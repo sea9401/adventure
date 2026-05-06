@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { Boss, BossDispatchResult, DispatchResult, ElementKind } from "@/lib/game/types";
+import type { BossDispatchResult, DispatchResult, ElementKind } from "@/lib/game/types";
 import { HpBar } from "./HpBar";
 
 // 원소 인디케이터 — 현재 스택 (cap 3) + 잔존 턴 수 표시
@@ -177,7 +177,7 @@ export function BossLogStream({
 }: {
   result: BossDispatchResult;
   startedAt: number;
-  boss: Boss;
+  boss: { name: string; hp: number };
   characterMaxHp: number;
   totalDurationMs?: number;
 }) {
