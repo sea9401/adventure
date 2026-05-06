@@ -3,8 +3,7 @@
 import { Panel } from "@/components/ui/Panel";
 import { Row } from "@/components/ui/Row";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { ADVANCED_CLASSES, CLASSES } from "@/lib/game/data";
-import type { CharacterClass } from "@/lib/game/types";
+import { CLASSES } from "@/lib/game/data";
 import {
   computeStats,
   getActivePassive,
@@ -124,114 +123,6 @@ export function CharacterView() {
 
   return (
     <>
-      <Panel
-        title={
-          state.character.advancedClass
-            ? "1차 직업 (2차 전직 해제 후 변경 가능)"
-            : "1차 직업 (언제든 무료 변경)"
-        }
-      >
-        <div className="space-y-2">
-          {(Object.keys(CLASSES) as CharacterClass[]).map((id) => {
-            const def = CLASSES[id];
-            const active = state.character.currentClass === id;
-            const locked = !!state.character.advancedClass && !active;
-            return (
-              <button
-                key={id}
-                onClick={() => state.changeClass(id)}
-                disabled={locked}
-                className={`w-full text-left border rounded-md p-3 transition-colors ${
-                  active
-                    ? "border-emerald-500 bg-emerald-950/30"
-                    : locked
-                      ? "border-line opacity-40 cursor-not-allowed"
-                      : "border-line hover:border-line-2"
-                }`}
-              >
-                <div className="flex items-baseline justify-between">
-                  <span className="font-medium">
-                    {def.name}
-                    {active && <span className="text-emerald-400 text-xs ml-2">(현재)</span>}
-                  </span>
-                </div>
-                <p className="text-xs text-fg-faint mt-1">{def.flavor}</p>
-                <p className="text-xs text-fg mt-1">
-                  HP {def.baseHp} · ATK {def.baseAtk} · DEF {def.baseDef} · MDEF {def.baseMdef} ·
-                  SPD {def.baseSpd} · AGI {def.baseAgi} · INT {def.baseInt}
-                </p>
-                <p className="text-xs text-fg-dim mt-0.5">
-                  성장(레벨당): HP+{def.growHp} ATK+{def.growAtk} DEF+{def.growDef} MDEF+
-                  {def.growMdef} SPD+{def.growSpd} AGI+{def.growAgi} INT+{def.growInt}
-                </p>
-                <p className="text-xs text-emerald-400 mt-1">패시브: {def.passiveText}</p>
-              </button>
-            );
-          })}
-        </div>
-      </Panel>
-
-      <Panel title={`2차 전직 — ${cls.name} 분기`}>
-        {state.character.level < 100 ? (
-          <p className="text-xs text-fg-faint">
-            Lv 100 도달 시 활성화. (현재 Lv {state.character.level}) — 2차 전직 시 만렙이 150으로
-            확장됩니다.
-          </p>
-        ) : (
-          <>
-            <p className="text-xs text-fg-faint mb-2">
-              {state.character.advancedClass
-                ? "같은 직군 내 분기는 자유 변경 가능 (학습 EXP 환불 없음). 해제 시 학습 차감분 100% 환불 + 레벨 100으로 클램프."
-                : "전직 후 만렙이 150으로 확장되고 누적 스킬 EXP로 2차 스킬을 학습할 수 있습니다."}
-            </p>
-            <div className="space-y-2">
-              {(Object.keys(ADVANCED_CLASSES) as (keyof typeof ADVANCED_CLASSES)[])
-                .filter((id) => ADVANCED_CLASSES[id].parent === state.character.currentClass)
-                .map((id) => {
-                  const adv = ADVANCED_CLASSES[id];
-                  const active = state.character.advancedClass === id;
-                  const growEntries = (Object.entries(adv.growMult) as [string, number][])
-                    .map(([k, v]) => `${k.toUpperCase()} ×${v}`)
-                    .join(" · ");
-                  return (
-                    <div
-                      key={id}
-                      className={`border rounded-md p-3 ${
-                        active ? "border-amber-500 bg-amber-950/20" : "border-line"
-                      }`}
-                    >
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-medium text-fg-strong">
-                          {adv.name}
-                          {active && <span className="text-amber-400 text-xs ml-2">(현재)</span>}
-                        </span>
-                        {active ? (
-                          <button
-                            onClick={() => state.unadvance()}
-                            className="rounded-md px-3 py-1 text-xs font-medium whitespace-nowrap bg-panel-2 hover:bg-panel-2 text-fg-strong"
-                          >
-                            해제 (EXP 환불)
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => state.advanceClass(id)}
-                            className="rounded-md px-3 py-1 text-xs font-medium whitespace-nowrap bg-amber-600 hover:bg-amber-500 text-white"
-                          >
-                            {state.character.advancedClass ? "분기 변경" : "전직"}
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-xs text-fg-faint mt-1">{adv.flavor}</p>
-                      <p className="text-xs text-fg-dim mt-0.5">성장 보정: {growEntries}</p>
-                      <p className="text-xs text-amber-400 mt-1">패시브: {adv.passiveText}</p>
-                    </div>
-                  );
-                })}
-            </div>
-          </>
-        )}
-      </Panel>
-
       <Panel title="능력치">
         {(() => {
           const points = state.character.statPoints ?? 0;
