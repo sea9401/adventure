@@ -1,0 +1,6 @@
+# 이 파일에 등재된 commit은 git blame에서 무시됩니다.
+# 활성화: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# (또는 IDE 설정에서)
+
+# Prettier 일괄 적용 (포맷만, 로직 변경 없음)
+6aa20608b8ef71ab6d081731c29cec356d7d9ea1

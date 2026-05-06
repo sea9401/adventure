@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-fg-strong: var(--fg-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-fg-dim: var(--fg-dim);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ── Dark theme (default) ── */
+:root {
+  --canvas: #0a0a0a; /* zinc-950 */
+  --panel: #18181b; /* zinc-900 */
+  --panel-2: #27272a; /* zinc-800 */
+  --line: #27272a; /* zinc-800 */
+  --line-2: #3f3f46; /* zinc-700 */
+  --fg-strong: #ffffff; /* pure white — 타이틀·강조 */
+  --fg: #ffffff; /* pure white — 본문 기본 */
+  --fg-muted: #e4e4e7; /* zinc-200 — 부속 정보 */
+  --fg-faint: #d4d4d8; /* zinc-300 — 라벨·meta */
+  --fg-dim: #a1a1aa; /* zinc-400 — 장식·flavor */
+  /* 장비 등급 — 다크 배경에서 가독성 우선 */
+  --rarity-craft: #f0abfc; /* fuchsia-300 */
+  --rarity-drop: #fdba74; /* orange-300 */
+  --rarity-set-mid: #7dd3fc; /* sky-300 — 사막/설원/해적/유령선 세트 */
+}
+
+/* ── Light theme ── */
+.light {
+  --canvas: #fafafa; /* zinc-50 */
+  --panel: #ffffff; /* white */
+  --panel-2: #f4f4f5; /* zinc-100 */
+  --line: #e4e4e7; /* zinc-200 */
+  --line-2: #d4d4d8; /* zinc-300 */
+  --fg-strong: #09090b; /* zinc-950 */
+  --fg: #18181b; /* zinc-900 */
+  --fg-muted: #52525b; /* zinc-600 */
+  --fg-faint: #71717a; /* zinc-500 */
+  --fg-dim: #a1a1aa; /* zinc-400 */
+  /* 장비 등급 — 흰 배경에서 가독성 위해 진한 톤 */
+  --rarity-craft: #a21caf; /* fuchsia-700 */
+  --rarity-drop: #c2410c; /* orange-700 */
+  --rarity-set-mid: #0369a1; /* sky-700 — 사막/설원/해적/유령선 세트 */
+}
+
+body {
+  background: var(--canvas);
+  color: var(--fg);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 모바일 — 입력 필드 폰트 16px 고정으로 iOS Safari 자동 줌 차단.
+   sm 이상에서는 14px로 복원해 데스크톱 밀도 유지. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+@media (min-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 14px;
+  }
+}
+
+/* 큰 자원/스탯 숫자에서 자릿수 변동 시 좌우 흔들림 방지.
+   Row의 value 영역, 자원 패널, HP/EXP 표시 등에 적용된다. */
+.num,
+.font-medium,
+[data-numeric] {
+  font-variant-numeric: tabular-nums;
+}
+
+.rarity-craft {
+  color: var(--rarity-craft);
+}
+.rarity-drop {
+  color: var(--rarity-drop);
+}
+.rarity-set-mid {
+  color: var(--rarity-set-mid);
+}
