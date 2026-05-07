@@ -20,9 +20,15 @@ const ROLE_LABEL: Record<NpcRole, string> = {
 export function TownView({
   region,
   onTalkClose,
+  renderNpcDialogue,
 }: {
   region: Region;
   onTalkClose?: (npcId: string, regionId: string) => void;
+  /**
+   * 특정 NPC에 대해 기본 NpcDialogue 대신 커스텀 다이얼로그를 렌더할 때 사용.
+   * null/undefined를 반환하면 기본 NpcDialogue 렌더.
+   */
+  renderNpcDialogue?: (npc: Npc, onClose: () => void) => ReactNode;
 }) {
   const npcs = getNpcsByRegion(region.id);
   const [openNpc, setOpenNpc] = useState<Npc | null>(null);
@@ -86,7 +92,10 @@ export function TownView({
         </div>
       )}
 
-      {openNpc && <NpcDialogue npc={openNpc} onClose={closeNpc} />}
+      {openNpc &&
+        (renderNpcDialogue?.(openNpc, closeNpc) ?? (
+          <NpcDialogue npc={openNpc} onClose={closeNpc} />
+        ))}
     </div>
   );
 }

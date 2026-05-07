@@ -19,6 +19,7 @@ import {
   Shield,
   Sparkle,
   Star,
+  Storefront,
   Sword,
   User,
   Wind,
@@ -29,6 +30,8 @@ import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
 import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
 import { TownView } from "@/adventure/TownView";
+import { NpcDialogue } from "@/adventure/NpcDialogue";
+import type { Npc } from "@/adventure/data/npcs";
 import { AdventureLogView } from "@/adventure/AdventureLogView";
 import { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -45,6 +48,10 @@ import { RecentLogView } from "@/adventure/RecentLogView";
 import { GuildView } from "@/adventure/GuildView";
 import { useQuests } from "@/adventure/quests/useQuests";
 import { getQuestById } from "@/adventure/data/quests";
+import { ITEMS, type EquipItem } from "@/adventure/data/items";
+import { type Recipe } from "@/adventure/data/recipes";
+import { useCrafting } from "@/adventure/crafting/useCrafting";
+import { CraftingView } from "@/adventure/CraftingView";
 import {
   genNotificationId,
   loadNotifications,
@@ -66,12 +73,19 @@ const TRAINING_DURATION_MS = 4 * 60 * 60 * 1000;
 const CHARACTER_STATE_KEY = "character.v1";
 const BATTLE_SETTINGS_KEY = "battle-settings.v1";
 
+type EquippedSlots = {
+  weapon: EquipItem | null;
+  armor: EquipItem | null;
+  accessory: EquipItem | null;
+};
+
 type CharacterDynamicState = {
   hp: number;
   mp: number;
   exp: number;
   gold: number;
   fame: number;
+  equipped?: EquippedSlots;
 };
 
 const initialCharacterState: CharacterDynamicState = {
@@ -91,17 +105,8 @@ function formatDuration(ms: number): string {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-export type EquipBonus = {
-  atk?: number;
-  def?: number;
-};
-
-type EquipItem = {
-  name: string;
-  stats: { label: string; value: string }[];
-  bonus?: EquipBonus;
-  description?: string;
-};
+// EquipBonus / EquipItem 타입은 src/adventure/data/items.ts로 이동됨.
+export type { EquipBonus } from "@/adventure/data/items";
 
 type Skill = {
   name: string;
@@ -742,6 +747,7 @@ export default function Home() {
   const [lastReadAt, setLastReadAt] = useState<number>(0);
   const adventureLog = useAdventureLog();
   const quests = useQuests();
+  const crafting = useCrafting();
 
   useEffect(() => {
     try {
@@ -785,6 +791,7 @@ export default function Home() {
           exp: parsed.exp ?? initialCharacterState.exp,
           gold: parsed.gold ?? initialCharacterState.gold,
           fame: parsed.fame ?? initialCharacterState.fame,
+          equipped: parsed.equipped,
         });
       }
     } catch {}
@@ -930,6 +937,7 @@ export default function Home() {
     exp: characterState.exp,
     gold: characterState.gold,
     fame: characterState.fame,
+    equipped: characterState.equipped ?? baseCharacter.equipped,
     stats: STAT_KEYS.reduce<Record<StatKey, number>>(
       (acc, k) => {
         acc[k] = baseCharacter.stats[k] + allocatedStats[k];
@@ -990,6 +998,105 @@ export default function Home() {
 
   const handleNotificationsOpen = () => {
     setLastReadAt(Date.now());
+  };
+
+  const equipItem = (
+    slot: "weapon" | "armor" | "accessory",
+    item: EquipItem,
+  ) => {
+    setCharacterState((prev) => {
+      const current = prev.equipped ?? baseCharacter.equipped;
+      return {
+        ...prev,
+        equipped: { ...current, [slot]: item },
+      };
+    });
+  };
+
+  const handleCraft = (recipe: Recipe) => {
+    crafting.markCrafted(recipe.id);
+    const item = ITEMS[recipe.result];
+    equipItem(recipe.slot, item);
+    addNotification("info", `${item.name}을(를) 만들었다.`);
+  };
+
+  const renderBoldDialogue = (npc: Npc, close: () => void) => {
+    const knowsBat = crafting.knows("baseball_bat");
+    const craftedBat = crafting.hasCrafted("baseball_bat");
+    const armorReceived = crafting.state.boldQuestComplete;
+
+    // Stage A — 처음. 제작서 주기.
+    if (!knowsBat) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "처음 보는데… 모험가인가?\n그 나뭇가지 들고 마을 밖으로 나가는 건 위험하네.\n자, 받아 — 야구 방망이 제작서다. 대장간에 가서 직접 만들어 봐."
+          }
+          primaryAction={{
+            label: "제작서를 받는다",
+            onClick: () => {
+              crafting.learnRecipe("baseball_bat");
+              addNotification(
+                "info",
+                "제작서를 손에 넣었다 — 야구 방망이",
+              );
+              close();
+            },
+          }}
+        />
+      );
+    }
+
+    // Stage B — 제작서를 받았지만 아직 안 만듦.
+    if (!craftedBat) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "방망이는 잘 만들고 있나?\n대장간 앞에서 망설이지 말게. 제작서대로 두드리면 되네."
+          }
+        />
+      );
+    }
+
+    // Stage C — 만들어 옴. 가죽갑옷 주기.
+    if (!armorReceived) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "오, 제대로 만들었군!\n…그런 천 옷으로 어딜 다녀. 이거도 챙겨가라 — 낡은 가죽갑옷이지만, 그쪽 천 쪼가리보단 백 배 낫지."
+          }
+          primaryAction={{
+            label: "낡은 가죽갑옷을 받는다",
+            onClick: () => {
+              equipItem("armor", ITEMS.old_leather_armor);
+              crafting.setBoldQuestComplete();
+              addNotification(
+                "info",
+                "낡은 가죽갑옷을 입었다.",
+              );
+              close();
+            },
+          }}
+        />
+      );
+    }
+
+    // Stage D — 끝. 일상 대화.
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={close}
+        text={
+          "왔구나.\n잘 지내고 있나? 무기 손볼 일 있으면 또 들르게."
+        }
+      />
+    );
   };
 
   const handleHeal = () => {
@@ -1167,6 +1274,11 @@ export default function Home() {
                   adventureLog.incrementNpcTalk(npcId);
                   adventureLog.addTownNpcTalked(regionId, npcId);
                 }}
+                renderNpcDialogue={(npc, close) =>
+                  npc.id === "village_blacksmith_bold"
+                    ? renderBoldDialogue(npc, close)
+                    : null
+                }
               />
             </div>
           )}
@@ -1254,6 +1366,18 @@ export default function Home() {
               />
               <EntryCard
                 icon={
+                  <Storefront
+                    size={28}
+                    weight="duotone"
+                    className="text-emerald-600"
+                  />
+                }
+                title="상점"
+                description="물건을 사고 팔 수 있는 곳."
+                onClick={() => setSubView("shop")}
+              />
+              <EntryCard
+                icon={
                   <Scroll
                     size={28}
                     weight="duotone"
@@ -1326,12 +1450,21 @@ export default function Home() {
           {tab === "town" && isTown && subView === "crafting" && (
             <div className="space-y-3">
               <SubViewHeader title="대장간" onBack={() => setSubView(null)} />
+              <CraftingView
+                knownIds={crafting.state.known}
+                onCraft={handleCraft}
+              />
+            </div>
+          )}
+          {tab === "town" && isTown && subView === "shop" && (
+            <div className="space-y-3">
+              <SubViewHeader title="상점" onBack={() => setSubView(null)} />
               <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
                 <div className="text-base font-medium text-zinc-700 dark:text-zinc-300">
-                  아직 만들 줄 아는 게 없습니다
+                  아직 진열대가 비어 있습니다
                 </div>
                 <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  제작 비법을 익히면 이곳에서 무기와 갑옷을 만들 수 있습니다.
+                  곧 상품을 들여놓을 예정입니다.
                 </div>
               </section>
             </div>
