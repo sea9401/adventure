@@ -15,7 +15,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-comfortaa), system-ui, sans-serif;
+  --font-sans:
+    var(--font-comfortaa), var(--font-gowun-dodum), system-ui, sans-serif;
 }
 
 body {

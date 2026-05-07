@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { Comfortaa } from "next/font/google";
+import { Comfortaa, Gowun_Dodum } from "next/font/google";
 import "./globals.css";
 
 const comfortaa = Comfortaa({
   variable: "--font-comfortaa",
   subsets: ["latin"],
+});
+
+const gowunDodum = Gowun_Dodum({
+  variable: "--font-gowun-dodum",
+  weight: "400",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -22,7 +28,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${comfortaa.variable} h-full antialiased`}
+      className={`${comfortaa.variable} ${gowunDodum.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
