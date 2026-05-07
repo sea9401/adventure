@@ -14,6 +14,17 @@ type EquipItem = {
   description?: string;
 };
 
+const STAT_KEYS = ["str", "dex", "vit", "spd", "luk"] as const;
+type StatKey = (typeof STAT_KEYS)[number];
+
+const STAT_LABELS: Record<StatKey, string> = {
+  str: "힘",
+  dex: "민첩",
+  vit: "활력",
+  spd: "속도",
+  luk: "행운",
+};
+
 const baseCharacter = {
   className: "무직",
   level: 1,
@@ -22,6 +33,7 @@ const baseCharacter = {
   mp: 30,
   maxMp: 30,
   gold: 0,
+  stats: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 } as Record<StatKey, number>,
   equipped: {
     weapon: {
       name: "나뭇가지",
@@ -150,9 +162,129 @@ function EquipCard({ title, item }: { title: string; item: EquipItem | null }) {
   );
 }
 
+type TabKey = "adventure" | "town" | "character";
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "adventure", label: "모험" },
+  { key: "town", label: "마을" },
+  { key: "character", label: "캐릭터" },
+];
+
+function TabBar({
+  active,
+  onChange,
+}: {
+  active: TabKey;
+  onChange: (next: TabKey) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="메인 탭"
+      className="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-100/60 p-1 dark:border-zinc-800 dark:bg-zinc-900/60"
+    >
+      {TABS.map((t) => {
+        const selected = active === t.key;
+        return (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={selected}
+            type="button"
+            onClick={() => onChange(t.key)}
+            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              selected
+                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-950 dark:text-zinc-100"
+                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            }`}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CharacterPanel({
+  character,
+}: {
+  character: typeof baseCharacter & { name: string };
+}) {
+  return (
+    <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <div className="space-y-2 p-4">
+        <div className="flex flex-wrap items-baseline gap-2">
+          <span className="text-lg font-semibold">{character.name}</span>
+          <span className="text-base text-zinc-500 dark:text-zinc-400">
+            {character.className}
+          </span>
+          <span className="text-base text-zinc-400 dark:text-zinc-500">
+            Lv.{character.level}
+          </span>
+        </div>
+
+        <StatBar
+          label="HP"
+          value={character.hp}
+          max={character.maxHp}
+          color="bg-red-500"
+        />
+        <StatBar
+          label="MP"
+          value={character.mp}
+          max={character.maxMp}
+          color="bg-sky-500"
+        />
+
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-zinc-500 dark:text-zinc-400">골드</span>
+          <span className="tabular-nums">
+            💰 {character.gold.toLocaleString()}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-5 gap-2 pt-1">
+          {STAT_KEYS.map((k) => (
+            <div
+              key={k}
+              className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-center dark:border-zinc-800 dark:bg-zinc-900/50"
+            >
+              <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                {STAT_LABELS[k]}
+              </div>
+              <div className="mt-0.5 text-base font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                {character.stats[k]}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
+          <EquipCard title="무기" item={character.equipped.weapon} />
+          <EquipCard title="방어구" item={character.equipped.armor} />
+          <EquipCard title="장신구" item={character.equipped.accessory} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PlaceholderPanel({ title, message }: { title: string; message: string }) {
+  return (
+    <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+      <div className="text-base font-medium text-zinc-700 dark:text-zinc-300">
+        {title}
+      </div>
+      <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{message}</div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [name, setName] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [tab, setTab] = useState<TabKey>("adventure");
 
   useEffect(() => {
     try {
@@ -192,46 +324,22 @@ export default function Home() {
           <ThemeToggle />
         </header>
 
-        <main className="mx-auto w-full max-w-2xl flex-1 p-4 sm:p-6">
-          <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
-            <div className="space-y-2 p-4">
-              <div className="flex flex-wrap items-baseline gap-2">
-                <span className="text-lg font-semibold">{character.name}</span>
-                <span className="text-base text-zinc-500 dark:text-zinc-400">
-                  {character.className}
-                </span>
-                <span className="text-base text-zinc-400 dark:text-zinc-500">
-                  Lv.{character.level}
-                </span>
-              </div>
+        <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4 sm:p-6">
+          <TabBar active={tab} onChange={setTab} />
 
-              <StatBar
-                label="HP"
-                value={character.hp}
-                max={character.maxHp}
-                color="bg-red-500"
-              />
-              <StatBar
-                label="MP"
-                value={character.mp}
-                max={character.maxMp}
-                color="bg-sky-500"
-              />
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500 dark:text-zinc-400">골드</span>
-                <span className="tabular-nums">
-                  💰 {character.gold.toLocaleString()}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
-                <EquipCard title="무기" item={character.equipped.weapon} />
-                <EquipCard title="방어구" item={character.equipped.armor} />
-                <EquipCard title="장신구" item={character.equipped.accessory} />
-              </div>
-            </div>
-          </section>
+          {tab === "adventure" && (
+            <PlaceholderPanel
+              title="모험"
+              message="새로운 모험이 곧 시작됩니다."
+            />
+          )}
+          {tab === "town" && (
+            <PlaceholderPanel
+              title="마을"
+              message="아직 둘러볼 수 있는 곳이 없습니다."
+            />
+          )}
+          {tab === "character" && <CharacterPanel character={character} />}
         </main>
       </div>
       {showModal && <NameSetupModal onSubmit={handleNameSubmit} />}
