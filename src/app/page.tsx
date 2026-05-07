@@ -1,7 +1,14 @@
-import { ThemeToggle } from "@/components/ThemeToggle";
+"use client";
 
-const character = {
-  name: "모험가",
+import { useEffect, useState } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { NameSetupModal } from "@/components/NameSetupModal";
+
+const NAME_STORAGE_KEY = "characterName.v2";
+const LEGACY_NAME_KEYS = ["characterName"];
+const DEFAULT_NAME = "모험가";
+
+const baseCharacter = {
   className: "무직",
   level: 1,
   hp: 50,
@@ -62,64 +69,90 @@ function EquipCard({ title, item }: { title: string; item: string | null }) {
 }
 
 export default function Home() {
-  return (
-    <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-6 dark:border-zinc-800">
-        <div className="flex min-w-0 items-baseline gap-3">
-          <h1 className="shrink-0 text-xl font-semibold tracking-wide">무슨무슨게임</h1>
-          <span className="truncate text-base text-zinc-600 dark:text-zinc-400">
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {character.name}
-            </span>
-            <span className="ml-2 text-zinc-500 dark:text-zinc-500">
-              Lv.{character.level}
-            </span>
-          </span>
-        </div>
-        <ThemeToggle />
-      </header>
+  const [name, setName] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-      <main className="mx-auto w-full max-w-2xl flex-1 p-4 sm:p-6">
-        <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
-          <div className="space-y-2 p-4">
-            <div className="flex flex-wrap items-baseline gap-2">
-              <span className="text-lg font-semibold">{character.name}</span>
-              <span className="text-base text-zinc-500 dark:text-zinc-400">
-                {character.className}
+  useEffect(() => {
+    try {
+      for (const key of LEGACY_NAME_KEYS) localStorage.removeItem(key);
+      const stored = localStorage.getItem(NAME_STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (stored) setName(stored);
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  const handleNameSubmit = (next: string) => {
+    try {
+      localStorage.setItem(NAME_STORAGE_KEY, next);
+    } catch {}
+    setName(next);
+  };
+
+  const character = { ...baseCharacter, name: name ?? DEFAULT_NAME };
+  const showModal = hydrated && !name;
+
+  return (
+    <>
+      <div className="flex flex-1 flex-col">
+        <header className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-6 dark:border-zinc-800">
+          <div className="flex min-w-0 items-baseline gap-3">
+            <h1 className="shrink-0 text-xl font-semibold tracking-wide">무슨무슨게임</h1>
+            <span className="truncate text-base text-zinc-600 dark:text-zinc-400">
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {character.name}
               </span>
-              <span className="text-base text-zinc-400 dark:text-zinc-500">
+              <span className="ml-2 text-zinc-500 dark:text-zinc-500">
                 Lv.{character.level}
               </span>
-            </div>
-
-            <StatBar
-              label="HP"
-              value={character.hp}
-              max={character.maxHp}
-              color="bg-emerald-500"
-            />
-            <StatBar
-              label="MP"
-              value={character.mp}
-              max={character.maxMp}
-              color="bg-sky-500"
-            />
-
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500 dark:text-zinc-400">골드</span>
-              <span className="tabular-nums">
-                💰 {character.gold.toLocaleString()}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
-              <EquipCard title="무기" item={character.equipped.weapon} />
-              <EquipCard title="방어구" item={character.equipped.armor} />
-              <EquipCard title="장신구" item={character.equipped.accessory} />
-            </div>
+            </span>
           </div>
-        </section>
-      </main>
-    </div>
+          <ThemeToggle />
+        </header>
+
+        <main className="mx-auto w-full max-w-2xl flex-1 p-4 sm:p-6">
+          <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
+            <div className="space-y-2 p-4">
+              <div className="flex flex-wrap items-baseline gap-2">
+                <span className="text-lg font-semibold">{character.name}</span>
+                <span className="text-base text-zinc-500 dark:text-zinc-400">
+                  {character.className}
+                </span>
+                <span className="text-base text-zinc-400 dark:text-zinc-500">
+                  Lv.{character.level}
+                </span>
+              </div>
+
+              <StatBar
+                label="HP"
+                value={character.hp}
+                max={character.maxHp}
+                color="bg-red-500"
+              />
+              <StatBar
+                label="MP"
+                value={character.mp}
+                max={character.maxMp}
+                color="bg-sky-500"
+              />
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-500 dark:text-zinc-400">골드</span>
+                <span className="tabular-nums">
+                  💰 {character.gold.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
+                <EquipCard title="무기" item={character.equipped.weapon} />
+                <EquipCard title="방어구" item={character.equipped.armor} />
+                <EquipCard title="장신구" item={character.equipped.accessory} />
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+      {showModal && <NameSetupModal onSubmit={handleNameSubmit} />}
+    </>
   );
 }
