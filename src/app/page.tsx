@@ -29,9 +29,9 @@ function StatBar({
 }) {
   const pct = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
   return (
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex items-center gap-2 text-sm">
       <span className="w-8 shrink-0 text-zinc-500 dark:text-zinc-400">{label}</span>
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
         <div
           className={`h-full ${color} transition-all`}
           style={{ width: `${pct * 100}%` }}
@@ -47,10 +47,10 @@ function StatBar({
 function EquipCard({ title, item }: { title: string; item: string | null }) {
   return (
     <div className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/50">
-      <div className="text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+      <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
         {title}
       </div>
-      <div className="mt-1 text-sm">
+      <div className="mt-1 text-base">
         {item ? (
           <span className="text-zinc-900 dark:text-zinc-100">{item}</span>
         ) : (
@@ -66,8 +66,8 @@ export default function Home() {
     <div className="flex flex-1 flex-col">
       <header className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-6 dark:border-zinc-800">
         <div className="flex min-w-0 items-baseline gap-3">
-          <h1 className="shrink-0 text-lg font-semibold tracking-wide">무슨무슨게임</h1>
-          <span className="truncate text-sm text-zinc-600 dark:text-zinc-400">
+          <h1 className="shrink-0 text-xl font-semibold tracking-wide">무슨무슨게임</h1>
+          <span className="truncate text-base text-zinc-600 dark:text-zinc-400">
             <span className="font-medium text-zinc-900 dark:text-zinc-100">
               {character.name}
             </span>
@@ -81,16 +81,16 @@ export default function Home() {
 
       <main className="mx-auto w-full max-w-2xl flex-1 p-4 sm:p-6">
         <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
-          <div className="border-b border-zinc-200 px-4 py-2 text-xs uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+          <div className="border-b border-zinc-200 px-4 py-2 text-sm uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             캐릭터
           </div>
           <div className="space-y-2 p-4">
             <div className="flex flex-wrap items-baseline gap-2">
-              <span className="text-base font-semibold">{character.name}</span>
-              <span className="text-sm text-zinc-500 dark:text-zinc-400">
+              <span className="text-lg font-semibold">{character.name}</span>
+              <span className="text-base text-zinc-500 dark:text-zinc-400">
                 {character.className}
               </span>
-              <span className="text-sm text-zinc-400 dark:text-zinc-500">
+              <span className="text-base text-zinc-400 dark:text-zinc-500">
                 Lv.{character.level}
               </span>
             </div>
@@ -108,7 +108,7 @@ export default function Home() {
               color="bg-sky-500"
             />
 
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-sm">
               <span className="text-zinc-500 dark:text-zinc-400">골드</span>
               <span className="tabular-nums">
                 💰 {character.gold.toLocaleString()}
