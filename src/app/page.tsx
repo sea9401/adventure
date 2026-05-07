@@ -10,6 +10,7 @@ import {
   Diamond,
   Hammer,
   MapPin,
+  Scroll,
   Shield,
   Sparkle,
   Sword,
@@ -18,6 +19,14 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
+import { BattleView } from "@/adventure/BattleView";
+import { WORLD_MAP } from "@/adventure/data/world";
+import {
+  initialMapProgress,
+  loadMapProgress,
+  saveMapProgress,
+  type MapProgress,
+} from "@/lib/map-progress";
 
 const PROFILE_STORAGE_KEY = "characterProfile.v1";
 const LEGACY_PROFILE_KEYS = ["characterName", "characterName.v2"];
@@ -604,16 +613,6 @@ function TrainingView({
   );
 }
 
-function PlaceholderPanel({ title, message }: { title: string; message: string }) {
-  return (
-    <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
-      <div className="text-base font-medium text-zinc-700 dark:text-zinc-300">
-        {title}
-      </div>
-      <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{message}</div>
-    </section>
-  );
-}
 
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -626,6 +625,8 @@ export default function Home() {
   const [allocatedStats, setAllocatedStats] =
     useState<Record<StatKey, number>>(ZERO_ALLOCATED);
   const [now, setNow] = useState(() => Date.now());
+  const [mapProgress, setMapProgress] =
+    useState<MapProgress>(initialMapProgress);
 
   useEffect(() => {
     try {
@@ -657,8 +658,15 @@ export default function Home() {
       }
     } catch {}
 
+    setMapProgress(loadMapProgress());
     setHydrated(true);
   }, []);
+
+  // 지도 진행 상태 영속
+  useEffect(() => {
+    if (!hydrated) return;
+    saveMapProgress(mapProgress);
+  }, [hydrated, mapProgress]);
 
   // 훈련 진행 중일 때만 1초 단위로 now 갱신
   useEffect(() => {
@@ -738,6 +746,9 @@ export default function Home() {
     ),
   };
   const showModal = hydrated && !profile;
+  const currentRegion =
+    WORLD_MAP.regions.find((r) => r.id === mapProgress.currentRegionId) ??
+    WORLD_MAP.regions[0];
 
   return (
     <>
@@ -798,13 +809,16 @@ export default function Home() {
           {tab === "adventure" && subView === "battle" && (
             <div className="space-y-3">
               <SubViewHeader title="전투" onBack={() => setSubView(null)} />
-              <PlaceholderPanel title="전투" message="준비 중입니다." />
+              <BattleView region={currentRegion} />
             </div>
           )}
           {tab === "adventure" && subView === "map" && (
             <div className="space-y-3">
               <SubViewHeader title="지도" onBack={() => setSubView(null)} />
-              <MapView />
+              <MapView
+                progress={mapProgress}
+                onProgressChange={setMapProgress}
+              />
             </div>
           )}
 
@@ -834,6 +848,18 @@ export default function Home() {
                 description="장비와 도구를 직접 만들 수 있는 곳."
                 onClick={() => setSubView("crafting")}
               />
+              <EntryCard
+                icon={
+                  <Scroll
+                    size={28}
+                    weight="duotone"
+                    className="text-yellow-700"
+                  />
+                }
+                title="모험가 길드"
+                description="의뢰를 받고 명성을 쌓을 수 있는 곳."
+                onClick={() => setSubView("guild")}
+              />
             </div>
           )}
           {tab === "town" && subView === "training" && (
@@ -857,6 +883,27 @@ export default function Home() {
                 </div>
                 <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                   곧 제작 메뉴가 열립니다.
+                </div>
+              </section>
+            </div>
+          )}
+          {tab === "town" && subView === "guild" && (
+            <div className="space-y-3">
+              <SubViewHeader
+                title="모험가 길드"
+                onBack={() => setSubView(null)}
+              />
+              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+                <Scroll
+                  size={40}
+                  weight="duotone"
+                  className="mx-auto text-yellow-700"
+                />
+                <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
+                  준비 중
+                </div>
+                <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  곧 의뢰 게시판이 열립니다.
                 </div>
               </section>
             </div>

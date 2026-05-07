@@ -1,36 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   WORLD_MAP,
   getAdjacent,
   type RegionId,
 } from "./data/world";
-import {
-  initialMapProgress,
-  loadMapProgress,
-  saveMapProgress,
-  type MapProgress,
-} from "@/lib/map-progress";
+import type { MapProgress } from "@/lib/map-progress";
 import { MapEdge } from "./MapEdge";
 import { MapNode, type NodeState } from "./MapNode";
 import { RegionDetail } from "./RegionDetail";
 
-export function MapView() {
-  const [progress, setProgress] = useState<MapProgress>(initialMapProgress);
-  const [hydrated, setHydrated] = useState(false);
+export function MapView({
+  progress,
+  onProgressChange,
+}: {
+  progress: MapProgress;
+  onProgressChange: (next: MapProgress) => void;
+}) {
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setProgress(loadMapProgress());
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    saveMapProgress(progress);
-  }, [hydrated, progress]);
 
   const visitedSet = new Set(progress.visitedRegionIds);
   const adjacentToCurrent = new Set(
@@ -60,12 +48,12 @@ export function MapView() {
 
   const handleMove = () => {
     if (!selectedId || !canMove) return;
-    setProgress((p) => ({
+    onProgressChange({
       currentRegionId: selectedId,
-      visitedRegionIds: p.visitedRegionIds.includes(selectedId)
-        ? p.visitedRegionIds
-        : [...p.visitedRegionIds, selectedId],
-    }));
+      visitedRegionIds: progress.visitedRegionIds.includes(selectedId)
+        ? progress.visitedRegionIds
+        : [...progress.visitedRegionIds, selectedId],
+    });
   };
 
   return (
