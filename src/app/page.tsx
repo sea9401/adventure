@@ -365,17 +365,17 @@ function CharacterMini({
 }) {
   const equipped = [
     {
-      icon: <Sword size={18} weight="duotone" />,
+      icon: <Sword size={18} weight="duotone" className="text-rose-500" />,
       label: "무기",
       item: character.equipped.weapon,
     },
     {
-      icon: <Shield size={18} weight="duotone" />,
+      icon: <Shield size={18} weight="duotone" className="text-sky-500" />,
       label: "방어구",
       item: character.equipped.armor,
     },
     {
-      icon: <Diamond size={18} weight="duotone" />,
+      icon: <Diamond size={18} weight="duotone" className="text-violet-500" />,
       label: "장신구",
       item: character.equipped.accessory,
     },
@@ -516,7 +516,7 @@ function SkillsView({ skills }: { skills: Skill[] }) {
             <Sparkle
               size={18}
               weight="duotone"
-              className="mt-0.5 shrink-0 text-zinc-600 dark:text-zinc-300"
+              className="mt-0.5 shrink-0 text-amber-500"
             />
             <div className="min-w-0">
               <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -755,13 +755,25 @@ export default function Home() {
               <CharacterMini character={character} />
               <div className="space-y-2">
                 <EntryCard
-                  icon={<Sword size={28} weight="duotone" />}
+                  icon={
+                    <Sword
+                      size={28}
+                      weight="duotone"
+                      className="text-rose-500"
+                    />
+                  }
                   title="전투"
                   description="적과 맞서 싸웁니다."
                   onClick={() => setSubView("battle")}
                 />
                 <EntryCard
-                  icon={<Compass size={28} weight="duotone" />}
+                  icon={
+                    <Compass
+                      size={28}
+                      weight="duotone"
+                      className="text-emerald-500"
+                    />
+                  }
                   title="지도"
                   description="모험할 곳을 찾아봅니다."
                   onClick={() => setSubView("map")}
@@ -785,13 +797,25 @@ export default function Home() {
           {tab === "town" && subView === null && (
             <div className="space-y-2">
               <EntryCard
-                icon={<Barbell size={28} weight="duotone" />}
+                icon={
+                  <Barbell
+                    size={28}
+                    weight="duotone"
+                    className="text-orange-500"
+                  />
+                }
                 title="훈련장"
                 description={trainingDescription}
                 onClick={() => setSubView("training")}
               />
               <EntryCard
-                icon={<Hammer size={28} weight="duotone" />}
+                icon={
+                  <Hammer
+                    size={28}
+                    weight="duotone"
+                    className="text-amber-600"
+                  />
+                }
                 title="제작소"
                 description="장비와 도구를 직접 만들 수 있는 곳."
                 onClick={() => setSubView("crafting")}
@@ -827,13 +851,25 @@ export default function Home() {
           {tab === "character" && subView === null && (
             <div className="space-y-2">
               <EntryCard
-                icon={<User size={28} weight="duotone" />}
+                icon={
+                  <User
+                    size={28}
+                    weight="duotone"
+                    className="text-blue-500"
+                  />
+                }
                 title="내 정보"
                 description="캐릭터 정보와 능력치를 확인합니다."
                 onClick={() => setSubView("info")}
               />
               <EntryCard
-                icon={<Sparkle size={28} weight="duotone" />}
+                icon={
+                  <Sparkle
+                    size={28}
+                    weight="duotone"
+                    className="text-amber-500"
+                  />
+                }
                 title="스킬"
                 description={
                   character.skills.length > 0
