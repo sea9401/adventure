@@ -309,7 +309,7 @@ function CharacterPortrait({ gender }: { gender: Gender }) {
   return (
     <div
       aria-label="캐릭터 이미지"
-      className="flex aspect-square w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-5xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
+      className="flex aspect-square w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-300 bg-zinc-50 text-5xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
     >
       {errored ? (
         <span>{fallback}</span>
