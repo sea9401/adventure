@@ -178,10 +178,10 @@ function TabBar({
   onChange: (next: TabKey) => void;
 }) {
   return (
-    <div
+    <nav
       role="tablist"
       aria-label="메인 탭"
-      className="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-100/60 p-1 dark:border-zinc-800 dark:bg-zinc-900/60"
+      className="mx-auto flex max-w-2xl gap-1 border-b border-zinc-200 px-4 sm:px-6 dark:border-zinc-800"
     >
       {TABS.map((t) => {
         const selected = active === t.key;
@@ -192,17 +192,17 @@ function TabBar({
             aria-selected={selected}
             type="button"
             onClick={() => onChange(t.key)}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`-mb-px border-b-2 px-4 py-2 text-sm transition-colors ${
               selected
-                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-950 dark:text-zinc-100"
-                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                ? "border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"
+                : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
             }`}
           >
             {t.label}
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }
 
@@ -324,9 +324,9 @@ export default function Home() {
           <ThemeToggle />
         </header>
 
-        <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4 sm:p-6">
-          <TabBar active={tab} onChange={setTab} />
+        <TabBar active={tab} onChange={setTab} />
 
+        <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4 sm:p-6">
           {tab === "adventure" && (
             <PlaceholderPanel
               title="모험"
