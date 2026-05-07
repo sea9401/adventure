@@ -10,11 +10,13 @@ import {
   Diamond,
   Hammer,
   Shield,
+  Sparkle,
   Sword,
   User,
 } from "@phosphor-icons/react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
+import { MapView } from "@/adventure/MapView";
 
 const PROFILE_STORAGE_KEY = "characterProfile.v1";
 const LEGACY_PROFILE_KEYS = ["characterName", "characterName.v2"];
@@ -37,6 +39,11 @@ function formatDuration(ms: number): string {
 type EquipItem = {
   name: string;
   stats: { label: string; value: string }[];
+  description?: string;
+};
+
+type Skill = {
+  name: string;
   description?: string;
 };
 
@@ -70,6 +77,7 @@ const baseCharacter = {
   affiliation: "무소속",
   battleCount: 0,
   fame: 0,
+  skills: [] as Skill[],
   stats: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 } as Record<StatKey, number>,
   equipped: {
     weapon: {
@@ -479,6 +487,54 @@ function SubViewHeader({
   );
 }
 
+function SkillsView({ skills }: { skills: Skill[] }) {
+  if (skills.length === 0) {
+    return (
+      <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+        <Sparkle
+          size={40}
+          weight="duotone"
+          className="mx-auto text-zinc-400 dark:text-zinc-500"
+        />
+        <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
+          아직 익힌 스킬이 없습니다
+        </div>
+        <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          모험을 통해 새로운 스킬을 배워보세요.
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <ul className="space-y-2">
+        {skills.map((s) => (
+          <li
+            key={s.name}
+            className="flex items-start gap-2.5 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50"
+          >
+            <Sparkle
+              size={18}
+              weight="duotone"
+              className="mt-0.5 shrink-0 text-zinc-600 dark:text-zinc-300"
+            />
+            <div className="min-w-0">
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                {s.name}
+              </div>
+              {s.description && (
+                <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  {s.description}
+                </div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function TrainingView({
   trainingEndsAt,
   unspentPoints,
@@ -722,7 +778,7 @@ export default function Home() {
           {tab === "adventure" && subView === "map" && (
             <div className="space-y-3">
               <SubViewHeader title="지도" onBack={() => setSubView(null)} />
-              <PlaceholderPanel title="지도" message="준비 중입니다." />
+              <MapView />
             </div>
           )}
 
@@ -776,6 +832,16 @@ export default function Home() {
                 description="캐릭터 정보와 능력치를 확인합니다."
                 onClick={() => setSubView("info")}
               />
+              <EntryCard
+                icon={<Sparkle size={28} weight="duotone" />}
+                title="스킬"
+                description={
+                  character.skills.length > 0
+                    ? `보유 스킬 ${character.skills.length}개`
+                    : "아직 익힌 스킬이 없습니다."
+                }
+                onClick={() => setSubView("skills")}
+              />
             </div>
           )}
           {tab === "character" && subView === "info" && (
@@ -789,6 +855,12 @@ export default function Home() {
                   <StatsPanel stats={character.stats} />
                 </div>
               </section>
+            </div>
+          )}
+          {tab === "character" && subView === "skills" && (
+            <div className="space-y-3">
+              <SubViewHeader title="스킬" onBack={() => setSubView(null)} />
+              <SkillsView skills={character.skills} />
             </div>
           )}
         </main>
