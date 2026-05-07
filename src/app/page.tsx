@@ -9,6 +9,7 @@ import {
   Compass,
   Diamond,
   Hammer,
+  MapPin,
   Shield,
   Sparkle,
   Sword,
@@ -619,6 +620,7 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
   const [subView, setSubView] = useState<string | null>(null);
+  const [currentLocation] = useState<string>("고향 마을");
   const [trainingEndsAt, setTrainingEndsAt] = useState<number | null>(null);
   const [unspentPoints, setUnspentPoints] = useState(0);
   const [allocatedStats, setAllocatedStats] =
@@ -741,7 +743,7 @@ export default function Home() {
     <>
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-6 dark:border-zinc-800">
-          <div className="flex min-w-0 items-baseline gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <h1 className="shrink-0 text-xl font-semibold tracking-wide">무슨무슨게임</h1>
             <span className="truncate text-base text-zinc-600 dark:text-zinc-400">
               <span className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -749,6 +751,10 @@ export default function Home() {
               </span>
               <span className="ml-2 text-zinc-500 dark:text-zinc-500">
                 Lv.{character.level}
+              </span>
+              <span className="ml-2 inline-flex items-center gap-1 text-zinc-500 dark:text-zinc-500">
+                <MapPin size={14} weight="fill" className="text-rose-500" />
+                {currentLocation}
               </span>
             </span>
           </div>

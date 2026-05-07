@@ -1,30 +1,25 @@
-import type { Region } from "./data/world";
+import type { Biome, Region } from "./data/world";
 
 const NODE_RADIUS = 24;
 
 export type NodeState = "current" | "visited" | "reachable" | "locked";
 
-const STYLES: Record<NodeState, { fill: string; stroke: string; label: string }> = {
-  current: {
-    fill: "fill-emerald-500",
-    stroke: "stroke-emerald-600 dark:stroke-emerald-400",
-    label: "fill-zinc-900 dark:fill-zinc-100",
-  },
-  visited: {
-    fill: "fill-zinc-100 dark:fill-zinc-800",
-    stroke: "stroke-zinc-400 dark:stroke-zinc-500",
-    label: "fill-zinc-700 dark:fill-zinc-300",
-  },
-  reachable: {
-    fill: "fill-white dark:fill-zinc-900",
-    stroke: "stroke-zinc-400 dark:stroke-zinc-500",
-    label: "fill-zinc-700 dark:fill-zinc-300",
-  },
-  locked: {
-    fill: "fill-zinc-50 dark:fill-zinc-900/50",
-    stroke: "stroke-zinc-300 dark:stroke-zinc-700",
-    label: "fill-zinc-400 dark:fill-zinc-600",
-  },
+const BIOME_FILL: Record<Biome, string> = {
+  village: "fill-amber-200 dark:fill-amber-900/60",
+  plains: "fill-lime-200 dark:fill-lime-900/60",
+  forest: "fill-emerald-200 dark:fill-emerald-900/60",
+  cave: "fill-stone-300 dark:fill-stone-800",
+  lake: "fill-sky-200 dark:fill-sky-900/60",
+  ruins: "fill-rose-200 dark:fill-rose-900/60",
+};
+
+const BIOME_STROKE: Record<Biome, string> = {
+  village: "stroke-amber-500 dark:stroke-amber-700",
+  plains: "stroke-lime-500 dark:stroke-lime-700",
+  forest: "stroke-emerald-500 dark:stroke-emerald-700",
+  cave: "stroke-stone-500 dark:stroke-stone-600",
+  lake: "stroke-sky-500 dark:stroke-sky-700",
+  ruins: "stroke-rose-500 dark:stroke-rose-700",
 };
 
 export function MapNode({
@@ -38,8 +33,27 @@ export function MapNode({
   selected: boolean;
   onClick: () => void;
 }) {
-  const s = STYLES[state];
   const isCurrent = state === "current";
+  const isReachable = state === "reachable";
+  const isLocked = state === "locked";
+
+  const fillClass = isLocked
+    ? "fill-zinc-100 dark:fill-zinc-900"
+    : BIOME_FILL[region.biome];
+
+  const strokeClass = selected
+    ? "stroke-zinc-900 dark:stroke-zinc-100"
+    : isCurrent
+      ? "stroke-emerald-600 dark:stroke-emerald-400"
+      : isLocked
+        ? "stroke-zinc-300 dark:stroke-zinc-700"
+        : BIOME_STROKE[region.biome];
+
+  const labelClass = isLocked
+    ? "fill-zinc-400 dark:fill-zinc-600"
+    : isCurrent
+      ? "fill-zinc-900 dark:fill-zinc-100 font-semibold"
+      : "fill-zinc-700 dark:fill-zinc-200";
 
   return (
     <g
@@ -54,6 +68,7 @@ export function MapNode({
           onClick();
         }
       }}
+      opacity={isLocked ? 0.55 : 1}
     >
       <circle
         cx={region.position.x}
@@ -66,7 +81,7 @@ export function MapNode({
           cx={region.position.x}
           cy={region.position.y}
           r={NODE_RADIUS + 6}
-          className="fill-emerald-500/25"
+          className="fill-emerald-500/30"
         >
           <animate
             attributeName="r"
@@ -76,8 +91,29 @@ export function MapNode({
           />
           <animate
             attributeName="opacity"
-            values="0.6;0.15;0.6"
+            values="0.7;0.15;0.7"
             dur="2s"
+            repeatCount="indefinite"
+          />
+        </circle>
+      )}
+      {isReachable && (
+        <circle
+          cx={region.position.x}
+          cy={region.position.y}
+          r={NODE_RADIUS + 4}
+          className="fill-amber-400/30"
+        >
+          <animate
+            attributeName="r"
+            values={`${NODE_RADIUS + 2};${NODE_RADIUS + 9};${NODE_RADIUS + 2}`}
+            dur="2.6s"
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="opacity"
+            values="0.55;0.1;0.55"
+            dur="2.6s"
             repeatCount="indefinite"
           />
         </circle>
@@ -87,9 +123,9 @@ export function MapNode({
         cy={region.position.y}
         r={NODE_RADIUS}
         strokeWidth={selected ? 3 : 2}
-        className={`${s.fill} ${selected ? "stroke-zinc-900 dark:stroke-zinc-100" : s.stroke}`}
+        className={`${fillClass} ${strokeClass}`}
       />
-      {state === "locked" && (
+      {isLocked && (
         <text
           x={region.position.x}
           y={region.position.y + 5}
@@ -103,7 +139,7 @@ export function MapNode({
         x={region.position.x}
         y={region.position.y + NODE_RADIUS + 18}
         textAnchor="middle"
-        className={`${s.label} text-[13px] ${isCurrent ? "font-semibold" : ""} select-none`}
+        className={`${labelClass} text-[13px] select-none`}
       >
         {region.name}
       </text>
