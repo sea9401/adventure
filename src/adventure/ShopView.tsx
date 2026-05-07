@@ -17,7 +17,9 @@ export function ShopView({
   onPurchasePotion: (id: PotionId, quantity: number) => void;
   onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
 }) {
-  const materialIds = Object.keys(MATERIALS) as MaterialId[];
+  const materialIds = (Object.keys(MATERIALS) as MaterialId[]).filter(
+    (id) => MATERIALS[id].inShop,
+  );
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-end gap-1.5 text-sm text-zinc-700 dark:text-zinc-200">
@@ -49,29 +51,31 @@ export function ShopView({
         </div>
       </div>
 
-      <div>
-        <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          재료
+      {materialIds.length > 0 && (
+        <div>
+          <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            재료
+          </div>
+          <div className="space-y-2">
+            {materialIds.map((id) => {
+              const m = MATERIALS[id];
+              const owned = inventory.materials[id] ?? 0;
+              return (
+                <ShopRow
+                  key={id}
+                  id={id}
+                  name={m.name}
+                  description={m.description}
+                  price={m.price}
+                  owned={owned}
+                  gold={gold}
+                  onPurchase={(qty) => onPurchaseMaterial(id, qty)}
+                />
+              );
+            })}
+          </div>
         </div>
-        <div className="space-y-2">
-          {materialIds.map((id) => {
-            const m = MATERIALS[id];
-            const owned = inventory.materials[id] ?? 0;
-            return (
-              <ShopRow
-                key={id}
-                id={id}
-                name={m.name}
-                description={m.description}
-                price={m.price}
-                owned={owned}
-                gold={gold}
-                onPurchase={(qty) => onPurchaseMaterial(id, qty)}
-              />
-            );
-          })}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
