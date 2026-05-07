@@ -212,45 +212,43 @@ function CharacterPanel({
   character: typeof baseCharacter & { name: string };
 }) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
-      <div className="space-y-2 p-4">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <span className="text-lg font-semibold">{character.name}</span>
-          <span className="text-base text-zinc-500 dark:text-zinc-400">
-            {character.className}
-          </span>
-          <span className="text-base text-zinc-400 dark:text-zinc-500">
-            Lv.{character.level}
-          </span>
-        </div>
-
-        <StatBar
-          label="HP"
-          value={character.hp}
-          max={character.maxHp}
-          color="bg-red-500"
-        />
-        <StatBar
-          label="MP"
-          value={character.mp}
-          max={character.maxMp}
-          color="bg-sky-500"
-        />
-
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-zinc-500 dark:text-zinc-400">골드</span>
-          <span className="tabular-nums">
-            💰 {character.gold.toLocaleString()}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
-          <EquipCard title="무기" item={character.equipped.weapon} />
-          <EquipCard title="방어구" item={character.equipped.armor} />
-          <EquipCard title="장신구" item={character.equipped.accessory} />
-        </div>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-baseline gap-2">
+        <span className="text-lg font-semibold">{character.name}</span>
+        <span className="text-base text-zinc-500 dark:text-zinc-400">
+          {character.className}
+        </span>
+        <span className="text-base text-zinc-400 dark:text-zinc-500">
+          Lv.{character.level}
+        </span>
       </div>
-    </section>
+
+      <StatBar
+        label="HP"
+        value={character.hp}
+        max={character.maxHp}
+        color="bg-red-500"
+      />
+      <StatBar
+        label="MP"
+        value={character.mp}
+        max={character.maxMp}
+        color="bg-sky-500"
+      />
+
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-zinc-500 dark:text-zinc-400">골드</span>
+        <span className="tabular-nums">
+          💰 {character.gold.toLocaleString()}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
+        <EquipCard title="무기" item={character.equipped.weapon} />
+        <EquipCard title="방어구" item={character.equipped.armor} />
+        <EquipCard title="장신구" item={character.equipped.accessory} />
+      </div>
+    </div>
   );
 }
 
@@ -260,28 +258,26 @@ function StatsPanel({
   stats: Record<StatKey, number>;
 }) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
-      <div className="p-4">
-        <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          능력치
-        </div>
-        <div className="mt-2 grid grid-cols-5 gap-2">
-          {STAT_KEYS.map((k) => (
-            <div
-              key={k}
-              className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-center dark:border-zinc-800 dark:bg-zinc-900/50"
-            >
-              <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                {STAT_LABELS[k]}
-              </div>
-              <div className="mt-0.5 text-base font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-                {stats[k]}
-              </div>
-            </div>
-          ))}
-        </div>
+    <div>
+      <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        능력치
       </div>
-    </section>
+      <div className="mt-2 grid grid-cols-5 gap-2">
+        {STAT_KEYS.map((k) => (
+          <div
+            key={k}
+            className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-center dark:border-zinc-800 dark:bg-zinc-900/50"
+          >
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">
+              {STAT_LABELS[k]}
+            </div>
+            <div className="mt-0.5 text-base font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+              {stats[k]}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -352,18 +348,20 @@ function CharacterMini({
   );
 }
 
-function TownPlaceCard({
+function CollapsibleCard({
   icon,
   title,
   description,
+  defaultOpen = false,
   children,
 }: {
   icon: string;
   title: string;
   description: string;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
       <button
@@ -404,7 +402,7 @@ function TownPlaceCard({
 function TownPanel() {
   return (
     <div className="space-y-2">
-      <TownPlaceCard
+      <CollapsibleCard
         icon="🏋️"
         title="훈련장"
         description="능력치를 단련할 수 있는 곳."
@@ -425,7 +423,7 @@ function TownPanel() {
             </button>
           ))}
         </div>
-      </TownPlaceCard>
+      </CollapsibleCard>
     </div>
   );
 }
@@ -498,10 +496,17 @@ export default function Home() {
           )}
           {tab === "town" && <TownPanel />}
           {tab === "character" && (
-            <>
-              <CharacterPanel character={character} />
-              <StatsPanel stats={character.stats} />
-            </>
+            <CollapsibleCard
+              icon="👤"
+              title="내 정보"
+              description="캐릭터 정보와 능력치를 확인합니다."
+            >
+              <div className="space-y-4">
+                <CharacterPanel character={character} />
+                <div className="border-t border-zinc-200 dark:border-zinc-800" />
+                <StatsPanel stats={character.stats} />
+              </div>
+            </CollapsibleCard>
           )}
         </main>
       </div>
