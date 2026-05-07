@@ -1,4 +1,5 @@
 import type { Monster } from "../data/monsters";
+import { computeHealAmount, type Potion, type PotionId } from "../data/potions";
 
 export type BattleLogEntry = {
   kind: "player_attack" | "enemy_attack" | "info";
@@ -29,6 +30,10 @@ export type PlayerCombat = {
   evasionPct: number; // 0~100, 적 공격 회피 확률
   attackCount: number; // 한 턴에 가하는 공격 횟수 (>=1)
 };
+
+export type PlayerAction =
+  | { kind: "attack" }
+  | { kind: "use_potion"; potionId: PotionId; potion: Potion };
 
 const LOG_LIMIT = 8;
 
@@ -74,17 +79,27 @@ export function initialBattleState(
   };
 }
 
-// 한 턴 진행 — 현재 phase 측이 공격하고 결과를 다음 BattleState로 반환.
-// player phase는 attackCount 만큼 연속 공격(턴마다 1회씩 분리해서 로그에 기록).
+// 한 턴 진행 — 현재 phase 측이 행동하고 결과를 다음 BattleState로 반환.
+// player phase는 action(공격 또는 물약)으로 분기. attack이면 attackCount 만큼 연속 공격.
 // phase === "ended" 이면 그대로 반환.
 export function advanceTurn(
   state: BattleState,
   player: PlayerCombat,
   playerName: string,
+  action: PlayerAction = { kind: "attack" },
 ): BattleState {
   if (state.phase === "ended") return state;
 
   if (state.phase === "player") {
+    if (action.kind === "use_potion") {
+      const next = applyPotionEffect(state, action.potion, playerName);
+      return {
+        ...next,
+        phase: "enemy",
+        playerAttacksLeft: Math.max(1, player.attackCount),
+      };
+    }
+
     const dmg = damageBetween(player.atk, state.enemy.def);
     const enemyHp = Math.max(0, state.enemyHp - dmg);
     const log = appendLog(state.log, {
@@ -147,4 +162,26 @@ export function advanceTurn(
     };
   }
   return { ...state, playerHp, log, phase: "player" };
+}
+
+// 물약 효과 적용 — 순수 함수. 인벤토리 차감은 호출 측 책임.
+export function applyPotionEffect(
+  state: BattleState,
+  potion: Potion,
+  playerName: string,
+): BattleState {
+  if (potion.effect.kind === "heal_hp") {
+    const heal = computeHealAmount(potion, state.playerMaxHp);
+    const newHp = Math.min(state.playerMaxHp, state.playerHp + heal);
+    const actual = newHp - state.playerHp;
+    return {
+      ...state,
+      playerHp: newHp,
+      log: appendLog(state.log, {
+        kind: "info",
+        text: `${playerName}이(가) ${potion.name}을(를) 마셨다 — HP +${actual} (${state.playerHp} → ${newHp})`,
+      }),
+    };
+  }
+  return state;
 }

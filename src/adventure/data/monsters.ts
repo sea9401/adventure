@@ -62,6 +62,7 @@ export const MONSTERS: Record<string, Monster> = {
   박쥐: {
     name: "박쥐",
     tags: ["beast"],
+    image: "/images/monster/bat.png",
     hp: 22,
     atk: 4,
     def: 0,
