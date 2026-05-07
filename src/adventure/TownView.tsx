@@ -5,6 +5,7 @@ import { UserCircle } from "@phosphor-icons/react";
 import type { Region } from "./data/world";
 import { getNpcsByRegion, type Npc, type NpcRole } from "./data/npcs";
 import { NpcDialogue } from "./NpcDialogue";
+import { EnemyEncounterSection } from "./EnemyEncounterSection";
 
 const ROLE_LABEL: Record<NpcRole, string> = {
   elder: "촌장",
@@ -85,6 +86,8 @@ export function TownView({ region }: { region: Region }) {
           ))}
         </div>
       )}
+
+      <EnemyEncounterSection region={region} />
 
       {openNpc && (
         <NpcDialogue npc={openNpc} onClose={() => setOpenNpc(null)} />
