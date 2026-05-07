@@ -129,14 +129,18 @@ function QuestCard({
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          <span className="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-200">
-            <Coins size={14} weight="fill" className="text-yellow-500" />
-            <span className="tabular-nums">{quest.reward.gold}</span>
-          </span>
-          <span className="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-200">
-            <Star size={14} weight="fill" className="text-amber-500" />
-            <span className="tabular-nums">명성 {quest.reward.fame}</span>
-          </span>
+          {(quest.reward.gold ?? 0) > 0 && (
+            <span className="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-200">
+              <Coins size={14} weight="fill" className="text-yellow-500" />
+              <span className="tabular-nums">{quest.reward.gold}</span>
+            </span>
+          )}
+          {(quest.reward.fame ?? 0) > 0 && (
+            <span className="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-200">
+              <Star size={14} weight="fill" className="text-amber-500" />
+              <span className="tabular-nums">명성 {quest.reward.fame}</span>
+            </span>
+          )}
           {entry.completedCount > 0 && (
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
               완료 {entry.completedCount}회

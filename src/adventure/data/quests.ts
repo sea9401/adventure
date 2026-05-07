@@ -1,9 +1,20 @@
+import type { ItemId } from "./items";
+import type { MaterialId } from "./materials";
 import type { NpcId } from "./npcs";
+import type { PotionId } from "./potions";
 import type { RegionId } from "./world";
 
+export type QuestRewardItem = { id: ItemId; count: number };
+export type QuestRewardPotion = { id: PotionId; count: number };
+export type QuestRewardMaterial = { id: MaterialId; count: number };
+
 export type QuestReward = {
-  gold: number;
-  fame: number;
+  gold?: number;
+  fame?: number;
+  potions?: QuestRewardPotion[];
+  materials?: QuestRewardMaterial[];
+  items?: QuestRewardItem[];
+  recipes?: string[];
 };
 
 export type Quest = {
@@ -49,7 +60,10 @@ export const QUESTS: Quest[] = [
     description: "훈련 교관 스미스의 첫 과제. 평야의 슬라임 5마리를 처치한다.",
     requiredLevel: 1,
     target: { monsterName: "슬라임", count: 5 },
-    reward: { gold: 0, fame: 0 },
+    reward: {
+      potions: [{ id: "potion_heal_s", count: 5 }],
+      recipes: ["potion_heal_s"],
+    },
     repeatable: false,
     giverNpcId: "village_trainer_smith",
   },
@@ -60,7 +74,7 @@ export const QUESTS: Quest[] = [
     description: "훈련 교관 스미스의 두 번째 과제. 들개 10마리를 처치한다.",
     requiredLevel: 1,
     target: { monsterName: "들개", count: 10 },
-    reward: { gold: 0, fame: 0 },
+    reward: {},
     repeatable: false,
     giverNpcId: "village_trainer_smith",
   },
@@ -71,7 +85,9 @@ export const QUESTS: Quest[] = [
     description: "훈련 교관 스미스의 마지막 과제. 두더쥐 10마리를 처치한다.",
     requiredLevel: 1,
     target: { monsterName: "두더쥐", count: 10 },
-    reward: { gold: 0, fame: 0 },
+    reward: {
+      items: [{ id: "vitality_ring", count: 1 }],
+    },
     repeatable: false,
     giverNpcId: "village_trainer_smith",
   },

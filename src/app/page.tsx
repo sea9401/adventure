@@ -50,6 +50,10 @@ import { GuildView } from "@/adventure/GuildView";
 import { useQuests } from "@/adventure/quests/useQuests";
 import { getQuestById } from "@/adventure/data/quests";
 import {
+  applyQuestReward,
+  type RewardServices,
+} from "@/adventure/quests/applyReward";
+import {
   ITEMS,
   findItemId,
   type EquipItem,
@@ -1212,15 +1216,7 @@ export default function Home() {
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              const r = quests.claim("village-trainer-slimes");
-              if (!r.ok) return;
-              inventory.add("potion_heal_s", 5);
-              crafting.learnRecipe("potion_heal_s");
-              addNotification(
-                "quest_complete",
-                `${r.quest.title} 완료 — 작은 회복약 ×5, 조합법 획득`,
-              );
-              close();
+              if (completeQuest("village-trainer-slimes")) close();
             },
           }}
         />
@@ -1268,10 +1264,7 @@ export default function Home() {
           primaryAction={{
             label: "보고한다",
             onClick: () => {
-              const r = quests.claim("village-trainer-dogs");
-              if (!r.ok) return;
-              addNotification("quest_complete", `${r.quest.title} 완료`);
-              close();
+              if (completeQuest("village-trainer-dogs")) close();
             },
           }}
         />
@@ -1319,14 +1312,7 @@ export default function Home() {
           primaryAction={{
             label: "활력의 반지를 받는다",
             onClick: () => {
-              const r = quests.claim("village-trainer-moles");
-              if (!r.ok) return;
-              inventory.addEquipment("vitality_ring");
-              addNotification(
-                "quest_complete",
-                `${r.quest.title} 완료 — 활력의 반지 획득`,
-              );
-              close();
+              if (completeQuest("village-trainer-moles")) close();
             },
           }}
         />
@@ -1517,16 +1503,35 @@ export default function Home() {
     quests.accept(id);
   };
 
-  const handleClaimQuest = (id: string) => {
+  const rewardServices: RewardServices = {
+    addPotion: (id, n) => inventory.add(id, n),
+    addMaterial: (id, n) => inventory.addMaterial(id, n),
+    addEquipment: (id) => inventory.addEquipment(id),
+    learnRecipe: (id) => crafting.learnRecipe(id),
+    addGoldFame: (gold, fame) =>
+      setCharacterState((prev) => ({
+        ...prev,
+        gold: prev.gold + gold,
+        fame: prev.fame + fame,
+      })),
+  };
+
+  // 퀘스트 보상 지급 + 알림 한 줄로 합성. NPC 다이얼로그/길드 게시판 공용.
+  const completeQuest = (id: string): boolean => {
     const result = quests.claim(id);
-    if (!result.ok) return;
-    const { quest } = result;
-    setCharacterState((prev) => ({
-      ...prev,
-      gold: prev.gold + quest.reward.gold,
-      fame: prev.fame + quest.reward.fame,
-    }));
-    addNotification("quest_complete", `${quest.title} 완료`);
+    if (!result.ok) return false;
+    const tokens = applyQuestReward(result.quest.reward, rewardServices);
+    addNotification(
+      "quest_complete",
+      tokens.length > 0
+        ? `${result.quest.title} 완료 — ${tokens.join(", ")}`
+        : `${result.quest.title} 완료`,
+    );
+    return true;
+  };
+
+  const handleClaimQuest = (id: string) => {
+    completeQuest(id);
   };
 
   // 알림(종·토스트)은 의미 있는 종류만 — battle_win·info는 최근 기록에만 남김.
