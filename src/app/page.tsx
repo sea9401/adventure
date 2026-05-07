@@ -1413,6 +1413,9 @@ export default function Home() {
                 potionCounts={inventory.state.potions}
                 consumePotion={inventory.consume}
                 pickAutoAction={pickAutoAction}
+                inventoryState={inventory.state}
+                autoPotionConfig={autoPotion.config}
+                onUpdateAutoPotionRule={autoPotion.updateRule}
               />
             </div>
           )}
@@ -1698,8 +1701,6 @@ export default function Home() {
               <SubViewHeader title="가방" onBack={() => setSubView(null)} />
               <InventoryView
                 inventory={inventory.state}
-                autoConfig={autoPotion.config}
-                onUpdateRule={autoPotion.updateRule}
                 onEquip={handleEquipFromInventory}
               />
             </div>

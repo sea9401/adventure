@@ -14,6 +14,12 @@ import { BattleScene, type ManualAction } from "./battle/BattleScene";
 import { BattleResult } from "./battle/BattleResult";
 import { EnemyEncounterSection } from "./EnemyEncounterSection";
 import { POTIONS, type PotionId } from "./data/potions";
+import type { InventoryState } from "./inventory/useInventory";
+import type {
+  AutoPotionConfig,
+  AutoPotionRule,
+} from "./inventory/useAutoPotionConfig";
+import { AutoPotionSection } from "./inventory/AutoPotionSection";
 
 const RESULT_AUTO_CONFIRM_MS = 1200;
 
@@ -41,6 +47,9 @@ export function BattleView({
   potionCounts,
   consumePotion,
   pickAutoAction,
+  inventoryState,
+  autoPotionConfig,
+  onUpdateAutoPotionRule,
 }: {
   region: Region;
   player: PlayerCombat;
@@ -52,6 +61,12 @@ export function BattleView({
   potionCounts: Partial<Record<PotionId, number>>;
   consumePotion: (id: PotionId) => boolean;
   pickAutoAction: (state: BattleState) => PlayerAction;
+  inventoryState: InventoryState;
+  autoPotionConfig: AutoPotionConfig;
+  onUpdateAutoPotionRule: (
+    index: number,
+    patch: Partial<AutoPotionRule>,
+  ) => void;
 }) {
   const { state, start, stop, act } = useBattle({ player, playerName });
 
@@ -173,6 +188,11 @@ export function BattleView({
                 {player.hp <= 0 ? "회복 필요" : "전투 시작"}
               </button>
             </div>
+            <AutoPotionSection
+              autoConfig={autoPotionConfig}
+              inventory={inventoryState}
+              onUpdateRule={onUpdateAutoPotionRule}
+            />
           </>
         ) : (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/90 dark:text-zinc-400">
