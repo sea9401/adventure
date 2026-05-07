@@ -105,6 +105,7 @@ import {
   STAT_LABELS,
   type StatKey,
 } from "@/adventure/data/stats";
+import { formatDuration } from "@/lib/format";
 
 const DEFAULT_NAME = "모험가";
 
@@ -136,15 +137,6 @@ const initialCharacterState: CharacterDynamicState = {
   gold: 0,
   fame: 0,
 };
-
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
-}
 
 // EquipBonus / EquipItem 타입은 src/adventure/data/items.ts로 이동됨.
 export type { EquipBonus } from "@/adventure/data/items";
