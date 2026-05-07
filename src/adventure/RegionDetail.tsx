@@ -1,5 +1,6 @@
 import type { Region } from "./data/world";
 import type { NodeState } from "./MapNode";
+import { Card } from "@/components/ui/Card";
 
 const STATE_LABELS: Record<NodeState, string> = {
   current: "현재 위치",
@@ -28,7 +29,7 @@ export function RegionDetail({
   }
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card padding="md">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           {region.name}
@@ -48,6 +49,6 @@ export function RegionDetail({
       >
         {state === "current" ? "이미 이곳에 있음" : canMove ? "이동" : "지금은 갈 수 없음"}
       </button>
-    </div>
+    </Card>
   );
 }

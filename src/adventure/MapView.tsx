@@ -10,6 +10,7 @@ import type { MapProgress } from "@/lib/map-progress";
 import { MapEdge } from "./MapEdge";
 import { MapNode, type NodeState } from "./MapNode";
 import { RegionDetail } from "./RegionDetail";
+import { Card } from "@/components/ui/Card";
 
 export function MapView({
   progress,
@@ -58,7 +59,7 @@ export function MapView({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/90">
+      <Card padding="none" className="overflow-hidden">
         <svg
           viewBox={`0 0 ${WORLD_MAP.viewBox.width} ${WORLD_MAP.viewBox.height}`}
           preserveAspectRatio="xMidYMid meet"
@@ -89,7 +90,7 @@ export function MapView({
             />
           ))}
         </svg>
-      </div>
+      </Card>
       <RegionDetail
         region={selectedRegion}
         state={selectedState}

@@ -1,0 +1,71 @@
+import { describe, it, expect } from "vitest";
+import {
+  applyExpGain,
+  getLevelTable,
+  MAX_LEVEL,
+  requiredExpToNext,
+} from "./leveling";
+
+describe("requiredExpToNext", () => {
+  it("Lv1→2는 100", () => {
+    expect(requiredExpToNext(1)).toBe(100);
+  });
+
+  it("레벨이 오르면 단조 증가", () => {
+    for (let lv = 1; lv < MAX_LEVEL - 1; lv += 1) {
+      expect(requiredExpToNext(lv)!).toBeLessThanOrEqual(
+        requiredExpToNext(lv + 1)!,
+      );
+    }
+  });
+
+  it("만렙은 null", () => {
+    expect(requiredExpToNext(MAX_LEVEL)).toBeNull();
+  });
+
+  it("0 이하는 null", () => {
+    expect(requiredExpToNext(0)).toBeNull();
+    expect(requiredExpToNext(-1)).toBeNull();
+  });
+});
+
+describe("applyExpGain", () => {
+  it("임계치 미달이면 EXP만 누적", () => {
+    const r = applyExpGain(1, 30, 50);
+    expect(r).toEqual({ level: 1, exp: 80, levelsGained: 0 });
+  });
+
+  it("임계치 정확히 도달하면 1 레벨업, 잉여 0", () => {
+    const r = applyExpGain(1, 0, 100);
+    expect(r).toEqual({ level: 2, exp: 0, levelsGained: 1 });
+  });
+
+  it("한 번에 여러 레벨도 처리", () => {
+    // Lv1 need = 100, Lv2 need = floor(100 * 2^1.5) = 282 → 합산 382
+    const r = applyExpGain(1, 0, 500);
+    expect(r.level).toBe(3);
+    expect(r.levelsGained).toBe(2);
+    expect(r.exp).toBe(500 - 100 - 282);
+  });
+
+  it("만렙 도달 시 잉여 EXP는 0으로 캡", () => {
+    const r = applyExpGain(MAX_LEVEL, 0, 999_999);
+    expect(r.level).toBe(MAX_LEVEL);
+    expect(r.exp).toBe(0);
+  });
+
+  it("음수 gain은 0으로 클램프", () => {
+    const r = applyExpGain(2, 50, -100);
+    expect(r).toEqual({ level: 2, exp: 0, levelsGained: 0 });
+  });
+});
+
+describe("getLevelTable", () => {
+  it("MAX_LEVEL - 1 줄을 반환하고 누적은 단조 증가", () => {
+    const rows = getLevelTable();
+    expect(rows.length).toBe(MAX_LEVEL - 1);
+    for (let i = 1; i < rows.length; i += 1) {
+      expect(rows[i].cumulative).toBeGreaterThan(rows[i - 1].cumulative);
+    }
+  });
+});

@@ -4,6 +4,8 @@ import { Coins, Scroll, Star } from "@phosphor-icons/react";
 import { getQuestsForRegion, type Quest } from "./data/quests";
 import type { RegionId } from "./data/world";
 import type { QuestProgressEntry } from "./quests/storage";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Card } from "@/components/ui/Card";
 
 export function GuildView({
   regionId,
@@ -22,19 +24,11 @@ export function GuildView({
 
   if (quests.length === 0) {
     return (
-      <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
-        <Scroll
-          size={40}
-          weight="duotone"
-          className="mx-auto text-zinc-400 dark:text-zinc-500"
-        />
-        <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
-          게시된 의뢰가 없습니다
-        </div>
-        <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          이 마을의 길드에는 아직 받을 수 있는 의뢰가 없습니다.
-        </div>
-      </section>
+      <EmptyState
+        icon={<Scroll size={40} weight="duotone" />}
+        title="게시된 의뢰가 없습니다"
+        message="이 마을의 길드에는 아직 받을 수 있는 의뢰가 없습니다."
+      />
     );
   }
 
@@ -93,7 +87,7 @@ function QuestCard({
   }
 
   return (
-    <li className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card as="li" padding="md">
       <div className="flex items-baseline justify-between gap-2">
         <div className="flex items-center gap-2">
           <Scroll size={18} weight="duotone" className="text-yellow-700" />
@@ -162,6 +156,6 @@ function QuestCard({
           {actionLabel}
         </button>
       </div>
-    </li>
+    </Card>
   );
 }

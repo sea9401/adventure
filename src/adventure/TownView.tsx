@@ -6,6 +6,8 @@ import type { Region } from "./data/world";
 import { getNpcsByRegion, type Npc, type NpcRole } from "./data/npcs";
 import { NpcDialogue } from "./NpcDialogue";
 import { NpcAvatar } from "./NpcAvatar";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Card } from "@/components/ui/Card";
 
 const ROLE_LABEL: Record<NpcRole, string> = {
   elder: "촌장",
@@ -40,29 +42,21 @@ export function TownView({
 
   return (
     <div className="space-y-3">
-      <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+      <Card as="section" padding="md">
         <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           {region.name}
         </div>
         <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
           {region.description}
         </p>
-      </section>
+      </Card>
 
       {npcs.length === 0 ? (
-        <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
-          <UserCircle
-            size={40}
-            weight="duotone"
-            className="mx-auto text-zinc-400 dark:text-zinc-500"
-          />
-          <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
-            마을 사람이 보이지 않습니다
-          </div>
-          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            어디로 갔는지 안개만 자욱하다.
-          </div>
-        </section>
+        <EmptyState
+          icon={<UserCircle size={40} weight="duotone" />}
+          title="마을 사람이 보이지 않습니다"
+          message="어디로 갔는지 안개만 자욱하다."
+        />
       ) : (
         <div className="space-y-2">
           <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">

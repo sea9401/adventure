@@ -5,6 +5,8 @@ import { ITEMS } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS } from "./data/potions";
 import { RECIPES, type Recipe } from "./data/recipes";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Card } from "@/components/ui/Card";
 
 function summarizeResult(r: Recipe): {
   title: string;
@@ -38,24 +40,16 @@ export function CraftingView({
 
   if (knownRecipes.length === 0) {
     return (
-      <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
-        <Hammer
-          size={40}
-          weight="duotone"
-          className="mx-auto text-zinc-400 dark:text-zinc-500"
-        />
-        <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
-          아직 등록된 제작서가 없습니다
-        </div>
-        <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          제작서를 손에 넣으면 여기에 자동으로 등록됩니다.
-        </div>
-      </section>
+      <EmptyState
+        icon={<Hammer size={40} weight="duotone" />}
+        title="아직 등록된 제작서가 없습니다"
+        message="제작서를 손에 넣으면 여기에 자동으로 등록됩니다."
+      />
     );
   }
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card as="section" padding="md">
       <div className="mb-3 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
         등록된 제작서
       </div>
@@ -119,6 +113,6 @@ export function CraftingView({
           );
         })}
       </div>
-    </section>
+    </Card>
   );
 }

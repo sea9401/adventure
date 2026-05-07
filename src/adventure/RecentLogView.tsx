@@ -4,6 +4,7 @@ import {
   type AppNotification,
   type NotificationKind,
 } from "@/lib/notifications";
+import { Card } from "@/components/ui/Card";
 
 const KIND_COLOR: Record<NotificationKind, string> = {
   battle_win: "text-emerald-600 dark:text-emerald-400",
@@ -56,7 +57,7 @@ export function RecentLogView({
           </button>
         </div>
       )}
-      <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/90">
+      <Card as="section" padding="none" className="overflow-hidden">
         <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
           {notifications.map((n) => (
             <li key={n.id} className="px-4 py-3">
@@ -69,7 +70,7 @@ export function RecentLogView({
             </li>
           ))}
         </ul>
-      </section>
+      </Card>
     </div>
   );
 }

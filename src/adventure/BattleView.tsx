@@ -20,6 +20,7 @@ import type {
   AutoPotionRule,
 } from "./inventory/useAutoPotionConfig";
 import { AutoPotionSection } from "./inventory/AutoPotionSection";
+import { Card } from "@/components/ui/Card";
 
 const RESULT_AUTO_CONFIRM_MS = 1200;
 
@@ -142,7 +143,7 @@ export function BattleView({
     const hasEnemies = region.enemies.length > 0;
     return (
       <div className="space-y-3">
-        <div className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+        <Card padding="md">
           <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             현재 위치
           </div>
@@ -152,7 +153,7 @@ export function BattleView({
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             {region.description}
           </p>
-        </div>
+        </Card>
 
         {hasEnemies ? (
           <>
@@ -183,9 +184,17 @@ export function BattleView({
                   if (enemy) startWithLog(enemy);
                 }}
                 disabled={player.hp <= 0}
-                className="flex-1 rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  autoBattle
+                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:border-emerald-400 dark:text-emerald-300"
+                    : "border-zinc-300 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                }`}
               >
-                {player.hp <= 0 ? "회복 필요" : "전투 시작"}
+                {player.hp <= 0
+                  ? "회복 필요"
+                  : autoBattle
+                    ? "자동 전투 시작"
+                    : "전투 시작"}
               </button>
             </div>
             <AutoPotionSection

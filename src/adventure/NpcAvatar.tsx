@@ -33,7 +33,7 @@ export function NpcAvatar({
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={npc.portrait}
-        alt=""
+        alt={`${npc.name} 초상화`}
         onError={() => setErrored(true)}
         style={{ width: size, height: size }}
         className={`shrink-0 rounded-full object-cover ${className}`}

@@ -10,6 +10,7 @@ import {
 } from "./data/potions";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import type { InventoryState } from "./inventory/useInventory";
+import { Card } from "@/components/ui/Card";
 
 export function ShopView({
   gold,
@@ -43,7 +44,6 @@ export function ShopView({
             return (
               <ShopRow
                 key={id}
-                id={id}
                 name={potion.name}
                 description={potion.description}
                 price={potion.price}
@@ -69,7 +69,6 @@ export function ShopView({
               return (
                 <ShopRow
                   key={id}
-                  id={id}
                   name={m.name}
                   description={m.description}
                   price={m.price}
@@ -87,7 +86,6 @@ export function ShopView({
 }
 
 function ShopRow({
-  id,
   name,
   description,
   price,
@@ -96,7 +94,6 @@ function ShopRow({
   cap,
   onPurchase,
 }: {
-  id: string;
   name: string;
   description: string;
   price: number;
@@ -114,10 +111,7 @@ function ShopRow({
   const canPurchase = !isFull && effectiveQty > 0 && canAfford;
 
   return (
-    <div
-      key={id}
-      className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
-    >
+    <Card>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           {name}
@@ -192,6 +186,6 @@ function ShopRow({
           </button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

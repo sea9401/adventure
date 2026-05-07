@@ -1,6 +1,7 @@
 "use client";
 
 import type { BattleOutcome } from "./engine";
+import { Card } from "@/components/ui/Card";
 
 export function BattleResult({
   outcome,
@@ -15,7 +16,7 @@ export function BattleResult({
 }) {
   const isWin = outcome === "win";
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white/90 p-6 text-center dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card padding="lg" className="text-center">
       <div
         className={`text-2xl font-semibold ${
           isWin
@@ -41,6 +42,6 @@ export function BattleResult({
       >
         {autoConfirm ? "자동 진행 중..." : "확인"}
       </button>
-    </div>
+    </Card>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { BattleState } from "./engine";
 import { MONSTERS } from "../data/monsters";
 import { POTIONS, type PotionId } from "../data/potions";
+import { Card } from "@/components/ui/Card";
 
 function HpBar({
   label,
@@ -50,7 +51,7 @@ function EnemyAvatar({ name }: { name: string }) {
   return (
     <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={image} alt="" className="h-full w-full object-cover" />
+      <img src={image} alt={name} className="h-full w-full object-cover" />
     </div>
   );
 }
@@ -81,7 +82,7 @@ export function BattleScene({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+      <Card padding="md">
         <div className="flex items-center gap-3">
           <EnemyAvatar name={state.enemy.name} />
           <div className="flex-1">
@@ -101,7 +102,7 @@ export function BattleScene({
             color="bg-emerald-500"
           />
         </div>
-      </div>
+      </Card>
 
       <div
         ref={logRef}
@@ -141,7 +142,7 @@ function ManualActionBar({
     .filter((e) => e.potion);
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card>
       <div className="mb-2 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
         행동 선택
       </div>
@@ -174,6 +175,6 @@ function ManualActionBar({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

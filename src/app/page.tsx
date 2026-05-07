@@ -86,9 +86,16 @@ import {
   type AppNotification,
   type NotificationKind,
 } from "@/lib/notifications";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Card } from "@/components/ui/Card";
+import { TabBar } from "@/components/ui/TabBar";
 
-const PROFILE_STORAGE_KEY = "characterProfile.v1";
-const LEGACY_PROFILE_KEYS = ["characterName", "characterName.v2"];
+const PROFILE_STORAGE_KEY = "character-profile.v1";
+const LEGACY_PROFILE_KEYS = [
+  "characterName",
+  "characterName.v2",
+  "characterProfile.v1",
+];
 const DEFAULT_NAME = "모험가";
 
 type Profile = { name: string; gender: Gender };
@@ -234,7 +241,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "character", label: "캐릭터" },
 ];
 
-function TabBar({
+function MainTabs({
   active,
   onChange,
 }: {
@@ -242,31 +249,14 @@ function TabBar({
   onChange: (next: TabKey) => void;
 }) {
   return (
-    <nav
-      role="tablist"
-      aria-label="메인 탭"
-      className="mx-auto flex w-full max-w-2xl gap-1 border-b border-zinc-200 px-4 sm:px-6 dark:border-zinc-800"
-    >
-      {TABS.map((t) => {
-        const selected = active === t.key;
-        return (
-          <button
-            key={t.key}
-            role="tab"
-            aria-selected={selected}
-            type="button"
-            onClick={() => onChange(t.key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-base font-semibold transition-colors ${
-              selected
-                ? "border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"
-                : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-            }`}
-          >
-            {t.label}
-          </button>
-        );
-      })}
-    </nav>
+    <TabBar
+      tabs={TABS}
+      active={active}
+      onChange={onChange}
+      ariaLabel="메인 탭"
+      size="md"
+      className="mx-auto w-full max-w-2xl px-4 sm:px-6"
+    />
   );
 }
 
@@ -512,7 +502,7 @@ function CharacterMini({
     },
   ];
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card as="section" padding="none">
       <div className="space-y-3 p-4">
         <div className="flex items-stretch gap-4">
           <CharacterPortrait gender={character.gender} />
@@ -554,7 +544,7 @@ function CharacterMini({
           ))}
         </div>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -627,23 +617,15 @@ function SubViewHeader({
 function SkillsView({ skills }: { skills: Skill[] }) {
   if (skills.length === 0) {
     return (
-      <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
-        <Sparkle
-          size={40}
-          weight="duotone"
-          className="mx-auto text-zinc-400 dark:text-zinc-500"
-        />
-        <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
-          아직 익힌 스킬이 없습니다
-        </div>
-        <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          모험을 통해 새로운 스킬을 배워보세요.
-        </div>
-      </section>
+      <EmptyState
+        icon={<Sparkle size={40} weight="duotone" />}
+        title="아직 익힌 스킬이 없습니다"
+        message="모험을 통해 새로운 스킬을 배워보세요."
+      />
     );
   }
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card as="section" padding="md">
       <ul className="space-y-2">
         {skills.map((s) => (
           <li
@@ -668,7 +650,7 @@ function SkillsView({ skills }: { skills: Skill[] }) {
           </li>
         ))}
       </ul>
-    </section>
+    </Card>
   );
 }
 
@@ -690,7 +672,7 @@ function TrainingView({
   const canAllocate = unspentPoints > 0;
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/90 p-6 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card as="section" padding="lg">
       <div className="space-y-6">
         <button
           type="button"
@@ -736,7 +718,7 @@ function TrainingView({
           </div>
         </div>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -767,8 +749,19 @@ export default function Home() {
 
   useEffect(() => {
     try {
+      // 신규 키가 비어 있으면 옛 키(`characterProfile.v1` 등)에서 한 번 옮겨온 뒤 정리.
+      let raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (!raw) {
+        for (const key of LEGACY_PROFILE_KEYS) {
+          const legacy = localStorage.getItem(key);
+          if (legacy) {
+            raw = legacy;
+            localStorage.setItem(PROFILE_STORAGE_KEY, legacy);
+            break;
+          }
+        }
+      }
       for (const key of LEGACY_PROFILE_KEYS) localStorage.removeItem(key);
-      const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<Profile>;
         if (
@@ -1582,7 +1575,7 @@ export default function Home() {
           </div>
         </header>
 
-        <TabBar active={tab} onChange={handleTabChange} />
+        <MainTabs active={tab} onChange={handleTabChange} />
 
         <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4 sm:p-6">
           {tab === "adventure" && subView === null && (
@@ -1771,7 +1764,7 @@ export default function Home() {
           {tab === "town" && isTown && subView === "healing" && (
             <div className="space-y-3">
               <SubViewHeader title="치유소" onBack={() => setSubView(null)} />
-              <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+              <Card as="section" padding="md">
                 <div className="flex items-center gap-3">
                   <FirstAid
                     size={32}
@@ -1810,7 +1803,7 @@ export default function Home() {
                     ? "이미 가득 차 있다"
                     : "전부 회복"}
                 </button>
-              </section>
+              </Card>
             </div>
           )}
           {tab === "town" && isTown && subView === "training" && (
@@ -1938,13 +1931,13 @@ export default function Home() {
             <div className="space-y-3">
               <SubViewHeader title="내 정보" onBack={() => setSubView(null)} />
               <CharacterMini character={character} />
-              <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+              <Card as="section" padding="md">
                 <div className="space-y-4">
                   <AdventurerCard character={character} />
                   <div className="border-t border-zinc-200 dark:border-zinc-800" />
                   <StatsPanel stats={character.stats} />
                 </div>
-              </section>
+              </Card>
             </div>
           )}
           {tab === "character" && subView === "inventory" && (
@@ -1952,6 +1945,7 @@ export default function Home() {
               <SubViewHeader title="가방" onBack={() => setSubView(null)} />
               <InventoryView
                 inventory={inventory.state}
+                equipped={character.equipped}
                 onEquip={handleEquipFromInventory}
               />
             </div>

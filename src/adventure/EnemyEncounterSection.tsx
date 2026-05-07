@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Region } from "./data/world";
 import { MONSTERS } from "./data/monsters";
+import { Card } from "@/components/ui/Card";
 
 function EnemyAvatar({ name }: { name: string }) {
   const [errored, setErrored] = useState(false);
@@ -22,7 +23,7 @@ function EnemyAvatar({ name }: { name: string }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={image}
-        alt=""
+        alt={name}
         onError={() => setErrored(true)}
         className="h-full w-full object-cover"
       />
@@ -33,7 +34,7 @@ function EnemyAvatar({ name }: { name: string }) {
 export function EnemyEncounterSection({ region }: { region: Region }) {
   if (region.enemies.length === 0) return null;
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card padding="md">
       <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
         마주칠 수 있는 적
       </div>
@@ -48,6 +49,6 @@ export function EnemyEncounterSection({ region }: { region: Region }) {
           </li>
         ))}
       </ul>
-    </div>
+    </Card>
   );
 }

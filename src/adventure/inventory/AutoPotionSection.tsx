@@ -6,6 +6,7 @@ import type {
   AutoPotionConfig,
   AutoPotionRule,
 } from "./useAutoPotionConfig";
+import { Card } from "@/components/ui/Card";
 
 const TARGET_LABEL: Record<AutoPotionRule["target"], string> = {
   hp_heal: "HP 회복 물약",
@@ -34,7 +35,7 @@ export function AutoPotionSection({
   onUpdateRule: (index: number, patch: Partial<AutoPotionRule>) => void;
 }) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <Card as="section">
       <div className="mb-2 flex items-baseline justify-between">
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           자동 사용 규칙
@@ -56,7 +57,7 @@ export function AutoPotionSection({
       <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
         ※ 죽기 직전 마지막 한 턴에는 발동하지 못할 수 있어요. 임계값을 충분히 높게 잡아두세요.
       </p>
-    </section>
+    </Card>
   );
 }
 
