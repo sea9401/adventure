@@ -42,7 +42,7 @@ export function InventoryView({
             가방이 비어 있습니다
           </div>
           <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            마을 상점에서 물약을 구입할 수 있습니다.
+            상점에서 물약을 사거나, 의뢰·제작으로 장비를 얻어 보세요.
           </div>
         </section>
       ) : (
