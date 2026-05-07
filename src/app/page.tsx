@@ -197,7 +197,7 @@ function TabBar({
     <nav
       role="tablist"
       aria-label="메인 탭"
-      className="mx-auto flex w-full max-w-2xl gap-1 border-b border-zinc-200 px-4 sm:px-6 dark:border-zinc-800"
+      className="mx-auto flex w-full max-w-2xl gap-1 border-b border-zinc-200 bg-white/90 px-4 sm:px-6 dark:border-zinc-800 dark:bg-zinc-950/90"
     >
       {TABS.map((t) => {
         const selected = active === t.key;
@@ -962,7 +962,7 @@ export default function Home() {
     <>
       <RegionBackground regionId={currentRegion.id} />
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-6 dark:border-zinc-800">
+        <header className="flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/90 px-4 py-3 sm:px-6 dark:border-zinc-800 dark:bg-zinc-950/90">
           <div className="flex min-w-0 items-center gap-3">
             <h1 className="shrink-0 text-xl font-semibold tracking-wide">무슨무슨게임</h1>
             <span className="truncate text-base text-zinc-600 dark:text-zinc-400">
