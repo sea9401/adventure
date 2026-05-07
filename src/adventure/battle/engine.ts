@@ -25,6 +25,7 @@ export type PlayerCombat = {
   maxHp: number;
   atk: number;
   def: number;
+  spd: number; // 선공 판정에 사용
   evasionPct: number; // 0~100, 적 공격 회피 확률
   attackCount: number; // 한 턴에 가하는 공격 횟수 (>=1)
 };
@@ -44,12 +45,14 @@ export function damageBetween(atk: number, def: number): number {
   return Math.max(1, atk - def);
 }
 
-// 플레이어 우선 — 항상 player phase로 시작.
+// 선공 — SPD가 높은 쪽이 먼저 공격. 동점이면 플레이어 우선.
 export function initialBattleState(
   player: PlayerCombat,
   enemy: Monster,
   playerName: string,
 ): BattleState {
+  const playerFirst = player.spd >= enemy.spd;
+  const initiator = playerFirst ? playerName : enemy.name;
   return {
     enemy,
     enemyHp: enemy.hp,
@@ -62,10 +65,10 @@ export function initialBattleState(
       },
       {
         kind: "info",
-        text: `${playerName}의 선공.`,
+        text: `${initiator}의 선공.`,
       },
     ],
-    phase: "player",
+    phase: playerFirst ? "player" : "enemy",
     outcome: null,
     playerAttacksLeft: Math.max(1, player.attackCount),
   };
