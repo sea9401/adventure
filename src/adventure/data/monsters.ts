@@ -1,5 +1,15 @@
+export type MonsterTag =
+  | "humanoid"
+  | "beast"
+  | "slime"
+  | "golem"
+  | "spirit"
+  | "undead"
+  | "dragon";
+
 export type Monster = {
   name: string;
+  tags: MonsterTag[];
   image?: string;
   hp: number;
   atk: number;
@@ -12,6 +22,7 @@ export type Monster = {
 export const MONSTERS: Record<string, Monster> = {
   주정뱅이: {
     name: "주정뱅이",
+    tags: ["humanoid"],
     image: "/images/monster/hobo.png",
     hp: 8,
     atk: 1,
@@ -22,6 +33,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   슬라임: {
     name: "슬라임",
+    tags: ["slime"],
     image: "/images/monster/slime.png",
     hp: 12,
     atk: 2,
@@ -32,6 +44,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   들개: {
     name: "들개",
+    tags: ["beast"],
     image: "/images/monster/wilddog.png",
     hp: 14,
     atk: 3,
@@ -42,6 +55,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   두더쥐: {
     name: "두더쥐",
+    tags: ["beast"],
     image: "/images/monster/mole.png",
     hp: 10,
     atk: 2,
@@ -52,74 +66,86 @@ export const MONSTERS: Record<string, Monster> = {
   },
   박쥐: {
     name: "박쥐",
+    tags: ["beast"],
     hp: 14,
     atk: 4,
     def: 0,
     spd: 6,
-    exp: 8,
+    exp: 0,
     gold: 3,
   },
   "광맥 골렘": {
     name: "광맥 골렘",
+    tags: ["golem"],
     hp: 30,
     atk: 5,
     def: 4,
     spd: 1,
-    exp: 14,
+    exp: 0,
     gold: 6,
   },
   거미: {
     name: "거미",
+    tags: ["beast"],
     hp: 18,
     atk: 5,
     def: 1,
     spd: 5,
-    exp: 10,
+    exp: 0,
     gold: 4,
   },
   산적: {
     name: "산적",
+    tags: ["humanoid"],
     hp: 25,
     atk: 6,
     def: 2,
     spd: 4,
-    exp: 12,
+    exp: 0,
     gold: 8,
   },
   "호수 정령": {
     name: "호수 정령",
+    tags: ["spirit"],
     hp: 35,
     atk: 8,
     def: 3,
     spd: 4,
-    exp: 18,
+    exp: 0,
     gold: 7,
   },
   수룡: {
     name: "수룡",
+    tags: ["dragon"],
     hp: 60,
     atk: 10,
     def: 5,
     spd: 5,
-    exp: 30,
+    exp: 0,
     gold: 15,
   },
   "고대 망령": {
     name: "고대 망령",
+    tags: ["undead", "spirit"],
     hp: 50,
     atk: 11,
     def: 4,
     spd: 4,
-    exp: 25,
+    exp: 0,
     gold: 10,
   },
   "타락한 기사": {
     name: "타락한 기사",
+    tags: ["humanoid", "undead"],
     hp: 70,
     atk: 13,
     def: 8,
     spd: 3,
-    exp: 40,
+    exp: 0,
     gold: 20,
   },
 };
+
+export function getMonstersByTag(tag: MonsterTag): Monster[] {
+  return Object.values(MONSTERS).filter((m) => m.tags.includes(tag));
+}
