@@ -29,6 +29,7 @@ import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
 import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
 import { TownView } from "@/adventure/TownView";
+import { AdventureLogView } from "@/adventure/AdventureLogView";
 import { WORLD_MAP } from "@/adventure/data/world";
 import {
   initialMapProgress,
@@ -1374,19 +1375,7 @@ export default function Home() {
           {tab === "character" && subView === "adventure-log" && (
             <div className="space-y-3">
               <SubViewHeader title="모험의 서" onBack={() => setSubView(null)} />
-              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
-                <BookOpen
-                  size={40}
-                  weight="duotone"
-                  className="mx-auto text-zinc-400 dark:text-zinc-500"
-                />
-                <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
-                  아직 기록이 없습니다
-                </div>
-                <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  모험을 진행하면 여기에 자취가 남습니다.
-                </div>
-              </section>
+              <AdventureLogView />
             </div>
           )}
           {tab === "character" && subView === "recent-log" && (
