@@ -1,0 +1,121 @@
+import type { Monster } from "../data/monsters";
+
+export type BattleLogEntry = {
+  kind: "player_attack" | "enemy_attack" | "info";
+  text: string;
+};
+
+export type BattleOutcome = "win" | "lose";
+
+export type BattlePhase = "player" | "enemy" | "ended";
+
+export type BattleState = {
+  enemy: Monster;
+  enemyHp: number;
+  playerHp: number;
+  playerMaxHp: number;
+  log: BattleLogEntry[];
+  phase: BattlePhase;
+  outcome: BattleOutcome | null;
+};
+
+export type PlayerCombat = {
+  hp: number;
+  maxHp: number;
+  atk: number;
+  def: number;
+};
+
+const LOG_LIMIT = 8;
+
+export function appendLog(
+  log: BattleLogEntry[],
+  entry: BattleLogEntry,
+): BattleLogEntry[] {
+  const next = [...log, entry];
+  if (next.length > LOG_LIMIT) next.splice(0, next.length - LOG_LIMIT);
+  return next;
+}
+
+export function damageBetween(atk: number, def: number): number {
+  return Math.max(1, atk - def);
+}
+
+// 플레이어 우선 — 항상 player phase로 시작.
+export function initialBattleState(
+  player: PlayerCombat,
+  enemy: Monster,
+  playerName: string,
+): BattleState {
+  return {
+    enemy,
+    enemyHp: enemy.hp,
+    playerHp: player.hp,
+    playerMaxHp: player.maxHp,
+    log: [
+      {
+        kind: "info",
+        text: `${enemy.name}이(가) 나타났다!`,
+      },
+      {
+        kind: "info",
+        text: `${playerName}의 선공.`,
+      },
+    ],
+    phase: "player",
+    outcome: null,
+  };
+}
+
+// 한 턴 진행 — 현재 phase 측이 공격하고 결과를 다음 BattleState로 반환.
+// phase === "ended" 이면 그대로 반환.
+export function advanceTurn(
+  state: BattleState,
+  player: PlayerCombat,
+  playerName: string,
+): BattleState {
+  if (state.phase === "ended") return state;
+
+  if (state.phase === "player") {
+    const dmg = damageBetween(player.atk, state.enemy.def);
+    const enemyHp = Math.max(0, state.enemyHp - dmg);
+    const log = appendLog(state.log, {
+      kind: "player_attack",
+      text: `${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
+    });
+    if (enemyHp <= 0) {
+      return {
+        ...state,
+        enemyHp,
+        log: appendLog(log, {
+          kind: "info",
+          text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
+        }),
+        phase: "ended",
+        outcome: "win",
+      };
+    }
+    return { ...state, enemyHp, log, phase: "enemy" };
+  }
+
+  // enemy phase
+  const dmg = damageBetween(state.enemy.atk, player.def);
+  const playerHp = Math.max(0, state.playerHp - dmg);
+  const log = appendLog(state.log, {
+    kind: "enemy_attack",
+    text: `${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
+  });
+  if (playerHp <= 0) {
+    return {
+      ...state,
+      playerHp,
+      log: appendLog(log, {
+        kind: "info",
+        text: `${playerName}이(가) 쓰러졌다...`,
+      }),
+      phase: "ended",
+      outcome: "lose",
+    };
+  }
+  return { ...state, playerHp, log, phase: "player" };
+}

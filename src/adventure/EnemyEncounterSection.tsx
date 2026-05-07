@@ -11,14 +11,14 @@ function EnemyAvatar({ name }: { name: string }) {
     return (
       <div
         aria-hidden
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border border-zinc-200 bg-zinc-100 text-xs text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
       >
         ?
       </div>
     );
   }
   return (
-    <div className="h-7 w-7 shrink-0 overflow-hidden rounded-sm border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={image}
@@ -41,20 +41,13 @@ export function EnemyEncounterSection({ region }: { region: Region }) {
         {region.enemies.map((enemy) => (
           <li
             key={enemy}
-            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 py-1 pl-1 pr-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50"
+            className="inline-flex items-center gap-2.5 rounded-md border border-zinc-200 bg-zinc-50 py-2 pl-2 pr-4 text-sm dark:border-zinc-800 dark:bg-zinc-900/50"
           >
             <EnemyAvatar name={enemy} />
             <span className="text-zinc-700 dark:text-zinc-300">{enemy}</span>
           </li>
         ))}
       </ul>
-      <button
-        type="button"
-        disabled
-        className="mt-3 w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-      >
-        전투 시작 (준비 중)
-      </button>
     </div>
   );
 }

@@ -19,7 +19,7 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
-import { BattleView } from "@/adventure/BattleView";
+import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
 import { TownView } from "@/adventure/TownView";
 import { WORLD_MAP } from "@/adventure/data/world";
 import {
@@ -28,6 +28,7 @@ import {
   saveMapProgress,
   type MapProgress,
 } from "@/lib/map-progress";
+import { START_REGION_ID } from "@/adventure/data/world";
 
 const PROFILE_STORAGE_KEY = "characterProfile.v1";
 const LEGACY_PROFILE_KEYS = ["characterName", "characterName.v2"];
@@ -38,6 +39,23 @@ type Profile = { name: string; gender: Gender };
 const TRAINING_STORAGE_KEY = "training.v1";
 const TRAINING_DURATION_MS = 4 * 60 * 60 * 1000;
 
+const CHARACTER_STATE_KEY = "character.v1";
+const BATTLE_SETTINGS_KEY = "battle-settings.v1";
+
+type CharacterDynamicState = {
+  hp: number;
+  mp: number;
+  exp: number;
+  gold: number;
+};
+
+const initialCharacterState: CharacterDynamicState = {
+  hp: 50,
+  mp: 30,
+  exp: 0,
+  gold: 0,
+};
+
 function formatDuration(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
@@ -47,9 +65,15 @@ function formatDuration(ms: number): string {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
+export type EquipBonus = {
+  atk?: number;
+  def?: number;
+};
+
 type EquipItem = {
   name: string;
   stats: { label: string; value: string }[];
+  bonus?: EquipBonus;
   description?: string;
 };
 
@@ -96,11 +120,13 @@ const baseCharacter = {
     weapon: {
       name: "나뭇가지",
       stats: [{ label: "공격력", value: "+0" }],
+      bonus: { atk: 0 },
       description: "어디서나 주울 수 있는 평범한 나뭇가지.",
     } as EquipItem | null,
     armor: {
       name: "천 옷",
       stats: [{ label: "방어력", value: "+1" }],
+      bonus: { def: 1 },
       description: "평범한 천으로 만든 옷.",
     } as EquipItem | null,
     accessory: {
@@ -620,7 +646,6 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
   const [subView, setSubView] = useState<string | null>(null);
-  const [currentLocation] = useState<string>("고향 마을");
   const [trainingEndsAt, setTrainingEndsAt] = useState<number | null>(null);
   const [unspentPoints, setUnspentPoints] = useState(0);
   const [allocatedStats, setAllocatedStats] =
@@ -628,6 +653,10 @@ export default function Home() {
   const [now, setNow] = useState(() => Date.now());
   const [mapProgress, setMapProgress] =
     useState<MapProgress>(initialMapProgress);
+  const [characterState, setCharacterState] =
+    useState<CharacterDynamicState>(initialCharacterState);
+  const [autoBattle, setAutoBattle] = useState(false);
+  const regionInitRanRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -660,8 +689,58 @@ export default function Home() {
     } catch {}
 
     setMapProgress(loadMapProgress());
+
+    try {
+      const raw = localStorage.getItem(CHARACTER_STATE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<CharacterDynamicState>;
+        setCharacterState({
+          hp: parsed.hp ?? initialCharacterState.hp,
+          mp: parsed.mp ?? initialCharacterState.mp,
+          exp: parsed.exp ?? initialCharacterState.exp,
+          gold: parsed.gold ?? initialCharacterState.gold,
+        });
+      }
+    } catch {}
+
+    try {
+      const raw = localStorage.getItem(BATTLE_SETTINGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { auto?: boolean };
+        setAutoBattle(!!parsed.auto);
+      }
+    } catch {}
+
     setHydrated(true);
   }, []);
+
+  // 캐릭터 변동 상태 영속
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(CHARACTER_STATE_KEY, JSON.stringify(characterState));
+    } catch {}
+  }, [hydrated, characterState]);
+
+  // 자동 전투 토글 영속
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(
+        BATTLE_SETTINGS_KEY,
+        JSON.stringify({ auto: autoBattle }),
+      );
+    } catch {}
+  }, [hydrated, autoBattle]);
+
+  // region 이동 시 자동 전투 강제 OFF (첫 mount 시엔 스킵)
+  useEffect(() => {
+    if (!regionInitRanRef.current) {
+      regionInitRanRef.current = true;
+      return;
+    }
+    setAutoBattle(false);
+  }, [mapProgress.currentRegionId]);
 
   // 지도 진행 상태 영속
   useEffect(() => {
@@ -738,6 +817,10 @@ export default function Home() {
     ...baseCharacter,
     name: profile?.name ?? DEFAULT_NAME,
     gender: profile?.gender ?? "male",
+    hp: Math.min(characterState.hp, baseCharacter.maxHp),
+    mp: Math.min(characterState.mp, baseCharacter.maxMp),
+    exp: characterState.exp,
+    gold: characterState.gold,
     stats: STAT_KEYS.reduce<Record<StatKey, number>>(
       (acc, k) => {
         acc[k] = baseCharacter.stats[k] + allocatedStats[k];
@@ -750,6 +833,48 @@ export default function Home() {
   const currentRegion =
     WORLD_MAP.regions.find((r) => r.id === mapProgress.currentRegionId) ??
     WORLD_MAP.regions[0];
+
+  // 전투 엔진용 PlayerCombat — 장비 보너스 합산.
+  const equippedItems = [
+    character.equipped.weapon,
+    character.equipped.armor,
+    character.equipped.accessory,
+  ];
+  const equipAtk = equippedItems.reduce(
+    (sum, item) => sum + (item?.bonus?.atk ?? 0),
+    0,
+  );
+  const equipDef = equippedItems.reduce(
+    (sum, item) => sum + (item?.bonus?.def ?? 0),
+    0,
+  );
+  const playerCombat = {
+    hp: character.hp,
+    maxHp: character.maxHp,
+    atk: character.stats.str + equipAtk,
+    def: equipDef,
+  };
+
+  const handleBattleEnd = (payload: BattleEndPayload) => {
+    if (payload.outcome === "win") {
+      setCharacterState((prev) => ({
+        ...prev,
+        hp: payload.finalPlayerHp,
+        exp: prev.exp + payload.rewards.exp,
+        gold: prev.gold + payload.rewards.gold,
+      }));
+    } else {
+      // 패배 — HP 회복 + 시작 마을 강제 이동 + 자동 전투 OFF
+      setCharacterState((prev) => ({ ...prev, hp: baseCharacter.maxHp }));
+      setMapProgress((prev) => ({
+        currentRegionId: START_REGION_ID,
+        visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
+          ? prev.visitedRegionIds
+          : [...prev.visitedRegionIds, START_REGION_ID],
+      }));
+      setAutoBattle(false);
+    }
+  };
 
   return (
     <>
@@ -766,7 +891,7 @@ export default function Home() {
               </span>
               <span className="ml-2 inline-flex items-center gap-1 text-zinc-500 dark:text-zinc-500">
                 <MapPin size={14} weight="fill" className="text-rose-500" />
-                {currentLocation}
+                {currentRegion.name}
               </span>
             </span>
           </div>
@@ -780,7 +905,7 @@ export default function Home() {
             <>
               <CharacterMini character={character} />
               <div className="space-y-2">
-                {currentRegion.tags?.includes("town") ? (
+                {currentRegion.tags?.includes("town") && (
                   <EntryCard
                     icon={
                       <User
@@ -791,9 +916,10 @@ export default function Home() {
                     }
                     title={currentRegion.name}
                     description="마을을 둘러보고 사람들과 이야기합니다."
-                    onClick={() => setSubView("battle")}
+                    onClick={() => setSubView("town")}
                   />
-                ) : (
+                )}
+                {currentRegion.enemies.length > 0 && (
                   <EntryCard
                     icon={
                       <Sword
@@ -822,21 +948,26 @@ export default function Home() {
               </div>
             </>
           )}
-          {tab === "adventure" && subView === "battle" && (
+          {tab === "adventure" && subView === "town" && (
             <div className="space-y-3">
               <SubViewHeader
-                title={
-                  currentRegion.tags?.includes("town")
-                    ? currentRegion.name
-                    : "전투"
-                }
+                title={currentRegion.name}
                 onBack={() => setSubView(null)}
               />
-              {currentRegion.tags?.includes("town") ? (
-                <TownView region={currentRegion} />
-              ) : (
-                <BattleView region={currentRegion} />
-              )}
+              <TownView region={currentRegion} />
+            </div>
+          )}
+          {tab === "adventure" && subView === "battle" && (
+            <div className="space-y-3">
+              <SubViewHeader title="전투" onBack={() => setSubView(null)} />
+              <BattleView
+                region={currentRegion}
+                player={playerCombat}
+                playerName={character.name}
+                autoBattle={autoBattle}
+                onAutoBattleChange={setAutoBattle}
+                onBattleEnd={handleBattleEnd}
+              />
             </div>
           )}
           {tab === "adventure" && subView === "map" && (
