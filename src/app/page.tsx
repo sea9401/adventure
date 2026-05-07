@@ -896,7 +896,13 @@ export default function Home() {
               </span>
             </span>
           </div>
-          <ThemeToggle />
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="inline-flex items-center gap-1 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
+              <Coins size={14} weight="fill" className="text-yellow-500" />
+              {character.gold.toLocaleString()}
+            </span>
+            <ThemeToggle />
+          </div>
         </header>
 
         <TabBar active={tab} onChange={handleTabChange} />
