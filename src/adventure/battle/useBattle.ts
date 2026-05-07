@@ -44,8 +44,13 @@ export function useBattle({
     return () => clearTimeout(id);
   }, [state]);
 
-  const start = (enemy: Monster) => {
-    setState(initialBattleState(playerRef.current, enemy, playerNameRef.current));
+  // hpOverride — 자동 전투 체인처럼 직전 전투의 finalHp를 그대로 이어받아 시작할 때 사용.
+  // setCharacterState 가 비동기라 playerRef.current.hp 가 stale일 수 있으므로 명시 주입.
+  const start = (enemy: Monster, hpOverride?: number) => {
+    const base = playerRef.current;
+    const p =
+      hpOverride !== undefined ? { ...base, hp: hpOverride } : base;
+    setState(initialBattleState(p, enemy, playerNameRef.current));
   };
 
   const stop = () => setState(null);

@@ -55,9 +55,9 @@ export function BattleView({
 }) {
   const { state, start, stop, act } = useBattle({ player, playerName });
 
-  const startWithLog = (enemy: Monster) => {
+  const startWithLog = (enemy: Monster, hpOverride?: number) => {
     onBattleStart?.(enemy.name);
-    start(enemy);
+    start(enemy, hpOverride);
   };
 
   // 자동 전투 — player phase일 때 일정 간격으로 자동 행동 결정.
@@ -104,7 +104,9 @@ export function BattleView({
       if (isWin && autoBattle) {
         const nextEnemy = pickEnemy(region);
         if (nextEnemy) {
-          startWithLog(nextEnemy);
+          // 체인 시작 — setCharacterState 가 아직 propagate 안 됐으므로
+          // finalHp 를 직접 주입해 다음 전투를 정확한 HP로 시작.
+          startWithLog(nextEnemy, finalHp);
           return;
         }
       }
