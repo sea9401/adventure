@@ -69,6 +69,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 270, y: 200 },
       biome: "cave",
       enemies: ["박쥐"],
+      image: "/images/ui/cave.png",
     },
     {
       id: "forest",
@@ -77,6 +78,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 580, y: 240 },
       biome: "forest",
       enemies: ["거미", "들개", "산적"],
+      image: "/images/ui/forest.png",
     },
     {
       id: "lake",
@@ -85,6 +87,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 440, y: 110 },
       biome: "lake",
       enemies: ["호수 정령"],
+      image: "/images/ui/mistlake.png",
     },
     {
       id: "diola",
@@ -103,6 +106,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 680, y: 400 },
       biome: "ruins",
       enemies: [],
+      image: "/images/ui/ruin.png",
     },
   ],
   edges: [

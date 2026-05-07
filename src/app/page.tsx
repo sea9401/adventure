@@ -11,12 +11,18 @@ import {
   Diamond,
   FirstAid,
   Hammer,
+  HandFist,
+  HeartStraight,
+  Lightning,
   MapPin,
   Scroll,
   Shield,
   Sparkle,
+  Star,
   Sword,
   User,
+  Wind,
+  type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
@@ -104,6 +110,22 @@ const STAT_LABELS: Record<StatKey, string> = {
   vit: "활력",
   spd: "속도",
   luk: "행운",
+};
+
+const STAT_ICONS: Record<StatKey, PhosphorIcon> = {
+  str: HandFist,
+  dex: Lightning,
+  vit: HeartStraight,
+  spd: Wind,
+  luk: Star,
+};
+
+const STAT_ICON_COLORS: Record<StatKey, string> = {
+  str: "text-rose-500",
+  dex: "text-amber-400",
+  vit: "text-emerald-500",
+  spd: "text-sky-500",
+  luk: "text-yellow-500",
 };
 
 const ZERO_ALLOCATED: Record<StatKey, number> = {
@@ -642,13 +664,13 @@ function TrainingView({
   const canAllocate = unspentPoints > 0;
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
-      <div className="space-y-4">
+    <section className="rounded-lg border border-zinc-200 bg-white/90 p-6 dark:border-zinc-800 dark:bg-zinc-950/90">
+      <div className="space-y-6">
         <button
           type="button"
           onClick={onStartTraining}
           disabled={isTraining}
-          className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-4 py-3 text-base font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
           {isTraining
             ? `훈련 중 · ${formatDuration(remaining)}`
@@ -656,27 +678,35 @@ function TrainingView({
         </button>
 
         <div>
-          <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          <div className="mb-3 flex items-center justify-between text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             <span>스탯 단련</span>
             <span className="tabular-nums">단련 포인트 {unspentPoints}</span>
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {STAT_KEYS.map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => onAllocateStat(k)}
-                disabled={!canAllocate}
-                className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900"
-              >
-                <span className="text-zinc-700 dark:text-zinc-300">
-                  {STAT_LABELS[k]} 단련
-                </span>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {canAllocate ? "+1" : "포인트 없음"}
-                </span>
-              </button>
-            ))}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {STAT_KEYS.map((k) => {
+              const Icon = STAT_ICONS[k];
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => onAllocateStat(k)}
+                  disabled={!canAllocate}
+                  className="flex items-center gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-base transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900"
+                >
+                  <Icon
+                    size={22}
+                    weight="duotone"
+                    className={`shrink-0 ${STAT_ICON_COLORS[k]}`}
+                  />
+                  <span className="flex-1 text-left font-medium text-zinc-700 dark:text-zinc-200">
+                    {STAT_LABELS[k]} 단련
+                  </span>
+                  <span className="shrink-0 text-sm font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
+                    +1
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -805,6 +835,7 @@ export default function Home() {
     )?.tags;
     const inTown = currentTags?.includes("town") ?? false;
     if (tab === "town" && !inTown) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubView(null);
     }
   }, [tab, mapProgress.currentRegionId]);
