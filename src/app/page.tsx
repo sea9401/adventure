@@ -20,6 +20,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
 import { BattleView } from "@/adventure/BattleView";
+import { TownView } from "@/adventure/TownView";
 import { WORLD_MAP } from "@/adventure/data/world";
 import {
   initialMapProgress,
@@ -779,18 +780,33 @@ export default function Home() {
             <>
               <CharacterMini character={character} />
               <div className="space-y-2">
-                <EntryCard
-                  icon={
-                    <Sword
-                      size={28}
-                      weight="duotone"
-                      className="text-rose-500"
-                    />
-                  }
-                  title="전투"
-                  description="적과 맞서 싸웁니다."
-                  onClick={() => setSubView("battle")}
-                />
+                {currentRegion.tags?.includes("town") ? (
+                  <EntryCard
+                    icon={
+                      <User
+                        size={28}
+                        weight="duotone"
+                        className="text-blue-500"
+                      />
+                    }
+                    title={currentRegion.name}
+                    description="마을을 둘러보고 사람들과 이야기합니다."
+                    onClick={() => setSubView("battle")}
+                  />
+                ) : (
+                  <EntryCard
+                    icon={
+                      <Sword
+                        size={28}
+                        weight="duotone"
+                        className="text-rose-500"
+                      />
+                    }
+                    title="전투"
+                    description="적과 맞서 싸웁니다."
+                    onClick={() => setSubView("battle")}
+                  />
+                )}
                 <EntryCard
                   icon={
                     <Compass
@@ -808,8 +824,19 @@ export default function Home() {
           )}
           {tab === "adventure" && subView === "battle" && (
             <div className="space-y-3">
-              <SubViewHeader title="전투" onBack={() => setSubView(null)} />
-              <BattleView region={currentRegion} />
+              <SubViewHeader
+                title={
+                  currentRegion.tags?.includes("town")
+                    ? currentRegion.name
+                    : "전투"
+                }
+                onBack={() => setSubView(null)}
+              />
+              {currentRegion.tags?.includes("town") ? (
+                <TownView region={currentRegion} />
+              ) : (
+                <BattleView region={currentRegion} />
+              )}
             </div>
           )}
           {tab === "adventure" && subView === "map" && (

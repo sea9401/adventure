@@ -1,4 +1,34 @@
+"use client";
+
+import { useState } from "react";
 import type { Region } from "./data/world";
+import { MONSTERS } from "./data/monsters";
+
+function EnemyAvatar({ name }: { name: string }) {
+  const [errored, setErrored] = useState(false);
+  const image = MONSTERS[name]?.image;
+  if (!image || errored) {
+    return (
+      <div
+        aria-hidden
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+      >
+        ?
+      </div>
+    );
+  }
+  return (
+    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={image}
+        alt=""
+        onError={() => setErrored(true)}
+        className="h-full w-full object-cover"
+      />
+    </div>
+  );
+}
 
 export function BattleView({ region }: { region: Region }) {
   const hasEnemies = region.enemies.length > 0;
@@ -26,8 +56,9 @@ export function BattleView({ region }: { region: Region }) {
             {region.enemies.map((enemy) => (
               <li
                 key={enemy}
-                className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+                className="flex items-center gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900/50"
               >
+                <EnemyAvatar name={enemy} />
                 <span className="text-zinc-700 dark:text-zinc-300">{enemy}</span>
               </li>
             ))}
