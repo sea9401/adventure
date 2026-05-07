@@ -26,9 +26,20 @@ const ROLE_COLOR: Record<NpcRole, string> = {
   trainer: "text-orange-500",
 };
 
-export function TownView({ region }: { region: Region }) {
+export function TownView({
+  region,
+  onTalkClose,
+}: {
+  region: Region;
+  onTalkClose?: (npcId: string, regionId: string) => void;
+}) {
   const npcs = getNpcsByRegion(region.id);
   const [openNpc, setOpenNpc] = useState<Npc | null>(null);
+
+  const closeNpc = () => {
+    if (openNpc) onTalkClose?.(openNpc.id, region.id);
+    setOpenNpc(null);
+  };
 
   return (
     <div className="space-y-3">
@@ -88,9 +99,7 @@ export function TownView({ region }: { region: Region }) {
         </div>
       )}
 
-      {openNpc && (
-        <NpcDialogue npc={openNpc} onClose={() => setOpenNpc(null)} />
-      )}
+      {openNpc && <NpcDialogue npc={openNpc} onClose={closeNpc} />}
     </div>
   );
 }

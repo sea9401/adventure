@@ -30,6 +30,7 @@ export function BattleView({
   playerName,
   autoBattle,
   onAutoBattleChange,
+  onBattleStart,
   onBattleEnd,
 }: {
   region: Region;
@@ -37,9 +38,15 @@ export function BattleView({
   playerName: string;
   autoBattle: boolean;
   onAutoBattleChange: (next: boolean) => void;
+  onBattleStart?: (enemyName: string) => void;
   onBattleEnd: (payload: BattleEndPayload) => void;
 }) {
   const { state, start, stop } = useBattle({ player, playerName });
+
+  const startWithLog = (enemy: Monster) => {
+    onBattleStart?.(enemy.name);
+    start(enemy);
+  };
 
   // 종료 후 onConfirm — 외부 상태 반영 + 자동/수동 다음 행동 분기.
   // ref로 보관해서 useEffect에서 latest 값 사용 (closure stale 방지).
@@ -61,7 +68,7 @@ export function BattleView({
       if (isWin && autoBattle) {
         const nextEnemy = pickEnemy(region);
         if (nextEnemy) {
-          start(nextEnemy);
+          startWithLog(nextEnemy);
           return;
         }
       }
@@ -120,7 +127,7 @@ export function BattleView({
                 type="button"
                 onClick={() => {
                   const enemy = pickEnemy(region);
-                  if (enemy) start(enemy);
+                  if (enemy) startWithLog(enemy);
                 }}
                 disabled={player.hp <= 0}
                 className="flex-1 rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
