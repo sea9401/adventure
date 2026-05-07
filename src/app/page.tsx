@@ -41,12 +41,7 @@ import {
   applyQuestReward,
   type RewardServices,
 } from "@/adventure/quests/applyReward";
-import {
-  ITEMS,
-  findItemId,
-  type EquipItem,
-  type ItemId,
-} from "@/adventure/data/items";
+import { ITEMS, findItemId, type ItemId } from "@/adventure/data/items";
 import { MONSTERS } from "@/adventure/data/monsters";
 import {
   POTIONS,
@@ -63,11 +58,7 @@ import type { BattleState, PlayerAction } from "@/adventure/battle/engine";
 import { type Recipe } from "@/adventure/data/recipes";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
-import {
-  applyExpGain,
-  MAX_LEVEL,
-  requiredExpToNext,
-} from "@/lib/leveling";
+import { requiredExpToNext } from "@/lib/leveling";
 import { CraftingView } from "@/adventure/CraftingView";
 import {
   genNotificationId,
@@ -86,16 +77,11 @@ import { RegionBackground } from "@/components/ui/RegionBackground";
 import {
   PROFILE_STORAGE_KEY,
   LEGACY_PROFILE_KEYS,
-  CHARACTER_STATE_KEY,
   BATTLE_SETTINGS_KEY,
 } from "@/lib/storage-keys";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { formatDuration } from "@/lib/format";
-import type {
-  Character,
-  EquippedSlots,
-  Skill,
-} from "@/adventure/character/types";
+import type { Character } from "@/adventure/character/types";
 import { ZERO_ALLOCATED } from "@/adventure/character/statMeta";
 import { AdventurerCard } from "@/adventure/character/AdventurerCard";
 import { StatsPanel } from "@/adventure/character/StatsPanel";
@@ -103,56 +89,14 @@ import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { SkillsView } from "@/adventure/character/SkillsView";
 import { TrainingView } from "@/adventure/character/TrainingView";
 import { useTraining } from "@/adventure/training/useTraining";
+import { baseCharacter } from "@/adventure/character/defaults";
+import { useCharacterState } from "@/adventure/character/useCharacterState";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
 
 const DEFAULT_NAME = "모험가";
 
 type Profile = { name: string; gender: Gender };
-
-type CharacterDynamicState = {
-  hp: number;
-  mp: number;
-  level: number;
-  exp: number;
-  gold: number;
-  fame: number;
-  equipped?: EquippedSlots;
-};
-
-const initialCharacterState: CharacterDynamicState = {
-  hp: 50,
-  mp: 30,
-  level: 1,
-  exp: 0,
-  gold: 0,
-  fame: 0,
-};
-
-// EquipBonus / EquipItem 타입은 src/adventure/data/items.ts로 이동됨.
-export type { EquipBonus } from "@/adventure/data/items";
-
-const baseCharacter = {
-  className: "무직",
-  level: 1,
-  hp: 50,
-  maxHp: 50,
-  mp: 30,
-  maxMp: 30,
-  exp: 0,
-  maxExp: 100,
-  gold: 0,
-  affiliation: "무소속",
-  battleCount: 0,
-  fame: 0,
-  skills: [] as Skill[],
-  stats: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 } as Record<StatKey, number>,
-  equipped: {
-    weapon: ITEMS.branch_stick as EquipItem | null,
-    armor: ITEMS.cloth_clothes as EquipItem | null,
-    accessory: ITEMS.mom_amulet as EquipItem | null,
-  },
-};
 
 type TabKey = "adventure" | "town" | "character";
 
@@ -188,8 +132,6 @@ export default function Home() {
   const [subView, setSubView] = useState<string | null>(null);
   const [mapProgress, setMapProgress] =
     useState<MapProgress>(initialMapProgress);
-  const [characterState, setCharacterState] =
-    useState<CharacterDynamicState>(initialCharacterState);
   const [autoBattle, setAutoBattle] = useState(false);
   const regionInitRanRef = useRef(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -200,6 +142,8 @@ export default function Home() {
   const inventory = useInventory();
   const autoPotion = useAutoPotionConfig();
   const training = useTraining();
+  const characterStateHook = useCharacterState();
+  const characterState = characterStateHook.state;
 
   useEffect(() => {
     try {
@@ -231,25 +175,6 @@ export default function Home() {
     setMapProgress(loadMapProgress());
 
     try {
-      const raw = localStorage.getItem(CHARACTER_STATE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<CharacterDynamicState>;
-        setCharacterState({
-          hp: parsed.hp ?? initialCharacterState.hp,
-          mp: parsed.mp ?? initialCharacterState.mp,
-          level: Math.min(
-            MAX_LEVEL,
-            Math.max(1, parsed.level ?? initialCharacterState.level),
-          ),
-          exp: parsed.exp ?? initialCharacterState.exp,
-          gold: parsed.gold ?? initialCharacterState.gold,
-          fame: parsed.fame ?? initialCharacterState.fame,
-          equipped: parsed.equipped,
-        });
-      }
-    } catch {}
-
-    try {
       const raw = localStorage.getItem(BATTLE_SETTINGS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as { auto?: boolean };
@@ -269,14 +194,6 @@ export default function Home() {
     if (!hydrated) return;
     saveNotifications({ list: notifications, lastReadAt });
   }, [hydrated, notifications, lastReadAt]);
-
-  // 캐릭터 변동 상태 영속
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(CHARACTER_STATE_KEY, JSON.stringify(characterState));
-    } catch {}
-  }, [hydrated, characterState]);
 
   // 자동 전투 토글 영속
   useEffect(() => {
@@ -334,7 +251,7 @@ export default function Home() {
       ? `단련 포인트 ${training.unspentPoints}개 보유`
       : "능력치를 단련할 수 있는 곳.";
 
-  const equippedSlots = characterState.equipped ?? baseCharacter.equipped;
+  const equippedSlots = characterStateHook.equippedSlots;
   // 장비 bonus의 스탯 부분(str/dex/vit/spd/luk) 합산. atk/def는 playerCombat 단계에서 따로 처리.
   const equipStatBonuses: Record<StatKey, number> = { ...ZERO_ALLOCATED };
   for (const item of [
@@ -379,28 +296,7 @@ export default function Home() {
     adventureLog.markRegionVisited(currentRegion.id);
   }, [currentRegion.id, adventureLog]);
 
-  // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.
-  // 초기 로드(localStorage 동기화)는 무시하기 위해 ref가 null이면 베이스라인만 기록.
   const lastSeenLevelRef = useRef<number | null>(null);
-  useEffect(() => {
-    if (lastSeenLevelRef.current === null) {
-      lastSeenLevelRef.current = characterState.level;
-      return;
-    }
-    const prev = lastSeenLevelRef.current;
-    const next = characterState.level;
-    if (next > prev) {
-      const gained = next - prev;
-      training.addPoints(gained);
-      addNotification(
-        "info",
-        `레벨업! Lv.${next} (스탯 포인트 +${gained})`,
-      );
-    }
-    lastSeenLevelRef.current = next;
-    // addNotification은 setter만 사용하므로 deps에서 제외 — eslint 비활성.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterState.level]);
 
   // 전투 엔진용 PlayerCombat — 장비 보너스 합산.
   const equippedItems = [
@@ -472,7 +368,7 @@ export default function Home() {
     if (buyQty <= 0) return;
     const cost = potion.price * buyQty;
     if (characterState.gold < cost) return;
-    setCharacterState((prev) => ({ ...prev, gold: prev.gold - cost }));
+    characterStateHook.addGold(-cost);
     inventory.add(id, buyQty);
   };
 
@@ -481,7 +377,7 @@ export default function Home() {
     if (!m) return;
     const cost = m.price * quantity;
     if (characterState.gold < cost) return;
-    setCharacterState((prev) => ({ ...prev, gold: prev.gold - cost }));
+    characterStateHook.addGold(-cost);
     inventory.addMaterial(id, quantity);
   };
 
@@ -499,28 +395,36 @@ export default function Home() {
     setLastReadAt(Date.now());
   };
 
-  // 장비 교체 — 기존에 장착돼 있던 아이템은 인벤토리로 회수.
-  // ITEMS 사전에 등록된 아이템만 회수 가능 (이름 기반 역추적).
-  const equipItem = (
-    slot: "weapon" | "armor" | "accessory",
-    item: EquipItem,
-  ) => {
-    setCharacterState((prev) => {
-      const current = prev.equipped ?? baseCharacter.equipped;
-      const oldId = findItemId(current[slot]);
-      if (oldId) inventory.addEquipment(oldId, 1);
-      return {
-        ...prev,
-        equipped: { ...current, [slot]: item },
-      };
-    });
-  };
+  // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.
+  // 초기 로드(localStorage 동기화)는 무시하기 위해 ref가 null이면 베이스라인만 기록.
+  useEffect(() => {
+    if (lastSeenLevelRef.current === null) {
+      lastSeenLevelRef.current = characterState.level;
+      return;
+    }
+    const prev = lastSeenLevelRef.current;
+    const next = characterState.level;
+    if (next > prev) {
+      const gained = next - prev;
+      training.addPoints(gained);
+      addNotification(
+        "info",
+        `레벨업! Lv.${next} (스탯 포인트 +${gained})`,
+      );
+    }
+    lastSeenLevelRef.current = next;
+    // addNotification/training.addPoints 는 setter — deps 제외.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [characterState.level]);
 
   // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
+  // ITEMS 사전에 등록된 아이템만 회수 가능 (이름 기반 역추적).
   const handleEquipFromInventory = (id: ItemId) => {
     if (!inventory.consumeEquipment(id, 1)) return;
     const item = ITEMS[id];
-    equipItem(item.slot, item);
+    const oldId = findItemId(characterStateHook.equippedSlots[item.slot]);
+    if (oldId) inventory.addEquipment(oldId, 1);
+    characterStateHook.setSlot(item.slot, item);
     addNotification("info", `${item.name}을(를) 장착했다.`);
   };
 
@@ -559,27 +463,12 @@ export default function Home() {
     }
   };
 
-  const handleHeal = () => {
-    setCharacterState((prev) => ({
-      ...prev,
-      hp: baseCharacter.maxHp,
-      mp: baseCharacter.maxMp,
-    }));
-  };
-
   const handleBattleEnd = (payload: BattleEndPayload) => {
     if (payload.outcome === "win") {
       adventureLog.addKill(payload.enemyName);
       const readyQuestIds = quests.recordKill(payload.enemyName);
-      setCharacterState((prev) => {
-        const next = applyExpGain(prev.level, prev.exp, payload.rewards.exp);
-        return {
-          ...prev,
-          hp: payload.finalPlayerHp,
-          level: next.level,
-          exp: next.exp,
-        };
-      });
+      characterStateHook.setHp(payload.finalPlayerHp);
+      characterStateHook.addExp(payload.rewards.exp);
       // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
       const monster = MONSTERS[payload.enemyName];
       if (monster?.drops) {
@@ -610,7 +499,7 @@ export default function Home() {
       }
     } else {
       // 패배 — HP 회복 + 시작 마을 강제 이동 + 자동 전투 OFF
-      setCharacterState((prev) => ({ ...prev, hp: baseCharacter.maxHp }));
+      characterStateHook.restoreHpFull();
       setMapProgress((prev) => ({
         currentRegionId: START_REGION_ID,
         visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
@@ -634,17 +523,8 @@ export default function Home() {
     addMaterial: (id, n) => inventory.addMaterial(id, n),
     addEquipment: (id) => inventory.addEquipment(id),
     learnRecipe: (id) => crafting.learnRecipe(id),
-    addGoldFame: (gold, fame) =>
-      setCharacterState((prev) => ({
-        ...prev,
-        gold: prev.gold + gold,
-        fame: prev.fame + fame,
-      })),
-    addExp: (n) =>
-      setCharacterState((prev) => {
-        const next = applyExpGain(prev.level, prev.exp, n);
-        return { ...prev, level: next.level, exp: next.exp };
-      }),
+    addGoldFame: characterStateHook.addGoldFame,
+    addExp: characterStateHook.addExp,
   };
 
   // 퀘스트 보상 지급 + 알림 한 줄로 합성. NPC 다이얼로그/길드 게시판 공용.
@@ -945,7 +825,7 @@ export default function Home() {
                 </div>
                 <button
                   type="button"
-                  onClick={handleHeal}
+                  onClick={characterStateHook.heal}
                   disabled={
                     character.hp >= character.maxHp &&
                     character.mp >= character.maxMp
