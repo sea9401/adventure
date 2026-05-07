@@ -10,9 +10,9 @@ const character = {
   maxMp: 30,
   gold: 0,
   equipped: {
-    weapon: null as string | null,
-    armor: null as string | null,
-    accessory: null as string | null,
+    weapon: "나뭇가지" as string | null,
+    armor: "천 옷" as string | null,
+    accessory: "엄마가 준 부적" as string | null,
   },
 };
 
