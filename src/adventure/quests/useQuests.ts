@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { QUESTS, getQuestById, type Quest } from "../data/quests";
 import {
   defaultQuestEntry,
@@ -17,14 +17,19 @@ export type ClaimResult =
 export function useQuests() {
   const [progress, setProgress] = useState<QuestProgressMap>({});
   const [hydrated, setHydrated] = useState(false);
+  // setState 업데이터가 큐잉되어 다음 렌더에 처리되므로 동기 계산용 미러 ref가 필요.
+  const progressRef = useRef<QuestProgressMap>({});
 
   useEffect(() => {
+    const loaded = loadQuestProgress();
+    progressRef.current = loaded;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setProgress(loadQuestProgress());
+    setProgress(loaded);
     setHydrated(true);
   }, []);
 
   useEffect(() => {
+    progressRef.current = progress;
     if (!hydrated) return;
     saveQuestProgress(progress);
   }, [hydrated, progress]);
@@ -35,63 +40,64 @@ export function useQuests() {
   );
 
   const accept = useCallback((id: string) => {
-    setProgress((prev) => {
-      const cur = prev[id] ?? defaultQuestEntry();
-      if (cur.state !== "available") return prev;
-      return { ...prev, [id]: { ...cur, state: "active", progress: 0 } };
-    });
+    const cur = progressRef.current;
+    const entry = cur[id] ?? defaultQuestEntry();
+    if (entry.state !== "available") return;
+    const next: QuestProgressMap = {
+      ...cur,
+      [id]: { ...entry, state: "active", progress: 0 },
+    };
+    progressRef.current = next;
+    setProgress(next);
   }, []);
 
   // 전투 승리 시 호출 — 활성 퀘스트 중 타겟 일치하는 것의 진행도 증가.
   // 이번 호출에서 막 ready로 전환된 퀘스트 ID 목록을 반환 (알림 트리거용).
   const recordKill = useCallback((monsterName: string): string[] => {
-    let justReady: string[] = [];
-    setProgress((prev) => {
-      let changed = false;
-      const next: QuestProgressMap = { ...prev };
-      const ready: string[] = [];
-      for (const quest of QUESTS) {
-        if (quest.target.monsterName !== monsterName) continue;
-        const entry = next[quest.id] ?? defaultQuestEntry();
-        if (entry.state !== "active") continue;
-        if (entry.progress >= quest.target.count) continue;
-        const newProgress = entry.progress + 1;
-        const newState: QuestProgressEntry["state"] =
-          newProgress >= quest.target.count ? "ready" : "active";
-        next[quest.id] = { ...entry, progress: newProgress, state: newState };
-        if (newState === "ready") ready.push(quest.id);
-        changed = true;
-      }
-      if (changed) justReady = ready;
-      return changed ? next : prev;
-    });
+    const cur = progressRef.current;
+    const next: QuestProgressMap = { ...cur };
+    const justReady: string[] = [];
+    let changed = false;
+    for (const quest of QUESTS) {
+      if (quest.target.monsterName !== monsterName) continue;
+      const entry = next[quest.id] ?? defaultQuestEntry();
+      if (entry.state !== "active") continue;
+      if (entry.progress >= quest.target.count) continue;
+      const newProgress = entry.progress + 1;
+      const newState: QuestProgressEntry["state"] =
+        newProgress >= quest.target.count ? "ready" : "active";
+      next[quest.id] = { ...entry, progress: newProgress, state: newState };
+      if (newState === "ready") justReady.push(quest.id);
+      changed = true;
+    }
+    if (changed) {
+      progressRef.current = next;
+      setProgress(next);
+    }
     return justReady;
   }, []);
 
   // 보상 수령 — 호출 측이 캐릭터 상태 갱신을 함께 처리
-  const claim = useCallback(
-    (id: string): ClaimResult => {
-      const quest = getQuestById(id);
-      if (!quest) return { ok: false, reason: "not-found" };
-      const entry = progress[id] ?? defaultQuestEntry();
-      if (entry.state !== "ready") return { ok: false, reason: "not-ready" };
-      setProgress((prev) => {
-        const cur = prev[id] ?? defaultQuestEntry();
-        return {
-          ...prev,
-          [id]: {
-            ...cur,
-            state: quest.repeatable ? "available" : "completed",
-            progress: 0,
-            completedCount: cur.completedCount + 1,
-            lastCompletedAt: Date.now(),
-          },
-        };
-      });
-      return { ok: true, quest };
-    },
-    [progress],
-  );
+  const claim = useCallback((id: string): ClaimResult => {
+    const quest = getQuestById(id);
+    if (!quest) return { ok: false, reason: "not-found" };
+    const cur = progressRef.current;
+    const entry = cur[id] ?? defaultQuestEntry();
+    if (entry.state !== "ready") return { ok: false, reason: "not-ready" };
+    const next: QuestProgressMap = {
+      ...cur,
+      [id]: {
+        ...entry,
+        state: quest.repeatable ? "available" : "completed",
+        progress: 0,
+        completedCount: entry.completedCount + 1,
+        lastCompletedAt: Date.now(),
+      },
+    };
+    progressRef.current = next;
+    setProgress(next);
+    return { ok: true, quest };
+  }, []);
 
   return { progress, hydrated, getEntry, accept, recordKill, claim };
 }
