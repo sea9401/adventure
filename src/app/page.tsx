@@ -2,11 +2,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  ArrowLeft,
   Backpack,
   Barbell,
   BookOpen,
-  CaretRight,
   Coins,
   Compass,
   Diamond,
@@ -93,6 +91,10 @@ import {
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
+import { StatBar } from "@/components/ui/StatBar";
+import { EntryCard } from "@/components/ui/EntryCard";
+import { SubViewHeader } from "@/components/ui/SubViewHeader";
+import { RegionBackground } from "@/components/ui/RegionBackground";
 import {
   PROFILE_STORAGE_KEY,
   LEGACY_PROFILE_KEYS,
@@ -192,34 +194,6 @@ const baseCharacter = {
   },
 };
 
-function StatBar({
-  label,
-  value,
-  max,
-  color,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  color: string;
-}) {
-  const pct = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="w-10 shrink-0 text-zinc-500 dark:text-zinc-400">{label}</span>
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-        <div
-          className={`h-full ${color} transition-all`}
-          style={{ width: `${pct * 100}%` }}
-        />
-      </div>
-      <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">
-        {value}/{max}
-      </span>
-    </div>
-  );
-}
-
 type TabKey = "adventure" | "town" | "character";
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -315,37 +289,6 @@ function StatsPanel({
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function RegionBackground({
-  regionId,
-  imageOverride,
-}: {
-  regionId: string;
-  imageOverride?: string;
-}) {
-  const [errored, setErrored] = useState(false);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setErrored(false);
-  }, [regionId, imageOverride]);
-  if (errored) return null;
-  const src = imageOverride ?? `/images/ui/${regionId}.png`;
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt=""
-        onError={() => setErrored(true)}
-        className="h-full w-full object-cover"
-      />
-      <div className="absolute inset-0 bg-zinc-50/85 dark:bg-zinc-950/80" />
     </div>
   );
 }
@@ -532,72 +475,6 @@ function CharacterMini({
         </div>
       </div>
     </Card>
-  );
-}
-
-function EntryCard({
-  icon,
-  title,
-  description,
-  onClick,
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/90 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/90 dark:hover:bg-zinc-900/80"
-    >
-      <span
-        aria-hidden
-        className="flex shrink-0 items-center justify-center text-zinc-700 dark:text-zinc-200"
-      >
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-base font-medium text-zinc-900 dark:text-zinc-100">
-          {title}
-        </span>
-        <span className="block truncate text-sm text-zinc-500 dark:text-zinc-400">
-          {description}
-        </span>
-      </span>
-      <CaretRight
-        size={16}
-        weight="bold"
-        aria-hidden
-        className="shrink-0 text-zinc-400 dark:text-zinc-500"
-      />
-    </button>
-  );
-}
-
-function SubViewHeader({
-  title,
-  onBack,
-}: {
-  title: string;
-  onBack: () => void;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={onBack}
-        aria-label="뒤로"
-        className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-      >
-        <ArrowLeft size={16} weight="bold" />
-        뒤로
-      </button>
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-        {title}
-      </h2>
-    </div>
   );
 }
 
