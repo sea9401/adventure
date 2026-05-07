@@ -294,12 +294,20 @@ function StatsPanel({
   );
 }
 
-function RegionBackground({ regionId }: { regionId: string }) {
+function RegionBackground({
+  regionId,
+  imageOverride,
+}: {
+  regionId: string;
+  imageOverride?: string;
+}) {
   const [errored, setErrored] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setErrored(false);
-  }, [regionId]);
+  }, [regionId, imageOverride]);
   if (errored) return null;
+  const src = imageOverride ?? `/images/ui/${regionId}.png`;
   return (
     <div
       aria-hidden
@@ -307,7 +315,7 @@ function RegionBackground({ regionId }: { regionId: string }) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/images/ui/${regionId}.png`}
+        src={src}
         alt=""
         onError={() => setErrored(true)}
         className="h-full w-full object-cover"
@@ -960,7 +968,10 @@ export default function Home() {
 
   return (
     <>
-      <RegionBackground regionId={currentRegion.id} />
+      <RegionBackground
+        regionId={currentRegion.id}
+        imageOverride={currentRegion.image}
+      />
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/90 px-4 py-3 sm:px-6 dark:border-zinc-800 dark:bg-zinc-950/90">
           <div className="flex min-w-0 items-center gap-3">

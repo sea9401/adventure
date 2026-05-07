@@ -82,28 +82,16 @@ export function BattleView({
     const hasEnemies = region.enemies.length > 0;
     return (
       <div className="space-y-3">
-        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/90">
-          {region.image && (
-            <div className="aspect-[2/1] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={region.image}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            </div>
-          )}
-          <div className="p-4">
-            <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              현재 위치
-            </div>
-            <h3 className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              {region.name}
-            </h3>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-              {region.description}
-            </p>
+        <div className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
+          <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            현재 위치
           </div>
+          <h3 className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            {region.name}
+          </h3>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            {region.description}
+          </p>
         </div>
 
         {hasEnemies ? (
