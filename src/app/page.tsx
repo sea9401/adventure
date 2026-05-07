@@ -93,22 +93,19 @@ import {
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
+import {
+  PROFILE_STORAGE_KEY,
+  LEGACY_PROFILE_KEYS,
+  TRAINING_STORAGE_KEY,
+  CHARACTER_STATE_KEY,
+  BATTLE_SETTINGS_KEY,
+} from "@/lib/storage-keys";
 
-const PROFILE_STORAGE_KEY = "character-profile.v1";
-const LEGACY_PROFILE_KEYS = [
-  "characterName",
-  "characterName.v2",
-  "characterProfile.v1",
-];
 const DEFAULT_NAME = "모험가";
 
 type Profile = { name: string; gender: Gender };
 
-const TRAINING_STORAGE_KEY = "training.v1";
 const TRAINING_DURATION_MS = 4 * 60 * 60 * 1000;
-
-const CHARACTER_STATE_KEY = "character.v1";
-const BATTLE_SETTINGS_KEY = "battle-settings.v1";
 
 type EquippedSlots = {
   weapon: EquipItem | null;
