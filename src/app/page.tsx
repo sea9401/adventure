@@ -1389,7 +1389,11 @@ export default function Home() {
           )}
         </main>
       </div>
-      <NotificationToast notifications={notifications} />
+      <NotificationToast
+        notifications={notifications.filter(
+          (n) => n.kind !== "battle_win" && n.kind !== "info",
+        )}
+      />
       {showModal && <NameSetupModal onSubmit={handleProfileSubmit} />}
     </>
   );
