@@ -3,6 +3,11 @@ export type EquipSlot = "weapon" | "armor" | "accessory";
 export type EquipBonus = {
   atk?: number;
   def?: number;
+  str?: number;
+  dex?: number;
+  vit?: number;
+  spd?: number;
+  luk?: number;
 };
 
 export type EquipItem = {
@@ -33,6 +38,7 @@ export const ITEMS = {
     name: "엄마가 준 부적",
     slot: "accessory",
     stats: [{ label: "행운", value: "+2" }],
+    bonus: { luk: 2 },
     description: "어머니의 사랑이 깃든 작은 부적.",
   } satisfies EquipItem,
 
@@ -55,6 +61,7 @@ export const ITEMS = {
     name: "활력의 반지",
     slot: "accessory",
     stats: [{ label: "활력", value: "+2" }],
+    bonus: { vit: 2 },
     description: "은은한 녹빛이 도는 반지. 끼고 있으면 몸이 가볍다.",
   } satisfies EquipItem,
   squishy_armor: {
