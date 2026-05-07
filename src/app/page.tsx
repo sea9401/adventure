@@ -1232,6 +1232,8 @@ export default function Home() {
     const knowsBat = crafting.knows("baseball_bat");
     const craftedBat = crafting.hasCrafted("baseball_bat");
     const armorReceived = crafting.state.boldQuestComplete;
+    const slimeQuestDone = crafting.state.boldSlimeQuestComplete;
+    const hasSlimeCore = inventory.materialCount("slime_core") > 0;
 
     // Stage A — 처음. 제작서 주기.
     if (!knowsBat) {
@@ -1291,7 +1293,37 @@ export default function Home() {
       );
     }
 
-    // Stage D — 끝. 일상 대화.
+    // Stage D — 슬라임 핵을 들고 오면 1회성 의뢰.
+    if (armorReceived && !slimeQuestDone && hasSlimeCore) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "어, 그건… 슬라임 핵 아닌가?\n흔치 않은 물건인데 — 한 개만 양보해 주게. 대장간에서 시도해 볼 게 있어. 사례는 따로 챙겨주지."
+          }
+          primaryAction={{
+            label: "슬라임 핵을 건넨다",
+            onClick: () => {
+              if (!inventory.consumeMaterial("slime_core", 1)) return;
+              crafting.setBoldSlimeQuestComplete();
+              setCharacterState((prev) => ({
+                ...prev,
+                gold: prev.gold + 20,
+                fame: prev.fame + 5,
+              }));
+              addNotification(
+                "quest_complete",
+                `${STORY_QUESTS.bold_slime_core.title} 완료`,
+              );
+              close();
+            },
+          }}
+        />
+      );
+    }
+
+    // Stage E — 끝. 일상 대화.
     return (
       <NpcDialogue
         npc={npc}

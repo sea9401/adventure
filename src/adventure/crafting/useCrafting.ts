@@ -44,6 +44,14 @@ export function useCrafting() {
     );
   }, []);
 
+  const setBoldSlimeQuestComplete = useCallback(() => {
+    setState((prev) =>
+      prev.boldSlimeQuestComplete
+        ? prev
+        : { ...prev, boldSlimeQuestComplete: true },
+    );
+  }, []);
+
   return {
     state,
     hydrated,
@@ -52,5 +60,6 @@ export function useCrafting() {
     learnRecipe,
     markCrafted,
     setBoldQuestComplete,
+    setBoldSlimeQuestComplete,
   };
 }

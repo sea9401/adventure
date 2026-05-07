@@ -16,6 +16,13 @@ export const STORY_QUESTS = {
       "대장장이 볼드의 권유로 야구 방망이를 직접 제작해 보자.",
     giverNpcId: "village_blacksmith_bold",
   },
+  bold_slime_core: {
+    id: "bold_slime_core",
+    title: "슬라임 핵의 정체",
+    description:
+      "슬라임 핵을 본 볼드가 흥미를 보인다. 한 개 가져다 주자.",
+    giverNpcId: "village_blacksmith_bold",
+  },
 } as const satisfies Record<string, StoryQuest>;
 
 export type StoryQuestId = keyof typeof STORY_QUESTS;
