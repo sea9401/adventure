@@ -50,6 +50,7 @@ export const NPCS: Npc[] = [
       "반들반들한 대머리에 가죽 앞치마를 두른 사내. 망치질 한 번에 모루가 통째로 운다.",
     greeting:
       "어, 왔나.\n무기든 갑옷이든 가져와 봐. 쓸 만한 거면 손봐주고, 못 쓸 거면 그 자리에서 녹여주지.",
+    portrait: "/images/npc/bold.png",
   },
   {
     id: "diola_elder",
