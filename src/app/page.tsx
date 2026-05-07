@@ -1427,7 +1427,13 @@ export default function Home() {
                 title="최근 기록"
                 onBack={() => setSubView(null)}
               />
-              <RecentLogView notifications={notifications} />
+              <RecentLogView
+                notifications={notifications}
+                onClear={() => {
+                  setNotifications([]);
+                  setLastReadAt(Date.now());
+                }}
+              />
             </div>
           )}
         </main>
