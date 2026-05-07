@@ -244,7 +244,28 @@ function CharacterPanel({
           </span>
         </div>
 
-        <div className="grid grid-cols-5 gap-2 pt-1">
+        <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
+          <EquipCard title="무기" item={character.equipped.weapon} />
+          <EquipCard title="방어구" item={character.equipped.armor} />
+          <EquipCard title="장신구" item={character.equipped.accessory} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StatsPanel({
+  stats,
+}: {
+  stats: Record<StatKey, number>;
+}) {
+  return (
+    <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <div className="p-4">
+        <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          능력치
+        </div>
+        <div className="mt-2 grid grid-cols-5 gap-2">
           {STAT_KEYS.map((k) => (
             <div
               key={k}
@@ -254,16 +275,10 @@ function CharacterPanel({
                 {STAT_LABELS[k]}
               </div>
               <div className="mt-0.5 text-base font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-                {character.stats[k]}
+                {stats[k]}
               </div>
             </div>
           ))}
-        </div>
-
-        <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
-          <EquipCard title="무기" item={character.equipped.weapon} />
-          <EquipCard title="방어구" item={character.equipped.armor} />
-          <EquipCard title="장신구" item={character.equipped.accessory} />
         </div>
       </div>
     </section>
@@ -339,7 +354,12 @@ export default function Home() {
               message="아직 둘러볼 수 있는 곳이 없습니다."
             />
           )}
-          {tab === "character" && <CharacterPanel character={character} />}
+          {tab === "character" && (
+            <>
+              <CharacterPanel character={character} />
+              <StatsPanel stats={character.stats} />
+            </>
+          )}
         </main>
       </div>
       {showModal && <NameSetupModal onSubmit={handleNameSubmit} />}
