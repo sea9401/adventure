@@ -21,8 +21,6 @@ import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
 import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
 import { TownView } from "@/adventure/TownView";
-import { NpcDialogue } from "@/adventure/NpcDialogue";
-import type { Npc } from "@/adventure/data/npcs";
 import { AdventureLogView } from "@/adventure/AdventureLogView";
 import { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -65,7 +63,6 @@ import type { BattleState, PlayerAction } from "@/adventure/battle/engine";
 import { type Recipe } from "@/adventure/data/recipes";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
-import { STORY_QUESTS } from "@/adventure/data/storyQuests";
 import {
   applyExpGain,
   MAX_LEVEL,
@@ -106,6 +103,8 @@ import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { SkillsView } from "@/adventure/character/SkillsView";
 import { TrainingView } from "@/adventure/character/TrainingView";
+import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
+import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
 
 const DEFAULT_NAME = "모험가";
 
@@ -627,269 +626,6 @@ export default function Home() {
     }
   };
 
-  const renderTrainerDialogue = (npc: Npc, close: () => void) => {
-    const slime = quests.getEntry("village-trainer-slimes");
-    const dogs = quests.getEntry("village-trainer-dogs");
-    const moles = quests.getEntry("village-trainer-moles");
-
-    // === 슬라임 단계 ===
-    if (slime.state === "available") {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "훈련이 필요해서 왔는가?\n일단 평야로 가서 슬라임 5마리를 잡고 돌아오게."
-          }
-          primaryAction={{
-            label: "받아들인다",
-            onClick: () => {
-              quests.accept("village-trainer-slimes");
-              close();
-            },
-          }}
-        />
-      );
-    }
-    if (slime.state === "active") {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            `슬라임은 잘 잡고 있나?\n평야에 가면 흔하지. — 진행 ${slime.progress}/5`
-          }
-        />
-      );
-    }
-    if (slime.state === "ready") {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "오, 다섯 마리를 다 잡아왔군.\n잘 했네 — 자, 보상이다. 작은 회복약 다섯 개와 조합법.\n모험을 하려면 포션 정도는 만들 줄 알아야 할걸세."
-          }
-          primaryAction={{
-            label: "보상을 받는다",
-            onClick: () => {
-              if (completeQuest("village-trainer-slimes")) close();
-            },
-          }}
-        />
-      );
-    }
-
-    // === 들개 단계 (슬라임 완료 후) ===
-    if (dogs.state === "available") {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "슬라임은 얌전한 편이지.\n다음은 들개다 — 평야와 외곽 숲에서 떼지어 다닌다.\n10마리만 잡아와. 어금니가 부딪치는 소리가 익숙해져야 해."
-          }
-          primaryAction={{
-            label: "받아들인다",
-            onClick: () => {
-              quests.accept("village-trainer-dogs");
-              close();
-            },
-          }}
-        />
-      );
-    }
-    if (dogs.state === "active") {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            `들개는 빠르고 사나워.\n자세를 낮추고 발을 노려라. — 진행 ${dogs.progress}/10`
-          }
-        />
-      );
-    }
-    if (dogs.state === "ready") {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "들개의 눈빛이 익숙해졌나?\n잘 했네. — 그럼 마지막 단련만 남았다."
-          }
-          primaryAction={{
-            label: "보고한다",
-            onClick: () => {
-              if (completeQuest("village-trainer-dogs")) close();
-            },
-          }}
-        />
-      );
-    }
-
-    // === 두더쥐 단계 (들개 완료 후) ===
-    if (moles.state === "available") {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "두더쥐를 우습게 보면 안 돼.\n땅 밑으로 들락거리며 빠르게 친다.\n10마리. 어디로 들어가는지, 어디로 나오는지 — 그걸 보는 눈을 길러봐."
-          }
-          primaryAction={{
-            label: "받아들인다",
-            onClick: () => {
-              quests.accept("village-trainer-moles");
-              close();
-            },
-          }}
-        />
-      );
-    }
-    if (moles.state === "active") {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            `두더쥐는 보이지 않을 때가 더 위험하지.\n흙 위의 떨림을 읽어라. — 진행 ${moles.progress}/10`
-          }
-        />
-      );
-    }
-    if (moles.state === "ready") {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "훌륭해. 슬라임, 들개, 두더쥐 — 평야의 셋을 다 끝냈군.\n자, 이건 내가 신참 시절 주워 모은 거다. 활력의 반지. 끼고 다녀라."
-          }
-          primaryAction={{
-            label: "활력의 반지를 받는다",
-            onClick: () => {
-              if (completeQuest("village-trainer-moles")) close();
-            },
-          }}
-        />
-      );
-    }
-
-    // 모든 단련 완료 후 일상 대화.
-    return (
-      <NpcDialogue
-        npc={npc}
-        onClose={close}
-        text={
-          "또 왔구나.\n이제 평야는 졸업이지. 한 단계 더 위로 나아가 봐."
-        }
-      />
-    );
-  };
-
-  const renderBoldDialogue = (npc: Npc, close: () => void) => {
-    const knowsBat = crafting.knows("baseball_bat");
-    const craftedBat = crafting.hasCrafted("baseball_bat");
-    const armorReceived = crafting.state.boldQuestComplete;
-    const slimeQuestDone = crafting.state.boldSlimeQuestComplete;
-    const hasSlimeCore = inventory.materialCount("slime_core") > 0;
-
-    // Stage A — 처음. 제작서 주기.
-    if (!knowsBat) {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "처음 보는데… 모험가인가?\n그 나뭇가지 들고 마을 밖으로 나가는 건 위험하네.\n자, 받아 — 야구 방망이 제작서다. 대장간에 가서 직접 만들어 봐."
-          }
-          primaryAction={{
-            label: "제작서를 받는다",
-            onClick: () => {
-              crafting.learnRecipe("baseball_bat");
-              close();
-            },
-          }}
-        />
-      );
-    }
-
-    // Stage B — 제작서를 받았지만 아직 안 만듦.
-    if (!craftedBat) {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "방망이는 잘 만들고 있나?\n대장간 앞에서 망설이지 말게. 제작서대로 두드리면 되네."
-          }
-        />
-      );
-    }
-
-    // Stage C — 만들어 옴. 가죽갑옷 주기.
-    if (!armorReceived) {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "오, 제대로 만들었군!\n…그런 천 옷으로 어딜 다녀. 이거도 챙겨가라 — 낡은 가죽갑옷이지만, 그쪽 천 쪼가리보단 백 배 낫지."
-          }
-          primaryAction={{
-            label: "낡은 가죽갑옷을 받는다",
-            onClick: () => {
-              inventory.addEquipment("old_leather_armor");
-              crafting.setBoldQuestComplete();
-              addNotification(
-                "quest_complete",
-                `${STORY_QUESTS.bold_blacksmith_intro.title} 완료`,
-              );
-              close();
-            },
-          }}
-        />
-      );
-    }
-
-    // Stage D — 슬라임 핵을 들고 오면 1회성. 제작법을 받음(핵은 소모 X).
-    if (armorReceived && !slimeQuestDone && hasSlimeCore) {
-      return (
-        <NpcDialogue
-          npc={npc}
-          onClose={close}
-          text={
-            "어, 이건… 슬라임 핵 아닌가?\n이걸로 꽤 괜찮은 방어구를 만들 수 있다네. 내가 장비 제조법을 주지 — 슬라임 조각도 함께 챙겨서 대장간으로 오게."
-          }
-          primaryAction={{
-            label: "제조법을 받는다",
-            onClick: () => {
-              crafting.learnRecipe("squishy_armor");
-              crafting.setBoldSlimeQuestComplete();
-              addNotification(
-                "quest_complete",
-                `${STORY_QUESTS.bold_slime_core.title} 완료`,
-              );
-              close();
-            },
-          }}
-        />
-      );
-    }
-
-    // Stage E — 끝. 일상 대화.
-    return (
-      <NpcDialogue
-        npc={npc}
-        onClose={close}
-        text={
-          "왔구나.\n잘 지내고 있나? 무기 손볼 일 있으면 또 들르게."
-        }
-      />
-    );
-  };
-
   const handleHeal = () => {
     setCharacterState((prev) => ({
       ...prev,
@@ -1105,10 +841,27 @@ export default function Home() {
                   adventureLog.addTownNpcTalked(regionId, npcId);
                 }}
                 renderNpcDialogue={(npc, close) => {
-                  if (npc.id === "village_blacksmith_bold")
-                    return renderBoldDialogue(npc, close);
-                  if (npc.id === "village_trainer_smith")
-                    return renderTrainerDialogue(npc, close);
+                  if (npc.id === "village_blacksmith_bold") {
+                    return (
+                      <BlacksmithDialogue
+                        npc={npc}
+                        onClose={close}
+                        crafting={crafting}
+                        inventory={inventory}
+                        addNotification={addNotification}
+                      />
+                    );
+                  }
+                  if (npc.id === "village_trainer_smith") {
+                    return (
+                      <TrainerDialogue
+                        npc={npc}
+                        onClose={close}
+                        quests={quests}
+                        completeQuest={completeQuest}
+                      />
+                    );
+                  }
                   return null;
                 }}
               />
