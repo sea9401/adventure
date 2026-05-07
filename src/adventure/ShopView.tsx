@@ -3,39 +3,75 @@
 import { useState } from "react";
 import { Coins } from "@phosphor-icons/react";
 import { POTIONS, POTION_IDS, type PotionId } from "./data/potions";
+import { MATERIALS, type MaterialId } from "./data/materials";
 import type { InventoryState } from "./inventory/useInventory";
 
 export function ShopView({
   gold,
   inventory,
-  onPurchase,
+  onPurchasePotion,
+  onPurchaseMaterial,
 }: {
   gold: number;
   inventory: InventoryState;
-  onPurchase: (id: PotionId, quantity: number) => void;
+  onPurchasePotion: (id: PotionId, quantity: number) => void;
+  onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
 }) {
+  const materialIds = Object.keys(MATERIALS) as MaterialId[];
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center justify-end gap-1.5 text-sm text-zinc-700 dark:text-zinc-200">
         <Coins size={16} weight="fill" className="text-yellow-500" />
         <span className="tabular-nums">{gold.toLocaleString()}</span>
       </div>
-      {POTION_IDS.map((id) => {
-        const potion = POTIONS[id];
-        const owned = inventory.potions[id] ?? 0;
-        return (
-          <ShopRow
-            key={id}
-            id={id}
-            name={potion.name}
-            description={potion.description}
-            price={potion.price}
-            owned={owned}
-            gold={gold}
-            onPurchase={onPurchase}
-          />
-        );
-      })}
+
+      <div>
+        <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          물약
+        </div>
+        <div className="space-y-2">
+          {POTION_IDS.map((id) => {
+            const potion = POTIONS[id];
+            const owned = inventory.potions[id] ?? 0;
+            return (
+              <ShopRow
+                key={id}
+                id={id}
+                name={potion.name}
+                description={potion.description}
+                price={potion.price}
+                owned={owned}
+                gold={gold}
+                onPurchase={(qty) => onPurchasePotion(id, qty)}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          재료
+        </div>
+        <div className="space-y-2">
+          {materialIds.map((id) => {
+            const m = MATERIALS[id];
+            const owned = inventory.materials[id] ?? 0;
+            return (
+              <ShopRow
+                key={id}
+                id={id}
+                name={m.name}
+                description={m.description}
+                price={m.price}
+                owned={owned}
+                gold={gold}
+                onPurchase={(qty) => onPurchaseMaterial(id, qty)}
+              />
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -49,20 +85,23 @@ function ShopRow({
   gold,
   onPurchase,
 }: {
-  id: PotionId;
+  id: string;
   name: string;
   description: string;
   price: number;
   owned: number;
   gold: number;
-  onPurchase: (id: PotionId, quantity: number) => void;
+  onPurchase: (quantity: number) => void;
 }) {
   const [qty, setQty] = useState(1);
   const totalCost = price * qty;
   const canAfford = gold >= totalCost;
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90">
+    <div
+      key={id}
+      className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
+    >
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           {name}
@@ -111,7 +150,7 @@ function ShopRow({
             type="button"
             onClick={() => {
               if (canAfford) {
-                onPurchase(id, qty);
+                onPurchase(qty);
                 setQty(1);
               }
             }}
