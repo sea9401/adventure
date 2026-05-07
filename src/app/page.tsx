@@ -59,6 +59,7 @@ import { MONSTERS } from "@/adventure/data/monsters";
 import {
   POTIONS,
   POTION_IDS,
+  POTION_MAX_PER_TYPE,
   computeHealAmount,
   type PotionId,
 } from "@/adventure/data/potions";
@@ -1064,10 +1065,14 @@ export default function Home() {
   const handlePurchasePotion = (id: PotionId, quantity: number) => {
     const potion = POTIONS[id];
     if (!potion) return;
-    const cost = potion.price * quantity;
+    const have = inventory.state.potions[id] ?? 0;
+    const room = Math.max(0, POTION_MAX_PER_TYPE - have);
+    const buyQty = Math.min(quantity, room);
+    if (buyQty <= 0) return;
+    const cost = potion.price * buyQty;
     if (characterState.gold < cost) return;
     setCharacterState((prev) => ({ ...prev, gold: prev.gold - cost }));
-    inventory.add(id, quantity);
+    inventory.add(id, buyQty);
   };
 
   const handlePurchaseMaterial = (id: MaterialId, quantity: number) => {
@@ -1154,10 +1159,12 @@ export default function Home() {
   };
 
   const renderTrainerDialogue = (npc: Npc, close: () => void) => {
-    const entry = quests.getEntry("village-trainer-slimes");
+    const slime = quests.getEntry("village-trainer-slimes");
+    const dogs = quests.getEntry("village-trainer-dogs");
+    const moles = quests.getEntry("village-trainer-moles");
 
-    // Stage A — 처음. 슬라임 5마리 처치 의뢰.
-    if (entry.state === "available") {
+    // === 슬라임 단계 ===
+    if (slime.state === "available") {
       return (
         <NpcDialogue
           npc={npc}
@@ -1175,22 +1182,18 @@ export default function Home() {
         />
       );
     }
-
-    // Stage B — 진행 중. 진척 표시.
-    if (entry.state === "active") {
+    if (slime.state === "active") {
       return (
         <NpcDialogue
           npc={npc}
           onClose={close}
           text={
-            `슬라임은 잘 잡고 있나?\n평야에 가면 흔하지. — 진행 ${entry.progress}/5`
+            `슬라임은 잘 잡고 있나?\n평야에 가면 흔하지. — 진행 ${slime.progress}/5`
           }
         />
       );
     }
-
-    // Stage C — 조건 충족. 보상 지급.
-    if (entry.state === "ready") {
+    if (slime.state === "ready") {
       return (
         <NpcDialogue
           npc={npc}
@@ -1216,13 +1219,119 @@ export default function Home() {
       );
     }
 
-    // Stage D — 완료 후 일상 대화.
+    // === 들개 단계 (슬라임 완료 후) ===
+    if (dogs.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "슬라임은 얌전한 편이지.\n다음은 들개다 — 평야와 외곽 숲에서 떼지어 다닌다.\n10마리만 잡아와. 어금니가 부딪치는 소리가 익숙해져야 해."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept("village-trainer-dogs");
+              close();
+            },
+          }}
+        />
+      );
+    }
+    if (dogs.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            `들개는 빠르고 사나워.\n자세를 낮추고 발을 노려라. — 진행 ${dogs.progress}/10`
+          }
+        />
+      );
+    }
+    if (dogs.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "들개의 눈빛이 익숙해졌나?\n잘 했네. — 그럼 마지막 단련만 남았다."
+          }
+          primaryAction={{
+            label: "보고한다",
+            onClick: () => {
+              const r = quests.claim("village-trainer-dogs");
+              if (!r.ok) return;
+              addNotification("quest_complete", `${r.quest.title} 완료`);
+              close();
+            },
+          }}
+        />
+      );
+    }
+
+    // === 두더쥐 단계 (들개 완료 후) ===
+    if (moles.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "두더쥐를 우습게 보면 안 돼.\n땅 밑으로 들락거리며 빠르게 친다.\n10마리. 어디로 들어가는지, 어디로 나오는지 — 그걸 보는 눈을 길러봐."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept("village-trainer-moles");
+              close();
+            },
+          }}
+        />
+      );
+    }
+    if (moles.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            `두더쥐는 보이지 않을 때가 더 위험하지.\n흙 위의 떨림을 읽어라. — 진행 ${moles.progress}/10`
+          }
+        />
+      );
+    }
+    if (moles.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "훌륭해. 슬라임, 들개, 두더쥐 — 평야의 셋을 다 끝냈군.\n자, 이건 내가 신참 시절 주워 모은 거다. 활력의 반지. 끼고 다녀라."
+          }
+          primaryAction={{
+            label: "활력의 반지를 받는다",
+            onClick: () => {
+              const r = quests.claim("village-trainer-moles");
+              if (!r.ok) return;
+              inventory.addEquipment("vitality_ring");
+              addNotification(
+                "quest_complete",
+                `${r.quest.title} 완료 — 활력의 반지 획득`,
+              );
+              close();
+            },
+          }}
+        />
+      );
+    }
+
+    // 모든 단련 완료 후 일상 대화.
     return (
       <NpcDialogue
         npc={npc}
         onClose={close}
         text={
-          "또 왔구나.\n모험을 하려면 포션 정도는 만들 줄 알아야 할걸세."
+          "또 왔구나.\n이제 평야는 졸업이지. 한 단계 더 위로 나아가 봐."
         }
       />
     );
@@ -1761,11 +1870,7 @@ export default function Home() {
                   />
                 }
                 title="가방"
-                description={
-                  inventory.totalPotions() > 0
-                    ? `보유 아이템 ${inventory.totalPotions()}개`
-                    : "비어 있습니다."
-                }
+                description="모험에 필요한 물건들을 챙길 수 있는 가방이다."
                 onClick={() => setSubView("inventory")}
               />
               <EntryCard

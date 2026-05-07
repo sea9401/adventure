@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ItemId } from "../data/items";
 import type { MaterialId } from "../data/materials";
-import type { PotionId } from "../data/potions";
+import { POTION_MAX_PER_TYPE, type PotionId } from "../data/potions";
 
 export type InventoryState = {
   potions: Partial<Record<PotionId, number>>;
@@ -60,14 +60,21 @@ export function useInventory() {
     save(state);
   }, [hydrated, state]);
 
-  const add = useCallback((id: PotionId, n = 1) => {
+  // 포션은 종류 별 POTION_MAX_PER_TYPE 까지만 보유 — 초과분은 silently 잘림.
+  // 실제로 추가된 수량을 반환 (호출 측이 골드 환불·메시지 처리에 활용).
+  const add = useCallback((id: PotionId, n = 1): number => {
     const cur = stateRef.current;
+    const have = cur.potions[id] ?? 0;
+    const room = Math.max(0, POTION_MAX_PER_TYPE - have);
+    const added = Math.min(n, room);
+    if (added <= 0) return 0;
     const next: InventoryState = {
       ...cur,
-      potions: { ...cur.potions, [id]: (cur.potions[id] ?? 0) + n },
+      potions: { ...cur.potions, [id]: have + added },
     };
     stateRef.current = next;
     setState(next);
+    return added;
   }, []);
 
   const consume = useCallback((id: PotionId, n = 1): boolean => {

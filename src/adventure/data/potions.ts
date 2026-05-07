@@ -26,6 +26,9 @@ export const POTIONS: Record<PotionId, Potion> = {
 
 export const POTION_IDS = Object.keys(POTIONS) as PotionId[];
 
+// 각 포션 종류 별 최대 보유 가능 수.
+export const POTION_MAX_PER_TYPE = 10;
+
 export function computeHealAmount(potion: Potion, maxHp: number): number {
   const flat = potion.effect.flat ?? 0;
   const pct = potion.effect.pct ?? 0;
