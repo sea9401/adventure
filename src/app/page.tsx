@@ -798,6 +798,17 @@ export default function Home() {
     setAutoBattle(false);
   }, [mapProgress.currentRegionId]);
 
+  // 마을 탭에 있는데 현재 위치가 마을이 아니면 서브뷰 강제 종료
+  useEffect(() => {
+    const currentTags = WORLD_MAP.regions.find(
+      (r) => r.id === mapProgress.currentRegionId,
+    )?.tags;
+    const inTown = currentTags?.includes("town") ?? false;
+    if (tab === "town" && !inTown) {
+      setSubView(null);
+    }
+  }, [tab, mapProgress.currentRegionId]);
+
   // 지도 진행 상태 영속
   useEffect(() => {
     if (!hydrated) return;
@@ -889,6 +900,7 @@ export default function Home() {
   const currentRegion =
     WORLD_MAP.regions.find((r) => r.id === mapProgress.currentRegionId) ??
     WORLD_MAP.regions[0];
+  const isTown = currentRegion.tags?.includes("town") ?? false;
 
   // 전투 엔진용 PlayerCombat — 장비 보너스 합산.
   const equippedItems = [
@@ -1085,7 +1097,22 @@ export default function Home() {
             </div>
           )}
 
-          {tab === "town" && subView === null && (
+          {tab === "town" && !isTown && (
+            <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+              <MapPin
+                size={40}
+                weight="duotone"
+                className="mx-auto text-zinc-400 dark:text-zinc-500"
+              />
+              <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
+                이곳에는 마을이 없습니다
+              </div>
+              <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                마을의 시설은 마을 안에서만 이용할 수 있습니다.
+              </div>
+            </section>
+          )}
+          {tab === "town" && isTown && subView === null && (
             <div className="space-y-2">
               <EntryCard
                 icon={
@@ -1142,7 +1169,7 @@ export default function Home() {
               />
             </div>
           )}
-          {tab === "town" && subView === "healing" && (
+          {tab === "town" && isTown && subView === "healing" && (
             <div className="space-y-3">
               <SubViewHeader title="치유소" onBack={() => setSubView(null)} />
               <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
@@ -1187,7 +1214,7 @@ export default function Home() {
               </section>
             </div>
           )}
-          {tab === "town" && subView === "training" && (
+          {tab === "town" && isTown && subView === "training" && (
             <div className="space-y-3">
               <SubViewHeader title="훈련장" onBack={() => setSubView(null)} />
               <TrainingView
@@ -1199,7 +1226,7 @@ export default function Home() {
               />
             </div>
           )}
-          {tab === "town" && subView === "crafting" && (
+          {tab === "town" && isTown && subView === "crafting" && (
             <div className="space-y-3">
               <SubViewHeader title="제작소" onBack={() => setSubView(null)} />
               <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
@@ -1212,7 +1239,7 @@ export default function Home() {
               </section>
             </div>
           )}
-          {tab === "town" && subView === "guild" && (
+          {tab === "town" && isTown && subView === "guild" && (
             <div className="space-y-3">
               <SubViewHeader
                 title="모험가 길드"
