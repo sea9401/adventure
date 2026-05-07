@@ -28,7 +28,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 1,
     def: 0,
     spd: 1,
-    exp: 3,
+    exp: 1,
     gold: 1,
   },
   슬라임: {
@@ -39,7 +39,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 2,
     def: 1,
     spd: 1,
-    exp: 5,
+    exp: 2,
     gold: 2,
   },
   들개: {
@@ -50,7 +50,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 3,
     def: 1,
     spd: 4,
-    exp: 6,
+    exp: 3,
     gold: 2,
   },
   두더쥐: {
@@ -61,7 +61,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 2,
     def: 0,
     spd: 3,
-    exp: 4,
+    exp: 2,
     gold: 2,
   },
   박쥐: {

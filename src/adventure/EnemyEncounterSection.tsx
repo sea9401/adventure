@@ -11,14 +11,14 @@ function EnemyAvatar({ name }: { name: string }) {
     return (
       <div
         aria-hidden
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+        className="flex h-24 w-24 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-2xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
       >
         ?
       </div>
     );
   }
   return (
-    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+    <div className="h-24 w-24 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={image}
@@ -41,10 +41,10 @@ export function EnemyEncounterSection({ region }: { region: Region }) {
         {region.enemies.map((enemy) => (
           <li
             key={enemy}
-            className="inline-flex items-center gap-2.5 rounded-md border border-zinc-200 bg-zinc-50 py-2 pl-2 pr-4 text-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+            className="inline-flex flex-col items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-800 dark:bg-zinc-900/50"
           >
             <EnemyAvatar name={enemy} />
-            <span className="text-zinc-700 dark:text-zinc-300">{enemy}</span>
+            <span className="text-sm text-zinc-700 dark:text-zinc-300">{enemy}</span>
           </li>
         ))}
       </ul>
