@@ -71,6 +71,7 @@ export const MONSTERS: Record<string, Monster> = {
   거미: {
     name: "거미",
     tags: ["beast"],
+    image: "/images/monster/spider.png",
     hp: 29,
     atk: 5,
     def: 1,
@@ -80,6 +81,7 @@ export const MONSTERS: Record<string, Monster> = {
   산적: {
     name: "산적",
     tags: ["humanoid"],
+    image: "/images/monster/bandit.png",
     hp: 40,
     atk: 6,
     def: 2,
