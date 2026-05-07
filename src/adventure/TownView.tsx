@@ -30,7 +30,7 @@ export function TownView({ region }: { region: Region }) {
 
   return (
     <div className="space-y-3">
-      <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           {region.name}
         </div>
@@ -40,7 +40,7 @@ export function TownView({ region }: { region: Region }) {
       </section>
 
       {npcs.length === 0 ? (
-        <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+        <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
           <UserCircle
             size={40}
             weight="duotone"
@@ -63,7 +63,7 @@ export function TownView({ region }: { region: Region }) {
               key={npc.id}
               type="button"
               onClick={() => setOpenNpc(npc)}
-              className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/40 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/40"
+              className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/90 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/90 dark:hover:bg-zinc-900/80"
             >
               <UserCircle
                 size={28}

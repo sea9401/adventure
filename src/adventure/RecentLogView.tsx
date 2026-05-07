@@ -28,7 +28,7 @@ export function RecentLogView({
 }) {
   if (notifications.length === 0) {
     return (
-      <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+      <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
           아직 기록된 알림이 없습니다.
         </div>
@@ -36,7 +36,7 @@ export function RecentLogView({
     );
   }
   return (
-    <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
+    <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/90">
       <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
         {notifications.map((n) => (
           <li key={n.id} className="px-4 py-3">

@@ -70,7 +70,7 @@ export function BattleScene({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <div className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="flex items-center gap-3">
           <EnemyAvatar name={state.enemy.name} />
           <div className="flex-1">
@@ -94,7 +94,7 @@ export function BattleScene({
 
       <div
         ref={logRef}
-        className="max-h-40 overflow-y-auto rounded-lg border border-zinc-200 bg-white/40 p-3 text-sm dark:border-zinc-800 dark:bg-zinc-950/40"
+        className="max-h-40 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-3 text-sm dark:border-zinc-800 dark:bg-zinc-950/90"
       >
         {state.log.map((entry, i) => (
           <div

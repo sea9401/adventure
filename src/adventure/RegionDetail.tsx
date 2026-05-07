@@ -21,14 +21,14 @@ export function RegionDetail({
 }) {
   if (!region || !state) {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-300 bg-white/40 px-4 py-3 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-400">
+      <div className="rounded-lg border border-dashed border-zinc-300 bg-white/90 px-4 py-3 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/90 dark:text-zinc-400">
         지도에서 지역을 선택하세요.
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+    <div className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
           {region.name}

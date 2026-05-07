@@ -58,7 +58,7 @@ export function MapView({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/90">
         <svg
           viewBox={`0 0 ${WORLD_MAP.viewBox.width} ${WORLD_MAP.viewBox.height}`}
           preserveAspectRatio="xMidYMid meet"

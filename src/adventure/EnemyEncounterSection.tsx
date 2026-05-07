@@ -33,7 +33,7 @@ function EnemyAvatar({ name }: { name: string }) {
 export function EnemyEncounterSection({ region }: { region: Region }) {
   if (region.enemies.length === 0) return null;
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+    <div className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
         마주칠 수 있는 적
       </div>

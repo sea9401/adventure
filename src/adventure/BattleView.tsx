@@ -82,7 +82,7 @@ export function BattleView({
     const hasEnemies = region.enemies.length > 0;
     return (
       <div className="space-y-3">
-        <div className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+        <div className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
           <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             현재 위치
           </div>
@@ -130,7 +130,7 @@ export function BattleView({
             </div>
           </>
         ) : (
-          <div className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-400">
+          <div className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/90 dark:text-zinc-400">
             이곳에는 전투할 적이 없습니다.
           </div>
         )}

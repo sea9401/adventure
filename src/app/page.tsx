@@ -456,7 +456,7 @@ function CharacterMini({
     },
   ];
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
+    <section className="rounded-lg border border-zinc-200 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="space-y-3 p-4">
         <div className="flex items-stretch gap-4">
           <CharacterPortrait gender={character.gender} />
@@ -517,7 +517,7 @@ function EntryCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/40 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/40"
+      className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/90 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/90 dark:hover:bg-zinc-900/80"
     >
       <span
         aria-hidden
@@ -571,7 +571,7 @@ function SubViewHeader({
 function SkillsView({ skills }: { skills: Skill[] }) {
   if (skills.length === 0) {
     return (
-      <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+      <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
         <Sparkle
           size={40}
           weight="duotone"
@@ -587,7 +587,7 @@ function SkillsView({ skills }: { skills: Skill[] }) {
     );
   }
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+    <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
       <ul className="space-y-2">
         {skills.map((s) => (
           <li
@@ -634,7 +634,7 @@ function TrainingView({
   const canAllocate = unspentPoints > 0;
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+    <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="space-y-4">
         <button
           type="button"
@@ -1134,7 +1134,7 @@ export default function Home() {
           {tab === "town" && subView === "healing" && (
             <div className="space-y-3">
               <SubViewHeader title="치유소" onBack={() => setSubView(null)} />
-              <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+              <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
                 <div className="flex items-center gap-3">
                   <FirstAid
                     size={32}
@@ -1191,7 +1191,7 @@ export default function Home() {
           {tab === "town" && subView === "crafting" && (
             <div className="space-y-3">
               <SubViewHeader title="제작소" onBack={() => setSubView(null)} />
-              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
                 <div className="text-base font-medium text-zinc-700 dark:text-zinc-300">
                   준비 중
                 </div>
@@ -1207,7 +1207,7 @@ export default function Home() {
                 title="모험가 길드"
                 onBack={() => setSubView(null)}
               />
-              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
                 <Scroll
                   size={40}
                   weight="duotone"
@@ -1287,7 +1287,7 @@ export default function Home() {
             <div className="space-y-3">
               <SubViewHeader title="내 정보" onBack={() => setSubView(null)} />
               <CharacterMini character={character} />
-              <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+              <section className="rounded-lg border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/90">
                 <div className="space-y-4">
                   <AdventurerCard character={character} />
                   <div className="border-t border-zinc-200 dark:border-zinc-800" />
@@ -1305,7 +1305,7 @@ export default function Home() {
           {tab === "character" && subView === "adventure-log" && (
             <div className="space-y-3">
               <SubViewHeader title="모험의 서" onBack={() => setSubView(null)} />
-              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
                 <BookOpen
                   size={40}
                   weight="duotone"
