@@ -86,7 +86,7 @@ export const WORLD_MAP: WorldMap = {
       description: "잔잔한 수면 너머 무언가 보이는 호수.",
       position: { x: 440, y: 110 },
       biome: "lake",
-      enemies: ["호수 정령"],
+      enemies: ["호수 님프"],
       image: "/images/ui/mistlake.png",
     },
     {
