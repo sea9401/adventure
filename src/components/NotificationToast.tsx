@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { AppNotification } from "@/lib/notifications";
+import type { AppNotification, NotificationKind } from "@/lib/notifications";
 
 const TOAST_DURATION_MS = 3000;
 const MAX_VISIBLE_TOASTS = 3;
+
+// 토스트로 띄우지 않을 알림 종류 — 사용자가 직접 일으킨 액션의 결과는 토스트 대신 벨/로그에서만 확인.
+const TOAST_BLOCKED_KINDS = new Set<NotificationKind>(["battle_win"]);
 
 type ToastItem = {
   id: string;
@@ -31,6 +34,7 @@ export function NotificationToast({
     const latest = notifications[0];
     if (latest.id === lastIdRef.current) return;
     lastIdRef.current = latest.id;
+    if (TOAST_BLOCKED_KINDS.has(latest.kind)) return;
     setToasts((prev) =>
       [...prev, { id: latest.id, text: latest.text }].slice(-MAX_VISIBLE_TOASTS),
     );

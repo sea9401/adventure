@@ -988,7 +988,6 @@ export default function Home() {
       hp: baseCharacter.maxHp,
       mp: baseCharacter.maxMp,
     }));
-    addNotification("info", "치유소에서 체력과 마력을 회복했다.");
   };
 
   const handleBattleEnd = (payload: BattleEndPayload) => {
