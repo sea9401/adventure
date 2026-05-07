@@ -294,19 +294,26 @@ function StatsPanel({
   );
 }
 
-function RegionImage({ regionId, alt }: { regionId: string; alt: string }) {
+function RegionBackground({ regionId }: { regionId: string }) {
   const [errored, setErrored] = useState(false);
+  useEffect(() => {
+    setErrored(false);
+  }, [regionId]);
   if (errored) return null;
   return (
-    <section className="overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={`/images/ui/${regionId}.png`}
-        alt={alt}
+        alt=""
         onError={() => setErrored(true)}
-        className="block h-auto w-full"
+        className="h-full w-full object-cover"
       />
-    </section>
+      <div className="absolute inset-0 bg-zinc-50/85 dark:bg-zinc-950/80" />
+    </div>
   );
 }
 
@@ -953,6 +960,7 @@ export default function Home() {
 
   return (
     <>
+      <RegionBackground regionId={currentRegion.id} />
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-6 dark:border-zinc-800">
           <div className="flex min-w-0 items-center gap-3">
@@ -990,10 +998,6 @@ export default function Home() {
           {tab === "adventure" && subView === null && (
             <>
               <CharacterMini character={character} />
-              <RegionImage
-                regionId={currentRegion.id}
-                alt={currentRegion.name}
-              />
               <div className="space-y-2">
                 {currentRegion.tags?.includes("town") && (
                   <EntryCard
