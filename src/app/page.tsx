@@ -313,15 +313,15 @@ function CharacterMini({
   ];
   return (
     <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
-      <div className="space-y-1.5 px-3 py-2">
-        <div className="flex items-stretch gap-3">
+      <div className="space-y-3 p-4">
+        <div className="flex items-stretch gap-4">
           <div
             aria-label="캐릭터 이미지"
-            className="flex aspect-square w-20 shrink-0 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-3xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
+            className="flex aspect-square w-24 shrink-0 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-4xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
           >
             🧑
           </div>
-          <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-baseline gap-2">
               <span className="text-base font-semibold">{character.name}</span>
               <span className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -331,7 +331,7 @@ function CharacterMini({
                 Lv.{character.level}
               </span>
             </div>
-            <div className="max-w-sm space-y-1.5">
+            <div className="max-w-sm space-y-2">
               <StatBar
                 label="HP"
                 value={character.hp}
@@ -347,11 +347,11 @@ function CharacterMini({
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+        <div className="grid grid-cols-3 gap-2">
           {equipped.map(({ icon, label, item }) => (
             <div
               key={label}
-              className="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 dark:border-zinc-800 dark:bg-zinc-900/50"
+              className="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/50"
             >
               <span className="shrink-0 text-base leading-none">{icon}</span>
               <div className="min-w-0 leading-tight">
