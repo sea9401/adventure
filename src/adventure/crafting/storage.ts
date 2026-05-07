@@ -2,6 +2,7 @@ export type CraftingState = {
   known: string[];
   crafted: string[];
   boldQuestComplete: boolean;
+  boldSlimeQuestComplete: boolean;
 };
 
 export const CRAFTING_STORAGE_KEY = "crafting.v1";
@@ -10,6 +11,7 @@ export const emptyCraftingState = (): CraftingState => ({
   known: [],
   crafted: [],
   boldQuestComplete: false,
+  boldSlimeQuestComplete: false,
 });
 
 export function loadCraftingState(): CraftingState {
@@ -22,6 +24,7 @@ export function loadCraftingState(): CraftingState {
       known: Array.isArray(parsed?.known) ? parsed!.known : [],
       crafted: Array.isArray(parsed?.crafted) ? parsed!.crafted : [],
       boldQuestComplete: !!parsed?.boldQuestComplete,
+      boldSlimeQuestComplete: !!parsed?.boldSlimeQuestComplete,
     };
   } catch {
     return emptyCraftingState();
