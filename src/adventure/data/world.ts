@@ -66,7 +66,7 @@ export const WORLD_MAP: WorldMap = {
       description: "축축하고 어두운 광맥 동굴.",
       position: { x: 270, y: 200 },
       biome: "cave",
-      enemies: ["박쥐", "광맥 골렘"],
+      enemies: ["박쥐"],
     },
     {
       id: "forest",
@@ -82,7 +82,7 @@ export const WORLD_MAP: WorldMap = {
       description: "잔잔한 수면 너머 무언가 보이는 호수.",
       position: { x: 440, y: 110 },
       biome: "lake",
-      enemies: ["호수 정령", "수룡"],
+      enemies: ["호수 정령"],
     },
     {
       id: "diola",
@@ -100,7 +100,7 @@ export const WORLD_MAP: WorldMap = {
       description: "잊힌 문명의 흔적. 위험한 기운이 감돈다.",
       position: { x: 680, y: 400 },
       biome: "ruins",
-      enemies: ["고대 망령", "타락한 기사"],
+      enemies: [],
     },
   ],
   edges: [

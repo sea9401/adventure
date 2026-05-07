@@ -104,36 +104,6 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 0,
     gold: 7,
   },
-  수룡: {
-    name: "수룡",
-    tags: ["dragon"],
-    hp: 60,
-    atk: 10,
-    def: 5,
-    spd: 5,
-    exp: 0,
-    gold: 15,
-  },
-  "고대 망령": {
-    name: "고대 망령",
-    tags: ["undead", "spirit"],
-    hp: 50,
-    atk: 11,
-    def: 4,
-    spd: 4,
-    exp: 0,
-    gold: 10,
-  },
-  "타락한 기사": {
-    name: "타락한 기사",
-    tags: ["humanoid", "undead"],
-    hp: 70,
-    atk: 13,
-    def: 8,
-    spd: 3,
-    exp: 0,
-    gold: 20,
-  },
 };
 
 export function getMonstersByTag(tag: MonsterTag): Monster[] {
