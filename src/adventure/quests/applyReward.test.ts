@@ -8,6 +8,7 @@ function makeServices() {
     addEquipment: vi.fn(),
     learnRecipe: vi.fn(),
     addGoldFame: vi.fn(),
+    addExp: vi.fn(),
   } satisfies RewardServices;
 }
 
@@ -62,11 +63,26 @@ describe("applyQuestReward", () => {
     expect(tokens).toEqual(["작은 회복약 조합법"]);
   });
 
+  it("EXP 보상은 addExp 호출 + 'EXP +n' 토큰", () => {
+    const s = makeServices();
+    const tokens = applyQuestReward({ exp: 10 }, s);
+    expect(s.addExp).toHaveBeenCalledWith(10);
+    expect(tokens).toEqual(["EXP +10"]);
+  });
+
+  it("EXP가 0이면 addExp 호출 안 함", () => {
+    const s = makeServices();
+    applyQuestReward({ exp: 0 }, s);
+    expect(s.addExp).not.toHaveBeenCalled();
+  });
+
   it("복합 보상은 정의 순서대로 토큰을 합성", () => {
     const s = makeServices();
     const tokens = applyQuestReward(
       {
         gold: 5,
+        fame: 1,
+        exp: 10,
         potions: [{ id: "potion_heal_s", count: 5 }],
         recipes: ["potion_heal_s"],
       },
@@ -74,6 +90,8 @@ describe("applyQuestReward", () => {
     );
     expect(tokens).toEqual([
       "골드 +5",
+      "명성 +1",
+      "EXP +10",
       "작은 회복약 ×5",
       "작은 회복약 조합법",
     ]);

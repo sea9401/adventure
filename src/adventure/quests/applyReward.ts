@@ -11,6 +11,8 @@ export type RewardServices = {
   learnRecipe: (id: string) => void;
   // gold/fame은 setState 1회로 처리하기 위해 묶어서 전달.
   addGoldFame: (gold: number, fame: number) => void;
+  // EXP는 applyExpGain을 거쳐 레벨업까지 자동 처리되어야 한다.
+  addExp: (amount: number) => void;
 };
 
 function recipeName(id: string): string {
@@ -35,6 +37,12 @@ export function applyQuestReward(
     services.addGoldFame(gold, fame);
     if (gold > 0) summary.push(`골드 +${gold}`);
     if (fame > 0) summary.push(`명성 +${fame}`);
+  }
+
+  const exp = reward.exp ?? 0;
+  if (exp > 0) {
+    services.addExp(exp);
+    summary.push(`EXP +${exp}`);
   }
 
   for (const p of reward.potions ?? []) {

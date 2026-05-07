@@ -1514,6 +1514,11 @@ export default function Home() {
         gold: prev.gold + gold,
         fame: prev.fame + fame,
       })),
+    addExp: (n) =>
+      setCharacterState((prev) => {
+        const next = applyExpGain(prev.level, prev.exp, n);
+        return { ...prev, level: next.level, exp: next.exp };
+      }),
   };
 
   // 퀘스트 보상 지급 + 알림 한 줄로 합성. NPC 다이얼로그/길드 게시판 공용.
@@ -1678,6 +1683,7 @@ export default function Home() {
               <MapView
                 progress={mapProgress}
                 onProgressChange={setMapProgress}
+                log={adventureLog.log}
               />
             </div>
           )}

@@ -11,6 +11,7 @@ export type QuestRewardMaterial = { id: MaterialId; count: number };
 export type QuestReward = {
   gold?: number;
   fame?: number;
+  exp?: number;
   potions?: QuestRewardPotion[];
   materials?: QuestRewardMaterial[];
   items?: QuestRewardItem[];
@@ -74,7 +75,7 @@ export const QUESTS: Quest[] = [
     description: "훈련 교관 스미스의 두 번째 과제. 들개 10마리를 처치한다.",
     requiredLevel: 1,
     target: { monsterName: "들개", count: 10 },
-    reward: {},
+    reward: { exp: 10, gold: 5, fame: 1 },
     repeatable: false,
     giverNpcId: "village_trainer_smith",
   },
