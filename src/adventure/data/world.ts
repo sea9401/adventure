@@ -58,7 +58,7 @@ export const WORLD_MAP: WorldMap = {
       description: "넓고 한가로운 풀밭. 들쥐와 슬라임이 어슬렁거린다.",
       position: { x: 380, y: 360 },
       biome: "plains",
-      enemies: ["슬라임", "들쥐"],
+      enemies: ["슬라임", "들개", "두더쥐"],
     },
     {
       id: "cave",

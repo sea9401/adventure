@@ -11,14 +11,14 @@ function EnemyAvatar({ name }: { name: string }) {
     return (
       <div
         aria-hidden
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border border-zinc-200 bg-zinc-100 text-xs text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
       >
         ?
       </div>
     );
   }
   return (
-    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+    <div className="h-7 w-7 shrink-0 overflow-hidden rounded-sm border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={image}
@@ -52,11 +52,11 @@ export function BattleView({ region }: { region: Region }) {
           <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             마주칠 수 있는 적
           </div>
-          <ul className="mt-2 space-y-1.5">
+          <ul className="mt-2 flex flex-wrap gap-1.5">
             {region.enemies.map((enemy) => (
               <li
                 key={enemy}
-                className="flex items-center gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+                className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 py-1 pl-1 pr-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50"
               >
                 <EnemyAvatar name={enemy} />
                 <span className="text-zinc-700 dark:text-zinc-300">{enemy}</span>
