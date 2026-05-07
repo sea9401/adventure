@@ -51,6 +51,11 @@ import { getQuestById } from "@/adventure/data/quests";
 import { ITEMS, type EquipItem } from "@/adventure/data/items";
 import { type Recipe } from "@/adventure/data/recipes";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
+import {
+  applyExpGain,
+  MAX_LEVEL,
+  requiredExpToNext,
+} from "@/lib/leveling";
 import { CraftingView } from "@/adventure/CraftingView";
 import {
   genNotificationId,
@@ -82,6 +87,7 @@ type EquippedSlots = {
 type CharacterDynamicState = {
   hp: number;
   mp: number;
+  level: number;
   exp: number;
   gold: number;
   fame: number;
@@ -91,6 +97,7 @@ type CharacterDynamicState = {
 const initialCharacterState: CharacterDynamicState = {
   hp: 50,
   mp: 30,
+  level: 1,
   exp: 0,
   gold: 0,
   fame: 0,
@@ -788,6 +795,10 @@ export default function Home() {
         setCharacterState({
           hp: parsed.hp ?? initialCharacterState.hp,
           mp: parsed.mp ?? initialCharacterState.mp,
+          level: Math.min(
+            MAX_LEVEL,
+            Math.max(1, parsed.level ?? initialCharacterState.level),
+          ),
           exp: parsed.exp ?? initialCharacterState.exp,
           gold: parsed.gold ?? initialCharacterState.gold,
           fame: parsed.fame ?? initialCharacterState.fame,
@@ -934,7 +945,9 @@ export default function Home() {
     gender: profile?.gender ?? "male",
     hp: Math.min(characterState.hp, baseCharacter.maxHp),
     mp: Math.min(characterState.mp, baseCharacter.maxMp),
+    level: characterState.level,
     exp: characterState.exp,
+    maxExp: requiredExpToNext(characterState.level) ?? 0,
     gold: characterState.gold,
     fame: characterState.fame,
     equipped: characterState.equipped ?? baseCharacter.equipped,
@@ -955,6 +968,29 @@ export default function Home() {
   useEffect(() => {
     adventureLog.markRegionVisited(currentRegion.id);
   }, [currentRegion.id, adventureLog]);
+
+  // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.
+  // 초기 로드(localStorage 동기화)는 무시하기 위해 ref가 null이면 베이스라인만 기록.
+  const lastSeenLevelRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (lastSeenLevelRef.current === null) {
+      lastSeenLevelRef.current = characterState.level;
+      return;
+    }
+    const prev = lastSeenLevelRef.current;
+    const next = characterState.level;
+    if (next > prev) {
+      const gained = next - prev;
+      setUnspentPoints((p) => p + gained);
+      addNotification(
+        "info",
+        `레벨업! Lv.${next} (스탯 포인트 +${gained})`,
+      );
+    }
+    lastSeenLevelRef.current = next;
+    // addNotification은 setter만 사용하므로 deps에서 제외 — eslint 비활성.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [characterState.level]);
 
   // 전투 엔진용 PlayerCombat — 장비 보너스 합산.
   const equippedItems = [
@@ -1111,11 +1147,15 @@ export default function Home() {
     if (payload.outcome === "win") {
       adventureLog.addKill(payload.enemyName);
       const readyQuestIds = quests.recordKill(payload.enemyName);
-      setCharacterState((prev) => ({
-        ...prev,
-        hp: payload.finalPlayerHp,
-        exp: prev.exp + payload.rewards.exp,
-      }));
+      setCharacterState((prev) => {
+        const next = applyExpGain(prev.level, prev.exp, payload.rewards.exp);
+        return {
+          ...prev,
+          hp: payload.finalPlayerHp,
+          level: next.level,
+          exp: next.exp,
+        };
+      });
       const reward =
         payload.rewards.exp > 0 ? `EXP +${payload.rewards.exp}` : "보상 없음";
       addNotification(
