@@ -4,20 +4,18 @@ import { formatDuration } from "@/lib/format";
 import { STAT_ICONS, STAT_ICON_COLORS } from "./statMeta";
 
 export function TrainingView({
-  trainingEndsAt,
+  remaining,
+  isTraining,
   unspentPoints,
-  now,
   onStartTraining,
   onAllocateStat,
 }: {
-  trainingEndsAt: number | null;
+  remaining: number;
+  isTraining: boolean;
   unspentPoints: number;
-  now: number;
   onStartTraining: () => void;
   onAllocateStat: (key: StatKey) => void;
 }) {
-  const remaining = trainingEndsAt ? Math.max(0, trainingEndsAt - now) : 0;
-  const isTraining = !!trainingEndsAt && remaining > 0;
   const canAllocate = unspentPoints > 0;
 
   return (

@@ -86,7 +86,6 @@ import { RegionBackground } from "@/components/ui/RegionBackground";
 import {
   PROFILE_STORAGE_KEY,
   LEGACY_PROFILE_KEYS,
-  TRAINING_STORAGE_KEY,
   CHARACTER_STATE_KEY,
   BATTLE_SETTINGS_KEY,
 } from "@/lib/storage-keys";
@@ -103,14 +102,13 @@ import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { SkillsView } from "@/adventure/character/SkillsView";
 import { TrainingView } from "@/adventure/character/TrainingView";
+import { useTraining } from "@/adventure/training/useTraining";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
 
 const DEFAULT_NAME = "모험가";
 
 type Profile = { name: string; gender: Gender };
-
-const TRAINING_DURATION_MS = 4 * 60 * 60 * 1000;
 
 type CharacterDynamicState = {
   hp: number;
@@ -188,11 +186,6 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
   const [subView, setSubView] = useState<string | null>(null);
-  const [trainingEndsAt, setTrainingEndsAt] = useState<number | null>(null);
-  const [unspentPoints, setUnspentPoints] = useState(0);
-  const [allocatedStats, setAllocatedStats] =
-    useState<Record<StatKey, number>>(ZERO_ALLOCATED);
-  const [now, setNow] = useState(() => Date.now());
   const [mapProgress, setMapProgress] =
     useState<MapProgress>(initialMapProgress);
   const [characterState, setCharacterState] =
@@ -206,6 +199,7 @@ export default function Home() {
   const crafting = useCrafting();
   const inventory = useInventory();
   const autoPotion = useAutoPotionConfig();
+  const training = useTraining();
 
   useEffect(() => {
     try {
@@ -231,20 +225,6 @@ export default function Home() {
           // eslint-disable-next-line react-hooks/set-state-in-effect
           setProfile({ name: parsed.name, gender: parsed.gender });
         }
-      }
-    } catch {}
-
-    try {
-      const raw = localStorage.getItem(TRAINING_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as {
-          endsAt?: number | null;
-          points?: number;
-          allocated?: Partial<Record<StatKey, number>>;
-        };
-        setTrainingEndsAt(parsed.endsAt ?? null);
-        setUnspentPoints(parsed.points ?? 0);
-        setAllocatedStats({ ...ZERO_ALLOCATED, ...parsed.allocated });
       }
     } catch {}
 
@@ -336,37 +316,6 @@ export default function Home() {
     saveMapProgress(mapProgress);
   }, [hydrated, mapProgress]);
 
-  // 훈련 진행 중일 때만 1초 단위로 now 갱신
-  useEffect(() => {
-    if (!trainingEndsAt) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [trainingEndsAt]);
-
-  // 훈련 종료 시점 도달 시 자동 적립 (페이지 로드 직후 / 탭 사용 중 모두 처리)
-  useEffect(() => {
-    if (trainingEndsAt && now >= trainingEndsAt) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setUnspentPoints((p) => p + 1);
-      setTrainingEndsAt(null);
-    }
-  }, [trainingEndsAt, now]);
-
-  // hydration 이후에만 변경 사항을 localStorage에 저장 (초기 덮어쓰기 방지)
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(
-        TRAINING_STORAGE_KEY,
-        JSON.stringify({
-          endsAt: trainingEndsAt,
-          points: unspentPoints,
-          allocated: allocatedStats,
-        }),
-      );
-    } catch {}
-  }, [hydrated, trainingEndsAt, unspentPoints, allocatedStats]);
-
   const handleProfileSubmit = (next: Profile) => {
     try {
       localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(next));
@@ -374,31 +323,15 @@ export default function Home() {
     setProfile(next);
   };
 
-  const handleStartTraining = () => {
-    if (trainingEndsAt) return;
-    setTrainingEndsAt(Date.now() + TRAINING_DURATION_MS);
-    setNow(Date.now());
-  };
-
-  const handleAllocateStat = (key: StatKey) => {
-    if (unspentPoints <= 0) return;
-    setAllocatedStats((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
-    setUnspentPoints((p) => p - 1);
-  };
-
   const handleTabChange = (next: TabKey) => {
     setTab(next);
     setSubView(null);
   };
 
-  const trainingRemaining = trainingEndsAt
-    ? Math.max(0, trainingEndsAt - now)
-    : 0;
-  const isTraining = !!trainingEndsAt && trainingRemaining > 0;
-  const trainingDescription = isTraining
-    ? `훈련 중 · ${formatDuration(trainingRemaining)}`
-    : unspentPoints > 0
-      ? `단련 포인트 ${unspentPoints}개 보유`
+  const trainingDescription = training.isTraining
+    ? `훈련 중 · ${formatDuration(training.remaining)}`
+    : training.unspentPoints > 0
+      ? `단련 포인트 ${training.unspentPoints}개 보유`
       : "능력치를 단련할 수 있는 곳.";
 
   const equippedSlots = characterState.equipped ?? baseCharacter.equipped;
@@ -430,7 +363,7 @@ export default function Home() {
     stats: STAT_KEYS.reduce<Record<StatKey, number>>(
       (acc, k) => {
         acc[k] =
-          baseCharacter.stats[k] + allocatedStats[k] + equipStatBonuses[k];
+          baseCharacter.stats[k] + training.allocatedStats[k] + equipStatBonuses[k];
         return acc;
       },
       {} as Record<StatKey, number>,
@@ -458,7 +391,7 @@ export default function Home() {
     const next = characterState.level;
     if (next > prev) {
       const gained = next - prev;
-      setUnspentPoints((p) => p + gained);
+      training.addPoints(gained);
       addNotification(
         "info",
         `레벨업! Lv.${next} (스탯 포인트 +${gained})`,
@@ -1031,11 +964,11 @@ export default function Home() {
             <div className="space-y-3">
               <SubViewHeader title="훈련장" onBack={() => setSubView(null)} />
               <TrainingView
-                trainingEndsAt={trainingEndsAt}
-                unspentPoints={unspentPoints}
-                now={now}
-                onStartTraining={handleStartTraining}
-                onAllocateStat={handleAllocateStat}
+                remaining={training.remaining}
+                isTraining={training.isTraining}
+                unspentPoints={training.unspentPoints}
+                onStartTraining={training.startTraining}
+                onAllocateStat={training.allocateStat}
               />
             </div>
           )}
