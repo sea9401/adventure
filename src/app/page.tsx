@@ -9,7 +9,7 @@ const LEGACY_NAME_KEYS = ["characterName"];
 const DEFAULT_NAME = "모험가";
 
 const TRAINING_STORAGE_KEY = "training.v1";
-const TRAINING_DURATION_MS = 3 * 60 * 60 * 1000;
+const TRAINING_DURATION_MS = 4 * 60 * 60 * 1000;
 
 function formatDuration(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -317,7 +317,7 @@ function CharacterMini({
         <div className="flex items-stretch gap-4">
           <div
             aria-label="캐릭터 이미지"
-            className="flex aspect-square w-24 shrink-0 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-4xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
+            className="flex aspect-square w-32 shrink-0 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-5xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
           >
             🧑
           </div>
@@ -465,7 +465,7 @@ function TrainingView({
         >
           {isTraining
             ? `훈련 중 · ${formatDuration(remaining)}`
-            : "3시간 훈련 시작"}
+            : "4시간 훈련 시작"}
         </button>
 
         <div>
