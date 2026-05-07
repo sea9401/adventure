@@ -948,6 +948,20 @@ export default function Home() {
       ? `단련 포인트 ${unspentPoints}개 보유`
       : "능력치를 단련할 수 있는 곳.";
 
+  const equippedSlots = characterState.equipped ?? baseCharacter.equipped;
+  // 장비 bonus의 스탯 부분(str/dex/vit/spd/luk) 합산. atk/def는 playerCombat 단계에서 따로 처리.
+  const equipStatBonuses: Record<StatKey, number> = { ...ZERO_ALLOCATED };
+  for (const item of [
+    equippedSlots.weapon,
+    equippedSlots.armor,
+    equippedSlots.accessory,
+  ]) {
+    if (!item?.bonus) continue;
+    for (const k of STAT_KEYS) {
+      equipStatBonuses[k] += item.bonus[k] ?? 0;
+    }
+  }
+
   const character = {
     ...baseCharacter,
     name: profile?.name ?? DEFAULT_NAME,
@@ -959,10 +973,11 @@ export default function Home() {
     maxExp: requiredExpToNext(characterState.level) ?? 0,
     gold: characterState.gold,
     fame: characterState.fame,
-    equipped: characterState.equipped ?? baseCharacter.equipped,
+    equipped: equippedSlots,
     stats: STAT_KEYS.reduce<Record<StatKey, number>>(
       (acc, k) => {
-        acc[k] = baseCharacter.stats[k] + allocatedStats[k];
+        acc[k] =
+          baseCharacter.stats[k] + allocatedStats[k] + equipStatBonuses[k];
         return acc;
       },
       {} as Record<StatKey, number>,
