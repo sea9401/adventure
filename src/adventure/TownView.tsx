@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { UserCircle } from "@phosphor-icons/react";
 import type { Region } from "./data/world";
 import { getNpcsByRegion, type Npc, type NpcRole } from "./data/npcs";

@@ -4,12 +4,23 @@ import { X } from "@phosphor-icons/react";
 import type { Npc } from "./data/npcs";
 import { NpcAvatar } from "./NpcAvatar";
 
+export type NpcDialogueAction = {
+  label: string;
+  onClick: () => void;
+};
+
 export function NpcDialogue({
   npc,
   onClose,
+  text,
+  primaryAction,
+  closeLabel = "떠나기",
 }: {
   npc: Npc;
   onClose: () => void;
+  text?: string;
+  primaryAction?: NpcDialogueAction;
+  closeLabel?: string;
 }) {
   return (
     <div
@@ -49,16 +60,27 @@ export function NpcDialogue({
         </div>
 
         <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
-          {npc.greeting}
+          {text ?? npc.greeting}
         </p>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-5 w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        >
-          떠나기
-        </button>
+        <div className="mt-5 flex flex-col gap-2">
+          {primaryAction && (
+            <button
+              type="button"
+              onClick={primaryAction.onClick}
+              className="w-full rounded-md bg-amber-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-600"
+            >
+              {primaryAction.label}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          >
+            {closeLabel}
+          </button>
+        </div>
       </div>
     </div>
   );
