@@ -944,10 +944,8 @@ export default function Home() {
   const isTown = currentRegion.tags?.includes("town") ?? false;
 
   useEffect(() => {
-    if (tab === "adventure" && subView === "town" && isTown) {
-      adventureLog.markTownVisited(currentRegion.id);
-    }
-  }, [tab, subView, isTown, currentRegion.id, adventureLog]);
+    adventureLog.markRegionVisited(currentRegion.id);
+  }, [currentRegion.id, adventureLog]);
 
   // 전투 엔진용 PlayerCombat — 장비 보너스 합산.
   const equippedItems = [
@@ -1232,8 +1230,8 @@ export default function Home() {
                     className="text-amber-600"
                   />
                 }
-                title="제작소"
-                description="장비와 도구를 직접 만들 수 있는 곳."
+                title="대장간"
+                description="장비를 두드려 벼리는 곳."
                 onClick={() => setSubView("crafting")}
               />
               <EntryCard

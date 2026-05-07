@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import {
+  Compass,
   Diamond,
   MapPin,
   Sword,
@@ -14,13 +15,14 @@ import { WORLD_MAP } from "./data/world";
 import type { AdventureLog } from "./log/storage";
 import { getRevealStage, type MonsterRevealStage } from "./log/thresholds";
 
-type LogTabKey = "monsters" | "items" | "npcs" | "towns";
+type LogTabKey = "monsters" | "items" | "npcs" | "towns" | "places";
 
 const LOG_TABS: { key: LogTabKey; label: string }[] = [
   { key: "monsters", label: "몬스터" },
   { key: "items", label: "아이템" },
   { key: "npcs", label: "NPC" },
   { key: "towns", label: "마을" },
+  { key: "places", label: "장소" },
 ];
 
 const ROLE_LABEL: Record<NpcRole, string> = {
@@ -74,6 +76,7 @@ export function AdventureLogView({ log }: { log: AdventureLog }) {
       )}
       {tab === "npcs" && <NpcsTab log={log} />}
       {tab === "towns" && <TownsTab log={log} />}
+      {tab === "places" && <PlacesTab log={log} />}
     </div>
   );
 }
@@ -253,6 +256,56 @@ function TownsTab({ log }: { log: AdventureLog }) {
             {totalNpcs > 0 && (
               <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                 만난 사람 {talked} / {totalNpcs}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PlacesTab({ log }: { log: AdventureLog }) {
+  const places = WORLD_MAP.regions.filter(
+    (r) => !r.tags?.includes("town") && log.towns[r.id]?.visited,
+  );
+  if (places.length === 0) {
+    return (
+      <EmptyTab
+        icon={<Compass size={40} weight="duotone" />}
+        title="아직 기록된 장소가 없습니다"
+        message="새로운 곳을 방문하면 안내문이 추가됩니다."
+      />
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {places.map((r) => {
+        const totalEnemies = r.enemies.length;
+        const encountered = r.enemies.filter(
+          (e) => log.monsters[e]?.encountered,
+        ).length;
+        return (
+          <div
+            key={r.id}
+            className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                {r.name}
+              </span>
+              {r.recommendedLevel !== undefined && (
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  적정 Lv.{r.recommendedLevel}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+              {r.description}
+            </p>
+            {totalEnemies > 0 && (
+              <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                만난 몬스터 {encountered} / {totalEnemies}
               </div>
             )}
           </div>

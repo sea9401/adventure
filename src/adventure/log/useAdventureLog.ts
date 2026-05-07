@@ -63,7 +63,7 @@ export function useAdventureLog() {
     });
   }, []);
 
-  const markTownVisited = useCallback((regionId: string) => {
+  const markRegionVisited = useCallback((regionId: string) => {
     setLog((prev) => {
       const existing = prev.towns[regionId];
       if (existing?.visited) return prev;
@@ -126,7 +126,7 @@ export function useAdventureLog() {
     hydrated,
     markEncountered,
     addKill,
-    markTownVisited,
+    markRegionVisited,
     addTownNpcTalked,
     incrementNpcTalk,
   };
