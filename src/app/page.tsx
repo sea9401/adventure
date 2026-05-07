@@ -9,6 +9,7 @@ import {
   Coins,
   Compass,
   Diamond,
+  FirstAid,
   Hammer,
   MapPin,
   Scroll,
@@ -290,6 +291,22 @@ function StatsPanel({
         ))}
       </div>
     </div>
+  );
+}
+
+function RegionImage({ regionId, alt }: { regionId: string; alt: string }) {
+  const [errored, setErrored] = useState(false);
+  if (errored) return null;
+  return (
+    <section className="overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/images/ui/${regionId}.png`}
+        alt={alt}
+        onError={() => setErrored(true)}
+        className="block h-auto w-full"
+      />
+    </section>
   );
 }
 
@@ -893,6 +910,15 @@ export default function Home() {
     setLastReadAt(Date.now());
   };
 
+  const handleHeal = () => {
+    setCharacterState((prev) => ({
+      ...prev,
+      hp: baseCharacter.maxHp,
+      mp: baseCharacter.maxMp,
+    }));
+    addNotification("info", "치유소에서 체력과 마력을 회복했다.");
+  };
+
   const handleBattleEnd = (payload: BattleEndPayload) => {
     if (payload.outcome === "win") {
       setCharacterState((prev) => ({
@@ -964,6 +990,10 @@ export default function Home() {
           {tab === "adventure" && subView === null && (
             <>
               <CharacterMini character={character} />
+              <RegionImage
+                regionId={currentRegion.id}
+                alt={currentRegion.name}
+              />
               <div className="space-y-2">
                 {currentRegion.tags?.includes("town") && (
                   <EntryCard
@@ -1042,6 +1072,23 @@ export default function Home() {
 
           {tab === "town" && subView === null && (
             <div className="space-y-2">
+              <EntryCard
+                icon={
+                  <FirstAid
+                    size={28}
+                    weight="duotone"
+                    className="text-rose-500"
+                  />
+                }
+                title="치유소"
+                description={
+                  character.hp >= character.maxHp &&
+                  character.mp >= character.maxMp
+                    ? "체력과 마력이 가득 차 있다."
+                    : "지친 몸을 회복할 수 있는 곳."
+                }
+                onClick={() => setSubView("healing")}
+              />
               <EntryCard
                 icon={
                   <Barbell
