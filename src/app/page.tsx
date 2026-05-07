@@ -962,11 +962,19 @@ export default function Home() {
     (sum, item) => sum + (item?.bonus?.def ?? 0),
     0,
   );
+  // 스탯 → 전투 수치 변환:
+  //   힘   STR : +2 atk / pt
+  //   민첩 DEX : +1% 회피 / pt
+  //   활력 VIT : +2 def / pt
+  //   속도 SPD : 3pt 당 공격 횟수 +1 (베이스 1회)
+  //   행운 LUK : +1% 드랍률 / pt (드랍 시스템 도입 시 사용)
   const playerCombat = {
     hp: character.hp,
     maxHp: character.maxHp,
-    atk: character.stats.str + equipAtk,
-    def: equipDef,
+    atk: character.stats.str * 2 + equipAtk,
+    def: character.stats.vit * 2 + equipDef,
+    evasionPct: character.stats.dex,
+    attackCount: 1 + Math.floor(character.stats.spd / 3),
   };
 
   const addNotification = (kind: NotificationKind, text: string) => {

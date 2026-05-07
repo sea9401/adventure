@@ -17,6 +17,7 @@ export type BattleState = {
   log: BattleLogEntry[];
   phase: BattlePhase;
   outcome: BattleOutcome | null;
+  playerAttacksLeft: number;
 };
 
 export type PlayerCombat = {
@@ -24,6 +25,8 @@ export type PlayerCombat = {
   maxHp: number;
   atk: number;
   def: number;
+  evasionPct: number; // 0~100, 적 공격 회피 확률
+  attackCount: number; // 한 턴에 가하는 공격 횟수 (>=1)
 };
 
 const LOG_LIMIT = 8;
@@ -64,10 +67,12 @@ export function initialBattleState(
     ],
     phase: "player",
     outcome: null,
+    playerAttacksLeft: Math.max(1, player.attackCount),
   };
 }
 
 // 한 턴 진행 — 현재 phase 측이 공격하고 결과를 다음 BattleState로 반환.
+// player phase는 attackCount 만큼 연속 공격(턴마다 1회씩 분리해서 로그에 기록).
 // phase === "ended" 이면 그대로 반환.
 export function advanceTurn(
   state: BattleState,
@@ -95,10 +100,31 @@ export function advanceTurn(
         outcome: "win",
       };
     }
-    return { ...state, enemyHp, log, phase: "enemy" };
+    const attacksLeft = state.playerAttacksLeft - 1;
+    if (attacksLeft > 0) {
+      return { ...state, enemyHp, log, playerAttacksLeft: attacksLeft };
+    }
+    return {
+      ...state,
+      enemyHp,
+      log,
+      phase: "enemy",
+      playerAttacksLeft: Math.max(1, player.attackCount),
+    };
   }
 
-  // enemy phase
+  // enemy phase — 회피 판정 후 데미지 처리
+  if (Math.random() * 100 < player.evasionPct) {
+    return {
+      ...state,
+      log: appendLog(state.log, {
+        kind: "info",
+        text: `${playerName}이(가) ${state.enemy.name}의 공격을 회피했다!`,
+      }),
+      phase: "player",
+    };
+  }
+
   const dmg = damageBetween(state.enemy.atk, player.def);
   const playerHp = Math.max(0, state.playerHp - dmg);
   const log = appendLog(state.log, {

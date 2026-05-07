@@ -7,13 +7,13 @@ import {
   MapPin,
   Sword,
   User,
-  UserCircle,
 } from "@phosphor-icons/react";
 import { MONSTERS } from "./data/monsters";
 import { NPCS, type NpcRole } from "./data/npcs";
 import { WORLD_MAP } from "./data/world";
 import type { AdventureLog } from "./log/storage";
 import { getRevealStage, type MonsterRevealStage } from "./log/thresholds";
+import { NpcAvatar } from "./NpcAvatar";
 
 type LogTabKey = "monsters" | "items" | "npcs" | "towns" | "places";
 
@@ -335,12 +335,8 @@ function NpcsTab({ log }: { log: AdventureLog }) {
             key={n.id}
             className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
           >
-            <div className="flex items-center gap-2">
-              <UserCircle
-                size={28}
-                weight="duotone"
-                className="shrink-0 text-zinc-500"
-              />
+            <div className="flex items-start gap-3">
+              <NpcAvatar npc={n} size={40} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -353,11 +349,11 @@ function NpcsTab({ log }: { log: AdventureLog }) {
                     {entry.talkCount}회
                   </span>
                 </div>
+                <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  {n.description}
+                </p>
               </div>
             </div>
-            <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400">
-              {n.description}
-            </p>
           </div>
         );
       })}
