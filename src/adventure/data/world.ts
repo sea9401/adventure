@@ -25,6 +25,7 @@ export type Region = {
   biome: Biome;
   enemies: string[];
   tags?: RegionTag[];
+  recommendedLevel?: number;
 };
 
 export type RegionEdge = {
@@ -47,8 +48,9 @@ export const WORLD_MAP: WorldMap = {
       description: "평화로운 작은 마을. 모든 모험의 시작점.",
       position: { x: 160, y: 380 },
       biome: "village",
-      enemies: [],
+      enemies: ["주정뱅이"],
       tags: ["town"],
+      recommendedLevel: 1,
     },
     {
       id: "plains",
@@ -90,6 +92,7 @@ export const WORLD_MAP: WorldMap = {
       biome: "village",
       enemies: [],
       tags: ["town"],
+      recommendedLevel: 5,
     },
     {
       id: "ruins",
