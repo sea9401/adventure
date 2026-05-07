@@ -1,28 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Backpack,
   Barbell,
   BookOpen,
   Coins,
   Compass,
-  Diamond,
   FirstAid,
   Hammer,
-  HandFist,
-  HeartStraight,
-  Lightning,
   MapPin,
   Scroll,
-  Shield,
   Sparkle,
-  Star,
   Storefront,
   Sword,
   User,
-  Wind,
-  type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
@@ -88,7 +80,6 @@ import {
   type AppNotification,
   type NotificationKind,
 } from "@/lib/notifications";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { StatBar } from "@/components/ui/StatBar";
@@ -102,24 +93,25 @@ import {
   CHARACTER_STATE_KEY,
   BATTLE_SETTINGS_KEY,
 } from "@/lib/storage-keys";
-import {
-  STAT_KEYS,
-  STAT_LABELS,
-  type StatKey,
-} from "@/adventure/data/stats";
+import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { formatDuration } from "@/lib/format";
+import type {
+  Character,
+  EquippedSlots,
+  Skill,
+} from "@/adventure/character/types";
+import { ZERO_ALLOCATED } from "@/adventure/character/statMeta";
+import { AdventurerCard } from "@/adventure/character/AdventurerCard";
+import { StatsPanel } from "@/adventure/character/StatsPanel";
+import { CharacterMini } from "@/adventure/character/CharacterMini";
+import { SkillsView } from "@/adventure/character/SkillsView";
+import { TrainingView } from "@/adventure/character/TrainingView";
 
 const DEFAULT_NAME = "모험가";
 
 type Profile = { name: string; gender: Gender };
 
 const TRAINING_DURATION_MS = 4 * 60 * 60 * 1000;
-
-type EquippedSlots = {
-  weapon: EquipItem | null;
-  armor: EquipItem | null;
-  accessory: EquipItem | null;
-};
 
 type CharacterDynamicState = {
   hp: number;
@@ -142,35 +134,6 @@ const initialCharacterState: CharacterDynamicState = {
 
 // EquipBonus / EquipItem 타입은 src/adventure/data/items.ts로 이동됨.
 export type { EquipBonus } from "@/adventure/data/items";
-
-type Skill = {
-  name: string;
-  description?: string;
-};
-
-const STAT_ICONS: Record<StatKey, PhosphorIcon> = {
-  str: HandFist,
-  dex: Lightning,
-  vit: HeartStraight,
-  spd: Wind,
-  luk: Star,
-};
-
-const STAT_ICON_COLORS: Record<StatKey, string> = {
-  str: "text-rose-500",
-  dex: "text-amber-400",
-  vit: "text-emerald-500",
-  spd: "text-sky-500",
-  luk: "text-yellow-500",
-};
-
-const ZERO_ALLOCATED: Record<StatKey, number> = {
-  str: 0,
-  dex: 0,
-  vit: 0,
-  spd: 0,
-  luk: 0,
-};
 
 const baseCharacter = {
   className: "무직",
@@ -220,372 +183,6 @@ function MainTabs({
     />
   );
 }
-
-function AdventurerCard({
-  character,
-}: {
-  character: typeof baseCharacter & { name: string };
-}) {
-  const items: { label: string; value: ReactNode }[] = [
-    { label: "소속", value: character.affiliation },
-    { label: "전투 전적", value: `${character.battleCount.toLocaleString()}회` },
-    { label: "명성", value: character.fame.toLocaleString() },
-    {
-      label: "보유 골드",
-      value: (
-        <span className="inline-flex items-center gap-1">
-          <Coins size={14} weight="fill" className="text-yellow-500" />
-          {character.gold.toLocaleString()}
-        </span>
-      ),
-    },
-  ];
-  return (
-    <div>
-      <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-        모험가 카드
-      </div>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        {items.map(({ label, value }) => (
-          <div
-            key={label}
-            className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50"
-          >
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">
-              {label}
-            </div>
-            <div className="mt-0.5 text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-              {value}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function StatsPanel({
-  stats,
-}: {
-  stats: Record<StatKey, number>;
-}) {
-  return (
-    <div>
-      <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-        능력치
-      </div>
-      <div className="mt-2 grid grid-cols-5 gap-2">
-        {STAT_KEYS.map((k) => (
-          <div
-            key={k}
-            className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-center dark:border-zinc-800 dark:bg-zinc-900/50"
-          >
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">
-              {STAT_LABELS[k]}
-            </div>
-            <div className="mt-0.5 text-base font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-              {stats[k]}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CharacterPortrait({ gender }: { gender: Gender }) {
-  const [errored, setErrored] = useState(false);
-  return (
-    <div
-      aria-label="캐릭터 이미지"
-      className="flex aspect-square w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-300 bg-zinc-50 text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
-    >
-      {errored ? (
-        <User size={56} weight="duotone" />
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/images/character/${gender}.png`}
-          alt=""
-          onError={() => setErrored(true)}
-          className="h-full w-full object-contain"
-        />
-      )}
-    </div>
-  );
-}
-
-function MiniEquipCard({
-  icon,
-  label,
-  item,
-}: {
-  icon: ReactNode;
-  label: string;
-  item: EquipItem | null;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", handler);
-    return () => document.removeEventListener("pointerdown", handler);
-  }, [open]);
-
-  const showOnHover = (e: React.PointerEvent) => {
-    if (e.pointerType === "mouse") setOpen(true);
-  };
-  const hideOnLeave = (e: React.PointerEvent) => {
-    if (e.pointerType === "mouse") setOpen(false);
-  };
-  const toggleOnTap = () => {
-    if (item) setOpen((v) => !v);
-  };
-
-  return (
-    <div
-      ref={ref}
-      className={`relative flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/50 ${
-        item ? "cursor-pointer" : ""
-      }`}
-      onPointerEnter={item ? showOnHover : undefined}
-      onPointerLeave={item ? hideOnLeave : undefined}
-      onClick={toggleOnTap}
-      aria-expanded={item ? open : undefined}
-    >
-      <span className="flex shrink-0 items-center text-zinc-700 dark:text-zinc-300">
-        {icon}
-      </span>
-      <div className="min-w-0 leading-tight">
-        <div className="truncate text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          {label}
-        </div>
-        <div className="truncate text-xs">
-          {item ? (
-            <span className="text-zinc-800 dark:text-zinc-200">{item.name}</span>
-          ) : (
-            <span className="italic text-zinc-400 dark:text-zinc-600">없음</span>
-          )}
-        </div>
-      </div>
-
-      {item && open && (
-        <div
-          role="tooltip"
-          className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-md border border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
-        >
-          <div className="font-medium text-zinc-900 dark:text-zinc-100">
-            {item.name}
-          </div>
-          <div className="mt-1.5 space-y-0.5">
-            {item.stats.map((s) => (
-              <div
-                key={s.label}
-                className="flex items-baseline justify-between gap-2"
-              >
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  {s.label}
-                </span>
-                <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {s.value}
-                </span>
-              </div>
-            ))}
-          </div>
-          {item.description && (
-            <div className="mt-2 border-t border-zinc-200 pt-2 text-xs italic text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-              {item.description}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CharacterMini({
-  character,
-}: {
-  character: typeof baseCharacter & { name: string; gender: Gender };
-}) {
-  const equipped = [
-    {
-      icon: <Sword size={18} weight="duotone" className="text-rose-500" />,
-      label: "무기",
-      item: character.equipped.weapon,
-    },
-    {
-      icon: <Shield size={18} weight="duotone" className="text-sky-500" />,
-      label: "방어구",
-      item: character.equipped.armor,
-    },
-    {
-      icon: <Diamond size={18} weight="duotone" className="text-violet-500" />,
-      label: "장신구",
-      item: character.equipped.accessory,
-    },
-  ];
-  return (
-    <Card as="section" padding="none">
-      <div className="space-y-3 p-4">
-        <div className="flex items-stretch gap-4">
-          <CharacterPortrait gender={character.gender} />
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-wrap items-baseline gap-2">
-              <span className="text-base font-semibold">{character.name}</span>
-              <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                {character.className}
-              </span>
-              <span className="text-sm text-zinc-400 dark:text-zinc-500">
-                Lv.{character.level}
-              </span>
-            </div>
-            <div className="max-w-sm space-y-2">
-              <StatBar
-                label="HP"
-                value={character.hp}
-                max={character.maxHp}
-                color="bg-red-500"
-              />
-              <StatBar
-                label="MP"
-                value={character.mp}
-                max={character.maxMp}
-                color="bg-sky-500"
-              />
-              <StatBar
-                label="EXP"
-                value={character.exp}
-                max={character.maxExp}
-                color="bg-amber-400"
-              />
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {equipped.map(({ icon, label, item }) => (
-            <MiniEquipCard key={label} icon={icon} label={label} item={item} />
-          ))}
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function SkillsView({ skills }: { skills: Skill[] }) {
-  if (skills.length === 0) {
-    return (
-      <EmptyState
-        icon={<Sparkle size={40} weight="duotone" />}
-        title="아직 익힌 스킬이 없습니다"
-        message="모험을 통해 새로운 스킬을 배워보세요."
-      />
-    );
-  }
-  return (
-    <Card as="section" padding="md">
-      <ul className="space-y-2">
-        {skills.map((s) => (
-          <li
-            key={s.name}
-            className="flex items-start gap-2.5 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50"
-          >
-            <Sparkle
-              size={18}
-              weight="duotone"
-              className="mt-0.5 shrink-0 text-amber-500"
-            />
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                {s.name}
-              </div>
-              {s.description && (
-                <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                  {s.description}
-                </div>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  );
-}
-
-function TrainingView({
-  trainingEndsAt,
-  unspentPoints,
-  now,
-  onStartTraining,
-  onAllocateStat,
-}: {
-  trainingEndsAt: number | null;
-  unspentPoints: number;
-  now: number;
-  onStartTraining: () => void;
-  onAllocateStat: (key: StatKey) => void;
-}) {
-  const remaining = trainingEndsAt ? Math.max(0, trainingEndsAt - now) : 0;
-  const isTraining = !!trainingEndsAt && remaining > 0;
-  const canAllocate = unspentPoints > 0;
-
-  return (
-    <Card as="section" padding="lg">
-      <div className="space-y-6">
-        <button
-          type="button"
-          onClick={onStartTraining}
-          disabled={isTraining}
-          className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-4 py-3 text-base font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-        >
-          {isTraining
-            ? `훈련 중 · ${formatDuration(remaining)}`
-            : "4시간 훈련 시작"}
-        </button>
-
-        <div>
-          <div className="mb-3 flex items-center justify-between text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            <span>스탯 단련</span>
-            <span className="tabular-nums">단련 포인트 {unspentPoints}</span>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {STAT_KEYS.map((k) => {
-              const Icon = STAT_ICONS[k];
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => onAllocateStat(k)}
-                  disabled={!canAllocate}
-                  className="flex items-center gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-base transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900"
-                >
-                  <Icon
-                    size={22}
-                    weight="duotone"
-                    className={`shrink-0 ${STAT_ICON_COLORS[k]}`}
-                  />
-                  <span className="flex-1 text-left font-medium text-zinc-700 dark:text-zinc-200">
-                    {STAT_LABELS[k]} 단련
-                  </span>
-                  <span className="shrink-0 text-sm font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
-                    +1
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -819,7 +416,7 @@ export default function Home() {
     }
   }
 
-  const character = {
+  const character: Character = {
     ...baseCharacter,
     name: profile?.name ?? DEFAULT_NAME,
     gender: profile?.gender ?? "male",
