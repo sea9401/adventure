@@ -43,25 +43,27 @@ export function BattleView({
   // 종료 후 onConfirm — 외부 상태 반영 + 자동/수동 다음 행동 분기.
   // ref로 보관해서 useEffect에서 latest 값 사용 (closure stale 방지).
   const handleConfirmRef = useRef(() => {});
-  handleConfirmRef.current = () => {
-    if (!state || !state.outcome) return;
-    const isWin = state.outcome === "win";
-    const finalHp = isWin ? state.playerHp : 0;
-    const rewards = isWin
-      ? { exp: state.enemy.exp, gold: state.enemy.gold }
-      : { exp: 0, gold: 0 };
+  useEffect(() => {
+    handleConfirmRef.current = () => {
+      if (!state || !state.outcome) return;
+      const isWin = state.outcome === "win";
+      const finalHp = isWin ? state.playerHp : 0;
+      const rewards = isWin
+        ? { exp: state.enemy.exp, gold: state.enemy.gold }
+        : { exp: 0, gold: 0 };
 
-    onBattleEnd({ outcome: state.outcome, finalPlayerHp: finalHp, rewards });
+      onBattleEnd({ outcome: state.outcome, finalPlayerHp: finalHp, rewards });
 
-    if (isWin && autoBattle) {
-      const nextEnemy = pickEnemy(region);
-      if (nextEnemy) {
-        start(nextEnemy);
-        return;
+      if (isWin && autoBattle) {
+        const nextEnemy = pickEnemy(region);
+        if (nextEnemy) {
+          start(nextEnemy);
+          return;
+        }
       }
-    }
-    stop();
-  };
+      stop();
+    };
+  });
 
   // 자동 확인 타이머 — autoBattle ON & ended일 때만 1.2s 후 자동 진행.
   useEffect(() => {

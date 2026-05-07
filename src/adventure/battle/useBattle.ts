@@ -22,8 +22,11 @@ export function useBattle({
   const [state, setState] = useState<BattleState | null>(null);
   const playerRef = useRef(player);
   const playerNameRef = useRef(playerName);
-  playerRef.current = player;
-  playerNameRef.current = playerName;
+
+  useEffect(() => {
+    playerRef.current = player;
+    playerNameRef.current = playerName;
+  });
 
   // 자동 턴 루프 — phase가 player/enemy일 때만 다음 턴 예약.
   useEffect(() => {
