@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NameSetupModal } from "@/components/NameSetupModal";
 
 const NAME_STORAGE_KEY = "characterName.v2";
 const LEGACY_NAME_KEYS = ["characterName"];
 const DEFAULT_NAME = "모험가";
+
+type EquipItem = {
+  name: string;
+  stats: { label: string; value: string }[];
+  description?: string;
+};
 
 const baseCharacter = {
   className: "무직",
@@ -17,9 +23,21 @@ const baseCharacter = {
   maxMp: 30,
   gold: 0,
   equipped: {
-    weapon: "나뭇가지" as string | null,
-    armor: "천 옷" as string | null,
-    accessory: "엄마가 준 부적" as string | null,
+    weapon: {
+      name: "나뭇가지",
+      stats: [{ label: "공격력", value: "+1" }],
+      description: "어디서나 주울 수 있는 평범한 나뭇가지.",
+    } as EquipItem | null,
+    armor: {
+      name: "천 옷",
+      stats: [{ label: "방어력", value: "+1" }],
+      description: "평범한 천으로 만든 옷.",
+    } as EquipItem | null,
+    accessory: {
+      name: "엄마가 준 부적",
+      stats: [{ label: "행운", value: "+3" }],
+      description: "어머니의 사랑이 깃든 작은 부적.",
+    } as EquipItem | null,
   },
 };
 
@@ -51,19 +69,83 @@ function StatBar({
   );
 }
 
-function EquipCard({ title, item }: { title: string; item: string | null }) {
+function EquipCard({ title, item }: { title: string; item: EquipItem | null }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [open]);
+
+  const showOnHover = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setOpen(true);
+  };
+  const hideOnLeave = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setOpen(false);
+  };
+  const toggleOnTap = () => {
+    if (item) setOpen((v) => !v);
+  };
+
   return (
-    <div className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/50">
+    <div
+      ref={ref}
+      className={`relative rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/50 ${
+        item ? "cursor-pointer" : ""
+      }`}
+      onPointerEnter={item ? showOnHover : undefined}
+      onPointerLeave={item ? hideOnLeave : undefined}
+      onClick={toggleOnTap}
+      aria-expanded={item ? open : undefined}
+    >
       <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
         {title}
       </div>
       <div className="mt-1 text-base">
         {item ? (
-          <span className="text-zinc-900 dark:text-zinc-100">{item}</span>
+          <span className="text-zinc-900 dark:text-zinc-100">{item.name}</span>
         ) : (
           <span className="italic text-zinc-400 dark:text-zinc-600">없음</span>
         )}
       </div>
+
+      {item && open && (
+        <div
+          role="tooltip"
+          className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-md border border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+        >
+          <div className="font-medium text-zinc-900 dark:text-zinc-100">
+            {item.name}
+          </div>
+          <div className="mt-1.5 space-y-0.5">
+            {item.stats.map((s) => (
+              <div
+                key={s.label}
+                className="flex items-baseline justify-between gap-2"
+              >
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  {s.label}
+                </span>
+                <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {s.value}
+                </span>
+              </div>
+            ))}
+          </div>
+          {item.description && (
+            <div className="mt-2 border-t border-zinc-200 pt-2 text-xs italic text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              {item.description}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
