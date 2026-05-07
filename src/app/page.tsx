@@ -42,6 +42,8 @@ import { START_REGION_ID } from "@/adventure/data/world";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationToast } from "@/components/NotificationToast";
 import { RecentLogView } from "@/adventure/RecentLogView";
+import { GuildView } from "@/adventure/GuildView";
+import { useQuests } from "@/adventure/quests/useQuests";
 import {
   genNotificationId,
   loadNotifications,
@@ -68,6 +70,7 @@ type CharacterDynamicState = {
   mp: number;
   exp: number;
   gold: number;
+  fame: number;
 };
 
 const initialCharacterState: CharacterDynamicState = {
@@ -75,6 +78,7 @@ const initialCharacterState: CharacterDynamicState = {
   mp: 30,
   exp: 0,
   gold: 0,
+  fame: 0,
 };
 
 function formatDuration(ms: number): string {
@@ -736,6 +740,7 @@ export default function Home() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [lastReadAt, setLastReadAt] = useState<number>(0);
   const adventureLog = useAdventureLog();
+  const quests = useQuests();
 
   useEffect(() => {
     try {
@@ -778,6 +783,7 @@ export default function Home() {
           mp: parsed.mp ?? initialCharacterState.mp,
           exp: parsed.exp ?? initialCharacterState.exp,
           gold: parsed.gold ?? initialCharacterState.gold,
+          fame: parsed.fame ?? initialCharacterState.fame,
         });
       }
     } catch {}
@@ -922,6 +928,7 @@ export default function Home() {
     mp: Math.min(characterState.mp, baseCharacter.maxMp),
     exp: characterState.exp,
     gold: characterState.gold,
+    fame: characterState.fame,
     stats: STAT_KEYS.reduce<Record<StatKey, number>>(
       (acc, k) => {
         acc[k] = baseCharacter.stats[k] + allocatedStats[k];
@@ -989,6 +996,7 @@ export default function Home() {
   const handleBattleEnd = (payload: BattleEndPayload) => {
     if (payload.outcome === "win") {
       adventureLog.addKill(payload.enemyName);
+      quests.recordKill(payload.enemyName);
       setCharacterState((prev) => ({
         ...prev,
         hp: payload.finalPlayerHp,
@@ -1017,7 +1025,32 @@ export default function Home() {
     }
   };
 
-  const unreadCount = notifications.filter((n) => n.timestamp > lastReadAt).length;
+  const handleAcceptQuest = (id: string) => {
+    quests.accept(id);
+  };
+
+  const handleClaimQuest = (id: string) => {
+    const result = quests.claim(id);
+    if (!result.ok) return;
+    const { quest } = result;
+    setCharacterState((prev) => ({
+      ...prev,
+      gold: prev.gold + quest.reward.gold,
+      fame: prev.fame + quest.reward.fame,
+    }));
+    addNotification(
+      "info",
+      `의뢰 완료 — ${quest.title} (골드 +${quest.reward.gold}, 명성 +${quest.reward.fame})`,
+    );
+  };
+
+  // 알림(종·토스트)은 의미 있는 종류만 — battle_win·info는 최근 기록에만 남김.
+  const alertableNotifications = notifications.filter(
+    (n) => n.kind !== "battle_win" && n.kind !== "info",
+  );
+  const unreadCount = alertableNotifications.filter(
+    (n) => n.timestamp > lastReadAt,
+  ).length;
 
   return (
     <>
@@ -1048,7 +1081,7 @@ export default function Home() {
               {character.gold.toLocaleString()}
             </span>
             <NotificationBell
-              notifications={notifications}
+              notifications={alertableNotifications}
               unreadCount={unreadCount}
               onOpen={handleNotificationsOpen}
             />
@@ -1290,22 +1323,16 @@ export default function Home() {
           {tab === "town" && isTown && subView === "guild" && (
             <div className="space-y-3">
               <SubViewHeader
-                title="모험가 길드"
+                title={`모험가 길드 · ${currentRegion.name}`}
                 onBack={() => setSubView(null)}
               />
-              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
-                <Scroll
-                  size={40}
-                  weight="duotone"
-                  className="mx-auto text-yellow-700"
-                />
-                <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
-                  준비 중
-                </div>
-                <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  곧 의뢰 게시판이 열립니다.
-                </div>
-              </section>
+              <GuildView
+                regionId={currentRegion.id}
+                characterLevel={character.level}
+                getEntry={quests.getEntry}
+                onAccept={handleAcceptQuest}
+                onClaim={handleClaimQuest}
+              />
             </div>
           )}
 
@@ -1405,11 +1432,7 @@ export default function Home() {
           )}
         </main>
       </div>
-      <NotificationToast
-        notifications={notifications.filter(
-          (n) => n.kind !== "battle_win" && n.kind !== "info",
-        )}
-      />
+      <NotificationToast notifications={alertableNotifications} />
       {showModal && <NameSetupModal onSubmit={handleProfileSubmit} />}
     </>
   );
