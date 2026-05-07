@@ -8,6 +8,18 @@ const NAME_STORAGE_KEY = "characterName.v2";
 const LEGACY_NAME_KEYS = ["characterName"];
 const DEFAULT_NAME = "모험가";
 
+const TRAINING_STORAGE_KEY = "training.v1";
+const TRAINING_DURATION_MS = 3 * 60 * 60 * 1000;
+
+function formatDuration(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
 type EquipItem = {
   name: string;
   stats: { label: string; value: string }[];
@@ -23,6 +35,14 @@ const STAT_LABELS: Record<StatKey, string> = {
   vit: "활력",
   spd: "속도",
   luk: "행운",
+};
+
+const ZERO_ALLOCATED: Record<StatKey, number> = {
+  str: 0,
+  dex: 0,
+  vit: 0,
+  spd: 0,
+  luk: 0,
 };
 
 const baseCharacter = {
@@ -303,7 +323,7 @@ function CharacterMini({
             Lv.{character.level}
           </span>
         </div>
-        <div className="max-w-xs space-y-1.5">
+        <div className="max-w-sm space-y-1.5">
           <StatBar
             label="HP"
             value={character.hp}
@@ -399,29 +419,66 @@ function CollapsibleCard({
   );
 }
 
-function TownPanel() {
+function TownPanel({
+  trainingEndsAt,
+  unspentPoints,
+  now,
+  onStartTraining,
+  onAllocateStat,
+}: {
+  trainingEndsAt: number | null;
+  unspentPoints: number;
+  now: number;
+  onStartTraining: () => void;
+  onAllocateStat: (key: StatKey) => void;
+}) {
+  const remaining = trainingEndsAt ? Math.max(0, trainingEndsAt - now) : 0;
+  const isTraining = !!trainingEndsAt && remaining > 0;
+  const canAllocate = unspentPoints > 0;
+
+  let description = "능력치를 단련할 수 있는 곳.";
+  if (isTraining) description = `훈련 중 · ${formatDuration(remaining)}`;
+  else if (canAllocate) description = `단련 포인트 ${unspentPoints}개 보유`;
+
   return (
     <div className="space-y-2">
-      <CollapsibleCard
-        icon="🏋️"
-        title="훈련장"
-        description="능력치를 단련할 수 있는 곳."
-      >
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {STAT_KEYS.map((k) => (
-            <button
-              key={k}
-              type="button"
-              className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900"
-            >
-              <span className="text-zinc-700 dark:text-zinc-300">
-                {STAT_LABELS[k]} 단련
-              </span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                준비 중
-              </span>
-            </button>
-          ))}
+      <CollapsibleCard icon="🏋️" title="훈련장" description={description}>
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={onStartTraining}
+            disabled={isTraining}
+            className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            {isTraining
+              ? `훈련 중 · ${formatDuration(remaining)}`
+              : "3시간 훈련 시작"}
+          </button>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              <span>스탯 단련</span>
+              <span className="tabular-nums">단련 포인트 {unspentPoints}</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {STAT_KEYS.map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => onAllocateStat(k)}
+                  disabled={!canAllocate}
+                  className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900"
+                >
+                  <span className="text-zinc-700 dark:text-zinc-300">
+                    {STAT_LABELS[k]} 단련
+                  </span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {canAllocate ? "+1" : "포인트 없음"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </CollapsibleCard>
     </div>
@@ -443,6 +500,11 @@ export default function Home() {
   const [name, setName] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
+  const [trainingEndsAt, setTrainingEndsAt] = useState<number | null>(null);
+  const [unspentPoints, setUnspentPoints] = useState(0);
+  const [allocatedStats, setAllocatedStats] =
+    useState<Record<StatKey, number>>(ZERO_ALLOCATED);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     try {
@@ -451,8 +513,56 @@ export default function Home() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored) setName(stored);
     } catch {}
+
+    try {
+      const raw = localStorage.getItem(TRAINING_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          endsAt?: number | null;
+          points?: number;
+          allocated?: Partial<Record<StatKey, number>>;
+        };
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTrainingEndsAt(parsed.endsAt ?? null);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUnspentPoints(parsed.points ?? 0);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setAllocatedStats({ ...ZERO_ALLOCATED, ...parsed.allocated });
+      }
+    } catch {}
+
     setHydrated(true);
   }, []);
+
+  // 훈련 진행 중일 때만 1초 단위로 now 갱신
+  useEffect(() => {
+    if (!trainingEndsAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [trainingEndsAt]);
+
+  // 훈련 종료 시점 도달 시 자동 적립 (페이지 로드 직후 / 탭 사용 중 모두 처리)
+  useEffect(() => {
+    if (trainingEndsAt && now >= trainingEndsAt) {
+      setUnspentPoints((p) => p + 1);
+      setTrainingEndsAt(null);
+    }
+  }, [trainingEndsAt, now]);
+
+  // hydration 이후에만 변경 사항을 localStorage에 저장 (초기 덮어쓰기 방지)
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(
+        TRAINING_STORAGE_KEY,
+        JSON.stringify({
+          endsAt: trainingEndsAt,
+          points: unspentPoints,
+          allocated: allocatedStats,
+        }),
+      );
+    } catch {}
+  }, [hydrated, trainingEndsAt, unspentPoints, allocatedStats]);
 
   const handleNameSubmit = (next: string) => {
     try {
@@ -461,7 +571,29 @@ export default function Home() {
     setName(next);
   };
 
-  const character = { ...baseCharacter, name: name ?? DEFAULT_NAME };
+  const handleStartTraining = () => {
+    if (trainingEndsAt) return;
+    setTrainingEndsAt(Date.now() + TRAINING_DURATION_MS);
+    setNow(Date.now());
+  };
+
+  const handleAllocateStat = (key: StatKey) => {
+    if (unspentPoints <= 0) return;
+    setAllocatedStats((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
+    setUnspentPoints((p) => p - 1);
+  };
+
+  const character = {
+    ...baseCharacter,
+    name: name ?? DEFAULT_NAME,
+    stats: STAT_KEYS.reduce<Record<StatKey, number>>(
+      (acc, k) => {
+        acc[k] = baseCharacter.stats[k] + allocatedStats[k];
+        return acc;
+      },
+      {} as Record<StatKey, number>,
+    ),
+  };
   const showModal = hydrated && !name;
 
   return (
@@ -494,7 +626,15 @@ export default function Home() {
               />
             </>
           )}
-          {tab === "town" && <TownPanel />}
+          {tab === "town" && (
+            <TownPanel
+              trainingEndsAt={trainingEndsAt}
+              unspentPoints={unspentPoints}
+              now={now}
+              onStartTraining={handleStartTraining}
+              onAllocateStat={handleAllocateStat}
+            />
+          )}
           {tab === "character" && (
             <CollapsibleCard
               icon="👤"
