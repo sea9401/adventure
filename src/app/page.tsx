@@ -45,16 +45,13 @@ import { ITEMS, findItemId, type ItemId } from "@/adventure/data/items";
 import { MONSTERS } from "@/adventure/data/monsters";
 import {
   POTIONS,
-  POTION_IDS,
   POTION_MAX_PER_TYPE,
-  computeHealAmount,
   type PotionId,
 } from "@/adventure/data/potions";
 import { useInventory } from "@/adventure/inventory/useInventory";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { InventoryView } from "@/adventure/InventoryView";
 import { ShopView } from "@/adventure/ShopView";
-import type { BattleState, PlayerAction } from "@/adventure/battle/engine";
 import { type Recipe } from "@/adventure/data/recipes";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
@@ -74,7 +71,6 @@ import { StatBar } from "@/components/ui/StatBar";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { RegionBackground } from "@/components/ui/RegionBackground";
-import { BATTLE_SETTINGS_KEY } from "@/lib/storage-keys";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { formatDuration } from "@/lib/format";
 import type { Character } from "@/adventure/character/types";
@@ -88,6 +84,8 @@ import { useTraining } from "@/adventure/training/useTraining";
 import { baseCharacter } from "@/adventure/character/defaults";
 import { useCharacterState } from "@/adventure/character/useCharacterState";
 import { useProfile } from "@/adventure/profile/useProfile";
+import { useAutoBattle } from "@/adventure/battle/useAutoBattle";
+import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
 
@@ -124,8 +122,6 @@ export default function Home() {
   const [subView, setSubView] = useState<string | null>(null);
   const [mapProgress, setMapProgress] =
     useState<MapProgress>(initialMapProgress);
-  const [autoBattle, setAutoBattle] = useState(false);
-  const regionInitRanRef = useRef(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [lastReadAt, setLastReadAt] = useState<number>(0);
   const adventureLog = useAdventureLog();
@@ -137,19 +133,14 @@ export default function Home() {
   const characterStateHook = useCharacterState();
   const characterState = characterStateHook.state;
   const profile = useProfile();
+  const { autoBattle, setAutoBattle } = useAutoBattle(
+    mapProgress.currentRegionId,
+  );
 
   useEffect(() => {
     // localStorage 는 클라이언트 마운트 후에만 접근 가능 — useEffect 1회 hydrate.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMapProgress(loadMapProgress());
-
-    try {
-      const raw = localStorage.getItem(BATTLE_SETTINGS_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as { auto?: boolean };
-        setAutoBattle(!!parsed.auto);
-      }
-    } catch {}
 
     const stored = loadNotifications();
     setNotifications(stored.list);
@@ -163,26 +154,6 @@ export default function Home() {
     if (!hydrated) return;
     saveNotifications({ list: notifications, lastReadAt });
   }, [hydrated, notifications, lastReadAt]);
-
-  // 자동 전투 토글 영속
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(
-        BATTLE_SETTINGS_KEY,
-        JSON.stringify({ auto: autoBattle }),
-      );
-    } catch {}
-  }, [hydrated, autoBattle]);
-
-  // region 이동 시 자동 전투 강제 OFF (첫 mount 시엔 스킵)
-  useEffect(() => {
-    if (!regionInitRanRef.current) {
-      regionInitRanRef.current = true;
-      return;
-    }
-    setAutoBattle(false);
-  }, [mapProgress.currentRegionId]);
 
   // 마을 탭에 있는데 현재 위치가 마을이 아니면 서브뷰 강제 종료
   useEffect(() => {
@@ -288,37 +259,6 @@ export default function Home() {
     spd: character.stats.spd,
     evasionPct: character.stats.dex,
     attackCount: 1 + Math.floor(character.stats.spd / 10),
-  };
-
-  // 자동 전투 — 카테고리 단위 규칙 평가. 회복량 작은 물약부터 소진해 큰 것을 아낌.
-  // 인벤토리 차감은 호출 측(BattleView)에서.
-  const pickAutoAction = (state: BattleState): PlayerAction => {
-    for (const rule of autoPotion.config.rules) {
-      if (!rule.enabled) continue;
-      if (state.playerHp >= state.playerMaxHp) continue;
-
-      let triggered = false;
-      if (rule.trigger.kind === "hp_below_pct") {
-        const hpPct = (state.playerHp / state.playerMaxHp) * 100;
-        if (hpPct < rule.trigger.pct) triggered = true;
-      }
-      if (!triggered) continue;
-
-      const candidates = POTION_IDS.filter((id) => {
-        const p = POTIONS[id];
-        if (rule.target === "hp_heal" && p.effect.kind !== "heal_hp") return false;
-        return (inventory.state.potions[id] ?? 0) > 0;
-      }).sort(
-        (a, b) =>
-          computeHealAmount(POTIONS[a], state.playerMaxHp) -
-          computeHealAmount(POTIONS[b], state.playerMaxHp),
-      );
-
-      for (const id of candidates) {
-        return { kind: "use_potion", potionId: id, potion: POTIONS[id] };
-      }
-    }
-    return { kind: "attack" };
   };
 
   const handlePurchasePotion = (id: PotionId, quantity: number) => {
@@ -655,7 +595,12 @@ export default function Home() {
                 onBattleEnd={handleBattleEnd}
                 potionCounts={inventory.state.potions}
                 consumePotion={inventory.consume}
-                pickAutoAction={pickAutoAction}
+                pickAutoAction={(state) =>
+                  pickAutoAction(state, {
+                    rules: autoPotion.config.rules,
+                    potions: inventory.state.potions,
+                  })
+                }
                 inventoryState={inventory.state}
                 autoPotionConfig={autoPotion.config}
                 onUpdateAutoPotionRule={autoPotion.updateRule}
