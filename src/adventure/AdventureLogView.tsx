@@ -101,15 +101,6 @@ export function AdventureLogView({
 function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
   return (
     <div className="space-y-3">
-      <section className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          능력치 상세
-        </div>
-        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-          각 능력치가 {STAT_REVEAL_THRESHOLD}에 도달하면 전투 수치 환산 정보가
-          공개됩니다.
-        </p>
-      </section>
       <ul className="space-y-2">
         {STAT_KEYS.map((k) => {
           const value = stats[k];
