@@ -25,6 +25,7 @@ export type Npc = {
   role: NpcRole;
   description: string;
   greeting: string;
+  portrait?: string;
 };
 
 export const NPCS: Npc[] = [
@@ -37,6 +38,7 @@ export const NPCS: Npc[] = [
       "마을 한구석 훈련장을 지키는 전직 모험가. 어깨가 두툼하고 손마디가 굵다.",
     greeting:
       "왔구나, 새내기.\n자세부터 잡아주마. 모험은 한 번 휘두르는 검보다, 백 번 흘리는 땀이다.",
+    portrait: "/images/npc/smith.png",
   },
   {
     id: "diola_elder",

@@ -1,17 +1,8 @@
 "use client";
 
-import { UserCircle, X } from "@phosphor-icons/react";
-import type { Npc, NpcRole } from "./data/npcs";
-
-const ROLE_COLOR: Record<NpcRole, string> = {
-  elder: "text-amber-700",
-  vendor: "text-emerald-600",
-  innkeeper: "text-rose-500",
-  quest: "text-blue-500",
-  lore: "text-violet-500",
-  stranger: "text-zinc-500",
-  trainer: "text-orange-500",
-};
+import { X } from "@phosphor-icons/react";
+import type { Npc } from "./data/npcs";
+import { NpcAvatar } from "./NpcAvatar";
 
 export function NpcDialogue({
   npc,
@@ -34,11 +25,7 @@ export function NpcDialogue({
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <UserCircle
-              size={48}
-              weight="duotone"
-              className={`shrink-0 ${ROLE_COLOR[npc.role]}`}
-            />
+            <NpcAvatar npc={npc} size={48} />
             <div className="min-w-0">
               <div
                 id="npc-dialogue-title"

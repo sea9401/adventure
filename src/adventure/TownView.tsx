@@ -5,6 +5,7 @@ import { UserCircle } from "@phosphor-icons/react";
 import type { Region } from "./data/world";
 import { getNpcsByRegion, type Npc, type NpcRole } from "./data/npcs";
 import { NpcDialogue } from "./NpcDialogue";
+import { NpcAvatar } from "./NpcAvatar";
 
 const ROLE_LABEL: Record<NpcRole, string> = {
   elder: "촌장",
@@ -14,16 +15,6 @@ const ROLE_LABEL: Record<NpcRole, string> = {
   lore: "마을 사람",
   stranger: "방문자",
   trainer: "교관",
-};
-
-const ROLE_COLOR: Record<NpcRole, string> = {
-  elder: "text-amber-700",
-  vendor: "text-emerald-600",
-  innkeeper: "text-rose-500",
-  quest: "text-blue-500",
-  lore: "text-violet-500",
-  stranger: "text-zinc-500",
-  trainer: "text-orange-500",
 };
 
 export function TownView({
@@ -78,11 +69,7 @@ export function TownView({
               onClick={() => setOpenNpc(npc)}
               className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/90 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/90 dark:hover:bg-zinc-900/80"
             >
-              <UserCircle
-                size={28}
-                weight="duotone"
-                className={`shrink-0 ${ROLE_COLOR[npc.role]}`}
-              />
+              <NpcAvatar npc={npc} size={28} />
               <span className="min-w-0 flex-1">
                 <span className="block text-base font-medium text-zinc-900 dark:text-zinc-100">
                   {npc.name}
