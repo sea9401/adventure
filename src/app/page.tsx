@@ -103,87 +103,6 @@ function StatBar({
   );
 }
 
-function EquipCard({ title, item }: { title: string; item: EquipItem | null }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", handler);
-    return () => document.removeEventListener("pointerdown", handler);
-  }, [open]);
-
-  const showOnHover = (e: React.PointerEvent) => {
-    if (e.pointerType === "mouse") setOpen(true);
-  };
-  const hideOnLeave = (e: React.PointerEvent) => {
-    if (e.pointerType === "mouse") setOpen(false);
-  };
-  const toggleOnTap = () => {
-    if (item) setOpen((v) => !v);
-  };
-
-  return (
-    <div
-      ref={ref}
-      className={`relative rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900/50 ${
-        item ? "cursor-pointer" : ""
-      }`}
-      onPointerEnter={item ? showOnHover : undefined}
-      onPointerLeave={item ? hideOnLeave : undefined}
-      onClick={toggleOnTap}
-      aria-expanded={item ? open : undefined}
-    >
-      <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-        {title}
-      </div>
-      <div className="mt-1 text-base">
-        {item ? (
-          <span className="text-zinc-900 dark:text-zinc-100">{item.name}</span>
-        ) : (
-          <span className="italic text-zinc-400 dark:text-zinc-600">없음</span>
-        )}
-      </div>
-
-      {item && open && (
-        <div
-          role="tooltip"
-          className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-md border border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
-        >
-          <div className="font-medium text-zinc-900 dark:text-zinc-100">
-            {item.name}
-          </div>
-          <div className="mt-1.5 space-y-0.5">
-            {item.stats.map((s) => (
-              <div
-                key={s.label}
-                className="flex items-baseline justify-between gap-2"
-              >
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  {s.label}
-                </span>
-                <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {s.value}
-                </span>
-              </div>
-            ))}
-          </div>
-          {item.description && (
-            <div className="mt-2 border-t border-zinc-200 pt-2 text-xs italic text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-              {item.description}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 type TabKey = "adventure" | "town" | "character";
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -225,52 +144,6 @@ function TabBar({
         );
       })}
     </nav>
-  );
-}
-
-function CharacterPanel({
-  character,
-}: {
-  character: typeof baseCharacter & { name: string };
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-baseline gap-2">
-        <span className="text-lg font-semibold">{character.name}</span>
-        <span className="text-base text-zinc-500 dark:text-zinc-400">
-          {character.className}
-        </span>
-        <span className="text-base text-zinc-400 dark:text-zinc-500">
-          Lv.{character.level}
-        </span>
-      </div>
-
-      <StatBar
-        label="HP"
-        value={character.hp}
-        max={character.maxHp}
-        color="bg-red-500"
-      />
-      <StatBar
-        label="MP"
-        value={character.mp}
-        max={character.maxMp}
-        color="bg-sky-500"
-      />
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-zinc-500 dark:text-zinc-400">골드</span>
-        <span className="tabular-nums">
-          💰 {character.gold.toLocaleString()}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
-        <EquipCard title="무기" item={character.equipped.weapon} />
-        <EquipCard title="방어구" item={character.equipped.armor} />
-        <EquipCard title="장신구" item={character.equipped.accessory} />
-      </div>
-    </div>
   );
 }
 
@@ -326,6 +199,98 @@ function CharacterPortrait({ gender }: { gender: Gender }) {
   );
 }
 
+function MiniEquipCard({
+  icon,
+  label,
+  item,
+}: {
+  icon: string;
+  label: string;
+  item: EquipItem | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [open]);
+
+  const showOnHover = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setOpen(true);
+  };
+  const hideOnLeave = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setOpen(false);
+  };
+  const toggleOnTap = () => {
+    if (item) setOpen((v) => !v);
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={`relative flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/50 ${
+        item ? "cursor-pointer" : ""
+      }`}
+      onPointerEnter={item ? showOnHover : undefined}
+      onPointerLeave={item ? hideOnLeave : undefined}
+      onClick={toggleOnTap}
+      aria-expanded={item ? open : undefined}
+    >
+      <span className="shrink-0 text-base leading-none">{icon}</span>
+      <div className="min-w-0 leading-tight">
+        <div className="truncate text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          {label}
+        </div>
+        <div className="truncate text-xs">
+          {item ? (
+            <span className="text-zinc-800 dark:text-zinc-200">{item.name}</span>
+          ) : (
+            <span className="italic text-zinc-400 dark:text-zinc-600">없음</span>
+          )}
+        </div>
+      </div>
+
+      {item && open && (
+        <div
+          role="tooltip"
+          className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-md border border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+        >
+          <div className="font-medium text-zinc-900 dark:text-zinc-100">
+            {item.name}
+          </div>
+          <div className="mt-1.5 space-y-0.5">
+            {item.stats.map((s) => (
+              <div
+                key={s.label}
+                className="flex items-baseline justify-between gap-2"
+              >
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  {s.label}
+                </span>
+                <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {s.value}
+                </span>
+              </div>
+            ))}
+          </div>
+          {item.description && (
+            <div className="mt-2 border-t border-zinc-200 pt-2 text-xs italic text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              {item.description}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CharacterMini({
   character,
 }: {
@@ -369,28 +334,7 @@ function CharacterMini({
         </div>
         <div className="grid grid-cols-3 gap-2">
           {equipped.map(({ icon, label, item }) => (
-            <div
-              key={label}
-              className="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/50"
-            >
-              <span className="shrink-0 text-base leading-none">{icon}</span>
-              <div className="min-w-0 leading-tight">
-                <div className="truncate text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  {label}
-                </div>
-                <div className="truncate text-xs">
-                  {item ? (
-                    <span className="text-zinc-800 dark:text-zinc-200">
-                      {item.name}
-                    </span>
-                  ) : (
-                    <span className="italic text-zinc-400 dark:text-zinc-600">
-                      없음
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+            <MiniEquipCard key={label} icon={icon} label={label} item={item} />
           ))}
         </div>
       </div>
@@ -718,12 +662,9 @@ export default function Home() {
           {tab === "character" && subView === "info" && (
             <div className="space-y-3">
               <SubViewHeader title="내 정보" onBack={() => setSubView(null)} />
+              <CharacterMini character={character} />
               <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div className="space-y-4">
-                  <CharacterPanel character={character} />
-                  <div className="border-t border-zinc-200 dark:border-zinc-800" />
-                  <StatsPanel stats={character.stats} />
-                </div>
+                <StatsPanel stats={character.stats} />
               </section>
             </div>
           )}
