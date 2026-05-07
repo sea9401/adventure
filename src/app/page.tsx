@@ -17,7 +17,7 @@ import {
   User,
 } from "@phosphor-icons/react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
+import { NameSetupModal } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
 import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
 import { TownView } from "@/adventure/TownView";
@@ -74,11 +74,7 @@ import { StatBar } from "@/components/ui/StatBar";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { RegionBackground } from "@/components/ui/RegionBackground";
-import {
-  PROFILE_STORAGE_KEY,
-  LEGACY_PROFILE_KEYS,
-  BATTLE_SETTINGS_KEY,
-} from "@/lib/storage-keys";
+import { BATTLE_SETTINGS_KEY } from "@/lib/storage-keys";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { formatDuration } from "@/lib/format";
 import type { Character } from "@/adventure/character/types";
@@ -91,12 +87,9 @@ import { TrainingView } from "@/adventure/character/TrainingView";
 import { useTraining } from "@/adventure/training/useTraining";
 import { baseCharacter } from "@/adventure/character/defaults";
 import { useCharacterState } from "@/adventure/character/useCharacterState";
+import { useProfile } from "@/adventure/profile/useProfile";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
-
-const DEFAULT_NAME = "모험가";
-
-type Profile = { name: string; gender: Gender };
 
 type TabKey = "adventure" | "town" | "character";
 
@@ -126,7 +119,6 @@ function MainTabs({
 }
 
 export default function Home() {
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
   const [subView, setSubView] = useState<string | null>(null);
@@ -144,34 +136,11 @@ export default function Home() {
   const training = useTraining();
   const characterStateHook = useCharacterState();
   const characterState = characterStateHook.state;
+  const profile = useProfile();
 
   useEffect(() => {
-    try {
-      // 신규 키가 비어 있으면 옛 키(`characterProfile.v1` 등)에서 한 번 옮겨온 뒤 정리.
-      let raw = localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (!raw) {
-        for (const key of LEGACY_PROFILE_KEYS) {
-          const legacy = localStorage.getItem(key);
-          if (legacy) {
-            raw = legacy;
-            localStorage.setItem(PROFILE_STORAGE_KEY, legacy);
-            break;
-          }
-        }
-      }
-      for (const key of LEGACY_PROFILE_KEYS) localStorage.removeItem(key);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<Profile>;
-        if (
-          parsed?.name &&
-          (parsed.gender === "male" || parsed.gender === "female")
-        ) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setProfile({ name: parsed.name, gender: parsed.gender });
-        }
-      }
-    } catch {}
-
+    // localStorage 는 클라이언트 마운트 후에만 접근 가능 — useEffect 1회 hydrate.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMapProgress(loadMapProgress());
 
     try {
@@ -233,13 +202,6 @@ export default function Home() {
     saveMapProgress(mapProgress);
   }, [hydrated, mapProgress]);
 
-  const handleProfileSubmit = (next: Profile) => {
-    try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(next));
-    } catch {}
-    setProfile(next);
-  };
-
   const handleTabChange = (next: TabKey) => {
     setTab(next);
     setSubView(null);
@@ -267,8 +229,8 @@ export default function Home() {
 
   const character: Character = {
     ...baseCharacter,
-    name: profile?.name ?? DEFAULT_NAME,
-    gender: profile?.gender ?? "male",
+    name: profile.name,
+    gender: profile.gender,
     hp: Math.min(characterState.hp, baseCharacter.maxHp),
     mp: Math.min(characterState.mp, baseCharacter.maxMp),
     level: characterState.level,
@@ -286,7 +248,7 @@ export default function Home() {
       {} as Record<StatKey, number>,
     ),
   };
-  const showModal = hydrated && !profile;
+  const showModal = profile.needsSetup;
   const currentRegion =
     WORLD_MAP.regions.find((r) => r.id === mapProgress.currentRegionId) ??
     WORLD_MAP.regions[0];
@@ -1017,7 +979,7 @@ export default function Home() {
         </main>
       </div>
       <NotificationToast notifications={alertableNotifications} />
-      {showModal && <NameSetupModal onSubmit={handleProfileSubmit} />}
+      {showModal && <NameSetupModal onSubmit={profile.submit} />}
     </>
   );
 }
