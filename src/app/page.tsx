@@ -30,6 +30,7 @@ import { MapView } from "@/adventure/MapView";
 import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
 import { TownView } from "@/adventure/TownView";
 import { AdventureLogView } from "@/adventure/AdventureLogView";
+import { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { WORLD_MAP } from "@/adventure/data/world";
 import {
   initialMapProgress,
@@ -734,6 +735,7 @@ export default function Home() {
   const regionInitRanRef = useRef(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [lastReadAt, setLastReadAt] = useState<number>(0);
+  const adventureLog = useAdventureLog();
 
   useEffect(() => {
     try {
@@ -934,6 +936,12 @@ export default function Home() {
     WORLD_MAP.regions[0];
   const isTown = currentRegion.tags?.includes("town") ?? false;
 
+  useEffect(() => {
+    if (tab === "adventure" && subView === "town" && isTown) {
+      adventureLog.markTownVisited(currentRegion.id);
+    }
+  }, [tab, subView, isTown, currentRegion.id, adventureLog]);
+
   // 전투 엔진용 PlayerCombat — 장비 보너스 합산.
   const equippedItems = [
     character.equipped.weapon,
@@ -980,6 +988,7 @@ export default function Home() {
 
   const handleBattleEnd = (payload: BattleEndPayload) => {
     if (payload.outcome === "win") {
+      adventureLog.addKill(payload.enemyName);
       setCharacterState((prev) => ({
         ...prev,
         hp: payload.finalPlayerHp,
@@ -1103,7 +1112,13 @@ export default function Home() {
                 title={currentRegion.name}
                 onBack={() => setSubView(null)}
               />
-              <TownView region={currentRegion} />
+              <TownView
+                region={currentRegion}
+                onTalkClose={(npcId, regionId) => {
+                  adventureLog.incrementNpcTalk(npcId);
+                  adventureLog.addTownNpcTalked(regionId, npcId);
+                }}
+              />
             </div>
           )}
           {tab === "adventure" && subView === "battle" && (
@@ -1115,6 +1130,7 @@ export default function Home() {
                 playerName={character.name}
                 autoBattle={autoBattle}
                 onAutoBattleChange={setAutoBattle}
+                onBattleStart={adventureLog.markEncountered}
                 onBattleEnd={handleBattleEnd}
               />
             </div>
@@ -1375,7 +1391,7 @@ export default function Home() {
           {tab === "character" && subView === "adventure-log" && (
             <div className="space-y-3">
               <SubViewHeader title="모험의 서" onBack={() => setSubView(null)} />
-              <AdventureLogView />
+              <AdventureLogView log={adventureLog.log} />
             </div>
           )}
           {tab === "character" && subView === "recent-log" && (
