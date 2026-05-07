@@ -12,11 +12,7 @@ import { MONSTERS } from "./data/monsters";
 import { NPCS, type NpcRole } from "./data/npcs";
 import { WORLD_MAP } from "./data/world";
 import type { AdventureLog } from "./log/storage";
-import {
-  getKillsToNextStage,
-  getRevealStage,
-  type MonsterRevealStage,
-} from "./log/thresholds";
+import { getRevealStage, type MonsterRevealStage } from "./log/thresholds";
 
 type LogTabKey = "monsters" | "items" | "npcs" | "towns";
 
@@ -92,7 +88,7 @@ function EmptyTab({
   message: string;
 }) {
   return (
-    <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+    <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
       <div className="mx-auto inline-flex text-zinc-400 dark:text-zinc-500">
         {icon}
       </div>
@@ -133,10 +129,9 @@ function MonstersTab({ log }: { log: AdventureLog }) {
 function MonsterLogCard({ name, kills }: { name: string; kills: number }) {
   const monster = MONSTERS[name];
   const stage = getRevealStage(kills);
-  const remaining = getKillsToNextStage(kills);
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+    <div className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="flex items-center gap-3">
         <MonsterAvatar name={name} stage={stage} />
         <div className="min-w-0 flex-1">
@@ -155,11 +150,6 @@ function MonsterLogCard({ name, kills }: { name: string; kills: number }) {
               <Stat label="ATK" value={monster.atk} unlocked={stage >= 3} />
               <Stat label="DEF" value={monster.def} unlocked={stage >= 3} />
               <Stat label="SPD" value={monster.spd} unlocked={stage >= 3} />
-            </div>
-          )}
-          {remaining !== null && (
-            <div className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-              다음 정보까지 {remaining}회
             </div>
           )}
         </div>
@@ -245,7 +235,7 @@ function TownsTab({ log }: { log: AdventureLog }) {
         return (
           <div
             key={r.id}
-            className="rounded-lg border border-zinc-200 bg-white/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
+            className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
           >
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
@@ -290,7 +280,7 @@ function NpcsTab({ log }: { log: AdventureLog }) {
         return (
           <div
             key={n.id}
-            className="rounded-lg border border-zinc-200 bg-white/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
+            className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
           >
             <div className="flex items-center gap-2">
               <UserCircle
