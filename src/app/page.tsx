@@ -368,58 +368,66 @@ function CharacterMini({
   );
 }
 
-function CollapsibleCard({
+function EntryCard({
   icon,
   title,
   description,
-  defaultOpen = false,
-  children,
+  onClick,
 }: {
   icon: string;
   title: string;
   description: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
+  onClick: () => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
-      >
-        <span aria-hidden className="text-2xl leading-none">
-          {icon}
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/40 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/40"
+    >
+      <span aria-hidden className="text-2xl leading-none">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-base font-medium text-zinc-900 dark:text-zinc-100">
+          {title}
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-base font-medium text-zinc-900 dark:text-zinc-100">
-            {title}
-          </span>
-          <span className="block truncate text-sm text-zinc-500 dark:text-zinc-400">
-            {description}
-          </span>
+        <span className="block truncate text-sm text-zinc-500 dark:text-zinc-400">
+          {description}
         </span>
-        <span
-          aria-hidden
-          className={`shrink-0 text-zinc-400 transition-transform dark:text-zinc-500 ${
-            open ? "rotate-180" : ""
-          }`}
-        >
-          ▾
-        </span>
-      </button>
-      {open && (
-        <div className="border-t border-zinc-200 p-4 dark:border-zinc-800">
-          {children}
-        </div>
-      )}
-    </section>
+      </span>
+      <span aria-hidden className="shrink-0 text-zinc-400 dark:text-zinc-500">
+        ›
+      </span>
+    </button>
   );
 }
 
-function TownPanel({
+function SubViewHeader({
+  title,
+  onBack,
+}: {
+  title: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={onBack}
+        aria-label="뒤로"
+        className="-ml-2 rounded-md px-2 py-1 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+      >
+        ← 뒤로
+      </button>
+      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+        {title}
+      </h2>
+    </div>
+  );
+}
+
+function TrainingView({
   trainingEndsAt,
   unspentPoints,
   now,
@@ -436,52 +444,46 @@ function TownPanel({
   const isTraining = !!trainingEndsAt && remaining > 0;
   const canAllocate = unspentPoints > 0;
 
-  let description = "능력치를 단련할 수 있는 곳.";
-  if (isTraining) description = `훈련 중 · ${formatDuration(remaining)}`;
-  else if (canAllocate) description = `단련 포인트 ${unspentPoints}개 보유`;
-
   return (
-    <div className="space-y-2">
-      <CollapsibleCard icon="🏋️" title="훈련장" description={description}>
-        <div className="space-y-4">
-          <button
-            type="button"
-            onClick={onStartTraining}
-            disabled={isTraining}
-            className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
-            {isTraining
-              ? `훈련 중 · ${formatDuration(remaining)}`
-              : "3시간 훈련 시작"}
-          </button>
+    <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <div className="space-y-4">
+        <button
+          type="button"
+          onClick={onStartTraining}
+          disabled={isTraining}
+          className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          {isTraining
+            ? `훈련 중 · ${formatDuration(remaining)}`
+            : "3시간 훈련 시작"}
+        </button>
 
-          <div>
-            <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              <span>스탯 단련</span>
-              <span className="tabular-nums">단련 포인트 {unspentPoints}</span>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {STAT_KEYS.map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => onAllocateStat(k)}
-                  disabled={!canAllocate}
-                  className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900"
-                >
-                  <span className="text-zinc-700 dark:text-zinc-300">
-                    {STAT_LABELS[k]} 단련
-                  </span>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {canAllocate ? "+1" : "포인트 없음"}
-                  </span>
-                </button>
-              ))}
-            </div>
+        <div>
+          <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            <span>스탯 단련</span>
+            <span className="tabular-nums">단련 포인트 {unspentPoints}</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {STAT_KEYS.map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => onAllocateStat(k)}
+                disabled={!canAllocate}
+                className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900"
+              >
+                <span className="text-zinc-700 dark:text-zinc-300">
+                  {STAT_LABELS[k]} 단련
+                </span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {canAllocate ? "+1" : "포인트 없음"}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
-      </CollapsibleCard>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -500,6 +502,7 @@ export default function Home() {
   const [name, setName] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
+  const [subView, setSubView] = useState<string | null>(null);
   const [trainingEndsAt, setTrainingEndsAt] = useState<number | null>(null);
   const [unspentPoints, setUnspentPoints] = useState(0);
   const [allocatedStats, setAllocatedStats] =
@@ -581,6 +584,21 @@ export default function Home() {
     setUnspentPoints((p) => p - 1);
   };
 
+  const handleTabChange = (next: TabKey) => {
+    setTab(next);
+    setSubView(null);
+  };
+
+  const trainingRemaining = trainingEndsAt
+    ? Math.max(0, trainingEndsAt - now)
+    : 0;
+  const isTraining = !!trainingEndsAt && trainingRemaining > 0;
+  const trainingDescription = isTraining
+    ? `훈련 중 · ${formatDuration(trainingRemaining)}`
+    : unspentPoints > 0
+      ? `단련 포인트 ${unspentPoints}개 보유`
+      : "능력치를 단련할 수 있는 곳.";
+
   const character = {
     ...baseCharacter,
     name: name ?? DEFAULT_NAME,
@@ -612,7 +630,7 @@ export default function Home() {
           <ThemeToggle />
         </header>
 
-        <TabBar active={tab} onChange={setTab} />
+        <TabBar active={tab} onChange={handleTabChange} />
 
         <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4 sm:p-6">
           {tab === "adventure" && (
@@ -624,27 +642,51 @@ export default function Home() {
               />
             </>
           )}
-          {tab === "town" && (
-            <TownPanel
-              trainingEndsAt={trainingEndsAt}
-              unspentPoints={unspentPoints}
-              now={now}
-              onStartTraining={handleStartTraining}
-              onAllocateStat={handleAllocateStat}
-            />
+
+          {tab === "town" && subView === null && (
+            <div className="space-y-2">
+              <EntryCard
+                icon="🏋️"
+                title="훈련장"
+                description={trainingDescription}
+                onClick={() => setSubView("training")}
+              />
+            </div>
           )}
-          {tab === "character" && (
-            <CollapsibleCard
-              icon="👤"
-              title="내 정보"
-              description="캐릭터 정보와 능력치를 확인합니다."
-            >
-              <div className="space-y-4">
-                <CharacterPanel character={character} />
-                <div className="border-t border-zinc-200 dark:border-zinc-800" />
-                <StatsPanel stats={character.stats} />
-              </div>
-            </CollapsibleCard>
+          {tab === "town" && subView === "training" && (
+            <div className="space-y-3">
+              <SubViewHeader title="훈련장" onBack={() => setSubView(null)} />
+              <TrainingView
+                trainingEndsAt={trainingEndsAt}
+                unspentPoints={unspentPoints}
+                now={now}
+                onStartTraining={handleStartTraining}
+                onAllocateStat={handleAllocateStat}
+              />
+            </div>
+          )}
+
+          {tab === "character" && subView === null && (
+            <div className="space-y-2">
+              <EntryCard
+                icon="👤"
+                title="내 정보"
+                description="캐릭터 정보와 능력치를 확인합니다."
+                onClick={() => setSubView("info")}
+              />
+            </div>
+          )}
+          {tab === "character" && subView === "info" && (
+            <div className="space-y-3">
+              <SubViewHeader title="내 정보" onBack={() => setSubView(null)} />
+              <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div className="space-y-4">
+                  <CharacterPanel character={character} />
+                  <div className="border-t border-zinc-200 dark:border-zinc-800" />
+                  <StatsPanel stats={character.stats} />
+                </div>
+              </section>
+            </div>
           )}
         </main>
       </div>
