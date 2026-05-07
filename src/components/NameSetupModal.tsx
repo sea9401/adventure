@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GenderFemale, GenderMale } from "@phosphor-icons/react";
 
 export type Gender = "male" | "female";
 
@@ -57,7 +58,11 @@ export function NameSetupModal({
               {(["male", "female"] as const).map((g) => {
                 const selected = gender === g;
                 const label = g === "male" ? "남자" : "여자";
-                const emoji = g === "male" ? "👦" : "👧";
+                const Icon = g === "male" ? GenderMale : GenderFemale;
+                const iconColor =
+                  g === "male"
+                    ? "text-sky-500 dark:text-sky-400"
+                    : "text-pink-500 dark:text-pink-400";
                 return (
                   <button
                     key={g}
@@ -70,7 +75,7 @@ export function NameSetupModal({
                         : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-400"
                     }`}
                   >
-                    <span className="text-2xl">{emoji}</span>
+                    <Icon size={28} weight="bold" className={iconColor} />
                     <span>{label}</span>
                   </button>
                 );

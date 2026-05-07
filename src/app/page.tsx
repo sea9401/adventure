@@ -1,6 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  ArrowLeft,
+  Barbell,
+  CaretRight,
+  Coins,
+  Compass,
+  Diamond,
+  Hammer,
+  Shield,
+  Sword,
+  User,
+} from "@phosphor-icons/react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
 
@@ -155,11 +167,19 @@ function AdventurerCard({
 }: {
   character: typeof baseCharacter & { name: string };
 }) {
-  const items = [
+  const items: { label: string; value: ReactNode }[] = [
     { label: "소속", value: character.affiliation },
     { label: "전투 전적", value: `${character.battleCount.toLocaleString()}회` },
     { label: "명성", value: character.fame.toLocaleString() },
-    { label: "보유 골드", value: `💰 ${character.gold.toLocaleString()}` },
+    {
+      label: "보유 골드",
+      value: (
+        <span className="inline-flex items-center gap-1">
+          <Coins size={14} weight="fill" className="text-yellow-500" />
+          {character.gold.toLocaleString()}
+        </span>
+      ),
+    },
   ];
   return (
     <div>
@@ -216,14 +236,13 @@ function StatsPanel({
 
 function CharacterPortrait({ gender }: { gender: Gender }) {
   const [errored, setErrored] = useState(false);
-  const fallback = gender === "male" ? "👦" : "👧";
   return (
     <div
       aria-label="캐릭터 이미지"
-      className="flex aspect-square w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-300 bg-zinc-50 text-5xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
+      className="flex aspect-square w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-300 bg-zinc-50 text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
     >
       {errored ? (
-        <span>{fallback}</span>
+        <User size={56} weight="duotone" />
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -242,7 +261,7 @@ function MiniEquipCard({
   label,
   item,
 }: {
-  icon: string;
+  icon: ReactNode;
   label: string;
   item: EquipItem | null;
 }) {
@@ -281,7 +300,9 @@ function MiniEquipCard({
       onClick={toggleOnTap}
       aria-expanded={item ? open : undefined}
     >
-      <span className="shrink-0 text-base leading-none">{icon}</span>
+      <span className="flex shrink-0 items-center text-zinc-700 dark:text-zinc-300">
+        {icon}
+      </span>
       <div className="min-w-0 leading-tight">
         <div className="truncate text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           {label}
@@ -335,9 +356,21 @@ function CharacterMini({
   character: typeof baseCharacter & { name: string; gender: Gender };
 }) {
   const equipped = [
-    { icon: "🗡️", label: "무기", item: character.equipped.weapon },
-    { icon: "🛡️", label: "방어구", item: character.equipped.armor },
-    { icon: "💍", label: "장신구", item: character.equipped.accessory },
+    {
+      icon: <Sword size={18} weight="duotone" />,
+      label: "무기",
+      item: character.equipped.weapon,
+    },
+    {
+      icon: <Shield size={18} weight="duotone" />,
+      label: "방어구",
+      item: character.equipped.armor,
+    },
+    {
+      icon: <Diamond size={18} weight="duotone" />,
+      label: "장신구",
+      item: character.equipped.accessory,
+    },
   ];
   return (
     <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
@@ -386,7 +419,7 @@ function EntryCard({
   description,
   onClick,
 }: {
-  icon: string;
+  icon: ReactNode;
   title: string;
   description: string;
   onClick: () => void;
@@ -397,7 +430,10 @@ function EntryCard({
       onClick={onClick}
       className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/40 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/40"
     >
-      <span aria-hidden className="text-2xl leading-none">
+      <span
+        aria-hidden
+        className="flex shrink-0 items-center justify-center text-zinc-700 dark:text-zinc-200"
+      >
         {icon}
       </span>
       <span className="min-w-0 flex-1">
@@ -408,9 +444,12 @@ function EntryCard({
           {description}
         </span>
       </span>
-      <span aria-hidden className="shrink-0 text-zinc-400 dark:text-zinc-500">
-        ›
-      </span>
+      <CaretRight
+        size={16}
+        weight="bold"
+        aria-hidden
+        className="shrink-0 text-zinc-400 dark:text-zinc-500"
+      />
     </button>
   );
 }
@@ -428,9 +467,10 @@ function SubViewHeader({
         type="button"
         onClick={onBack}
         aria-label="뒤로"
-        className="-ml-2 rounded-md px-2 py-1 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+        className="-ml-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
       >
-        ← 뒤로
+        <ArrowLeft size={16} weight="bold" />
+        뒤로
       </button>
       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
         {title}
@@ -659,13 +699,13 @@ export default function Home() {
               <CharacterMini character={character} />
               <div className="space-y-2">
                 <EntryCard
-                  icon="⚔️"
+                  icon={<Sword size={28} weight="duotone" />}
                   title="전투"
                   description="적과 맞서 싸웁니다."
                   onClick={() => setSubView("battle")}
                 />
                 <EntryCard
-                  icon="🗺️"
+                  icon={<Compass size={28} weight="duotone" />}
                   title="지도"
                   description="모험할 곳을 찾아봅니다."
                   onClick={() => setSubView("map")}
@@ -689,10 +729,16 @@ export default function Home() {
           {tab === "town" && subView === null && (
             <div className="space-y-2">
               <EntryCard
-                icon="🏋️"
+                icon={<Barbell size={28} weight="duotone" />}
                 title="훈련장"
                 description={trainingDescription}
                 onClick={() => setSubView("training")}
+              />
+              <EntryCard
+                icon={<Hammer size={28} weight="duotone" />}
+                title="제작소"
+                description="장비와 도구를 직접 만들 수 있는 곳."
+                onClick={() => setSubView("crafting")}
               />
             </div>
           )}
@@ -708,11 +754,24 @@ export default function Home() {
               />
             </div>
           )}
+          {tab === "town" && subView === "crafting" && (
+            <div className="space-y-3">
+              <SubViewHeader title="제작소" onBack={() => setSubView(null)} />
+              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+                <div className="text-base font-medium text-zinc-700 dark:text-zinc-300">
+                  준비 중
+                </div>
+                <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  곧 제작 메뉴가 열립니다.
+                </div>
+              </section>
+            </div>
+          )}
 
           {tab === "character" && subView === null && (
             <div className="space-y-2">
               <EntryCard
-                icon="👤"
+                icon={<User size={28} weight="duotone" />}
                 title="내 정보"
                 description="캐릭터 정보와 능력치를 확인합니다."
                 onClick={() => setSubView("info")}
