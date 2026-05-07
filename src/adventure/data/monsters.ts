@@ -46,7 +46,10 @@ export const MONSTERS: Record<string, Monster> = {
     def: 1,
     spd: 1,
     exp: 2,
-    drops: [{ materialId: "slime_chunk", chance: 0.15 }],
+    drops: [
+      { materialId: "slime_chunk", chance: 0.15 },
+      { materialId: "slime_core", chance: 0.01 },
+    ],
   },
   들개: {
     name: "들개",
@@ -98,9 +101,10 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 4,
     exp: 5,
   },
-  "호수 정령": {
-    name: "호수 정령",
+  "호수 님프": {
+    name: "호수 님프",
     tags: ["spirit"],
+    image: "/images/monster/lakenymph.png",
     hp: 73,
     atk: 8,
     def: 3,

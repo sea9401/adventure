@@ -11,6 +11,12 @@ export const MATERIALS = {
     description: "끈적한 점액 덩어리. 묘하게 약효가 있다고 한다.",
     price: 3,
   },
+  slime_core: {
+    id: "slime_core",
+    name: "슬라임 핵",
+    description: "슬라임 깊숙한 곳에서 드물게 발견되는 단단한 결정.",
+    price: 20,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;
