@@ -314,28 +314,38 @@ function CharacterMini({
   return (
     <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
       <div className="space-y-1.5 px-3 py-2">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <span className="text-base font-semibold">{character.name}</span>
-          <span className="text-sm text-zinc-500 dark:text-zinc-400">
-            {character.className}
-          </span>
-          <span className="text-sm text-zinc-400 dark:text-zinc-500">
-            Lv.{character.level}
-          </span>
-        </div>
-        <div className="max-w-lg space-y-1.5">
-          <StatBar
-            label="HP"
-            value={character.hp}
-            max={character.maxHp}
-            color="bg-red-500"
-          />
-          <StatBar
-            label="MP"
-            value={character.mp}
-            max={character.maxMp}
-            color="bg-sky-500"
-          />
+        <div className="flex items-stretch gap-3">
+          <div
+            aria-label="캐릭터 이미지"
+            className="flex aspect-square w-20 shrink-0 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-3xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
+          >
+            🧑
+          </div>
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="flex flex-wrap items-baseline gap-2">
+              <span className="text-base font-semibold">{character.name}</span>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                {character.className}
+              </span>
+              <span className="text-sm text-zinc-400 dark:text-zinc-500">
+                Lv.{character.level}
+              </span>
+            </div>
+            <div className="max-w-sm space-y-1.5">
+              <StatBar
+                label="HP"
+                value={character.hp}
+                max={character.maxHp}
+                color="bg-red-500"
+              />
+              <StatBar
+                label="MP"
+                value={character.mp}
+                max={character.maxMp}
+                color="bg-sky-500"
+              />
+            </div>
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-1.5 pt-0.5">
           {equipped.map(({ icon, label, item }) => (
