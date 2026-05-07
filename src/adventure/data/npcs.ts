@@ -2,6 +2,7 @@ import type { RegionId } from "./world";
 
 export type NpcId =
   | "village_trainer_smith"
+  | "village_blacksmith_bold"
   | "diola_elder"
   | "diola_fisher"
   | "diola_innkeeper"
@@ -39,6 +40,16 @@ export const NPCS: Npc[] = [
     greeting:
       "왔구나, 새내기.\n자세부터 잡아주마. 모험은 한 번 휘두르는 검보다, 백 번 흘리는 땀이다.",
     portrait: "/images/npc/smith.png",
+  },
+  {
+    id: "village_blacksmith_bold",
+    region: "village",
+    name: "대장장이 볼드",
+    role: "vendor",
+    description:
+      "반들반들한 대머리에 가죽 앞치마를 두른 사내. 망치질 한 번에 모루가 통째로 운다.",
+    greeting:
+      "어, 왔나.\n무기든 갑옷이든 가져와 봐. 쓸 만한 거면 손봐주고, 못 쓸 거면 그 자리에서 녹여주지.",
   },
   {
     id: "diola_elder",

@@ -1307,7 +1307,7 @@ export default function Home() {
           )}
           {tab === "town" && isTown && subView === "crafting" && (
             <div className="space-y-3">
-              <SubViewHeader title="제작소" onBack={() => setSubView(null)} />
+              <SubViewHeader title="대장간" onBack={() => setSubView(null)} />
               <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
                 <div className="text-base font-medium text-zinc-700 dark:text-zinc-300">
                   준비 중
