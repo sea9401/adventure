@@ -74,16 +74,6 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 0,
     gold: 3,
   },
-  "광맥 골렘": {
-    name: "광맥 골렘",
-    tags: ["golem"],
-    hp: 30,
-    atk: 5,
-    def: 4,
-    spd: 1,
-    exp: 0,
-    gold: 6,
-  },
   거미: {
     name: "거미",
     tags: ["beast"],
