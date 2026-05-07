@@ -181,7 +181,7 @@ function TabBar({
     <nav
       role="tablist"
       aria-label="메인 탭"
-      className="flex gap-1 border-b border-zinc-200 px-4 sm:px-6 dark:border-zinc-800"
+      className="mx-auto flex w-full max-w-2xl gap-1 border-b border-zinc-200 px-4 sm:px-6 dark:border-zinc-800"
     >
       {TABS.map((t) => {
         const selected = active === t.key;
