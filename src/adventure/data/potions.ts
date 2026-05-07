@@ -20,7 +20,7 @@ export const POTIONS: Record<PotionId, Potion> = {
     name: "작은 회복약",
     description: "마시면 약간의 활력이 돌아온다. HP +20.",
     effect: { kind: "heal_hp", flat: 20 },
-    price: 12,
+    price: 1,
   },
 };
 
