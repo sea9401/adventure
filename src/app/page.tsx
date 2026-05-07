@@ -58,6 +58,7 @@ import { ShopView } from "@/adventure/ShopView";
 import type { BattleState, PlayerAction } from "@/adventure/battle/engine";
 import { type Recipe } from "@/adventure/data/recipes";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
+import { STORY_QUESTS } from "@/adventure/data/storyQuests";
 import {
   applyExpGain,
   MAX_LEVEL,
@@ -1110,10 +1111,6 @@ export default function Home() {
             label: "제작서를 받는다",
             onClick: () => {
               crafting.learnRecipe("baseball_bat");
-              addNotification(
-                "info",
-                "제작서를 손에 넣었다 — 야구 방망이",
-              );
               close();
             },
           }}
@@ -1149,8 +1146,8 @@ export default function Home() {
               equipItem("armor", ITEMS.old_leather_armor);
               crafting.setBoldQuestComplete();
               addNotification(
-                "info",
-                "낡은 가죽갑옷을 입었다.",
+                "quest_complete",
+                `${STORY_QUESTS.bold_blacksmith_intro.title} 완료`,
               );
               close();
             },
@@ -1237,13 +1234,11 @@ export default function Home() {
       gold: prev.gold + quest.reward.gold,
       fame: prev.fame + quest.reward.fame,
     }));
-    addNotification(
-      "info",
-      `의뢰 완료 — ${quest.title} (골드 +${quest.reward.gold}, 명성 +${quest.reward.fame})`,
-    );
+    addNotification("quest_complete", `${quest.title} 완료`);
   };
 
   // 알림(종·토스트)은 의미 있는 종류만 — battle_win·info는 최근 기록에만 남김.
+  // (quest_complete은 alertable — 토스트/종에 표시.)
   const alertableNotifications = notifications.filter(
     (n) => n.kind !== "battle_win" && n.kind !== "info",
   );
