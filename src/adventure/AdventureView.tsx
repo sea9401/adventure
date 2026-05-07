@@ -1,12 +1,12 @@
 "use client";
 
-import { CharacterStrip } from "./CharacterStrip";
+import { CharacterSummary } from "./CharacterSummary";
 import { VillageMap } from "./VillageMap";
 
 export function AdventureView() {
   return (
     <>
-      <CharacterStrip />
+      <CharacterSummary />
       <VillageMap />
     </>
   );
