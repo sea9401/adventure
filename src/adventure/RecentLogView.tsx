@@ -9,6 +9,7 @@ const KIND_COLOR: Record<NotificationKind, string> = {
   battle_win: "text-emerald-600 dark:text-emerald-400",
   battle_lose: "text-rose-600 dark:text-rose-400",
   training_done: "text-amber-600 dark:text-amber-400",
+  quest_ready: "text-yellow-700 dark:text-yellow-400",
   info: "text-zinc-600 dark:text-zinc-400",
 };
 

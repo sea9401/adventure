@@ -44,6 +44,7 @@ import { NotificationToast } from "@/components/NotificationToast";
 import { RecentLogView } from "@/adventure/RecentLogView";
 import { GuildView } from "@/adventure/GuildView";
 import { useQuests } from "@/adventure/quests/useQuests";
+import { getQuestById } from "@/adventure/data/quests";
 import {
   genNotificationId,
   loadNotifications,
@@ -993,7 +994,7 @@ export default function Home() {
   const handleBattleEnd = (payload: BattleEndPayload) => {
     if (payload.outcome === "win") {
       adventureLog.addKill(payload.enemyName);
-      quests.recordKill(payload.enemyName);
+      const readyQuestIds = quests.recordKill(payload.enemyName);
       setCharacterState((prev) => ({
         ...prev,
         hp: payload.finalPlayerHp,
@@ -1005,6 +1006,15 @@ export default function Home() {
         "battle_win",
         `${payload.enemyName}을(를) 쓰러뜨렸다 — ${reward}`,
       );
+      for (const id of readyQuestIds) {
+        const quest = getQuestById(id);
+        if (quest) {
+          addNotification(
+            "quest_ready",
+            `의뢰 조건 달성 — ${quest.title}: 길드에서 보상을 받을 수 있다.`,
+          );
+        }
+      }
     } else {
       // 패배 — HP 회복 + 시작 마을 강제 이동 + 자동 전투 OFF
       setCharacterState((prev) => ({ ...prev, hp: baseCharacter.maxHp }));
@@ -1309,10 +1319,10 @@ export default function Home() {
               <SubViewHeader title="대장간" onBack={() => setSubView(null)} />
               <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
                 <div className="text-base font-medium text-zinc-700 dark:text-zinc-300">
-                  준비 중
+                  아직 만들 줄 아는 게 없습니다
                 </div>
                 <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  곧 제작 메뉴가 열립니다.
+                  제작 비법을 익히면 이곳에서 무기와 갑옷을 만들 수 있습니다.
                 </div>
               </section>
             </div>

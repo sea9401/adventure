@@ -2,6 +2,7 @@ export type NotificationKind =
   | "battle_win"
   | "battle_lose"
   | "training_done"
+  | "quest_ready"
   | "info";
 
 export type AppNotification = {
