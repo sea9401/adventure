@@ -290,21 +290,21 @@ function CharacterMini({
 }: {
   character: typeof baseCharacter & { name: string };
 }) {
+  const equipped = [
+    { icon: "🗡️", item: character.equipped.weapon },
+    { icon: "🛡️", item: character.equipped.armor },
+    { icon: "💍", item: character.equipped.accessory },
+  ];
   return (
     <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
-      <div className="space-y-2 p-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-base font-semibold">{character.name}</span>
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">
-              {character.className}
-            </span>
-            <span className="text-sm text-zinc-400 dark:text-zinc-500">
-              Lv.{character.level}
-            </span>
-          </div>
-          <span className="text-sm tabular-nums text-zinc-500 dark:text-zinc-400">
-            💰 {character.gold.toLocaleString()}
+      <div className="space-y-1.5 px-3 py-2">
+        <div className="flex flex-wrap items-baseline gap-2">
+          <span className="text-base font-semibold">{character.name}</span>
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">
+            {character.className}
+          </span>
+          <span className="text-sm text-zinc-400 dark:text-zinc-500">
+            Lv.{character.level}
           </span>
         </div>
         <StatBar
@@ -319,8 +319,102 @@ function CharacterMini({
           max={character.maxMp}
           color="bg-sky-500"
         />
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-zinc-600 dark:text-zinc-400">
+          {equipped.map(({ icon, item }, i) => (
+            <span key={i} className="inline-flex items-center gap-1">
+              <span>{icon}</span>
+              {item ? (
+                <span className="text-zinc-800 dark:text-zinc-200">
+                  {item.name}
+                </span>
+              ) : (
+                <span className="italic text-zinc-400 dark:text-zinc-600">
+                  없음
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
       </div>
     </section>
+  );
+}
+
+function TownPlaceCard({
+  icon,
+  title,
+  description,
+  children,
+}: {
+  icon: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
+      >
+        <span aria-hidden className="text-2xl leading-none">
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-medium text-zinc-900 dark:text-zinc-100">
+            {title}
+          </span>
+          <span className="block truncate text-sm text-zinc-500 dark:text-zinc-400">
+            {description}
+          </span>
+        </span>
+        <span
+          aria-hidden
+          className={`shrink-0 text-zinc-400 transition-transform dark:text-zinc-500 ${
+            open ? "rotate-180" : ""
+          }`}
+        >
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className="border-t border-zinc-200 p-4 dark:border-zinc-800">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TownPanel() {
+  return (
+    <div className="space-y-2">
+      <TownPlaceCard
+        icon="🏋️"
+        title="훈련장"
+        description="능력치를 단련할 수 있는 곳."
+      >
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {STAT_KEYS.map((k) => (
+            <button
+              key={k}
+              type="button"
+              className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900"
+            >
+              <span className="text-zinc-700 dark:text-zinc-300">
+                {STAT_LABELS[k]} 단련
+              </span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                준비 중
+              </span>
+            </button>
+          ))}
+        </div>
+      </TownPlaceCard>
+    </div>
   );
 }
 
@@ -390,12 +484,7 @@ export default function Home() {
               />
             </>
           )}
-          {tab === "town" && (
-            <PlaceholderPanel
-              title="마을"
-              message="아직 둘러볼 수 있는 곳이 없습니다."
-            />
-          )}
+          {tab === "town" && <TownPanel />}
           {tab === "character" && (
             <>
               <CharacterPanel character={character} />
