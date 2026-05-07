@@ -1382,10 +1382,22 @@ export default function Home() {
               />
               <EntryCard
                 icon={
+                  <Storefront
+                    size={28}
+                    weight="duotone"
+                    className="text-emerald-600"
+                  />
+                }
+                title="상점"
+                description="물건을 사고 팔 수 있는 곳."
+                onClick={() => setSubView("shop")}
+              />
+              <EntryCard
+                icon={
                   <Barbell
                     size={28}
                     weight="duotone"
-                    className="text-orange-500"
+                    className="text-slate-400"
                   />
                 }
                 title="훈련장"
@@ -1403,18 +1415,6 @@ export default function Home() {
                 title="대장간"
                 description="장비를 두드려 벼리는 곳."
                 onClick={() => setSubView("crafting")}
-              />
-              <EntryCard
-                icon={
-                  <Storefront
-                    size={28}
-                    weight="duotone"
-                    className="text-emerald-600"
-                  />
-                }
-                title="상점"
-                description="물건을 사고 팔 수 있는 곳."
-                onClick={() => setSubView("shop")}
               />
               <EntryCard
                 icon={
