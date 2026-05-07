@@ -30,6 +30,17 @@ import {
   type MapProgress,
 } from "@/lib/map-progress";
 import { START_REGION_ID } from "@/adventure/data/world";
+import { NotificationBell } from "@/components/NotificationBell";
+import { NotificationToast } from "@/components/NotificationToast";
+import { RecentLogView } from "@/adventure/RecentLogView";
+import {
+  genNotificationId,
+  loadNotifications,
+  saveNotifications,
+  MAX_NOTIFICATIONS,
+  type AppNotification,
+  type NotificationKind,
+} from "@/lib/notifications";
 
 const PROFILE_STORAGE_KEY = "characterProfile.v1";
 const LEGACY_PROFILE_KEYS = ["characterName", "characterName.v2"];
@@ -658,6 +669,8 @@ export default function Home() {
     useState<CharacterDynamicState>(initialCharacterState);
   const [autoBattle, setAutoBattle] = useState(false);
   const regionInitRanRef = useRef(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [lastReadAt, setLastReadAt] = useState<number>(0);
 
   useEffect(() => {
     try {
@@ -712,8 +725,18 @@ export default function Home() {
       }
     } catch {}
 
+    const stored = loadNotifications();
+    setNotifications(stored.list);
+    setLastReadAt(stored.lastReadAt);
+
     setHydrated(true);
   }, []);
+
+  // 알림 영속
+  useEffect(() => {
+    if (!hydrated) return;
+    saveNotifications({ list: notifications, lastReadAt });
+  }, [hydrated, notifications, lastReadAt]);
 
   // 캐릭터 변동 상태 영속
   useEffect(() => {
@@ -856,6 +879,20 @@ export default function Home() {
     def: equipDef,
   };
 
+  const addNotification = (kind: NotificationKind, text: string) => {
+    const notif: AppNotification = {
+      id: genNotificationId(),
+      timestamp: Date.now(),
+      kind,
+      text,
+    };
+    setNotifications((prev) => [notif, ...prev].slice(0, MAX_NOTIFICATIONS));
+  };
+
+  const handleNotificationsOpen = () => {
+    setLastReadAt(Date.now());
+  };
+
   const handleBattleEnd = (payload: BattleEndPayload) => {
     if (payload.outcome === "win") {
       setCharacterState((prev) => ({
@@ -864,6 +901,18 @@ export default function Home() {
         exp: prev.exp + payload.rewards.exp,
         gold: prev.gold + payload.rewards.gold,
       }));
+      const expPart =
+        payload.rewards.exp > 0 ? ` EXP +${payload.rewards.exp}` : "";
+      const goldPart =
+        payload.rewards.gold > 0 ? ` 골드 +${payload.rewards.gold}` : "";
+      const reward =
+        expPart || goldPart
+          ? `${expPart}${goldPart}`.trim()
+          : "보상 없음";
+      addNotification(
+        "battle_win",
+        `${payload.enemyName}을(를) 쓰러뜨렸다 — ${reward}`,
+      );
     } else {
       // 패배 — HP 회복 + 시작 마을 강제 이동 + 자동 전투 OFF
       setCharacterState((prev) => ({ ...prev, hp: baseCharacter.maxHp }));
@@ -874,8 +923,14 @@ export default function Home() {
           : [...prev.visitedRegionIds, START_REGION_ID],
       }));
       setAutoBattle(false);
+      addNotification(
+        "battle_lose",
+        `${payload.enemyName}에게 쓰러졌다... 시작 마을로 돌아왔다.`,
+      );
     }
   };
+
+  const unreadCount = notifications.filter((n) => n.timestamp > lastReadAt).length;
 
   return (
     <>
@@ -897,10 +952,15 @@ export default function Home() {
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <span className="inline-flex items-center gap-1 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
-              <Coins size={14} weight="fill" className="text-yellow-500" />
+            <span className="inline-flex items-center gap-1.5 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
+              <Coins size={20} weight="fill" className="text-yellow-500" />
               {character.gold.toLocaleString()}
             </span>
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onOpen={handleNotificationsOpen}
+            />
             <ThemeToggle />
           </div>
         </header>
@@ -1116,6 +1176,22 @@ export default function Home() {
                 description="지금까지의 여정과 발견을 기록합니다."
                 onClick={() => setSubView("adventure-log")}
               />
+              <EntryCard
+                icon={
+                  <Scroll
+                    size={28}
+                    weight="duotone"
+                    className="text-rose-500"
+                  />
+                }
+                title="최근 기록"
+                description={
+                  notifications.length > 0
+                    ? `최근 알림 ${notifications.length}개`
+                    : "아직 기록된 알림이 없습니다."
+                }
+                onClick={() => setSubView("recent-log")}
+              />
             </div>
           )}
           {tab === "character" && subView === "info" && (
@@ -1155,8 +1231,18 @@ export default function Home() {
               </section>
             </div>
           )}
+          {tab === "character" && subView === "recent-log" && (
+            <div className="space-y-3">
+              <SubViewHeader
+                title="최근 기록"
+                onBack={() => setSubView(null)}
+              />
+              <RecentLogView notifications={notifications} />
+            </div>
+          )}
         </main>
       </div>
+      <NotificationToast notifications={notifications} />
       {showModal && <NameSetupModal onSubmit={handleProfileSubmit} />}
     </>
   );

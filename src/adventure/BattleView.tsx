@@ -13,6 +13,7 @@ const RESULT_AUTO_CONFIRM_MS = 1200;
 
 export type BattleEndPayload = {
   outcome: BattleOutcome;
+  enemyName: string;
   finalPlayerHp: number;
   rewards: { exp: number; gold: number };
 };
@@ -52,7 +53,12 @@ export function BattleView({
         ? { exp: state.enemy.exp, gold: state.enemy.gold }
         : { exp: 0, gold: 0 };
 
-      onBattleEnd({ outcome: state.outcome, finalPlayerHp: finalHp, rewards });
+      onBattleEnd({
+        outcome: state.outcome,
+        enemyName: state.enemy.name,
+        finalPlayerHp: finalHp,
+        rewards,
+      });
 
       if (isWin && autoBattle) {
         const nextEnemy = pickEnemy(region);
