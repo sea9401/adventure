@@ -75,7 +75,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 5,
     def: 1,
     spd: 5,
-    exp: 0,
+    exp: 4,
   },
   산적: {
     name: "산적",
@@ -84,7 +84,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 6,
     def: 2,
     spd: 4,
-    exp: 0,
+    exp: 5,
   },
   "호수 정령": {
     name: "호수 정령",
@@ -93,7 +93,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 8,
     def: 3,
     spd: 4,
-    exp: 0,
+    exp: 6,
   },
 };
 
