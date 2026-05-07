@@ -616,14 +616,36 @@ export default function Home() {
         <TabBar active={tab} onChange={handleTabChange} />
 
         <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4 sm:p-6">
-          {tab === "adventure" && (
+          {tab === "adventure" && subView === null && (
             <>
               <CharacterMini character={character} />
-              <PlaceholderPanel
-                title="모험"
-                message="새로운 모험이 곧 시작됩니다."
-              />
+              <div className="space-y-2">
+                <EntryCard
+                  icon="⚔️"
+                  title="전투"
+                  description="적과 맞서 싸웁니다."
+                  onClick={() => setSubView("battle")}
+                />
+                <EntryCard
+                  icon="🗺️"
+                  title="지도"
+                  description="모험할 곳을 찾아봅니다."
+                  onClick={() => setSubView("map")}
+                />
+              </div>
             </>
+          )}
+          {tab === "adventure" && subView === "battle" && (
+            <div className="space-y-3">
+              <SubViewHeader title="전투" onBack={() => setSubView(null)} />
+              <PlaceholderPanel title="전투" message="준비 중입니다." />
+            </div>
+          )}
+          {tab === "adventure" && subView === "map" && (
+            <div className="space-y-3">
+              <SubViewHeader title="지도" onBack={() => setSubView(null)} />
+              <PlaceholderPanel title="지도" message="준비 중입니다." />
+            </div>
           )}
 
           {tab === "town" && subView === null && (
