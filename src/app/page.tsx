@@ -55,6 +55,9 @@ const baseCharacter = {
   mp: 30,
   maxMp: 30,
   gold: 0,
+  affiliation: "무소속",
+  battleCount: 0,
+  fame: 0,
   stats: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 } as Record<StatKey, number>,
   equipped: {
     weapon: {
@@ -144,6 +147,41 @@ function TabBar({
         );
       })}
     </nav>
+  );
+}
+
+function AdventurerCard({
+  character,
+}: {
+  character: typeof baseCharacter & { name: string };
+}) {
+  const items = [
+    { label: "소속", value: character.affiliation },
+    { label: "전투 전적", value: `${character.battleCount.toLocaleString()}회` },
+    { label: "명성", value: character.fame.toLocaleString() },
+    { label: "보유 골드", value: `💰 ${character.gold.toLocaleString()}` },
+  ];
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        모험가 카드
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        {items.map(({ label, value }) => (
+          <div
+            key={label}
+            className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50"
+          >
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">
+              {label}
+            </div>
+            <div className="mt-0.5 text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+              {value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -686,7 +724,11 @@ export default function Home() {
               <SubViewHeader title="내 정보" onBack={() => setSubView(null)} />
               <CharacterMini character={character} />
               <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
-                <StatsPanel stats={character.stats} />
+                <div className="space-y-4">
+                  <AdventurerCard character={character} />
+                  <div className="border-t border-zinc-200 dark:border-zinc-800" />
+                  <StatsPanel stats={character.stats} />
+                </div>
               </section>
             </div>
           )}
