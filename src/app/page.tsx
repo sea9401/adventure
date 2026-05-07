@@ -1,3 +1,5 @@
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 const character = {
   name: "모험가",
   className: "무직",
@@ -62,8 +64,19 @@ function EquipCard({ title, item }: { title: string; item: string | null }) {
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-zinc-200 px-4 py-3 sm:px-6 dark:border-zinc-800">
-        <h1 className="text-lg font-semibold tracking-wide">무슨무슨게임</h1>
+      <header className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 sm:px-6 dark:border-zinc-800">
+        <div className="flex min-w-0 items-baseline gap-3">
+          <h1 className="shrink-0 text-lg font-semibold tracking-wide">무슨무슨게임</h1>
+          <span className="truncate text-sm text-zinc-600 dark:text-zinc-400">
+            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+              {character.name}
+            </span>
+            <span className="ml-2 text-zinc-500 dark:text-zinc-500">
+              Lv.{character.level}
+            </span>
+          </span>
+        </div>
+        <ThemeToggle />
       </header>
 
       <main className="mx-auto w-full max-w-2xl flex-1 p-4 sm:p-6">
