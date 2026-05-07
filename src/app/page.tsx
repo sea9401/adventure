@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   Barbell,
+  BookOpen,
   CaretRight,
   Coins,
   Compass,
@@ -1097,6 +1098,18 @@ export default function Home() {
                 }
                 onClick={() => setSubView("skills")}
               />
+              <EntryCard
+                icon={
+                  <BookOpen
+                    size={28}
+                    weight="duotone"
+                    className="text-emerald-600"
+                  />
+                }
+                title="모험의 서"
+                description="지금까지의 여정과 발견을 기록합니다."
+                onClick={() => setSubView("adventure-log")}
+              />
             </div>
           )}
           {tab === "character" && subView === "info" && (
@@ -1116,6 +1129,24 @@ export default function Home() {
             <div className="space-y-3">
               <SubViewHeader title="스킬" onBack={() => setSubView(null)} />
               <SkillsView skills={character.skills} />
+            </div>
+          )}
+          {tab === "character" && subView === "adventure-log" && (
+            <div className="space-y-3">
+              <SubViewHeader title="모험의 서" onBack={() => setSubView(null)} />
+              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
+                <BookOpen
+                  size={40}
+                  weight="duotone"
+                  className="mx-auto text-zinc-400 dark:text-zinc-500"
+                />
+                <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
+                  아직 기록이 없습니다
+                </div>
+                <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  모험을 진행하면 여기에 자취가 남습니다.
+                </div>
+              </section>
             </div>
           )}
         </main>
