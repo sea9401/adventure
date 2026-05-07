@@ -4,6 +4,7 @@ export type RegionId =
   | "forest"
   | "cave"
   | "lake"
+  | "diola"
   | "ruins";
 
 export type Biome =
@@ -14,6 +15,8 @@ export type Biome =
   | "lake"
   | "ruins";
 
+export type RegionTag = "town";
+
 export type Region = {
   id: RegionId;
   name: string;
@@ -21,6 +24,7 @@ export type Region = {
   position: { x: number; y: number };
   biome: Biome;
   enemies: string[];
+  tags?: RegionTag[];
 };
 
 export type RegionEdge = {
@@ -44,6 +48,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 160, y: 380 },
       biome: "village",
       enemies: [],
+      tags: ["town"],
     },
     {
       id: "plains",
@@ -78,6 +83,15 @@ export const WORLD_MAP: WorldMap = {
       enemies: ["호수 정령", "수룡"],
     },
     {
+      id: "diola",
+      name: "디올라 마을",
+      description: "안개 호수 가장자리에 자리한 작은 어촌. 호수에서 잡은 물고기로 살아간다.",
+      position: { x: 660, y: 80 },
+      biome: "village",
+      enemies: [],
+      tags: ["town"],
+    },
+    {
       id: "ruins",
       name: "옛 폐허",
       description: "잊힌 문명의 흔적. 위험한 기운이 감돈다.",
@@ -93,6 +107,7 @@ export const WORLD_MAP: WorldMap = {
     { from: "plains", to: "ruins" },
     { from: "cave", to: "lake" },
     { from: "forest", to: "lake" },
+    { from: "lake", to: "diola" },
     { from: "forest", to: "ruins" },
   ],
 };
