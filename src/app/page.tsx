@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { NameSetupModal } from "@/components/NameSetupModal";
+import { NameSetupModal, type Gender } from "@/components/NameSetupModal";
 
-const NAME_STORAGE_KEY = "characterName.v2";
-const LEGACY_NAME_KEYS = ["characterName"];
+const PROFILE_STORAGE_KEY = "characterProfile.v1";
+const LEGACY_PROFILE_KEYS = ["characterName", "characterName.v2"];
 const DEFAULT_NAME = "모험가";
+
+type Profile = { name: string; gender: Gender };
 
 const TRAINING_STORAGE_KEY = "training.v1";
 const TRAINING_DURATION_MS = 4 * 60 * 60 * 1000;
@@ -301,10 +303,33 @@ function StatsPanel({
   );
 }
 
+function CharacterPortrait({ gender }: { gender: Gender }) {
+  const [errored, setErrored] = useState(false);
+  const fallback = gender === "male" ? "👦" : "👧";
+  return (
+    <div
+      aria-label="캐릭터 이미지"
+      className="flex aspect-square w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-5xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
+    >
+      {errored ? (
+        <span>{fallback}</span>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`/images/character/${gender}.png`}
+          alt=""
+          onError={() => setErrored(true)}
+          className="h-full w-full object-contain"
+        />
+      )}
+    </div>
+  );
+}
+
 function CharacterMini({
   character,
 }: {
-  character: typeof baseCharacter & { name: string };
+  character: typeof baseCharacter & { name: string; gender: Gender };
 }) {
   const equipped = [
     { icon: "🗡️", label: "무기", item: character.equipped.weapon },
@@ -315,12 +340,7 @@ function CharacterMini({
     <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
       <div className="space-y-3 p-4">
         <div className="flex items-stretch gap-4">
-          <div
-            aria-label="캐릭터 이미지"
-            className="flex aspect-square w-32 shrink-0 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-5xl text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-600"
-          >
-            🧑
-          </div>
+          <CharacterPortrait gender={character.gender} />
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-baseline gap-2">
               <span className="text-base font-semibold">{character.name}</span>
@@ -509,7 +529,7 @@ function PlaceholderPanel({ title, message }: { title: string; message: string }
 }
 
 export default function Home() {
-  const [name, setName] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
   const [subView, setSubView] = useState<string | null>(null);
@@ -521,10 +541,18 @@ export default function Home() {
 
   useEffect(() => {
     try {
-      for (const key of LEGACY_NAME_KEYS) localStorage.removeItem(key);
-      const stored = localStorage.getItem(NAME_STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (stored) setName(stored);
+      for (const key of LEGACY_PROFILE_KEYS) localStorage.removeItem(key);
+      const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Profile>;
+        if (
+          parsed?.name &&
+          (parsed.gender === "male" || parsed.gender === "female")
+        ) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setProfile({ name: parsed.name, gender: parsed.gender });
+        }
+      }
     } catch {}
 
     try {
@@ -575,11 +603,11 @@ export default function Home() {
     } catch {}
   }, [hydrated, trainingEndsAt, unspentPoints, allocatedStats]);
 
-  const handleNameSubmit = (next: string) => {
+  const handleProfileSubmit = (next: Profile) => {
     try {
-      localStorage.setItem(NAME_STORAGE_KEY, next);
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(next));
     } catch {}
-    setName(next);
+    setProfile(next);
   };
 
   const handleStartTraining = () => {
@@ -611,7 +639,8 @@ export default function Home() {
 
   const character = {
     ...baseCharacter,
-    name: name ?? DEFAULT_NAME,
+    name: profile?.name ?? DEFAULT_NAME,
+    gender: profile?.gender ?? "male",
     stats: STAT_KEYS.reduce<Record<StatKey, number>>(
       (acc, k) => {
         acc[k] = baseCharacter.stats[k] + allocatedStats[k];
@@ -620,7 +649,7 @@ export default function Home() {
       {} as Record<StatKey, number>,
     ),
   };
-  const showModal = hydrated && !name;
+  const showModal = hydrated && !profile;
 
   return (
     <>
@@ -700,7 +729,7 @@ export default function Home() {
           )}
         </main>
       </div>
-      {showModal && <NameSetupModal onSubmit={handleNameSubmit} />}
+      {showModal && <NameSetupModal onSubmit={handleProfileSubmit} />}
     </>
   );
 }
