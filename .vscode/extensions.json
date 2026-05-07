@@ -1,9 +1,0 @@
-{
-  "recommendations": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode",
-    "bradlc.vscode-tailwindcss",
-    "Anthropic.claude-code",
-    "yoavbls.pretty-ts-errors"
-  ]
-}
