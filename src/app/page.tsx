@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
+  Backpack,
   Barbell,
   BookOpen,
   CaretRight,
@@ -49,6 +50,12 @@ import { GuildView } from "@/adventure/GuildView";
 import { useQuests } from "@/adventure/quests/useQuests";
 import { getQuestById } from "@/adventure/data/quests";
 import { ITEMS, type EquipItem } from "@/adventure/data/items";
+import { POTIONS, type PotionId } from "@/adventure/data/potions";
+import { useInventory } from "@/adventure/inventory/useInventory";
+import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
+import { InventoryView } from "@/adventure/InventoryView";
+import { ShopView } from "@/adventure/ShopView";
+import type { BattleState, PlayerAction } from "@/adventure/battle/engine";
 import { type Recipe } from "@/adventure/data/recipes";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
 import {
@@ -755,6 +762,8 @@ export default function Home() {
   const adventureLog = useAdventureLog();
   const quests = useQuests();
   const crafting = useCrafting();
+  const inventory = useInventory();
+  const autoPotion = useAutoPotionConfig();
 
   useEffect(() => {
     try {
@@ -1020,6 +1029,33 @@ export default function Home() {
     spd: character.stats.spd,
     evasionPct: character.stats.dex,
     attackCount: 1 + Math.floor(character.stats.spd / 10),
+  };
+
+  // 자동 전투 — 보유/규칙 평가 후 행동 결정. 인벤토리 차감은 호출 측(BattleView)에서.
+  const pickAutoAction = (state: BattleState): PlayerAction => {
+    for (const rule of autoPotion.config.rules) {
+      if (!rule.enabled) continue;
+      const potion = POTIONS[rule.potionId];
+      if (!potion) continue;
+      if ((inventory.state.potions[rule.potionId] ?? 0) <= 0) continue;
+      if (state.playerHp >= state.playerMaxHp) continue;
+      if (rule.trigger.kind === "hp_below_pct") {
+        const pct = (state.playerHp / state.playerMaxHp) * 100;
+        if (pct < rule.trigger.pct) {
+          return { kind: "use_potion", potionId: rule.potionId, potion };
+        }
+      }
+    }
+    return { kind: "attack" };
+  };
+
+  const handlePurchasePotion = (id: PotionId, quantity: number) => {
+    const potion = POTIONS[id];
+    if (!potion) return;
+    const cost = potion.price * quantity;
+    if (characterState.gold < cost) return;
+    setCharacterState((prev) => ({ ...prev, gold: prev.gold - cost }));
+    inventory.add(id, quantity);
   };
 
   const addNotification = (kind: NotificationKind, text: string) => {
@@ -1333,6 +1369,9 @@ export default function Home() {
                 onAutoBattleChange={setAutoBattle}
                 onBattleStart={adventureLog.markEncountered}
                 onBattleEnd={handleBattleEnd}
+                potionCounts={inventory.state.potions}
+                consumePotion={inventory.consume}
+                pickAutoAction={pickAutoAction}
               />
             </div>
           )}
@@ -1421,7 +1460,7 @@ export default function Home() {
                   <Scroll
                     size={28}
                     weight="duotone"
-                    className="text-yellow-700"
+                    className="text-stone-100"
                   />
                 }
                 title="모험가 길드"
@@ -1499,14 +1538,11 @@ export default function Home() {
           {tab === "town" && isTown && subView === "shop" && (
             <div className="space-y-3">
               <SubViewHeader title="상점" onBack={() => setSubView(null)} />
-              <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
-                <div className="text-base font-medium text-zinc-700 dark:text-zinc-300">
-                  아직 진열대가 비어 있습니다
-                </div>
-                <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  곧 상품을 들여놓을 예정입니다.
-                </div>
-              </section>
+              <ShopView
+                gold={character.gold}
+                inventory={inventory.state}
+                onPurchase={handlePurchasePotion}
+              />
             </div>
           )}
           {tab === "town" && isTown && subView === "guild" && (
@@ -1538,6 +1574,22 @@ export default function Home() {
                 title="내 정보"
                 description="캐릭터 정보와 능력치를 확인합니다."
                 onClick={() => setSubView("info")}
+              />
+              <EntryCard
+                icon={
+                  <Backpack
+                    size={28}
+                    weight="duotone"
+                    className="text-emerald-500"
+                  />
+                }
+                title="가방"
+                description={
+                  inventory.totalPotions() > 0
+                    ? `보유 아이템 ${inventory.totalPotions()}개`
+                    : "비어 있습니다."
+                }
+                onClick={() => setSubView("inventory")}
               />
               <EntryCard
                 icon={
@@ -1596,6 +1648,16 @@ export default function Home() {
                   <StatsPanel stats={character.stats} />
                 </div>
               </section>
+            </div>
+          )}
+          {tab === "character" && subView === "inventory" && (
+            <div className="space-y-3">
+              <SubViewHeader title="가방" onBack={() => setSubView(null)} />
+              <InventoryView
+                inventory={inventory.state}
+                autoConfig={autoPotion.config}
+                onUpdateRule={autoPotion.updateRule}
+              />
             </div>
           )}
           {tab === "character" && subView === "skills" && (

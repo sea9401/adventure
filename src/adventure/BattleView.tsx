@@ -3,11 +3,17 @@
 import { useEffect, useRef } from "react";
 import type { Region } from "./data/world";
 import { MONSTERS, type Monster } from "./data/monsters";
-import type { BattleOutcome, PlayerCombat } from "./battle/engine";
-import { useBattle } from "./battle/useBattle";
-import { BattleScene } from "./battle/BattleScene";
+import type {
+  BattleOutcome,
+  BattleState,
+  PlayerAction,
+  PlayerCombat,
+} from "./battle/engine";
+import { useBattle, PLAYER_TURN_INTERVAL_MS } from "./battle/useBattle";
+import { BattleScene, type ManualAction } from "./battle/BattleScene";
 import { BattleResult } from "./battle/BattleResult";
 import { EnemyEncounterSection } from "./EnemyEncounterSection";
+import { POTIONS, type PotionId } from "./data/potions";
 
 const RESULT_AUTO_CONFIRM_MS = 1200;
 
@@ -32,6 +38,9 @@ export function BattleView({
   onAutoBattleChange,
   onBattleStart,
   onBattleEnd,
+  potionCounts,
+  consumePotion,
+  pickAutoAction,
 }: {
   region: Region;
   player: PlayerCombat;
@@ -40,13 +49,40 @@ export function BattleView({
   onAutoBattleChange: (next: boolean) => void;
   onBattleStart?: (enemyName: string) => void;
   onBattleEnd: (payload: BattleEndPayload) => void;
+  potionCounts: Partial<Record<PotionId, number>>;
+  consumePotion: (id: PotionId) => boolean;
+  pickAutoAction: (state: BattleState) => PlayerAction;
 }) {
-  const { state, start, stop } = useBattle({ player, playerName });
+  const { state, start, stop, act } = useBattle({ player, playerName });
 
   const startWithLog = (enemy: Monster) => {
     onBattleStart?.(enemy.name);
     start(enemy);
   };
+
+  // 자동 전투 — player phase일 때 일정 간격으로 자동 행동 결정.
+  const pickActionRef = useRef(pickAutoAction);
+  const consumePotionRef = useRef(consumePotion);
+  useEffect(() => {
+    pickActionRef.current = pickAutoAction;
+    consumePotionRef.current = consumePotion;
+  });
+
+  useEffect(() => {
+    if (!state || state.phase !== "player") return;
+    if (!autoBattle) return;
+    const id = setTimeout(() => {
+      const picked = pickActionRef.current(state);
+      let action: PlayerAction = picked;
+      if (picked.kind === "use_potion") {
+        if (!consumePotionRef.current(picked.potionId)) {
+          action = { kind: "attack" };
+        }
+      }
+      act(action);
+    }, PLAYER_TURN_INTERVAL_MS);
+    return () => clearTimeout(id);
+  }, [state, autoBattle, act]);
 
   // 종료 후 onConfirm — 외부 상태 반영 + 자동/수동 다음 행동 분기.
   // ref로 보관해서 useEffect에서 latest 값 사용 (closure stale 방지).
@@ -147,7 +183,19 @@ export function BattleView({
 
   // 2) 전투 중
   if (state.phase !== "ended") {
-    return <BattleScene state={state} playerName={playerName} />;
+    const manual: ManualAction | undefined = autoBattle
+      ? undefined
+      : {
+          potionCounts,
+          onAttack: () => act({ kind: "attack" }),
+          onUsePotion: (id) => {
+            const potion = POTIONS[id];
+            if (!potion) return;
+            if (!consumePotion(id)) return;
+            act({ kind: "use_potion", potionId: id, potion });
+          },
+        };
+    return <BattleScene state={state} playerName={playerName} manual={manual} />;
   }
 
   // 3) 종료 — 결과 화면
