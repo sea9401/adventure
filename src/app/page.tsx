@@ -285,6 +285,45 @@ function StatsPanel({
   );
 }
 
+function CharacterMini({
+  character,
+}: {
+  character: typeof baseCharacter & { name: string };
+}) {
+  return (
+    <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <div className="space-y-2 p-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="text-base font-semibold">{character.name}</span>
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+              {character.className}
+            </span>
+            <span className="text-sm text-zinc-400 dark:text-zinc-500">
+              Lv.{character.level}
+            </span>
+          </div>
+          <span className="text-sm tabular-nums text-zinc-500 dark:text-zinc-400">
+            💰 {character.gold.toLocaleString()}
+          </span>
+        </div>
+        <StatBar
+          label="HP"
+          value={character.hp}
+          max={character.maxHp}
+          color="bg-red-500"
+        />
+        <StatBar
+          label="MP"
+          value={character.mp}
+          max={character.maxMp}
+          color="bg-sky-500"
+        />
+      </div>
+    </section>
+  );
+}
+
 function PlaceholderPanel({ title, message }: { title: string; message: string }) {
   return (
     <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
@@ -343,10 +382,13 @@ export default function Home() {
 
         <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4 sm:p-6">
           {tab === "adventure" && (
-            <PlaceholderPanel
-              title="모험"
-              message="새로운 모험이 곧 시작됩니다."
-            />
+            <>
+              <CharacterMini character={character} />
+              <PlaceholderPanel
+                title="모험"
+                message="새로운 모험이 곧 시작됩니다."
+              />
+            </>
           )}
           {tab === "town" && (
             <PlaceholderPanel
