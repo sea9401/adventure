@@ -136,7 +136,7 @@ function TabBar({
             aria-selected={selected}
             type="button"
             onClick={() => onChange(t.key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm transition-colors ${
+            className={`-mb-px border-b-2 px-4 py-2 text-base font-semibold transition-colors ${
               selected
                 ? "border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"
                 : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
