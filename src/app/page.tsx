@@ -100,6 +100,11 @@ import {
   CHARACTER_STATE_KEY,
   BATTLE_SETTINGS_KEY,
 } from "@/lib/storage-keys";
+import {
+  STAT_KEYS,
+  STAT_LABELS,
+  type StatKey,
+} from "@/adventure/data/stats";
 
 const DEFAULT_NAME = "모험가";
 
@@ -147,17 +152,6 @@ export type { EquipBonus } from "@/adventure/data/items";
 type Skill = {
   name: string;
   description?: string;
-};
-
-const STAT_KEYS = ["str", "dex", "vit", "spd", "luk"] as const;
-type StatKey = (typeof STAT_KEYS)[number];
-
-const STAT_LABELS: Record<StatKey, string> = {
-  str: "힘",
-  dex: "민첩",
-  vit: "활력",
-  spd: "속도",
-  luk: "행운",
 };
 
 const STAT_ICONS: Record<StatKey, PhosphorIcon> = {
