@@ -3,7 +3,27 @@
 import { Hammer } from "@phosphor-icons/react";
 import { ITEMS } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
+import { POTIONS } from "./data/potions";
 import { RECIPES, type Recipe } from "./data/recipes";
+
+function summarizeResult(r: Recipe): {
+  title: string;
+  meta: string;
+} {
+  if (r.result.kind === "equipment") {
+    const item = ITEMS[r.result.itemId];
+    return {
+      title: r.name,
+      meta: item.stats.map((s) => `${s.label} ${s.value}`).join(" · "),
+    };
+  }
+  const potion = POTIONS[r.result.potionId];
+  const qty = r.result.quantity;
+  return {
+    title: r.name,
+    meta: qty > 1 ? `${potion.name} ×${qty}` : potion.name,
+  };
+}
 
 export function CraftingView({
   knownIds,
@@ -41,7 +61,7 @@ export function CraftingView({
       </div>
       <div className="space-y-2">
         {knownRecipes.map((r) => {
-          const item = ITEMS[r.result];
+          const { title, meta } = summarizeResult(r);
           const canCraft = r.ingredients.every(
             (ing) => (materialCounts[ing.materialId] ?? 0) >= ing.count,
           );
@@ -52,10 +72,10 @@ export function CraftingView({
             >
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  {r.name}
+                  {title}
                 </span>
                 <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
-                  {item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
+                  {meta}
                 </span>
               </div>
               <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">

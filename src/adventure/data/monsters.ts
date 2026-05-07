@@ -1,3 +1,5 @@
+import type { MaterialId } from "./materials";
+
 export type MonsterTag =
   | "humanoid"
   | "beast"
@@ -6,6 +8,11 @@ export type MonsterTag =
   | "spirit"
   | "undead"
   | "dragon";
+
+export type MonsterDrop = {
+  materialId: MaterialId;
+  chance: number; // 0~1
+};
 
 export type Monster = {
   name: string;
@@ -16,6 +23,7 @@ export type Monster = {
   def: number;
   spd: number;
   exp: number;
+  drops?: MonsterDrop[];
 };
 
 export const MONSTERS: Record<string, Monster> = {
@@ -38,6 +46,7 @@ export const MONSTERS: Record<string, Monster> = {
     def: 1,
     spd: 1,
     exp: 2,
+    drops: [{ materialId: "slime_chunk", chance: 0.15 }],
   },
   들개: {
     name: "들개",

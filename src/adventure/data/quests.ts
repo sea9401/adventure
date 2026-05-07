@@ -1,3 +1,4 @@
+import type { NpcId } from "./npcs";
 import type { RegionId } from "./world";
 
 export type QuestReward = {
@@ -14,6 +15,8 @@ export type Quest = {
   target: { monsterName: string; count: number };
   reward: QuestReward;
   repeatable: boolean;
+  // 설정 시 길드 게시판에 노출되지 않고 해당 NPC 대화에서만 진행.
+  giverNpcId?: NpcId;
 };
 
 export const QUESTS: Quest[] = [
@@ -28,10 +31,33 @@ export const QUESTS: Quest[] = [
     reward: { gold: 3, fame: 1 },
     repeatable: true,
   },
+  {
+    id: "village-slime-extermination",
+    regionId: "village",
+    title: "슬라임 퇴치",
+    description:
+      "평야에 슬라임이 갑자기 너무 많아져서 농부들이 피해를 보고있어요. 슬라임 20마리를 처치해주세요.",
+    requiredLevel: 1,
+    target: { monsterName: "슬라임", count: 20 },
+    reward: { gold: 6, fame: 2 },
+    repeatable: true,
+  },
+  {
+    id: "village-trainer-slimes",
+    regionId: "village",
+    title: "훈련 — 슬라임 5마리",
+    description: "훈련 교관 스미스의 첫 과제. 평야의 슬라임 5마리를 처치한다.",
+    requiredLevel: 1,
+    target: { monsterName: "슬라임", count: 5 },
+    reward: { gold: 0, fame: 0 },
+    repeatable: false,
+    giverNpcId: "village_trainer_smith",
+  },
 ];
 
+// 길드 게시판 노출용 — NPC 전속 퀘스트는 제외.
 export function getQuestsForRegion(regionId: RegionId): Quest[] {
-  return QUESTS.filter((q) => q.regionId === regionId);
+  return QUESTS.filter((q) => q.regionId === regionId && !q.giverNpcId);
 }
 
 export function getQuestById(id: string): Quest | undefined {

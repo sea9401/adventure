@@ -55,6 +55,7 @@ import {
   type EquipItem,
   type ItemId,
 } from "@/adventure/data/items";
+import { MONSTERS } from "@/adventure/data/monsters";
 import {
   POTIONS,
   POTION_IDS,
@@ -1134,9 +1135,97 @@ export default function Home() {
       inventory.consumeMaterial(ing.materialId, ing.count);
     }
     crafting.markCrafted(recipe.id);
-    const item = ITEMS[recipe.result];
-    inventory.addEquipment(recipe.result);
-    addNotification("info", `${item.name}을(를) 만들었다.`);
+
+    if (recipe.result.kind === "equipment") {
+      const item = ITEMS[recipe.result.itemId];
+      inventory.addEquipment(recipe.result.itemId);
+      addNotification("info", `${item.name}을(를) 만들었다.`);
+    } else {
+      const potion = POTIONS[recipe.result.potionId];
+      inventory.add(recipe.result.potionId, recipe.result.quantity);
+      const qty = recipe.result.quantity;
+      addNotification(
+        "info",
+        qty > 1
+          ? `${potion.name} ×${qty}을(를) 만들었다.`
+          : `${potion.name}을(를) 만들었다.`,
+      );
+    }
+  };
+
+  const renderTrainerDialogue = (npc: Npc, close: () => void) => {
+    const entry = quests.getEntry("village-trainer-slimes");
+
+    // Stage A — 처음. 슬라임 5마리 처치 의뢰.
+    if (entry.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "훈련이 필요해서 왔는가?\n일단 평야로 가서 슬라임 5마리를 잡고 돌아오게."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept("village-trainer-slimes");
+              close();
+            },
+          }}
+        />
+      );
+    }
+
+    // Stage B — 진행 중. 진척 표시.
+    if (entry.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            `슬라임은 잘 잡고 있나?\n평야에 가면 흔하지. — 진행 ${entry.progress}/5`
+          }
+        />
+      );
+    }
+
+    // Stage C — 조건 충족. 보상 지급.
+    if (entry.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={close}
+          text={
+            "오, 다섯 마리를 다 잡아왔군.\n잘 했네 — 자, 보상이다. 작은 회복약 다섯 개와 조합법.\n모험을 하려면 포션 정도는 만들 줄 알아야 할걸세."
+          }
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              const r = quests.claim("village-trainer-slimes");
+              if (!r.ok) return;
+              inventory.add("potion_heal_s", 5);
+              crafting.learnRecipe("potion_heal_s");
+              addNotification(
+                "quest_complete",
+                `${r.quest.title} 완료 — 작은 회복약 ×5, 조합법 획득`,
+              );
+              close();
+            },
+          }}
+        />
+      );
+    }
+
+    // Stage D — 완료 후 일상 대화.
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={close}
+        text={
+          "또 왔구나.\n모험을 하려면 포션 정도는 만들 줄 알아야 할걸세."
+        }
+      />
+    );
   };
 
   const renderBoldDialogue = (npc: Npc, close: () => void) => {
@@ -1235,6 +1324,19 @@ export default function Home() {
           exp: next.exp,
         };
       });
+      // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
+      const monster = MONSTERS[payload.enemyName];
+      if (monster?.drops) {
+        for (const drop of monster.drops) {
+          if (Math.random() < drop.chance) {
+            inventory.addMaterial(drop.materialId, 1);
+            addNotification(
+              "info",
+              `${MATERIALS[drop.materialId].name}을(를) 손에 넣었다.`,
+            );
+          }
+        }
+      }
       const reward =
         payload.rewards.exp > 0 ? `EXP +${payload.rewards.exp}` : "보상 없음";
       addNotification(
@@ -1391,11 +1493,13 @@ export default function Home() {
                   adventureLog.incrementNpcTalk(npcId);
                   adventureLog.addTownNpcTalked(regionId, npcId);
                 }}
-                renderNpcDialogue={(npc, close) =>
-                  npc.id === "village_blacksmith_bold"
-                    ? renderBoldDialogue(npc, close)
-                    : null
-                }
+                renderNpcDialogue={(npc, close) => {
+                  if (npc.id === "village_blacksmith_bold")
+                    return renderBoldDialogue(npc, close);
+                  if (npc.id === "village_trainer_smith")
+                    return renderTrainerDialogue(npc, close);
+                  return null;
+                }}
               />
             </div>
           )}
