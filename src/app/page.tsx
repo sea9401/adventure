@@ -1127,6 +1127,51 @@ export default function Home() {
               />
             </div>
           )}
+          {tab === "town" && subView === "healing" && (
+            <div className="space-y-3">
+              <SubViewHeader title="치유소" onBack={() => setSubView(null)} />
+              <section className="rounded-lg border border-zinc-200 bg-white/40 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div className="flex items-center gap-3">
+                  <FirstAid
+                    size={32}
+                    weight="duotone"
+                    className="shrink-0 text-rose-500"
+                  />
+                  <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                    체력과 마력을 모두 회복할 수 있다. 지금은 무료.
+                  </p>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <StatBar
+                    label="HP"
+                    value={character.hp}
+                    max={character.maxHp}
+                    color="bg-red-500"
+                  />
+                  <StatBar
+                    label="MP"
+                    value={character.mp}
+                    max={character.maxMp}
+                    color="bg-sky-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleHeal}
+                  disabled={
+                    character.hp >= character.maxHp &&
+                    character.mp >= character.maxMp
+                  }
+                  className="mt-4 w-full rounded-md border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400 dark:text-rose-300"
+                >
+                  {character.hp >= character.maxHp &&
+                  character.mp >= character.maxMp
+                    ? "이미 가득 차 있다"
+                    : "전부 회복"}
+                </button>
+              </section>
+            </div>
+          )}
           {tab === "town" && subView === "training" && (
             <div className="space-y-3">
               <SubViewHeader title="훈련장" onBack={() => setSubView(null)} />
