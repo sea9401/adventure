@@ -57,14 +57,8 @@ import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
 import { requiredExpToNext } from "@/lib/leveling";
 import { CraftingView } from "@/adventure/CraftingView";
-import {
-  genNotificationId,
-  loadNotifications,
-  saveNotifications,
-  MAX_NOTIFICATIONS,
-  type AppNotification,
-  type NotificationKind,
-} from "@/lib/notifications";
+import type { NotificationKind } from "@/lib/notifications";
+import { useNotifications } from "@/adventure/notifications/useNotifications";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { StatBar } from "@/components/ui/StatBar";
@@ -122,8 +116,6 @@ export default function Home() {
   const [subView, setSubView] = useState<string | null>(null);
   const [mapProgress, setMapProgress] =
     useState<MapProgress>(initialMapProgress);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [lastReadAt, setLastReadAt] = useState<number>(0);
   const adventureLog = useAdventureLog();
   const quests = useQuests();
   const crafting = useCrafting();
@@ -136,24 +128,15 @@ export default function Home() {
   const { autoBattle, setAutoBattle } = useAutoBattle(
     mapProgress.currentRegionId,
   );
+  const notifications = useNotifications();
 
   useEffect(() => {
     // localStorage 는 클라이언트 마운트 후에만 접근 가능 — useEffect 1회 hydrate.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMapProgress(loadMapProgress());
 
-    const stored = loadNotifications();
-    setNotifications(stored.list);
-    setLastReadAt(stored.lastReadAt);
-
     setHydrated(true);
   }, []);
-
-  // 알림 영속
-  useEffect(() => {
-    if (!hydrated) return;
-    saveNotifications({ list: notifications, lastReadAt });
-  }, [hydrated, notifications, lastReadAt]);
 
   // 마을 탭에 있는데 현재 위치가 마을이 아니면 서브뷰 강제 종료
   useEffect(() => {
@@ -283,19 +266,8 @@ export default function Home() {
     inventory.addMaterial(id, quantity);
   };
 
-  const addNotification = (kind: NotificationKind, text: string) => {
-    const notif: AppNotification = {
-      id: genNotificationId(),
-      timestamp: Date.now(),
-      kind,
-      text,
-    };
-    setNotifications((prev) => [notif, ...prev].slice(0, MAX_NOTIFICATIONS));
-  };
-
-  const handleNotificationsOpen = () => {
-    setLastReadAt(Date.now());
-  };
+  const addNotification = (kind: NotificationKind, text: string) =>
+    notifications.add(kind, text);
 
   // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.
   // 초기 로드(localStorage 동기화)는 무시하기 위해 ref가 null이면 베이스라인만 기록.
@@ -447,14 +419,6 @@ export default function Home() {
     completeQuest(id);
   };
 
-  // 알림(종·토스트)은 의미 있는 종류만 — battle_win·info는 최근 기록에만 남김.
-  // (quest_complete은 alertable — 토스트/종에 표시.)
-  const alertableNotifications = notifications.filter(
-    (n) => n.kind !== "battle_win" && n.kind !== "info",
-  );
-  const unreadCount = alertableNotifications.filter(
-    (n) => n.timestamp > lastReadAt,
-  ).length;
 
   return (
     <>
@@ -485,9 +449,9 @@ export default function Home() {
               {character.gold.toLocaleString()}
             </span>
             <NotificationBell
-              notifications={alertableNotifications}
-              unreadCount={unreadCount}
-              onOpen={handleNotificationsOpen}
+              notifications={notifications.alertable}
+              unreadCount={notifications.unreadCount}
+              onOpen={notifications.markRead}
             />
             <ThemeToggle />
           </div>
@@ -860,8 +824,8 @@ export default function Home() {
                 }
                 title="최근 기록"
                 description={
-                  notifications.length > 0
-                    ? `최근 알림 ${notifications.length}개`
+                  notifications.list.length > 0
+                    ? `최근 알림 ${notifications.list.length}개`
                     : "아직 기록된 알림이 없습니다."
                 }
                 onClick={() => setSubView("recent-log")}
@@ -913,17 +877,14 @@ export default function Home() {
                 onBack={() => setSubView(null)}
               />
               <RecentLogView
-                notifications={notifications}
-                onClear={() => {
-                  setNotifications([]);
-                  setLastReadAt(Date.now());
-                }}
+                notifications={notifications.list}
+                onClear={notifications.clear}
               />
             </div>
           )}
         </main>
       </div>
-      <NotificationToast notifications={alertableNotifications} />
+      <NotificationToast notifications={notifications.alertable} />
       {showModal && <NameSetupModal onSubmit={profile.submit} />}
     </>
   );
