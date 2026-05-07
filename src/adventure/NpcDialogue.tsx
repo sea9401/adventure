@@ -10,6 +10,7 @@ const ROLE_COLOR: Record<NpcRole, string> = {
   quest: "text-blue-500",
   lore: "text-violet-500",
   stranger: "text-zinc-500",
+  trainer: "text-orange-500",
 };
 
 export function NpcDialogue({

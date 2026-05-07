@@ -1,6 +1,7 @@
 import type { RegionId } from "./world";
 
 export type NpcId =
+  | "village_trainer_smith"
   | "diola_elder"
   | "diola_fisher"
   | "diola_innkeeper"
@@ -14,7 +15,8 @@ export type NpcRole =
   | "innkeeper"
   | "quest"
   | "lore"
-  | "stranger";
+  | "stranger"
+  | "trainer";
 
 export type Npc = {
   id: NpcId;
@@ -26,6 +28,16 @@ export type Npc = {
 };
 
 export const NPCS: Npc[] = [
+  {
+    id: "village_trainer_smith",
+    region: "village",
+    name: "훈련 교관 스미스",
+    role: "trainer",
+    description:
+      "마을 한구석 훈련장을 지키는 전직 모험가. 어깨가 두툼하고 손마디가 굵다.",
+    greeting:
+      "왔구나, 새내기.\n자세부터 잡아주마. 모험은 한 번 휘두르는 검보다, 백 번 흘리는 땀이다.",
+  },
   {
     id: "diola_elder",
     region: "diola",

@@ -13,6 +13,7 @@ const ROLE_LABEL: Record<NpcRole, string> = {
   quest: "의뢰인",
   lore: "마을 사람",
   stranger: "방문자",
+  trainer: "교관",
 };
 
 const ROLE_COLOR: Record<NpcRole, string> = {
@@ -22,6 +23,7 @@ const ROLE_COLOR: Record<NpcRole, string> = {
   quest: "text-blue-500",
   lore: "text-violet-500",
   stranger: "text-zinc-500",
+  trainer: "text-orange-500",
 };
 
 export function TownView({ region }: { region: Region }) {
