@@ -26,6 +26,7 @@ export type Region = {
   enemies: string[];
   tags?: RegionTag[];
   recommendedLevel?: number;
+  image?: string;
 };
 
 export type RegionEdge = {
@@ -59,6 +60,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 380, y: 360 },
       biome: "plains",
       enemies: ["슬라임", "들개", "두더쥐"],
+      image: "/images/ui/plain.png",
     },
     {
       id: "cave",
