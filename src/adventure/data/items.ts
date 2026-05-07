@@ -51,6 +51,12 @@ export const ITEMS = {
     bonus: { def: 2 },
     description: "오랜 세월 입던 흔적이 남아있지만 천 옷보단 든든하다.",
   } satisfies EquipItem,
+  vitality_ring: {
+    name: "활력의 반지",
+    slot: "accessory",
+    stats: [{ label: "활력", value: "+2" }],
+    description: "은은한 녹빛이 도는 반지. 끼고 있으면 몸이 가볍다.",
+  } satisfies EquipItem,
   squishy_armor: {
     name: "물컹물컹한 갑옷",
     slot: "armor",
