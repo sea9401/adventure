@@ -15,7 +15,7 @@ export type BattleEndPayload = {
   outcome: BattleOutcome;
   enemyName: string;
   finalPlayerHp: number;
-  rewards: { exp: number; gold: number };
+  rewards: { exp: number };
 };
 
 function pickEnemy(region: Region): Monster | null {
@@ -49,9 +49,7 @@ export function BattleView({
       if (!state || !state.outcome) return;
       const isWin = state.outcome === "win";
       const finalHp = isWin ? state.playerHp : 0;
-      const rewards = isWin
-        ? { exp: state.enemy.exp, gold: state.enemy.gold }
-        : { exp: 0, gold: 0 };
+      const rewards = isWin ? { exp: state.enemy.exp } : { exp: 0 };
 
       onBattleEnd({
         outcome: state.outcome,
@@ -150,7 +148,6 @@ export function BattleView({
     <BattleResult
       outcome={state.outcome!}
       exp={state.outcome === "win" ? state.enemy.exp : 0}
-      gold={state.outcome === "win" ? state.enemy.gold : 0}
       onConfirm={() => handleConfirmRef.current()}
       autoConfirm={state.outcome === "win" && autoBattle}
     />

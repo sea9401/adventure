@@ -899,16 +899,9 @@ export default function Home() {
         ...prev,
         hp: payload.finalPlayerHp,
         exp: prev.exp + payload.rewards.exp,
-        gold: prev.gold + payload.rewards.gold,
       }));
-      const expPart =
-        payload.rewards.exp > 0 ? ` EXP +${payload.rewards.exp}` : "";
-      const goldPart =
-        payload.rewards.gold > 0 ? ` 골드 +${payload.rewards.gold}` : "";
       const reward =
-        expPart || goldPart
-          ? `${expPart}${goldPart}`.trim()
-          : "보상 없음";
+        payload.rewards.exp > 0 ? `EXP +${payload.rewards.exp}` : "보상 없음";
       addNotification(
         "battle_win",
         `${payload.enemyName}을(를) 쓰러뜨렸다 — ${reward}`,

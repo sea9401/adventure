@@ -16,7 +16,6 @@ export type Monster = {
   def: number;
   spd: number;
   exp: number;
-  gold: number;
 };
 
 export const MONSTERS: Record<string, Monster> = {
@@ -29,7 +28,6 @@ export const MONSTERS: Record<string, Monster> = {
     def: 0,
     spd: 1,
     exp: 1,
-    gold: 1,
   },
   슬라임: {
     name: "슬라임",
@@ -40,7 +38,6 @@ export const MONSTERS: Record<string, Monster> = {
     def: 1,
     spd: 1,
     exp: 2,
-    gold: 2,
   },
   들개: {
     name: "들개",
@@ -51,7 +48,6 @@ export const MONSTERS: Record<string, Monster> = {
     def: 1,
     spd: 4,
     exp: 3,
-    gold: 2,
   },
   두더쥐: {
     name: "두더쥐",
@@ -62,7 +58,6 @@ export const MONSTERS: Record<string, Monster> = {
     def: 0,
     spd: 3,
     exp: 2,
-    gold: 2,
   },
   박쥐: {
     name: "박쥐",
@@ -72,7 +67,6 @@ export const MONSTERS: Record<string, Monster> = {
     def: 0,
     spd: 6,
     exp: 0,
-    gold: 3,
   },
   거미: {
     name: "거미",
@@ -82,7 +76,6 @@ export const MONSTERS: Record<string, Monster> = {
     def: 1,
     spd: 5,
     exp: 0,
-    gold: 4,
   },
   산적: {
     name: "산적",
@@ -92,7 +85,6 @@ export const MONSTERS: Record<string, Monster> = {
     def: 2,
     spd: 4,
     exp: 0,
-    gold: 8,
   },
   "호수 정령": {
     name: "호수 정령",
@@ -102,7 +94,6 @@ export const MONSTERS: Record<string, Monster> = {
     def: 3,
     spd: 4,
     exp: 0,
-    gold: 7,
   },
 };
 

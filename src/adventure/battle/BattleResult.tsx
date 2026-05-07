@@ -5,13 +5,11 @@ import type { BattleOutcome } from "./engine";
 export function BattleResult({
   outcome,
   exp,
-  gold,
   onConfirm,
   autoConfirm,
 }: {
   outcome: BattleOutcome;
   exp: number;
-  gold: number;
   onConfirm: () => void;
   autoConfirm: boolean;
 }) {
@@ -30,7 +28,6 @@ export function BattleResult({
       {isWin ? (
         <div className="mt-2 flex items-center justify-center gap-4 text-sm text-zinc-700 dark:text-zinc-300">
           <span className="tabular-nums">EXP +{exp}</span>
-          <span className="tabular-nums">💰 +{gold}</span>
         </div>
       ) : (
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
