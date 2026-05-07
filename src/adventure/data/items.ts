@@ -51,6 +51,13 @@ export const ITEMS = {
     bonus: { def: 2 },
     description: "오랜 세월 입던 흔적이 남아있지만 천 옷보단 든든하다.",
   } satisfies EquipItem,
+  squishy_armor: {
+    name: "물컹물컹한 갑옷",
+    slot: "armor",
+    stats: [{ label: "방어력", value: "+3" }],
+    bonus: { def: 3 },
+    description: "슬라임 핵을 심으로 두른 갑옷. 충격을 부드럽게 흡수한다.",
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;

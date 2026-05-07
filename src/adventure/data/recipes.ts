@@ -33,6 +33,16 @@ export const RECIPES: Recipe[] = [
     ingredients: [{ materialId: "slime_chunk", count: 2 }],
     result: { kind: "potion", potionId: "potion_heal_s", quantity: 1 },
   },
+  {
+    id: "squishy_armor",
+    name: "물컹물컹한 갑옷 제작법",
+    description: `${ITEMS.squishy_armor.name}을(를) 만든다. 슬라임 핵을 심으로 두르고 조각을 겹겹이 다진다.`,
+    ingredients: [
+      { materialId: "slime_core", count: 1 },
+      { materialId: "slime_chunk", count: 10 },
+    ],
+    result: { kind: "equipment", itemId: "squishy_armor", slot: "armor" },
+  },
 ];
 
 export function getRecipeById(id: string): Recipe | undefined {

@@ -1293,25 +1293,20 @@ export default function Home() {
       );
     }
 
-    // Stage D — 슬라임 핵을 들고 오면 1회성 의뢰.
+    // Stage D — 슬라임 핵을 들고 오면 1회성. 제작법을 받음(핵은 소모 X).
     if (armorReceived && !slimeQuestDone && hasSlimeCore) {
       return (
         <NpcDialogue
           npc={npc}
           onClose={close}
           text={
-            "어, 그건… 슬라임 핵 아닌가?\n흔치 않은 물건인데 — 한 개만 양보해 주게. 대장간에서 시도해 볼 게 있어. 사례는 따로 챙겨주지."
+            "어, 이건… 슬라임 핵 아닌가?\n이걸로 꽤 괜찮은 방어구를 만들 수 있다네. 내가 장비 제조법을 주지 — 슬라임 조각도 함께 챙겨서 대장간으로 오게."
           }
           primaryAction={{
-            label: "슬라임 핵을 건넨다",
+            label: "제조법을 받는다",
             onClick: () => {
-              if (!inventory.consumeMaterial("slime_core", 1)) return;
+              crafting.learnRecipe("squishy_armor");
               crafting.setBoldSlimeQuestComplete();
-              setCharacterState((prev) => ({
-                ...prev,
-                gold: prev.gold + 20,
-                fame: prev.fame + 5,
-              }));
               addNotification(
                 "quest_complete",
                 `${STORY_QUESTS.bold_slime_core.title} 완료`,
