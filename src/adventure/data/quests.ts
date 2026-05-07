@@ -53,6 +53,28 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "village_trainer_smith",
   },
+  {
+    id: "village-trainer-dogs",
+    regionId: "village",
+    title: "훈련 — 들개 10마리",
+    description: "훈련 교관 스미스의 두 번째 과제. 들개 10마리를 처치한다.",
+    requiredLevel: 1,
+    target: { monsterName: "들개", count: 10 },
+    reward: { gold: 0, fame: 0 },
+    repeatable: false,
+    giverNpcId: "village_trainer_smith",
+  },
+  {
+    id: "village-trainer-moles",
+    regionId: "village",
+    title: "훈련 — 두더쥐 10마리",
+    description: "훈련 교관 스미스의 마지막 과제. 두더쥐 10마리를 처치한다.",
+    requiredLevel: 1,
+    target: { monsterName: "두더쥐", count: 10 },
+    reward: { gold: 0, fame: 0 },
+    repeatable: false,
+    giverNpcId: "village_trainer_smith",
+  },
 ];
 
 // 길드 게시판 노출용 — NPC 전속 퀘스트는 제외.
