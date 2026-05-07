@@ -4,18 +4,27 @@ import { useState, type ReactNode } from "react";
 import {
   Compass,
   Diamond,
+  Lock,
   MapPin,
+  Sparkle,
   Sword,
   User,
 } from "@phosphor-icons/react";
 import { MONSTERS } from "./data/monsters";
 import { NPCS, type NpcRole } from "./data/npcs";
+import {
+  STAT_CONVERSIONS,
+  STAT_KEYS,
+  STAT_LABELS,
+  STAT_REVEAL_THRESHOLD,
+  type StatKey,
+} from "./data/stats";
 import { WORLD_MAP } from "./data/world";
 import type { AdventureLog } from "./log/storage";
 import { getRevealStage, type MonsterRevealStage } from "./log/thresholds";
 import { NpcAvatar } from "./NpcAvatar";
 
-type LogTabKey = "monsters" | "items" | "npcs" | "towns" | "places";
+type LogTabKey = "monsters" | "items" | "npcs" | "towns" | "places" | "etc";
 
 const LOG_TABS: { key: LogTabKey; label: string }[] = [
   { key: "monsters", label: "몬스터" },
@@ -23,6 +32,7 @@ const LOG_TABS: { key: LogTabKey; label: string }[] = [
   { key: "npcs", label: "NPC" },
   { key: "towns", label: "마을" },
   { key: "places", label: "장소" },
+  { key: "etc", label: "기타" },
 ];
 
 const ROLE_LABEL: Record<NpcRole, string> = {
@@ -35,7 +45,13 @@ const ROLE_LABEL: Record<NpcRole, string> = {
   trainer: "교관",
 };
 
-export function AdventureLogView({ log }: { log: AdventureLog }) {
+export function AdventureLogView({
+  log,
+  stats,
+}: {
+  log: AdventureLog;
+  stats: Record<StatKey, number>;
+}) {
   const [tab, setTab] = useState<LogTabKey>("monsters");
 
   return (
@@ -77,6 +93,69 @@ export function AdventureLogView({ log }: { log: AdventureLog }) {
       {tab === "npcs" && <NpcsTab log={log} />}
       {tab === "towns" && <TownsTab log={log} />}
       {tab === "places" && <PlacesTab log={log} />}
+      {tab === "etc" && <EtcTab stats={stats} />}
+    </div>
+  );
+}
+
+function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
+  return (
+    <div className="space-y-3">
+      <section className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90">
+        <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          능력치 상세
+        </div>
+        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+          각 능력치가 {STAT_REVEAL_THRESHOLD}에 도달하면 전투 수치 환산 정보가
+          공개됩니다.
+        </p>
+      </section>
+      <ul className="space-y-2">
+        {STAT_KEYS.map((k) => {
+          const value = stats[k];
+          const revealed = value >= STAT_REVEAL_THRESHOLD;
+          return (
+            <li
+              key={k}
+              className="rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  {STAT_LABELS[k]}
+                </span>
+                <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+                  현재 {value} / 공개 {STAT_REVEAL_THRESHOLD}
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-xs">
+                {revealed ? (
+                  <>
+                    <Sparkle
+                      size={14}
+                      weight="duotone"
+                      className="shrink-0 text-amber-500"
+                    />
+                    <span className="text-zinc-700 dark:text-zinc-200">
+                      {STAT_CONVERSIONS[k]}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Lock
+                      size={14}
+                      weight="duotone"
+                      className="shrink-0 text-zinc-400 dark:text-zinc-500"
+                    />
+                    <span className="italic text-zinc-500 dark:text-zinc-400">
+                      {STAT_REVEAL_THRESHOLD} 달성 시 정보 공개
+                    </span>
+                  </>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

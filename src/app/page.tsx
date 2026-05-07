@@ -49,7 +49,12 @@ import { RecentLogView } from "@/adventure/RecentLogView";
 import { GuildView } from "@/adventure/GuildView";
 import { useQuests } from "@/adventure/quests/useQuests";
 import { getQuestById } from "@/adventure/data/quests";
-import { ITEMS, type EquipItem, type ItemId } from "@/adventure/data/items";
+import {
+  ITEMS,
+  findItemId,
+  type EquipItem,
+  type ItemId,
+} from "@/adventure/data/items";
 import {
   POTIONS,
   POTION_IDS,
@@ -62,7 +67,7 @@ import { InventoryView } from "@/adventure/InventoryView";
 import { ShopView } from "@/adventure/ShopView";
 import type { BattleState, PlayerAction } from "@/adventure/battle/engine";
 import { type Recipe } from "@/adventure/data/recipes";
-import { MATERIALS } from "@/adventure/data/materials";
+import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
 import { STORY_QUESTS } from "@/adventure/data/storyQuests";
 import {
@@ -185,23 +190,9 @@ const baseCharacter = {
   skills: [] as Skill[],
   stats: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 } as Record<StatKey, number>,
   equipped: {
-    weapon: {
-      name: "나뭇가지",
-      stats: [{ label: "공격력", value: "+0" }],
-      bonus: { atk: 0 },
-      description: "어디서나 주울 수 있는 평범한 나뭇가지.",
-    } as EquipItem | null,
-    armor: {
-      name: "천 옷",
-      stats: [{ label: "방어력", value: "+1" }],
-      bonus: { def: 1 },
-      description: "평범한 천으로 만든 옷.",
-    } as EquipItem | null,
-    accessory: {
-      name: "엄마가 준 부적",
-      stats: [{ label: "행운", value: "+3" }],
-      description: "어머니의 사랑이 깃든 작은 부적.",
-    } as EquipItem | null,
+    weapon: ITEMS.branch_stick as EquipItem | null,
+    armor: ITEMS.cloth_clothes as EquipItem | null,
+    accessory: ITEMS.mom_amulet as EquipItem | null,
   },
 };
 
@@ -1078,6 +1069,15 @@ export default function Home() {
     inventory.add(id, quantity);
   };
 
+  const handlePurchaseMaterial = (id: MaterialId, quantity: number) => {
+    const m = MATERIALS[id];
+    if (!m) return;
+    const cost = m.price * quantity;
+    if (characterState.gold < cost) return;
+    setCharacterState((prev) => ({ ...prev, gold: prev.gold - cost }));
+    inventory.addMaterial(id, quantity);
+  };
+
   const addNotification = (kind: NotificationKind, text: string) => {
     const notif: AppNotification = {
       id: genNotificationId(),
@@ -1092,12 +1092,16 @@ export default function Home() {
     setLastReadAt(Date.now());
   };
 
+  // 장비 교체 — 기존에 장착돼 있던 아이템은 인벤토리로 회수.
+  // ITEMS 사전에 등록된 아이템만 회수 가능 (이름 기반 역추적).
   const equipItem = (
     slot: "weapon" | "armor" | "accessory",
     item: EquipItem,
   ) => {
     setCharacterState((prev) => {
       const current = prev.equipped ?? baseCharacter.equipped;
+      const oldId = findItemId(current[slot]);
+      if (oldId) inventory.addEquipment(oldId, 1);
       return {
         ...prev,
         equipped: { ...current, [slot]: item },
@@ -1105,8 +1109,7 @@ export default function Home() {
     });
   };
 
-  // 인벤토리에서 장비를 꺼내 장착. 인벤토리 보유분에서 1개 차감.
-  // 기존에 장착돼 있던 아이템은 ID가 없는 시작 장비라 인벤토리로 회수하지 않음.
+  // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
   const handleEquipFromInventory = (id: ItemId) => {
     if (!inventory.consumeEquipment(id, 1)) return;
     const item = ITEMS[id];
@@ -1132,7 +1135,7 @@ export default function Home() {
     }
     crafting.markCrafted(recipe.id);
     const item = ITEMS[recipe.result];
-    equipItem(recipe.slot, item);
+    inventory.addEquipment(recipe.result);
     addNotification("info", `${item.name}을(를) 만들었다.`);
   };
 
@@ -1580,7 +1583,8 @@ export default function Home() {
               <ShopView
                 gold={character.gold}
                 inventory={inventory.state}
-                onPurchase={handlePurchasePotion}
+                onPurchasePotion={handlePurchasePotion}
+                onPurchaseMaterial={handlePurchaseMaterial}
               />
             </div>
           )}
@@ -1709,7 +1713,10 @@ export default function Home() {
           {tab === "character" && subView === "adventure-log" && (
             <div className="space-y-3">
               <SubViewHeader title="모험의 서" onBack={() => setSubView(null)} />
-              <AdventureLogView log={adventureLog.log} />
+              <AdventureLogView
+                log={adventureLog.log}
+                stats={character.stats}
+              />
             </div>
           )}
           {tab === "character" && subView === "recent-log" && (
