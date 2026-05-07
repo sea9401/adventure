@@ -1,15 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ItemId } from "../data/items";
+import type { MaterialId } from "../data/materials";
 import type { PotionId } from "../data/potions";
 
 export type InventoryState = {
   potions: Partial<Record<PotionId, number>>;
+  equipment: Partial<Record<ItemId, number>>;
+  materials: Partial<Record<MaterialId, number>>;
 };
 
 const STORAGE_KEY = "inventory.v1";
 
-export const emptyInventory = (): InventoryState => ({ potions: {} });
+export const emptyInventory = (): InventoryState => ({
+  potions: {},
+  equipment: {},
+  materials: {},
+});
 
 function load(): InventoryState {
   if (typeof window === "undefined") return emptyInventory();
@@ -17,7 +25,11 @@ function load(): InventoryState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyInventory();
     const parsed = JSON.parse(raw) as Partial<InventoryState> | null;
-    return { potions: parsed?.potions ?? {} };
+    return {
+      potions: parsed?.potions ?? {},
+      equipment: parsed?.equipment ?? {},
+      materials: parsed?.materials ?? {},
+    };
   } catch {
     return emptyInventory();
   }
@@ -81,5 +93,74 @@ export function useInventory() {
     return total;
   }, [state]);
 
-  return { state, hydrated, add, consume, count, totalPotions };
+  const addEquipment = useCallback((id: ItemId, n = 1) => {
+    const cur = stateRef.current;
+    const next: InventoryState = {
+      ...cur,
+      equipment: {
+        ...cur.equipment,
+        [id]: (cur.equipment[id] ?? 0) + n,
+      },
+    };
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
+  const consumeEquipment = useCallback((id: ItemId, n = 1): boolean => {
+    const cur = stateRef.current;
+    const have = cur.equipment[id] ?? 0;
+    if (have < n) return false;
+    const next: InventoryState = {
+      ...cur,
+      equipment: { ...cur.equipment, [id]: have - n },
+    };
+    stateRef.current = next;
+    setState(next);
+    return true;
+  }, []);
+
+  const addMaterial = useCallback((id: MaterialId, n = 1) => {
+    const cur = stateRef.current;
+    const next: InventoryState = {
+      ...cur,
+      materials: {
+        ...cur.materials,
+        [id]: (cur.materials[id] ?? 0) + n,
+      },
+    };
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
+  const consumeMaterial = useCallback((id: MaterialId, n = 1): boolean => {
+    const cur = stateRef.current;
+    const have = cur.materials[id] ?? 0;
+    if (have < n) return false;
+    const next: InventoryState = {
+      ...cur,
+      materials: { ...cur.materials, [id]: have - n },
+    };
+    stateRef.current = next;
+    setState(next);
+    return true;
+  }, []);
+
+  const materialCount = useCallback(
+    (id: MaterialId): number => state.materials[id] ?? 0,
+    [state],
+  );
+
+  return {
+    state,
+    hydrated,
+    add,
+    consume,
+    count,
+    totalPotions,
+    addEquipment,
+    consumeEquipment,
+    addMaterial,
+    consumeMaterial,
+    materialCount,
+  };
 }

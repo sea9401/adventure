@@ -49,14 +49,20 @@ import { RecentLogView } from "@/adventure/RecentLogView";
 import { GuildView } from "@/adventure/GuildView";
 import { useQuests } from "@/adventure/quests/useQuests";
 import { getQuestById } from "@/adventure/data/quests";
-import { ITEMS, type EquipItem } from "@/adventure/data/items";
-import { POTIONS, type PotionId } from "@/adventure/data/potions";
+import { ITEMS, type EquipItem, type ItemId } from "@/adventure/data/items";
+import {
+  POTIONS,
+  POTION_IDS,
+  computeHealAmount,
+  type PotionId,
+} from "@/adventure/data/potions";
 import { useInventory } from "@/adventure/inventory/useInventory";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { InventoryView } from "@/adventure/InventoryView";
 import { ShopView } from "@/adventure/ShopView";
 import type { BattleState, PlayerAction } from "@/adventure/battle/engine";
 import { type Recipe } from "@/adventure/data/recipes";
+import { MATERIALS } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
 import { STORY_QUESTS } from "@/adventure/data/storyQuests";
 import {
@@ -1032,19 +1038,32 @@ export default function Home() {
     attackCount: 1 + Math.floor(character.stats.spd / 10),
   };
 
-  // 자동 전투 — 보유/규칙 평가 후 행동 결정. 인벤토리 차감은 호출 측(BattleView)에서.
+  // 자동 전투 — 카테고리 단위 규칙 평가. 회복량 작은 물약부터 소진해 큰 것을 아낌.
+  // 인벤토리 차감은 호출 측(BattleView)에서.
   const pickAutoAction = (state: BattleState): PlayerAction => {
     for (const rule of autoPotion.config.rules) {
       if (!rule.enabled) continue;
-      const potion = POTIONS[rule.potionId];
-      if (!potion) continue;
-      if ((inventory.state.potions[rule.potionId] ?? 0) <= 0) continue;
       if (state.playerHp >= state.playerMaxHp) continue;
+
+      let triggered = false;
       if (rule.trigger.kind === "hp_below_pct") {
-        const pct = (state.playerHp / state.playerMaxHp) * 100;
-        if (pct < rule.trigger.pct) {
-          return { kind: "use_potion", potionId: rule.potionId, potion };
-        }
+        const hpPct = (state.playerHp / state.playerMaxHp) * 100;
+        if (hpPct < rule.trigger.pct) triggered = true;
+      }
+      if (!triggered) continue;
+
+      const candidates = POTION_IDS.filter((id) => {
+        const p = POTIONS[id];
+        if (rule.target === "hp_heal" && p.effect.kind !== "heal_hp") return false;
+        return (inventory.state.potions[id] ?? 0) > 0;
+      }).sort(
+        (a, b) =>
+          computeHealAmount(POTIONS[a], state.playerMaxHp) -
+          computeHealAmount(POTIONS[b], state.playerMaxHp),
+      );
+
+      for (const id of candidates) {
+        return { kind: "use_potion", potionId: id, potion: POTIONS[id] };
       }
     }
     return { kind: "attack" };
@@ -1086,7 +1105,31 @@ export default function Home() {
     });
   };
 
+  // 인벤토리에서 장비를 꺼내 장착. 인벤토리 보유분에서 1개 차감.
+  // 기존에 장착돼 있던 아이템은 ID가 없는 시작 장비라 인벤토리로 회수하지 않음.
+  const handleEquipFromInventory = (id: ItemId) => {
+    if (!inventory.consumeEquipment(id, 1)) return;
+    const item = ITEMS[id];
+    equipItem(item.slot, item);
+    addNotification("info", `${item.name}을(를) 장착했다.`);
+  };
+
   const handleCraft = (recipe: Recipe) => {
+    // 재료 검사 — 부족하면 알림만 띄우고 중단.
+    for (const ing of recipe.ingredients) {
+      if (inventory.materialCount(ing.materialId) < ing.count) {
+        const name = MATERIALS[ing.materialId].name;
+        addNotification(
+          "info",
+          `재료가 부족하다 — ${name} ${ing.count}개 필요.`,
+        );
+        return;
+      }
+    }
+    // 차감.
+    for (const ing of recipe.ingredients) {
+      inventory.consumeMaterial(ing.materialId, ing.count);
+    }
     crafting.markCrafted(recipe.id);
     const item = ITEMS[recipe.result];
     equipItem(recipe.slot, item);
@@ -1143,7 +1186,7 @@ export default function Home() {
           primaryAction={{
             label: "낡은 가죽갑옷을 받는다",
             onClick: () => {
-              equipItem("armor", ITEMS.old_leather_armor);
+              inventory.addEquipment("old_leather_armor");
               crafting.setBoldQuestComplete();
               addNotification(
                 "quest_complete",
@@ -1526,6 +1569,7 @@ export default function Home() {
               <SubViewHeader title="대장간" onBack={() => setSubView(null)} />
               <CraftingView
                 knownIds={crafting.state.known}
+                materialCounts={inventory.state.materials}
                 onCraft={handleCraft}
               />
             </div>
@@ -1652,6 +1696,7 @@ export default function Home() {
                 inventory={inventory.state}
                 autoConfig={autoPotion.config}
                 onUpdateRule={autoPotion.updateRule}
+                onEquip={handleEquipFromInventory}
               />
             </div>
           )}

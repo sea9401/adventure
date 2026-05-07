@@ -2,13 +2,16 @@
 
 import { Hammer } from "@phosphor-icons/react";
 import { ITEMS } from "./data/items";
+import { MATERIALS, type MaterialId } from "./data/materials";
 import { RECIPES, type Recipe } from "./data/recipes";
 
 export function CraftingView({
   knownIds,
+  materialCounts,
   onCraft,
 }: {
   knownIds: string[];
+  materialCounts: Partial<Record<MaterialId, number>>;
   onCraft: (recipe: Recipe) => void;
 }) {
   const knownRecipes = RECIPES.filter((r) => knownIds.includes(r.id));
@@ -39,6 +42,9 @@ export function CraftingView({
       <div className="space-y-2">
         {knownRecipes.map((r) => {
           const item = ITEMS[r.result];
+          const canCraft = r.ingredients.every(
+            (ing) => (materialCounts[ing.materialId] ?? 0) >= ing.count,
+          );
           return (
             <div
               key={r.id}
@@ -55,10 +61,32 @@ export function CraftingView({
               <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
                 {r.description}
               </p>
+              {r.ingredients.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+                  <span className="text-zinc-500 dark:text-zinc-400">재료:</span>
+                  {r.ingredients.map((ing) => {
+                    const have = materialCounts[ing.materialId] ?? 0;
+                    const enough = have >= ing.count;
+                    return (
+                      <span
+                        key={ing.materialId}
+                        className={
+                          enough
+                            ? "text-zinc-700 dark:text-zinc-300"
+                            : "text-rose-600 dark:text-rose-400"
+                        }
+                      >
+                        {MATERIALS[ing.materialId].name} {have}/{ing.count}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => onCraft(r)}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                disabled={!canCraft}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
                 <Hammer
                   size={16}
