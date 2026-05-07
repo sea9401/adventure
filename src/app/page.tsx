@@ -37,7 +37,7 @@ const baseCharacter = {
   equipped: {
     weapon: {
       name: "나뭇가지",
-      stats: [{ label: "공격력", value: "+1" }],
+      stats: [{ label: "공격력", value: "+0" }],
       description: "어디서나 주울 수 있는 평범한 나뭇가지.",
     } as EquipItem | null,
     armor: {
@@ -291,9 +291,9 @@ function CharacterMini({
   character: typeof baseCharacter & { name: string };
 }) {
   const equipped = [
-    { icon: "🗡️", item: character.equipped.weapon },
-    { icon: "🛡️", item: character.equipped.armor },
-    { icon: "💍", item: character.equipped.accessory },
+    { icon: "🗡️", label: "무기", item: character.equipped.weapon },
+    { icon: "🛡️", label: "방어구", item: character.equipped.armor },
+    { icon: "💍", label: "장신구", item: character.equipped.accessory },
   ];
   return (
     <section className="rounded-lg border border-zinc-200 bg-white/40 dark:border-zinc-800 dark:bg-zinc-950/40">
@@ -307,32 +307,44 @@ function CharacterMini({
             Lv.{character.level}
           </span>
         </div>
-        <StatBar
-          label="HP"
-          value={character.hp}
-          max={character.maxHp}
-          color="bg-red-500"
-        />
-        <StatBar
-          label="MP"
-          value={character.mp}
-          max={character.maxMp}
-          color="bg-sky-500"
-        />
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-          {equipped.map(({ icon, item }, i) => (
-            <span key={i} className="inline-flex items-center gap-1">
-              <span>{icon}</span>
-              {item ? (
-                <span className="text-zinc-800 dark:text-zinc-200">
-                  {item.name}
-                </span>
-              ) : (
-                <span className="italic text-zinc-400 dark:text-zinc-600">
-                  없음
-                </span>
-              )}
-            </span>
+        <div className="max-w-xs space-y-1.5">
+          <StatBar
+            label="HP"
+            value={character.hp}
+            max={character.maxHp}
+            color="bg-red-500"
+          />
+          <StatBar
+            label="MP"
+            value={character.mp}
+            max={character.maxMp}
+            color="bg-sky-500"
+          />
+        </div>
+        <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+          {equipped.map(({ icon, label, item }) => (
+            <div
+              key={label}
+              className="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 dark:border-zinc-800 dark:bg-zinc-900/50"
+            >
+              <span className="shrink-0 text-base leading-none">{icon}</span>
+              <div className="min-w-0 leading-tight">
+                <div className="truncate text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  {label}
+                </div>
+                <div className="truncate text-xs">
+                  {item ? (
+                    <span className="text-zinc-800 dark:text-zinc-200">
+                      {item.name}
+                    </span>
+                  ) : (
+                    <span className="italic text-zinc-400 dark:text-zinc-600">
+                      없음
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </div>
