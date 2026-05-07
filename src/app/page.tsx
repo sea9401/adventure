@@ -1136,7 +1136,7 @@ export default function Home() {
                 className="mx-auto text-zinc-400 dark:text-zinc-500"
               />
               <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
-                이곳에는 마을이 없습니다
+                이곳은 마을이 아닙니다
               </div>
               <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                 마을의 시설은 마을 안에서만 이용할 수 있습니다.
