@@ -32,7 +32,7 @@ export const ITEMS = {
   mom_amulet: {
     name: "엄마가 준 부적",
     slot: "accessory",
-    stats: [{ label: "행운", value: "+3" }],
+    stats: [{ label: "행운", value: "+2" }],
     description: "어머니의 사랑이 깃든 작은 부적.",
   } satisfies EquipItem,
 
