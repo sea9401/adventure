@@ -323,7 +323,7 @@ function CharacterMini({
             Lv.{character.level}
           </span>
         </div>
-        <div className="max-w-sm space-y-1.5">
+        <div className="max-w-lg space-y-1.5">
           <StatBar
             label="HP"
             value={character.hp}
@@ -522,11 +522,8 @@ export default function Home() {
           points?: number;
           allocated?: Partial<Record<StatKey, number>>;
         };
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTrainingEndsAt(parsed.endsAt ?? null);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUnspentPoints(parsed.points ?? 0);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setAllocatedStats({ ...ZERO_ALLOCATED, ...parsed.allocated });
       }
     } catch {}
@@ -544,6 +541,7 @@ export default function Home() {
   // 훈련 종료 시점 도달 시 자동 적립 (페이지 로드 직후 / 탭 사용 중 모두 처리)
   useEffect(() => {
     if (trainingEndsAt && now >= trainingEndsAt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUnspentPoints((p) => p + 1);
       setTrainingEndsAt(null);
     }
