@@ -16,7 +16,7 @@ export type InventoryState = {
 export const emptyInventory = (): InventoryState => ({
   potions: {},
   equipment: {},
-  materials: {},
+  materials: { branch: 1 },
 });
 
 function readInitial(raw: unknown): InventoryState {

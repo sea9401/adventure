@@ -21,11 +21,11 @@ export type EquipItem = {
 export const ITEMS = {
   // 시작 장비
   branch_stick: {
-    name: "나뭇가지",
+    name: "나무 막대",
     slot: "weapon",
     stats: [{ label: "공격력", value: "+0" }],
     bonus: { atk: 0 },
-    description: "어디서나 주울 수 있는 평범한 나뭇가지.",
+    description: "나뭇가지를 대충 다듬어 만든 평범한 막대.",
   } satisfies EquipItem,
   cloth_clothes: {
     name: "천 옷",

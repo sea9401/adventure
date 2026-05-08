@@ -33,7 +33,7 @@ export function BlacksmithDialogue({
         npc={npc}
         onClose={onClose}
         text={
-          "처음 보는데… 모험가인가?\n그 나뭇가지 들고 마을 밖으로 나가는 건 위험하네.\n자, 받아 — 야구 방망이 제작서다. 대장간에 가서 직접 만들어 봐."
+          "처음 보는데… 모험가인가?\n그 나무 막대 들고 마을 밖으로 나가는 건 위험하네.\n자, 받아 — 야구 방망이 제작서다. 대장간에 가서 직접 만들어 봐."
         }
         primaryAction={{
           label: "제작서를 받는다",
