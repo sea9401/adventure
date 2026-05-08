@@ -16,6 +16,9 @@ export type EquipItem = {
   stats: { label: string; value: string }[];
   bonus?: EquipBonus;
   description?: string;
+  // 거래소 등록 가능 여부. 미지정/true 면 거래 가능.
+  // 시작 장비·서사 아이템 등에는 false 로 막는다.
+  tradable?: boolean;
 };
 
 export const ITEMS = {
@@ -26,6 +29,7 @@ export const ITEMS = {
     stats: [{ label: "공격력", value: "+0" }],
     bonus: { atk: 0 },
     description: "나뭇가지를 대충 다듬어 만든 평범한 막대.",
+    tradable: false,
   } satisfies EquipItem,
   cloth_clothes: {
     name: "천 옷",
@@ -33,6 +37,7 @@ export const ITEMS = {
     stats: [{ label: "방어력", value: "+0" }],
     bonus: { def: 0 },
     description: "평범한 천으로 만든 옷.",
+    tradable: false,
   } satisfies EquipItem,
   mom_amulet: {
     name: "엄마가 준 부적",
@@ -40,6 +45,7 @@ export const ITEMS = {
     stats: [{ label: "행운", value: "+2" }],
     bonus: { luk: 2 },
     description: "어머니의 사랑이 깃든 작은 부적.",
+    tradable: false,
   } satisfies EquipItem,
 
   // 제작·드랍 장비

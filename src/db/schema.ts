@@ -6,6 +6,7 @@ import {
   jsonb,
   primaryKey,
   serial,
+  integer,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -72,7 +73,73 @@ export const presence = pgTable("presence", {
   lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
 });
 
+// 거래소 listing — 활성/판매됨/취소됨 모두 보관 (분석/감사용).
+// item_kind: 'equip' | 'material' — 인벤토리 카테고리 매핑.
+// item_name/seller_name 은 등록 시점 스냅샷 (이후 닉네임 변경되어도 표시 안정).
+// price 는 정수 골드 (최대 999,999,999 < 2^31 이라 integer 충분).
+export const marketplaceListings = pgTable(
+  "marketplace_listings",
+  {
+    id: serial("id").primaryKey(),
+    sellerId: text("seller_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    sellerName: text("seller_name").notNull(),
+    itemKind: text("item_kind").notNull(), // 'equip' | 'material'
+    itemId: text("item_id").notNull(),
+    itemName: text("item_name").notNull(),
+    quantity: integer("quantity").notNull(),
+    price: integer("price").notNull(),
+    status: text("status").notNull().default("active"), // 'active'|'sold'|'cancelled'
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    closedAt: timestamp("closed_at"),
+    buyerId: text("buyer_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (t) => [
+    // 활성 listing 의 아이템 종류·가격 검색용 partial index.
+    index("listings_active_idx")
+      .on(t.itemKind, t.itemId, t.price)
+      .where(sql`${t.status} = 'active'`),
+    // 내 등록 목록 / 슬롯 카운트.
+    index("listings_seller_idx").on(t.sellerId, t.status, t.createdAt),
+  ],
+);
+
+// 거래 결과 우편함. 사용자가 마을에서 "수령" 누를 때까지 대기.
+// kind: 'sale_proceeds' | 'purchase_item' | 'cancel_return'
+// payload 형식:
+//   sale_proceeds:  { gold: number }
+//   purchase_item:  { item_kind, item_id, quantity }
+//   cancel_return:  { item_kind, item_id, quantity }
+export const marketplaceInbox = pgTable(
+  "marketplace_inbox",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    payload: jsonb("payload").notNull(),
+    message: text("message"),
+    listingId: integer("listing_id").references(() => marketplaceListings.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    claimedAt: timestamp("claimed_at"),
+  },
+  (t) => [
+    // 미수령 우편 — 가장 빈번한 쿼리.
+    index("inbox_unclaimed_idx")
+      .on(t.userId, t.createdAt)
+      .where(sql`${t.claimedAt} IS NULL`),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type SavesKvRow = typeof savesKv.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
 export type PresenceRow = typeof presence.$inferSelect;
+export type MarketplaceListingRow = typeof marketplaceListings.$inferSelect;
+export type MarketplaceInboxRow = typeof marketplaceInbox.$inferSelect;
