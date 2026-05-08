@@ -6,8 +6,12 @@ import type { Skill } from "./types";
 export const HP_PER_LEVEL = 5;
 export const MP_PER_LEVEL = 2;
 
+// 직업 미정 시 표시되는 기본 className. 채팅 헤더 등에서 "의미 없는" 표시이므로
+// 이 값과 같으면 UI 에서 숨길 수 있도록 export.
+export const DEFAULT_CLASS_NAME = "무직";
+
 export const baseCharacter = {
-  className: "무직",
+  className: DEFAULT_CLASS_NAME,
   level: 1,
   hp: 47,
   maxHp: 47,
