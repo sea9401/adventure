@@ -68,7 +68,8 @@ export function ListingsView({
   }, [load, refreshKey]);
 
   // 창에 포커스 돌아왔을 때 자동 새로고침. 짧은 시간(<10s) 안의 중복은 스킵.
-  const lastLoadedAt = useRef<number>(Date.now());
+  // useRef 초기값은 순수해야 하므로 Date.now() 는 effect 에서 세팅.
+  const lastLoadedAt = useRef<number>(0);
   useEffect(() => {
     lastLoadedAt.current = Date.now();
   }, [items]);

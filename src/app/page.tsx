@@ -523,6 +523,16 @@ function Home() {
         return;
       }
     }
+    // 포션 결과는 종류별 한도(POTION_MAX_PER_TYPE) 검사 — 가득 차 있으면 재료만
+    // 소비되고 결과물이 안 늘어나는 버그를 막기 위해 사전 차단.
+    if (recipe.result.kind === "potion") {
+      const have = inventory.state.potions[recipe.result.potionId] ?? 0;
+      if (have >= POTION_MAX_PER_TYPE) {
+        const potion = POTIONS[recipe.result.potionId];
+        addNotification("info", `${potion.name}을(를) 더 들 수 없다.`);
+        return;
+      }
+    }
     // 차감.
     for (const ing of recipe.ingredients) {
       inventory.consumeMaterial(ing.materialId, ing.count);
@@ -1167,6 +1177,7 @@ function Home() {
               <CraftingView
                 knownIds={crafting.state.known}
                 materialCounts={inventory.state.materials}
+                potionCounts={inventory.state.potions}
                 onCraft={handleCraft}
               />
             </div>
