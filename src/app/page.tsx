@@ -39,7 +39,7 @@ import {
   applyQuestReward,
   type RewardServices,
 } from "@/adventure/quests/applyReward";
-import { ITEMS, findItemId, type ItemId } from "@/adventure/data/items";
+import { ITEMS, findItemId, type EquipSlot, type ItemId } from "@/adventure/data/items";
 import {
   getItemSellPrice,
   getMaterialSellPrice,
@@ -428,6 +428,15 @@ function Home() {
     if (oldId) inventory.addEquipment(oldId, 1);
     characterStateHook.setSlot(item.slot, item);
     addNotification("info", `${item.name}을(를) 장착했다.`);
+  };
+
+  const handleUnequip = (slot: EquipSlot) => {
+    const current = characterStateHook.equippedSlots[slot];
+    if (!current) return;
+    const id = findItemId(current);
+    if (id) inventory.addEquipment(id, 1);
+    characterStateHook.setSlot(slot, null);
+    addNotification("info", `${current.name}을(를) 해제했다.`);
   };
 
   const handleCraft = (recipe: Recipe) => {
@@ -1176,6 +1185,7 @@ function Home() {
                 inventory={inventory.state}
                 equipped={character.equipped}
                 onEquip={handleEquipFromInventory}
+                onUnequip={handleUnequip}
               />
             </div>
           )}

@@ -111,7 +111,7 @@ export function useCharacterState() {
       return { ...prev, level: next.level, exp: next.exp };
     });
 
-  const setSlot = (slot: keyof EquippedSlots, item: EquipItem) =>
+  const setSlot = (slot: keyof EquippedSlots, item: EquipItem | null) =>
     setState((prev) => {
       const current = prev.equipped ?? baseCharacter.equipped;
       return { ...prev, equipped: { ...current, [slot]: item } };

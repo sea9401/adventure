@@ -52,14 +52,24 @@ function computeDiff(
   });
 }
 
+const SLOT_LABELS: Record<EquipSlot, string> = {
+  weapon: "무기",
+  armor: "방어구",
+  accessory: "장신구",
+};
+
+const SLOT_ORDER: EquipSlot[] = ["weapon", "armor", "accessory"];
+
 export function InventoryView({
   inventory,
   equipped,
   onEquip,
+  onUnequip,
 }: {
   inventory: InventoryState;
   equipped?: EquippedSlots;
   onEquip?: (id: ItemId) => void;
+  onUnequip?: (slot: EquipSlot) => void;
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
 
@@ -88,6 +98,52 @@ export function InventoryView({
         ariaLabel="가방 탭"
       />
 
+      {tab === "equipment" && equipped && (
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            장착중
+          </h3>
+          {SLOT_ORDER.map((slot) => {
+            const item = equipped[slot] ?? null;
+            return (
+              <Card key={slot}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    <span className="mr-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                      {SLOT_LABELS[slot]}
+                    </span>
+                    {item ? (
+                      item.name
+                    ) : (
+                      <span className="text-zinc-400 dark:text-zinc-500">
+                        비어 있음
+                      </span>
+                    )}
+                  </span>
+                  {item && (
+                    <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
+                      {item.stats
+                        .map((s) => `${s.label} ${s.value}`)
+                        .join(" · ")}
+                    </span>
+                  )}
+                </div>
+                {onUnequip && (
+                  <button
+                    type="button"
+                    onClick={() => onUnequip(slot)}
+                    disabled={!item}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  >
+                    해제
+                  </button>
+                )}
+              </Card>
+            );
+          })}
+        </section>
+      )}
+
       {tab === "equipment" &&
         (ownedEquipment.length === 0 ? (
           <EmptyState
@@ -97,6 +153,9 @@ export function InventoryView({
           />
         ) : (
           <section className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              보유 장비
+            </h3>
             {ownedEquipment.map(({ id, item, count }) => {
               const current = equipped?.[item.slot] ?? null;
               const isEquipped = findItemId(current) === id;
