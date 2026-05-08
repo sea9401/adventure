@@ -3,15 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "npm run optimize-images",
+    "predev": "npm run optimize-images && npm run check-images",
     "dev": "next dev",
-    "prebuild": "npm run optimize-images",
+    "prebuild": "npm run optimize-images && npm run check-images",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "optimize-images": "node scripts/optimize-images.mjs"
+    "optimize-images": "node scripts/optimize-images.mjs",
+    "check-images": "node scripts/check-images.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
