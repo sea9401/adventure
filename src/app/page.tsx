@@ -314,6 +314,14 @@ export default function Home() {
     attackCount: 1 + Math.floor(character.stats.spd / 10),
   };
 
+  const playerStatus = {
+    gender: character.gender,
+    mp: character.mp,
+    maxMp: character.maxMp,
+    exp: character.exp,
+    maxExp: character.maxExp,
+  };
+
   const handlePurchasePotion = (id: PotionId, quantity: number) => {
     const potion = POTIONS[id];
     if (!potion) return;
@@ -781,6 +789,7 @@ export default function Home() {
                 region={currentRegion}
                 player={playerCombat}
                 playerName={character.name}
+                playerStatus={playerStatus}
                 onBattleStart={adventureLog.markEncountered}
                 onBattleEnd={handleBattleEnd}
                 pickAutoAction={(state) =>
@@ -830,6 +839,7 @@ export default function Home() {
                 trial={trialEdge}
                 player={playerCombat}
                 playerName={character.name}
+                playerStatus={playerStatus}
                 pickAutoAction={(state) =>
                   pickAutoAction(state, {
                     rules: autoPotion.config.rules,

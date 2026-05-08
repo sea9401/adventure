@@ -11,7 +11,7 @@ import type {
   PlayerCombat,
 } from "./battle/engine";
 import { useBattle, computeBattleCooldown } from "./battle/useBattle";
-import { BattleScene } from "./battle/BattleScene";
+import { BattleScene, type BattlePlayerStatus } from "./battle/BattleScene";
 import { BattleResult } from "./battle/BattleResult";
 import { EnemyEncounterSection } from "./EnemyEncounterSection";
 import type { PotionId } from "./data/potions";
@@ -43,6 +43,7 @@ export function BattleView({
   region,
   player,
   playerName,
+  playerStatus,
   onBattleStart,
   onBattleEnd,
   pickAutoAction,
@@ -56,6 +57,7 @@ export function BattleView({
   region: Region;
   player: PlayerCombat;
   playerName: string;
+  playerStatus: BattlePlayerStatus;
   onBattleStart?: (enemyName: string) => void;
   onBattleEnd: (payload: BattleEndPayload) => void;
   pickAutoAction: (state: BattleState) => PlayerAction;
@@ -204,6 +206,7 @@ export function BattleView({
       <BattleScene
         state={state}
         playerName={playerName}
+        playerStatus={playerStatus}
         recentNotifications={recentNotifications}
       />
       {isLoss && (

@@ -12,7 +12,7 @@ import {
   type PlayerAction,
   type PlayerCombat,
 } from "./battle/engine";
-import { BattleScene } from "./battle/BattleScene";
+import { BattleScene, type BattlePlayerStatus } from "./battle/BattleScene";
 import { BattleResult } from "./battle/BattleResult";
 import { Card } from "@/components/ui/Card";
 import type { PotionId } from "./data/potions";
@@ -39,6 +39,7 @@ export function TrialView({
   trial,
   player,
   playerName,
+  playerStatus,
   pickAutoAction,
   inventoryState,
   onBattleEnd,
@@ -49,6 +50,7 @@ export function TrialView({
   trial: TrialEdge;
   player: PlayerCombat;
   playerName: string;
+  playerStatus: BattlePlayerStatus;
   pickAutoAction: (state: BattleState) => PlayerAction;
   inventoryState: InventoryState;
   /** 매 전투 종료마다 호출. 외부에서 EXP/킬/드롭/패배 후처리 적용. */
@@ -171,6 +173,7 @@ export function TrialView({
       <BattleScene
         state={state}
         playerName={playerName}
+        playerStatus={playerStatus}
         recentNotifications={recentNotifications}
       />
 

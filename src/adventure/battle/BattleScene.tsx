@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BattleState } from "./engine";
 import { MONSTERS } from "../data/monsters";
 import {
@@ -9,6 +9,15 @@ import {
   type NotificationKind,
 } from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
+import type { Gender } from "@/components/NameSetupModal";
+
+export type BattlePlayerStatus = {
+  gender: Gender;
+  mp: number;
+  maxMp: number;
+  exp: number;
+  maxExp: number;
+};
 
 const RECENT_KIND_COLOR: Record<NotificationKind, string> = {
   battle_win: "text-emerald-700 dark:text-emerald-400",
@@ -71,13 +80,40 @@ function EnemyAvatar({ name }: { name: string }) {
   );
 }
 
+function PlayerAvatar({ gender, name }: { gender: Gender; name: string }) {
+  const [errored, setErrored] = useState(false);
+  if (errored) {
+    return (
+      <div
+        aria-hidden
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+      >
+        ?
+      </div>
+    );
+  }
+  return (
+    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/images/character/${gender}.webp`}
+        alt={name}
+        onError={() => setErrored(true)}
+        className="h-full w-full object-cover"
+      />
+    </div>
+  );
+}
+
 export function BattleScene({
   state,
   playerName,
+  playerStatus,
   recentNotifications,
 }: {
   state: BattleState;
   playerName: string;
+  playerStatus: BattlePlayerStatus;
   recentNotifications?: AppNotification[];
 }) {
   const logRef = useRef<HTMLDivElement>(null);
@@ -106,13 +142,28 @@ export function BattleScene({
             />
           </div>
         </div>
-        <div className="mt-3">
-          <HpBar
-            label={playerName}
-            value={state.playerHp}
-            max={state.playerMaxHp}
-            color="bg-emerald-500"
-          />
+        <div className="mt-3 flex items-start gap-3">
+          <PlayerAvatar gender={playerStatus.gender} name={playerName} />
+          <div className="flex-1 space-y-2">
+            <HpBar
+              label={playerName}
+              value={state.playerHp}
+              max={state.playerMaxHp}
+              color="bg-emerald-500"
+            />
+            <HpBar
+              label="MP"
+              value={playerStatus.mp}
+              max={playerStatus.maxMp}
+              color="bg-sky-500"
+            />
+            <HpBar
+              label="EXP"
+              value={playerStatus.exp}
+              max={playerStatus.maxExp}
+              color="bg-amber-400"
+            />
+          </div>
         </div>
       </Card>
 
