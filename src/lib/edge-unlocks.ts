@@ -4,7 +4,7 @@ import type { RegionId } from "@/adventure/data/world";
 // 또 시련을 시키지 않도록 기록.
 // 키 포맷: `${from}->${to}` — 방향성 있음.
 
-export const EDGE_UNLOCKS_KEY = "edge-unlocks.v1";
+export const EDGE_UNLOCKS_KEY = "edge-unlocks.v2";
 
 export type EdgeUnlocks = Record<string, true>;
 

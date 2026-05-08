@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { CHARACTER_STATE_KEY } from "@/lib/storage-keys";
+import { useState } from "react";
 import { applyExpGain, MAX_LEVEL } from "@/lib/leveling";
 import { ITEMS, findItemId, type EquipItem } from "@/adventure/data/items";
+import { useSavedValue } from "@/lib/storage/SaveProvider";
+import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import { baseCharacter, maxHpForLevel, maxMpForLevel } from "./defaults";
 import type { EquippedSlots } from "./types";
 
@@ -44,40 +45,29 @@ function rehydrateEquipped(
   };
 }
 
+function readInitial(raw: unknown): CharacterDynamicState {
+  if (!raw || typeof raw !== "object") return initialCharacterState;
+  const parsed = raw as Partial<CharacterDynamicState>;
+  return {
+    hp: parsed.hp ?? initialCharacterState.hp,
+    mp: parsed.mp ?? initialCharacterState.mp,
+    level: Math.min(
+      MAX_LEVEL,
+      Math.max(1, parsed.level ?? initialCharacterState.level),
+    ),
+    exp: parsed.exp ?? initialCharacterState.exp,
+    gold: parsed.gold ?? initialCharacterState.gold,
+    fame: parsed.fame ?? initialCharacterState.fame,
+    equipped: rehydrateEquipped(parsed.equipped),
+  };
+}
+
 export function useCharacterState() {
-  const [state, setState] =
-    useState<CharacterDynamicState>(initialCharacterState);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(CHARACTER_STATE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<CharacterDynamicState>;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setState({
-          hp: parsed.hp ?? initialCharacterState.hp,
-          mp: parsed.mp ?? initialCharacterState.mp,
-          level: Math.min(
-            MAX_LEVEL,
-            Math.max(1, parsed.level ?? initialCharacterState.level),
-          ),
-          exp: parsed.exp ?? initialCharacterState.exp,
-          gold: parsed.gold ?? initialCharacterState.gold,
-          fame: parsed.fame ?? initialCharacterState.fame,
-          equipped: rehydrateEquipped(parsed.equipped),
-        });
-      }
-    } catch {}
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(CHARACTER_STATE_KEY, JSON.stringify(state));
-    } catch {}
-  }, [hydrated, state]);
+  const initial = useSavedValue("character.v2");
+  const [state, setState] = useState<CharacterDynamicState>(() =>
+    readInitial(initial),
+  );
+  useRemotePatch("character.v2", state);
 
   const equippedSlots = state.equipped ?? baseCharacter.equipped;
 
@@ -129,7 +119,7 @@ export function useCharacterState() {
 
   return {
     state,
-    hydrated,
+    hydrated: true,
     equippedSlots,
     heal,
     restoreHpFull,

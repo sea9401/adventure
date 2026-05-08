@@ -5,7 +5,7 @@ export type CraftingState = {
   boldSlimeQuestComplete: boolean;
 };
 
-export const CRAFTING_STORAGE_KEY = "crafting.v1";
+export const CRAFTING_STORAGE_KEY = "crafting.v2";
 
 export const emptyCraftingState = (): CraftingState => ({
   known: [],

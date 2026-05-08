@@ -1,49 +1,59 @@
-import { useEffect, useState } from "react";
-import { TRAINING_STORAGE_KEY } from "@/lib/storage-keys";
+import { useEffect, useMemo, useState } from "react";
 import { ZERO_ALLOCATED } from "@/adventure/character/statMeta";
 import type { StatKey } from "@/adventure/data/stats";
+import { useSavedValue } from "@/lib/storage/SaveProvider";
+import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 
 export const TRAINING_DURATION_MS = 6 * 60 * 60 * 1000;
 
+type TrainingPersisted = {
+  endsAt: number | null;
+  points: number;
+  allocated: Record<StatKey, number>;
+};
+
+function readInitial(raw: unknown): TrainingPersisted {
+  const empty: TrainingPersisted = {
+    endsAt: null,
+    points: 0,
+    allocated: { ...ZERO_ALLOCATED },
+  };
+  if (!raw || typeof raw !== "object") return empty;
+  const parsed = raw as {
+    endsAt?: number | null;
+    points?: number;
+    allocated?: Partial<Record<StatKey, number>>;
+  };
+  return {
+    endsAt: parsed.endsAt ?? null,
+    points: parsed.points ?? 0,
+    allocated: { ...ZERO_ALLOCATED, ...parsed.allocated },
+  };
+}
+
 export function useTraining() {
-  const [trainingEndsAt, setTrainingEndsAt] = useState<number | null>(null);
-  const [unspentPoints, setUnspentPoints] = useState(0);
-  const [allocatedStats, setAllocatedStats] =
-    useState<Record<StatKey, number>>(ZERO_ALLOCATED);
+  const initial = useSavedValue("training.v2");
+  const initialPersisted = readInitial(initial);
+
+  const [trainingEndsAt, setTrainingEndsAt] = useState<number | null>(
+    initialPersisted.endsAt,
+  );
+  const [unspentPoints, setUnspentPoints] = useState(initialPersisted.points);
+  const [allocatedStats, setAllocatedStats] = useState<Record<StatKey, number>>(
+    initialPersisted.allocated,
+  );
   const [now, setNow] = useState(() => Date.now());
-  const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(TRAINING_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as {
-          endsAt?: number | null;
-          points?: number;
-          allocated?: Partial<Record<StatKey, number>>;
-        };
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTrainingEndsAt(parsed.endsAt ?? null);
-        setUnspentPoints(parsed.points ?? 0);
-        setAllocatedStats({ ...ZERO_ALLOCATED, ...parsed.allocated });
-      }
-    } catch {}
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(
-        TRAINING_STORAGE_KEY,
-        JSON.stringify({
-          endsAt: trainingEndsAt,
-          points: unspentPoints,
-          allocated: allocatedStats,
-        }),
-      );
-    } catch {}
-  }, [hydrated, trainingEndsAt, unspentPoints, allocatedStats]);
+  // 영속 — value 변할 때마다 디바운스 patch.
+  const persisted = useMemo(
+    () => ({
+      endsAt: trainingEndsAt,
+      points: unspentPoints,
+      allocated: allocatedStats,
+    }),
+    [trainingEndsAt, unspentPoints, allocatedStats],
+  );
+  useRemotePatch("training.v2", persisted);
 
   // 훈련 진행 중일 때만 1초 단위로 now 갱신.
   useEffect(() => {

@@ -38,8 +38,8 @@ import {
 } from "@/lib/edge-unlocks";
 import type { StatKey } from "@/adventure/data/stats";
 
-const INVENTORY_KEY = "inventory.v1";
-const AUTO_POTION_KEY = "auto-potion-rules.v1";
+const INVENTORY_KEY = "inventory.v2";
+const AUTO_POTION_KEY = "auto-potion-rules.v2";
 const THEME_KEY = "theme";
 
 export type TrainingPersisted = {

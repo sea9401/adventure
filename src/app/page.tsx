@@ -26,8 +26,6 @@ import { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { WORLD_MAP } from "@/adventure/data/world";
 import {
   initialMapProgress,
-  loadMapProgress,
-  saveMapProgress,
   type MapProgress,
 } from "@/lib/map-progress";
 import { START_REGION_ID } from "@/adventure/data/world";
@@ -104,6 +102,8 @@ import {
 import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
+import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
+import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 
 type TabKey = "adventure" | "town" | "character";
 
@@ -132,8 +132,15 @@ function MainTabs({
   );
 }
 
-export default function Home() {
-  const [hydrated, setHydrated] = useState(false);
+export default function Page() {
+  return (
+    <SaveProvider>
+      <Home />
+    </SaveProvider>
+  );
+}
+
+function Home() {
   const [tab, setTab] = useState<TabKey>("adventure");
   const [subView, setSubView] = useState<string | null>(null);
   // 사용자가 명시적으로 자동 사냥을 시작했는지. region 이동/사망 시 false.
@@ -142,8 +149,8 @@ export default function Home() {
   const [huntingActive, setHuntingActiveState] = useState(false);
   useEffect(() => {
     try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (sessionStorage.getItem("hunting-active") === "true") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHuntingActiveState(true);
       }
     } catch {}
@@ -158,8 +165,15 @@ export default function Home() {
   const [pendingTownNpcId, setPendingTownNpcId] = useState<string | null>(null);
   // 시련(trial) 진행 중인 엣지. 세팅되면 지도 서브뷰에서 TrialView 가 대신 렌더링됨.
   const [trialEdge, setTrialEdge] = useState<TrialEdge | null>(null);
-  const [mapProgress, setMapProgress] =
-    useState<MapProgress>(initialMapProgress);
+  const initialMap = useSavedValue<Partial<MapProgress>>("map.v2");
+  const [mapProgress, setMapProgress] = useState<MapProgress>(() => ({
+    currentRegionId: initialMap?.currentRegionId ?? initialMapProgress.currentRegionId,
+    visitedRegionIds:
+      initialMap?.visitedRegionIds && initialMap.visitedRegionIds.length > 0
+        ? initialMap.visitedRegionIds
+        : initialMapProgress.visitedRegionIds,
+  }));
+  useRemotePatch("map.v2", mapProgress);
   const adventureLog = useAdventureLog();
   const quests = useQuests();
   const crafting = useCrafting();
@@ -172,14 +186,6 @@ export default function Home() {
   const notifications = useNotifications();
   const edgeUnlocks = useEdgeUnlocks();
 
-  useEffect(() => {
-    // localStorage 는 클라이언트 마운트 후에만 접근 가능 — useEffect 1회 hydrate.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMapProgress(loadMapProgress());
-
-    setHydrated(true);
-  }, []);
-
   // 마을 탭에 있는데 현재 위치가 마을이 아니면 서브뷰 강제 종료
   useEffect(() => {
     const currentTags = WORLD_MAP.regions.find(
@@ -191,12 +197,6 @@ export default function Home() {
       setSubView(null);
     }
   }, [tab, mapProgress.currentRegionId]);
-
-  // 지도 진행 상태 영속
-  useEffect(() => {
-    if (!hydrated) return;
-    saveMapProgress(mapProgress);
-  }, [hydrated, mapProgress]);
 
   // 시련 중 사용자가 다른 탭/서브뷰로 이동하면 시련 자동 취소.
   // 다시 돌아오면 처음부터 새로 도전. (도중 EXP/킬은 이미 적용됐으므로 손해 없음.)
@@ -392,11 +392,10 @@ export default function Home() {
   };
 
   // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.
-  // hydrate 가 끝나기 전에는 effect 가 초기값(1) 기준으로 베이스라인을 잡았다가
-  // localStorage 동기화 직후 (1 → 저장 레벨) 차이를 가짜 레벨업으로 오인하므로
-  // characterStateHook.hydrated 가 true 가 된 다음에만 베이스라인을 기록한다.
+  // SaveProvider 가 마운트 전에 character.v1 을 hydrate 하므로 첫 effect 의
+  // characterState.level 은 이미 저장된 값. ref 로 베이스라인만 잡고,
+  // 이후 증가분만 레벨업으로 처리.
   useEffect(() => {
-    if (!characterStateHook.hydrated) return;
     if (lastSeenLevelRef.current === null) {
       lastSeenLevelRef.current = characterState.level;
       return;
@@ -414,7 +413,7 @@ export default function Home() {
     lastSeenLevelRef.current = next;
     // addNotification/training.addPoints 는 setter — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterState.level, characterStateHook.hydrated]);
+  }, [characterState.level]);
 
   // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
   // ITEMS 사전에 등록된 아이템만 회수 가능 (이름 기반 역추적).
@@ -528,7 +527,7 @@ export default function Home() {
   // 오프라인 자동 사냥 — 페이지를 떠난 동안 일어났을 일을 결정적으로 한 번에 시뮬.
   // 30분 cap + 사망 시 break + 시작 마을 이동.
   useOfflineSimulation({
-    enabled: hydrated && currentRegion.enemies.length > 0,
+    enabled: currentRegion.enemies.length > 0,
     regionId: currentRegion.id,
     active: huntingActive,
     runSim: (awayMs) =>

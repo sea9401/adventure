@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import type { RegionId } from "../data/world";
 import type { OfflineSimResult } from "./offlineSim";
 
-const STORAGE_KEY = "last-active-tick.v1";
+const STORAGE_KEY = "last-active-tick.v2";
 
 type StoredTick = { regionId: RegionId; ts: number; active: boolean };
 

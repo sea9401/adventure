@@ -1,9 +1,6 @@
-import { useEffect, useState } from "react";
-import {
-  PROFILE_STORAGE_KEY,
-  LEGACY_PROFILE_KEYS,
-} from "@/lib/storage-keys";
+import { useState } from "react";
 import { AVATARS, type Avatar, type Gender } from "@/components/NameSetupModal";
+import { useRemoteSave, useSavedValue } from "@/lib/storage/SaveProvider";
 
 export const DEFAULT_NAME = "모험가";
 export const DEFAULT_AVATAR: Avatar = "male1";
@@ -19,50 +16,32 @@ function normalizeAvatar(raw: unknown): Avatar | null {
   return null;
 }
 
-export function useProfile() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [hydrated, setHydrated] = useState(false);
+function readInitial(raw: unknown): Profile | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as { name?: unknown; gender?: unknown };
+  const normalized = normalizeAvatar(obj.gender);
+  if (typeof obj.name === "string" && obj.name.length > 0 && normalized) {
+    return { name: obj.name, gender: normalized };
+  }
+  return null;
+}
 
-  useEffect(() => {
-    try {
-      // 신규 키가 비어 있으면 옛 키(`characterProfile.v1` 등)에서 한 번 옮겨온 뒤 정리.
-      let raw = localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (!raw) {
-        for (const key of LEGACY_PROFILE_KEYS) {
-          const legacy = localStorage.getItem(key);
-          if (legacy) {
-            raw = legacy;
-            localStorage.setItem(PROFILE_STORAGE_KEY, legacy);
-            break;
-          }
-        }
-      }
-      for (const key of LEGACY_PROFILE_KEYS) localStorage.removeItem(key);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<{
-          name: string;
-          gender: unknown;
-        }>;
-        const normalized = normalizeAvatar(parsed?.gender);
-        if (parsed?.name && normalized) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setProfile({ name: parsed.name, gender: normalized });
-        }
-      }
-    } catch {}
-    setHydrated(true);
-  }, []);
+export function useProfile() {
+  const initial = useSavedValue("character-profile.v2");
+  const remote = useRemoteSave();
+  const [profile, setProfile] = useState<Profile | null>(() =>
+    readInitial(initial),
+  );
 
   const submit = (next: Profile) => {
-    try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(next));
-    } catch {}
     setProfile(next);
+    remote.patch("character-profile.v2", next);
   };
 
   const name = profile?.name ?? DEFAULT_NAME;
   const gender: Gender = profile?.gender ?? DEFAULT_AVATAR;
-  const needsSetup = hydrated && !profile;
+  // SaveProvider 가 children 마운트 전에 hydrate 를 끝내므로 needsSetup 은 단순.
+  const needsSetup = !profile;
 
-  return { profile, name, gender, hydrated, needsSetup, submit };
+  return { profile, name, gender, hydrated: true, needsSetup, submit };
 }

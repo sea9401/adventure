@@ -22,7 +22,7 @@ export type AdventureLog = {
   npcs: Record<string, NpcLogEntry>;
 };
 
-export const ADVENTURE_LOG_KEY = "adventure-log.v1";
+export const ADVENTURE_LOG_KEY = "adventure-log.v2";
 
 // 몬스터 이름이 바뀌었을 때 기존 도감 데이터를 새 이름으로 옮기기 위한 매핑.
 const MONSTER_RENAMES: Record<string, string> = {

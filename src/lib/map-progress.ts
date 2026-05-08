@@ -1,6 +1,6 @@
 import { START_REGION_ID, type RegionId } from "@/adventure/data/world";
 
-export const MAP_STORAGE_KEY = "map.v1";
+export const MAP_STORAGE_KEY = "map.v2";
 
 export type MapProgress = {
   currentRegionId: RegionId;
