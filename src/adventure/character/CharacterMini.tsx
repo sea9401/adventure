@@ -3,8 +3,30 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { StatBar } from "@/components/ui/StatBar";
 import type { Gender } from "@/components/NameSetupModal";
-import type { EquipItem } from "@/adventure/data/items";
-import type { Character } from "./types";
+import type { EquipItem, EquipSlot } from "@/adventure/data/items";
+import type { Character, EquippedSlots } from "./types";
+
+const EQUIP_SLOT_META: {
+  slot: EquipSlot;
+  icon: ReactNode;
+  label: string;
+}[] = [
+  {
+    slot: "weapon",
+    icon: <Sword size={18} weight="duotone" className="text-rose-500" />,
+    label: "무기",
+  },
+  {
+    slot: "armor",
+    icon: <Shield size={18} weight="duotone" className="text-sky-500" />,
+    label: "방어구",
+  },
+  {
+    slot: "accessory",
+    icon: <Diamond size={18} weight="duotone" className="text-violet-500" />,
+    label: "장신구",
+  },
+];
 
 function CharacterPortrait({ gender }: { gender: Gender }) {
   const [errored, setErrored] = useState(false);
@@ -37,7 +59,7 @@ const TOOLTIP_ALIGN: Record<TooltipAlign, string> = {
   end: "right-0",
 };
 
-function MiniEquipCard({
+export function MiniEquipCard({
   icon,
   label,
   item,
@@ -133,24 +155,49 @@ function MiniEquipCard({
   );
 }
 
+export function EquippedGrid({
+  equipped,
+  onUnequip,
+}: {
+  equipped: EquippedSlots;
+  onUnequip?: (slot: EquipSlot) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {EQUIP_SLOT_META.map(({ slot, icon, label }, i) => {
+        const item = equipped[slot];
+        return (
+          <div key={slot} className="space-y-1.5">
+            <MiniEquipCard
+              icon={icon}
+              label={label}
+              item={item}
+              tooltipAlign={
+                i === 0
+                  ? "start"
+                  : i === EQUIP_SLOT_META.length - 1
+                    ? "end"
+                    : "center"
+              }
+            />
+            {onUnequip && (
+              <button
+                type="button"
+                onClick={() => onUnequip(slot)}
+                disabled={!item}
+                className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                해제
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function CharacterMini({ character }: { character: Character }) {
-  const equipped = [
-    {
-      icon: <Sword size={18} weight="duotone" className="text-rose-500" />,
-      label: "무기",
-      item: character.equipped.weapon,
-    },
-    {
-      icon: <Shield size={18} weight="duotone" className="text-sky-500" />,
-      label: "방어구",
-      item: character.equipped.armor,
-    },
-    {
-      icon: <Diamond size={18} weight="duotone" className="text-violet-500" />,
-      label: "장신구",
-      item: character.equipped.accessory,
-    },
-  ];
   return (
     <Card as="section" padding="none">
       <div className="space-y-3 p-4">
@@ -188,23 +235,7 @@ export function CharacterMini({ character }: { character: Character }) {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {equipped.map(({ icon, label, item }, i) => (
-            <MiniEquipCard
-              key={label}
-              icon={icon}
-              label={label}
-              item={item}
-              tooltipAlign={
-                i === 0
-                  ? "start"
-                  : i === equipped.length - 1
-                    ? "end"
-                    : "center"
-              }
-            />
-          ))}
-        </div>
+        <EquippedGrid equipped={character.equipped} />
       </div>
     </Card>
   );
