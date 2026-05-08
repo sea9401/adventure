@@ -73,6 +73,7 @@ export const NPCS: Npc[] = [
       "마을 뒤편 숲을 오가며 장작을 패는 사내. 어깨에는 늘 도끼가 걸려 있고, 옷자락에 톱밥이 묻어 있다.",
     greeting:
       "어이, 모험가 양반.\n오늘도 숲에서 나무 좀 패다 왔지. 별일 없는 게 제일이야, 안 그래?",
+    portrait: "/images/npc/jimmy.webp",
   },
   {
     id: "diola_elder",
