@@ -13,7 +13,7 @@ import type { EquippedSlots } from "@/adventure/character/types";
 import type { RemoteSave } from "@/lib/storage/remote";
 import { ListingsView } from "./ListingsView";
 import { ListingCreateModal } from "./ListingCreateModal";
-import { cancelListing } from "./api";
+import { buyListing, cancelListing } from "./api";
 import type { Listing } from "./types";
 
 type SubTab = "all" | "mine";
@@ -31,6 +31,9 @@ export function MarketplaceTab({
   consumeMaterial,
   addEquipment,
   addMaterial,
+  addGold,
+  inboxCount,
+  refreshInbox,
   pushToast,
 }: {
   inventory: InventoryState;
@@ -40,12 +43,37 @@ export function MarketplaceTab({
   consumeMaterial: (id: MaterialId, n?: number) => boolean;
   addEquipment: (id: ItemId, n?: number) => void;
   addMaterial: (id: MaterialId, n?: number) => void;
+  addGold: (delta: number) => void;
+  inboxCount: number | null;
+  refreshInbox: () => void;
   pushToast: (msg: string) => void;
 }) {
   const [sub, setSub] = useState<SubTab>("all");
   const [modal, setModal] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  const onBuy = useCallback(
+    async (listing: Listing) => {
+      setError(null);
+      try {
+        const r = await buyListing(remote, listing.id);
+        // 서버가 골드 차감했으므로 클라 로컬도 -price 적용. 다음 PATCH 가
+        // 구매 후 상태로 일관되게 보내짐.
+        addGold(-listing.price);
+        pushToast(
+          `${r.itemName}${r.quantity > 1 ? ` ×${r.quantity}` : ""} 구매 완료 — 마을 우편함에서 수령하세요.`,
+        );
+        setRefresh((v) => v + 1);
+        refreshInbox();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "구매 실패";
+        setError(msg);
+        pushToast(msg);
+      }
+    },
+    [remote, addGold, pushToast, refreshInbox],
+  );
 
   const onCancel = useCallback(
     async (listing: Listing) => {
@@ -94,6 +122,11 @@ export function MarketplaceTab({
             매물 등록
           </button>
         </div>
+        {inboxCount !== null && inboxCount > 0 ? (
+          <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            📬 마을 우편함에 수령 대기 {inboxCount}건이 있습니다.
+          </div>
+        ) : null}
       </Card>
 
       {error ? (
@@ -105,6 +138,7 @@ export function MarketplaceTab({
       <ListingsView
         refreshKey={refresh}
         onCancelListing={onCancel}
+        onBuyListing={onBuy}
         mineOnly={sub === "mine"}
       />
 

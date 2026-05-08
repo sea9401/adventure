@@ -25,10 +25,12 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 export function ListingsView({
   refreshKey,
   onCancelListing,
+  onBuyListing,
   mineOnly = false,
 }: {
   refreshKey: number;
   onCancelListing?: (listing: Listing) => Promise<void>;
+  onBuyListing?: (listing: Listing) => Promise<void>;
   mineOnly?: boolean;
 }) {
   const [kind, setKind] = useState<KindFilter>("all");
@@ -150,6 +152,7 @@ export function ListingsView({
               key={it.id}
               item={it}
               onCancel={onCancelListing}
+              onBuy={onBuyListing}
             />
           ))}
         </div>
@@ -172,9 +175,11 @@ export function ListingsView({
 function ListingCard({
   item,
   onCancel,
+  onBuy,
 }: {
   item: Listing;
   onCancel?: (listing: Listing) => Promise<void>;
+  onBuy?: (listing: Listing) => Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
   return (
@@ -214,16 +219,23 @@ function ListingCard({
             </button>
           ) : item.isMine ? (
             <span className="mt-1 block text-[10px] text-zinc-500">내 매물</span>
-          ) : (
+          ) : onBuy ? (
             <button
               type="button"
-              disabled
-              title="구매 기능은 다음 업데이트에서 추가됩니다."
-              className="mt-1 cursor-not-allowed rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  await onBuy(item);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              className="mt-1 rounded-md border border-emerald-700 bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
             >
-              구매(곧)
+              {busy ? "구매 중…" : "구매"}
             </button>
-          )}
+          ) : null}
         </span>
       </div>
     </Card>

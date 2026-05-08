@@ -1,7 +1,8 @@
 import { ITEMS, type ItemId, type EquipItem } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 
-export const MARKETPLACE_FEE_RATE = 0.05;
+// 거래 성사 수수료. 0 이면 수수료 없음 (UI 에서도 자동 숨김).
+export const MARKETPLACE_FEE_RATE = 0;
 export const MARKETPLACE_SLOT_LIMIT = 10;
 export const MARKETPLACE_PRICE_MIN = 1;
 export const MARKETPLACE_PRICE_MAX = 999_999_999;

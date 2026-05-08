@@ -7,6 +7,7 @@ import {
   BookOpen,
   Coins,
   Compass,
+  Envelope,
   FirstAid,
   Hammer,
   MapPin,
@@ -53,6 +54,8 @@ import {
 } from "@/adventure/data/potions";
 import { useInventory } from "@/adventure/inventory/useInventory";
 import { MarketplaceTab } from "@/adventure/marketplace/MarketplaceTab";
+import { InboxView } from "@/adventure/marketplace/InboxView";
+import { useInboxCount } from "@/adventure/marketplace/useInboxCount";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { InventoryView } from "@/adventure/InventoryView";
@@ -196,6 +199,7 @@ function Home() {
   const crafting = useCrafting();
   const inventory = useInventory();
   const remote = useRemoteSave();
+  const inbox = useInboxCount();
   const autoPotion = useAutoPotionConfig();
   const training = useTraining();
   const characterStateHook = useCharacterState();
@@ -1023,6 +1027,26 @@ function Home() {
                 description="의뢰를 받고 명성을 쌓을 수 있는 곳."
                 onClick={() => setSubView("guild")}
               />
+              <EntryCard
+                icon={
+                  <Envelope
+                    size={28}
+                    weight="duotone"
+                    className="text-amber-500"
+                  />
+                }
+                title={
+                  inbox.count !== null && inbox.count > 0
+                    ? `우편함 (${inbox.count})`
+                    : "우편함"
+                }
+                description={
+                  inbox.count !== null && inbox.count > 0
+                    ? "거래소에서 도착한 우편이 있습니다."
+                    : "거래소 거래 결과가 도착하는 곳."
+                }
+                onClick={() => setSubView("inbox")}
+              />
             </div>
           )}
           {tab === "town" && isTown && subView === "healing" && (() => {
@@ -1131,6 +1155,19 @@ function Home() {
                 getEntry={quests.getEntry}
                 onAccept={handleAcceptQuest}
                 onClaim={handleClaimQuest}
+              />
+            </div>
+          )}
+          {tab === "town" && isTown && subView === "inbox" && (
+            <div className="space-y-3">
+              <SubViewHeader title="우편함" onBack={back} />
+              <InboxView
+                remote={remote}
+                addEquipment={inventory.addEquipment}
+                addMaterial={inventory.addMaterial}
+                addGold={characterStateHook.addGold}
+                refreshInbox={inbox.refresh}
+                pushToast={(msg) => addNotification("info", msg)}
               />
             </div>
           )}
@@ -1269,6 +1306,9 @@ function Home() {
               consumeMaterial={inventory.consumeMaterial}
               addEquipment={inventory.addEquipment}
               addMaterial={inventory.addMaterial}
+              addGold={characterStateHook.addGold}
+              inboxCount={inbox.count}
+              refreshInbox={inbox.refresh}
               pushToast={(msg) => addNotification("info", msg)}
             />
           )}
