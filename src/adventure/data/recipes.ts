@@ -30,7 +30,7 @@ export const RECIPES: Recipe[] = [
     id: "potion_heal_s",
     name: "작은 회복약 조합법",
     description: "슬라임 조각의 점액을 졸여 작은 회복약을 만든다.",
-    ingredients: [{ materialId: "slime_chunk", count: 2 }],
+    ingredients: [{ materialId: "slime_chunk", count: 3 }],
     result: { kind: "potion", potionId: "potion_heal_s", quantity: 1 },
   },
   {

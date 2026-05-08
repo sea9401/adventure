@@ -9,10 +9,72 @@ import {
   type PotionId,
 } from "./data/potions";
 import { MATERIALS, type MaterialId } from "./data/materials";
+import { ITEMS, type ItemId } from "./data/items";
+import {
+  getItemSellPrice,
+  getMaterialSellPrice,
+  getPotionSellPrice,
+} from "./data/sellPrices";
 import type { InventoryState } from "./inventory/useInventory";
 import { Card } from "@/components/ui/Card";
+import { TabBar } from "@/components/ui/TabBar";
+import { EmptyState } from "@/components/ui/EmptyState";
+
+type ShopTabKey = "buy" | "sell";
+
+const TABS: { key: ShopTabKey; label: string }[] = [
+  { key: "buy", label: "구매" },
+  { key: "sell", label: "판매" },
+];
 
 export function ShopView({
+  gold,
+  inventory,
+  onPurchasePotion,
+  onPurchaseMaterial,
+  onSellPotion,
+  onSellMaterial,
+  onSellEquipment,
+}: {
+  gold: number;
+  inventory: InventoryState;
+  onPurchasePotion: (id: PotionId, quantity: number) => void;
+  onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
+  onSellPotion: (id: PotionId, quantity: number) => void;
+  onSellMaterial: (id: MaterialId, quantity: number) => void;
+  onSellEquipment: (id: ItemId, quantity: number) => void;
+}) {
+  const [tab, setTab] = useState<ShopTabKey>("buy");
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-end gap-1.5 text-sm text-zinc-700 dark:text-zinc-200">
+        <Coins size={16} weight="fill" className="text-yellow-500" />
+        <span className="tabular-nums">{gold.toLocaleString()}</span>
+      </div>
+
+      <TabBar tabs={TABS} active={tab} onChange={setTab} ariaLabel="상점 탭" />
+
+      {tab === "buy" && (
+        <BuyTab
+          gold={gold}
+          inventory={inventory}
+          onPurchasePotion={onPurchasePotion}
+          onPurchaseMaterial={onPurchaseMaterial}
+        />
+      )}
+      {tab === "sell" && (
+        <SellTab
+          inventory={inventory}
+          onSellPotion={onSellPotion}
+          onSellMaterial={onSellMaterial}
+          onSellEquipment={onSellEquipment}
+        />
+      )}
+    </div>
+  );
+}
+
+function BuyTab({
   gold,
   inventory,
   onPurchasePotion,
@@ -28,11 +90,6 @@ export function ShopView({
   );
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-end gap-1.5 text-sm text-zinc-700 dark:text-zinc-200">
-        <Coins size={16} weight="fill" className="text-yellow-500" />
-        <span className="tabular-nums">{gold.toLocaleString()}</span>
-      </div>
-
       <div>
         <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           물약
@@ -42,7 +99,7 @@ export function ShopView({
             const potion = POTIONS[id];
             const owned = inventory.potions[id] ?? 0;
             return (
-              <ShopRow
+              <BuyRow
                 key={id}
                 name={potion.name}
                 description={potion.description}
@@ -67,7 +124,7 @@ export function ShopView({
               const m = MATERIALS[id];
               const owned = inventory.materials[id] ?? 0;
               return (
-                <ShopRow
+                <BuyRow
                   key={id}
                   name={m.name}
                   description={m.description}
@@ -85,7 +142,7 @@ export function ShopView({
   );
 }
 
-function ShopRow({
+function BuyRow({
   name,
   description,
   price,
@@ -131,40 +188,13 @@ function ShopRow({
           <span>/ 개</span>
         </div>
         <div className="ml-auto inline-flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
-            disabled={qty <= 1 || isFull}
-            className="h-7 w-7 rounded-md border border-zinc-300 text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            aria-label="수량 감소"
-          >
-            −
-          </button>
-          <input
-            type="number"
+          <QtyStepper
+            qty={qty}
+            setQty={setQty}
             min={1}
-            max={cap !== undefined ? room : undefined}
-            value={qty}
+            max={cap !== undefined ? room || 1 : undefined}
             disabled={isFull}
-            onChange={(e) => {
-              const raw = Math.max(1, Math.floor(Number(e.target.value) || 1));
-              setQty(cap !== undefined ? Math.min(raw, room || 1) : raw);
-            }}
-            className="w-12 rounded-md border border-zinc-300 bg-white px-2 py-1 text-center text-sm tabular-nums disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950"
           />
-          <button
-            type="button"
-            onClick={() =>
-              setQty((q) =>
-                cap !== undefined ? Math.min(q + 1, room || 1) : q + 1,
-              )
-            }
-            disabled={isFull || (cap !== undefined && qty >= room)}
-            className="h-7 w-7 rounded-md border border-zinc-300 text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            aria-label="수량 증가"
-          >
-            +
-          </button>
           <button
             type="button"
             onClick={() => {
@@ -187,5 +217,228 @@ function ShopRow({
         </div>
       </div>
     </Card>
+  );
+}
+
+function SellTab({
+  inventory,
+  onSellPotion,
+  onSellMaterial,
+  onSellEquipment,
+}: {
+  inventory: InventoryState;
+  onSellPotion: (id: PotionId, quantity: number) => void;
+  onSellMaterial: (id: MaterialId, quantity: number) => void;
+  onSellEquipment: (id: ItemId, quantity: number) => void;
+}) {
+  const ownedPotions = POTION_IDS.filter(
+    (id) => (inventory.potions[id] ?? 0) > 0,
+  );
+  const ownedMaterials = (Object.keys(MATERIALS) as MaterialId[]).filter(
+    (id) => (inventory.materials[id] ?? 0) > 0,
+  );
+  const ownedEquipment = (Object.keys(ITEMS) as ItemId[]).filter(
+    (id) => (inventory.equipment[id] ?? 0) > 0,
+  );
+
+  if (
+    ownedPotions.length === 0 &&
+    ownedMaterials.length === 0 &&
+    ownedEquipment.length === 0
+  ) {
+    return (
+      <EmptyState
+        icon={<Coins size={40} weight="fill" />}
+        title="판매할 아이템이 없습니다"
+        message="가방에 들어 있는 항목만 팔 수 있어요."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {ownedPotions.length > 0 && (
+        <SellSection
+          label="물약"
+          rows={ownedPotions.map((id) => ({
+            key: id,
+            name: POTIONS[id].name,
+            description: POTIONS[id].description,
+            owned: inventory.potions[id] ?? 0,
+            unitPrice: getPotionSellPrice(id),
+            onSell: (qty) => onSellPotion(id, qty),
+          }))}
+        />
+      )}
+      {ownedMaterials.length > 0 && (
+        <SellSection
+          label="재료"
+          rows={ownedMaterials.map((id) => ({
+            key: id,
+            name: MATERIALS[id].name,
+            description: MATERIALS[id].description,
+            owned: inventory.materials[id] ?? 0,
+            unitPrice: getMaterialSellPrice(id),
+            onSell: (qty) => onSellMaterial(id, qty),
+          }))}
+        />
+      )}
+      {ownedEquipment.length > 0 && (
+        <SellSection
+          label="장비"
+          rows={ownedEquipment.map((id) => ({
+            key: id,
+            name: ITEMS[id].name,
+            description: ITEMS[id].description ?? "",
+            owned: inventory.equipment[id] ?? 0,
+            unitPrice: getItemSellPrice(id),
+            onSell: (qty) => onSellEquipment(id, qty),
+          }))}
+        />
+      )}
+    </div>
+  );
+}
+
+function SellSection({
+  label,
+  rows,
+}: {
+  label: string;
+  rows: Array<{
+    key: string;
+    name: string;
+    description: string;
+    owned: number;
+    unitPrice: number;
+    onSell: (qty: number) => void;
+  }>;
+}) {
+  return (
+    <div>
+      <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        {label}
+      </div>
+      <div className="space-y-2">
+        {rows.map(({ key, ...rest }) => (
+          <SellRow key={key} {...rest} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SellRow({
+  name,
+  description,
+  owned,
+  unitPrice,
+  onSell,
+}: {
+  name: string;
+  description: string;
+  owned: number;
+  unitPrice: number;
+  onSell: (qty: number) => void;
+}) {
+  const [qty, setQty] = useState(1);
+  const max = Math.max(1, owned);
+  const effectiveQty = Math.min(qty, owned);
+  const total = unitPrice * effectiveQty;
+  const canSell = effectiveQty > 0 && owned > 0;
+
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          {name}
+        </span>
+        <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+          보유 {owned}
+        </span>
+      </div>
+      {description && (
+        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+          {description}
+        </p>
+      )}
+      <div className="mt-2 flex items-center gap-2">
+        <div className="inline-flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
+          <Coins size={12} weight="fill" className="text-yellow-500" />
+          <span className="tabular-nums">{unitPrice}</span>
+          <span>/ 개</span>
+        </div>
+        <div className="ml-auto inline-flex items-center gap-1">
+          <QtyStepper qty={qty} setQty={setQty} min={1} max={max} />
+          <button
+            type="button"
+            onClick={() => {
+              if (!canSell) return;
+              onSell(effectiveQty);
+              setQty(1);
+            }}
+            disabled={!canSell}
+            className="ml-1 inline-flex items-center gap-1 rounded-md border border-rose-400 bg-rose-500/10 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400 dark:text-rose-300"
+          >
+            판매
+            <span className="inline-flex items-center gap-0.5 text-xs tabular-nums">
+              <Coins size={10} weight="fill" className="text-yellow-500" />
+              {total}
+            </span>
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function QtyStepper({
+  qty,
+  setQty,
+  min,
+  max,
+  disabled,
+}: {
+  qty: number;
+  setQty: (n: number | ((prev: number) => number)) => void;
+  min: number;
+  max?: number;
+  disabled?: boolean;
+}) {
+  const clamp = (n: number) => {
+    let v = Math.max(min, Math.floor(n || min));
+    if (max !== undefined) v = Math.min(v, max);
+    return v;
+  };
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setQty((q) => clamp(q - 1))}
+        disabled={disabled || qty <= min}
+        className="h-7 w-7 rounded-md border border-zinc-300 text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        aria-label="수량 감소"
+      >
+        −
+      </button>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={qty}
+        disabled={disabled}
+        onChange={(e) => setQty(clamp(Number(e.target.value)))}
+        className="w-12 rounded-md border border-zinc-300 bg-white px-2 py-1 text-center text-sm tabular-nums disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950"
+      />
+      <button
+        type="button"
+        onClick={() => setQty((q) => clamp(q + 1))}
+        disabled={disabled || (max !== undefined && qty >= max)}
+        className="h-7 w-7 rounded-md border border-zinc-300 text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        aria-label="수량 증가"
+      >
+        +
+      </button>
+    </>
   );
 }

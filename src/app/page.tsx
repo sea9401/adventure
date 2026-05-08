@@ -42,6 +42,11 @@ import {
   type RewardServices,
 } from "@/adventure/quests/applyReward";
 import { ITEMS, findItemId, type ItemId } from "@/adventure/data/items";
+import {
+  getItemSellPrice,
+  getMaterialSellPrice,
+  getPotionSellPrice,
+} from "@/adventure/data/sellPrices";
 import { MONSTERS } from "@/adventure/data/monsters";
 import {
   POTIONS,
@@ -271,6 +276,47 @@ export default function Home() {
 
   const addNotification = (kind: NotificationKind, text: string) =>
     notifications.add(kind, text);
+
+  // 판매 — 인벤토리에서 차감 + 골드 지급. 0G 아이템은 단순 정리(버리기) 효과.
+  const handleSellPotion = (id: PotionId, quantity: number) => {
+    if (quantity <= 0) return;
+    if (!inventory.consume(id, quantity)) return;
+    const total = getPotionSellPrice(id) * quantity;
+    if (total > 0) characterStateHook.addGold(total);
+    addNotification(
+      "info",
+      total > 0
+        ? `${POTIONS[id].name} ×${quantity}을(를) ${total}G에 팔았다.`
+        : `${POTIONS[id].name} ×${quantity}을(를) 버렸다.`,
+    );
+  };
+
+  const handleSellMaterial = (id: MaterialId, quantity: number) => {
+    if (quantity <= 0) return;
+    if (!inventory.consumeMaterial(id, quantity)) return;
+    const total = getMaterialSellPrice(id) * quantity;
+    if (total > 0) characterStateHook.addGold(total);
+    addNotification(
+      "info",
+      total > 0
+        ? `${MATERIALS[id].name} ×${quantity}을(를) ${total}G에 팔았다.`
+        : `${MATERIALS[id].name} ×${quantity}을(를) 버렸다.`,
+    );
+  };
+
+  const handleSellEquipment = (id: ItemId, quantity: number) => {
+    if (quantity <= 0) return;
+    if (!inventory.consumeEquipment(id, quantity)) return;
+    const total = getItemSellPrice(id) * quantity;
+    if (total > 0) characterStateHook.addGold(total);
+    const name = ITEMS[id].name;
+    addNotification(
+      "info",
+      total > 0
+        ? `${name}${quantity > 1 ? ` ×${quantity}` : ""}을(를) ${total}G에 팔았다.`
+        : `${name}${quantity > 1 ? ` ×${quantity}` : ""}을(를) 버렸다.`,
+    );
+  };
 
   // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.
   // 초기 로드(localStorage 동기화)는 무시하기 위해 ref가 null이면 베이스라인만 기록.
@@ -808,6 +854,9 @@ export default function Home() {
                 inventory={inventory.state}
                 onPurchasePotion={handlePurchasePotion}
                 onPurchaseMaterial={handlePurchaseMaterial}
+                onSellPotion={handleSellPotion}
+                onSellMaterial={handleSellMaterial}
+                onSellEquipment={handleSellEquipment}
               />
             </div>
           )}
