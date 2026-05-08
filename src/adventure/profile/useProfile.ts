@@ -9,7 +9,12 @@ export type Profile = { name: string; gender: Avatar };
 
 export type SubmitResult =
   | { ok: true }
-  | { ok: false; reason: "taken" | "invalid" | "network" };
+  | { ok: false; reason: "taken" | "invalid" | "network" | "server" };
+
+export type SubmitOptions = {
+  // 자동 재시도 직전에 한 번 호출 — UI 가 "재시도 중..." 등을 표시할 수 있도록.
+  onRetry?: () => void;
+};
 
 // 저장된 gender 값을 정규화. 구버전("male"/"female")은 male1/female1 으로 마이그레이션.
 function normalizeAvatar(raw: unknown): Avatar | null {
@@ -42,6 +47,7 @@ export function useProfile() {
   // 결정적 실패(400/409)는 재시도하지 않음.
   const submit = async (
     next: Profile,
+    options?: SubmitOptions,
     attempt = 0,
   ): Promise<SubmitResult> => {
     const RETRY_DELAY_MS = 1000;
@@ -56,8 +62,9 @@ export function useProfile() {
       });
     } catch {
       if (attempt < MAX_ATTEMPTS - 1) {
+        options?.onRetry?.();
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-        return submit(next, attempt + 1);
+        return submit(next, options, attempt + 1);
       }
       return { ok: false, reason: "network" };
     }
@@ -65,10 +72,11 @@ export function useProfile() {
     if (res.status === 400) return { ok: false, reason: "invalid" };
     if (!res.ok) {
       if (attempt < MAX_ATTEMPTS - 1) {
+        options?.onRetry?.();
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-        return submit(next, attempt + 1);
+        return submit(next, options, attempt + 1);
       }
-      return { ok: false, reason: "network" };
+      return { ok: false, reason: "server" };
     }
     setProfile(next);
     return { ok: true };

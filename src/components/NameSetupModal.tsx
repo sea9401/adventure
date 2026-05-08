@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle, User, WarningCircle } from "@phosphor-icons/react";
-import type { SubmitResult } from "@/adventure/profile/useProfile";
+import type {
+  SubmitOptions,
+  SubmitResult,
+} from "@/adventure/profile/useProfile";
 
 // 캐릭터 아바타 id — 외형 6종 (남자 1~3 / 여자 1~3).
 // 이전 버전의 "male"/"female" 도 마이그레이션 시점에 male1/female1 로 흡수.
@@ -34,12 +37,16 @@ type CheckState =
 export function NameSetupModal({
   onSubmit,
 }: {
-  onSubmit: (data: { name: string; gender: Avatar }) => Promise<SubmitResult>;
+  onSubmit: (
+    data: { name: string; gender: Avatar },
+    options?: SubmitOptions,
+  ) => Promise<SubmitResult>;
 }) {
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<Avatar | null>(null);
   const [check, setCheck] = useState<CheckState>({ kind: "idle" });
   const [submitting, setSubmitting] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const trimmed = name.trim();
 
@@ -86,20 +93,30 @@ export function NameSetupModal({
     e.preventDefault();
     if (!canSubmit || avatar === null) return;
     setSubmitting(true);
+    setRetrying(false);
     setSubmitError(null);
-    const result = await onSubmit({ name: trimmed, gender: avatar });
+    const result = await onSubmit(
+      { name: trimmed, gender: avatar },
+      { onRetry: () => setRetrying(true) },
+    );
     if (result.ok) {
       // needsSetup=false 가 되어 부모가 모달 unmount — 별도 처리 불필요.
       return;
     }
     setSubmitting(false);
+    setRetrying(false);
     if (result.reason === "taken") {
       setCheck({ kind: "taken" });
       setSubmitError("이미 사용 중인 이름이에요. 다른 이름으로 시도해주세요.");
     } else if (result.reason === "invalid") {
       setSubmitError("입력값이 유효하지 않아요.");
+    } else if (result.reason === "network") {
+      setSubmitError(
+        "네트워크가 불안정해요. 연결을 확인하고 다시 시도해주세요.",
+      );
     } else {
-      setSubmitError("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      // server (5xx)
+      setSubmitError("서버가 응답하지 않아요. 잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -159,7 +176,11 @@ export function NameSetupModal({
             disabled={!canSubmit}
             className="w-full rounded-md bg-zinc-900 px-3 py-2 text-base font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >
-            {submitting ? "저장 중..." : "모험 시작"}
+            {submitting
+              ? retrying
+                ? "재시도 중..."
+                : "저장 중..."
+              : "모험 시작"}
           </button>
         </form>
       </div>
