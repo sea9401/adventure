@@ -93,29 +93,38 @@ export function BattleView({
     return () => clearTimeout(id);
   }, [state, act]);
 
-  // 종료 후 onConfirm — 외부 상태 반영 + 승리 시 다음 적 자동 체이닝.
+  // 전투 종료 즉시 onBattleEnd 발화 — 1.2s 결과 화면을 기다리지 않고 외부 상태
+  // (퀘스트 진행/도감/HP/EXP/알림)을 바로 반영해 카운트 갱신 지연을 없앤다.
+  // onBattleEnd 는 매 렌더마다 새 함수라 deps 에 넣으면 재발화하므로 ref 로 latest 보관.
+  const onBattleEndRef = useRef(onBattleEnd);
+  useEffect(() => {
+    onBattleEndRef.current = onBattleEnd;
+  });
+  // 같은 ended state 객체에 대해 두 번 발화하지 않도록 가드.
+  const firedForStateRef = useRef<BattleState | null>(null);
+  useEffect(() => {
+    if (!state || state.phase !== "ended" || !state.outcome) return;
+    if (firedForStateRef.current === state) return;
+    firedForStateRef.current = state;
+    const isWin = state.outcome === "win";
+    onBattleEndRef.current({
+      outcome: state.outcome,
+      enemyName: state.enemy.name,
+      finalPlayerHp: isWin ? state.playerHp : 0,
+      rewards: isWin ? { exp: state.enemy.exp } : { exp: 0 },
+    });
+  }, [state]);
+
+  // 종료 후 onConfirm — 승리 시 다음 적 자동 체이닝 / 그 외엔 stop.
   // ref로 보관해서 useEffect에서 latest 값 사용 (closure stale 방지).
   const handleConfirmRef = useRef(() => {});
   useEffect(() => {
     handleConfirmRef.current = () => {
       if (!state || !state.outcome) return;
-      const isWin = state.outcome === "win";
-      const finalHp = isWin ? state.playerHp : 0;
-      const rewards = isWin ? { exp: state.enemy.exp } : { exp: 0 };
-
-      onBattleEnd({
-        outcome: state.outcome,
-        enemyName: state.enemy.name,
-        finalPlayerHp: finalHp,
-        rewards,
-      });
-
-      if (isWin) {
+      if (state.outcome === "win") {
         const nextEnemy = pickEnemy(region);
         if (nextEnemy) {
-          // 체인 시작 — setCharacterState 가 아직 propagate 안 됐으므로
-          // finalHp 를 직접 주입해 다음 전투를 정확한 HP로 시작.
-          startWithLog(nextEnemy, finalHp);
+          startWithLog(nextEnemy, state.playerHp);
           return;
         }
       }
