@@ -74,7 +74,7 @@ export const WORLD_MAP: WorldMap = {
       description: "축축하고 어두운 광맥 동굴.",
       position: { x: 270, y: 200 },
       biome: "cave",
-      enemies: ["박쥐"],
+      enemies: ["박쥐", "동굴뱀"],
       recommendedLevel: 3,
     },
     {

@@ -81,6 +81,16 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 7,
     exp: 4,
   },
+  동굴뱀: {
+    name: "동굴뱀",
+    tags: ["beast"],
+    image: "/images/monster/cavesnake.webp",
+    hp: 44,
+    atk: 6,
+    def: 2,
+    spd: 5,
+    exp: 5,
+  },
   거미: {
     name: "거미",
     tags: ["beast"],
