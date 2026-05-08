@@ -39,7 +39,7 @@ export const NPCS: Npc[] = [
       "마을 한구석 훈련장을 지키는 전직 모험가. 어깨가 두툼하고 손마디가 굵다.",
     greeting:
       "왔구나, 새내기.\n자세부터 잡아주마. 모험은 한 번 휘두르는 검보다, 백 번 흘리는 땀이다.",
-    portrait: "/images/npc/smith.png",
+    portrait: "/images/npc/smith.webp",
   },
   {
     id: "village_blacksmith_bold",
@@ -50,7 +50,7 @@ export const NPCS: Npc[] = [
       "반들반들한 대머리에 가죽 앞치마를 두른 사내. 망치질 한 번에 모루가 통째로 운다.",
     greeting:
       "어, 왔나.\n무기든 갑옷이든 가져와 봐. 쓸 만한 거면 손봐주고, 못 쓸 거면 그 자리에서 녹여주지.",
-    portrait: "/images/npc/bold.png",
+    portrait: "/images/npc/bold.webp",
   },
   {
     id: "diola_elder",

@@ -18,7 +18,7 @@ function CharacterPortrait({ gender }: { gender: Gender }) {
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`/images/character/${gender}.png`}
+          src={`/images/character/${gender}.webp`}
           alt=""
           onError={() => setErrored(true)}
           className="h-full w-full object-contain"

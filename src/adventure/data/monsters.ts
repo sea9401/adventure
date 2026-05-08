@@ -30,7 +30,7 @@ export const MONSTERS: Record<string, Monster> = {
   주정뱅이: {
     name: "주정뱅이",
     tags: ["humanoid"],
-    image: "/images/monster/hobo.png",
+    image: "/images/monster/hobo.webp",
     hp: 17,
     atk: 1,
     def: 0,
@@ -40,7 +40,7 @@ export const MONSTERS: Record<string, Monster> = {
   슬라임: {
     name: "슬라임",
     tags: ["slime"],
-    image: "/images/monster/slime.png",
+    image: "/images/monster/slime.webp",
     hp: 25,
     atk: 2,
     def: 1,
@@ -54,7 +54,7 @@ export const MONSTERS: Record<string, Monster> = {
   들개: {
     name: "들개",
     tags: ["beast"],
-    image: "/images/monster/wilddog.png",
+    image: "/images/monster/wilddog.webp",
     hp: 29,
     atk: 3,
     def: 1,
@@ -64,7 +64,7 @@ export const MONSTERS: Record<string, Monster> = {
   두더쥐: {
     name: "두더쥐",
     tags: ["beast"],
-    image: "/images/monster/mole.png",
+    image: "/images/monster/mole.webp",
     hp: 21,
     atk: 2,
     def: 0,
@@ -74,7 +74,7 @@ export const MONSTERS: Record<string, Monster> = {
   박쥐: {
     name: "박쥐",
     tags: ["beast"],
-    image: "/images/monster/bat.png",
+    image: "/images/monster/bat.webp",
     hp: 29,
     atk: 4,
     def: 0,
@@ -84,7 +84,7 @@ export const MONSTERS: Record<string, Monster> = {
   거미: {
     name: "거미",
     tags: ["beast"],
-    image: "/images/monster/spider.png",
+    image: "/images/monster/spider.webp",
     hp: 38,
     atk: 5,
     def: 1,
@@ -94,7 +94,7 @@ export const MONSTERS: Record<string, Monster> = {
   산적: {
     name: "산적",
     tags: ["humanoid"],
-    image: "/images/monster/bandit.png",
+    image: "/images/monster/bandit.webp",
     hp: 52,
     atk: 6,
     def: 2,
@@ -104,7 +104,7 @@ export const MONSTERS: Record<string, Monster> = {
   "호수 님프": {
     name: "호수 님프",
     tags: ["spirit"],
-    image: "/images/monster/lakenymph.png",
+    image: "/images/monster/lakenymph.webp",
     hp: 73,
     atk: 8,
     def: 3,

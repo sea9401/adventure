@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run optimize-images",
     "dev": "next dev",
+    "prebuild": "npm run optimize-images",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "optimize-images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -23,6 +26,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.5",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^2"

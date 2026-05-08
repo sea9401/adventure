@@ -13,7 +13,7 @@ export function RegionBackground({
     setErrored(false);
   }, [regionId, imageOverride]);
   if (errored) return null;
-  const src = imageOverride ?? `/images/ui/${regionId}.png`;
+  const src = imageOverride ?? `/images/ui/${regionId}.webp`;
   return (
     <div
       aria-hidden
