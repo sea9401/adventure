@@ -96,6 +96,10 @@ import {
   type TrialEdge,
 } from "@/adventure/TrialView";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
+import {
+  deriveSkills,
+  powerAttackBonusFor,
+} from "@/adventure/character/skills";
 import { getTitle } from "@/adventure/data/titles";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
@@ -281,6 +285,7 @@ function Home() {
   const characterMaxHp = maxHpForLevel(characterState.level) + totalStats.vit;
   const characterMaxMp = maxMpForLevel(characterState.level);
   const equippedTitle = getTitle(characterStateHook.equippedTitleId);
+  const characterSkills = deriveSkills(totalStats);
   const character: Character = {
     ...baseCharacter,
     name: profile.name,
@@ -297,10 +302,12 @@ function Home() {
     fame: characterState.fame,
     equipped: equippedSlots,
     stats: totalStats,
+    skills: characterSkills,
   };
   usePresenceHeartbeat({
     name: character.name,
     className: character.className,
+    title: character.titleName ?? null,
   });
 
   const showModal = profile.needsSetup;
@@ -332,6 +339,7 @@ function Home() {
   }, [characterState.hp, isTown]);
 
   const lastSeenLevelRef = useRef<number | null>(null);
+  const lastSeenSkillsRef = useRef<string[] | null>(null);
 
   // 전투 엔진용 PlayerCombat — 장비 보너스 합산.
   const equippedItems = [
@@ -361,6 +369,7 @@ function Home() {
     spd: character.stats.spd,
     evasionPct: character.stats.dex,
     attackCount: 1 + Math.floor(character.stats.spd / 10),
+    powerAttackBonus: powerAttackBonusFor(character.stats),
   };
 
   const playerStatus = {
@@ -464,6 +473,24 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [characterState.level]);
 
+  // 스킬 획득 감지 — 스탯 변화로 새 스킬이 추가되면 알림.
+  // 마운트 시 현재 보유 스킬을 baseline 으로 잡고, 이후 신규 추가만 알림.
+  useEffect(() => {
+    const currentNames = characterSkills.map((s) => s.name);
+    if (lastSeenSkillsRef.current === null) {
+      lastSeenSkillsRef.current = currentNames;
+      return;
+    }
+    const prev = new Set(lastSeenSkillsRef.current);
+    for (const name of currentNames) {
+      if (!prev.has(name)) {
+        addNotification("info", `스킬 획득! ${name}`);
+      }
+    }
+    lastSeenSkillsRef.current = currentNames;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [characterSkills.map((s) => s.name).join(",")]);
+
   // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
   // ITEMS 사전에 등록된 아이템만 회수 가능 (이름 기반 역추적).
   const handleEquipFromInventory = (id: ItemId) => {
@@ -528,6 +555,15 @@ function Home() {
     if (title) addNotification("info", `칭호 획득 — ${title.name}`);
   };
 
+  // 누적 패배 카운트가 임계 도달하면 약골 칭호 자동 등록.
+  // 외부 상태(battleLosses)를 관찰해 칭호 등록 — 의도적 set-state-in-effect.
+  const battleLosses = adventureLog.log.battleLosses ?? 0;
+  useEffect(() => {
+    if (battleLosses >= 10) grantTitle("frail");
+    // grantTitle 안정 참조 — deps 제외.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [battleLosses]);
+
   const handleBattleEnd = (payload: BattleEndPayload) =>
     onBattleEnd(payload, {
       inventory: {
@@ -538,6 +574,7 @@ function Home() {
       adventureLog: {
         addKill: adventureLog.addKill,
         markTitleObtained: grantTitle,
+        incrementBattleLosses: adventureLog.incrementBattleLosses,
       },
       quests: { recordKill: quests.recordKill },
       characterState: {
@@ -598,6 +635,7 @@ function Home() {
       if (result.died) {
         // HP 0 + 시작 마을 강제 이동 + 마을 탭 치료소 sub 로 점프.
         // replace — 사망 시점은 history 에 남기지 않음.
+        adventureLog.incrementBattleLosses();
         characterStateHook.setHp(0);
         replaceLocation("town", "healing");
         setMapProgress((prev) => ({
@@ -690,7 +728,11 @@ function Home() {
               unreadCount={notifications.unreadCount}
               onOpen={notifications.markRead}
             />
-            <ChatButton name={character.name} className={character.className} />
+            <ChatButton
+              name={character.name}
+              className={character.className}
+              title={character.titleName ?? null}
+            />
             <SettingsMenu />
           </div>
         </header>
@@ -1307,6 +1349,7 @@ function Home() {
               addEquipment={inventory.addEquipment}
               addMaterial={inventory.addMaterial}
               addGold={characterStateHook.addGold}
+              currentGold={character.gold}
               inboxCount={inbox.count}
               refreshInbox={inbox.refresh}
               pushToast={(msg) => addNotification("info", msg)}

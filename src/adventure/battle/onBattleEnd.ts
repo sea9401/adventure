@@ -23,6 +23,7 @@ export type BattleEndDeps = {
   adventureLog: {
     addKill: (name: string) => void;
     markTitleObtained: (titleId: string) => void;
+    incrementBattleLosses: () => void;
   };
   quests: { recordKill: (name: string) => string[] };
   characterState: {
@@ -103,6 +104,7 @@ export function onBattleEnd(
 
   // 패배 — HP 0 + 시작 마을 강제 이동 + 마을 탭 치료소 sub 로 점프 + 자동 사냥 해제.
   // replace 로 history 에 남기지 않음 (사망 직후로 back 되돌아갈 일 없음).
+  deps.adventureLog.incrementBattleLosses();
   deps.characterState.setHp(0);
   deps.setHuntingActive(false);
   deps.replaceLocation("town", "healing");

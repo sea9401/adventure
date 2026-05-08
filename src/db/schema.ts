@@ -45,7 +45,8 @@ export const savesKv = pgTable(
 );
 
 // 글로벌 채팅 메시지. 3일 후 cron 으로 일괄 삭제.
-// name/className 은 전송 시점 스냅샷 — 이후 사용자가 바뀌어도 과거 메시지는 그대로.
+// name/className/title 은 전송 시점 스냅샷 — 이후 사용자가 바뀌어도 과거 메시지는 그대로.
+// title 은 미장착 시 NULL.
 export const messages = pgTable(
   "messages",
   {
@@ -55,6 +56,7 @@ export const messages = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     className: text("class_name").notNull(),
+    title: text("title"),
     content: text("content").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
@@ -70,6 +72,7 @@ export const presence = pgTable("presence", {
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   className: text("class_name").notNull(),
+  title: text("title"),
   lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
 });
 
