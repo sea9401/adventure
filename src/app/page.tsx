@@ -147,8 +147,15 @@ export default function Page() {
 
 function Home() {
   // tab/subView 는 URL 쿼리(?tab=...&sub=...)로 관리 → 브라우저 back/forward 가 in-app 이동을 따라감.
-  const { tab, subView, setTab, setSubView, replaceSubView, back } =
-    useNavTabs();
+  const {
+    tab,
+    subView,
+    setTab,
+    setSubView,
+    replaceSubView,
+    replaceLocation,
+    back,
+  } = useNavTabs();
   // 사용자가 명시적으로 자동 사냥을 시작했는지. region 이동/사망 시 false.
   // 같은 탭 안에서는 sessionStorage로 보존 — 캐릭터 탭 등으로 잠깐 다녀와도 ON 유지.
   // 새 탭/창에서는 항상 false (sessionStorage 특성).
@@ -518,12 +525,11 @@ function Home() {
         }
       }
     } else {
-      // 패배 — HP 0 (치유소 유도) + 시작 마을 강제 이동 + 자동 사냥 해제
-      // subView 리셋: 전투 sub 가 아니라 모험 탭 메인(마을·지도 진입)으로 복귀.
+      // 패배 — HP 0 + 시작 마을 강제 이동 + 마을 탭 치료소 sub 로 점프 + 자동 사냥 해제.
       // replace 로 history 에 남기지 않음 (사망 직후로 back 되돌아갈 일 없음).
       characterStateHook.setHp(0);
       setHuntingActive(false);
-      replaceSubView(null);
+      replaceLocation("town", "healing");
       setMapProgress((prev) => ({
         currentRegionId: START_REGION_ID,
         visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
@@ -579,10 +585,10 @@ function Home() {
       if (result.expGained > 0)
         characterStateHook.addExp(result.expGained, character.stats.vit);
       if (result.died) {
-        // HP 0 으로 두고 치유소 사용을 유도. subView 리셋으로 모험 탭 메인으로 복귀.
+        // HP 0 + 시작 마을 강제 이동 + 마을 탭 치료소 sub 로 점프.
         // replace — 사망 시점은 history 에 남기지 않음.
         characterStateHook.setHp(0);
-        replaceSubView(null);
+        replaceLocation("town", "healing");
         setMapProgress((prev) => ({
           currentRegionId: START_REGION_ID,
           visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
