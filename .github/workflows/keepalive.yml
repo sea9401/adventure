@@ -1,0 +1,27 @@
+# Neon DB 가 scale-to-zero 로 잠들지 않도록 5분 간격으로 keepalive 엔드포인트를 호출.
+# 무료 플랜 유지를 위해 Vercel Cron(Hobby 는 일 1회 제한) 대신 GitHub Actions 사용.
+#
+# 필요한 secrets:
+#   APP_URL      — 배포된 앱 URL (예: https://adventure-rpg.vercel.app, 끝 슬래시 없음)
+#   CRON_SECRET  — Vercel 환경변수와 동일한 값
+#
+# GitHub Actions cron 은 정확한 5분 간격이 보장되진 않음 (가끔 5~10분 지연 가능).
+# Neon idle timeout(~5분)에 맞춰 4분 간격으로 잡아 약간의 마진을 둠.
+name: Keepalive
+
+on:
+  schedule:
+    - cron: "*/4 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Ping /api/keepalive
+        run: |
+          curl --fail --silent --show-error \
+            --max-time 30 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/keepalive"
