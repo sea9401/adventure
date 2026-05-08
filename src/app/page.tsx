@@ -79,6 +79,13 @@ import { baseCharacter } from "@/adventure/character/defaults";
 import { useCharacterState } from "@/adventure/character/useCharacterState";
 import { useProfile } from "@/adventure/profile/useProfile";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
+import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
+import {
+  simulateOfflineHunt,
+  summarizeOfflineResult,
+  OFFLINE_SIM_MAX_MS,
+} from "@/adventure/battle/offlineSim";
+import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
 
@@ -386,6 +393,74 @@ export default function Home() {
   const handleAcceptQuest = (id: string) => {
     quests.accept(id);
   };
+
+  // 오프라인 자동 사냥 — 페이지를 떠난 동안 일어났을 일을 결정적으로 한 번에 시뮬.
+  // 30분 cap + 사망 시 break + 시작 마을 이동.
+  useOfflineSimulation({
+    enabled: hydrated && currentRegion.enemies.length > 0,
+    regionId: currentRegion.id,
+    runSim: (awayMs) =>
+      simulateOfflineHunt({
+        player: playerCombat,
+        playerName: profile.name,
+        region: currentRegion,
+        potions: inventory.state.potions,
+        turnIntervalMs: PLAYER_TURN_INTERVAL_MS,
+        awayMs,
+        pickAction: (state) =>
+          pickAutoAction(state, {
+            rules: autoPotion.config.rules,
+            potions: inventory.state.potions,
+          }),
+      }),
+    onApply: (result) => {
+      // 처치 — 도감/퀘스트 진행 누적. 퀘스트 ready 알림은 한 번에 하나만 의미 있어 첫 트리거만 띄움.
+      const readyQuestIds = new Set<string>();
+      for (const [name, n] of Object.entries(result.killsByName)) {
+        for (let i = 0; i < n; i += 1) {
+          adventureLog.addKill(name);
+          for (const id of quests.recordKill(name)) readyQuestIds.add(id);
+        }
+      }
+      // 포션 차감
+      for (const [id, n] of Object.entries(result.potionsConsumed)) {
+        if (n) inventory.consume(id as PotionId, n);
+      }
+      // EXP/HP/사망
+      if (result.expGained > 0) characterStateHook.addExp(result.expGained);
+      if (result.died) {
+        characterStateHook.restoreHpFull();
+        setMapProgress((prev) => ({
+          currentRegionId: START_REGION_ID,
+          visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
+            ? prev.visitedRegionIds
+            : [...prev.visitedRegionIds, START_REGION_ID],
+        }));
+      } else {
+        characterStateHook.setHp(result.finalPlayerHp);
+      }
+      // 요약 알림
+      const summary = summarizeOfflineResult(result);
+      const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
+      const cap =
+        result.cappedByLimit
+          ? ` (${OFFLINE_SIM_MAX_MS / 60_000}분 cap)`
+          : "";
+      addNotification(
+        result.died ? "battle_lose" : "info",
+        `오프라인 사냥 ${minutes}분${cap}${summary ? ` — ${summary}` : ""}`,
+      );
+      for (const id of readyQuestIds) {
+        const quest = getQuestById(id);
+        if (quest) {
+          addNotification(
+            "quest_ready",
+            `의뢰 조건 달성 — ${quest.title}: 길드에서 보상을 받을 수 있다.`,
+          );
+        }
+      }
+    },
+  });
 
   const rewardServices: RewardServices = {
     addPotion: (id, n) => inventory.add(id, n),
