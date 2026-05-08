@@ -83,7 +83,6 @@ import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { SkillsView } from "@/adventure/character/SkillsView";
 import { TrainingView } from "@/adventure/character/TrainingView";
-import { GrowthShrineView } from "@/adventure/character/GrowthShrineView";
 import { useTraining } from "@/adventure/training/useTraining";
 import {
   baseCharacter,
@@ -1090,22 +1089,6 @@ function Home() {
               />
               <EntryCard
                 icon={
-                  <Sparkle
-                    size={28}
-                    weight="duotone"
-                    className="text-violet-500"
-                  />
-                }
-                title="성장의 신전"
-                description={
-                  training.unspentPoints > 0
-                    ? `단련 포인트 ${training.unspentPoints}개 사용 가능`
-                    : "단련 포인트로 능력을 새겨넣는 곳."
-                }
-                onClick={() => setSubView("shrine")}
-              />
-              <EntryCard
-                icon={
                   <Hammer
                     size={28}
                     weight="duotone"
@@ -1196,19 +1179,6 @@ function Home() {
                 isTraining={training.isTraining}
                 unspentPoints={training.unspentPoints}
                 onStartTraining={training.startTraining}
-              />
-            </div>
-          )}
-          {tab === "town" && isTown && subView === "shrine" && (
-            <div className="space-y-3">
-              <SubViewHeader title="성장의 신전" onBack={back} />
-              <GrowthShrineView
-                unspentPoints={training.unspentPoints}
-                revertPoints={training.revertPoints}
-                allocatedStats={training.allocatedStats}
-                baseStats={baseCharacter.stats}
-                onAllocate={training.allocateStat}
-                onDeallocate={training.deallocateStat}
               />
             </div>
           )}
