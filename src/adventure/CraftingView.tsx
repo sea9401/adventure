@@ -3,7 +3,7 @@
 import { Hammer } from "@phosphor-icons/react";
 import { ITEMS } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
-import { POTIONS, POTION_MAX_PER_TYPE, type PotionId } from "./data/potions";
+import { POTIONS, type PotionId } from "./data/potions";
 import { RECIPES, type Recipe } from "./data/recipes";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
@@ -31,11 +31,13 @@ export function CraftingView({
   knownIds,
   materialCounts,
   potionCounts,
+  potionMax,
   onCraft,
 }: {
   knownIds: string[];
   materialCounts: Partial<Record<MaterialId, number>>;
   potionCounts: Partial<Record<PotionId, number>>;
+  potionMax: number;
   onCraft: (recipe: Recipe) => void;
 }) {
   const knownRecipes = RECIPES.filter((r) => knownIds.includes(r.id));
@@ -61,11 +63,11 @@ export function CraftingView({
           const hasMaterials = r.ingredients.every(
             (ing) => (materialCounts[ing.materialId] ?? 0) >= ing.count,
           );
-          // 포션 결과는 종류별 한도(POTION_MAX_PER_TYPE)에 걸리면 제작 불가.
+          // 포션 결과는 종류별 한도(potionMax)에 걸리면 제작 불가.
           // 한도까지 가득 차 있으면 재료만 소비되는 버그를 막기 위해 사전 차단.
           const potionFull =
             r.result.kind === "potion" &&
-            (potionCounts[r.result.potionId] ?? 0) >= POTION_MAX_PER_TYPE;
+            (potionCounts[r.result.potionId] ?? 0) >= potionMax;
           const canCraft = hasMaterials && !potionFull;
           return (
             <div

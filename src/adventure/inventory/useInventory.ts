@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ItemId } from "../data/items";
 import type { MaterialId } from "../data/materials";
-import { POTION_MAX_PER_TYPE, type PotionId } from "../data/potions";
+import { potionMax, type PotionId } from "../data/potions";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 
@@ -11,6 +11,8 @@ export type InventoryState = {
   potions: Partial<Record<PotionId, number>>;
   equipment: Partial<Record<ItemId, number>>;
   materials: Partial<Record<MaterialId, number>>;
+  // 종류별 포션 최대 보유 수의 추가 보너스. 보상으로 영구 누적.
+  potionCapacityBonus?: number;
 };
 
 export const emptyInventory = (): InventoryState => ({
@@ -26,6 +28,7 @@ function readInitial(raw: unknown): InventoryState {
     potions: parsed.potions ?? {},
     equipment: parsed.equipment ?? {},
     materials: parsed.materials ?? {},
+    potionCapacityBonus: Math.max(0, parsed.potionCapacityBonus ?? 0),
   };
 }
 
@@ -39,12 +42,13 @@ export function useInventory() {
     stateRef.current = state;
   }, [state]);
 
-  // 포션은 종류 별 POTION_MAX_PER_TYPE 까지만 보유 — 초과분은 silently 잘림.
+  // 포션은 종류 별 potionMax(bonus) 까지만 보유 — 초과분은 silently 잘림.
   // 실제로 추가된 수량을 반환 (호출 측이 골드 환불·메시지 처리에 활용).
   const add = useCallback((id: PotionId, n = 1): number => {
     const cur = stateRef.current;
     const have = cur.potions[id] ?? 0;
-    const room = Math.max(0, POTION_MAX_PER_TYPE - have);
+    const cap = potionMax(cur.potionCapacityBonus ?? 0);
+    const room = Math.max(0, cap - have);
     const added = Math.min(n, room);
     if (added <= 0) return 0;
     const next: InventoryState = {
@@ -54,6 +58,17 @@ export function useInventory() {
     stateRef.current = next;
     setState(next);
     return added;
+  }, []);
+
+  const addPotionCapacity = useCallback((n = 1) => {
+    if (n <= 0) return;
+    const cur = stateRef.current;
+    const next: InventoryState = {
+      ...cur,
+      potionCapacityBonus: (cur.potionCapacityBonus ?? 0) + n,
+    };
+    stateRef.current = next;
+    setState(next);
   }, []);
 
   const consume = useCallback((id: PotionId, n = 1): boolean => {
@@ -136,6 +151,8 @@ export function useInventory() {
     [state],
   );
 
+  const potionMaxValue = potionMax(state.potionCapacityBonus ?? 0);
+
   return {
     state,
     hydrated: true,
@@ -148,5 +165,7 @@ export function useInventory() {
     addMaterial,
     consumeMaterial,
     materialCount,
+    addPotionCapacity,
+    potionMax: potionMaxValue,
   };
 }

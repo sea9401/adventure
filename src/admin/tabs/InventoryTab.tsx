@@ -8,7 +8,7 @@ import {
 import { useAdmin } from "../AdminContext";
 import { Button, Checkbox, TextInput } from "../ui/Field";
 import { DangerAction } from "../ui/DangerAction";
-import { POTIONS, POTION_MAX_PER_TYPE, type PotionId } from "@/adventure/data/potions";
+import { POTIONS, potionMax, type PotionId } from "@/adventure/data/potions";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import type { InventoryState } from "@/adventure/inventory/useInventory";
@@ -95,13 +95,21 @@ export function InventoryTab() {
         />
       </div>
 
-      <Section title="포션" hint={`종류별 최대 ${POTION_MAX_PER_TYPE}`}>
+      <Section
+        title="포션"
+        hint={`종류별 최대 ${potionMax(state.potionCapacityBonus ?? 0)}${
+          (state.potionCapacityBonus ?? 0) > 0
+            ? ` (보너스 +${state.potionCapacityBonus})`
+            : ""
+        }`}
+      >
         <Table>
           <THead headers={["id", "이름", "보유", "액션"]} />
           <tbody>
             {potionRows.map((p) => {
               const n = state.potions[p.id] ?? 0;
-              const over = n > POTION_MAX_PER_TYPE;
+              const cap = potionMax(state.potionCapacityBonus ?? 0);
+              const over = n > cap;
               return (
                 <Row key={p.id}>
                   <Cell mono>{p.id}</Cell>
@@ -116,7 +124,7 @@ export function InventoryTab() {
                     <RowActions
                       onAdd={(d) => setPotion(p.id, n + d)}
                       onSet={(v) => setPotion(p.id, v)}
-                      maxQuick={POTION_MAX_PER_TYPE}
+                      maxQuick={cap}
                       readOnly={readOnly}
                     />
                   </Cell>

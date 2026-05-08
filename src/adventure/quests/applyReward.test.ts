@@ -9,6 +9,7 @@ function makeServices() {
     learnRecipe: vi.fn(),
     addGoldFame: vi.fn(),
     addExp: vi.fn(),
+    addPotionCapacity: vi.fn(),
   } satisfies RewardServices;
 }
 
@@ -74,6 +75,13 @@ describe("applyQuestReward", () => {
     const s = makeServices();
     applyQuestReward({ exp: 0 }, s);
     expect(s.addExp).not.toHaveBeenCalled();
+  });
+
+  it("potionCapacityBonus는 addPotionCapacity 호출 + '+n' 토큰", () => {
+    const s = makeServices();
+    const tokens = applyQuestReward({ potionCapacityBonus: 1 }, s);
+    expect(s.addPotionCapacity).toHaveBeenCalledWith(1);
+    expect(tokens).toEqual(["포션 최대 보유량 +1"]);
   });
 
   it("복합 보상은 정의 순서대로 토큰을 합성", () => {

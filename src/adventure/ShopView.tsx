@@ -5,7 +5,7 @@ import { Coins } from "@phosphor-icons/react";
 import {
   POTIONS,
   POTION_IDS,
-  POTION_MAX_PER_TYPE,
+  potionMax,
   type PotionId,
 } from "./data/potions";
 import { MATERIALS, type MaterialId } from "./data/materials";
@@ -96,6 +96,7 @@ function BuyTab({
   const materialIds = (Object.keys(MATERIALS) as MaterialId[]).filter(
     (id) => MATERIALS[id].inShop,
   );
+  const cap = potionMax(inventory.potionCapacityBonus ?? 0);
   return (
     <div className="space-y-3">
       <div>
@@ -114,7 +115,7 @@ function BuyTab({
                 price={potion.price}
                 owned={owned}
                 gold={gold}
-                cap={POTION_MAX_PER_TYPE}
+                cap={cap}
                 onPurchase={(qty) => onPurchasePotion(id, qty)}
               />
             );
