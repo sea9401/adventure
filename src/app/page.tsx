@@ -102,9 +102,11 @@ import {
   critChancePctFor,
   deriveSkills,
   doubleStrikeIntervalFor,
+  effectiveSkillNames,
   evadeGuaranteedFor,
   guardFor,
   powerAttackBonusFor,
+  SKILL_SLOT_COUNT,
 } from "@/adventure/character/skills";
 import { getTitle } from "@/adventure/data/titles";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
@@ -293,6 +295,11 @@ function Home() {
   const characterMaxMp = maxMpForLevel(characterState.level);
   const equippedTitle = getTitle(characterStateHook.equippedTitleId);
   const characterSkills = deriveSkills(totalStats);
+  const effectiveSkillNameList = effectiveSkillNames(
+    characterSkills,
+    characterState.equippedSkills,
+  );
+  const effectiveSkillSet = new Set(effectiveSkillNameList);
   const character: Character = {
     ...baseCharacter,
     name: profile.name,
@@ -376,11 +383,14 @@ function Home() {
     spd: character.stats.spd,
     evasionPct: character.stats.dex,
     attackCount: 1 + Math.floor(character.stats.spd / 10),
-    powerAttackBonus: powerAttackBonusFor(character.stats),
-    guaranteedEvades: evadeGuaranteedFor(character.stats),
-    extraAttackEveryNTurns: doubleStrikeIntervalFor(character.stats),
-    critChancePct: critChancePctFor(character.stats),
-    guard: guardFor(character.stats),
+    powerAttackBonus: powerAttackBonusFor(character.stats, effectiveSkillSet),
+    guaranteedEvades: evadeGuaranteedFor(character.stats, effectiveSkillSet),
+    extraAttackEveryNTurns: doubleStrikeIntervalFor(
+      character.stats,
+      effectiveSkillSet,
+    ),
+    critChancePct: critChancePctFor(character.stats, effectiveSkillSet),
+    guard: guardFor(character.stats, effectiveSkillSet),
   };
 
   const playerStatus = {
@@ -1342,7 +1352,23 @@ function Home() {
           {tab === "character" && subView === "skills" && (
             <div className="space-y-3">
               <SubViewHeader title="스킬" onBack={back} />
-              <SkillsView skills={character.skills} />
+              <SkillsView
+                skills={character.skills}
+                equippedNames={effectiveSkillNameList}
+                onEquip={(name) => {
+                  if (effectiveSkillNameList.includes(name)) return;
+                  if (effectiveSkillNameList.length >= SKILL_SLOT_COUNT) return;
+                  characterStateHook.setEquippedSkills([
+                    ...effectiveSkillNameList,
+                    name,
+                  ]);
+                }}
+                onUnequip={(name) => {
+                  characterStateHook.setEquippedSkills(
+                    effectiveSkillNameList.filter((n) => n !== name),
+                  );
+                }}
+              />
             </div>
           )}
           {tab === "character" && subView === "adventure-log" && (
