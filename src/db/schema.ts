@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   text,
@@ -6,15 +7,26 @@ import {
   primaryKey,
   serial,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Clerk userId 와 게임 사용자 1:1 매핑.
-export const users = pgTable("users", {
-  id: text("id").primaryKey(),
-  email: text("email"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+// name: 닉네임. 중복 방지용 권위적(authoritative) 컬럼 — 최초 설정 시 등록.
+// 기존 유저는 NULL 인 상태로 시작하고, 새로 시작하는 유저만 unique 제약 적용.
+export const users = pgTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    email: text("email"),
+    name: text("name"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => [
+    // 대소문자 무시 unique. NULL 은 자유롭게 허용 (기존 유저 호환).
+    uniqueIndex("users_name_lower_idx").on(sql`lower(${t.name})`),
+  ],
+);
 
 // 게임 진행 상태는 키별로 분리 저장. localStorage 패턴과 동일.
 // 새 키 추가 시 마이그레이션 없이 행만 추가.
