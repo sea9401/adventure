@@ -16,7 +16,7 @@ import {
   Sword,
   User,
 } from "@phosphor-icons/react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { SettingsMenu } from "@/components/SettingsMenu";
 import { NameSetupModal } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
 import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
@@ -653,7 +653,7 @@ function Home() {
               unreadCount={notifications.unreadCount}
               onOpen={notifications.markRead}
             />
-            <ThemeToggle />
+            <SettingsMenu />
           </div>
         </header>
 
