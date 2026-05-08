@@ -114,8 +114,14 @@ export function ChatPanel({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-end bg-black/40 sm:items-end sm:p-4">
-      <div className="flex h-[100dvh] w-full max-w-md flex-col bg-white shadow-2xl dark:bg-zinc-950 sm:h-[600px] sm:max-h-[85vh] sm:rounded-lg sm:border sm:border-zinc-200 dark:sm:border-zinc-800">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-40 flex items-end justify-end bg-black/40 sm:items-end sm:p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex h-[100dvh] w-full max-w-md flex-col bg-white shadow-2xl dark:bg-zinc-950 sm:h-[600px] sm:max-h-[85vh] sm:rounded-lg sm:border sm:border-zinc-200 dark:sm:border-zinc-800"
+      >
         <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
           <div className="flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
             <ChatCircle size={20} weight="duotone" />
