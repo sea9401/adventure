@@ -38,47 +38,60 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid" }, { status: 400 });
   }
 
-  // 사전 중복 검사 (UX 용 — race 는 unique 제약이 잡음).
-  // legacy 프로필도 함께 검사.
-  const legacyHit = await db
-    .select({ userId: savesKv.userId })
-    .from(savesKv)
-    .where(
-      sql`${savesKv.key} = ${PROFILE_STORAGE_KEY} and ${savesKv.userId} <> ${userId} and lower(${savesKv.value}->>'name') = lower(${name})`,
-    )
-    .limit(1);
-  if (legacyHit.length > 0) {
-    return Response.json({ error: "taken" }, { status: 409 });
-  }
-
-  // users.name unique upsert. 다른 유저가 같은 이름 가지면 unique 제약 위반.
   try {
-    await db
-      .update(users)
-      .set({ name, updatedAt: new Date() })
-      .where(sql`${users.id} = ${userId}`);
-  } catch (e) {
-    // Postgres unique violation: code 23505
-    const code = (e as { code?: string }).code;
-    if (code === "23505") {
+    // 사전 중복 검사 (UX 용 — race 는 unique 제약이 잡음).
+    // legacy 프로필도 함께 검사.
+    const legacyHit = await db
+      .select({ userId: savesKv.userId })
+      .from(savesKv)
+      .where(
+        sql`${savesKv.key} = ${PROFILE_STORAGE_KEY} and ${savesKv.userId} <> ${userId} and lower(${savesKv.value}->>'name') = lower(${name})`,
+      )
+      .limit(1);
+    if (legacyHit.length > 0) {
       return Response.json({ error: "taken" }, { status: 409 });
     }
-    throw e;
-  }
 
-  const profile = { name, gender };
-  await db
-    .insert(savesKv)
-    .values({
+    // users.name unique upsert. 다른 유저가 같은 이름 가지면 unique 제약 위반.
+    try {
+      await db
+        .update(users)
+        .set({ name, updatedAt: new Date() })
+        .where(sql`${users.id} = ${userId}`);
+    } catch (e) {
+      // Postgres unique violation: code 23505
+      const code = (e as { code?: string }).code;
+      if (code === "23505") {
+        return Response.json({ error: "taken" }, { status: 409 });
+      }
+      throw e;
+    }
+
+    const profile = { name, gender };
+    await db
+      .insert(savesKv)
+      .values({
+        userId,
+        key: PROFILE_STORAGE_KEY,
+        value: profile,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [savesKv.userId, savesKv.key],
+        set: { value: profile, updatedAt: new Date() },
+      });
+
+    return Response.json({ ok: true, profile });
+  } catch (e) {
+    // 진단용 — 5xx 가 빈번한 경우 Vercel 로그에서 패턴 확인.
+    // userId 는 추적용으로 남기되 name 은 잠재적 PII 가 적어도 한 번 더 확인 후 추가.
+    const err = e as { code?: string; message?: string; name?: string };
+    console.error("[/api/profile/setup] db failure", {
       userId,
-      key: PROFILE_STORAGE_KEY,
-      value: profile,
-      updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: [savesKv.userId, savesKv.key],
-      set: { value: profile, updatedAt: new Date() },
+      code: err.code,
+      name: err.name,
+      message: err.message,
     });
-
-  return Response.json({ ok: true, profile });
+    return new Response("server error", { status: 500 });
+  }
 }
