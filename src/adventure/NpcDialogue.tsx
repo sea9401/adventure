@@ -31,20 +31,20 @@ export function NpcDialogue({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+        className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <NpcAvatar npc={npc} size={48} />
+          <div className="flex items-center gap-4">
+            <NpcAvatar npc={npc} size={112} />
             <div className="min-w-0">
               <div
                 id="npc-dialogue-title"
-                className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+                className="text-lg font-semibold text-zinc-900 dark:text-zinc-100"
               >
                 {npc.name}
               </div>
-              <div className="text-xs text-zinc-500 dark:text-zinc-400">
+              <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                 {npc.description}
               </div>
             </div>
@@ -59,7 +59,7 @@ export function NpcDialogue({
           </button>
         </div>
 
-        <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+        <p className="mt-5 whitespace-pre-line text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
           {text ?? npc.greeting}
         </p>
 
