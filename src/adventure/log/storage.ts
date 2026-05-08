@@ -26,6 +26,8 @@ export type AdventureLog = {
   towns: Record<string, TownLogEntry>;
   npcs: Record<string, NpcLogEntry>;
   titles: Record<string, TitleLogEntry>;
+  /** 누적 전투 패배 횟수 — 칭호/통계용. */
+  battleLosses?: number;
 };
 
 export const ADVENTURE_LOG_KEY = "adventure-log.v2";
@@ -74,6 +76,7 @@ export const emptyAdventureLog = (): AdventureLog => ({
   towns: {},
   npcs: {},
   titles: {},
+  battleLosses: 0,
 });
 
 export function loadAdventureLog(): AdventureLog {
@@ -87,6 +90,7 @@ export function loadAdventureLog(): AdventureLog {
       towns: parsed?.towns ?? {},
       npcs: parsed?.npcs ?? {},
       titles: parsed?.titles ?? {},
+      battleLosses: parsed?.battleLosses ?? 0,
     };
   } catch {
     return emptyAdventureLog();

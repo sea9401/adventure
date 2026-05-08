@@ -21,6 +21,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "처음으로 몬스터를 쓰러뜨린 자.",
     condition: "몬스터 1마리 처치",
   },
+  frail: {
+    id: "frail",
+    name: "약골",
+    description: "수 차례 쓰러져도 다시 일어선 자. 자랑은 아니다.",
+    condition: "전투 패배 10회",
+  },
 };
 
 export function getTitle(id: TitleId | null | undefined): Title | undefined {

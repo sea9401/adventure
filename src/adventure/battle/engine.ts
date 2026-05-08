@@ -1,5 +1,6 @@
 import type { Monster } from "../data/monsters";
 import { computeHealAmount, type Potion, type PotionId } from "../data/potions";
+import { POWER_ATTACK_TURN_INTERVAL } from "../character/skills";
 
 export type BattleLogEntry = {
   kind: "player_attack" | "enemy_attack" | "info";
@@ -19,6 +20,8 @@ export type BattleState = {
   phase: BattlePhase;
   outcome: BattleOutcome | null;
   playerAttacksLeft: number;
+  // 완료된 플레이어 턴 수 — 강공격(N턴마다 발동) 트리거에 사용. 진행 중인 턴은 미포함.
+  completedPlayerTurns: number;
 };
 
 export type PlayerCombat = {
@@ -29,6 +32,8 @@ export type PlayerCombat = {
   spd: number; // 선공 판정에 사용
   evasionPct: number; // 0~100, 적 공격 회피 확률
   attackCount: number; // 한 턴에 가하는 공격 횟수 (>=1)
+  // 강공격 보너스 — POWER_ATTACK_TURN_INTERVAL 턴마다 첫 공격에 추가 피해. 0/undefined = 스킬 미보유.
+  powerAttackBonus?: number;
 };
 
 export type PlayerAction =
@@ -76,6 +81,7 @@ export function initialBattleState(
     phase: playerFirst ? "player" : "enemy",
     outcome: null,
     playerAttacksLeft: Math.max(1, player.attackCount),
+    completedPlayerTurns: 0,
   };
 }
 
@@ -100,12 +106,27 @@ export function advanceTurn(
       };
     }
 
-    const dmg = damageBetween(player.atk, state.enemy.def);
-    const enemyHp = Math.max(0, state.enemyHp - dmg);
+    // 강공격 발동 — POWER_ATTACK_TURN_INTERVAL 턴마다 그 턴의 첫 공격이 ATK + bonus.
+    // 진행 중인 턴 번호 = completedPlayerTurns + 1. 첫 공격 = playerAttacksLeft 가 attackCount 와 같을 때.
+    const turnNumber = state.completedPlayerTurns + 1;
+    const isFirstAttackOfTurn =
+      state.playerAttacksLeft === Math.max(1, player.attackCount);
+    const bonus =
+      isFirstAttackOfTurn &&
+      turnNumber % POWER_ATTACK_TURN_INTERVAL === 0 &&
+      (player.powerAttackBonus ?? 0) > 0
+        ? player.powerAttackBonus!
+        : 0;
+
+    const dmg = damageBetween(player.atk + bonus, state.enemy.def);
     const log = appendLog(state.log, {
       kind: "player_attack",
-      text: `${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
+      text:
+        bonus > 0
+          ? `[강공격] ${state.enemy.name}에게 ${dmg} 피해를 입혔다.`
+          : `${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
     });
+    const enemyHp = Math.max(0, state.enemyHp - dmg);
     if (enemyHp <= 0) {
       return {
         ...state,
@@ -116,6 +137,7 @@ export function advanceTurn(
         }),
         phase: "ended",
         outcome: "win",
+        completedPlayerTurns: state.completedPlayerTurns + 1,
       };
     }
     const attacksLeft = state.playerAttacksLeft - 1;
@@ -128,6 +150,7 @@ export function advanceTurn(
       log,
       phase: "enemy",
       playerAttacksLeft: Math.max(1, player.attackCount),
+      completedPlayerTurns: state.completedPlayerTurns + 1,
     };
   }
 

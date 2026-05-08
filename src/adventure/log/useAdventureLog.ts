@@ -56,6 +56,7 @@ function readInitial(raw: unknown): AdventureLog {
     towns: parsed.towns ?? {},
     npcs: parsed.npcs ?? {},
     titles: parsed.titles ?? {},
+    battleLosses: parsed.battleLosses ?? 0,
   };
 }
 
