@@ -30,8 +30,8 @@ export const ITEMS = {
   cloth_clothes: {
     name: "천 옷",
     slot: "armor",
-    stats: [{ label: "방어력", value: "+1" }],
-    bonus: { def: 1 },
+    stats: [{ label: "방어력", value: "+0" }],
+    bonus: { def: 0 },
     description: "평범한 천으로 만든 옷.",
   } satisfies EquipItem,
   mom_amulet: {
