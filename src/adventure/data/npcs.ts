@@ -3,6 +3,7 @@ import type { RegionId } from "./world";
 export type NpcId =
   | "village_trainer_smith"
   | "village_blacksmith_bold"
+  | "village_suzy"
   | "diola_elder"
   | "diola_fisher"
   | "diola_innkeeper"
@@ -51,6 +52,16 @@ export const NPCS: Npc[] = [
     greeting:
       "어, 왔나.\n무기든 갑옷이든 가져와 봐. 쓸 만한 거면 손봐주고, 못 쓸 거면 그 자리에서 녹여주지.",
     portrait: "/images/npc/bold.webp",
+  },
+  {
+    id: "village_suzy",
+    region: "village",
+    name: "수지",
+    role: "lore",
+    description:
+      "마을 어귀에서 자주 서성이는 젊은 아낙. 손에는 늘 뜨다 만 뜨개질감이 들려 있다.",
+    greeting:
+      "아, 모험가 분이세요?\n혹시 디올라 쪽에서 오시는 길은 아니죠? …우리 그이가 거기 호숫가에서 일한다고 갔는데, 벌써 한 달째 편지 한 통이 없네요.",
   },
   {
     id: "diola_elder",
