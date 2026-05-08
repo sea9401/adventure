@@ -60,6 +60,28 @@ export const QUESTS: Quest[] = [
     repeatable: true,
   },
   {
+    id: "village-dog-extermination",
+    regionId: "village",
+    title: "들개 퇴치",
+    description:
+      "마을 외곽에서 들개가 가축을 노린다는 신고가 들어왔어요. 들개 15마리를 처치해주세요.",
+    requiredLevel: 1,
+    target: { monsterName: "들개", count: 15 },
+    reward: { gold: 18, fame: 2 },
+    repeatable: true,
+  },
+  {
+    id: "village-mole-extermination",
+    regionId: "village",
+    title: "두더쥐 퇴치",
+    description:
+      "두더쥐가 밭을 헤집어 놓아 농작물 피해가 심해요. 두더쥐 20마리를 처치해주세요.",
+    requiredLevel: 1,
+    target: { monsterName: "두더쥐", count: 20 },
+    reward: { gold: 14, fame: 2 },
+    repeatable: true,
+  },
+  {
     id: "village-trainer-slimes",
     regionId: "village",
     title: "훈련 — 슬라임 5마리",
