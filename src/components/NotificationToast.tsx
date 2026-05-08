@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { X } from "@phosphor-icons/react";
 import type { AppNotification, NotificationKind } from "@/lib/notifications";
 
 const TOAST_DURATION_MS = 3000;
@@ -49,6 +50,10 @@ export function NotificationToast({
     return () => clearTimeout(id);
   }, [toasts]);
 
+  const dismiss = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
   if (toasts.length === 0) return null;
 
   return (
@@ -56,9 +61,17 @@ export function NotificationToast({
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="pointer-events-auto max-w-sm rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-right dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+          className="pointer-events-auto flex max-w-sm items-start gap-2 rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-right dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
         >
-          {t.text}
+          <span className="flex-1 pt-0.5">{t.text}</span>
+          <button
+            type="button"
+            aria-label="알림 닫기"
+            onClick={() => dismiss(t.id)}
+            className="-mr-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          >
+            <X size={14} weight="bold" />
+          </button>
         </div>
       ))}
     </div>
