@@ -52,7 +52,6 @@ export function NameSetupModal({
       return;
     }
     if (trimmed.length > NAME_MAX) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCheck({ kind: "tooLong" });
       return;
     }
