@@ -4,6 +4,7 @@ export type NpcId =
   | "village_trainer_smith"
   | "village_blacksmith_bold"
   | "village_suzy"
+  | "village_woodcutter_jimmy"
   | "diola_elder"
   | "diola_fisher"
   | "diola_innkeeper"
@@ -62,6 +63,16 @@ export const NPCS: Npc[] = [
       "마을 어귀에서 자주 서성이는 젊은 아낙. 손에는 늘 뜨다 만 뜨개질감이 들려 있다.",
     greeting:
       "아, 모험가 분이세요?\n혹시 디올라 쪽에서 오시는 길은 아니죠? …우리 그이가 거기 호숫가에서 일한다고 갔는데, 벌써 한 달째 편지 한 통이 없네요.",
+  },
+  {
+    id: "village_woodcutter_jimmy",
+    region: "village",
+    name: "나무꾼 지미",
+    role: "lore",
+    description:
+      "마을 뒤편 숲을 오가며 장작을 패는 사내. 어깨에는 늘 도끼가 걸려 있고, 옷자락에 톱밥이 묻어 있다.",
+    greeting:
+      "어이, 모험가 양반.\n오늘도 숲에서 나무 좀 패다 왔지. 별일 없는 게 제일이야, 안 그래?",
   },
   {
     id: "diola_elder",
