@@ -5,7 +5,7 @@ import { CaretDown, ChatCircle, PaperPlaneTilt, Users, X } from "@phosphor-icons
 import { formatRelative } from "@/lib/notifications";
 import { CHAT_MAX_LENGTH } from "@/lib/chat-config";
 
-type ChatMessage = {
+export type ChatMessage = {
   id: number;
   name: string;
   className: string;
@@ -20,13 +20,7 @@ type PresenceUser = {
   mine: boolean;
 };
 
-const POLL_INTERVAL_MS = 3000;
-
-async function fetchMessages(): Promise<ChatMessage[]> {
-  const res = await fetch("/api/chat", { cache: "no-store" });
-  if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
-  return res.json();
-}
+const PRESENCE_POLL_MS = 3000;
 
 async function fetchPresence(): Promise<PresenceUser[]> {
   const res = await fetch("/api/presence", { cache: "no-store" });
@@ -56,13 +50,16 @@ export function ChatPanel({
   onClose,
   name,
   className,
+  messages,
+  onMessageSent,
 }: {
   open: boolean;
   onClose: () => void;
   name: string;
   className: string;
+  messages: ChatMessage[];
+  onMessageSent: (m: ChatMessage) => void;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [presence, setPresence] = useState<PresenceUser[]>([]);
   const [presenceOpen, setPresenceOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -75,19 +72,14 @@ export function ChatPanel({
     let cancelled = false;
     const tick = async () => {
       try {
-        const [nextMessages, nextPresence] = await Promise.all([
-          fetchMessages(),
-          fetchPresence(),
-        ]);
-        if (cancelled) return;
-        setMessages(nextMessages);
-        setPresence(nextPresence);
+        const next = await fetchPresence();
+        if (!cancelled) setPresence(next);
       } catch {
         // 네트워크 오류는 다음 폴링에서 자동 재시도 — UI 에 띄우지 않음.
       }
     };
     tick();
-    const interval = setInterval(tick, POLL_INTERVAL_MS);
+    const interval = setInterval(tick, PRESENCE_POLL_MS);
     return () => {
       cancelled = true;
       clearInterval(interval);
@@ -113,10 +105,7 @@ export function ChatPanel({
     setError(null);
     try {
       const sent = await postMessage({ name, className, content: trimmed });
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === sent.id)) return prev;
-        return [...prev, sent];
-      });
+      onMessageSent(sent);
       setDraft("");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "전송 실패";
