@@ -4,36 +4,35 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { QUESTS, getQuestById, type Quest } from "../data/quests";
 import {
   defaultQuestEntry,
-  loadQuestProgress,
-  saveQuestProgress,
   type QuestProgressEntry,
   type QuestProgressMap,
 } from "./storage";
 import { cooldownStatus } from "./cooldown";
+import { useSavedValue } from "@/lib/storage/SaveProvider";
+import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 
 export type ClaimResult =
   | { ok: true; quest: Quest }
   | { ok: false; reason: "not-found" | "not-ready" };
 
-export function useQuests() {
-  const [progress, setProgress] = useState<QuestProgressMap>({});
-  const [hydrated, setHydrated] = useState(false);
-  // setState 업데이터가 큐잉되어 다음 렌더에 처리되므로 동기 계산용 미러 ref가 필요.
-  const progressRef = useRef<QuestProgressMap>({});
+function readInitial(raw: unknown): QuestProgressMap {
+  if (!raw || typeof raw !== "object") return {};
+  return raw as QuestProgressMap;
+}
 
-  useEffect(() => {
-    const loaded = loadQuestProgress();
-    progressRef.current = loaded;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setProgress(loaded);
-    setHydrated(true);
-  }, []);
+export function useQuests() {
+  const initial = useSavedValue("quest-progress.v1");
+  const [progress, setProgress] = useState<QuestProgressMap>(() =>
+    readInitial(initial),
+  );
+  // setState 업데이터가 큐잉되어 다음 렌더에 처리되므로 동기 계산용 미러 ref 가 필요.
+  const progressRef = useRef<QuestProgressMap>(progress);
 
   useEffect(() => {
     progressRef.current = progress;
-    if (!hydrated) return;
-    saveQuestProgress(progress);
-  }, [hydrated, progress]);
+  }, [progress]);
+
+  useRemotePatch("quest-progress.v1", progress);
 
   const getEntry = useCallback(
     (id: string): QuestProgressEntry => progress[id] ?? defaultQuestEntry(),
@@ -55,7 +54,7 @@ export function useQuests() {
   }, []);
 
   // 전투 승리 시 호출 — 활성 퀘스트 중 타겟 일치하는 것의 진행도 증가.
-  // 이번 호출에서 막 ready로 전환된 퀘스트 ID 목록을 반환 (알림 트리거용).
+  // 이번 호출에서 막 ready 로 전환된 퀘스트 ID 목록을 반환 (알림 트리거용).
   const recordKill = useCallback((monsterName: string): string[] => {
     const cur = progressRef.current;
     const next: QuestProgressMap = { ...cur };
@@ -80,7 +79,7 @@ export function useQuests() {
     return justReady;
   }, []);
 
-  // 보상 수령 — 호출 측이 캐릭터 상태 갱신을 함께 처리
+  // 보상 수령 — 호출 측이 캐릭터 상태 갱신을 함께 처리.
   const claim = useCallback((id: string): ClaimResult => {
     const quest = getQuestById(id);
     if (!quest) return { ok: false, reason: "not-found" };
@@ -102,5 +101,5 @@ export function useQuests() {
     return { ok: true, quest };
   }, []);
 
-  return { progress, hydrated, getEntry, accept, recordKill, claim };
+  return { progress, hydrated: true, getEntry, accept, recordKill, claim };
 }

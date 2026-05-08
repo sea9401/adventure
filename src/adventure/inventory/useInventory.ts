@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ItemId } from "../data/items";
 import type { MaterialId } from "../data/materials";
 import { POTION_MAX_PER_TYPE, type PotionId } from "../data/potions";
+import { useSavedValue } from "@/lib/storage/SaveProvider";
+import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 
 export type InventoryState = {
   potions: Partial<Record<PotionId, number>>;
@@ -11,54 +13,31 @@ export type InventoryState = {
   materials: Partial<Record<MaterialId, number>>;
 };
 
-const STORAGE_KEY = "inventory.v1";
-
 export const emptyInventory = (): InventoryState => ({
   potions: {},
   equipment: {},
   materials: {},
 });
 
-function load(): InventoryState {
-  if (typeof window === "undefined") return emptyInventory();
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return emptyInventory();
-    const parsed = JSON.parse(raw) as Partial<InventoryState> | null;
-    return {
-      potions: parsed?.potions ?? {},
-      equipment: parsed?.equipment ?? {},
-      materials: parsed?.materials ?? {},
-    };
-  } catch {
-    return emptyInventory();
-  }
-}
-
-function save(state: InventoryState): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {}
+function readInitial(raw: unknown): InventoryState {
+  if (!raw || typeof raw !== "object") return emptyInventory();
+  const parsed = raw as Partial<InventoryState>;
+  return {
+    potions: parsed.potions ?? {},
+    equipment: parsed.equipment ?? {},
+    materials: parsed.materials ?? {},
+  };
 }
 
 export function useInventory() {
-  const [state, setState] = useState<InventoryState>(emptyInventory);
-  const [hydrated, setHydrated] = useState(false);
-  const stateRef = useRef<InventoryState>(emptyInventory());
-
-  useEffect(() => {
-    const loaded = load();
-    stateRef.current = loaded;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setState(loaded);
-    setHydrated(true);
-  }, []);
+  const initial = useSavedValue("inventory.v1");
+  const [state, setState] = useState<InventoryState>(() => readInitial(initial));
+  const stateRef = useRef<InventoryState>(state);
+  useRemotePatch("inventory.v1", state);
 
   useEffect(() => {
     stateRef.current = state;
-    if (!hydrated) return;
-    save(state);
-  }, [hydrated, state]);
+  }, [state]);
 
   // 포션은 종류 별 POTION_MAX_PER_TYPE 까지만 보유 — 초과분은 silently 잘림.
   // 실제로 추가된 수량을 반환 (호출 측이 골드 환불·메시지 처리에 활용).
@@ -159,7 +138,7 @@ export function useInventory() {
 
   return {
     state,
-    hydrated,
+    hydrated: true,
     add,
     consume,
     count,
