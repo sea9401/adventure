@@ -40,7 +40,13 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
   const kindParam = url.searchParams.get("kind");
-  const sort = url.searchParams.get("sort") ?? "recent";
+  const sortParam = url.searchParams.get("sort");
+  const VALID_SORTS = ["recent", "price_asc", "price_desc"] as const;
+  type Sort = (typeof VALID_SORTS)[number];
+  if (sortParam !== null && !(VALID_SORTS as readonly string[]).includes(sortParam)) {
+    return new Response("invalid sort", { status: 400 });
+  }
+  const sort: Sort = (sortParam ?? "recent") as Sort;
   const mine = url.searchParams.get("mine") === "1";
   const limit = Math.min(
     50,

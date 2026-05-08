@@ -10,7 +10,10 @@ export type ListQuery = {
   limit?: number;
 };
 
-export async function fetchListings(q: ListQuery): Promise<ListResponse> {
+export async function fetchListings(
+  q: ListQuery,
+  signal?: AbortSignal,
+): Promise<ListResponse> {
   const url = new URL("/api/marketplace/listings", window.location.origin);
   if (q.q) url.searchParams.set("q", q.q);
   if (q.kind && q.kind !== "all") url.searchParams.set("kind", q.kind);
@@ -18,7 +21,7 @@ export async function fetchListings(q: ListQuery): Promise<ListResponse> {
   if (q.mine) url.searchParams.set("mine", "1");
   if (q.cursor) url.searchParams.set("cursor", q.cursor);
   if (q.limit) url.searchParams.set("limit", String(q.limit));
-  const r = await fetch(url.toString());
+  const r = await fetch(url.toString(), { signal });
   if (!r.ok) throw new Error(`목록 로드 실패 (${r.status})`);
   return (await r.json()) as ListResponse;
 }

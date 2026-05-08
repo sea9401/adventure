@@ -46,25 +46,36 @@ export function ListingsView({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const r = await fetchListings({ kind, sort, q: submitted, mine: mineOnly });
-      setItems(r.items);
-      setNextCursor(r.nextCursor);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "로드 실패");
-    } finally {
-      setLoading(false);
-    }
-  }, [kind, sort, submitted, mineOnly]);
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const r = await fetchListings(
+          { kind, sort, q: submitted, mine: mineOnly },
+          signal,
+        );
+        if (signal?.aborted) return;
+        setItems(r.items);
+        setNextCursor(r.nextCursor);
+      } catch (e) {
+        if (signal?.aborted) return;
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        setError(e instanceof Error ? e.message : "로드 실패");
+      } finally {
+        if (!signal?.aborted) setLoading(false);
+      }
+    },
+    [kind, sort, submitted, mineOnly],
+  );
 
   useEffect(() => {
-    // 비동기 fetch 후 setState 라 cascading render 가 아니지만 린트는 호출
-    // 그래프만 보고 발화하므로 끔.
+    // 의존성(필터/정렬/검색)이 빠르게 바뀔 때 늦게 도착한 응답이 최신 결과를 덮어쓰지
+    // 않도록 AbortController 로 이전 fetch 를 취소.
+    const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
+    void load(controller.signal);
+    return () => controller.abort();
   }, [load, refreshKey]);
 
   // 창에 포커스 돌아왔을 때 자동 새로고침. 짧은 시간(<10s) 안의 중복은 스킵.
