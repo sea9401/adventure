@@ -20,6 +20,7 @@ import type {
   AutoPotionRule,
 } from "./inventory/useAutoPotionConfig";
 import { AutoPotionSection } from "./inventory/AutoPotionSection";
+import type { AppNotification } from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
 
 export type BattleEndPayload = {
@@ -46,6 +47,7 @@ export function BattleView({
   inventoryState,
   autoPotionConfig,
   onUpdateAutoPotionRule,
+  recentNotifications,
 }: {
   region: Region;
   player: PlayerCombat;
@@ -59,6 +61,7 @@ export function BattleView({
     index: number,
     patch: Partial<AutoPotionRule>,
   ) => void;
+  recentNotifications?: AppNotification[];
 }) {
   const { state, potionsConsumed, start, stop } = useBattle({
     player,
@@ -165,7 +168,11 @@ export function BattleView({
     state.phase === "ended" && state.outcome === "lose";
   return (
     <>
-      <BattleScene state={state} playerName={playerName} />
+      <BattleScene
+        state={state}
+        playerName={playerName}
+        recentNotifications={recentNotifications}
+      />
       {isLoss && (
         <BattleResult
           outcome="lose"

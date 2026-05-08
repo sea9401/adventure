@@ -714,6 +714,7 @@ export default function Home() {
                 inventoryState={inventory.state}
                 autoPotionConfig={autoPotion.config}
                 onUpdateAutoPotionRule={autoPotion.updateRule}
+                recentNotifications={notifications.list}
               />
             </div>
           )}

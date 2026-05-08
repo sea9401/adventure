@@ -3,7 +3,23 @@
 import { useEffect, useRef } from "react";
 import type { BattleState } from "./engine";
 import { MONSTERS } from "../data/monsters";
+import {
+  formatRelative,
+  type AppNotification,
+  type NotificationKind,
+} from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
+
+const RECENT_KIND_COLOR: Record<NotificationKind, string> = {
+  battle_win: "text-emerald-700 dark:text-emerald-400",
+  battle_lose: "text-rose-700 dark:text-rose-400",
+  training_done: "text-amber-700 dark:text-amber-400",
+  quest_ready: "text-yellow-700 dark:text-yellow-400",
+  quest_complete: "text-violet-700 dark:text-violet-400",
+  info: "text-zinc-600 dark:text-zinc-400",
+};
+
+const RECENT_NOTIFICATIONS_VISIBLE = 3;
 
 function HpBar({
   label,
@@ -58,9 +74,11 @@ function EnemyAvatar({ name }: { name: string }) {
 export function BattleScene({
   state,
   playerName,
+  recentNotifications,
 }: {
   state: BattleState;
   playerName: string;
+  recentNotifications?: AppNotification[];
 }) {
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +86,11 @@ export function BattleScene({
     const el = logRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [state.log]);
+
+  const recents = (recentNotifications ?? []).slice(
+    0,
+    RECENT_NOTIFICATIONS_VISIBLE,
+  );
 
   return (
     <div className="space-y-3">
@@ -113,6 +136,28 @@ export function BattleScene({
         ))}
       </div>
 
+      {recents.length > 0 && (
+        <Card padding="md">
+          <div className="mb-1.5 text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            최근 활동
+          </div>
+          <ul className="space-y-1">
+            {recents.map((n) => (
+              <li
+                key={n.id}
+                className="flex items-baseline justify-between gap-2 text-xs"
+              >
+                <span className={`truncate ${RECENT_KIND_COLOR[n.kind]}`}>
+                  {n.text}
+                </span>
+                <span className="shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500">
+                  {formatRelative(n.timestamp)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }
