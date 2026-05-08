@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Monster } from "../data/monsters";
 import type { PotionId } from "../data/potions";
 import {
@@ -31,14 +31,18 @@ export function useBattle({
   >({});
 
   // 매 렌더 latest 값을 ref로 캡처 — start 콜백이 stale closure에 갇히지 않도록.
+  // ref mutate 는 effect 안에서. start 는 사용자 인터랙션으로 호출되므로 그때는
+  // 이미 effect 가 실행돼 ref 가 최신.
   const playerRef = useRef(player);
   const playerNameRef = useRef(playerName);
   const pickActionRef = useRef(pickAction);
   const potionsRef = useRef(potions);
-  playerRef.current = player;
-  playerNameRef.current = playerName;
-  pickActionRef.current = pickAction;
-  potionsRef.current = potions;
+  useEffect(() => {
+    playerRef.current = player;
+    playerNameRef.current = playerName;
+    pickActionRef.current = pickAction;
+    potionsRef.current = potions;
+  });
 
   // hpOverride — 직전 전투의 finalHp를 그대로 이어받을 때 사용 (setCharacterState 비동기 우회).
   const start = useCallback((enemy: Monster, hpOverride?: number) => {

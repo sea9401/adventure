@@ -15,7 +15,6 @@ import {
 import { BattleScene, type BattlePlayerStatus } from "./battle/BattleScene";
 import { BattleResult } from "./battle/BattleResult";
 import { Card } from "@/components/ui/Card";
-import type { PotionId } from "./data/potions";
 import type { InventoryState } from "./inventory/useInventory";
 import type { AppNotification } from "@/lib/notifications";
 import type { BattleEndPayload } from "./BattleView";
@@ -89,9 +88,11 @@ export function TrialView({
 
   // 전투 종료 처리. 같은 state 객체에 대해 한 번만 발화.
   const onBattleEndRef = useRef(onBattleEnd);
-  onBattleEndRef.current = onBattleEnd;
   const onTrialEndRef = useRef(onTrialEnd);
-  onTrialEndRef.current = onTrialEnd;
+  useEffect(() => {
+    onBattleEndRef.current = onBattleEnd;
+    onTrialEndRef.current = onTrialEnd;
+  });
   const firedForStateRef = useRef<BattleState | null>(null);
 
   useEffect(() => {

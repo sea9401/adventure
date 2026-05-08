@@ -92,7 +92,6 @@ import {
   type TrialEdge,
 } from "@/adventure/TrialView";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
-import type { RegionId } from "@/adventure/data/world";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
 import {
@@ -305,9 +304,11 @@ function Home() {
 
   // 안전망 — HP<=0 인데 마을이 아닌 곳(사냥 지역 등)에 있으면 시작 마을로 강제 복귀.
   // 패배 모달을 확인하기 전에 새로고침/탭 닫기 등으로 빠져나가 stuck 된 유저를 다음 진입에서 구출.
+  // 외부 상태(hp/region)를 관찰해 위치 보정 — 의도적 set-state-in-effect.
   useEffect(() => {
     if (characterState.hp > 0) return;
     if (isTown) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMapProgress((prev) => ({
       currentRegionId: START_REGION_ID,
       visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
@@ -518,9 +519,11 @@ function Home() {
       characterStateHook.setHp(payload.finalPlayerHp);
       characterStateHook.addExp(payload.rewards.exp, character.stats.vit);
       // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
+      // Math.random 은 lint 가 render 호출로 오인하지만 여기는 onBattleEnd 핸들러.
       const monster = MONSTERS[payload.enemyName];
       if (monster?.drops) {
         for (const drop of monster.drops) {
+          // eslint-disable-next-line react-hooks/purity
           if (Math.random() < drop.chance) {
             inventory.addMaterial(drop.materialId, 1);
             addNotification(

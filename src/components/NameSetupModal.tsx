@@ -44,8 +44,10 @@ export function NameSetupModal({
   const trimmed = name.trim();
 
   // 입력 변경 시 debounce 후 가용성 체크. 컴포넌트 unmount/입력 변경 시 fetch 결과는 무시.
+  // 외부 입력(name)을 관찰해 check 상태로 매핑 — 의도적 set-state-in-effect.
   useEffect(() => {
     if (trimmed.length < NAME_MIN) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCheck({ kind: "idle" });
       return;
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { UserCircle } from "@phosphor-icons/react";
 import type { Npc, NpcRole } from "./data/npcs";
 
@@ -23,18 +23,18 @@ export function NpcAvatar({
   size: number;
   className?: string;
 }) {
-  const [errored, setErrored] = useState(false);
-  useEffect(() => {
-    setErrored(false);
-  }, [npc.portrait]);
+  // 어떤 portrait 가 실패했는지 자체를 state 로 저장 — npc.portrait 가 바뀌면
+  // 자동으로 비교가 다시 일어나면서 별도 effect 없이 reset 효과를 얻는다.
+  const [erroredPortrait, setErroredPortrait] = useState<string | null>(null);
+  const isErrored = erroredPortrait === npc.portrait;
 
-  if (npc.portrait && !errored) {
+  if (npc.portrait && !isErrored) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={npc.portrait}
         alt={`${npc.name} 초상화`}
-        onError={() => setErrored(true)}
+        onError={() => setErroredPortrait(npc.portrait ?? null)}
         style={{ width: size, height: size }}
         className={`shrink-0 rounded-full object-cover ${className}`}
       />
