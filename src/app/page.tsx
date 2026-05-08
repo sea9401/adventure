@@ -126,7 +126,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "adventure", label: "모험" },
   { key: "town", label: "마을" },
   { key: "character", label: "캐릭터" },
-  { key: "marketplace", label: "거래소" },
+  { key: "plaza", label: "광장" },
 ];
 
 function MainTabs({
@@ -1370,21 +1370,73 @@ function Home() {
               />
             </div>
           )}
-          {tab === "marketplace" && (
-            <MarketplaceTab
-              inventory={inventory.state}
-              equipped={equippedSlots}
-              remote={remote}
-              consumeEquipment={inventory.consumeEquipment}
-              consumeMaterial={inventory.consumeMaterial}
-              addEquipment={inventory.addEquipment}
-              addMaterial={inventory.addMaterial}
-              addGold={characterStateHook.addGold}
-              currentGold={character.gold}
-              inboxCount={inbox.count}
-              refreshInbox={inbox.refresh}
-              pushToast={(msg) => addNotification("info", msg)}
-            />
+          {tab === "plaza" && subView === null && (
+            <div className="space-y-2">
+              <EntryCard
+                icon={
+                  <Storefront
+                    size={28}
+                    weight="duotone"
+                    className="text-emerald-500"
+                  />
+                }
+                title="거래소"
+                description="다른 모험가와 아이템을 사고팔 수 있는 곳."
+                onClick={() => setSubView("marketplace")}
+              />
+              <EntryCard
+                icon={
+                  <Envelope
+                    size={28}
+                    weight="duotone"
+                    className="text-amber-500"
+                  />
+                }
+                title={
+                  inbox.count !== null && inbox.count > 0
+                    ? `우편함 (${inbox.count})`
+                    : "우편함"
+                }
+                description={
+                  inbox.count !== null && inbox.count > 0
+                    ? "거래소에서 도착한 우편이 있습니다."
+                    : "거래소 거래 결과가 도착하는 곳."
+                }
+                onClick={() => setSubView("inbox")}
+              />
+            </div>
+          )}
+          {tab === "plaza" && subView === "marketplace" && (
+            <div className="space-y-3">
+              <SubViewHeader title="거래소" onBack={back} />
+              <MarketplaceTab
+                inventory={inventory.state}
+                equipped={equippedSlots}
+                remote={remote}
+                consumeEquipment={inventory.consumeEquipment}
+                consumeMaterial={inventory.consumeMaterial}
+                addEquipment={inventory.addEquipment}
+                addMaterial={inventory.addMaterial}
+                addGold={characterStateHook.addGold}
+                currentGold={character.gold}
+                inboxCount={inbox.count}
+                refreshInbox={inbox.refresh}
+                pushToast={(msg) => addNotification("info", msg)}
+              />
+            </div>
+          )}
+          {tab === "plaza" && subView === "inbox" && (
+            <div className="space-y-3">
+              <SubViewHeader title="우편함" onBack={back} />
+              <InboxView
+                remote={remote}
+                addEquipment={inventory.addEquipment}
+                addMaterial={inventory.addMaterial}
+                addGold={characterStateHook.addGold}
+                refreshInbox={inbox.refresh}
+                pushToast={(msg) => addNotification("info", msg)}
+              />
+            </div>
           )}
         </main>
       </div>
