@@ -9,8 +9,8 @@ export const MP_PER_LEVEL = 2;
 export const baseCharacter = {
   className: "무직",
   level: 1,
-  hp: 50,
-  maxHp: 50,
+  hp: 47,
+  maxHp: 47,
   mp: 30,
   maxMp: 30,
   exp: 0,

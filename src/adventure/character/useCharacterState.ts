@@ -17,7 +17,7 @@ export type CharacterDynamicState = {
 };
 
 export const initialCharacterState: CharacterDynamicState = {
-  hp: 50,
+  hp: 47,
   mp: 30,
   level: 1,
   exp: 0,
@@ -71,16 +71,18 @@ export function useCharacterState() {
 
   const equippedSlots = state.equipped ?? baseCharacter.equipped;
 
-  const heal = (cost = 0) =>
+  // maxHp/maxMp는 호출 측이 스탯(VIT 등) 보정을 합쳐 넘겨주면 그 값으로 회복.
+  // 미지정이면 레벨 기준만 사용 (스탯 보정 없는 레거시 동작).
+  const heal = (cost = 0, maxHp?: number, maxMp?: number) =>
     setState((prev) => ({
       ...prev,
       gold: Math.max(0, prev.gold - cost),
-      hp: maxHpForLevel(prev.level),
-      mp: maxMpForLevel(prev.level),
+      hp: maxHp ?? maxHpForLevel(prev.level),
+      mp: maxMp ?? maxMpForLevel(prev.level),
     }));
 
-  const restoreHpFull = () =>
-    setState((prev) => ({ ...prev, hp: maxHpForLevel(prev.level) }));
+  const restoreHpFull = (maxHp?: number) =>
+    setState((prev) => ({ ...prev, hp: maxHp ?? maxHpForLevel(prev.level) }));
 
   const setHp = (hp: number) => setState((prev) => ({ ...prev, hp }));
 
@@ -94,7 +96,9 @@ export function useCharacterState() {
   const addGold = (delta: number) =>
     setState((prev) => ({ ...prev, gold: prev.gold + delta }));
 
-  const addExp = (n: number) =>
+  // vitHpBonus: 레벨업 풀회복 시 VIT(스탯+장비) 보너스만큼 maxHp에 더해 회복.
+  // 기본 0 — 호출 측에서 안 넘기면 레벨 기준 max 까지만 회복 (퀘스트 보상 등).
+  const addExp = (n: number, vitHpBonus = 0) =>
     setState((prev) => {
       const next = applyExpGain(prev.level, prev.exp, n);
       // 레벨업 시 HP/MP 를 새 max 로 풀회복 — 보상감 + max 증가만 했을 때 발생하는
@@ -104,7 +108,7 @@ export function useCharacterState() {
           ...prev,
           level: next.level,
           exp: next.exp,
-          hp: maxHpForLevel(next.level),
+          hp: maxHpForLevel(next.level) + vitHpBonus,
           mp: maxMpForLevel(next.level),
         };
       }
