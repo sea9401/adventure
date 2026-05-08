@@ -63,6 +63,7 @@ export function NotificationPrefsModal({ onClose }: { onClose: () => void }) {
                     type="checkbox"
                     checked={enabled}
                     onChange={(e) => setPref(kind, e.target.checked)}
+                    aria-label={`${meta.name} 알림`}
                     className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-emerald-500"
                   />
                 </label>

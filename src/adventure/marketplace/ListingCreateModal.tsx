@@ -301,6 +301,7 @@ function PriceForm({
             max={selection.have}
             value={quantity}
             onChange={(e) => onQuantity(e.target.value)}
+            autoFocus
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </label>
@@ -316,6 +317,7 @@ function PriceForm({
           max={PRICE_MAX}
           value={price}
           onChange={(e) => onPrice(e.target.value)}
+          autoFocus={selection.kind !== "material"}
           className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </label>
