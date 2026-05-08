@@ -46,10 +46,9 @@ export type OfflineSimulationOptions = {
   onApply: (result: OfflineSimResult) => void;
 };
 
-// 트리거 두 가지:
-//   1. mount/region/active 변경 시: 저장된 tick이 active=true && 같은 region이면 시뮬
-//   2. document visibility hidden→visible 전환 시: 동일 흐름
-// active 여부와 관계없이 baseline 저장은 항상 — 다음 active 진입 시 측정 정확도 유지.
+// 트리거: visibility hidden→visible 한 사이클을 완전히 거친 경우에만.
+//   - mount/active toggle 시점엔 baseline만 갱신 — 새로고침이나 단순 재진입으로는 시뮬 안 됨.
+//   - 사용자가 명시적으로 active=true로 두고 페이지/탭을 떠난 다음 돌아왔을 때만 보상 적용.
 export function useOfflineSimulation({
   enabled,
   regionId,
@@ -67,28 +66,24 @@ export function useOfflineSimulation({
   useEffect(() => {
     if (!enabled) return;
 
-    const tryReplay = () => {
-      const stored = loadTick();
-      // 직전 세션이 active=true이고 같은 region에 있을 때만 시뮬.
-      if (stored?.active && stored.regionId === regionId) {
-        const awayMs = Date.now() - stored.ts;
-        if (awayMs > 0) {
-          const result = runSimRef.current(awayMs);
-          if (result.battles > 0 || result.died) {
-            onApplyRef.current(result);
-          }
-        }
-      }
-      saveTick({ regionId, ts: Date.now(), active });
-    };
-
-    tryReplay();
+    // mount/active 변화 시점엔 baseline만 갱신. 시뮬 트리거는 visibility 사이클로 한정.
+    saveTick({ regionId, ts: Date.now(), active });
 
     const onVisibility = () => {
       if (document.visibilityState === "hidden") {
         saveTick({ regionId, ts: Date.now(), active });
       } else if (document.visibilityState === "visible") {
-        tryReplay();
+        const stored = loadTick();
+        if (stored?.active && stored.regionId === regionId) {
+          const awayMs = Date.now() - stored.ts;
+          if (awayMs > 0) {
+            const result = runSimRef.current(awayMs);
+            if (result.battles > 0 || result.died) {
+              onApplyRef.current(result);
+            }
+          }
+        }
+        saveTick({ regionId, ts: Date.now(), active });
       }
     };
 

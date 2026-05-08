@@ -50,6 +50,8 @@ export function BattleView({
   autoPotionConfig,
   onUpdateAutoPotionRule,
   recentNotifications,
+  huntingActive,
+  onToggleHunting,
 }: {
   region: Region;
   player: PlayerCombat;
@@ -64,6 +66,8 @@ export function BattleView({
     patch: Partial<AutoPotionRule>,
   ) => void;
   recentNotifications?: AppNotification[];
+  huntingActive: boolean;
+  onToggleHunting: (next: boolean) => void;
 }) {
   const { state, potionsConsumed, start, stop } = useBattle({
     player,
@@ -150,6 +154,32 @@ export function BattleView({
             >
               {player.hp <= 0 ? "회복 필요" : "전투 시작"}
             </button>
+            <button
+              type="button"
+              onClick={() => onToggleHunting(!huntingActive)}
+              aria-pressed={huntingActive}
+              disabled={player.hp <= 0}
+              className={`w-full rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                huntingActive
+                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:border-emerald-400 dark:text-emerald-300"
+                  : "border-zinc-300 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className={`inline-block h-2 w-2 rounded-full ${
+                    huntingActive
+                      ? "bg-emerald-500"
+                      : "bg-zinc-400 dark:bg-zinc-600"
+                  }`}
+                />
+                오프라인 사냥 {huntingActive ? "ON" : "OFF"}
+              </span>
+            </button>
+            <p className="-mt-1 px-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+              ON 상태로 페이지/탭을 떠났다가 돌아오면 그 동안의 사냥이 한 번에 적용됩니다 (최대 30분).
+            </p>
             <AutoPotionSection
               autoConfig={autoPotionConfig}
               inventory={inventoryState}

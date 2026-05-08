@@ -40,7 +40,7 @@
 - **레벨업** — `lib/leveling.ts` (`MAX_LEVEL`, `requiredExpToNext`, `applyExpGain`).
 - **수동 행동** — 자동 OFF 시 공격 / 포션 사용 선택.
 - **자동 포션 규칙** — `AutoPotionSection`에서 종류별 발동 조건(HP < x%) 설정. 자동 전투 중에만 동작.
-- **오프라인 사냥** — 페이지를 떠난 동안에는 JS가 못 도므로, 복귀 시 `offlineSim.ts`로 결정적 시뮬레이션을 한 번에 돌려 결과를 적용. cap 30분 (`OFFLINE_SIM_MAX_MS`). 사망 시 break + 시작 마을 이동. 알림 한 줄로 요약. **사용자가 전투 시작 버튼을 눌러 자동 사냥 active 상태일 때만 시뮬 적용** (region 이동·사망·새로고침 시 OFF). 트리거: mount + visibility hidden→visible. (`useOfflineSimulation`, 키 `last-active-tick.v1`에 `active` 플래그 함께 저장)
+- **오프라인 사냥** — 진입 화면의 별도 토글 버튼("오프라인 사냥 ON/OFF")로 활성화. ON 상태로 페이지/탭을 떠났다가 돌아오면 그 시간 동안의 사냥을 `offlineSim.ts`로 결정적 시뮬해 한 번에 적용. cap 30분 (`OFFLINE_SIM_MAX_MS`). 사망 시 break + 시작 마을 이동. 알림 한 줄로 요약. 트리거는 **visibility hidden→visible 한 사이클을 거친 경우에만** — 새로고침/단순 탭 재진입으로는 발동하지 않음. region 이동·사망 시 자동 OFF. (`useOfflineSimulation`, 키 `last-active-tick.v1`에 `active` 플래그 함께 저장)
 - **UI** — 적 카드(세로, 아바타 96px) + HP 바 + 전투 로그 + 결과 화면.
 
 > 설계: `docs/battle-system-plan.md`, `docs/potion-system-plan.md`

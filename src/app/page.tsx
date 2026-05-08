@@ -742,10 +742,7 @@ export default function Home() {
                 region={currentRegion}
                 player={playerCombat}
                 playerName={character.name}
-                onBattleStart={(name) => {
-                  adventureLog.markEncountered(name);
-                  setHuntingActive(true);
-                }}
+                onBattleStart={adventureLog.markEncountered}
                 onBattleEnd={handleBattleEnd}
                 pickAutoAction={(state) =>
                   pickAutoAction(state, {
@@ -757,6 +754,8 @@ export default function Home() {
                 autoPotionConfig={autoPotion.config}
                 onUpdateAutoPotionRule={autoPotion.updateRule}
                 recentNotifications={notifications.list}
+                huntingActive={huntingActive}
+                onToggleHunting={setHuntingActive}
               />
             </div>
           )}
