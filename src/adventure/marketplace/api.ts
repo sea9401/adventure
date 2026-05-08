@@ -73,6 +73,79 @@ export async function cancelListing(
   return (await r.json()) as CancelResult;
 }
 
+export type BuyResult = {
+  ok: true;
+  newGold: number;
+  fee: number;
+  sellerName: string;
+  itemName: string;
+  quantity: number;
+  inboxId: number;
+};
+
+export async function buyListing(
+  remote: RemoteSave,
+  listingId: number,
+): Promise<BuyResult> {
+  await remote.flush();
+  const r = await fetch("/api/marketplace/listings/buy", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id: listingId }),
+  });
+  if (!r.ok) {
+    const text = await r.text();
+    throw new Error(translateError(text, r.status));
+  }
+  return (await r.json()) as BuyResult;
+}
+
+export type InboxItem = {
+  id: number;
+  kind: "sale_proceeds" | "purchase_item" | "cancel_return";
+  payload: Record<string, unknown>;
+  message: string | null;
+  listingId: number | null;
+  createdAt: string;
+};
+
+export type InboxResponse = {
+  items: InboxItem[];
+  unclaimedCount: number;
+};
+
+export async function fetchInbox(): Promise<InboxResponse> {
+  const r = await fetch("/api/marketplace/inbox");
+  if (!r.ok) throw new Error(`우편함 로드 실패 (${r.status})`);
+  return (await r.json()) as InboxResponse;
+}
+
+export type ClaimResult = {
+  ok: true;
+  claimed: number[];
+  goldAdded: number;
+  itemsAdded: { kind: "equip" | "material"; id: string; quantity: number }[];
+  newGold: number | null;
+  newInventory: unknown | null;
+};
+
+export async function claimInbox(
+  remote: RemoteSave,
+  ids: number[],
+): Promise<ClaimResult> {
+  await remote.flush();
+  const r = await fetch("/api/marketplace/inbox/claim", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+  if (!r.ok) {
+    const text = await r.text();
+    throw new Error(translateError(text, r.status));
+  }
+  return (await r.json()) as ClaimResult;
+}
+
 function translateError(text: string, status: number): string {
   switch (text) {
     case "slot_limit":
@@ -81,6 +154,14 @@ function translateError(text: string, status: number): string {
       return "장착 중인 장비는 등록할 수 없습니다.";
     case "insufficient":
       return "인벤토리에 해당 수량이 없습니다.";
+    case "insufficient_gold":
+      return "골드가 부족합니다.";
+    case "self_buy":
+      return "본인이 등록한 매물은 구매할 수 없습니다.";
+    case "no_character":
+      return "캐릭터 데이터가 없습니다.";
+    case "no_unclaimed":
+      return "수령할 우편이 없습니다.";
     case "not_tradable":
     case "not tradable":
       return "이 아이템은 거래할 수 없습니다.";

@@ -12,7 +12,8 @@ import type { EquippedSlots } from "@/adventure/character/types";
 import type { RemoteSave } from "@/lib/storage/remote";
 import { createListing } from "./api";
 
-const FEE_RATE = 0.05;
+// 서버 MARKETPLACE_FEE_RATE 와 동기화. 0 이면 수수료 표시 숨김.
+const FEE_RATE = 0;
 const PRICE_MAX = 999_999_999;
 
 type Selection =
@@ -42,8 +43,9 @@ export function ListingCreateModal({
   showError: (msg: string) => void;
 }) {
   const [selection, setSelection] = useState<Selection | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [price, setPrice] = useState<number>(1);
+  // 입력 중 빈 값/임시 값을 허용하기 위해 string 으로 보관 — 검증은 submit 에서.
+  const [quantity, setQuantity] = useState("1");
+  const [price, setPrice] = useState("1");
   const [submitting, setSubmitting] = useState(false);
 
   const equippedIds = useMemo(() => {
@@ -88,22 +90,24 @@ export function ListingCreateModal({
 
   const noItems = equipOptions.length === 0 && materialOptions.length === 0;
 
-  const fee = Math.floor(price * FEE_RATE);
-  const sellerGets = Math.max(0, price - fee);
+  const priceNum = Math.floor(Number(price)) || 0;
+  const fee = Math.floor(priceNum * FEE_RATE);
+  const sellerGets = Math.max(0, priceNum - fee);
 
   const submit = async () => {
     if (!selection) return;
-    if (
-      !Number.isInteger(price) ||
-      price < 1 ||
-      price > PRICE_MAX
-    ) {
+    const priceN = Math.floor(Number(price));
+    if (!Number.isInteger(priceN) || priceN < 1 || priceN > PRICE_MAX) {
       showError("가격은 1 이상의 정수여야 합니다.");
       return;
     }
-    const qty = selection.kind === "material" ? quantity : 1;
-    if (selection.kind === "material" && (qty < 1 || qty > selection.have)) {
-      showError("수량이 잘못되었습니다.");
+    const qtyN =
+      selection.kind === "material" ? Math.floor(Number(quantity)) : 1;
+    if (
+      selection.kind === "material" &&
+      (!Number.isInteger(qtyN) || qtyN < 1 || qtyN > selection.have)
+    ) {
+      showError(`수량은 1~${selection.have} 사이여야 합니다.`);
       return;
     }
     setSubmitting(true);
@@ -111,10 +115,10 @@ export function ListingCreateModal({
       await createListing(remote, {
         itemKind: selection.kind,
         itemId: selection.itemId,
-        quantity: qty,
-        price,
+        quantity: qtyN,
+        price: priceN,
       });
-      onLocalDeduct(selection, qty);
+      onLocalDeduct(selection, qtyN);
       onSuccess();
     } catch (e) {
       showError(e instanceof Error ? e.message : "등록 실패");
@@ -152,8 +156,10 @@ export function ListingCreateModal({
             materialOptions={materialOptions}
             onPick={(s) => {
               setSelection(s);
-              setQuantity(1);
-              setPrice(s.kind === "material" ? Math.max(1, s.def.price) : 1);
+              setQuantity("1");
+              setPrice(
+                s.kind === "material" ? String(Math.max(1, s.def.price)) : "1",
+              );
             }}
           />
         ) : (
@@ -257,10 +263,10 @@ function PriceForm({
   onBack,
 }: {
   selection: Selection;
-  quantity: number;
-  price: number;
-  onQuantity: (n: number) => void;
-  onPrice: (n: number) => void;
+  quantity: string;
+  price: string;
+  onQuantity: (s: string) => void;
+  onPrice: (s: string) => void;
   fee: number;
   sellerGets: number;
   onBack: () => void;
@@ -287,21 +293,14 @@ function PriceForm({
       {selection.kind === "material" ? (
         <label className="block">
           <span className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            수량
+            수량 (최대 {selection.have})
           </span>
           <input
             type="number"
             min={1}
             max={selection.have}
             value={quantity}
-            onChange={(e) =>
-              onQuantity(
-                Math.min(
-                  selection.have,
-                  Math.max(1, Math.floor(Number(e.target.value) || 1)),
-                ),
-              )
-            }
+            onChange={(e) => onQuantity(e.target.value)}
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </label>
@@ -316,22 +315,18 @@ function PriceForm({
           min={1}
           max={PRICE_MAX}
           value={price}
-          onChange={(e) =>
-            onPrice(
-              Math.min(
-                PRICE_MAX,
-                Math.max(1, Math.floor(Number(e.target.value) || 1)),
-              ),
-            )
-          }
+          onChange={(e) => onPrice(e.target.value)}
           className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </label>
 
-      <div className="rounded-md bg-zinc-50 p-2 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
-        성사 수수료 5% 차감 후 <strong>{sellerGets.toLocaleString()} G</strong>{" "}
-        수령 예정 (수수료 {fee.toLocaleString()} G)
-      </div>
+      {fee > 0 ? (
+        <div className="rounded-md bg-zinc-50 p-2 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+          성사 수수료 차감 후{" "}
+          <strong>{sellerGets.toLocaleString()} G</strong> 수령 예정 (수수료{" "}
+          {fee.toLocaleString()} G)
+        </div>
+      ) : null}
     </div>
   );
 }
