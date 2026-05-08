@@ -14,6 +14,8 @@ export type TabBarProps<K extends string> = {
   ariaLabel: string;
   size?: TabSize;
   className?: string;
+  // 탭이 많아 화면을 넘칠 때 줄바꿈 대신 가로 스크롤. 모바일에서 7+ 탭이 세로로 깨지는 걸 방지.
+  scrollable?: boolean;
 };
 
 export function TabBar<K extends string>({
@@ -23,9 +25,13 @@ export function TabBar<K extends string>({
   ariaLabel,
   size = "sm",
   className,
+  scrollable = false,
 }: TabBarProps<K>) {
   const cls = [
     "flex gap-1 border-b border-zinc-200 dark:border-zinc-800",
+    scrollable
+      ? "flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      : "",
     className,
   ]
     .filter(Boolean)
@@ -41,7 +47,7 @@ export function TabBar<K extends string>({
             aria-selected={selected}
             type="button"
             onClick={() => onChange(t.key)}
-            className={`-mb-px border-b-2 ${SIZE[size]} transition-colors ${
+            className={`-mb-px shrink-0 whitespace-nowrap border-b-2 ${SIZE[size]} transition-colors ${
               selected
                 ? "border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"
                 : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
