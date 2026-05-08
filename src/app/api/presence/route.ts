@@ -15,6 +15,7 @@ export async function GET() {
       userId: presence.userId,
       name: presence.name,
       className: presence.className,
+      title: presence.title,
     })
     .from(presence)
     .where(gt(presence.lastSeenAt, since))
@@ -24,6 +25,7 @@ export async function GET() {
     rows.map((r) => ({
       name: r.name,
       className: r.className,
+      title: r.title,
       mine: r.userId === userId,
     })),
   );
@@ -33,7 +35,7 @@ export async function POST(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
 
-  let body: { name?: unknown; className?: unknown };
+  let body: { name?: unknown; className?: unknown; title?: unknown };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -43,16 +45,18 @@ export async function POST(req: Request) {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const className =
     typeof body.className === "string" ? body.className.trim() : "";
+  const titleRaw = typeof body.title === "string" ? body.title.trim() : "";
+  const title = titleRaw === "" ? null : titleRaw;
 
   if (!name) return new Response("missing name", { status: 400 });
   if (!className) return new Response("missing className", { status: 400 });
 
   await db
     .insert(presence)
-    .values({ userId, name, className })
+    .values({ userId, name, className, title })
     .onConflictDoUpdate({
       target: presence.userId,
-      set: { name, className, lastSeenAt: sql`now()` },
+      set: { name, className, title, lastSeenAt: sql`now()` },
     });
 
   return new Response(null, { status: 204 });

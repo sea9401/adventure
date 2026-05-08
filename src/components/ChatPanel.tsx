@@ -9,6 +9,7 @@ export type ChatMessage = {
   id: number;
   name: string;
   className: string;
+  title: string | null;
   content: string;
   createdAt: number;
   mine: boolean;
@@ -17,6 +18,7 @@ export type ChatMessage = {
 type PresenceUser = {
   name: string;
   className: string;
+  title: string | null;
   mine: boolean;
 };
 
@@ -31,6 +33,7 @@ async function fetchPresence(): Promise<PresenceUser[]> {
 async function postMessage(payload: {
   name: string;
   className: string;
+  title: string | null;
   content: string;
 }): Promise<ChatMessage> {
   const res = await fetch("/api/chat", {
@@ -50,6 +53,7 @@ export function ChatPanel({
   onClose,
   name,
   className,
+  title,
   messages,
   onMessageSent,
 }: {
@@ -57,6 +61,7 @@ export function ChatPanel({
   onClose: () => void;
   name: string;
   className: string;
+  title: string | null;
   messages: ChatMessage[];
   onMessageSent: (m: ChatMessage) => void;
 }) {
@@ -104,7 +109,7 @@ export function ChatPanel({
     setSending(true);
     setError(null);
     try {
-      const sent = await postMessage({ name, className, content: trimmed });
+      const sent = await postMessage({ name, className, title, content: trimmed });
       onMessageSent(sent);
       setDraft("");
     } catch (err) {
@@ -179,6 +184,11 @@ export function ChatPanel({
                     <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                       {u.className}
                     </span>
+                    {u.title && (
+                      <span className="font-medium text-amber-600 dark:text-amber-400">
+                        {u.title}
+                      </span>
+                    )}
                     <span
                       className={
                         u.mine
@@ -218,6 +228,11 @@ export function ChatPanel({
                   <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                     {m.className}
                   </span>
+                  {m.title && (
+                    <span className="font-medium text-amber-600 dark:text-amber-400">
+                      {m.title}
+                    </span>
+                  )}
                   <span className="font-semibold text-zinc-700 dark:text-zinc-200">
                     {m.name}
                   </span>

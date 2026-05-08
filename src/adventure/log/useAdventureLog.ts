@@ -164,6 +164,14 @@ export function useAdventureLog() {
     });
   }, []);
 
+  // 누적 패배 카운트 +1 — 칭호/통계용.
+  const incrementBattleLosses = useCallback(() => {
+    setLog((prev) => ({
+      ...prev,
+      battleLosses: (prev.battleLosses ?? 0) + 1,
+    }));
+  }, []);
+
   // 칭호 획득 — 도감 등록은 "획득 시"가 트리거. 이미 등록된 경우 중복 무시.
   const markTitleObtained = useCallback((titleId: string) => {
     setLog((prev) => {
@@ -187,5 +195,6 @@ export function useAdventureLog() {
     addTownNpcTalked,
     incrementNpcTalk,
     markTitleObtained,
+    incrementBattleLosses,
   };
 }

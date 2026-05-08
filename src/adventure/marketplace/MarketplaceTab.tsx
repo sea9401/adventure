@@ -13,6 +13,7 @@ import type { EquippedSlots } from "@/adventure/character/types";
 import type { RemoteSave } from "@/lib/storage/remote";
 import { ListingsView } from "./ListingsView";
 import { ListingCreateModal } from "./ListingCreateModal";
+import { BuyConfirmModal } from "./BuyConfirmModal";
 import { buyListing, cancelListing } from "./api";
 import type { Listing } from "./types";
 
@@ -44,6 +45,7 @@ export function MarketplaceTab({
   addEquipment: (id: ItemId, n?: number) => void;
   addMaterial: (id: MaterialId, n?: number) => void;
   addGold: (delta: number) => void;
+  currentGold: number;
   inboxCount: number | null;
   refreshInbox: () => void;
   pushToast: (msg: string) => void;
@@ -52,24 +54,30 @@ export function MarketplaceTab({
   const [modal, setModal] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [pendingBuy, setPendingBuy] = useState<Listing | null>(null);
 
-  const onBuy = useCallback(
+  // 구매 버튼 클릭 → 확인 모달만 띄우고 실제 호출은 모달의 confirm 에서.
+  const onBuy = useCallback(async (listing: Listing) => {
+    setError(null);
+    setPendingBuy(listing);
+  }, []);
+
+  const performBuy = useCallback(
     async (listing: Listing) => {
-      setError(null);
       try {
         const r = await buyListing(remote, listing.id);
-        // 서버가 골드 차감했으므로 클라 로컬도 -price 적용. 다음 PATCH 가
-        // 구매 후 상태로 일관되게 보내짐.
         addGold(-listing.price);
         pushToast(
           `${r.itemName}${r.quantity > 1 ? ` ×${r.quantity}` : ""} 구매 완료 — 마을 우편함에서 수령하세요.`,
         );
         setRefresh((v) => v + 1);
         refreshInbox();
+        setPendingBuy(null);
       } catch (e) {
         const msg = e instanceof Error ? e.message : "구매 실패";
         setError(msg);
         pushToast(msg);
+        // 모달은 닫지 않음 — 사용자가 닫고 다시 시도할 수 있게.
       }
     },
     [remote, addGold, pushToast, refreshInbox],
@@ -140,7 +148,17 @@ export function MarketplaceTab({
         onCancelListing={onCancel}
         onBuyListing={onBuy}
         mineOnly={sub === "mine"}
+        currentGold={currentGold}
       />
+
+      {pendingBuy ? (
+        <BuyConfirmModal
+          listing={pendingBuy}
+          currentGold={currentGold}
+          onConfirm={() => performBuy(pendingBuy)}
+          onClose={() => setPendingBuy(null)}
+        />
+      ) : null}
 
       {modal ? (
         <ListingCreateModal

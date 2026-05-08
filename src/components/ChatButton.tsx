@@ -27,9 +27,11 @@ function writeLastSeen(id: number) {
 export function ChatButton({
   name,
   className,
+  title,
 }: {
   name: string;
   className: string;
+  title: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -108,6 +110,7 @@ export function ChatButton({
         onClose={() => setOpen(false)}
         name={name}
         className={className}
+        title={title}
         messages={messages}
         onMessageSent={handleMessageSent}
       />

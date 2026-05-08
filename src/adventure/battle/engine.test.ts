@@ -226,3 +226,76 @@ describe("resolveBattle", () => {
     expect(r.turns).toBeGreaterThan(8); // 잘려야 의미 있음
   });
 });
+
+describe("강공격 (powerAttackBonus)", () => {
+  // 적 def 0, 플레이어 atk 1 → 일반 공격 1 데미지 / 강공격 (atk+2) = 3 데미지.
+  const minimal: PlayerCombat = {
+    ...PLAYER,
+    atk: 1,
+    spd: 100, // 항상 선공
+    powerAttackBonus: 2,
+  };
+  const enemy = makeEnemy({ def: 0, hp: 100, atk: 0 });
+
+  it("3턴마다 첫 공격이 ATK+2 로 발동", () => {
+    let s = initialBattleState(minimal, enemy, "P");
+    // turn 1 공격 → 일반 (1 dmg), enemy 공격, turn 2 공격 → 일반 (1 dmg), ...
+    s = advanceTurn(s, minimal, "P"); // turn 1 — player attack
+    s = advanceTurn(s, minimal, "P"); // turn 1 — enemy
+    s = advanceTurn(s, minimal, "P"); // turn 2 — player attack
+    s = advanceTurn(s, minimal, "P"); // turn 2 — enemy
+    s = advanceTurn(s, minimal, "P"); // turn 3 — player attack (강공격 발동)
+    const lastPlayerAttack = [...s.log]
+      .reverse()
+      .find((e) => e.kind === "player_attack")!;
+    expect(lastPlayerAttack.text).toContain("[강공격]");
+    expect(lastPlayerAttack.text).toContain("3 피해");
+  });
+
+  it("turn 1, 2, 4, 5 의 공격은 일반 — 강공격 마커 없음", () => {
+    let s = initialBattleState(minimal, enemy, "P");
+    const observed: string[] = [];
+    for (let turn = 1; turn <= 7; turn += 1) {
+      s = advanceTurn(s, minimal, "P"); // player
+      const last = [...s.log].reverse().find((e) => e.kind === "player_attack");
+      if (last) observed.push(`t${turn}:${last.text.includes("[강공격]") ? "POWER" : "NORMAL"}`);
+      s = advanceTurn(s, minimal, "P"); // enemy
+    }
+    // 강공격 = turn 3, 6
+    expect(observed).toEqual([
+      "t1:NORMAL",
+      "t2:NORMAL",
+      "t3:POWER",
+      "t4:NORMAL",
+      "t5:NORMAL",
+      "t6:POWER",
+      "t7:NORMAL",
+    ]);
+  });
+
+  it("powerAttackBonus 미설정(undefined) 시 강공격 발동 안 함", () => {
+    const noSkill: PlayerCombat = { ...minimal, powerAttackBonus: undefined };
+    let s = initialBattleState(noSkill, enemy, "P");
+    for (let i = 0; i < 6; i += 1) s = advanceTurn(s, noSkill, "P");
+    const playerAttacks = s.log.filter((e) => e.kind === "player_attack");
+    for (const a of playerAttacks) expect(a.text).not.toContain("[강공격]");
+  });
+
+  it("attackCount 2 일 때 강공격은 첫 공격에만 적용", () => {
+    const dual: PlayerCombat = { ...minimal, attackCount: 2 };
+    let s = initialBattleState(dual, enemy, "P");
+    // turn 3 까지 진행 (turn 3 = power turn)
+    s = advanceTurn(s, dual, "P"); // turn 1 — attack 1
+    s = advanceTurn(s, dual, "P"); // turn 1 — attack 2
+    s = advanceTurn(s, dual, "P"); // turn 1 — enemy
+    s = advanceTurn(s, dual, "P"); // turn 2 — attack 1
+    s = advanceTurn(s, dual, "P"); // turn 2 — attack 2
+    s = advanceTurn(s, dual, "P"); // turn 2 — enemy
+    s = advanceTurn(s, dual, "P"); // turn 3 — attack 1 (강공격)
+    s = advanceTurn(s, dual, "P"); // turn 3 — attack 2 (일반)
+    const playerAttacks = s.log.filter((e) => e.kind === "player_attack");
+    const recent = playerAttacks.slice(-2);
+    expect(recent[0].text).toContain("[강공격]");
+    expect(recent[1].text).not.toContain("[강공격]");
+  });
+});

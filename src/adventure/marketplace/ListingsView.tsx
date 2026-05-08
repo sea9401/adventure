@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Storefront } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -27,11 +27,13 @@ export function ListingsView({
   onCancelListing,
   onBuyListing,
   mineOnly = false,
+  currentGold,
 }: {
   refreshKey: number;
   onCancelListing?: (listing: Listing) => Promise<void>;
   onBuyListing?: (listing: Listing) => Promise<void>;
   mineOnly?: boolean;
+  currentGold?: number;
 }) {
   const [kind, setKind] = useState<KindFilter>("all");
   const [sort, setSort] = useState<SortMode>("recent");
@@ -64,6 +66,27 @@ export function ListingsView({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load, refreshKey]);
+
+  // 창에 포커스 돌아왔을 때 자동 새로고침. 짧은 시간(<10s) 안의 중복은 스킵.
+  const lastLoadedAt = useRef<number>(Date.now());
+  useEffect(() => {
+    lastLoadedAt.current = Date.now();
+  }, [items]);
+  useEffect(() => {
+    const onFocus = () => {
+      if (Date.now() - lastLoadedAt.current < 10_000) return;
+      void load();
+    };
+    const onVisible = () => {
+      if (!document.hidden) onFocus();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [load]);
 
   const loadMore = async () => {
     if (!nextCursor || loadingMore) return;
@@ -153,6 +176,7 @@ export function ListingsView({
               item={it}
               onCancel={onCancelListing}
               onBuy={onBuyListing}
+              currentGold={currentGold}
             />
           ))}
         </div>
@@ -176,12 +200,16 @@ function ListingCard({
   item,
   onCancel,
   onBuy,
+  currentGold,
 }: {
   item: Listing;
   onCancel?: (listing: Listing) => Promise<void>;
   onBuy?: (listing: Listing) => Promise<void>;
+  currentGold?: number;
 }) {
   const [busy, setBusy] = useState(false);
+  const insufficientGold =
+    typeof currentGold === "number" && currentGold < item.price;
   return (
     <Card padding="sm">
       <div className="flex items-center gap-3">
@@ -222,7 +250,8 @@ function ListingCard({
           ) : onBuy ? (
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || insufficientGold}
+              title={insufficientGold ? "골드 부족" : undefined}
               onClick={async () => {
                 setBusy(true);
                 try {
@@ -231,9 +260,13 @@ function ListingCard({
                   setBusy(false);
                 }
               }}
-              className="mt-1 rounded-md border border-emerald-700 bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              className={
+                insufficientGold
+                  ? "mt-1 cursor-not-allowed rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+                  : "mt-1 rounded-md border border-emerald-700 bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              }
             >
-              {busy ? "구매 중…" : "구매"}
+              {busy ? "구매 중…" : insufficientGold ? "골드 부족" : "구매"}
             </button>
           ) : null}
         </span>

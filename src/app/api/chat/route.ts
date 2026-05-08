@@ -17,6 +17,7 @@ export async function GET() {
       id: messages.id,
       name: messages.name,
       className: messages.className,
+      title: messages.title,
       content: messages.content,
       createdAt: messages.createdAt,
       mine: messages.userId,
@@ -30,6 +31,7 @@ export async function GET() {
       id: r.id,
       name: r.name,
       className: r.className,
+      title: r.title,
       content: r.content,
       createdAt: r.createdAt.getTime(),
       mine: r.mine === userId,
@@ -43,7 +45,12 @@ export async function POST(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
 
-  let body: { name?: unknown; className?: unknown; content?: unknown };
+  let body: {
+    name?: unknown;
+    className?: unknown;
+    title?: unknown;
+    content?: unknown;
+  };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -53,6 +60,8 @@ export async function POST(req: Request) {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const className =
     typeof body.className === "string" ? body.className.trim() : "";
+  const titleRaw = typeof body.title === "string" ? body.title.trim() : "";
+  const title = titleRaw === "" ? null : titleRaw;
   const content =
     typeof body.content === "string" ? body.content.trim() : "";
 
@@ -76,7 +85,7 @@ export async function POST(req: Request) {
 
   const [inserted] = await db
     .insert(messages)
-    .values({ userId, name, className, content })
+    .values({ userId, name, className, title, content })
     .returning({
       id: messages.id,
       createdAt: messages.createdAt,
@@ -86,6 +95,7 @@ export async function POST(req: Request) {
     id: inserted.id,
     name,
     className,
+    title,
     content,
     createdAt: inserted.createdAt.getTime(),
     mine: true,
