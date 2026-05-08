@@ -29,10 +29,23 @@ export type Region = {
 };
 
 // 지역 간 이동에 걸리는 선행 조건. 방향성이 있으며 edge 의 from→to 진행에만 적용된다.
-// 현재는 "지정한 지역의 모험의 서를 모두 조우(encountered=true)" 한 가지만 지원.
-export type EdgeRequirement = {
-  bestiaryOf?: RegionId;
-};
+// 종류별 kind 로 구분 — 한 엣지에는 한 종류만 붙는다.
+//
+// 현재 구현된 종류:
+// - "bestiary": 지정 지역의 모든 몬스터를 조우(encountered=true) 했어야 함.
+// - "trial":   이동 시도 시 자동 전투 N전을 치러 모두 이겨야 함. 한 번 통과하면 영구 해금.
+//
+// 향후 확장 후보 (구현 X — 명칭만 예약):
+// - "level":  최소 캐릭터 레벨.
+// - "quest":  특정 퀘스트 완료.
+// - "kills":  특정 몬스터 누적 처치 수.
+// - "item":   특정 아이템 보유 (consume 옵션).
+// - "fame":   최소 명성.
+export type EdgeRequirement =
+  | { kind: "bestiary"; regionId: RegionId }
+  | { kind: "trial"; battles: number; enemiesFrom: RegionId };
+
+export type EdgeRequirementKind = EdgeRequirement["kind"];
 
 export type RegionEdge = {
   from: RegionId;
@@ -116,11 +129,27 @@ export const WORLD_MAP: WorldMap = {
   ],
   edges: [
     { from: "village", to: "plains" },
-    { from: "plains", to: "cave" },
-    { from: "plains", to: "forest" },
+    {
+      from: "plains",
+      to: "cave",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "cave" },
+    },
+    {
+      from: "plains",
+      to: "forest",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "forest" },
+    },
     { from: "plains", to: "ruins" },
-    { from: "cave", to: "lake" },
-    { from: "forest", to: "lake" },
+    {
+      from: "cave",
+      to: "lake",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "lake" },
+    },
+    {
+      from: "forest",
+      to: "lake",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "lake" },
+    },
     { from: "lake", to: "diola" },
     { from: "forest", to: "ruins" },
   ],

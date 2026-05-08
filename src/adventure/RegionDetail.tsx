@@ -14,12 +14,14 @@ export function RegionDetail({
   region,
   state,
   canMove,
+  canChallenge,
   onMove,
   requirementStatus,
 }: {
   region: Region | null;
   state: NodeState | null;
   canMove: boolean;
+  canChallenge?: boolean;
   onMove: () => void;
   requirementStatus?: EdgeRequirementStatus | null;
 }) {
@@ -46,17 +48,24 @@ export function RegionDetail({
       </p>
       {requirementStatus?.progress && !requirementStatus.met && (
         <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-          진행 조건: {requirementStatus.progress.label} 완성 (
-          {requirementStatus.progress.current} / {requirementStatus.progress.total})
+          {requirementStatus.kind === "trial"
+            ? requirementStatus.reason ?? requirementStatus.progress.label
+            : `진행 조건: ${requirementStatus.progress.label} 완성 (${requirementStatus.progress.current} / ${requirementStatus.progress.total})`}
         </div>
       )}
       <button
         type="button"
-        disabled={!canMove}
+        disabled={!canMove && !canChallenge}
         onClick={onMove}
         className="mt-3 w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-[transform,background-color] duration-100 hover:bg-zinc-100 active:scale-[0.97] active:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:active:bg-zinc-700"
       >
-        {state === "current" ? "이미 이곳에 있음" : canMove ? "이동" : "지금은 갈 수 없음"}
+        {state === "current"
+          ? "이미 이곳에 있음"
+          : canChallenge && !canMove
+            ? "시련 도전"
+            : canMove
+              ? "이동"
+              : "지금은 갈 수 없음"}
       </button>
     </Card>
   );

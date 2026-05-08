@@ -10,7 +10,15 @@ import { MATERIALS } from "@/adventure/data/materials";
 import { RECIPES } from "@/adventure/data/recipes";
 import { QUESTS } from "@/adventure/data/quests";
 import { NPCS } from "@/adventure/data/npcs";
-import { WORLD_MAP } from "@/adventure/data/world";
+import { WORLD_MAP, type EdgeRequirement } from "@/adventure/data/world";
+
+function describeRequirement(req: EdgeRequirement | undefined): string {
+  if (!req) return "—";
+  if (req.kind === "bestiary") return `bestiary: ${req.regionId}`;
+  if (req.kind === "trial")
+    return `trial: ${req.battles}전 (${req.enemiesFrom})`;
+  return "—";
+}
 import { getLevelTable } from "@/lib/leveling";
 import { STAT_KEYS, STAT_LABELS, STAT_CONVERSIONS } from "@/adventure/data/stats";
 
@@ -348,9 +356,7 @@ function WorldTable() {
           rows={WORLD_MAP.edges.map((e) => [
             e.from,
             e.to,
-            e.requires?.bestiaryOf
-              ? `bestiaryOf: ${e.requires.bestiaryOf}`
-              : "—",
+            describeRequirement(e.requires),
           ])}
         />
       </div>

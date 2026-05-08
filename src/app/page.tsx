@@ -87,6 +87,13 @@ import {
 } from "@/adventure/character/defaults";
 import { useCharacterState } from "@/adventure/character/useCharacterState";
 import { useProfile } from "@/adventure/profile/useProfile";
+import { useEdgeUnlocks } from "@/adventure/edges/useEdgeUnlocks";
+import {
+  TrialView,
+  type TrialEdge,
+} from "@/adventure/TrialView";
+import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
+import type { RegionId } from "@/adventure/data/world";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
 import {
@@ -149,6 +156,8 @@ export default function Home() {
   };
   // 마을 진입 직후 자동으로 열 NPC 대화 — 알림판 클릭 시 세팅, TownView 가 마운트 직후 소비.
   const [pendingTownNpcId, setPendingTownNpcId] = useState<string | null>(null);
+  // 시련(trial) 진행 중인 엣지. 세팅되면 지도 서브뷰에서 TrialView 가 대신 렌더링됨.
+  const [trialEdge, setTrialEdge] = useState<TrialEdge | null>(null);
   const [mapProgress, setMapProgress] =
     useState<MapProgress>(initialMapProgress);
   const adventureLog = useAdventureLog();
@@ -161,6 +170,7 @@ export default function Home() {
   const characterState = characterStateHook.state;
   const profile = useProfile();
   const notifications = useNotifications();
+  const edgeUnlocks = useEdgeUnlocks();
 
   useEffect(() => {
     // localStorage 는 클라이언트 마운트 후에만 접근 가능 — useEffect 1회 hydrate.
@@ -187,6 +197,16 @@ export default function Home() {
     if (!hydrated) return;
     saveMapProgress(mapProgress);
   }, [hydrated, mapProgress]);
+
+  // 시련 중 사용자가 다른 탭/서브뷰로 이동하면 시련 자동 취소.
+  // 다시 돌아오면 처음부터 새로 도전. (도중 EXP/킬은 이미 적용됐으므로 손해 없음.)
+  useEffect(() => {
+    if (!trialEdge) return;
+    if (tab !== "adventure" || subView !== "map") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTrialEdge(null);
+    }
+  }, [tab, subView, trialEdge]);
 
   // region 변경 시 자동 사냥 해제 — 다른 곳으로 이동했으면 그 region에서의 자동 사냥은 끝.
   // 첫 mount(baseline 기록) 시에는 변경 감지하지 않도록 ref로 분기.
@@ -778,7 +798,7 @@ export default function Home() {
               />
             </div>
           )}
-          {tab === "adventure" && subView === "map" && (
+          {tab === "adventure" && subView === "map" && !trialEdge && (
             <div className="space-y-3">
               <SubViewHeader title="지도" onBack={() => setSubView(null)} />
               <MapView
@@ -786,6 +806,61 @@ export default function Home() {
                 onProgressChange={setMapProgress}
                 log={adventureLog.log}
                 playerHp={character.hp}
+                isEdgeUnlocked={edgeUnlocks.isUnlocked}
+                onTrialStart={(from, to) => {
+                  const req = findEdgeRequirement(from, to);
+                  if (!req || req.kind !== "trial") return;
+                  setTrialEdge({
+                    from,
+                    to,
+                    battles: req.battles,
+                    enemiesFrom: req.enemiesFrom,
+                  });
+                }}
+              />
+            </div>
+          )}
+          {tab === "adventure" && subView === "map" && trialEdge && (
+            <div className="space-y-3">
+              <SubViewHeader
+                title="시련"
+                onBack={() => setTrialEdge(null)}
+              />
+              <TrialView
+                trial={trialEdge}
+                player={playerCombat}
+                playerName={character.name}
+                pickAutoAction={(state) =>
+                  pickAutoAction(state, {
+                    rules: autoPotion.config.rules,
+                    potions: inventory.state.potions,
+                  })
+                }
+                inventoryState={inventory.state}
+                onBattleEnd={handleBattleEnd}
+                onTrialEnd={(result) => {
+                  if (result === "win" && trialEdge) {
+                    edgeUnlocks.unlock(trialEdge.from, trialEdge.to);
+                    setMapProgress((prev) => ({
+                      currentRegionId: trialEdge.to,
+                      visitedRegionIds: prev.visitedRegionIds.includes(
+                        trialEdge.to,
+                      )
+                        ? prev.visitedRegionIds
+                        : [...prev.visitedRegionIds, trialEdge.to],
+                    }));
+                    addNotification(
+                      "info",
+                      `시련 통과 — ${
+                        WORLD_MAP.regions.find((r) => r.id === trialEdge.to)
+                          ?.name ?? trialEdge.to
+                      } 진입.`,
+                    );
+                  }
+                  setTrialEdge(null);
+                }}
+                onAbort={() => setTrialEdge(null)}
+                recentNotifications={notifications.list}
               />
             </div>
           )}

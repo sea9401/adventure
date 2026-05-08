@@ -117,7 +117,14 @@ export function MapTab() {
             </thead>
             <tbody>
               {WORLD_MAP.edges.map((e) => {
-                const status = evaluateEdgeRequirement(e.requires, log);
+                const status = evaluateEdgeRequirement(e.requires, { log });
+                const reqText = !e.requires
+                  ? "—"
+                  : e.requires.kind === "bestiary"
+                    ? `bestiary:${e.requires.regionId}`
+                    : e.requires.kind === "trial"
+                      ? `trial:${e.requires.battles}전(${e.requires.enemiesFrom})`
+                      : "—";
                 return (
                   <tr
                     key={`${e.from}-${e.to}`}
@@ -125,11 +132,7 @@ export function MapTab() {
                   >
                     <td className="px-2 py-1">{e.from}</td>
                     <td className="px-2 py-1">{e.to}</td>
-                    <td className="px-2 py-1 font-mono text-xs">
-                      {e.requires?.bestiaryOf
-                        ? `bestiaryOf:${e.requires.bestiaryOf}`
-                        : "—"}
-                    </td>
+                    <td className="px-2 py-1 font-mono text-xs">{reqText}</td>
                     <td className="px-2 py-1">{status.met ? "✓" : "—"}</td>
                     <td className="px-2 py-1">
                       {status.progress

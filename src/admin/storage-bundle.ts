@@ -32,6 +32,10 @@ import {
   MAP_STORAGE_KEY,
   type MapProgress,
 } from "@/lib/map-progress";
+import {
+  EDGE_UNLOCKS_KEY,
+  type EdgeUnlocks,
+} from "@/lib/edge-unlocks";
 import type { StatKey } from "@/adventure/data/stats";
 
 const INVENTORY_KEY = "inventory.v1";
@@ -55,6 +59,7 @@ export const STORAGE_KEYS = {
   log: ADVENTURE_LOG_KEY,
   notifications: NOTIFICATIONS_STORAGE_KEY,
   map: MAP_STORAGE_KEY,
+  edgeUnlocks: EDGE_UNLOCKS_KEY,
   theme: THEME_KEY,
 } as const;
 
@@ -69,6 +74,7 @@ export type SaveBundleData = {
   log?: AdventureLog;
   notifications?: NotificationStorage;
   map?: MapProgress;
+  edgeUnlocks?: EdgeUnlocks;
   theme?: "light" | "dark";
 };
 
@@ -123,6 +129,7 @@ export function loadBundle(): SaveBundle {
       log: readKey<AdventureLog>(STORAGE_KEYS.log),
       notifications: readKey<NotificationStorage>(STORAGE_KEYS.notifications),
       map: readKey<MapProgress>(STORAGE_KEYS.map),
+      edgeUnlocks: readKey<EdgeUnlocks>(STORAGE_KEYS.edgeUnlocks),
       theme: readKey<"light" | "dark">(STORAGE_KEYS.theme),
     },
   };
@@ -141,6 +148,7 @@ export function applyBundle(bundle: SaveBundle): void {
     { key: STORAGE_KEYS.log, value: d.log },
     { key: STORAGE_KEYS.notifications, value: d.notifications },
     { key: STORAGE_KEYS.map, value: d.map },
+    { key: STORAGE_KEYS.edgeUnlocks, value: d.edgeUnlocks },
     { key: STORAGE_KEYS.theme, value: d.theme },
   ];
   for (const { key, value } of map) {

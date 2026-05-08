@@ -23,11 +23,15 @@ export function MapView({
   onProgressChange,
   log,
   playerHp,
+  isEdgeUnlocked,
+  onTrialStart,
 }: {
   progress: MapProgress;
   onProgressChange: (next: MapProgress) => void;
   log: AdventureLog;
   playerHp: number;
+  isEdgeUnlocked: (from: RegionId, to: RegionId) => boolean;
+  onTrialStart: (from: RegionId, to: RegionId) => void;
 }) {
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
   const [lowHpBlocked, setLowHpBlocked] = useState(false);
@@ -54,25 +58,43 @@ export function MapView({
     : null;
   const selectedState = selectedId ? stateOf(selectedId) : null;
   const isAdjacent = !!selectedId && adjacentToCurrent.has(selectedId);
+  const selectedReq = selectedId
+    ? findEdgeRequirement(progress.currentRegionId, selectedId)
+    : undefined;
   const requirementStatus: EdgeRequirementStatus | null =
     selectedId && isAdjacent
-      ? evaluateEdgeRequirement(
-          findEdgeRequirement(progress.currentRegionId, selectedId),
+      ? evaluateEdgeRequirement(selectedReq, {
           log,
-        )
+          isEdgeUnlocked,
+          from: progress.currentRegionId,
+          to: selectedId,
+        })
       : null;
+  const isTrialEdge =
+    !!selectedId &&
+    isAdjacent &&
+    selectedReq?.kind === "trial" &&
+    !isEdgeUnlocked(progress.currentRegionId, selectedId);
+  // 시련 엣지는 met=false 라도 "도전" 액션으로 진입 가능 — canMove 와 별도로 처리.
   const canMove =
     !!selectedId &&
     selectedId !== progress.currentRegionId &&
     isAdjacent &&
     (requirementStatus?.met ?? true);
+  const canChallenge = isTrialEdge;
 
   const handleMove = () => {
-    if (!selectedId || !canMove) return;
+    if (!selectedId) return;
     if (playerHp <= 0) {
       setLowHpBlocked(true);
       return;
     }
+    if (canChallenge && !canMove) {
+      // 시련 도전 — 자동 전투 N전 시작.
+      onTrialStart(progress.currentRegionId, selectedId);
+      return;
+    }
+    if (!canMove) return;
     onProgressChange({
       currentRegionId: selectedId,
       visitedRegionIds: progress.visitedRegionIds.includes(selectedId)
@@ -119,6 +141,7 @@ export function MapView({
         region={selectedRegion}
         state={selectedState}
         canMove={canMove}
+        canChallenge={canChallenge}
         onMove={handleMove}
         requirementStatus={requirementStatus}
       />
