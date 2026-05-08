@@ -55,9 +55,26 @@ export function useNavTabs() {
     [router, tab],
   );
 
+  // tab + sub 를 한 번에 교체 — 사망 시 패배 모달 confirm → 치료소 강제 이동처럼
+  // 시스템이 일으키는 점프 용도 (replace 라 history 에 남지 않음).
+  const replaceLocation = useCallback(
+    (nextTab: TabKey, nextSub: string | null) => {
+      router.replace(buildHref(nextTab, nextSub));
+    },
+    [router],
+  );
+
   const back = useCallback(() => {
     router.back();
   }, [router]);
 
-  return { tab, subView, setTab, setSubView, replaceSubView, back };
+  return {
+    tab,
+    subView,
+    setTab,
+    setSubView,
+    replaceSubView,
+    replaceLocation,
+    back,
+  };
 }
