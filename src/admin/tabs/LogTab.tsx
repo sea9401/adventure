@@ -171,9 +171,9 @@ export function LogTab() {
                         </Button>
                         <Button
                           disabled={readOnly}
-                          onClick={() => setMonster(name, { kills: 10, encountered: true })}
+                          onClick={() => setMonster(name, { kills: 30, encountered: true })}
                         >
-                          10킬
+                          30킬
                         </Button>
                         <Button
                           disabled={readOnly}
