@@ -96,7 +96,7 @@ function QuestCard({
       actionLabel = `Lv.${quest.requiredLevel} 필요`;
       actionDisabled = true;
     } else {
-      actionLabel = "수주하기";
+      actionLabel = "수락";
       actionHandler = onAccept;
     }
   } else if (entry.state === "active") {
