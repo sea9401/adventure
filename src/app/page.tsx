@@ -349,8 +349,11 @@ export default function Home() {
   };
 
   // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.
-  // 초기 로드(localStorage 동기화)는 무시하기 위해 ref가 null이면 베이스라인만 기록.
+  // hydrate 가 끝나기 전에는 effect 가 초기값(1) 기준으로 베이스라인을 잡았다가
+  // localStorage 동기화 직후 (1 → 저장 레벨) 차이를 가짜 레벨업으로 오인하므로
+  // characterStateHook.hydrated 가 true 가 된 다음에만 베이스라인을 기록한다.
   useEffect(() => {
+    if (!characterStateHook.hydrated) return;
     if (lastSeenLevelRef.current === null) {
       lastSeenLevelRef.current = characterState.level;
       return;
@@ -368,7 +371,7 @@ export default function Home() {
     lastSeenLevelRef.current = next;
     // addNotification/training.addPoints 는 setter — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [characterState.level]);
+  }, [characterState.level, characterStateHook.hydrated]);
 
   // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
   // ITEMS 사전에 등록된 아이템만 회수 가능 (이름 기반 역추적).
