@@ -50,7 +50,6 @@ import {
 } from "@/adventure/data/sellPrices";
 import {
   POTIONS,
-  POTION_MAX_PER_TYPE,
   type PotionId,
 } from "@/adventure/data/potions";
 import { useInventory } from "@/adventure/inventory/useInventory";
@@ -84,6 +83,7 @@ import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { SkillsView } from "@/adventure/character/SkillsView";
 import { TrainingView } from "@/adventure/character/TrainingView";
+import { GrowthShrineView } from "@/adventure/character/GrowthShrineView";
 import { useTraining } from "@/adventure/training/useTraining";
 import {
   baseCharacter,
@@ -99,7 +99,11 @@ import {
 } from "@/adventure/TrialView";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
 import {
+  critChancePctFor,
   deriveSkills,
+  doubleStrikeIntervalFor,
+  evadeGuaranteedFor,
+  guardFor,
   powerAttackBonusFor,
 } from "@/adventure/character/skills";
 import { getTitle } from "@/adventure/data/titles";
@@ -114,6 +118,7 @@ import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
+import { WoodcutterJimmyDialogue } from "@/adventure/town/dialogues/WoodcutterJimmyDialogue";
 import { SuzyDialogue } from "@/adventure/town/dialogues/SuzyDialogue";
 import { KaiDialogue } from "@/adventure/town/dialogues/KaiDialogue";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
@@ -372,6 +377,10 @@ function Home() {
     evasionPct: character.stats.dex,
     attackCount: 1 + Math.floor(character.stats.spd / 10),
     powerAttackBonus: powerAttackBonusFor(character.stats),
+    guaranteedEvades: evadeGuaranteedFor(character.stats),
+    extraAttackEveryNTurns: doubleStrikeIntervalFor(character.stats),
+    critChancePct: critChancePctFor(character.stats),
+    guard: guardFor(character.stats),
   };
 
   const playerStatus = {
@@ -386,7 +395,7 @@ function Home() {
     const potion = POTIONS[id];
     if (!potion) return;
     const have = inventory.state.potions[id] ?? 0;
-    const room = Math.max(0, POTION_MAX_PER_TYPE - have);
+    const room = Math.max(0, inventory.potionMax - have);
     const buyQty = Math.min(quantity, room);
     if (buyQty <= 0) return;
     const cost = potion.price * buyQty;
@@ -525,11 +534,11 @@ function Home() {
         return;
       }
     }
-    // 포션 결과는 종류별 한도(POTION_MAX_PER_TYPE) 검사 — 가득 차 있으면 재료만
+    // 포션 결과는 종류별 한도(potionMax) 검사 — 가득 차 있으면 재료만
     // 소비되고 결과물이 안 늘어나는 버그를 막기 위해 사전 차단.
     if (recipe.result.kind === "potion") {
       const have = inventory.state.potions[recipe.result.potionId] ?? 0;
-      if (have >= POTION_MAX_PER_TYPE) {
+      if (have >= inventory.potionMax) {
         const potion = POTIONS[recipe.result.potionId];
         addNotification("info", `${potion.name}을(를) 더 들 수 없다.`);
         return;
@@ -690,6 +699,7 @@ function Home() {
     addGoldFame: characterStateHook.addGoldFame,
     // 퀘스트 보상으로 레벨업 시에도 VIT 보너스만큼 maxHp 까지 풀회복.
     addExp: (n) => characterStateHook.addExp(n, character.stats.vit),
+    addPotionCapacity: (n) => inventory.addPotionCapacity(n),
   };
 
   // 퀘스트 보상 지급 + 알림 한 줄로 합성. NPC 다이얼로그/길드 게시판 공용.
@@ -863,6 +873,17 @@ function Home() {
                       <TrainerDialogue
                         npc={npc}
                         onClose={close}
+                        quests={quests}
+                        completeQuest={completeQuest}
+                      />
+                    );
+                  }
+                  if (npc.id === "village_woodcutter_jimmy") {
+                    return (
+                      <WoodcutterJimmyDialogue
+                        npc={npc}
+                        onClose={close}
+                        crafting={crafting}
                         quests={quests}
                         completeQuest={completeQuest}
                       />
@@ -1059,6 +1080,22 @@ function Home() {
               />
               <EntryCard
                 icon={
+                  <Sparkle
+                    size={28}
+                    weight="duotone"
+                    className="text-violet-500"
+                  />
+                }
+                title="성장의 신전"
+                description={
+                  training.unspentPoints > 0
+                    ? `단련 포인트 ${training.unspentPoints}개 사용 가능`
+                    : "단련 포인트로 능력을 새겨넣는 곳."
+                }
+                onClick={() => setSubView("shrine")}
+              />
+              <EntryCard
+                icon={
                   <Hammer
                     size={28}
                     weight="duotone"
@@ -1149,7 +1186,19 @@ function Home() {
                 isTraining={training.isTraining}
                 unspentPoints={training.unspentPoints}
                 onStartTraining={training.startTraining}
-                onAllocateStat={training.allocateStat}
+              />
+            </div>
+          )}
+          {tab === "town" && isTown && subView === "shrine" && (
+            <div className="space-y-3">
+              <SubViewHeader title="성장의 신전" onBack={back} />
+              <GrowthShrineView
+                unspentPoints={training.unspentPoints}
+                revertPoints={training.revertPoints}
+                allocatedStats={training.allocatedStats}
+                baseStats={baseCharacter.stats}
+                onAllocate={training.allocateStat}
+                onDeallocate={training.deallocateStat}
               />
             </div>
           )}
@@ -1160,6 +1209,7 @@ function Home() {
                 knownIds={crafting.state.known}
                 materialCounts={inventory.state.materials}
                 potionCounts={inventory.state.potions}
+                potionMax={inventory.potionMax}
                 onCraft={handleCraft}
               />
             </div>

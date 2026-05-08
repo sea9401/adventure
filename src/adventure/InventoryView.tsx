@@ -11,7 +11,7 @@ import {
   type ItemId,
 } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
-import { POTIONS, POTION_IDS, POTION_MAX_PER_TYPE } from "./data/potions";
+import { POTIONS, POTION_IDS, potionMax } from "./data/potions";
 import type { InventoryState } from "./inventory/useInventory";
 import type { EquippedSlots } from "./character/types";
 import { EquippedGrid } from "./character/CharacterMini";
@@ -87,6 +87,7 @@ export function InventoryView({
     potion: POTIONS[id],
     count: inventory.potions[id] ?? 0,
   })).filter((e) => e.count > 0);
+  const potionCap = potionMax(inventory.potionCapacityBonus ?? 0);
 
   return (
     <div className="space-y-3">
@@ -245,12 +246,12 @@ export function InventoryView({
                     </span>
                     <span
                       className={`shrink-0 text-xs tabular-nums ${
-                        count >= POTION_MAX_PER_TYPE
+                        count >= potionCap
                           ? "text-amber-600 dark:text-amber-400"
                           : "text-zinc-500 dark:text-zinc-400"
                       }`}
                     >
-                      {count} / {POTION_MAX_PER_TYPE}
+                      {count} / {potionCap}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">

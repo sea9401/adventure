@@ -13,6 +13,7 @@ export type RewardServices = {
   addGoldFame: (gold: number, fame: number) => void;
   // EXP는 applyExpGain을 거쳐 레벨업까지 자동 처리되어야 한다.
   addExp: (amount: number) => void;
+  addPotionCapacity: (n: number) => void;
 };
 
 function recipeName(id: string): string {
@@ -63,6 +64,12 @@ export function applyQuestReward(
   for (const id of reward.recipes ?? []) {
     services.learnRecipe(id);
     summary.push(recipeName(id));
+  }
+
+  const capBonus = reward.potionCapacityBonus ?? 0;
+  if (capBonus > 0) {
+    services.addPotionCapacity(capBonus);
+    summary.push(`포션 최대 보유량 +${capBonus}`);
   }
 
   return summary;

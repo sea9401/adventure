@@ -16,6 +16,8 @@ export type QuestReward = {
   materials?: QuestRewardMaterial[];
   items?: QuestRewardItem[];
   recipes?: string[];
+  // 종류별 포션 최대 보유 수의 영구 보너스(+n).
+  potionCapacityBonus?: number;
 };
 
 export type Quest = {
@@ -118,6 +120,21 @@ export const QUESTS: Quest[] = [
     },
     repeatable: false,
     giverNpcId: "village_trainer_smith",
+  },
+  {
+    id: "village-jimmy-bandits",
+    regionId: "village",
+    title: "나무꾼 지미의 부탁",
+    description:
+      "요즘 숲에 산적이 너무 많이 나와서 벌목하러 가질 못하고있어요. 산적들좀 처리해주세요.",
+    requiredLevel: 1,
+    target: { monsterName: "산적", count: 20 },
+    reward: {
+      items: [{ id: "spare_hatchet", count: 1 }],
+      potionCapacityBonus: 1,
+    },
+    repeatable: false,
+    giverNpcId: "village_woodcutter_jimmy",
   },
 ];
 

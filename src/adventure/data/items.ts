@@ -87,6 +87,14 @@ export const ITEMS = {
     bonus: { atk: 4, dex: 2 },
     description: "산적이 품에 숨기고 다니던 단검. 짧지만 손에 착 감긴다.",
   } satisfies EquipItem,
+  spare_hatchet: {
+    name: "예비 손도끼",
+    slot: "weapon",
+    stats: [{ label: "공격력", value: "+3" }],
+    bonus: { atk: 3 },
+    description: "나무꾼 지미가 챙겨 다니던 예비 손도끼. 손에 익으면 제법 매섭다.",
+    tradable: false,
+  } satisfies EquipItem,
   nymph_ring: {
     name: "님프의 반지",
     slot: "accessory",
