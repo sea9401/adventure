@@ -211,6 +211,9 @@ export function BattleView({
           outcome="lose"
           exp={0}
           onConfirm={() => {
+            // 더블탭/연속 클릭으로 onBattleEnd 가 중복 발화하지 않도록 가드.
+            if (firedForStateRef.current === state) return;
+            firedForStateRef.current = state;
             onBattleEndRef.current({
               outcome: "lose",
               enemyName: state.enemy.name,
@@ -219,6 +222,8 @@ export function BattleView({
               potionsConsumed,
               log: state.log,
             });
+            // BattleView 로컬 state 초기화 — 모달 닫고 진입 화면으로 복귀.
+            stop();
           }}
         />
       )}
