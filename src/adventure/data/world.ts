@@ -66,6 +66,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 380, y: 360 },
       biome: "plains",
       enemies: ["슬라임", "들개", "두더쥐"],
+      recommendedLevel: 1,
     },
     {
       id: "cave",
@@ -74,6 +75,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 270, y: 200 },
       biome: "cave",
       enemies: ["박쥐"],
+      recommendedLevel: 3,
     },
     {
       id: "forest",
@@ -82,6 +84,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 580, y: 240 },
       biome: "forest",
       enemies: ["거미", "들개", "산적"],
+      recommendedLevel: 5,
     },
     {
       id: "lake",
@@ -90,6 +93,7 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 440, y: 110 },
       biome: "lake",
       enemies: ["호수 님프"],
+      recommendedLevel: 7,
     },
     {
       id: "diola",
@@ -99,7 +103,7 @@ export const WORLD_MAP: WorldMap = {
       biome: "village",
       enemies: [],
       tags: ["town"],
-      recommendedLevel: 5,
+      recommendedLevel: 6,
     },
     {
       id: "ruins",
