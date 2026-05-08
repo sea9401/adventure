@@ -1083,18 +1083,6 @@ function Home() {
               />
               <EntryCard
                 icon={
-                  <Note
-                    size={28}
-                    weight="duotone"
-                    className="text-sky-500"
-                  />
-                }
-                title="게시판"
-                description="마을의 새 소식이 올라오는 곳."
-                onClick={() => setSubView("bulletin")}
-              />
-              <EntryCard
-                icon={
                   <Envelope
                     size={28}
                     weight="duotone"
@@ -1223,12 +1211,6 @@ function Home() {
                 onAccept={handleAcceptQuest}
                 onClaim={handleClaimQuest}
               />
-            </div>
-          )}
-          {tab === "town" && isTown && subView === "bulletin" && (
-            <div className="space-y-3">
-              <SubViewHeader title="게시판" onBack={back} />
-              <BulletinBoardView />
             </div>
           )}
           {tab === "town" && isTown && subView === "inbox" && (
@@ -1386,6 +1368,18 @@ function Home() {
               />
               <EntryCard
                 icon={
+                  <Note
+                    size={28}
+                    weight="duotone"
+                    className="text-sky-500"
+                  />
+                }
+                title="게시판"
+                description="마을의 새 소식이 올라오는 곳."
+                onClick={() => setSubView("bulletin")}
+              />
+              <EntryCard
+                icon={
                   <Envelope
                     size={28}
                     weight="duotone"
@@ -1404,6 +1398,12 @@ function Home() {
                 }
                 onClick={() => setSubView("inbox")}
               />
+            </div>
+          )}
+          {tab === "plaza" && subView === "bulletin" && (
+            <div className="space-y-3">
+              <SubViewHeader title="게시판" onBack={back} />
+              <BulletinBoardView />
             </div>
           )}
           {tab === "plaza" && subView === "marketplace" && (
