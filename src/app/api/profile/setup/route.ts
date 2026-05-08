@@ -19,7 +19,18 @@ const NAME_MAX = 16;
 // 400 { error: "invalid" | "missing" } — 유효성 실패
 // 409 { error: "taken" } — 중복 (낙관적 검증 또는 unique 제약 위반)
 export async function POST(req: Request) {
-  const userId = await ensureUser();
+  let userId: string | null;
+  try {
+    userId = await ensureUser();
+  } catch (e) {
+    const err = e as { code?: string; name?: string; message?: string };
+    console.error("[/api/profile/setup] ensureUser threw", {
+      code: err.code,
+      name: err.name,
+      message: err.message,
+    });
+    return new Response("server error (auth)", { status: 500 });
+  }
   if (!userId) return new Response("unauthorized", { status: 401 });
 
   let body: { name?: unknown; gender?: unknown };
