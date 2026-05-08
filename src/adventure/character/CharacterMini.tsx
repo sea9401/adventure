@@ -28,14 +28,25 @@ function CharacterPortrait({ gender }: { gender: Gender }) {
   );
 }
 
+type TooltipAlign = "start" | "center" | "end";
+
+const TOOLTIP_ALIGN: Record<TooltipAlign, string> = {
+  // 그리드 모서리 셀에서 화면 밖으로 잘리지 않도록 셀 안쪽 가장자리에 정렬.
+  start: "left-0",
+  center: "left-1/2 -translate-x-1/2",
+  end: "right-0",
+};
+
 function MiniEquipCard({
   icon,
   label,
   item,
+  tooltipAlign = "center",
 }: {
   icon: ReactNode;
   label: string;
   item: EquipItem | null;
+  tooltipAlign?: TooltipAlign;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -91,7 +102,7 @@ function MiniEquipCard({
       {item && open && (
         <div
           role="tooltip"
-          className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-md border border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+          className={`pointer-events-none absolute top-full z-20 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-md border border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900 ${TOOLTIP_ALIGN[tooltipAlign]}`}
         >
           <div className="font-medium text-zinc-900 dark:text-zinc-100">
             {item.name}
@@ -178,8 +189,20 @@ export function CharacterMini({ character }: { character: Character }) {
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          {equipped.map(({ icon, label, item }) => (
-            <MiniEquipCard key={label} icon={icon} label={label} item={item} />
+          {equipped.map(({ icon, label, item }, i) => (
+            <MiniEquipCard
+              key={label}
+              icon={icon}
+              label={label}
+              item={item}
+              tooltipAlign={
+                i === 0
+                  ? "start"
+                  : i === equipped.length - 1
+                    ? "end"
+                    : "center"
+              }
+            />
           ))}
         </div>
       </div>
