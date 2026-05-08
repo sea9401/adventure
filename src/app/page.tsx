@@ -1369,7 +1369,11 @@ function Home() {
           {tab === "plaza" && subView === "bulletin" && (
             <div className="space-y-3">
               <SubViewHeader title="게시판" onBack={back} />
-              <BulletinBoardView />
+              <BulletinBoardView
+                name={character.name}
+                className={character.className}
+                title={equippedTitle?.name ?? null}
+              />
             </div>
           )}
           {tab === "plaza" && subView === "marketplace" && (
