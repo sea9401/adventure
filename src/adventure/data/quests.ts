@@ -34,7 +34,7 @@ export type Quest = {
   giverNpcId?: NpcId;
 };
 
-export const REPEAT_COOLDOWN_MS_DEFAULT = 12 * 60 * 60 * 1000;
+export const REPEAT_COOLDOWN_MS_DEFAULT = 6 * 60 * 60 * 1000;
 
 export const QUESTS: Quest[] = [
   {
@@ -45,7 +45,7 @@ export const QUESTS: Quest[] = [
       "마을에 주정뱅이가 너무 많다는 민원이 들어오고있어요. 주정뱅이 10명을 혼내주세요.",
     requiredLevel: 1,
     target: { monsterName: "주정뱅이", count: 10 },
-    reward: { gold: 3, fame: 1 },
+    reward: { gold: 10, fame: 1 },
     repeatable: true,
   },
   {
@@ -56,7 +56,7 @@ export const QUESTS: Quest[] = [
       "평야에 슬라임이 갑자기 너무 많아져서 농부들이 피해를 보고있어요. 슬라임 20마리를 처치해주세요.",
     requiredLevel: 1,
     target: { monsterName: "슬라임", count: 20 },
-    reward: { gold: 6, fame: 2 },
+    reward: { gold: 15, fame: 2 },
     repeatable: true,
   },
   {
