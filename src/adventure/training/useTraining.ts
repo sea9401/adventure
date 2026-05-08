@@ -32,7 +32,7 @@ function readInitial(raw: unknown): TrainingPersisted {
 }
 
 export function useTraining() {
-  const initial = useSavedValue("training.v1");
+  const initial = useSavedValue("training.v2");
   const initialPersisted = readInitial(initial);
 
   const [trainingEndsAt, setTrainingEndsAt] = useState<number | null>(
@@ -53,7 +53,7 @@ export function useTraining() {
     }),
     [trainingEndsAt, unspentPoints, allocatedStats],
   );
-  useRemotePatch("training.v1", persisted);
+  useRemotePatch("training.v2", persisted);
 
   // 훈련 진행 중일 때만 1초 단위로 now 갱신.
   useEffect(() => {

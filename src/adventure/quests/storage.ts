@@ -9,7 +9,7 @@ export type QuestProgressEntry = {
 
 export type QuestProgressMap = Record<string, QuestProgressEntry>;
 
-export const QUEST_PROGRESS_KEY = "quest-progress.v1";
+export const QUEST_PROGRESS_KEY = "quest-progress.v2";
 
 export function defaultQuestEntry(): QuestProgressEntry {
   return { state: "available", progress: 0, completedCount: 0 };

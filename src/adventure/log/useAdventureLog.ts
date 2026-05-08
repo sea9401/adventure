@@ -59,9 +59,9 @@ function readInitial(raw: unknown): AdventureLog {
 }
 
 export function useAdventureLog() {
-  const initial = useSavedValue("adventure-log.v1");
+  const initial = useSavedValue("adventure-log.v2");
   const [log, setLog] = useState<AdventureLog>(() => readInitial(initial));
-  useRemotePatch("adventure-log.v1", log);
+  useRemotePatch("adventure-log.v2", log);
 
   const markEncountered = useCallback((monsterName: string) => {
     setLog((prev) => {

@@ -27,7 +27,7 @@ function readInitial(raw: unknown): Profile | null {
 }
 
 export function useProfile() {
-  const initial = useSavedValue("character-profile.v1");
+  const initial = useSavedValue("character-profile.v2");
   const remote = useRemoteSave();
   const [profile, setProfile] = useState<Profile | null>(() =>
     readInitial(initial),
@@ -35,7 +35,7 @@ export function useProfile() {
 
   const submit = (next: Profile) => {
     setProfile(next);
-    remote.patch("character-profile.v1", next);
+    remote.patch("character-profile.v2", next);
   };
 
   const name = profile?.name ?? DEFAULT_NAME;

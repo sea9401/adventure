@@ -63,11 +63,11 @@ function readInitial(raw: unknown): CharacterDynamicState {
 }
 
 export function useCharacterState() {
-  const initial = useSavedValue("character.v1");
+  const initial = useSavedValue("character.v2");
   const [state, setState] = useState<CharacterDynamicState>(() =>
     readInitial(initial),
   );
-  useRemotePatch("character.v1", state);
+  useRemotePatch("character.v2", state);
 
   const equippedSlots = state.equipped ?? baseCharacter.equipped;
 

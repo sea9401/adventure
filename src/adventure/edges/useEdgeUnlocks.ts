@@ -16,9 +16,9 @@ function readInitial(raw: unknown): EdgeUnlocks {
 }
 
 export function useEdgeUnlocks() {
-  const initial = useSavedValue("edge-unlocks.v1");
+  const initial = useSavedValue("edge-unlocks.v2");
   const [unlocks, setUnlocks] = useState<EdgeUnlocks>(() => readInitial(initial));
-  useRemotePatch("edge-unlocks.v1", unlocks);
+  useRemotePatch("edge-unlocks.v2", unlocks);
 
   const unlock = (from: RegionId, to: RegionId) => {
     setUnlocks((prev) => ({ ...prev, [edgeUnlockKey(from, to)]: true }));

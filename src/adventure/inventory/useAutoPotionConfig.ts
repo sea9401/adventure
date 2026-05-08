@@ -15,7 +15,7 @@ export type AutoPotionRule = {
 
 export type AutoPotionConfig = { rules: AutoPotionRule[] };
 
-const STORAGE_KEY = "auto-potion-rules.v1";
+const STORAGE_KEY = "auto-potion-rules.v2";
 
 export const defaultAutoPotionConfig = (): AutoPotionConfig => ({
   rules: [

@@ -2,15 +2,15 @@
 // 디바이스별 설정(theme, auto-potion-rules, battle-settings, notifications)은
 // 일부러 제외 — 디바이스마다 다를 수 있는 항목.
 export const SYNCED_KEYS = [
-  "character-profile.v1",
-  "character.v1",
-  "training.v1",
-  "inventory.v1",
-  "crafting.v1",
-  "quest-progress.v1",
-  "adventure-log.v1",
-  "map.v1",
-  "edge-unlocks.v1",
+  "character-profile.v2",
+  "character.v2",
+  "training.v2",
+  "inventory.v2",
+  "crafting.v2",
+  "quest-progress.v2",
+  "adventure-log.v2",
+  "map.v2",
+  "edge-unlocks.v2",
 ] as const;
 
 export type SyncedKey = (typeof SYNCED_KEYS)[number];

@@ -21,7 +21,7 @@ function readInitial(raw: unknown): QuestProgressMap {
 }
 
 export function useQuests() {
-  const initial = useSavedValue("quest-progress.v1");
+  const initial = useSavedValue("quest-progress.v2");
   const [progress, setProgress] = useState<QuestProgressMap>(() =>
     readInitial(initial),
   );
@@ -32,7 +32,7 @@ export function useQuests() {
     progressRef.current = progress;
   }, [progress]);
 
-  useRemotePatch("quest-progress.v1", progress);
+  useRemotePatch("quest-progress.v2", progress);
 
   const getEntry = useCallback(
     (id: string): QuestProgressEntry => progress[id] ?? defaultQuestEntry(),

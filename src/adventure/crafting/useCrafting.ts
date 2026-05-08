@@ -17,9 +17,9 @@ function readInitial(raw: unknown): CraftingState {
 }
 
 export function useCrafting() {
-  const initial = useSavedValue("crafting.v1");
+  const initial = useSavedValue("crafting.v2");
   const [state, setState] = useState<CraftingState>(() => readInitial(initial));
-  useRemotePatch("crafting.v1", state);
+  useRemotePatch("crafting.v2", state);
 
   const learnRecipe = useCallback((id: string) => {
     setState((prev) =>

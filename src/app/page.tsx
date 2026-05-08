@@ -165,7 +165,7 @@ function Home() {
   const [pendingTownNpcId, setPendingTownNpcId] = useState<string | null>(null);
   // 시련(trial) 진행 중인 엣지. 세팅되면 지도 서브뷰에서 TrialView 가 대신 렌더링됨.
   const [trialEdge, setTrialEdge] = useState<TrialEdge | null>(null);
-  const initialMap = useSavedValue<Partial<MapProgress>>("map.v1");
+  const initialMap = useSavedValue<Partial<MapProgress>>("map.v2");
   const [mapProgress, setMapProgress] = useState<MapProgress>(() => ({
     currentRegionId: initialMap?.currentRegionId ?? initialMapProgress.currentRegionId,
     visitedRegionIds:
@@ -173,7 +173,7 @@ function Home() {
         ? initialMap.visitedRegionIds
         : initialMapProgress.visitedRegionIds,
   }));
-  useRemotePatch("map.v1", mapProgress);
+  useRemotePatch("map.v2", mapProgress);
   const adventureLog = useAdventureLog();
   const quests = useQuests();
   const crafting = useCrafting();

@@ -30,10 +30,10 @@ function readInitial(raw: unknown): InventoryState {
 }
 
 export function useInventory() {
-  const initial = useSavedValue("inventory.v1");
+  const initial = useSavedValue("inventory.v2");
   const [state, setState] = useState<InventoryState>(() => readInitial(initial));
   const stateRef = useRef<InventoryState>(state);
-  useRemotePatch("inventory.v1", state);
+  useRemotePatch("inventory.v2", state);
 
   useEffect(() => {
     stateRef.current = state;

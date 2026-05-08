@@ -14,7 +14,7 @@ import {
 } from "./remote";
 import { SYNCED_KEYS, type SyncedKey } from "./synced-keys";
 
-const MIGRATION_MARKER_KEY = "migrated.v1";
+const MIGRATION_MARKER_KEY = "migrated.v2";
 
 type SaveData = Partial<Record<SyncedKey, unknown>>;
 

@@ -20,7 +20,7 @@ export type AppNotification = {
   meta?: NotificationMeta;
 };
 
-export const NOTIFICATIONS_STORAGE_KEY = "notifications.v1";
+export const NOTIFICATIONS_STORAGE_KEY = "notifications.v2";
 export const MAX_NOTIFICATIONS = 10;
 
 export type NotificationStorage = {
