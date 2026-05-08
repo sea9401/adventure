@@ -13,15 +13,17 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..", "public", "images");
 
-// 카테고리별 최대 가로 픽셀 + WebP 품질.
+// 카테고리별 최대 가로 픽셀 + WebP 품질. 폴더 안의 서브폴더도 같은 프로필로 재귀 처리.
 // - character: 큰 모달/아바타 (~256px) 기준 + 여유분.
 // - monster:   전투 96px / 도감 56px 모두 커버하는 512px.
 // - npc:       40px 아바타 기준이지만 확대 대비 256px.
+// - items:     인벤토리 32~64px 아이콘. 도감 확대 대비 256px. items/{accessory,armor,weapon}/ 모두 동일 프로필.
 // - ui:        풀스크린 배경. 1080~1440 디스플레이 폭 커버.
 const PROFILES = {
   character: { maxWidth: 512, quality: 85 },
   monster: { maxWidth: 512, quality: 85 },
   npc: { maxWidth: 256, quality: 85 },
+  items: { maxWidth: 256, quality: 85 },
   ui: { maxWidth: 1920, quality: 80 },
 };
 
@@ -56,11 +58,18 @@ async function processDir(dir, profile) {
   let totalBefore = 0;
   let totalAfter = 0;
   for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      const sub = await processDir(full, profile);
+      count += sub.count;
+      totalBefore += sub.before;
+      totalAfter += sub.after;
+      continue;
+    }
     if (!entry.isFile()) continue;
     if (!/\.png$/i.test(entry.name)) continue;
-    const src = path.join(dir, entry.name);
-    const { before, after } = await processFile(src, profile);
-    const rel = path.relative(ROOT, src.replace(/\.png$/i, ".webp"));
+    const { before, after } = await processFile(full, profile);
+    const rel = path.relative(ROOT, full.replace(/\.png$/i, ".webp"));
     const pct = ((1 - after / before) * 100).toFixed(0);
     console.log(`  ${rel}: ${fmtBytes(before)} → ${fmtBytes(after)} (-${pct}%)`);
     count += 1;
