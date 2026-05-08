@@ -7,8 +7,8 @@ import {
 } from "./leveling";
 
 describe("requiredExpToNext", () => {
-  it("Lv1→2는 100", () => {
-    expect(requiredExpToNext(1)).toBe(100);
+  it("Lv1→2는 120", () => {
+    expect(requiredExpToNext(1)).toBe(120);
   });
 
   it("레벨이 오르면 단조 증가", () => {
@@ -36,16 +36,16 @@ describe("applyExpGain", () => {
   });
 
   it("임계치 정확히 도달하면 1 레벨업, 잉여 0", () => {
-    const r = applyExpGain(1, 0, 100);
+    const r = applyExpGain(1, 0, 120);
     expect(r).toEqual({ level: 2, exp: 0, levelsGained: 1 });
   });
 
   it("한 번에 여러 레벨도 처리", () => {
-    // Lv1 need = 100, Lv2 need = floor(100 * 2^1.5) = 282 → 합산 382
+    // Lv1 need = 120, Lv2 need = floor(120 * 2^1.5) = 339 → 합산 459
     const r = applyExpGain(1, 0, 500);
     expect(r.level).toBe(3);
     expect(r.levelsGained).toBe(2);
-    expect(r.exp).toBe(500 - 100 - 282);
+    expect(r.exp).toBe(500 - 120 - 339);
   });
 
   it("만렙 도달 시 잉여 EXP는 0으로 캡", () => {

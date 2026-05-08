@@ -14,7 +14,7 @@ export const baseCharacter = {
   mp: 30,
   maxMp: 30,
   exp: 0,
-  maxExp: 100,
+  maxExp: 120,
   gold: 0,
   affiliation: "무소속",
   battleCount: 0,

@@ -1,6 +1,6 @@
 // 캐릭터 레벨링 시스템.
 // - 만렙 50.
-// - 다음 레벨까지 필요한 EXP = floor(100 * level^1.5). Lv1→2 = 100.
+// - 다음 레벨까지 필요한 EXP = floor(120 * level^1.5). Lv1→2 = 120.
 // - 레벨업당 스탯 포인트 1점 획득(호출측에서 분배).
 
 export const MAX_LEVEL = 50;
@@ -8,7 +8,7 @@ export const MAX_LEVEL = 50;
 export function requiredExpToNext(level: number): number | null {
   if (level >= MAX_LEVEL) return null;
   if (level < 1) return null;
-  return Math.floor(100 * Math.pow(level, 1.5));
+  return Math.floor(120 * Math.pow(level, 1.5));
 }
 
 // EXP 누적 적용 + 자동 레벨업 처리.
