@@ -7,6 +7,7 @@ import { Button, NumberInput, Select, TextInput } from "../ui/Field";
 import {
   formatRelative,
   genNotificationId,
+  MAX_NOTIFICATIONS,
   type AppNotification,
   type NotificationKind,
   type NotificationStorage,
@@ -49,7 +50,7 @@ export function NotificationsTab() {
       kind: draftKind,
       text: draftText.trim(),
     };
-    persist({ ...data, list: [item, ...data.list].slice(0, 20) });
+    persist({ ...data, list: [item, ...data.list].slice(0, MAX_NOTIFICATIONS) });
   };
 
   const remove = (id: string) => {
@@ -107,7 +108,9 @@ export function NotificationsTab() {
 
       <section className="rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">목록 ({data.list.length}/20)</h2>
+          <h2 className="text-sm font-semibold">
+            목록 ({data.list.length}/{MAX_NOTIFICATIONS})
+          </h2>
           <Button
             disabled={readOnly || data.list.length === 0}
             onClick={() =>

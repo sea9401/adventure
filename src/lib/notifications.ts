@@ -21,7 +21,7 @@ export type AppNotification = {
 };
 
 export const NOTIFICATIONS_STORAGE_KEY = "notifications.v1";
-export const MAX_NOTIFICATIONS = 20;
+export const MAX_NOTIFICATIONS = 10;
 
 export type NotificationStorage = {
   list: AppNotification[];
