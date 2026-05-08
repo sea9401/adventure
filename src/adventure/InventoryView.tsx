@@ -13,6 +13,8 @@ import {
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, POTION_IDS, POTION_MAX_PER_TYPE } from "./data/potions";
 import type { InventoryState } from "./inventory/useInventory";
+import type { EquippedSlots } from "./character/types";
+import { EquippedGrid } from "./character/CharacterMini";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
@@ -24,8 +26,6 @@ const TABS: { key: InvTabKey; label: string }[] = [
   { key: "materials", label: "재료" },
   { key: "potions", label: "포션" },
 ];
-
-export type EquippedSlots = Partial<Record<EquipSlot, EquipItem | null>>;
 
 const BONUS_LABELS: Record<keyof EquipBonus, string> = {
   atk: "공격력",
@@ -51,14 +51,6 @@ function computeDiff(
     return [{ key: k, label: BONUS_LABELS[k], delta }];
   });
 }
-
-const SLOT_LABELS: Record<EquipSlot, string> = {
-  weapon: "무기",
-  armor: "방어구",
-  accessory: "장신구",
-};
-
-const SLOT_ORDER: EquipSlot[] = ["weapon", "armor", "accessory"];
 
 export function InventoryView({
   inventory,
@@ -99,49 +91,14 @@ export function InventoryView({
       />
 
       {tab === "equipment" && equipped && (
-        <section className="space-y-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            장착중
-          </h3>
-          {SLOT_ORDER.map((slot) => {
-            const item = equipped[slot] ?? null;
-            return (
-              <Card key={slot}>
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    <span className="mr-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
-                      {SLOT_LABELS[slot]}
-                    </span>
-                    {item ? (
-                      item.name
-                    ) : (
-                      <span className="text-zinc-400 dark:text-zinc-500">
-                        비어 있음
-                      </span>
-                    )}
-                  </span>
-                  {item && (
-                    <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
-                      {item.stats
-                        .map((s) => `${s.label} ${s.value}`)
-                        .join(" · ")}
-                    </span>
-                  )}
-                </div>
-                {onUnequip && (
-                  <button
-                    type="button"
-                    onClick={() => onUnequip(slot)}
-                    disabled={!item}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                  >
-                    해제
-                  </button>
-                )}
-              </Card>
-            );
-          })}
-        </section>
+        <Card as="section" padding="none">
+          <div className="space-y-3 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              장착중
+            </h3>
+            <EquippedGrid equipped={equipped} onUnequip={onUnequip} />
+          </div>
+        </Card>
       )}
 
       {tab === "equipment" &&

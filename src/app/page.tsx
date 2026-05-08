@@ -17,6 +17,7 @@ import {
   User,
 } from "@phosphor-icons/react";
 import { SettingsMenu } from "@/components/SettingsMenu";
+import { ChatButton } from "@/components/ChatButton";
 import { NameSetupModal } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
 import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
@@ -251,7 +252,16 @@ function Home() {
     }
   }
 
-  const characterMaxHp = maxHpForLevel(characterState.level);
+  const totalStats = STAT_KEYS.reduce<Record<StatKey, number>>(
+    (acc, k) => {
+      acc[k] =
+        baseCharacter.stats[k] + training.allocatedStats[k] + equipStatBonuses[k];
+      return acc;
+    },
+    {} as Record<StatKey, number>,
+  );
+  // VIT 1pt 당 maxHp +1 — 레벨 기준 max 위에 스탯 보너스를 얹는다.
+  const characterMaxHp = maxHpForLevel(characterState.level) + totalStats.vit;
   const characterMaxMp = maxMpForLevel(characterState.level);
   const character: Character = {
     ...baseCharacter,
@@ -267,14 +277,7 @@ function Home() {
     gold: characterState.gold,
     fame: characterState.fame,
     equipped: equippedSlots,
-    stats: STAT_KEYS.reduce<Record<StatKey, number>>(
-      (acc, k) => {
-        acc[k] =
-          baseCharacter.stats[k] + training.allocatedStats[k] + equipStatBonuses[k];
-        return acc;
-      },
-      {} as Record<StatKey, number>,
-    ),
+    stats: totalStats,
   };
   const showModal = profile.needsSetup;
   const currentRegion =
@@ -304,14 +307,14 @@ function Home() {
   );
   // 스탯 → 전투 수치 변환:
   //   힘   STR : +1 atk / pt
-  //   민첩 DEX : +1% 회피 / pt
-  //   활력 VIT : +2 def / pt
+  //   민첩 DEX : +1% 회피 / pt, +1 atk / 5pt
+  //   활력 VIT : +2 def / pt, +1 maxHp / pt (maxHp는 character 빌드 단계에서 반영)
   //   속도 SPD : 10pt 당 공격 횟수 +1 (베이스 1회)
   //   행운 LUK : +1% 드랍률 / pt (드랍 시스템 도입 시 사용)
   const playerCombat = {
     hp: character.hp,
     maxHp: character.maxHp,
-    atk: character.stats.str + equipAtk,
+    atk: character.stats.str + Math.floor(character.stats.dex / 5) + equipAtk,
     def: character.stats.vit * 2 + equipDef,
     spd: character.stats.spd,
     evasionPct: character.stats.dex,
@@ -483,7 +486,7 @@ function Home() {
       adventureLog.addKill(payload.enemyName);
       const readyQuestIds = quests.recordKill(payload.enemyName);
       characterStateHook.setHp(payload.finalPlayerHp);
-      characterStateHook.addExp(payload.rewards.exp);
+      characterStateHook.addExp(payload.rewards.exp, character.stats.vit);
       // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
       const monster = MONSTERS[payload.enemyName];
       if (monster?.drops) {
@@ -571,7 +574,8 @@ function Home() {
         if (n) inventory.consume(id as PotionId, n);
       }
       // EXP/HP/사망
-      if (result.expGained > 0) characterStateHook.addExp(result.expGained);
+      if (result.expGained > 0)
+        characterStateHook.addExp(result.expGained, character.stats.vit);
       if (result.died) {
         // HP 0 으로 두고 치유소 사용을 유도. subView 리셋으로 모험 탭 메인으로 복귀.
         characterStateHook.setHp(0);
@@ -614,7 +618,8 @@ function Home() {
     addEquipment: (id) => inventory.addEquipment(id),
     learnRecipe: (id) => crafting.learnRecipe(id),
     addGoldFame: characterStateHook.addGoldFame,
-    addExp: characterStateHook.addExp,
+    // 퀘스트 보상으로 레벨업 시에도 VIT 보너스만큼 maxHp 까지 풀회복.
+    addExp: (n) => characterStateHook.addExp(n, character.stats.vit),
   };
 
   // 퀘스트 보상 지급 + 알림 한 줄로 합성. NPC 다이얼로그/길드 게시판 공용.
@@ -666,6 +671,7 @@ function Home() {
               unreadCount={notifications.unreadCount}
               onOpen={notifications.markRead}
             />
+            <ChatButton name={character.name} level={character.level} />
             <SettingsMenu />
           </div>
         </header>
@@ -1042,7 +1048,13 @@ function Home() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => characterStateHook.heal(healCost)}
+                    onClick={() =>
+                      characterStateHook.heal(
+                        healCost,
+                        character.maxHp,
+                        character.maxMp,
+                      )
+                    }
                     disabled={isFull}
                     className="mt-4 w-full rounded-md border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400 dark:text-rose-300"
                   >
