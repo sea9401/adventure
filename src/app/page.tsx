@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import {
   Backpack,
   Barbell,
@@ -108,8 +108,7 @@ import { KaiDialogue } from "@/adventure/town/dialogues/KaiDialogue";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
-
-type TabKey = "adventure" | "town" | "character";
+import { useNavTabs, type TabKey } from "@/lib/useNavTabs";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "adventure", label: "모험" },
@@ -139,14 +138,17 @@ function MainTabs({
 export default function Page() {
   return (
     <SaveProvider>
-      <Home />
+      <Suspense fallback={null}>
+        <Home />
+      </Suspense>
     </SaveProvider>
   );
 }
 
 function Home() {
-  const [tab, setTab] = useState<TabKey>("adventure");
-  const [subView, setSubView] = useState<string | null>(null);
+  // tab/subView 는 URL 쿼리(?tab=...&sub=...)로 관리 → 브라우저 back/forward 가 in-app 이동을 따라감.
+  const { tab, subView, setTab, setSubView, replaceSubView, back } =
+    useNavTabs();
   // 사용자가 명시적으로 자동 사냥을 시작했는지. region 이동/사망 시 false.
   // 같은 탭 안에서는 sessionStorage로 보존 — 캐릭터 탭 등으로 잠깐 다녀와도 ON 유지.
   // 새 탭/창에서는 항상 false (sessionStorage 특성).
@@ -198,9 +200,10 @@ function Home() {
     )?.tags;
     const inTown = currentTags?.includes("town") ?? false;
     if (tab === "town" && !inTown) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSubView(null);
+      replaceSubView(null);
     }
+    // replaceSubView 는 router 의 안정 참조 — deps 에서 제외해도 안전.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, mapProgress.currentRegionId]);
 
   // 시련 중 사용자가 다른 탭/서브뷰로 이동하면 시련 자동 취소.
@@ -227,10 +230,8 @@ function Home() {
     }
   }, [mapProgress.currentRegionId]);
 
-  const handleTabChange = (next: TabKey) => {
-    setTab(next);
-    setSubView(null);
-  };
+  // setTab 은 항상 sub 를 비우므로 추가 처리 없음.
+  const handleTabChange = setTab;
 
   const trainingDescription = training.isTraining
     ? `훈련 중 · ${formatDuration(training.remaining)}`
@@ -518,10 +519,11 @@ function Home() {
       }
     } else {
       // 패배 — HP 0 (치유소 유도) + 시작 마을 강제 이동 + 자동 사냥 해제
-      // subView 리셋: 전투 sub 가 아니라 모험 탭 메인(마을·지도 진입)으로 복귀
+      // subView 리셋: 전투 sub 가 아니라 모험 탭 메인(마을·지도 진입)으로 복귀.
+      // replace 로 history 에 남기지 않음 (사망 직후로 back 되돌아갈 일 없음).
       characterStateHook.setHp(0);
       setHuntingActive(false);
-      setSubView(null);
+      replaceSubView(null);
       setMapProgress((prev) => ({
         currentRegionId: START_REGION_ID,
         visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
@@ -578,8 +580,9 @@ function Home() {
         characterStateHook.addExp(result.expGained, character.stats.vit);
       if (result.died) {
         // HP 0 으로 두고 치유소 사용을 유도. subView 리셋으로 모험 탭 메인으로 복귀.
+        // replace — 사망 시점은 history 에 남기지 않음.
         characterStateHook.setHp(0);
-        setSubView(null);
+        replaceSubView(null);
         setMapProgress((prev) => ({
           currentRegionId: START_REGION_ID,
           visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
@@ -763,7 +766,7 @@ function Home() {
             <div className="space-y-3">
               <SubViewHeader
                 title={currentRegion.name}
-                onBack={() => setSubView(null)}
+                onBack={back}
               />
               <TownView
                 region={currentRegion}
@@ -823,7 +826,7 @@ function Home() {
           )}
           {tab === "adventure" && subView === "battle" && (
             <div className="space-y-3">
-              <SubViewHeader title="전투" onBack={() => setSubView(null)} />
+              <SubViewHeader title="전투" onBack={back} />
               <BattleView
                 region={currentRegion}
                 player={playerCombat}
@@ -848,7 +851,7 @@ function Home() {
           )}
           {tab === "adventure" && subView === "map" && !trialEdge && (
             <div className="space-y-3">
-              <SubViewHeader title="지도" onBack={() => setSubView(null)} />
+              <SubViewHeader title="지도" onBack={back} />
               <MapView
                 progress={mapProgress}
                 onProgressChange={setMapProgress}
@@ -1019,7 +1022,7 @@ function Home() {
               <div className="space-y-3">
                 <SubViewHeader
                   title="시작 마을 치료소"
-                  onBack={() => setSubView(null)}
+                  onBack={back}
                 />
                 <Card as="section" padding="md">
                   <div className="flex items-center gap-3">
@@ -1070,7 +1073,7 @@ function Home() {
           })()}
           {tab === "town" && isTown && subView === "training" && (
             <div className="space-y-3">
-              <SubViewHeader title="훈련장" onBack={() => setSubView(null)} />
+              <SubViewHeader title="훈련장" onBack={back} />
               <TrainingView
                 remaining={training.remaining}
                 isTraining={training.isTraining}
@@ -1082,7 +1085,7 @@ function Home() {
           )}
           {tab === "town" && isTown && subView === "crafting" && (
             <div className="space-y-3">
-              <SubViewHeader title="대장간" onBack={() => setSubView(null)} />
+              <SubViewHeader title="대장간" onBack={back} />
               <CraftingView
                 knownIds={crafting.state.known}
                 materialCounts={inventory.state.materials}
@@ -1092,7 +1095,7 @@ function Home() {
           )}
           {tab === "town" && isTown && subView === "shop" && (
             <div className="space-y-3">
-              <SubViewHeader title="상점" onBack={() => setSubView(null)} />
+              <SubViewHeader title="상점" onBack={back} />
               <ShopView
                 gold={character.gold}
                 inventory={inventory.state}
@@ -1108,7 +1111,7 @@ function Home() {
             <div className="space-y-3">
               <SubViewHeader
                 title={`모험가 길드 · ${currentRegion.name}`}
-                onBack={() => setSubView(null)}
+                onBack={back}
               />
               <GuildView
                 regionId={currentRegion.id}
@@ -1194,7 +1197,7 @@ function Home() {
           )}
           {tab === "character" && subView === "info" && (
             <div className="space-y-3">
-              <SubViewHeader title="내 정보" onBack={() => setSubView(null)} />
+              <SubViewHeader title="내 정보" onBack={back} />
               <CharacterMini character={character} />
               <Card as="section" padding="md">
                 <div className="space-y-4">
@@ -1207,7 +1210,7 @@ function Home() {
           )}
           {tab === "character" && subView === "inventory" && (
             <div className="space-y-3">
-              <SubViewHeader title="가방" onBack={() => setSubView(null)} />
+              <SubViewHeader title="가방" onBack={back} />
               <InventoryView
                 inventory={inventory.state}
                 equipped={character.equipped}
@@ -1218,13 +1221,13 @@ function Home() {
           )}
           {tab === "character" && subView === "skills" && (
             <div className="space-y-3">
-              <SubViewHeader title="스킬" onBack={() => setSubView(null)} />
+              <SubViewHeader title="스킬" onBack={back} />
               <SkillsView skills={character.skills} />
             </div>
           )}
           {tab === "character" && subView === "adventure-log" && (
             <div className="space-y-3">
-              <SubViewHeader title="모험의 서" onBack={() => setSubView(null)} />
+              <SubViewHeader title="모험의 서" onBack={back} />
               <AdventureLogView
                 log={adventureLog.log}
                 stats={character.stats}
@@ -1235,7 +1238,7 @@ function Home() {
             <div className="space-y-3">
               <SubViewHeader
                 title="최근 기록"
-                onBack={() => setSubView(null)}
+                onBack={back}
               />
               <RecentLogView
                 notifications={notifications.list}
