@@ -6,6 +6,7 @@ import {
   MAX_NOTIFICATIONS,
   type AppNotification,
   type NotificationKind,
+  type NotificationMeta,
 } from "@/lib/notifications";
 
 export function useNotifications() {
@@ -27,12 +28,17 @@ export function useNotifications() {
     saveNotifications({ list, lastReadAt });
   }, [hydrated, list, lastReadAt]);
 
-  const add = (kind: NotificationKind, text: string) => {
+  const add = (
+    kind: NotificationKind,
+    text: string,
+    meta?: NotificationMeta,
+  ) => {
     const notif: AppNotification = {
       id: genNotificationId(),
       timestamp: Date.now(),
       kind,
       text,
+      ...(meta ? { meta } : {}),
     };
     setList((prev) => [notif, ...prev].slice(0, MAX_NOTIFICATIONS));
   };

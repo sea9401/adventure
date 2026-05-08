@@ -1,4 +1,7 @@
-import { Trash } from "@phosphor-icons/react";
+"use client";
+
+import { useState } from "react";
+import { CaretDown, CaretRight, Trash } from "@phosphor-icons/react";
 import {
   formatRelative,
   type AppNotification,
@@ -15,6 +18,13 @@ const KIND_COLOR: Record<NotificationKind, string> = {
   info: "text-zinc-600 dark:text-zinc-400",
 };
 
+// BattleScene과 동일한 줄별 색상 매핑.
+function logLineColor(kind: string): string {
+  if (kind === "player_attack") return "text-emerald-700 dark:text-emerald-400";
+  if (kind === "enemy_attack") return "text-rose-700 dark:text-rose-400";
+  return "text-zinc-600 dark:text-zinc-400";
+}
+
 function formatAbsolute(ts: number): string {
   const d = new Date(ts);
   return d.toLocaleString("ko-KR", {
@@ -23,6 +33,56 @@ function formatAbsolute(ts: number): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function NotificationRow({ n }: { n: AppNotification }) {
+  const [open, setOpen] = useState(false);
+  const battleLog = n.meta?.battleLog;
+  const expandable = !!battleLog && battleLog.length > 0;
+
+  return (
+    <li className="px-4 py-3">
+      <button
+        type="button"
+        onClick={() => expandable && setOpen((v) => !v)}
+        disabled={!expandable}
+        aria-expanded={expandable ? open : undefined}
+        className={`flex w-full items-start gap-2 text-left ${
+          expandable ? "cursor-pointer" : "cursor-default"
+        }`}
+      >
+        {expandable && (
+          <span
+            aria-hidden
+            className="mt-0.5 shrink-0 text-zinc-400 dark:text-zinc-500"
+          >
+            {open ? (
+              <CaretDown size={12} weight="bold" />
+            ) : (
+              <CaretRight size={12} weight="bold" />
+            )}
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <div className={`text-sm ${KIND_COLOR[n.kind]}`}>{n.text}</div>
+          <div className="mt-1 flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+            <span>{formatAbsolute(n.timestamp)}</span>
+            <span aria-hidden>·</span>
+            <span>{formatRelative(n.timestamp)}</span>
+          </div>
+        </span>
+      </button>
+      {expandable && open && (
+        <div className="mt-2 ml-5 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
+          {battleLog.map((entry, i) => (
+            <div key={i} className={logLineColor(entry.kind)}>
+              {entry.text}
+            </div>
+          ))}
+        </div>
+      )}
+    </li>
+  );
 }
 
 export function RecentLogView({
@@ -60,14 +120,7 @@ export function RecentLogView({
       <Card as="section" padding="none" className="overflow-hidden">
         <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
           {notifications.map((n) => (
-            <li key={n.id} className="px-4 py-3">
-              <div className={`text-sm ${KIND_COLOR[n.kind]}`}>{n.text}</div>
-              <div className="mt-1 flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-                <span>{formatAbsolute(n.timestamp)}</span>
-                <span aria-hidden>·</span>
-                <span>{formatRelative(n.timestamp)}</span>
-              </div>
-            </li>
+            <NotificationRow key={n.id} n={n} />
           ))}
         </ul>
       </Card>

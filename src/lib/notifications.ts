@@ -6,11 +6,18 @@ export type NotificationKind =
   | "quest_complete"
   | "info";
 
+// 알림 종류별로 부착될 수 있는 부가 데이터. UI에서 expand 시 사용.
+// kind = "battle_win" | "battle_lose" 일 때 battleLog가 있으면 RecentLogView에서 클릭 시 전투 로그 펼쳐 보기.
+export type NotificationMeta = {
+  battleLog?: { kind: string; text: string }[];
+};
+
 export type AppNotification = {
   id: string;
   timestamp: number;
   kind: NotificationKind;
   text: string;
+  meta?: NotificationMeta;
 };
 
 export const NOTIFICATIONS_STORAGE_KEY = "notifications.v1";

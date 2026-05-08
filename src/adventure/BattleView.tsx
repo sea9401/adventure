@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { Region } from "./data/world";
 import { MONSTERS, type Monster } from "./data/monsters";
 import type {
+  BattleLogEntry,
   BattleOutcome,
   BattleState,
   PlayerAction,
@@ -29,6 +30,7 @@ export type BattleEndPayload = {
   finalPlayerHp: number;
   rewards: { exp: number };
   potionsConsumed: Partial<Record<PotionId, number>>;
+  log: BattleLogEntry[];
 };
 
 function pickEnemy(region: Region): Monster | null {
@@ -93,6 +95,7 @@ export function BattleView({
       finalPlayerHp: state.playerHp,
       rewards: { exp: state.enemy.exp },
       potionsConsumed,
+      log: state.log,
     });
   }, [state, potionsConsumed]);
 
@@ -184,6 +187,7 @@ export function BattleView({
               finalPlayerHp: 0,
               rewards: { exp: 0 },
               potionsConsumed,
+              log: state.log,
             });
           }}
         />

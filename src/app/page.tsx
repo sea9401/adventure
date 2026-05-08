@@ -62,7 +62,7 @@ import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
 import { requiredExpToNext } from "@/lib/leveling";
 import { CraftingView } from "@/adventure/CraftingView";
-import type { NotificationKind } from "@/lib/notifications";
+import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 import { useNotifications } from "@/adventure/notifications/useNotifications";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
@@ -299,8 +299,11 @@ export default function Home() {
     inventory.addMaterial(id, quantity);
   };
 
-  const addNotification = (kind: NotificationKind, text: string) =>
-    notifications.add(kind, text);
+  const addNotification = (
+    kind: NotificationKind,
+    text: string,
+    meta?: NotificationMeta,
+  ) => notifications.add(kind, text, meta);
 
   // 판매 — 인벤토리에서 차감 + 골드 지급. 0G 아이템은 단순 정리(버리기) 효과.
   const handleSellPotion = (id: PotionId, quantity: number) => {
@@ -439,6 +442,7 @@ export default function Home() {
       addNotification(
         "battle_win",
         `${payload.enemyName}을(를) 쓰러뜨렸다 — ${reward}`,
+        { battleLog: payload.log },
       );
       for (const id of readyQuestIds) {
         const quest = getQuestById(id);
@@ -462,6 +466,7 @@ export default function Home() {
       addNotification(
         "battle_lose",
         `${payload.enemyName}에게 쓰러졌다... 시작 마을로 돌아왔다.`,
+        { battleLog: payload.log },
       );
     }
   };
