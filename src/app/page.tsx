@@ -129,6 +129,9 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
   const [subView, setSubView] = useState<string | null>(null);
+  // 사용자가 명시적으로 자동 사냥을 시작했는지. region 이동/사망/새로고침 시 false.
+  // 오프라인 시뮬은 이 값이 true일 때만 실제 보상으로 적용된다.
+  const [huntingActive, setHuntingActive] = useState(false);
   const [mapProgress, setMapProgress] =
     useState<MapProgress>(initialMapProgress);
   const adventureLog = useAdventureLog();
@@ -167,6 +170,20 @@ export default function Home() {
     if (!hydrated) return;
     saveMapProgress(mapProgress);
   }, [hydrated, mapProgress]);
+
+  // region 변경 시 자동 사냥 해제 — 다른 곳으로 이동했으면 그 region에서의 자동 사냥은 끝.
+  // 첫 mount(baseline 기록) 시에는 변경 감지하지 않도록 ref로 분기.
+  const lastRegionForHuntRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastRegionForHuntRef.current === null) {
+      lastRegionForHuntRef.current = mapProgress.currentRegionId;
+      return;
+    }
+    if (lastRegionForHuntRef.current !== mapProgress.currentRegionId) {
+      setHuntingActive(false);
+      lastRegionForHuntRef.current = mapProgress.currentRegionId;
+    }
+  }, [mapProgress.currentRegionId]);
 
   const handleTabChange = (next: TabKey) => {
     setTab(next);
@@ -429,8 +446,9 @@ export default function Home() {
         }
       }
     } else {
-      // 패배 — HP 회복 + 시작 마을 강제 이동
+      // 패배 — HP 회복 + 시작 마을 강제 이동 + 자동 사냥 해제
       characterStateHook.restoreHpFull();
+      setHuntingActive(false);
       setMapProgress((prev) => ({
         currentRegionId: START_REGION_ID,
         visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
@@ -453,6 +471,7 @@ export default function Home() {
   useOfflineSimulation({
     enabled: hydrated && currentRegion.enemies.length > 0,
     regionId: currentRegion.id,
+    active: huntingActive,
     runSim: (awayMs) =>
       simulateOfflineHunt({
         player: playerCombat,
@@ -677,7 +696,10 @@ export default function Home() {
                 region={currentRegion}
                 player={playerCombat}
                 playerName={character.name}
-                onBattleStart={adventureLog.markEncountered}
+                onBattleStart={(name) => {
+                  adventureLog.markEncountered(name);
+                  setHuntingActive(true);
+                }}
                 onBattleEnd={handleBattleEnd}
                 consumePotion={inventory.consume}
                 pickAutoAction={(state) =>

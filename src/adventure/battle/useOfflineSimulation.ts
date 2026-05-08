@@ -6,7 +6,7 @@ import type { OfflineSimResult } from "./offlineSim";
 
 const STORAGE_KEY = "last-active-tick.v1";
 
-type StoredTick = { regionId: RegionId; ts: number };
+type StoredTick = { regionId: RegionId; ts: number; active: boolean };
 
 function loadTick(): StoredTick | null {
   if (typeof window === "undefined") return null;
@@ -15,7 +15,12 @@ function loadTick(): StoredTick | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredTick> | null;
     if (!parsed?.regionId || typeof parsed.ts !== "number") return null;
-    return { regionId: parsed.regionId, ts: parsed.ts };
+    return {
+      regionId: parsed.regionId,
+      ts: parsed.ts,
+      // 구버전 데이터(v.0)에 active 없으면 false로 간주 — 사용자가 명시적으로 활성화하지 않은 한 시뮬 X.
+      active: parsed.active === true,
+    };
   } catch {
     return null;
   }
@@ -31,6 +36,9 @@ export type OfflineSimulationOptions = {
   // 시뮬 자체를 활성화할지. 아직 hydrate 안 됐거나 region에 적이 없으면 false.
   enabled: boolean;
   regionId: RegionId;
+  // 사용자가 명시적으로 자동 사냥을 시작했는지(전투 시작 버튼 누름 후).
+  // false이면 베이스라인만 갱신하고 시뮬은 돌리지 않는다.
+  active: boolean;
   // 자리비운 시간(ms)을 받아 시뮬을 돌리고 결과를 반환. 호출 측에서 입력값을
   // 클로저에 가둬두기 좋다 (현재 player/potions/rules를 매번 새로 읽도록).
   runSim: (awayMs: number) => OfflineSimResult;
@@ -39,12 +47,13 @@ export type OfflineSimulationOptions = {
 };
 
 // 트리거 두 가지:
-//   1. mount/region 변경 시: 저장된 lastTickAt이 같은 region이면 시뮬 → lastTick 갱신
+//   1. mount/region/active 변경 시: 저장된 tick이 active=true && 같은 region이면 시뮬
 //   2. document visibility hidden→visible 전환 시: 동일 흐름
-// 또한 visible→hidden 시점에도 lastTick을 즉시 갱신해 다음 복귀 때 정확히 측정.
+// active 여부와 관계없이 baseline 저장은 항상 — 다음 active 진입 시 측정 정확도 유지.
 export function useOfflineSimulation({
   enabled,
   regionId,
+  active,
   runSim,
   onApply,
 }: OfflineSimulationOptions): void {
@@ -60,7 +69,8 @@ export function useOfflineSimulation({
 
     const tryReplay = () => {
       const stored = loadTick();
-      if (stored && stored.regionId === regionId) {
+      // 직전 세션이 active=true이고 같은 region에 있을 때만 시뮬.
+      if (stored?.active && stored.regionId === regionId) {
         const awayMs = Date.now() - stored.ts;
         if (awayMs > 0) {
           const result = runSimRef.current(awayMs);
@@ -69,16 +79,14 @@ export function useOfflineSimulation({
           }
         }
       }
-      saveTick({ regionId, ts: Date.now() });
+      saveTick({ regionId, ts: Date.now(), active });
     };
 
-    // mount + region 진입 시 한 번 시뮬 (있으면) + 새 baseline 저장
     tryReplay();
 
     const onVisibility = () => {
       if (document.visibilityState === "hidden") {
-        // 자리비움 직전 baseline 갱신 — 다음 복귀 때 정확히 측정.
-        saveTick({ regionId, ts: Date.now() });
+        saveTick({ regionId, ts: Date.now(), active });
       } else if (document.visibilityState === "visible") {
         tryReplay();
       }
@@ -88,5 +96,5 @@ export function useOfflineSimulation({
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [enabled, regionId]);
+  }, [enabled, regionId, active]);
 }
