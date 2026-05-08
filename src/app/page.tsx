@@ -297,6 +297,22 @@ function Home() {
     adventureLog.markRegionVisited(currentRegion.id);
   }, [currentRegion.id, adventureLog]);
 
+  // 안전망 — HP<=0 인데 마을이 아닌 곳(사냥 지역 등)에 있으면 시작 마을로 강제 복귀.
+  // 패배 모달을 확인하기 전에 새로고침/탭 닫기 등으로 빠져나가 stuck 된 유저를 다음 진입에서 구출.
+  useEffect(() => {
+    if (characterState.hp > 0) return;
+    if (isTown) return;
+    setMapProgress((prev) => ({
+      currentRegionId: START_REGION_ID,
+      visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
+        ? prev.visitedRegionIds
+        : [...prev.visitedRegionIds, START_REGION_ID],
+    }));
+    replaceSubView(null);
+    // setMapProgress/replaceSubView 안정 참조 — deps 제외.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [characterState.hp, isTown]);
+
   const lastSeenLevelRef = useRef<number | null>(null);
 
   // 전투 엔진용 PlayerCombat — 장비 보너스 합산.
