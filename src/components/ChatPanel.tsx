@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChatCircle, PaperPlaneTilt, X } from "@phosphor-icons/react";
+import { CaretDown, ChatCircle, PaperPlaneTilt, Users, X } from "@phosphor-icons/react";
 import { formatRelative } from "@/lib/notifications";
 
 type ChatMessage = {
@@ -13,11 +13,23 @@ type ChatMessage = {
   mine: boolean;
 };
 
+type PresenceUser = {
+  name: string;
+  className: string;
+  mine: boolean;
+};
+
 const POLL_INTERVAL_MS = 3000;
 const MAX_LENGTH = 200;
 
 async function fetchMessages(): Promise<ChatMessage[]> {
   const res = await fetch("/api/chat", { cache: "no-store" });
+  if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+  return res.json();
+}
+
+async function fetchPresence(): Promise<PresenceUser[]> {
+  const res = await fetch("/api/presence", { cache: "no-store" });
   if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
   return res.json();
 }
@@ -51,6 +63,8 @@ export function ChatPanel({
   className: string;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [presence, setPresence] = useState<PresenceUser[]>([]);
+  const [presenceOpen, setPresenceOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,8 +75,13 @@ export function ChatPanel({
     let cancelled = false;
     const tick = async () => {
       try {
-        const next = await fetchMessages();
-        if (!cancelled) setMessages(next);
+        const [nextMessages, nextPresence] = await Promise.all([
+          fetchMessages(),
+          fetchPresence(),
+        ]);
+        if (cancelled) return;
+        setMessages(nextMessages);
+        setPresence(nextPresence);
       } catch {
         // 네트워크 오류는 다음 폴링에서 자동 재시도 — UI 에 띄우지 않음.
       }
@@ -127,15 +146,70 @@ export function ChatPanel({
             <ChatCircle size={20} weight="duotone" />
             전체 채팅
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="채팅 닫기"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPresenceOpen((v) => !v)}
+              aria-expanded={presenceOpen}
+              aria-label="접속자 목록"
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <Users size={14} weight="duotone" />
+              <span className="tabular-nums">접속 {presence.length}명</span>
+              <CaretDown
+                size={12}
+                weight="bold"
+                className={`transition-transform ${presenceOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="채팅 닫기"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </header>
+
+        {presenceOpen && (
+          <div className="max-h-40 overflow-y-auto border-b border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/60">
+            {presence.length === 0 ? (
+              <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                접속 중인 유저가 없습니다.
+              </div>
+            ) : (
+              <ul className="space-y-0.5">
+                {presence.map((u, i) => (
+                  <li
+                    key={`${u.name}-${i}`}
+                    className="flex items-center gap-1.5 text-xs"
+                  >
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                    <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                      {u.className}
+                    </span>
+                    <span
+                      className={
+                        u.mine
+                          ? "font-semibold text-emerald-700 dark:text-emerald-400"
+                          : "font-semibold text-zinc-700 dark:text-zinc-200"
+                      }
+                    >
+                      {u.name}
+                      {u.mine && (
+                        <span className="ml-1 text-[10px] font-normal text-zinc-500 dark:text-zinc-400">
+                          (나)
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         <div
           ref={listRef}

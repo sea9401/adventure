@@ -109,6 +109,7 @@ import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import { useNavTabs, type TabKey } from "@/lib/useNavTabs";
+import { usePresenceHeartbeat } from "@/lib/usePresenceHeartbeat";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "adventure", label: "모험" },
@@ -287,6 +288,11 @@ function Home() {
     equipped: equippedSlots,
     stats: totalStats,
   };
+  usePresenceHeartbeat({
+    name: character.name,
+    className: character.className,
+  });
+
   const showModal = profile.needsSetup;
   const currentRegion =
     WORLD_MAP.regions.find((r) => r.id === mapProgress.currentRegionId) ??

@@ -48,6 +48,19 @@ export const messages = pgTable(
   (t) => [index("messages_created_at_idx").on(t.createdAt)],
 );
 
+// 현재 접속 중인 유저 — 클라이언트가 주기적으로 하트비트(POST /api/presence)
+// 보내 last_seen_at 갱신. "최근 X 초 이내 본 유저"가 온라인으로 간주된다.
+// 행은 누적되지만 GET 시 시간 필터로 제외 — 별도 cleanup 불필요.
+export const presence = pgTable("presence", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  className: text("class_name").notNull(),
+  lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type SavesKvRow = typeof savesKv.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
+export type PresenceRow = typeof presence.$inferSelect;
