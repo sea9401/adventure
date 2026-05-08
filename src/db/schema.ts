@@ -44,6 +44,24 @@ export const savesKv = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.key] })],
 );
 
+// 광장 게시판 글. 7일 후 cron 으로 일괄 삭제.
+// name/className/title 은 전송 시점 스냅샷.
+export const bulletinPosts = pgTable(
+  "bulletin_posts",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    className: text("class_name").notNull(),
+    title: text("title"),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [index("bulletin_posts_created_at_idx").on(t.createdAt)],
+);
+
 // 글로벌 채팅 메시지. 3일 후 cron 으로 일괄 삭제.
 // name/className/title 은 전송 시점 스냅샷 — 이후 사용자가 바뀌어도 과거 메시지는 그대로.
 // title 은 미장착 시 NULL.
@@ -143,6 +161,7 @@ export const marketplaceInbox = pgTable(
 export type User = typeof users.$inferSelect;
 export type SavesKvRow = typeof savesKv.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
+export type BulletinPostRow = typeof bulletinPosts.$inferSelect;
 export type PresenceRow = typeof presence.$inferSelect;
 export type MarketplaceListingRow = typeof marketplaceListings.$inferSelect;
 export type MarketplaceInboxRow = typeof marketplaceInbox.$inferSelect;
