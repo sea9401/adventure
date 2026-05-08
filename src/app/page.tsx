@@ -475,8 +475,10 @@ export default function Home() {
       }
     } else {
       // 패배 — HP 0 (치유소 유도) + 시작 마을 강제 이동 + 자동 사냥 해제
+      // subView 리셋: 전투 sub 가 아니라 모험 탭 메인(마을·지도 진입)으로 복귀
       characterStateHook.setHp(0);
       setHuntingActive(false);
+      setSubView(null);
       setMapProgress((prev) => ({
         currentRegionId: START_REGION_ID,
         visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
@@ -531,8 +533,9 @@ export default function Home() {
       // EXP/HP/사망
       if (result.expGained > 0) characterStateHook.addExp(result.expGained);
       if (result.died) {
-        // HP 0 으로 두고 치유소 사용을 유도
+        // HP 0 으로 두고 치유소 사용을 유도. subView 리셋으로 모험 탭 메인으로 복귀.
         characterStateHook.setHp(0);
+        setSubView(null);
         setMapProgress((prev) => ({
           currentRegionId: START_REGION_ID,
           visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
@@ -871,51 +874,55 @@ export default function Home() {
               />
             </div>
           )}
-          {tab === "town" && isTown && subView === "healing" && (
-            <div className="space-y-3">
-              <SubViewHeader title="치유소" onBack={() => setSubView(null)} />
-              <Card as="section" padding="md">
-                <div className="flex items-center gap-3">
-                  <FirstAid
-                    size={32}
-                    weight="duotone"
-                    className="shrink-0 text-rose-500"
-                  />
-                  <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                    체력과 마력을 모두 회복할 수 있다. 지금은 무료.
-                  </p>
-                </div>
-                <div className="mt-4 space-y-2">
-                  <StatBar
-                    label="HP"
-                    value={character.hp}
-                    max={character.maxHp}
-                    color="bg-red-500"
-                  />
-                  <StatBar
-                    label="MP"
-                    value={character.mp}
-                    max={character.maxMp}
-                    color="bg-sky-500"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={characterStateHook.heal}
-                  disabled={
-                    character.hp >= character.maxHp &&
-                    character.mp >= character.maxMp
-                  }
-                  className="mt-4 w-full rounded-md border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400 dark:text-rose-300"
-                >
-                  {character.hp >= character.maxHp &&
-                  character.mp >= character.maxMp
-                    ? "이미 가득 차 있다"
-                    : "전부 회복"}
-                </button>
-              </Card>
-            </div>
-          )}
+          {tab === "town" && isTown && subView === "healing" && (() => {
+            const healCost = character.gold > 0 ? 1 : 0;
+            const isFull =
+              character.hp >= character.maxHp &&
+              character.mp >= character.maxMp;
+            return (
+              <div className="space-y-3">
+                <SubViewHeader title="치유소" onBack={() => setSubView(null)} />
+                <Card as="section" padding="md">
+                  <div className="flex items-center gap-3">
+                    <FirstAid
+                      size={32}
+                      weight="duotone"
+                      className="shrink-0 text-rose-500"
+                    />
+                    <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                      체력과 마력을 모두 회복할 수 있다. 비용 1 G — 소지금이 없을 때는 무료.
+                    </p>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <StatBar
+                      label="HP"
+                      value={character.hp}
+                      max={character.maxHp}
+                      color="bg-red-500"
+                    />
+                    <StatBar
+                      label="MP"
+                      value={character.mp}
+                      max={character.maxMp}
+                      color="bg-sky-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => characterStateHook.heal(healCost)}
+                    disabled={isFull}
+                    className="mt-4 w-full rounded-md border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400 dark:text-rose-300"
+                  >
+                    {isFull
+                      ? "이미 가득 차 있다"
+                      : healCost > 0
+                      ? `전부 회복 (${healCost} G)`
+                      : "전부 회복 (무료)"}
+                  </button>
+                </Card>
+              </div>
+            );
+          })()}
           {tab === "town" && isTown && subView === "training" && (
             <div className="space-y-3">
               <SubViewHeader title="훈련장" onBack={() => setSubView(null)} />

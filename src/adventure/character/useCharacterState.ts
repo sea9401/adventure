@@ -81,9 +81,10 @@ export function useCharacterState() {
 
   const equippedSlots = state.equipped ?? baseCharacter.equipped;
 
-  const heal = () =>
+  const heal = (cost = 0) =>
     setState((prev) => ({
       ...prev,
+      gold: Math.max(0, prev.gold - cost),
       hp: maxHpForLevel(prev.level),
       mp: maxMpForLevel(prev.level),
     }));
