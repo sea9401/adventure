@@ -80,7 +80,11 @@ import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { SkillsView } from "@/adventure/character/SkillsView";
 import { TrainingView } from "@/adventure/character/TrainingView";
 import { useTraining } from "@/adventure/training/useTraining";
-import { baseCharacter } from "@/adventure/character/defaults";
+import {
+  baseCharacter,
+  maxHpForLevel,
+  maxMpForLevel,
+} from "@/adventure/character/defaults";
 import { useCharacterState } from "@/adventure/character/useCharacterState";
 import { useProfile } from "@/adventure/profile/useProfile";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
@@ -189,12 +193,16 @@ export default function Home() {
     }
   }
 
+  const characterMaxHp = maxHpForLevel(characterState.level);
+  const characterMaxMp = maxMpForLevel(characterState.level);
   const character: Character = {
     ...baseCharacter,
     name: profile.name,
     gender: profile.gender,
-    hp: Math.min(characterState.hp, baseCharacter.maxHp),
-    mp: Math.min(characterState.mp, baseCharacter.maxMp),
+    hp: Math.min(characterState.hp, characterMaxHp),
+    mp: Math.min(characterState.mp, characterMaxMp),
+    maxHp: characterMaxHp,
+    maxMp: characterMaxMp,
     level: characterState.level,
     exp: characterState.exp,
     maxExp: requiredExpToNext(characterState.level) ?? 0,

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CHARACTER_STATE_KEY } from "@/lib/storage-keys";
 import { applyExpGain, MAX_LEVEL } from "@/lib/leveling";
 import type { EquipItem } from "@/adventure/data/items";
-import { baseCharacter } from "./defaults";
+import { baseCharacter, maxHpForLevel, maxMpForLevel } from "./defaults";
 import type { EquippedSlots } from "./types";
 
 export type CharacterDynamicState = {
@@ -64,12 +64,12 @@ export function useCharacterState() {
   const heal = () =>
     setState((prev) => ({
       ...prev,
-      hp: baseCharacter.maxHp,
-      mp: baseCharacter.maxMp,
+      hp: maxHpForLevel(prev.level),
+      mp: maxMpForLevel(prev.level),
     }));
 
   const restoreHpFull = () =>
-    setState((prev) => ({ ...prev, hp: baseCharacter.maxHp }));
+    setState((prev) => ({ ...prev, hp: maxHpForLevel(prev.level) }));
 
   const setHp = (hp: number) => setState((prev) => ({ ...prev, hp }));
 
@@ -86,6 +86,17 @@ export function useCharacterState() {
   const addExp = (n: number) =>
     setState((prev) => {
       const next = applyExpGain(prev.level, prev.exp, n);
+      // 레벨업 시 HP/MP 를 새 max 로 풀회복 — 보상감 + max 증가만 했을 때 발생하는
+      // "현재값이 max 보다 낮은 채 정체" 문제 회피.
+      if (next.levelsGained > 0) {
+        return {
+          ...prev,
+          level: next.level,
+          exp: next.exp,
+          hp: maxHpForLevel(next.level),
+          mp: maxMpForLevel(next.level),
+        };
+      }
       return { ...prev, level: next.level, exp: next.exp };
     });
 
