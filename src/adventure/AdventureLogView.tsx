@@ -78,6 +78,7 @@ export function AdventureLogView({
         active={tab}
         onChange={setTab}
         ariaLabel="모험의 서 탭"
+        scrollable
       />
 
       {tab === "monsters" && <MonstersTab log={log} />}
