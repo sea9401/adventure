@@ -1,0 +1,38 @@
+import { desc, ilike, or, sql } from "drizzle-orm";
+import { db } from "@/db";
+import { users, presence } from "@/db/schema";
+import { requireAdmin } from "@/lib/server/isAdmin";
+
+// GET /api/admin/users?q=<search>
+// q 비어있으면 최근 활동 순 50명. q 있으면 email/이름 부분 일치.
+// presence 는 LEFT JOIN — 한 번도 접속 안 한 유저도 검색됨.
+export async function GET(req: Request) {
+  const gate = await requireAdmin();
+  if (gate) return gate;
+
+  const url = new URL(req.url);
+  const q = (url.searchParams.get("q") ?? "").trim();
+
+  const base = db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: presence.name,
+      className: presence.className,
+      lastSeenAt: presence.lastSeenAt,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .leftJoin(presence, sql`${presence.userId} = ${users.id}`);
+
+  const rows = await (q
+    ? base.where(
+        or(ilike(users.email, `%${q}%`), ilike(presence.name, `%${q}%`)),
+      )
+    : base
+  )
+    .orderBy(desc(presence.lastSeenAt), desc(users.createdAt))
+    .limit(50);
+
+  return Response.json(rows);
+}

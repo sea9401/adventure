@@ -13,9 +13,11 @@ import { MapTab } from "./tabs/MapTab";
 import { NotificationsTab } from "./tabs/NotificationsTab";
 import { AutoPotionTab } from "./tabs/AutoPotionTab";
 import { DataTab } from "./tabs/DataTab";
+import { UsersTab } from "./tabs/UsersTab";
 
 type TabKey =
   | "overview"
+  | "users"
   | "character"
   | "inventory"
   | "quests"
@@ -28,6 +30,7 @@ type TabKey =
 
 const TABS: { key: TabKey; label: string; group: "system" | "edit" | "data" }[] = [
   { key: "overview", label: "개요", group: "system" },
+  { key: "users", label: "유저", group: "system" },
   { key: "character", label: "캐릭터", group: "edit" },
   { key: "inventory", label: "인벤토리", group: "edit" },
   { key: "quests", label: "퀘스트", group: "edit" },
@@ -102,6 +105,7 @@ function ShellInner() {
 
         <main className="flex-1 space-y-4">
           {tab === "overview" && <OverviewTab />}
+          {tab === "users" && <UsersTab />}
           {tab === "character" && <CharacterTab />}
           {tab === "inventory" && <InventoryTab />}
           {tab === "quests" && <QuestsTab />}
