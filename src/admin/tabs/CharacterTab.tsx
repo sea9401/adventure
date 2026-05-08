@@ -31,7 +31,7 @@ export function CharacterTab() {
 
   if (!data) return <div className="text-sm">로딩 중…</div>;
 
-  const profile = data.profile ?? { name: "모험가", gender: "male" as const };
+  const profile = data.profile ?? { name: "모험가", gender: "male1" as const };
   const character = data.character ?? initialCharacterState;
   const training = data.training ?? { endsAt: null, points: 0, allocated: {} };
 
@@ -95,13 +95,19 @@ export function CharacterTab() {
               }
             />
           </Field>
-          <Field label="성별">
-            <Select<"male" | "female">
+          <Field label="외형">
+            <Select<
+              "male1" | "male2" | "male3" | "female1" | "female2" | "female3"
+            >
               value={profile.gender}
               disabled={readOnly}
               options={[
-                { value: "male", label: "남" },
-                { value: "female", label: "여" },
+                { value: "male1", label: "male1" },
+                { value: "male2", label: "male2" },
+                { value: "male3", label: "male3" },
+                { value: "female1", label: "female1" },
+                { value: "female2", label: "female2" },
+                { value: "female3", label: "female3" },
               ]}
               onChange={(gender) => save({ profile: { ...profile, gender } })}
             />

@@ -3,11 +3,21 @@ import {
   PROFILE_STORAGE_KEY,
   LEGACY_PROFILE_KEYS,
 } from "@/lib/storage-keys";
-import type { Gender } from "@/components/NameSetupModal";
+import { AVATARS, type Avatar, type Gender } from "@/components/NameSetupModal";
 
 export const DEFAULT_NAME = "모험가";
+export const DEFAULT_AVATAR: Avatar = "male1";
 
-export type Profile = { name: string; gender: Gender };
+export type Profile = { name: string; gender: Avatar };
+
+// 저장된 gender 값을 정규화. 구버전("male"/"female")은 male1/female1 으로 마이그레이션.
+function normalizeAvatar(raw: unknown): Avatar | null {
+  if (typeof raw !== "string") return null;
+  if (AVATARS.includes(raw as Avatar)) return raw as Avatar;
+  if (raw === "male") return "male1";
+  if (raw === "female") return "female1";
+  return null;
+}
 
 export function useProfile() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -29,13 +39,14 @@ export function useProfile() {
       }
       for (const key of LEGACY_PROFILE_KEYS) localStorage.removeItem(key);
       if (raw) {
-        const parsed = JSON.parse(raw) as Partial<Profile>;
-        if (
-          parsed?.name &&
-          (parsed.gender === "male" || parsed.gender === "female")
-        ) {
+        const parsed = JSON.parse(raw) as Partial<{
+          name: string;
+          gender: unknown;
+        }>;
+        const normalized = normalizeAvatar(parsed?.gender);
+        if (parsed?.name && normalized) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
-          setProfile({ name: parsed.name, gender: parsed.gender });
+          setProfile({ name: parsed.name, gender: normalized });
         }
       }
     } catch {}
@@ -50,7 +61,7 @@ export function useProfile() {
   };
 
   const name = profile?.name ?? DEFAULT_NAME;
-  const gender: Gender = profile?.gender ?? "male";
+  const gender: Gender = profile?.gender ?? DEFAULT_AVATAR;
   const needsSetup = hydrated && !profile;
 
   return { profile, name, gender, hydrated, needsSetup, submit };
