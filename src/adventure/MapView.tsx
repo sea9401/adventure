@@ -22,12 +22,15 @@ export function MapView({
   progress,
   onProgressChange,
   log,
+  playerHp,
 }: {
   progress: MapProgress;
   onProgressChange: (next: MapProgress) => void;
   log: AdventureLog;
+  playerHp: number;
 }) {
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
+  const [lowHpBlocked, setLowHpBlocked] = useState(false);
 
   const visitedSet = new Set(progress.visitedRegionIds);
   const adjacentToCurrent = new Set(
@@ -66,6 +69,10 @@ export function MapView({
 
   const handleMove = () => {
     if (!selectedId || !canMove) return;
+    if (playerHp <= 0) {
+      setLowHpBlocked(true);
+      return;
+    }
     onProgressChange({
       currentRegionId: selectedId,
       visitedRegionIds: progress.visitedRegionIds.includes(selectedId)
@@ -115,6 +122,33 @@ export function MapView({
         onMove={handleMove}
         requirementStatus={requirementStatus}
       />
+      {lowHpBlocked && (
+        <LowHpBlockModal onConfirm={() => setLowHpBlocked(false)} />
+      )}
+    </div>
+  );
+}
+
+function LowHpBlockModal({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
+      <Card padding="lg" className="w-full max-w-sm text-center">
+        <div className="text-lg font-semibold text-rose-600 dark:text-rose-400">
+          움직일 수가 없다
+        </div>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          체력이 너무 낮아 한 발짝도 떼기 힘들다...
+          <br />
+          일단 치유소로 가서 회복부터 하자.
+        </p>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="mt-4 w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          확인
+        </button>
+      </Card>
     </div>
   );
 }

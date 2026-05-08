@@ -782,6 +782,7 @@ export default function Home() {
                 progress={mapProgress}
                 onProgressChange={setMapProgress}
                 log={adventureLog.log}
+                playerHp={character.hp}
               />
             </div>
           )}
