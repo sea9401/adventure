@@ -129,9 +129,24 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
   const [subView, setSubView] = useState<string | null>(null);
-  // 사용자가 명시적으로 자동 사냥을 시작했는지. region 이동/사망/새로고침 시 false.
-  // 오프라인 시뮬은 이 값이 true일 때만 실제 보상으로 적용된다.
-  const [huntingActive, setHuntingActive] = useState(false);
+  // 사용자가 명시적으로 자동 사냥을 시작했는지. region 이동/사망 시 false.
+  // 같은 탭 안에서는 sessionStorage로 보존 — 캐릭터 탭 등으로 잠깐 다녀와도 ON 유지.
+  // 새 탭/창에서는 항상 false (sessionStorage 특성).
+  const [huntingActive, setHuntingActiveState] = useState(false);
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (sessionStorage.getItem("hunting-active") === "true") {
+        setHuntingActiveState(true);
+      }
+    } catch {}
+  }, []);
+  const setHuntingActive = (next: boolean) => {
+    setHuntingActiveState(next);
+    try {
+      sessionStorage.setItem("hunting-active", next ? "true" : "false");
+    } catch {}
+  };
   // 마을 진입 직후 자동으로 열 NPC 대화 — 알림판 클릭 시 세팅, TownView 가 마운트 직후 소비.
   const [pendingTownNpcId, setPendingTownNpcId] = useState<string | null>(null);
   const [mapProgress, setMapProgress] =
