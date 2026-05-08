@@ -11,6 +11,7 @@ export const SYNCED_KEYS = [
   "adventure-log.v2",
   "map.v2",
   "edge-unlocks.v2",
+  "storyFlags.v2",
 ] as const;
 
 export type SyncedKey = (typeof SYNCED_KEYS)[number];

@@ -23,6 +23,13 @@ export const STORY_QUESTS = {
       "슬라임 핵을 본 볼드가 흥미를 보인다. 한 개 가져다 주자.",
     giverNpcId: "village_blacksmith_bold",
   },
+  suzy_husband_news: {
+    id: "suzy_husband_news",
+    title: "남편의 소식",
+    description:
+      "디올라로 일하러 간 남편을 걱정하는 수지. 호숫가에서 일한다는 그를 보고 소식을 전해주자.",
+    giverNpcId: "village_suzy",
+  },
 } as const satisfies Record<string, StoryQuest>;
 
 export type StoryQuestId = keyof typeof STORY_QUESTS;

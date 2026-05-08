@@ -102,6 +102,9 @@ import {
 import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
+import { SuzyDialogue } from "@/adventure/town/dialogues/SuzyDialogue";
+import { KaiDialogue } from "@/adventure/town/dialogues/KaiDialogue";
+import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 
@@ -185,6 +188,7 @@ function Home() {
   const profile = useProfile();
   const notifications = useNotifications();
   const edgeUnlocks = useEdgeUnlocks();
+  const storyFlags = useStoryFlags();
 
   // 마을 탭에 있는데 현재 위치가 마을이 아니면 서브뷰 강제 종료
   useEffect(() => {
@@ -773,6 +777,27 @@ function Home() {
                         onClose={close}
                         quests={quests}
                         completeQuest={completeQuest}
+                      />
+                    );
+                  }
+                  if (npc.id === "village_suzy") {
+                    return (
+                      <SuzyDialogue
+                        npc={npc}
+                        onClose={close}
+                        storyFlags={storyFlags}
+                        inventory={inventory}
+                        characterStateHook={characterStateHook}
+                        addNotification={addNotification}
+                      />
+                    );
+                  }
+                  if (npc.id === "diola_fisher") {
+                    return (
+                      <KaiDialogue
+                        npc={npc}
+                        onClose={close}
+                        storyFlags={storyFlags}
                       />
                     );
                   }
