@@ -5,7 +5,6 @@ import {
   jsonb,
   primaryKey,
   serial,
-  integer,
   index,
 } from "drizzle-orm/pg-core";
 
@@ -33,7 +32,7 @@ export const savesKv = pgTable(
 );
 
 // 글로벌 채팅 메시지. 3일 후 cron 으로 일괄 삭제.
-// name/level 은 전송 시점 스냅샷 — 이후 사용자가 이름/레벨 바뀌어도 과거 메시지는 그대로.
+// name/className 은 전송 시점 스냅샷 — 이후 사용자가 바뀌어도 과거 메시지는 그대로.
 export const messages = pgTable(
   "messages",
   {
@@ -42,7 +41,7 @@ export const messages = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    level: integer("level").notNull(),
+    className: text("class_name").notNull(),
     content: text("content").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },

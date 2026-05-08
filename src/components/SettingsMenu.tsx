@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Gear, Moon, Sun, SignOut } from "@phosphor-icons/react";
+import { Gear, Moon, Question, Sun, SignOut } from "@phosphor-icons/react";
 import { useClerk } from "@clerk/nextjs";
+import { HelpModal } from "./HelpModal";
 
 export function SettingsMenu() {
   const [open, setOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const containerRef = useRef<HTMLDivElement>(null);
   const { signOut } = useClerk();
@@ -46,6 +48,11 @@ export function SettingsMenu() {
     signOut({ redirectUrl: "/sign-in" });
   };
 
+  const handleOpenHelp = () => {
+    setOpen(false);
+    setHelpOpen(true);
+  };
+
   const isDark = theme === "dark";
 
   return (
@@ -82,6 +89,16 @@ export function SettingsMenu() {
             <li>
               <button
                 type="button"
+                onClick={handleOpenHelp}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                <Question size={18} weight="duotone" />
+                도움말
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
                 onClick={handleSignOut}
                 className="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40"
               >
@@ -92,6 +109,7 @@ export function SettingsMenu() {
           </ul>
         </div>
       )}
+      {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }
