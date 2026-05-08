@@ -14,7 +14,7 @@ export type InventoryState = {
 };
 
 export const emptyInventory = (): InventoryState => ({
-  potions: {},
+  potions: { potion_heal_s: 10 },
   equipment: {},
   materials: { branch: 1 },
 });
