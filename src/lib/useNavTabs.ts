@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 // - replaceSubView: history entry 추가 없이 교체 (replace). 사망·강제 복귀 같은 system cleanup.
 // - back: router.back() 으로 직전 entry 로. in-app back 버튼용.
 
-const TAB_KEYS = ["adventure", "town", "character"] as const;
+const TAB_KEYS = ["adventure", "town", "character", "marketplace"] as const;
 export type TabKey = (typeof TAB_KEYS)[number];
 const DEFAULT_TAB: TabKey = "adventure";
 

@@ -73,11 +73,11 @@ export const QUESTS: Quest[] = [
   {
     id: "village-mole-extermination",
     regionId: "village",
-    title: "두더쥐 퇴치",
+    title: "두더지 퇴치",
     description:
-      "두더쥐가 밭을 헤집어 놓아 농작물 피해가 심해요. 두더쥐 20마리를 처치해주세요.",
+      "두더지가 밭을 헤집어 놓아 농작물 피해가 심해요. 두더지 20마리를 처치해주세요.",
     requiredLevel: 1,
-    target: { monsterName: "두더쥐", count: 20 },
+    target: { monsterName: "두더지", count: 20 },
     reward: { gold: 14, fame: 2 },
     repeatable: true,
   },
@@ -109,10 +109,10 @@ export const QUESTS: Quest[] = [
   {
     id: "village-trainer-moles",
     regionId: "village",
-    title: "훈련 — 두더쥐 10마리",
-    description: "훈련 교관 스미스의 마지막 과제. 두더쥐 10마리를 처치한다.",
+    title: "훈련 — 두더지 10마리",
+    description: "훈련 교관 스미스의 마지막 과제. 두더지 10마리를 처치한다.",
     requiredLevel: 1,
-    target: { monsterName: "두더쥐", count: 10 },
+    target: { monsterName: "두더지", count: 10 },
     reward: {
       items: [{ id: "vitality_ring", count: 1 }],
     },

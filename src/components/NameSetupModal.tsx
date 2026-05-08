@@ -25,7 +25,7 @@ const CHECK_DEBOUNCE_MS = 400;
 
 type CheckState =
   | { kind: "idle" }
-  | { kind: "tooShort" }
+  | { kind: "tooLong" }
   | { kind: "checking" }
   | { kind: "available" }
   | { kind: "taken" }
@@ -52,7 +52,8 @@ export function NameSetupModal({
       return;
     }
     if (trimmed.length > NAME_MAX) {
-      setCheck({ kind: "tooShort" });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCheck({ kind: "tooLong" });
       return;
     }
     setCheck({ kind: "checking" });
@@ -175,7 +176,7 @@ function NameCheckIndicator({ state }: { state: CheckState }) {
       </p>
     );
   }
-  if (state.kind === "tooShort") {
+  if (state.kind === "tooLong") {
     return (
       <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
         1~16자로 입력해주세요.

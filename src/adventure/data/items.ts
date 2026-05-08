@@ -77,6 +77,23 @@ export const ITEMS = {
     bonus: { def: 3 },
     description: "슬라임 핵을 심으로 두른 갑옷. 충격을 부드럽게 흡수한다.",
   } satisfies EquipItem,
+  bandit_dagger: {
+    name: "산적의 단검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+4" },
+      { label: "민첩", value: "+2" },
+    ],
+    bonus: { atk: 4, dex: 2 },
+    description: "산적이 품에 숨기고 다니던 단검. 짧지만 손에 착 감긴다.",
+  } satisfies EquipItem,
+  nymph_ring: {
+    name: "님프의 반지",
+    slot: "accessory",
+    stats: [{ label: "속도", value: "+2" }],
+    bonus: { spd: 2 },
+    description: "은은하게 푸른빛이 도는 가는 반지. 호수 님프의 가호가 깃들어 있다.",
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;

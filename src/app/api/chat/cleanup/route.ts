@@ -1,10 +1,10 @@
 import { lt } from "drizzle-orm";
 import { db } from "@/db";
 import { messages } from "@/db/schema";
+import { CHAT_RETENTION_DAYS } from "@/lib/chat-config";
 
-// Vercel Cron 으로 매일 호출. 3일 이상 지난 메시지 삭제.
+// Vercel Cron 으로 매일 호출. CHAT_RETENTION_DAYS 일 이상 지난 메시지 삭제.
 // CRON_SECRET 으로 외부 호출 차단.
-const RETENTION_DAYS = 3;
 
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization");
@@ -13,7 +13,9 @@ export async function GET(req: Request) {
     return new Response("unauthorized", { status: 401 });
   }
 
-  const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const cutoff = new Date(
+    Date.now() - CHAT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+  );
   const deleted = await db
     .delete(messages)
     .where(lt(messages.createdAt, cutoff))

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CaretDown, ChatCircle, PaperPlaneTilt, Users, X } from "@phosphor-icons/react";
 import { formatRelative } from "@/lib/notifications";
+import { CHAT_MAX_LENGTH } from "@/lib/chat-config";
 
 type ChatMessage = {
   id: number;
@@ -20,7 +21,6 @@ type PresenceUser = {
 };
 
 const POLL_INTERVAL_MS = 3000;
-const MAX_LENGTH = 200;
 
 async function fetchMessages(): Promise<ChatMessage[]> {
   const res = await fetch("/api/chat", { cache: "no-store" });
@@ -262,7 +262,7 @@ export function ChatPanel({
             type="text"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            maxLength={MAX_LENGTH}
+            maxLength={CHAT_MAX_LENGTH}
             placeholder="메시지를 입력하세요"
             className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none transition-colors focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-blue-400"
           />

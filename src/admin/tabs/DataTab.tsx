@@ -165,7 +165,17 @@ function MonstersTable({ q }: { q: string }) {
       m.def,
       m.spd,
       m.exp,
-      m.drops?.map((d) => `${d.materialId}(${d.chance})`).join(", ") ?? "—",
+      m.drops
+        ?.map((d) => {
+          const id =
+            d.kind === "material"
+              ? d.materialId
+              : d.kind === "equip"
+                ? d.itemId
+                : `gold ${d.amount}`;
+          return `${id}(${d.chance})`;
+        })
+        .join(", ") ?? "—",
     ]);
   return (
     <div className="space-y-2">
