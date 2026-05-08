@@ -164,6 +164,72 @@ export function advanceTurn(
   return { ...state, playerHp, log, phase: "player" };
 }
 
+// 한 전투를 시작부터 끝까지 한 번에 시뮬한다. 결과(최종 상태 + 로그 + 턴 수 + 소비된 포션)만
+// 반환하므로 실시간 UI/오프라인 시뮬 양쪽에서 동일하게 사용 가능.
+//
+// `pickAction`은 player phase에서 호출. 포션 사용 결정 시 호출 측에서 보유량 체크 X —
+// 함수 내부에서 잔량을 추적하고 부족하면 attack으로 폴백한다.
+export type ResolveContext = {
+  pickAction: (state: BattleState) => PlayerAction;
+  potions: Partial<Record<PotionId, number>>;
+};
+
+export type BattleResolution = {
+  outcome: BattleOutcome;
+  finalState: BattleState;
+  potionsConsumed: Partial<Record<PotionId, number>>;
+  turns: number;
+};
+
+export function resolveBattle(
+  player: PlayerCombat,
+  enemy: import("../data/monsters").Monster,
+  playerName: string,
+  ctx: ResolveContext,
+): BattleResolution {
+  const potions: Partial<Record<PotionId, number>> = { ...ctx.potions };
+  const consumed: Partial<Record<PotionId, number>> = {};
+  let state = initialBattleState(player, enemy, playerName);
+  let turns = 0;
+
+  while (state.phase !== "ended") {
+    let action: PlayerAction = { kind: "attack" };
+    if (state.phase === "player") {
+      const picked = ctx.pickAction(state);
+      if (picked.kind === "use_potion") {
+        const have = potions[picked.potionId] ?? 0;
+        if (have > 0) {
+          potions[picked.potionId] = have - 1;
+          consumed[picked.potionId] = (consumed[picked.potionId] ?? 0) + 1;
+          action = picked;
+        }
+      } else {
+        action = picked;
+      }
+    }
+    state = advanceTurn(state, player, playerName, action);
+    turns += 1;
+
+    // 무한 루프 가드 — 정상 전투는 보통 수십 턴 안에 끝난다. 만약 데미지 0/회피 100% 같은
+    // 병리적 조합이면 적의 타임아웃 패배로 강제 종료.
+    if (turns > 500) {
+      return {
+        outcome: "lose",
+        finalState: { ...state, phase: "ended", outcome: "lose" },
+        potionsConsumed: consumed,
+        turns,
+      };
+    }
+  }
+
+  return {
+    outcome: state.outcome!,
+    finalState: state,
+    potionsConsumed: consumed,
+    turns,
+  };
+}
+
 // 물약 효과 적용 — 순수 함수. 인벤토리 차감은 호출 측 책임.
 export function applyPotionEffect(
   state: BattleState,

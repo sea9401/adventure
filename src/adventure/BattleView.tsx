@@ -9,7 +9,7 @@ import type {
   PlayerAction,
   PlayerCombat,
 } from "./battle/engine";
-import { useBattle, PLAYER_TURN_INTERVAL_MS } from "./battle/useBattle";
+import { useBattle, computeBattleCooldown } from "./battle/useBattle";
 import { BattleScene } from "./battle/BattleScene";
 import { BattleResult } from "./battle/BattleResult";
 import { EnemyEncounterSection } from "./EnemyEncounterSection";
@@ -22,13 +22,12 @@ import type {
 import { AutoPotionSection } from "./inventory/AutoPotionSection";
 import { Card } from "@/components/ui/Card";
 
-const RESULT_AUTO_CONFIRM_MS = 1200;
-
 export type BattleEndPayload = {
   outcome: BattleOutcome;
   enemyName: string;
   finalPlayerHp: number;
   rewards: { exp: number };
+  potionsConsumed: Partial<Record<PotionId, number>>;
 };
 
 function pickEnemy(region: Region): Monster | null {
@@ -43,7 +42,6 @@ export function BattleView({
   playerName,
   onBattleStart,
   onBattleEnd,
-  consumePotion,
   pickAutoAction,
   inventoryState,
   autoPotionConfig,
@@ -54,7 +52,6 @@ export function BattleView({
   playerName: string;
   onBattleStart?: (enemyName: string) => void;
   onBattleEnd: (payload: BattleEndPayload) => void;
-  consumePotion: (id: PotionId) => boolean;
   pickAutoAction: (state: BattleState) => PlayerAction;
   inventoryState: InventoryState;
   autoPotionConfig: AutoPotionConfig;
@@ -63,81 +60,57 @@ export function BattleView({
     patch: Partial<AutoPotionRule>,
   ) => void;
 }) {
-  const { state, start, stop, act } = useBattle({ player, playerName });
+  const { state, potionsConsumed, start, stop } = useBattle({
+    player,
+    playerName,
+    pickAction: pickAutoAction,
+    potions: inventoryState.potions,
+  });
 
   const startWithLog = (enemy: Monster, hpOverride?: number) => {
     onBattleStart?.(enemy.name);
     start(enemy, hpOverride);
   };
 
-  // 플레이어 턴 자동 행동 결정 (자동포션 룰 평가 포함).
-  const pickActionRef = useRef(pickAutoAction);
-  const consumePotionRef = useRef(consumePotion);
-  useEffect(() => {
-    pickActionRef.current = pickAutoAction;
-    consumePotionRef.current = consumePotion;
-  });
-
-  useEffect(() => {
-    if (!state || state.phase !== "player") return;
-    const id = setTimeout(() => {
-      const picked = pickActionRef.current(state);
-      let action: PlayerAction = picked;
-      if (picked.kind === "use_potion") {
-        if (!consumePotionRef.current(picked.potionId)) {
-          action = { kind: "attack" };
-        }
-      }
-      act(action);
-    }, PLAYER_TURN_INTERVAL_MS);
-    return () => clearTimeout(id);
-  }, [state, act]);
-
-  // 전투 종료 즉시 onBattleEnd 발화 — 1.2s 결과 화면을 기다리지 않고 외부 상태
-  // (퀘스트 진행/도감/HP/EXP/알림)을 바로 반영해 카운트 갱신 지연을 없앤다.
-  // onBattleEnd 는 매 렌더마다 새 함수라 deps 에 넣으면 재발화하므로 ref 로 latest 보관.
+  // 전투 종료 시 onBattleEnd 발화. 승리는 즉시 보상 적용 + cooldown 후 다음 적 자동 진행.
+  // 패배는 BattleResult 모달에서 사용자 확인을 받은 뒤에야 발화 — 시작 마을 강제 이동이
+  // BattleView unmount를 유발하므로 모달이 사라지지 않게.
   const onBattleEndRef = useRef(onBattleEnd);
-  useEffect(() => {
-    onBattleEndRef.current = onBattleEnd;
-  });
-  // 같은 ended state 객체에 대해 두 번 발화하지 않도록 가드.
+  onBattleEndRef.current = onBattleEnd;
+
   const firedForStateRef = useRef<BattleState | null>(null);
   useEffect(() => {
     if (!state || state.phase !== "ended" || !state.outcome) return;
     if (firedForStateRef.current === state) return;
+    if (state.outcome !== "win") return; // 패배는 confirm 시 발화
     firedForStateRef.current = state;
-    const isWin = state.outcome === "win";
     onBattleEndRef.current({
       outcome: state.outcome,
       enemyName: state.enemy.name,
-      finalPlayerHp: isWin ? state.playerHp : 0,
-      rewards: isWin ? { exp: state.enemy.exp } : { exp: 0 },
+      finalPlayerHp: state.playerHp,
+      rewards: { exp: state.enemy.exp },
+      potionsConsumed,
     });
-  }, [state]);
+  }, [state, potionsConsumed]);
 
-  // 종료 후 onConfirm — 승리 시 다음 적 자동 체이닝 / 그 외엔 stop.
-  // ref로 보관해서 useEffect에서 latest 값 사용 (closure stale 방지).
-  const handleConfirmRef = useRef(() => {});
+  // 승리 시 로그 길이에 비례한 cooldown 후 다음 적 자동 시작.
+  // ref로 latest region/state 캡처해 setTimeout 클로저 stale 방지.
+  const region_ref = useRef(region);
+  region_ref.current = region;
   useEffect(() => {
-    handleConfirmRef.current = () => {
-      if (!state || !state.outcome) return;
-      if (state.outcome === "win") {
-        const nextEnemy = pickEnemy(region);
-        if (nextEnemy) {
-          startWithLog(nextEnemy, state.playerHp);
-          return;
-        }
+    if (!state || state.phase !== "ended" || state.outcome !== "win") return;
+    const cooldown = computeBattleCooldown(state.log.length);
+    const finalHp = state.playerHp;
+    const id = setTimeout(() => {
+      const nextEnemy = pickEnemy(region_ref.current);
+      if (nextEnemy) {
+        startWithLog(nextEnemy, finalHp);
+      } else {
+        stop();
       }
-      stop();
-    };
-  });
-
-  // 승리 시 결과 화면을 1.2s 보여준 뒤 자동 진행. 패배는 사용자 확인 대기.
-  useEffect(() => {
-    if (!state || state.phase !== "ended") return;
-    if (state.outcome !== "win") return;
-    const id = setTimeout(() => handleConfirmRef.current(), RESULT_AUTO_CONFIRM_MS);
+    }, cooldown);
     return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   // 1) 전투 외 — 진입 화면
@@ -186,17 +159,28 @@ export function BattleView({
     );
   }
 
-  // 2) 전투 중
-  if (state.phase !== "ended") {
-    return <BattleScene state={state} playerName={playerName} />;
-  }
-
-  // 3) 종료 — 결과 화면
+  // 2) 진행 중 / 승리 cooldown — 같은 화면. final state(전체 로그 + final HP)을 그대로 보여준다.
+  // 진짜 "ended && lose"일 때만 결과 모달이 위에 뜬다.
+  const isLoss =
+    state.phase === "ended" && state.outcome === "lose";
   return (
-    <BattleResult
-      outcome={state.outcome!}
-      exp={state.outcome === "win" ? state.enemy.exp : 0}
-      onConfirm={() => handleConfirmRef.current()}
-    />
+    <>
+      <BattleScene state={state} playerName={playerName} />
+      {isLoss && (
+        <BattleResult
+          outcome="lose"
+          exp={0}
+          onConfirm={() => {
+            onBattleEndRef.current({
+              outcome: "lose",
+              enemyName: state.enemy.name,
+              finalPlayerHp: 0,
+              rewards: { exp: 0 },
+              potionsConsumed,
+            });
+          }}
+        />
+      )}
+    </>
   );
 }

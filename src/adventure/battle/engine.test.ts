@@ -5,6 +5,7 @@ import {
   applyPotionEffect,
   damageBetween,
   initialBattleState,
+  resolveBattle,
   type BattleLogEntry,
   type PlayerCombat,
 } from "./engine";
@@ -165,5 +166,63 @@ describe("applyPotionEffect", () => {
     });
     expect(s1.playerHp).toBe(30);
     expect(s1.phase).toBe("enemy");
+  });
+});
+
+describe("resolveBattle", () => {
+  it("강한 플레이어는 승리 + 적 HP 0", () => {
+    const r = resolveBattle(PLAYER, makeEnemy(), "P", {
+      pickAction: () => ({ kind: "attack" }),
+      potions: {},
+    });
+    expect(r.outcome).toBe("win");
+    expect(r.finalState.phase).toBe("ended");
+    expect(r.finalState.enemyHp).toBe(0);
+    expect(r.turns).toBeGreaterThan(0);
+  });
+
+  it("약한 플레이어는 패배 + final HP 0", () => {
+    const fragile: PlayerCombat = { ...PLAYER, hp: 1, def: 0 };
+    vi.spyOn(Math, "random").mockReturnValue(0.99); // 회피 실패
+    const r = resolveBattle(fragile, makeEnemy({ atk: 50 }), "P", {
+      pickAction: () => ({ kind: "attack" }),
+      potions: {},
+    });
+    expect(r.outcome).toBe("lose");
+    expect(r.finalState.playerHp).toBe(0);
+  });
+
+  it("포션 보유량을 추적, 부족하면 attack으로 폴백", () => {
+    const r = resolveBattle(PLAYER, makeEnemy({ hp: 100 }), "P", {
+      pickAction: () => ({
+        kind: "use_potion",
+        potionId: "potion_heal_s",
+        potion: HEAL_POTION,
+      }),
+      potions: { potion_heal_s: 1 },
+    });
+    expect(r.potionsConsumed.potion_heal_s).toBe(1);
+  });
+
+  it("포션 0개면 소비 0, attack으로 진행", () => {
+    const r = resolveBattle(PLAYER, makeEnemy(), "P", {
+      pickAction: () => ({
+        kind: "use_potion",
+        potionId: "potion_heal_s",
+        potion: HEAL_POTION,
+      }),
+      potions: {},
+    });
+    expect(r.potionsConsumed.potion_heal_s ?? 0).toBe(0);
+    expect(r.outcome).toBe("win"); // 폴백 attack으로 어쨌든 진행
+  });
+
+  it("로그가 LOG_LIMIT(8)을 넘지 않는다", () => {
+    const r = resolveBattle(PLAYER, makeEnemy({ hp: 200 }), "P", {
+      pickAction: () => ({ kind: "attack" }),
+      potions: {},
+    });
+    expect(r.finalState.log.length).toBeLessThanOrEqual(8);
+    expect(r.turns).toBeGreaterThan(8); // 잘려야 의미 있음
   });
 });

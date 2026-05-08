@@ -412,6 +412,10 @@ export default function Home() {
   };
 
   const handleBattleEnd = (payload: BattleEndPayload) => {
+    // 전투 중 사용된 포션을 인벤토리에서 차감 (resolveBattle은 가짜 잔량으로 시뮬했음).
+    for (const [id, n] of Object.entries(payload.potionsConsumed)) {
+      if (n) inventory.consume(id as PotionId, n);
+    }
     if (payload.outcome === "win") {
       adventureLog.addKill(payload.enemyName);
       const readyQuestIds = quests.recordKill(payload.enemyName);
@@ -701,7 +705,6 @@ export default function Home() {
                   setHuntingActive(true);
                 }}
                 onBattleEnd={handleBattleEnd}
-                consumePotion={inventory.consume}
                 pickAutoAction={(state) =>
                   pickAutoAction(state, {
                     rules: autoPotion.config.rules,
