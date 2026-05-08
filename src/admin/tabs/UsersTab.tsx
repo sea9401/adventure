@@ -13,6 +13,22 @@ import {
 } from "@/adventure/character/defaults";
 import { MAX_LEVEL, requiredExpToNext } from "@/lib/leveling";
 import type { Profile } from "@/adventure/profile/useProfile";
+import { ZERO_ALLOCATED } from "@/adventure/character/statMeta";
+import type { StatKey } from "@/adventure/data/stats";
+
+type TrainingPersisted = {
+  endsAt: number | null;
+  points: number;
+  allocated: Record<StatKey, number>;
+  revertPoints: number;
+};
+
+const emptyTraining = (): TrainingPersisted => ({
+  endsAt: null,
+  points: 0,
+  allocated: { ...ZERO_ALLOCATED },
+  revertPoints: 0,
+});
 
 type AdminUserRow = {
   id: string;
@@ -26,7 +42,7 @@ type AdminUserRow = {
 type SavesMap = {
   "character-profile.v2"?: Profile;
   "character.v2"?: CharacterDynamicState;
-  // 다른 동기화 키도 있지만 이 탭에서는 프로필/캐릭터만 편집.
+  "training.v2"?: TrainingPersisted;
   [key: string]: unknown;
 };
 
@@ -129,6 +145,17 @@ export function UsersTab() {
     }
   };
 
+  const updateTraining = async (next: TrainingPersisted) => {
+    if (!selected) return;
+    try {
+      await patchKey(selected.id, "training.v2", next);
+      setSaves((s) => ({ ...(s ?? {}), "training.v2": next }));
+      showToast("훈련 데이터 저장됨. 대상 유저는 새로고침해야 반영됩니다.");
+    } catch (e) {
+      showToast(`실패: ${e instanceof Error ? e.message : "오류"}`);
+    }
+  };
+
   return (
     <div className="grid gap-4 md:grid-cols-[320px_1fr]">
       <section className="rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
@@ -213,6 +240,7 @@ export function UsersTab() {
             readOnly={readOnly}
             onUpdateProfile={updateProfile}
             onUpdateCharacter={updateCharacter}
+            onUpdateTraining={updateTraining}
             onReload={() => loadSaves(selected.id)}
           />
         )}
@@ -229,6 +257,7 @@ function SelectedUserPanel({
   readOnly,
   onUpdateProfile,
   onUpdateCharacter,
+  onUpdateTraining,
   onReload,
 }: {
   user: AdminUserRow;
@@ -238,6 +267,7 @@ function SelectedUserPanel({
   readOnly: boolean;
   onUpdateProfile: (next: Profile) => void;
   onUpdateCharacter: (next: CharacterDynamicState) => void;
+  onUpdateTraining: (next: TrainingPersisted) => void;
   onReload: () => void;
 }) {
   const character = saves?.["character.v2"] ?? initialCharacterState;
@@ -245,6 +275,7 @@ function SelectedUserPanel({
     name: user.name ?? "모험가",
     gender: "male1" as const,
   };
+  const training = saves?.["training.v2"] ?? emptyTraining();
   const requiredExp = requiredExpToNext(character.level) ?? 0;
 
   return (
@@ -379,6 +410,78 @@ function SelectedUserPanel({
             }
           >
             +1000 G
+          </Button>
+        </div>
+      </section>
+
+      <section className="rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <h2 className="text-sm font-semibold">훈련</h2>
+        <div className="mt-2 grid gap-3 md:grid-cols-2">
+          <Field label="단련 포인트 (미사용)">
+            <NumberInput
+              value={training.points}
+              min={0}
+              disabled={readOnly || loading}
+              onChange={(points) =>
+                onUpdateTraining({
+                  ...training,
+                  points: Math.max(0, Math.floor(points)),
+                })
+              }
+            />
+          </Field>
+          <Field label="되돌리기 포인트">
+            <NumberInput
+              value={training.revertPoints}
+              min={0}
+              disabled={readOnly || loading}
+              onChange={(revertPoints) =>
+                onUpdateTraining({
+                  ...training,
+                  revertPoints: Math.max(0, Math.floor(revertPoints)),
+                })
+              }
+            />
+          </Field>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            disabled={readOnly || loading}
+            onClick={() =>
+              onUpdateTraining({ ...training, points: training.points + 1 })
+            }
+          >
+            +1 단련
+          </Button>
+          <Button
+            disabled={readOnly || loading}
+            onClick={() =>
+              onUpdateTraining({ ...training, points: training.points + 5 })
+            }
+          >
+            +5 단련
+          </Button>
+          <Button
+            disabled={readOnly || loading}
+            onClick={() =>
+              onUpdateTraining({
+                ...training,
+                revertPoints: training.revertPoints + 1,
+              })
+            }
+          >
+            +1 되돌리기
+          </Button>
+          <Button
+            disabled={readOnly || loading}
+            onClick={() =>
+              onUpdateTraining({
+                ...training,
+                revertPoints: training.revertPoints + 3,
+              })
+            }
+          >
+            +3 되돌리기
           </Button>
         </div>
       </section>
