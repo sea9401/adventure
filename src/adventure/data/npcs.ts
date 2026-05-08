@@ -63,6 +63,7 @@ export const NPCS: Npc[] = [
       "마을 어귀에서 자주 서성이는 젊은 아낙. 손에는 늘 뜨다 만 뜨개질감이 들려 있다.",
     greeting:
       "아, 모험가 분이세요?\n혹시 디올라 쪽에서 오시는 길은 아니죠? …우리 그이가 거기 호숫가에서 일한다고 갔는데, 벌써 한 달째 편지 한 통이 없네요.",
+    portrait: "/images/npc/suzy.webp",
   },
   {
     id: "village_woodcutter_jimmy",
