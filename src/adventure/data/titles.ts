@@ -27,6 +27,24 @@ export const TITLES: Record<TitleId, Title> = {
     description: "수 차례 쓰러져도 다시 일어선 자. 자랑은 아니다.",
     condition: "전투 패배 10회",
   },
+  chatterbox: {
+    id: "chatterbox",
+    name: "수다쟁이",
+    description: "광장에 말을 자주 얹는 자.",
+    condition: "글로벌 채팅 100회 발화",
+  },
+  patient: {
+    id: "patient",
+    name: "환자",
+    description: "치료소 단골. 의사와 안면을 텄다.",
+    condition: "치료소 50회 이용",
+  },
+  early_bird: {
+    id: "early_bird",
+    name: "새벽형 인간",
+    description: "남들이 잘 때 모험을 떠나는 자.",
+    condition: "새벽 3~5시 접속",
+  },
 };
 
 export function getTitle(id: TitleId | null | undefined): Title | undefined {
