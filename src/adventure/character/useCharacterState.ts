@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CHARACTER_STATE_KEY } from "@/lib/storage-keys";
 import { applyExpGain, MAX_LEVEL } from "@/lib/leveling";
-import type { EquipItem } from "@/adventure/data/items";
+import { ITEMS, findItemId, type EquipItem } from "@/adventure/data/items";
 import { baseCharacter, maxHpForLevel, maxMpForLevel } from "./defaults";
 import type { EquippedSlots } from "./types";
 
@@ -24,6 +24,26 @@ export const initialCharacterState: CharacterDynamicState = {
   fame: 0,
 };
 
+// 저장된 EquipItem(이름·stats·bonus 통째로 직렬화)을 ITEMS 정의의 "지금" 인스턴스로 교체.
+// 이렇게 하지 않으면 밸런스 패치(예: 부적 행운 +3 → +2) 후에도 옛 인스턴스가 그대로 보인다.
+// 이름 매칭이 안 되면 null — 슬롯에서 사라짐.
+function rehydrateSlot(saved: EquipItem | null | undefined): EquipItem | null {
+  if (!saved) return null;
+  const id = findItemId(saved);
+  return id ? ITEMS[id] : null;
+}
+
+function rehydrateEquipped(
+  saved: CharacterDynamicState["equipped"],
+): CharacterDynamicState["equipped"] {
+  if (!saved) return undefined;
+  return {
+    weapon: rehydrateSlot(saved.weapon),
+    armor: rehydrateSlot(saved.armor),
+    accessory: rehydrateSlot(saved.accessory),
+  };
+}
+
 export function useCharacterState() {
   const [state, setState] =
     useState<CharacterDynamicState>(initialCharacterState);
@@ -45,7 +65,7 @@ export function useCharacterState() {
           exp: parsed.exp ?? initialCharacterState.exp,
           gold: parsed.gold ?? initialCharacterState.gold,
           fame: parsed.fame ?? initialCharacterState.fame,
-          equipped: parsed.equipped,
+          equipped: rehydrateEquipped(parsed.equipped),
         });
       }
     } catch {}
