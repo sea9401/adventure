@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { migrateUserIfNeeded } from "./migrateUser";
 
 // API 라우트 진입 시 호출 — Clerk 인증 사용자를 DB users 테이블에 upsert 후
 // userId 반환. 401 케이스는 호출 측에서 응답 분기.
@@ -39,6 +40,21 @@ export async function ensureUser(): Promise<string | null> {
       message: err.message,
     });
     throw e;
+  }
+
+  // Clerk dev → production 전환 후 같은 이메일 재가입자의 옛 데이터 자동 이관.
+  // 이메일 일치하는 다른 userId 가 없으면 즉시 반환되어 비용 거의 없음.
+  // 실패해도 인증/생성 흐름은 막지 않음 — 마이그레이션은 best effort.
+  try {
+    await migrateUserIfNeeded(userId, email);
+  } catch (e) {
+    const err = e as { code?: string; name?: string; message?: string };
+    console.error("[ensureUser] migrateUserIfNeeded failed (non-fatal)", {
+      userId,
+      code: err.code,
+      name: err.name,
+      message: err.message,
+    });
   }
 
   return userId;
