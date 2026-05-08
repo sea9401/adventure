@@ -205,6 +205,11 @@ export function CharacterMini({ character }: { character: Character }) {
           <CharacterPortrait gender={character.gender} />
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-baseline gap-2">
+              {character.titleName && (
+                <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                  {character.titleName}
+                </span>
+              )}
               <span className="text-base font-semibold">{character.name}</span>
               <span className="text-sm text-zinc-500 dark:text-zinc-400">
                 {character.className}

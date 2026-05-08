@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   Compass,
+  Crown,
   Diamond,
   Lock,
   MapPin,
@@ -15,6 +16,7 @@ import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { MONSTERS } from "./data/monsters";
 import { NPCS, type NpcRole } from "./data/npcs";
+import { TITLES, type TitleId } from "./data/titles";
 import {
   STAT_CONVERSIONS,
   STAT_KEYS,
@@ -27,7 +29,14 @@ import type { AdventureLog } from "./log/storage";
 import { getRevealStage, type MonsterRevealStage } from "./log/thresholds";
 import { NpcAvatar } from "./NpcAvatar";
 
-type LogTabKey = "monsters" | "items" | "npcs" | "towns" | "places" | "etc";
+type LogTabKey =
+  | "monsters"
+  | "items"
+  | "npcs"
+  | "towns"
+  | "places"
+  | "etc"
+  | "titles";
 
 const LOG_TABS: { key: LogTabKey; label: string }[] = [
   { key: "monsters", label: "몬스터" },
@@ -36,6 +45,7 @@ const LOG_TABS: { key: LogTabKey; label: string }[] = [
   { key: "towns", label: "마을" },
   { key: "places", label: "장소" },
   { key: "etc", label: "기타" },
+  { key: "titles", label: "칭호" },
 ];
 
 const ROLE_LABEL: Record<NpcRole, string> = {
@@ -51,9 +61,13 @@ const ROLE_LABEL: Record<NpcRole, string> = {
 export function AdventureLogView({
   log,
   stats,
+  equippedTitleId,
+  onEquipTitle,
 }: {
   log: AdventureLog;
   stats: Record<StatKey, number>;
+  equippedTitleId?: string | null;
+  onEquipTitle?: (titleId: TitleId | null) => void;
 }) {
   const [tab, setTab] = useState<LogTabKey>("monsters");
 
@@ -78,6 +92,85 @@ export function AdventureLogView({
       {tab === "towns" && <TownsTab log={log} />}
       {tab === "places" && <PlacesTab log={log} />}
       {tab === "etc" && <EtcTab stats={stats} />}
+      {tab === "titles" && (
+        <TitlesTab
+          log={log}
+          equippedTitleId={equippedTitleId ?? null}
+          onEquipTitle={onEquipTitle}
+        />
+      )}
+    </div>
+  );
+}
+
+// 도감에는 정의된 모든 칭호를 잠금/획득 상태로 표시 — 그 중 획득(log.titles 등록)된
+// 칭호만 장착/해제 가능. 한 번에 한 개만 장착 (equippedTitleId).
+function TitlesTab({
+  log,
+  equippedTitleId,
+  onEquipTitle,
+}: {
+  log: AdventureLog;
+  equippedTitleId: string | null;
+  onEquipTitle?: (titleId: TitleId | null) => void;
+}) {
+  const all = Object.values(TITLES);
+  if (all.length === 0) {
+    return (
+      <EmptyState
+        icon={<Crown size={40} weight="duotone" />}
+        title="아직 정의된 칭호가 없습니다"
+        message="추후 업데이트로 추가될 예정입니다."
+      />
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {all.map((title) => {
+        const entry = log.titles[title.id];
+        const obtained = !!entry;
+        const isEquipped = equippedTitleId === title.id;
+        return (
+          <Card key={title.id}>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="flex items-baseline gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                {obtained ? (
+                  title.name
+                ) : (
+                  <span className="flex items-center gap-1 italic text-zinc-400 dark:text-zinc-500">
+                    <Lock size={12} weight="duotone" />
+                    ???
+                  </span>
+                )}
+                {isEquipped && (
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-normal text-emerald-700 dark:text-emerald-400">
+                    장착중
+                  </span>
+                )}
+              </span>
+              {obtained && entry && (
+                <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+                  {new Date(entry.obtainedAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+              {obtained ? title.description : title.condition}
+            </p>
+            {obtained && onEquipTitle && (
+              <button
+                type="button"
+                onClick={() =>
+                  onEquipTitle(isEquipped ? null : (title.id as TitleId))
+                }
+                className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                {isEquipped ? "해제" : "장착"}
+              </button>
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 }

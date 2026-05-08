@@ -16,6 +16,8 @@ export type EquippedSlots = {
 export type Character = {
   name: string;
   className: string;
+  /** 장착 중인 칭호 이름 (TITLES[id].name). 미장착이면 undefined. */
+  titleName?: string;
   gender: Gender;
   level: number;
   hp: number;

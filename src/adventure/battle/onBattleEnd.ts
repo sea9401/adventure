@@ -1,8 +1,10 @@
 import type { BattleEndPayload } from "@/adventure/BattleView";
 import type { PotionId } from "@/adventure/data/potions";
 import type { MaterialId } from "@/adventure/data/materials";
+import type { ItemId } from "@/adventure/data/items";
 import { MONSTERS } from "@/adventure/data/monsters";
 import { MATERIALS } from "@/adventure/data/materials";
+import { ITEMS } from "@/adventure/data/items";
 import { START_REGION_ID } from "@/adventure/data/world";
 import { getQuestById } from "@/adventure/data/quests";
 import type { MapProgress } from "@/lib/map-progress";
@@ -16,12 +18,17 @@ export type BattleEndDeps = {
   inventory: {
     consume: (id: PotionId, n: number) => void;
     addMaterial: (id: MaterialId, n: number) => void;
+    addEquipment: (id: ItemId) => void;
   };
-  adventureLog: { addKill: (name: string) => void };
+  adventureLog: {
+    addKill: (name: string) => void;
+    markTitleObtained: (titleId: string) => void;
+  };
   quests: { recordKill: (name: string) => string[] };
   characterState: {
     setHp: (n: number) => void;
     addExp: (exp: number, vit: number) => void;
+    addGoldFame: (gold: number, fame: number) => void;
   };
   vit: number;
   addNotification: (
@@ -47,18 +54,30 @@ export function onBattleEnd(
 
   if (payload.outcome === "win") {
     deps.adventureLog.addKill(payload.enemyName);
+    deps.adventureLog.markTitleObtained("first_blood");
     const readyQuestIds = deps.quests.recordKill(payload.enemyName);
     deps.characterState.setHp(payload.finalPlayerHp);
     deps.characterState.addExp(payload.rewards.exp, deps.vit);
     // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
+    // kind 별로 인벤/골드/장비에 분배.
     const monster = MONSTERS[payload.enemyName];
     if (monster?.drops) {
       for (const drop of monster.drops) {
-        if (Math.random() < drop.chance) {
+        if (Math.random() >= drop.chance) continue;
+        if (drop.kind === "material") {
           deps.inventory.addMaterial(drop.materialId, 1);
           deps.addNotification(
             "info",
             `${MATERIALS[drop.materialId].name}을(를) 손에 넣었다.`,
+          );
+        } else if (drop.kind === "gold") {
+          deps.characterState.addGoldFame(drop.amount, 0);
+          deps.addNotification("info", `골드 +${drop.amount}`);
+        } else if (drop.kind === "equip") {
+          deps.inventory.addEquipment(drop.itemId);
+          deps.addNotification(
+            "info",
+            `${ITEMS[drop.itemId].name}을(를) 손에 넣었다!`,
           );
         }
       }
