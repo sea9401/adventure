@@ -3,7 +3,7 @@ import { TRAINING_STORAGE_KEY } from "@/lib/storage-keys";
 import { ZERO_ALLOCATED } from "@/adventure/character/statMeta";
 import type { StatKey } from "@/adventure/data/stats";
 
-export const TRAINING_DURATION_MS = 4 * 60 * 60 * 1000;
+export const TRAINING_DURATION_MS = 6 * 60 * 60 * 1000;
 
 export function useTraining() {
   const [trainingEndsAt, setTrainingEndsAt] = useState<number | null>(null);

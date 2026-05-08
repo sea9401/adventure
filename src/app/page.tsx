@@ -229,7 +229,7 @@ export default function Home() {
     0,
   );
   // 스탯 → 전투 수치 변환:
-  //   힘   STR : +2 atk / pt
+  //   힘   STR : +1 atk / pt
   //   민첩 DEX : +1% 회피 / pt
   //   활력 VIT : +2 def / pt
   //   속도 SPD : 10pt 당 공격 횟수 +1 (베이스 1회)
@@ -237,7 +237,7 @@ export default function Home() {
   const playerCombat = {
     hp: character.hp,
     maxHp: character.maxHp,
-    atk: character.stats.str * 2 + equipAtk,
+    atk: character.stats.str + equipAtk,
     def: character.stats.vit * 2 + equipDef,
     spd: character.stats.spd,
     evasionPct: character.stats.dex,

@@ -29,7 +29,7 @@ export function TrainingView({
         >
           {isTraining
             ? `훈련 중 · ${formatDuration(remaining)}`
-            : "4시간 훈련 시작"}
+            : "6시간 훈련 시작"}
         </button>
 
         <div>

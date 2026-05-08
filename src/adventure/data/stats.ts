@@ -11,7 +11,7 @@ export const STAT_LABELS: Record<StatKey, string> = {
 
 // 스탯 1pt 당 전투 수치 환산 — UI 도감 노출용 설명.
 export const STAT_CONVERSIONS: Record<StatKey, string> = {
-  str: "1pt 당 공격력 +2",
+  str: "1pt 당 공격력 +1",
   dex: "1pt 당 회피 +1%",
   vit: "1pt 당 방어력 +2",
   spd: "10pt 당 공격 횟수 +1 (베이스 1회)",
