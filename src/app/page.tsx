@@ -132,6 +132,8 @@ export default function Home() {
   // 사용자가 명시적으로 자동 사냥을 시작했는지. region 이동/사망/새로고침 시 false.
   // 오프라인 시뮬은 이 값이 true일 때만 실제 보상으로 적용된다.
   const [huntingActive, setHuntingActive] = useState(false);
+  // 마을 진입 직후 자동으로 열 NPC 대화 — 알림판 클릭 시 세팅, TownView 가 마운트 직후 소비.
+  const [pendingTownNpcId, setPendingTownNpcId] = useState<string | null>(null);
   const [mapProgress, setMapProgress] =
     useState<MapProgress>(initialMapProgress);
   const adventureLog = useAdventureLog();
@@ -615,6 +617,39 @@ export default function Home() {
           {tab === "adventure" && subView === null && (
             <>
               <CharacterMini character={character} />
+              {(() => {
+                if (currentRegion.id !== "village") return null;
+                if (crafting.state.boldQuestComplete) return null;
+                const message = !crafting.knows("baseball_bat")
+                  ? "지나가던 당신을 대장장이가 부릅니다."
+                  : !crafting.hasCrafted("baseball_bat")
+                    ? "대장장이가 망치질을 멈추고 당신을 흘끗 본다."
+                    : "야구 방망이를 만든 당신을 대장장이가 다시 찾는다.";
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingTownNpcId("village_blacksmith_bold");
+                      setSubView("town");
+                    }}
+                    className="flex w-full items-center gap-3 rounded-lg border border-amber-300/80 bg-amber-50/70 px-4 py-3 text-left transition-colors hover:bg-amber-100/70 dark:border-amber-900/60 dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
+                  >
+                    <Hammer
+                      size={28}
+                      weight="duotone"
+                      className="shrink-0 text-amber-600 dark:text-amber-400"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11px] uppercase tracking-wider text-amber-700/80 dark:text-amber-400/80">
+                        알림판
+                      </div>
+                      <p className="mt-0.5 text-sm italic text-zinc-700 dark:text-zinc-300">
+                        {message}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })()}
               <div className="space-y-2">
                 {currentRegion.tags?.includes("town") && (
                   <EntryCard
@@ -667,6 +702,8 @@ export default function Home() {
               />
               <TownView
                 region={currentRegion}
+                initialNpcId={pendingTownNpcId ?? undefined}
+                onInitialNpcConsumed={() => setPendingTownNpcId(null)}
                 onTalkClose={(npcId, regionId) => {
                   adventureLog.incrementNpcTalk(npcId);
                   adventureLog.addTownNpcTalked(regionId, npcId);

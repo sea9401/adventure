@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { UserCircle } from "@phosphor-icons/react";
 import type { Region } from "./data/world";
 import { getNpcsByRegion, type Npc, type NpcRole } from "./data/npcs";
@@ -23,6 +23,8 @@ export function TownView({
   region,
   onTalkClose,
   renderNpcDialogue,
+  initialNpcId,
+  onInitialNpcConsumed,
 }: {
   region: Region;
   onTalkClose?: (npcId: string, regionId: string) => void;
@@ -31,9 +33,25 @@ export function TownView({
    * null/undefined를 반환하면 기본 NpcDialogue 렌더.
    */
   renderNpcDialogue?: (npc: Npc, onClose: () => void) => ReactNode;
+  /** 마운트 시 자동으로 열어 둘 NPC 대화 — 알림판 등 외부 진입 경로용. */
+  initialNpcId?: string;
+  /** initialNpcId 를 한 번 소비했음을 부모에 알림 (state 정리용). */
+  onInitialNpcConsumed?: () => void;
 }) {
   const npcs = getNpcsByRegion(region.id);
   const [openNpc, setOpenNpc] = useState<Npc | null>(null);
+
+  // 외부에서 특정 NPC 자동 오픈 요청. 마운트 시 한 번만 처리하고 부모에 소비 알림.
+  useEffect(() => {
+    if (!initialNpcId) return;
+    const npc = npcs.find((n) => n.id === initialNpcId);
+    if (npc) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOpenNpc(npc);
+    }
+    onInitialNpcConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const closeNpc = () => {
     if (openNpc) onTalkClose?.(openNpc.id, region.id);
