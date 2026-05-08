@@ -55,6 +55,7 @@ function readInitial(raw: unknown): AdventureLog {
     monsters: migrateMonsters(parsed.monsters ?? {}),
     towns: parsed.towns ?? {},
     npcs: parsed.npcs ?? {},
+    titles: parsed.titles ?? {},
   };
 }
 
@@ -162,6 +163,20 @@ export function useAdventureLog() {
     });
   }, []);
 
+  // 칭호 획득 — 도감 등록은 "획득 시"가 트리거. 이미 등록된 경우 중복 무시.
+  const markTitleObtained = useCallback((titleId: string) => {
+    setLog((prev) => {
+      if (prev.titles[titleId]) return prev;
+      return {
+        ...prev,
+        titles: {
+          ...prev.titles,
+          [titleId]: { obtainedAt: Date.now() },
+        },
+      };
+    });
+  }, []);
+
   return {
     log,
     hydrated: true,
@@ -170,5 +185,6 @@ export function useAdventureLog() {
     markRegionVisited,
     addTownNpcTalked,
     incrementNpcTalk,
+    markTitleObtained,
   };
 }

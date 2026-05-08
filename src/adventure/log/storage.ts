@@ -16,10 +16,16 @@ export type NpcLogEntry = {
   firstTalkAt?: number;
 };
 
+// 칭호는 한 번 획득하면 끝 — 등록 시각만 기록.
+export type TitleLogEntry = {
+  obtainedAt: number;
+};
+
 export type AdventureLog = {
   monsters: Record<string, MonsterLogEntry>;
   towns: Record<string, TownLogEntry>;
   npcs: Record<string, NpcLogEntry>;
+  titles: Record<string, TitleLogEntry>;
 };
 
 export const ADVENTURE_LOG_KEY = "adventure-log.v2";
@@ -67,6 +73,7 @@ export const emptyAdventureLog = (): AdventureLog => ({
   monsters: {},
   towns: {},
   npcs: {},
+  titles: {},
 });
 
 export function loadAdventureLog(): AdventureLog {
@@ -79,6 +86,7 @@ export function loadAdventureLog(): AdventureLog {
       monsters: migrateMonsters(parsed?.monsters ?? {}),
       towns: parsed?.towns ?? {},
       npcs: parsed?.npcs ?? {},
+      titles: parsed?.titles ?? {},
     };
   } catch {
     return emptyAdventureLog();

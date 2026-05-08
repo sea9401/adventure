@@ -41,12 +41,12 @@ import {
   type RewardServices,
 } from "@/adventure/quests/applyReward";
 import { ITEMS, findItemId, type EquipSlot, type ItemId } from "@/adventure/data/items";
+import { getTitle } from "@/adventure/data/titles";
 import {
   getItemSellPrice,
   getMaterialSellPrice,
   getPotionSellPrice,
 } from "@/adventure/data/sellPrices";
-import { MONSTERS } from "@/adventure/data/monsters";
 import {
   POTIONS,
   POTION_MAX_PER_TYPE,
@@ -92,7 +92,6 @@ import {
   type TrialEdge,
 } from "@/adventure/TrialView";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
-import type { RegionId } from "@/adventure/data/world";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
 import {
@@ -101,6 +100,7 @@ import {
   OFFLINE_SIM_MAX_MS,
 } from "@/adventure/battle/offlineSim";
 import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
+import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
 import { SuzyDialogue } from "@/adventure/town/dialogues/SuzyDialogue";
@@ -272,6 +272,7 @@ function Home() {
   // VIT 1pt 당 maxHp +1 — 레벨 기준 max 위에 스탯 보너스를 얹는다.
   const characterMaxHp = maxHpForLevel(characterState.level) + totalStats.vit;
   const characterMaxMp = maxMpForLevel(characterState.level);
+  const equippedTitle = getTitle(characterStateHook.equippedTitleId);
   const character: Character = {
     ...baseCharacter,
     name: profile.name,
@@ -287,6 +288,7 @@ function Home() {
     fame: characterState.fame,
     equipped: equippedSlots,
     stats: totalStats,
+    titleName: equippedTitle?.name,
   };
   usePresenceHeartbeat({
     name: character.name,
@@ -305,9 +307,11 @@ function Home() {
 
   // 안전망 — HP<=0 인데 마을이 아닌 곳(사냥 지역 등)에 있으면 시작 마을로 강제 복귀.
   // 패배 모달을 확인하기 전에 새로고침/탭 닫기 등으로 빠져나가 stuck 된 유저를 다음 진입에서 구출.
+  // 외부 상태(hp/region)를 관찰해 위치 보정 — 의도적 set-state-in-effect.
   useEffect(() => {
     if (characterState.hp > 0) return;
     if (isTown) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMapProgress((prev) => ({
       currentRegionId: START_REGION_ID,
       visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
@@ -507,64 +511,24 @@ function Home() {
     }
   };
 
-  const handleBattleEnd = (payload: BattleEndPayload) => {
-    // 전투 중 사용된 포션을 인벤토리에서 차감 (resolveBattle은 가짜 잔량으로 시뮬했음).
-    for (const [id, n] of Object.entries(payload.potionsConsumed)) {
-      if (n) inventory.consume(id as PotionId, n);
-    }
-    if (payload.outcome === "win") {
-      adventureLog.addKill(payload.enemyName);
-      const readyQuestIds = quests.recordKill(payload.enemyName);
-      characterStateHook.setHp(payload.finalPlayerHp);
-      characterStateHook.addExp(payload.rewards.exp, character.stats.vit);
-      // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
-      const monster = MONSTERS[payload.enemyName];
-      if (monster?.drops) {
-        for (const drop of monster.drops) {
-          if (Math.random() < drop.chance) {
-            inventory.addMaterial(drop.materialId, 1);
-            addNotification(
-              "info",
-              `${MATERIALS[drop.materialId].name}을(를) 손에 넣었다.`,
-            );
-          }
-        }
-      }
-      const reward =
-        payload.rewards.exp > 0 ? `EXP +${payload.rewards.exp}` : "보상 없음";
-      addNotification(
-        "battle_win",
-        `${payload.enemyName}을(를) 쓰러뜨렸다 — ${reward}`,
-        { battleLog: payload.log },
-      );
-      for (const id of readyQuestIds) {
-        const quest = getQuestById(id);
-        if (quest) {
-          addNotification(
-            "quest_ready",
-            `의뢰 조건 달성 — ${quest.title}: 길드에서 보상을 받을 수 있다.`,
-          );
-        }
-      }
-    } else {
-      // 패배 — HP 0 + 시작 마을 강제 이동 + 마을 탭 치료소 sub 로 점프 + 자동 사냥 해제.
-      // replace 로 history 에 남기지 않음 (사망 직후로 back 되돌아갈 일 없음).
-      characterStateHook.setHp(0);
-      setHuntingActive(false);
-      replaceLocation("town", "healing");
-      setMapProgress((prev) => ({
-        currentRegionId: START_REGION_ID,
-        visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
-          ? prev.visitedRegionIds
-          : [...prev.visitedRegionIds, START_REGION_ID],
-      }));
-      addNotification(
-        "battle_lose",
-        `${payload.enemyName}에게 쓰러졌다... 시작 마을 치유소에서 회복이 필요하다.`,
-        { battleLog: payload.log },
-      );
-    }
-  };
+  const handleBattleEnd = (payload: BattleEndPayload) =>
+    onBattleEnd(payload, {
+      inventory: {
+        consume: inventory.consume,
+        addMaterial: inventory.addMaterial,
+      },
+      adventureLog: { addKill: adventureLog.addKill },
+      quests: { recordKill: quests.recordKill },
+      characterState: {
+        setHp: characterStateHook.setHp,
+        addExp: characterStateHook.addExp,
+      },
+      vit: character.stats.vit,
+      addNotification,
+      setHuntingActive,
+      replaceLocation,
+      setMapProgress,
+    });
 
   const handleAcceptQuest = (id: string) => {
     quests.accept(id);
@@ -1258,6 +1222,8 @@ function Home() {
               <AdventureLogView
                 log={adventureLog.log}
                 stats={character.stats}
+                equippedTitleId={characterStateHook.equippedTitleId}
+                onEquipTitle={characterStateHook.setEquippedTitle}
               />
             </div>
           )}

@@ -28,6 +28,8 @@ export function NotificationToast({
   const lastIdRef = useRef<string | null>(null);
 
   // 신규 알림 감지 — 마운트 시점 이전 알림은 토스트 안 띄움.
+  // 외부 props(notifications)를 관찰해 큐 누적 — set-state-in-effect 패턴이지만
+  // 외부 변화 구독 케이스라 의도적.
   useEffect(() => {
     if (!initRef.current) {
       initRef.current = true;
@@ -39,6 +41,7 @@ export function NotificationToast({
     if (latest.id === lastIdRef.current) return;
     lastIdRef.current = latest.id;
     if (TOAST_BLOCKED_KINDS.has(latest.kind)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToasts((prev) =>
       [...prev, { id: latest.id, text: latest.text }].slice(-MAX_VISIBLE_TOASTS),
     );

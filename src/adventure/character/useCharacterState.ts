@@ -14,6 +14,8 @@ export type CharacterDynamicState = {
   gold: number;
   fame: number;
   equipped?: EquippedSlots;
+  /** 장착 중인 칭호 ID. null/미지정 = 미장착. */
+  equippedTitleId?: string | null;
 };
 
 export const initialCharacterState: CharacterDynamicState = {
@@ -21,8 +23,9 @@ export const initialCharacterState: CharacterDynamicState = {
   mp: 30,
   level: 1,
   exp: 0,
-  gold: 0,
+  gold: 10,
   fame: 0,
+  equippedTitleId: null,
 };
 
 // 저장된 EquipItem(이름·stats·bonus 통째로 직렬화)을 ITEMS 정의의 "지금" 인스턴스로 교체.
@@ -59,6 +62,7 @@ function readInitial(raw: unknown): CharacterDynamicState {
     gold: parsed.gold ?? initialCharacterState.gold,
     fame: parsed.fame ?? initialCharacterState.fame,
     equipped: rehydrateEquipped(parsed.equipped),
+    equippedTitleId: parsed.equippedTitleId ?? null,
   };
 }
 
@@ -121,10 +125,14 @@ export function useCharacterState() {
       return { ...prev, equipped: { ...current, [slot]: item } };
     });
 
+  const setEquippedTitle = (titleId: string | null) =>
+    setState((prev) => ({ ...prev, equippedTitleId: titleId }));
+
   return {
     state,
     hydrated: true,
     equippedSlots,
+    equippedTitleId: state.equippedTitleId ?? null,
     heal,
     restoreHpFull,
     setHp,
@@ -132,5 +140,6 @@ export function useCharacterState() {
     addGoldFame,
     addExp,
     setSlot,
+    setEquippedTitle,
   };
 }

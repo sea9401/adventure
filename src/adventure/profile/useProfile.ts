@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { AVATARS, type Avatar, type Gender } from "@/components/NameSetupModal";
-import { useRemoteSave, useSavedValue } from "@/lib/storage/SaveProvider";
+import { useSavedValue } from "@/lib/storage/SaveProvider";
 
 export const DEFAULT_NAME = "모험가";
 export const DEFAULT_AVATAR: Avatar = "male1";
 
 export type Profile = { name: string; gender: Avatar };
+
+export type SubmitResult =
+  | { ok: true }
+  | { ok: false; reason: "taken" | "invalid" | "network" };
 
 // 저장된 gender 값을 정규화. 구버전("male"/"female")은 male1/female1 으로 마이그레이션.
 function normalizeAvatar(raw: unknown): Avatar | null {
@@ -28,14 +32,28 @@ function readInitial(raw: unknown): Profile | null {
 
 export function useProfile() {
   const initial = useSavedValue("character-profile.v2");
-  const remote = useRemoteSave();
   const [profile, setProfile] = useState<Profile | null>(() =>
     readInitial(initial),
   );
 
-  const submit = (next: Profile) => {
+  // 서버 /api/profile/setup 호출 — 중복 닉네임 검증·users.name 등록·savesKv 갱신.
+  // 성공 시 로컬 state 도 갱신.
+  const submit = async (next: Profile): Promise<SubmitResult> => {
+    let res: Response;
+    try {
+      res = await fetch("/api/profile/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+    } catch {
+      return { ok: false, reason: "network" };
+    }
+    if (res.status === 409) return { ok: false, reason: "taken" };
+    if (res.status === 400) return { ok: false, reason: "invalid" };
+    if (!res.ok) return { ok: false, reason: "network" };
     setProfile(next);
-    remote.patch("character-profile.v2", next);
+    return { ok: true };
   };
 
   const name = profile?.name ?? DEFAULT_NAME;

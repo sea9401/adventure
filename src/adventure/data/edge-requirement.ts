@@ -75,6 +75,14 @@ export function evaluateEdgeRequirement(
     };
   }
 
+  if (req.kind === "locked") {
+    return {
+      met: false,
+      kind: "locked",
+      reason: req.reason ?? "아직 갈 수 없다.",
+    };
+  }
+
   return { met: true };
 }
 

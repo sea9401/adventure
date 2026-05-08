@@ -43,7 +43,10 @@ export type Region = {
 // - "fame":   최소 명성.
 export type EdgeRequirement =
   | { kind: "bestiary"; regionId: RegionId }
-  | { kind: "trial"; battles: number; enemiesFrom: RegionId };
+  | { kind: "trial"; battles: number; enemiesFrom: RegionId }
+  // "locked" — 영원히 통과 불가 (현재 미구현 지역, 콘텐츠 가림용).
+  // reason 으로 UI 에 보여줄 한 줄 이유를 지정.
+  | { kind: "locked"; reason?: string };
 
 export type EdgeRequirementKind = EdgeRequirement["kind"];
 
@@ -78,7 +81,7 @@ export const WORLD_MAP: WorldMap = {
       description: "넓고 한가로운 풀밭. 들쥐와 슬라임이 어슬렁거린다.",
       position: { x: 380, y: 360 },
       biome: "plains",
-      enemies: ["슬라임", "들개", "두더쥐"],
+      enemies: ["슬라임", "들개", "두더지"],
       recommendedLevel: 1,
     },
     {
@@ -139,7 +142,6 @@ export const WORLD_MAP: WorldMap = {
       to: "forest",
       requires: { kind: "trial", battles: 5, enemiesFrom: "forest" },
     },
-    { from: "plains", to: "ruins" },
     {
       from: "cave",
       to: "lake",
@@ -151,7 +153,11 @@ export const WORLD_MAP: WorldMap = {
       requires: { kind: "trial", battles: 5, enemiesFrom: "lake" },
     },
     { from: "lake", to: "diola" },
-    { from: "forest", to: "ruins" },
+    {
+      from: "forest",
+      to: "ruins",
+      requires: { kind: "locked", reason: "아직 발길이 닿지 않은 곳이다." },
+    },
   ],
 };
 

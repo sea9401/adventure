@@ -87,7 +87,9 @@ export function BattleView({
   // 패배는 BattleResult 모달에서 사용자 확인을 받은 뒤에야 발화 — 시작 마을 강제 이동이
   // BattleView unmount를 유발하므로 모달이 사라지지 않게.
   const onBattleEndRef = useRef(onBattleEnd);
-  onBattleEndRef.current = onBattleEnd;
+  useEffect(() => {
+    onBattleEndRef.current = onBattleEnd;
+  });
 
   const firedForStateRef = useRef<BattleState | null>(null);
   useEffect(() => {
@@ -108,7 +110,9 @@ export function BattleView({
   // 승리 시 로그 길이에 비례한 cooldown 후 다음 적 자동 시작.
   // ref로 latest region/state 캡처해 setTimeout 클로저 stale 방지.
   const region_ref = useRef(region);
-  region_ref.current = region;
+  useEffect(() => {
+    region_ref.current = region;
+  });
   useEffect(() => {
     if (!state || state.phase !== "ended" || state.outcome !== "win") return;
     const cooldown = computeBattleCooldown(state.log.length);
