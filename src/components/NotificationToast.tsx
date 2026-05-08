@@ -2,16 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "@phosphor-icons/react";
-import type { AppNotification, NotificationKind } from "@/lib/notifications";
+import type { AppNotification } from "@/lib/notifications";
+import { useToastPrefs } from "@/lib/notification-prefs";
 
 const TOAST_DURATION_MS = 2000;
 const MAX_VISIBLE_TOASTS = 3;
-
-// 토스트로 띄우지 않을 알림 종류 — 사용자가 직접 일으킨 액션의 결과는 토스트 대신 벨/로그에서만 확인.
-const TOAST_BLOCKED_KINDS = new Set<NotificationKind>([
-  "battle_win",
-  "battle_lose",
-]);
 
 type ToastItem = {
   id: string;
@@ -26,6 +21,10 @@ export function NotificationToast({
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const initRef = useRef(false);
   const lastIdRef = useRef<string | null>(null);
+  const { prefs } = useToastPrefs();
+  // useEffect deps 안정화를 위한 ref — prefs 가 바뀐다고 옛 알림을 토스트로 띄우진 않음.
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
 
   // 신규 알림 감지 — 마운트 시점 이전 알림은 토스트 안 띄움.
   // 외부 props(notifications)를 관찰해 큐 누적 — set-state-in-effect 패턴이지만
@@ -40,7 +39,8 @@ export function NotificationToast({
     const latest = notifications[0];
     if (latest.id === lastIdRef.current) return;
     lastIdRef.current = latest.id;
-    if (TOAST_BLOCKED_KINDS.has(latest.kind)) return;
+    // 사용자 선호 — 해당 종류가 OFF 면 토스트 안 띄움.
+    if (!prefsRef.current[latest.kind]) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setToasts((prev) =>
       [...prev, { id: latest.id, text: latest.text }].slice(-MAX_VISIBLE_TOASTS),

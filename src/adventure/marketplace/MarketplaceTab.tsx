@@ -33,6 +33,7 @@ export function MarketplaceTab({
   addEquipment,
   addMaterial,
   addGold,
+  currentGold,
   inboxCount,
   refreshInbox,
   pushToast,

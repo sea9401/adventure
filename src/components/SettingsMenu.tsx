@@ -1,13 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Gear, Moon, Question, Sun, SignOut } from "@phosphor-icons/react";
+import {
+  Bell,
+  Gear,
+  Moon,
+  Question,
+  Sun,
+  SignOut,
+} from "@phosphor-icons/react";
 import { useClerk } from "@clerk/nextjs";
 import { HelpModal } from "./HelpModal";
+import { NotificationPrefsModal } from "./NotificationPrefsModal";
 
 export function SettingsMenu() {
   const [open, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [notifPrefsOpen, setNotifPrefsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const containerRef = useRef<HTMLDivElement>(null);
   const { signOut } = useClerk();
@@ -53,6 +62,11 @@ export function SettingsMenu() {
     setHelpOpen(true);
   };
 
+  const handleOpenNotifPrefs = () => {
+    setOpen(false);
+    setNotifPrefsOpen(true);
+  };
+
   const isDark = theme === "dark";
 
   return (
@@ -89,6 +103,16 @@ export function SettingsMenu() {
             <li>
               <button
                 type="button"
+                onClick={handleOpenNotifPrefs}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                <Bell size={18} weight="duotone" />
+                알림 설정
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
                 onClick={handleOpenHelp}
                 className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
@@ -110,6 +134,9 @@ export function SettingsMenu() {
         </div>
       )}
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
+      {notifPrefsOpen && (
+        <NotificationPrefsModal onClose={() => setNotifPrefsOpen(false)} />
+      )}
     </div>
   );
 }
