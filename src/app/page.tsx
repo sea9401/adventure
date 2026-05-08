@@ -11,6 +11,7 @@ import {
   FirstAid,
   Hammer,
   MapPin,
+  Note,
   Scroll,
   Sparkle,
   Storefront,
@@ -65,6 +66,7 @@ import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
 import { requiredExpToNext } from "@/lib/leveling";
 import { CraftingView } from "@/adventure/CraftingView";
+import { BulletinBoardView } from "@/adventure/BulletinBoardView";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 import { useNotifications } from "@/adventure/notifications/useNotifications";
 import { Card } from "@/components/ui/Card";
@@ -167,15 +169,15 @@ function Home() {
     replaceLocation,
     back,
   } = useNavTabs();
-  // 사용자가 명시적으로 자동 사냥을 시작했는지. region 이동/사망 시 false.
-  // 같은 탭 안에서는 sessionStorage로 보존 — 캐릭터 탭 등으로 잠깐 다녀와도 ON 유지.
-  // 새 탭/창에서는 항상 false (sessionStorage 특성).
-  const [huntingActive, setHuntingActiveState] = useState(false);
+  // 자동 사냥 ON/OFF. 디폴트 ON — 새 탭/창에서도 ON 으로 시작.
+  // region 이동/사망 시 false 로 떨어지고, 같은 탭 안에서는 sessionStorage 로 보존.
+  // sessionStorage 가 명시적으로 "false" 일 때만 OFF 로 복원 (그 외엔 ON).
+  const [huntingActive, setHuntingActiveState] = useState(true);
   useEffect(() => {
     try {
-      if (sessionStorage.getItem("hunting-active") === "true") {
+      if (sessionStorage.getItem("hunting-active") === "false") {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setHuntingActiveState(true);
+        setHuntingActiveState(false);
       }
     } catch {}
   }, []);
@@ -1081,6 +1083,18 @@ function Home() {
               />
               <EntryCard
                 icon={
+                  <Note
+                    size={28}
+                    weight="duotone"
+                    className="text-sky-500"
+                  />
+                }
+                title="게시판"
+                description="마을의 새 소식이 올라오는 곳."
+                onClick={() => setSubView("bulletin")}
+              />
+              <EntryCard
+                icon={
                   <Envelope
                     size={28}
                     weight="duotone"
@@ -1209,6 +1223,12 @@ function Home() {
                 onAccept={handleAcceptQuest}
                 onClaim={handleClaimQuest}
               />
+            </div>
+          )}
+          {tab === "town" && isTown && subView === "bulletin" && (
+            <div className="space-y-3">
+              <SubViewHeader title="게시판" onBack={back} />
+              <BulletinBoardView />
             </div>
           )}
           {tab === "town" && isTown && subView === "inbox" && (
