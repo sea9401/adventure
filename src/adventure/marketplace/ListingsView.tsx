@@ -232,10 +232,9 @@ function ListingCard({
               <span className="ml-1 text-zinc-500">×{item.quantity}</span>
             ) : null}
           </span>
-          <span className="block text-xs text-zinc-500">
-            {item.sellerName}
-            {item.isMine ? <span className="ml-1 text-emerald-600">(내 매물)</span> : null}
-          </span>
+          {item.isMine ? (
+            <span className="block text-xs text-emerald-600">내 매물</span>
+          ) : null}
         </span>
         <span className="shrink-0 text-right">
           <span className="block text-base font-semibold text-amber-700 dark:text-amber-400">
