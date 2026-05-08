@@ -41,7 +41,6 @@ import {
   type RewardServices,
 } from "@/adventure/quests/applyReward";
 import { ITEMS, findItemId, type EquipSlot, type ItemId } from "@/adventure/data/items";
-import { getTitle } from "@/adventure/data/titles";
 import {
   getItemSellPrice,
   getMaterialSellPrice,
@@ -53,6 +52,8 @@ import {
   type PotionId,
 } from "@/adventure/data/potions";
 import { useInventory } from "@/adventure/inventory/useInventory";
+import { MarketplaceTab } from "@/adventure/marketplace/MarketplaceTab";
+import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { InventoryView } from "@/adventure/InventoryView";
 import { ShopView } from "@/adventure/ShopView";
@@ -92,6 +93,7 @@ import {
   type TrialEdge,
 } from "@/adventure/TrialView";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
+import { getTitle } from "@/adventure/data/titles";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
 import {
@@ -115,6 +117,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "adventure", label: "모험" },
   { key: "town", label: "마을" },
   { key: "character", label: "캐릭터" },
+  { key: "marketplace", label: "거래소" },
 ];
 
 function MainTabs({
@@ -192,6 +195,7 @@ function Home() {
   const quests = useQuests();
   const crafting = useCrafting();
   const inventory = useInventory();
+  const remote = useRemoteSave();
   const autoPotion = useAutoPotionConfig();
   const training = useTraining();
   const characterStateHook = useCharacterState();
@@ -277,6 +281,7 @@ function Home() {
     ...baseCharacter,
     name: profile.name,
     gender: profile.gender,
+    titleName: equippedTitle?.name,
     hp: Math.min(characterState.hp, characterMaxHp),
     mp: Math.min(characterState.mp, characterMaxMp),
     maxHp: characterMaxHp,
@@ -288,7 +293,6 @@ function Home() {
     fame: characterState.fame,
     equipped: equippedSlots,
     stats: totalStats,
-    titleName: equippedTitle?.name,
   };
   usePresenceHeartbeat({
     name: character.name,
@@ -511,17 +515,31 @@ function Home() {
     }
   };
 
+  // 칭호 등록은 "획득 시"가 트리거 — 신규로 등록되는 시점에만 토스트.
+  // 이미 획득한 칭호엔 무반응 (markTitleObtained 자체가 idempotent).
+  const grantTitle = (titleId: string) => {
+    if (adventureLog.log.titles[titleId]) return;
+    adventureLog.markTitleObtained(titleId);
+    const title = getTitle(titleId);
+    if (title) addNotification("info", `칭호 획득 — ${title.name}`);
+  };
+
   const handleBattleEnd = (payload: BattleEndPayload) =>
     onBattleEnd(payload, {
       inventory: {
         consume: inventory.consume,
         addMaterial: inventory.addMaterial,
+        addEquipment: inventory.addEquipment,
       },
-      adventureLog: { addKill: adventureLog.addKill },
+      adventureLog: {
+        addKill: adventureLog.addKill,
+        markTitleObtained: grantTitle,
+      },
       quests: { recordKill: quests.recordKill },
       characterState: {
         setHp: characterStateHook.setHp,
         addExp: characterStateHook.addExp,
+        addGoldFame: characterStateHook.addGoldFame,
       },
       vit: character.stats.vit,
       addNotification,
@@ -557,12 +575,15 @@ function Home() {
     onApply: (result) => {
       // 처치 — 도감/퀘스트 진행 누적. 퀘스트 ready 알림은 한 번에 하나만 의미 있어 첫 트리거만 띄움.
       const readyQuestIds = new Set<string>();
+      let anyKill = false;
       for (const [name, n] of Object.entries(result.killsByName)) {
         for (let i = 0; i < n; i += 1) {
           adventureLog.addKill(name);
           for (const id of quests.recordKill(name)) readyQuestIds.add(id);
+          anyKill = true;
         }
       }
+      if (anyKill) grantTitle("first_blood");
       // 포션 차감
       for (const [id, n] of Object.entries(result.potionsConsumed)) {
         if (n) inventory.consume(id as PotionId, n);
@@ -1238,6 +1259,18 @@ function Home() {
                 onClear={notifications.clear}
               />
             </div>
+          )}
+          {tab === "marketplace" && (
+            <MarketplaceTab
+              inventory={inventory.state}
+              equipped={equippedSlots}
+              remote={remote}
+              consumeEquipment={inventory.consumeEquipment}
+              consumeMaterial={inventory.consumeMaterial}
+              addEquipment={inventory.addEquipment}
+              addMaterial={inventory.addMaterial}
+              pushToast={(msg) => addNotification("info", msg)}
+            />
           )}
         </main>
       </div>

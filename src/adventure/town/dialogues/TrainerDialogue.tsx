@@ -110,14 +110,14 @@ export function TrainerDialogue({ npc, onClose, quests, completeQuest }: Props) 
     );
   }
 
-  // === 두더쥐 단계 (들개 완료 후) ===
+  // === 두더지 단계 (들개 완료 후) ===
   if (moles.state === "available") {
     return (
       <NpcDialogue
         npc={npc}
         onClose={onClose}
         text={
-          "두더쥐를 우습게 보면 안 돼.\n땅 밑으로 들락거리며 빠르게 친다.\n10마리. 어디로 들어가는지, 어디로 나오는지 — 그걸 보는 눈을 길러봐."
+          "두더지를 우습게 보면 안 돼.\n땅 밑으로 들락거리며 빠르게 친다.\n10마리. 어디로 들어가는지, 어디로 나오는지 — 그걸 보는 눈을 길러봐."
         }
         primaryAction={{
           label: "받아들인다",
@@ -135,7 +135,7 @@ export function TrainerDialogue({ npc, onClose, quests, completeQuest }: Props) 
         npc={npc}
         onClose={onClose}
         text={
-          `두더쥐는 보이지 않을 때가 더 위험하지.\n흙 위의 떨림을 읽어라. — 진행 ${moles.progress}/10`
+          `두더지는 보이지 않을 때가 더 위험하지.\n흙 위의 떨림을 읽어라. — 진행 ${moles.progress}/10`
         }
       />
     );
@@ -146,7 +146,7 @@ export function TrainerDialogue({ npc, onClose, quests, completeQuest }: Props) 
         npc={npc}
         onClose={onClose}
         text={
-          "훌륭해. 슬라임, 들개, 두더쥐 — 평야의 셋을 다 끝냈군.\n자, 이건 내가 신참 시절 주워 모은 거다. 활력의 반지. 끼고 다녀라."
+          "훌륭해. 슬라임, 들개, 두더지 — 평야의 셋을 다 끝냈군.\n자, 이건 내가 신참 시절 주워 모은 거다. 활력의 반지. 끼고 다녀라."
         }
         primaryAction={{
           label: "활력의 반지를 받는다",

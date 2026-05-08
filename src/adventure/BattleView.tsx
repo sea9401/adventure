@@ -97,14 +97,20 @@ export function BattleView({
     if (firedForStateRef.current === state) return;
     if (state.outcome !== "win") return; // 패배는 confirm 시 발화
     firedForStateRef.current = state;
-    onBattleEndRef.current({
-      outcome: state.outcome,
-      enemyName: state.enemy.name,
-      finalPlayerHp: state.playerHp,
-      rewards: { exp: state.enemy.exp },
-      potionsConsumed,
-      log: state.log,
-    });
+    try {
+      onBattleEndRef.current({
+        outcome: state.outcome,
+        enemyName: state.enemy.name,
+        finalPlayerHp: state.playerHp,
+        rewards: { exp: state.enemy.exp },
+        potionsConsumed,
+        log: state.log,
+      });
+    } catch (err) {
+      // 핸들러 실패 시 ref 해제 — 다음 effect 실행에서 재시도 가능.
+      firedForStateRef.current = null;
+      console.error("onBattleEnd failed:", err);
+    }
   }, [state, potionsConsumed]);
 
   // 승리 시 로그 길이에 비례한 cooldown 후 다음 적 자동 시작.
@@ -221,14 +227,19 @@ export function BattleView({
             // 더블탭/연속 클릭으로 onBattleEnd 가 중복 발화하지 않도록 가드.
             if (firedForStateRef.current === state) return;
             firedForStateRef.current = state;
-            onBattleEndRef.current({
-              outcome: "lose",
-              enemyName: state.enemy.name,
-              finalPlayerHp: 0,
-              rewards: { exp: 0 },
-              potionsConsumed,
-              log: state.log,
-            });
+            try {
+              onBattleEndRef.current({
+                outcome: "lose",
+                enemyName: state.enemy.name,
+                finalPlayerHp: 0,
+                rewards: { exp: 0 },
+                potionsConsumed,
+                log: state.log,
+              });
+            } catch (err) {
+              firedForStateRef.current = null;
+              console.error("onBattleEnd failed:", err);
+            }
             // BattleView 로컬 state 초기화 — 모달 닫고 진입 화면으로 복귀.
             stop();
           }}

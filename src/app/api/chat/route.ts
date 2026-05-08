@@ -2,10 +2,11 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { messages } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
-
-const MAX_LENGTH = 200;
-const FETCH_LIMIT = 50;
-const RATE_LIMIT_MS = 2000;
+import {
+  CHAT_FETCH_LIMIT,
+  CHAT_MAX_LENGTH,
+  CHAT_RATE_LIMIT_MS,
+} from "@/lib/chat-config";
 
 export async function GET() {
   const userId = await ensureUser();
@@ -22,7 +23,7 @@ export async function GET() {
     })
     .from(messages)
     .orderBy(desc(messages.createdAt))
-    .limit(FETCH_LIMIT);
+    .limit(CHAT_FETCH_LIMIT);
 
   const result = rows
     .map((r) => ({
@@ -58,11 +59,11 @@ export async function POST(req: Request) {
   if (!name) return new Response("missing name", { status: 400 });
   if (!className) return new Response("missing className", { status: 400 });
   if (!content) return new Response("empty content", { status: 400 });
-  if (content.length > MAX_LENGTH) {
-    return new Response(`too long (max ${MAX_LENGTH})`, { status: 400 });
+  if (content.length > CHAT_MAX_LENGTH) {
+    return new Response(`too long (max ${CHAT_MAX_LENGTH})`, { status: 400 });
   }
 
-  const since = new Date(Date.now() - RATE_LIMIT_MS);
+  const since = new Date(Date.now() - CHAT_RATE_LIMIT_MS);
   const [lastRow] = await db
     .select({ createdAt: messages.createdAt })
     .from(messages)
