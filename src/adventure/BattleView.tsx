@@ -10,10 +10,10 @@ import type {
   PlayerCombat,
 } from "./battle/engine";
 import { useBattle, PLAYER_TURN_INTERVAL_MS } from "./battle/useBattle";
-import { BattleScene, type ManualAction } from "./battle/BattleScene";
+import { BattleScene } from "./battle/BattleScene";
 import { BattleResult } from "./battle/BattleResult";
 import { EnemyEncounterSection } from "./EnemyEncounterSection";
-import { POTIONS, type PotionId } from "./data/potions";
+import type { PotionId } from "./data/potions";
 import type { InventoryState } from "./inventory/useInventory";
 import type {
   AutoPotionConfig,
@@ -41,11 +41,8 @@ export function BattleView({
   region,
   player,
   playerName,
-  autoBattle,
-  onAutoBattleChange,
   onBattleStart,
   onBattleEnd,
-  potionCounts,
   consumePotion,
   pickAutoAction,
   inventoryState,
@@ -55,11 +52,8 @@ export function BattleView({
   region: Region;
   player: PlayerCombat;
   playerName: string;
-  autoBattle: boolean;
-  onAutoBattleChange: (next: boolean) => void;
   onBattleStart?: (enemyName: string) => void;
   onBattleEnd: (payload: BattleEndPayload) => void;
-  potionCounts: Partial<Record<PotionId, number>>;
   consumePotion: (id: PotionId) => boolean;
   pickAutoAction: (state: BattleState) => PlayerAction;
   inventoryState: InventoryState;
@@ -76,7 +70,7 @@ export function BattleView({
     start(enemy, hpOverride);
   };
 
-  // 자동 전투 — player phase일 때 일정 간격으로 자동 행동 결정.
+  // 플레이어 턴 자동 행동 결정 (자동포션 룰 평가 포함).
   const pickActionRef = useRef(pickAutoAction);
   const consumePotionRef = useRef(consumePotion);
   useEffect(() => {
@@ -86,7 +80,6 @@ export function BattleView({
 
   useEffect(() => {
     if (!state || state.phase !== "player") return;
-    if (!autoBattle) return;
     const id = setTimeout(() => {
       const picked = pickActionRef.current(state);
       let action: PlayerAction = picked;
@@ -98,9 +91,9 @@ export function BattleView({
       act(action);
     }, PLAYER_TURN_INTERVAL_MS);
     return () => clearTimeout(id);
-  }, [state, autoBattle, act]);
+  }, [state, act]);
 
-  // 종료 후 onConfirm — 외부 상태 반영 + 자동/수동 다음 행동 분기.
+  // 종료 후 onConfirm — 외부 상태 반영 + 승리 시 다음 적 자동 체이닝.
   // ref로 보관해서 useEffect에서 latest 값 사용 (closure stale 방지).
   const handleConfirmRef = useRef(() => {});
   useEffect(() => {
@@ -117,7 +110,7 @@ export function BattleView({
         rewards,
       });
 
-      if (isWin && autoBattle) {
+      if (isWin) {
         const nextEnemy = pickEnemy(region);
         if (nextEnemy) {
           // 체인 시작 — setCharacterState 가 아직 propagate 안 됐으므로
@@ -130,13 +123,13 @@ export function BattleView({
     };
   });
 
-  // 자동 확인 타이머 — autoBattle ON & ended일 때만 1.2s 후 자동 진행.
+  // 승리 시 결과 화면을 1.2s 보여준 뒤 자동 진행. 패배는 사용자 확인 대기.
   useEffect(() => {
     if (!state || state.phase !== "ended") return;
-    if (!autoBattle) return;
+    if (state.outcome !== "win") return;
     const id = setTimeout(() => handleConfirmRef.current(), RESULT_AUTO_CONFIRM_MS);
     return () => clearTimeout(id);
-  }, [state, autoBattle]);
+  }, [state]);
 
   // 1) 전투 외 — 진입 화면
   if (!state) {
@@ -158,45 +151,17 @@ export function BattleView({
         {hasEnemies ? (
           <>
             <EnemyEncounterSection region={region} />
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onAutoBattleChange(!autoBattle)}
-                aria-pressed={autoBattle}
-                className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-2 text-xs font-medium transition-colors ${
-                  autoBattle
-                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400 dark:text-emerald-300"
-                    : "border-zinc-300 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
-                }`}
-              >
-                <span
-                  aria-hidden
-                  className={`inline-block h-2 w-2 rounded-full ${
-                    autoBattle ? "bg-emerald-500" : "bg-zinc-400 dark:bg-zinc-600"
-                  }`}
-                />
-                자동 전투 {autoBattle ? "ON" : "OFF"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const enemy = pickEnemy(region);
-                  if (enemy) startWithLog(enemy);
-                }}
-                disabled={player.hp <= 0}
-                className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                  autoBattle
-                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:border-emerald-400 dark:text-emerald-300"
-                    : "border-zinc-300 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {player.hp <= 0
-                  ? "회복 필요"
-                  : autoBattle
-                    ? "자동 전투 시작"
-                    : "전투 시작"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const enemy = pickEnemy(region);
+                if (enemy) startWithLog(enemy);
+              }}
+              disabled={player.hp <= 0}
+              className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              {player.hp <= 0 ? "회복 필요" : "전투 시작"}
+            </button>
             <AutoPotionSection
               autoConfig={autoPotionConfig}
               inventory={inventoryState}
@@ -214,19 +179,7 @@ export function BattleView({
 
   // 2) 전투 중
   if (state.phase !== "ended") {
-    const manual: ManualAction | undefined = autoBattle
-      ? undefined
-      : {
-          potionCounts,
-          onAttack: () => act({ kind: "attack" }),
-          onUsePotion: (id) => {
-            const potion = POTIONS[id];
-            if (!potion) return;
-            if (!consumePotion(id)) return;
-            act({ kind: "use_potion", potionId: id, potion });
-          },
-        };
-    return <BattleScene state={state} playerName={playerName} manual={manual} />;
+    return <BattleScene state={state} playerName={playerName} />;
   }
 
   // 3) 종료 — 결과 화면
@@ -235,7 +188,6 @@ export function BattleView({
       outcome={state.outcome!}
       exp={state.outcome === "win" ? state.enemy.exp : 0}
       onConfirm={() => handleConfirmRef.current()}
-      autoConfirm={state.outcome === "win" && autoBattle}
     />
   );
 }

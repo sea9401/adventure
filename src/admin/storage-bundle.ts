@@ -7,7 +7,6 @@ import {
   PROFILE_STORAGE_KEY,
   TRAINING_STORAGE_KEY,
   CHARACTER_STATE_KEY,
-  BATTLE_SETTINGS_KEY,
 } from "@/lib/storage-keys";
 import type { Profile } from "@/adventure/profile/useProfile";
 import type { CharacterDynamicState } from "@/adventure/character/useCharacterState";
@@ -45,13 +44,10 @@ export type TrainingPersisted = {
   allocated?: Partial<Record<StatKey, number>>;
 };
 
-export type BattleSettings = { auto?: boolean };
-
 export const STORAGE_KEYS = {
   profile: PROFILE_STORAGE_KEY,
   character: CHARACTER_STATE_KEY,
   training: TRAINING_STORAGE_KEY,
-  battleSettings: BATTLE_SETTINGS_KEY,
   inventory: INVENTORY_KEY,
   autoPotion: AUTO_POTION_KEY,
   crafting: CRAFTING_STORAGE_KEY,
@@ -66,7 +62,6 @@ export type SaveBundleData = {
   profile?: Profile;
   character?: CharacterDynamicState;
   training?: TrainingPersisted;
-  battleSettings?: BattleSettings;
   inventory?: InventoryState;
   autoPotion?: AutoPotionConfig;
   crafting?: CraftingState;
@@ -121,7 +116,6 @@ export function loadBundle(): SaveBundle {
       profile: readKey<Profile>(STORAGE_KEYS.profile),
       character: readKey<CharacterDynamicState>(STORAGE_KEYS.character),
       training: readKey<TrainingPersisted>(STORAGE_KEYS.training),
-      battleSettings: readKey<BattleSettings>(STORAGE_KEYS.battleSettings),
       inventory: readKey<InventoryState>(STORAGE_KEYS.inventory),
       autoPotion: readKey<AutoPotionConfig>(STORAGE_KEYS.autoPotion),
       crafting: readKey<CraftingState>(STORAGE_KEYS.crafting),
@@ -140,7 +134,6 @@ export function applyBundle(bundle: SaveBundle): void {
     { key: STORAGE_KEYS.profile, value: d.profile },
     { key: STORAGE_KEYS.character, value: d.character },
     { key: STORAGE_KEYS.training, value: d.training },
-    { key: STORAGE_KEYS.battleSettings, value: d.battleSettings },
     { key: STORAGE_KEYS.inventory, value: d.inventory },
     { key: STORAGE_KEYS.autoPotion, value: d.autoPotion },
     { key: STORAGE_KEYS.crafting, value: d.crafting },

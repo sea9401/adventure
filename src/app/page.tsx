@@ -78,7 +78,6 @@ import { useTraining } from "@/adventure/training/useTraining";
 import { baseCharacter } from "@/adventure/character/defaults";
 import { useCharacterState } from "@/adventure/character/useCharacterState";
 import { useProfile } from "@/adventure/profile/useProfile";
-import { useAutoBattle } from "@/adventure/battle/useAutoBattle";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
@@ -125,9 +124,6 @@ export default function Home() {
   const characterStateHook = useCharacterState();
   const characterState = characterStateHook.state;
   const profile = useProfile();
-  const { autoBattle, setAutoBattle } = useAutoBattle(
-    mapProgress.currentRegionId,
-  );
   const notifications = useNotifications();
 
   useEffect(() => {
@@ -372,7 +368,7 @@ export default function Home() {
         }
       }
     } else {
-      // 패배 — HP 회복 + 시작 마을 강제 이동 + 자동 전투 OFF
+      // 패배 — HP 회복 + 시작 마을 강제 이동
       characterStateHook.restoreHpFull();
       setMapProgress((prev) => ({
         currentRegionId: START_REGION_ID,
@@ -380,7 +376,6 @@ export default function Home() {
           ? prev.visitedRegionIds
           : [...prev.visitedRegionIds, START_REGION_ID],
       }));
-      setAutoBattle(false);
       addNotification(
         "battle_lose",
         `${payload.enemyName}에게 쓰러졌다... 시작 마을로 돌아왔다.`,
@@ -553,11 +548,8 @@ export default function Home() {
                 region={currentRegion}
                 player={playerCombat}
                 playerName={character.name}
-                autoBattle={autoBattle}
-                onAutoBattleChange={setAutoBattle}
                 onBattleStart={adventureLog.markEncountered}
                 onBattleEnd={handleBattleEnd}
-                potionCounts={inventory.state.potions}
                 consumePotion={inventory.consume}
                 pickAutoAction={(state) =>
                   pickAutoAction(state, {

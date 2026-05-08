@@ -7,12 +7,10 @@ export function BattleResult({
   outcome,
   exp,
   onConfirm,
-  autoConfirm,
 }: {
   outcome: BattleOutcome;
   exp: number;
   onConfirm: () => void;
-  autoConfirm: boolean;
 }) {
   const isWin = outcome === "win";
   return (
@@ -32,7 +30,7 @@ export function BattleResult({
         </div>
       ) : (
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          시작 마을로 옮겨졌다. 자동 전투가 해제되었다.
+          시작 마을로 옮겨졌다.
         </p>
       )}
       <button
@@ -40,7 +38,7 @@ export function BattleResult({
         onClick={onConfirm}
         className="mt-4 w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
       >
-        {autoConfirm ? "자동 진행 중..." : "확인"}
+        {isWin ? "다음 적 준비 중..." : "확인"}
       </button>
     </Card>
   );
