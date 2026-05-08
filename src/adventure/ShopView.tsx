@@ -27,6 +27,14 @@ const TABS: { key: ShopTabKey; label: string }[] = [
   { key: "sell", label: "판매" },
 ];
 
+type SellCategoryKey = "equipment" | "materials" | "potions";
+
+const SELL_TABS: { key: SellCategoryKey; label: string }[] = [
+  { key: "equipment", label: "장비" },
+  { key: "materials", label: "재료" },
+  { key: "potions", label: "포션" },
+];
+
 export function ShopView({
   gold,
   inventory,
@@ -231,6 +239,8 @@ function SellTab({
   onSellMaterial: (id: MaterialId, quantity: number) => void;
   onSellEquipment: (id: ItemId, quantity: number) => void;
 }) {
+  const [category, setCategory] = useState<SellCategoryKey>("equipment");
+
   const ownedPotions = POTION_IDS.filter(
     (id) => (inventory.potions[id] ?? 0) > 0,
   );
@@ -257,54 +267,67 @@ function SellTab({
 
   return (
     <div className="space-y-3">
-      {ownedPotions.length > 0 && (
-        <SellSection
-          label="물약"
-          rows={ownedPotions.map((id) => ({
-            key: id,
-            name: POTIONS[id].name,
-            description: POTIONS[id].description,
-            owned: inventory.potions[id] ?? 0,
-            unitPrice: getPotionSellPrice(id),
-            onSell: (qty) => onSellPotion(id, qty),
-          }))}
-        />
-      )}
-      {ownedMaterials.length > 0 && (
-        <SellSection
-          label="재료"
-          rows={ownedMaterials.map((id) => ({
-            key: id,
-            name: MATERIALS[id].name,
-            description: MATERIALS[id].description,
-            owned: inventory.materials[id] ?? 0,
-            unitPrice: getMaterialSellPrice(id),
-            onSell: (qty) => onSellMaterial(id, qty),
-          }))}
-        />
-      )}
-      {ownedEquipment.length > 0 && (
-        <SellSection
-          label="장비"
-          rows={ownedEquipment.map((id) => ({
-            key: id,
-            name: ITEMS[id].name,
-            description: ITEMS[id].description ?? "",
-            owned: inventory.equipment[id] ?? 0,
-            unitPrice: getItemSellPrice(id),
-            onSell: (qty) => onSellEquipment(id, qty),
-          }))}
-        />
-      )}
+      <TabBar
+        tabs={SELL_TABS}
+        active={category}
+        onChange={setCategory}
+        ariaLabel="판매 카테고리"
+      />
+
+      {category === "equipment" &&
+        (ownedEquipment.length > 0 ? (
+          <SellRows
+            rows={ownedEquipment.map((id) => ({
+              key: id,
+              name: ITEMS[id].name,
+              description: ITEMS[id].description ?? "",
+              owned: inventory.equipment[id] ?? 0,
+              unitPrice: getItemSellPrice(id),
+              onSell: (qty) => onSellEquipment(id, qty),
+            }))}
+          />
+        ) : (
+          <SellCategoryEmpty label="장비" />
+        ))}
+
+      {category === "materials" &&
+        (ownedMaterials.length > 0 ? (
+          <SellRows
+            rows={ownedMaterials.map((id) => ({
+              key: id,
+              name: MATERIALS[id].name,
+              description: MATERIALS[id].description,
+              owned: inventory.materials[id] ?? 0,
+              unitPrice: getMaterialSellPrice(id),
+              onSell: (qty) => onSellMaterial(id, qty),
+            }))}
+          />
+        ) : (
+          <SellCategoryEmpty label="재료" />
+        ))}
+
+      {category === "potions" &&
+        (ownedPotions.length > 0 ? (
+          <SellRows
+            rows={ownedPotions.map((id) => ({
+              key: id,
+              name: POTIONS[id].name,
+              description: POTIONS[id].description,
+              owned: inventory.potions[id] ?? 0,
+              unitPrice: getPotionSellPrice(id),
+              onSell: (qty) => onSellPotion(id, qty),
+            }))}
+          />
+        ) : (
+          <SellCategoryEmpty label="포션" />
+        ))}
     </div>
   );
 }
 
-function SellSection({
-  label,
+function SellRows({
   rows,
 }: {
-  label: string;
   rows: Array<{
     key: string;
     name: string;
@@ -315,15 +338,18 @@ function SellSection({
   }>;
 }) {
   return (
-    <div>
-      <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-        {label}
-      </div>
-      <div className="space-y-2">
-        {rows.map(({ key, ...rest }) => (
-          <SellRow key={key} {...rest} />
-        ))}
-      </div>
+    <div className="space-y-2">
+      {rows.map(({ key, ...rest }) => (
+        <SellRow key={key} {...rest} />
+      ))}
+    </div>
+  );
+}
+
+function SellCategoryEmpty({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-dashed border-zinc-300 bg-white/60 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/60 dark:text-zinc-400">
+      판매할 {label}이(가) 없습니다.
     </div>
   );
 }
