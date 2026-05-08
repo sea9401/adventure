@@ -38,7 +38,15 @@ export function useProfile() {
 
   // 서버 /api/profile/setup 호출 — 중복 닉네임 검증·users.name 등록·savesKv 갱신.
   // 성공 시 로컬 state 도 갱신.
-  const submit = async (next: Profile): Promise<SubmitResult> => {
+  // Neon DB 콜드스타트 등으로 첫 호출이 실패하는 경우가 잦아 1회 자동 재시도(1초 backoff).
+  // 결정적 실패(400/409)는 재시도하지 않음.
+  const submit = async (
+    next: Profile,
+    attempt = 0,
+  ): Promise<SubmitResult> => {
+    const RETRY_DELAY_MS = 1000;
+    const MAX_ATTEMPTS = 2;
+
     let res: Response;
     try {
       res = await fetch("/api/profile/setup", {
@@ -47,11 +55,21 @@ export function useProfile() {
         body: JSON.stringify(next),
       });
     } catch {
+      if (attempt < MAX_ATTEMPTS - 1) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        return submit(next, attempt + 1);
+      }
       return { ok: false, reason: "network" };
     }
     if (res.status === 409) return { ok: false, reason: "taken" };
     if (res.status === 400) return { ok: false, reason: "invalid" };
-    if (!res.ok) return { ok: false, reason: "network" };
+    if (!res.ok) {
+      if (attempt < MAX_ATTEMPTS - 1) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        return submit(next, attempt + 1);
+      }
+      return { ok: false, reason: "network" };
+    }
     setProfile(next);
     return { ok: true };
   };
