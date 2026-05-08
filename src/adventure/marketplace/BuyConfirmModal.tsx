@@ -58,9 +58,6 @@ export function BuyConfirmModal({
                 <span className="ml-1 text-zinc-500">×{listing.quantity}</span>
               ) : null}
             </div>
-            <div className="text-xs text-zinc-500">
-              판매자 {listing.sellerName}
-            </div>
           </Card>
 
           <dl className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900">
