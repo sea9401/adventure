@@ -91,16 +91,29 @@ export function ChatPanel({
     };
   }, [open]);
 
+  // 패널을 처음 열었을 때 한 번은 무조건 맨 아래로 — 최신 메시지부터 보이게.
+  // open 이 false 가 되면 다음 열림에 다시 한 번 트리거되도록 ref 리셋.
+  const initialScrolledRef = useRef(false);
+  useEffect(() => {
+    if (!open) initialScrolledRef.current = false;
+  }, [open]);
+
   // 새 메시지가 추가되면 자동 스크롤 (이미 하단 근처에 있을 때만).
+  // 단, open 직후 첫 메시지 도착 시점엔 강제로 맨 아래로 한 번 정렬.
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
+    if (open && !initialScrolledRef.current && messages.length > 0) {
+      el.scrollTop = el.scrollHeight;
+      initialScrolledRef.current = true;
+      return;
+    }
     const nearBottom =
       el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     if (nearBottom) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, open]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
