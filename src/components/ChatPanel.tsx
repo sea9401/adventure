@@ -7,7 +7,7 @@ import { formatRelative } from "@/lib/notifications";
 type ChatMessage = {
   id: number;
   name: string;
-  level: number;
+  className: string;
   content: string;
   createdAt: number;
   mine: boolean;
@@ -24,7 +24,7 @@ async function fetchMessages(): Promise<ChatMessage[]> {
 
 async function postMessage(payload: {
   name: string;
-  level: number;
+  className: string;
   content: string;
 }): Promise<ChatMessage> {
   const res = await fetch("/api/chat", {
@@ -43,12 +43,12 @@ export function ChatPanel({
   open,
   onClose,
   name,
-  level,
+  className,
 }: {
   open: boolean;
   onClose: () => void;
   name: string;
-  level: number;
+  className: string;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -93,7 +93,7 @@ export function ChatPanel({
     setSending(true);
     setError(null);
     try {
-      const sent = await postMessage({ name, level, content: trimmed });
+      const sent = await postMessage({ name, className, content: trimmed });
       setMessages((prev) => {
         if (prev.some((m) => m.id === sent.id)) return prev;
         return [...prev, sent];
@@ -146,8 +146,8 @@ export function ChatPanel({
                 className={`flex flex-col gap-0.5 ${m.mine ? "items-end" : "items-start"}`}
               >
                 <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                  <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                    Lv.{m.level}
+                  <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    {m.className}
                   </span>
                   <span className="font-semibold text-zinc-700 dark:text-zinc-200">
                     {m.name}

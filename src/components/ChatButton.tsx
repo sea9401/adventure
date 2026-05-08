@@ -4,7 +4,13 @@ import { useState } from "react";
 import { ChatCircle } from "@phosphor-icons/react";
 import { ChatPanel } from "./ChatPanel";
 
-export function ChatButton({ name, level }: { name: string; level: number }) {
+export function ChatButton({
+  name,
+  className,
+}: {
+  name: string;
+  className: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -22,7 +28,7 @@ export function ChatButton({ name, level }: { name: string; level: number }) {
         open={open}
         onClose={() => setOpen(false)}
         name={name}
-        level={level}
+        className={className}
       />
     </>
   );

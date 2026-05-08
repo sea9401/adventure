@@ -674,7 +674,7 @@ function Home() {
               unreadCount={notifications.unreadCount}
               onOpen={notifications.markRead}
             />
-            <ChatButton name={character.name} level={character.level} />
+            <ChatButton name={character.name} className={character.className} />
             <SettingsMenu />
           </div>
         </header>

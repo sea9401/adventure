@@ -15,7 +15,7 @@ export async function GET() {
     .select({
       id: messages.id,
       name: messages.name,
-      level: messages.level,
+      className: messages.className,
       content: messages.content,
       createdAt: messages.createdAt,
       mine: messages.userId,
@@ -28,7 +28,7 @@ export async function GET() {
     .map((r) => ({
       id: r.id,
       name: r.name,
-      level: r.level,
+      className: r.className,
       content: r.content,
       createdAt: r.createdAt.getTime(),
       mine: r.mine === userId,
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
 
-  let body: { name?: unknown; level?: unknown; content?: unknown };
+  let body: { name?: unknown; className?: unknown; content?: unknown };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -50,15 +50,13 @@ export async function POST(req: Request) {
   }
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
-  const level =
-    typeof body.level === "number" && Number.isFinite(body.level)
-      ? Math.max(1, Math.floor(body.level))
-      : null;
+  const className =
+    typeof body.className === "string" ? body.className.trim() : "";
   const content =
     typeof body.content === "string" ? body.content.trim() : "";
 
   if (!name) return new Response("missing name", { status: 400 });
-  if (level === null) return new Response("missing level", { status: 400 });
+  if (!className) return new Response("missing className", { status: 400 });
   if (!content) return new Response("empty content", { status: 400 });
   if (content.length > MAX_LENGTH) {
     return new Response(`too long (max ${MAX_LENGTH})`, { status: 400 });
@@ -77,7 +75,7 @@ export async function POST(req: Request) {
 
   const [inserted] = await db
     .insert(messages)
-    .values({ userId, name, level, content })
+    .values({ userId, name, className, content })
     .returning({
       id: messages.id,
       createdAt: messages.createdAt,
@@ -86,7 +84,7 @@ export async function POST(req: Request) {
   return Response.json({
     id: inserted.id,
     name,
-    level,
+    className,
     content,
     createdAt: inserted.createdAt.getTime(),
     mine: true,
