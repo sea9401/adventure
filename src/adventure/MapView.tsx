@@ -6,7 +6,13 @@ import {
   getAdjacent,
   type RegionId,
 } from "./data/world";
+import {
+  evaluateEdgeRequirement,
+  findEdgeRequirement,
+  type EdgeRequirementStatus,
+} from "./data/edge-requirement";
 import type { MapProgress } from "@/lib/map-progress";
+import type { AdventureLog } from "./log/storage";
 import { MapEdge } from "./MapEdge";
 import { MapNode, type NodeState } from "./MapNode";
 import { RegionDetail } from "./RegionDetail";
@@ -15,9 +21,11 @@ import { Card } from "@/components/ui/Card";
 export function MapView({
   progress,
   onProgressChange,
+  log,
 }: {
   progress: MapProgress;
   onProgressChange: (next: MapProgress) => void;
+  log: AdventureLog;
 }) {
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
 
@@ -42,10 +50,19 @@ export function MapView({
     ? (WORLD_MAP.regions.find((r) => r.id === selectedId) ?? null)
     : null;
   const selectedState = selectedId ? stateOf(selectedId) : null;
+  const isAdjacent = !!selectedId && adjacentToCurrent.has(selectedId);
+  const requirementStatus: EdgeRequirementStatus | null =
+    selectedId && isAdjacent
+      ? evaluateEdgeRequirement(
+          findEdgeRequirement(progress.currentRegionId, selectedId),
+          log,
+        )
+      : null;
   const canMove =
     !!selectedId &&
     selectedId !== progress.currentRegionId &&
-    adjacentToCurrent.has(selectedId);
+    isAdjacent &&
+    (requirementStatus?.met ?? true);
 
   const handleMove = () => {
     if (!selectedId || !canMove) return;
@@ -96,6 +113,7 @@ export function MapView({
         state={selectedState}
         canMove={canMove}
         onMove={handleMove}
+        requirementStatus={requirementStatus}
       />
     </div>
   );

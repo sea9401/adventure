@@ -1,4 +1,5 @@
 import type { Region } from "./data/world";
+import type { EdgeRequirementStatus } from "./data/edge-requirement";
 import type { NodeState } from "./MapNode";
 import { Card } from "@/components/ui/Card";
 
@@ -14,11 +15,13 @@ export function RegionDetail({
   state,
   canMove,
   onMove,
+  requirementStatus,
 }: {
   region: Region | null;
   state: NodeState | null;
   canMove: boolean;
   onMove: () => void;
+  requirementStatus?: EdgeRequirementStatus | null;
 }) {
   if (!region || !state) {
     return (
@@ -41,6 +44,12 @@ export function RegionDetail({
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         {region.description}
       </p>
+      {requirementStatus?.progress && !requirementStatus.met && (
+        <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          진행 조건: {requirementStatus.progress.label} 완성 (
+          {requirementStatus.progress.current} / {requirementStatus.progress.total})
+        </div>
+      )}
       <button
         type="button"
         disabled={!canMove}

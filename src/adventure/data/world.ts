@@ -29,9 +29,16 @@ export type Region = {
   image?: string;
 };
 
+// 지역 간 이동에 걸리는 선행 조건. 방향성이 있으며 edge 의 from→to 진행에만 적용된다.
+// 현재는 "지정한 지역의 모험의 서를 모두 조우(encountered=true)" 한 가지만 지원.
+export type EdgeRequirement = {
+  bestiaryOf?: RegionId;
+};
+
 export type RegionEdge = {
   from: RegionId;
   to: RegionId;
+  requires?: EdgeRequirement;
 };
 
 export type WorldMap = {
