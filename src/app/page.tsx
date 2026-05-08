@@ -595,10 +595,7 @@ export default function Home() {
 
   return (
     <>
-      <RegionBackground
-        regionId={currentRegion.id}
-        imageOverride={currentRegion.image}
-      />
+      <RegionBackground regionId={currentRegion.id} />
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/90 px-4 py-3 sm:px-6 dark:border-zinc-800 dark:bg-zinc-950/90">
           <div className="flex min-w-0 items-center gap-3">

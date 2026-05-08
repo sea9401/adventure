@@ -60,6 +60,7 @@ export const NPCS: Npc[] = [
     description: "바닷바람에 그을린 노인. 호수의 모든 변화를 기억한다.",
     greeting:
       "…어서 와요, 모험가.\n안개가 짙은 날엔 길을 잘 살펴야 해. 이 호수도 늘 같은 자리에 있는 건 아니거든.",
+    portrait: "/images/npc/marin.webp",
   },
   {
     id: "diola_fisher",

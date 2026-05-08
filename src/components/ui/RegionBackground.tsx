@@ -2,18 +2,16 @@ import { useEffect, useState } from "react";
 
 export function RegionBackground({
   regionId,
-  imageOverride,
 }: {
   regionId: string;
-  imageOverride?: string;
 }) {
   const [errored, setErrored] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setErrored(false);
-  }, [regionId, imageOverride]);
+  }, [regionId]);
   if (errored) return null;
-  const src = imageOverride ?? `/images/ui/${regionId}.webp`;
+  const src = `/images/ui/${regionId}.webp`;
   return (
     <div
       aria-hidden

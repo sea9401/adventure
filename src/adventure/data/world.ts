@@ -26,7 +26,6 @@ export type Region = {
   enemies: string[];
   tags?: RegionTag[];
   recommendedLevel?: number;
-  image?: string;
 };
 
 // 지역 간 이동에 걸리는 선행 조건. 방향성이 있으며 edge 의 from→to 진행에만 적용된다.
@@ -67,7 +66,6 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 380, y: 360 },
       biome: "plains",
       enemies: ["슬라임", "들개", "두더쥐"],
-      image: "/images/ui/plain.webp",
     },
     {
       id: "cave",
@@ -76,7 +74,6 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 270, y: 200 },
       biome: "cave",
       enemies: ["박쥐"],
-      image: "/images/ui/cave.webp",
     },
     {
       id: "forest",
@@ -85,7 +82,6 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 580, y: 240 },
       biome: "forest",
       enemies: ["거미", "들개", "산적"],
-      image: "/images/ui/forest.webp",
     },
     {
       id: "lake",
@@ -94,7 +90,6 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 440, y: 110 },
       biome: "lake",
       enemies: ["호수 님프"],
-      image: "/images/ui/mistlake.webp",
     },
     {
       id: "diola",
@@ -113,7 +108,6 @@ export const WORLD_MAP: WorldMap = {
       position: { x: 680, y: 400 },
       biome: "ruins",
       enemies: [],
-      image: "/images/ui/ruin.webp",
     },
   ],
   edges: [
