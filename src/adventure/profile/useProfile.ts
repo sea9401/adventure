@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AVATARS, type Avatar, type Gender } from "@/components/NameSetupModal";
+import { AVATARS, type Avatar, type Gender } from "@/adventure/profile/avatars";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 
 export const DEFAULT_NAME = "모험가";

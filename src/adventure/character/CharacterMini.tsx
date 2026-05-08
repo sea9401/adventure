@@ -2,7 +2,7 @@ import { Diamond, Shield, Sword, User } from "@phosphor-icons/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { StatBar } from "@/components/ui/StatBar";
-import type { Gender } from "@/components/NameSetupModal";
+import type { Gender } from "@/adventure/profile/avatars";
 import type { EquipItem, EquipSlot } from "@/adventure/data/items";
 import type { Character, EquippedSlots } from "./types";
 

@@ -1,6 +1,6 @@
 import type { EquipItem } from "@/adventure/data/items";
 import type { StatKey } from "@/adventure/data/stats";
-import type { Gender } from "@/components/NameSetupModal";
+import type { Gender } from "@/adventure/profile/avatars";
 
 export type Skill = {
   name: string;
