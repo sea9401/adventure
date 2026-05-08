@@ -27,6 +27,12 @@ const TABS: { key: InvTabKey; label: string }[] = [
   { key: "potions", label: "포션" },
 ];
 
+const SLOT_TABS: { key: EquipSlot; label: string }[] = [
+  { key: "weapon", label: "무기" },
+  { key: "armor", label: "방어구" },
+  { key: "accessory", label: "장신구" },
+];
+
 const BONUS_LABELS: Record<keyof EquipBonus, string> = {
   atk: "공격력",
   def: "방어력",
@@ -64,6 +70,7 @@ export function InventoryView({
   onUnequip?: (slot: EquipSlot) => void;
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
+  const [equipSlotTab, setEquipSlotTab] = useState<EquipSlot>("weapon");
 
   const ownedEquipment = (Object.keys(ITEMS) as ItemId[])
     .map((id) => ({ id, item: ITEMS[id], count: inventory.equipment[id] ?? 0 }))
@@ -113,7 +120,22 @@ export function InventoryView({
             <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               보유 장비
             </h3>
-            {ownedEquipment.map(({ id, item, count }) => {
+            <TabBar
+              tabs={SLOT_TABS}
+              active={equipSlotTab}
+              onChange={setEquipSlotTab}
+              ariaLabel="장비 슬롯 탭"
+              size="sm"
+            />
+            {ownedEquipment.filter((e) => e.item.slot === equipSlotTab)
+              .length === 0 && (
+              <p className="px-1 py-3 text-xs text-zinc-500 dark:text-zinc-400">
+                해당 종류의 장비가 없습니다.
+              </p>
+            )}
+            {ownedEquipment
+              .filter((e) => e.item.slot === equipSlotTab)
+              .map(({ id, item, count }) => {
               const current = equipped?.[item.slot] ?? null;
               const isEquipped = findItemId(current) === id;
               const diff = isEquipped ? [] : computeDiff(item, current);
