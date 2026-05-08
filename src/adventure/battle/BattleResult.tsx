@@ -3,7 +3,8 @@
 import type { BattleOutcome } from "./engine";
 import { Card } from "@/components/ui/Card";
 
-// 패배 시 BattleScene 위에 띄우는 모달. 사용자 확인을 받아야 시작 마을 이동/HP 회복이 진행된다.
+// 패배 시 BattleScene 위에 띄우는 모달. 사용자 확인을 받아야 시작 마을 이동/HP 0 처리가 진행된다.
+// (HP는 풀회복하지 않고 0으로 두어 치유소 사용을 유도.)
 // (승리는 cooldown 동안 BattleScene이 그대로 보이므로 결과 카드를 띄우지 않는다.)
 export function BattleResult({
   outcome,
@@ -33,7 +34,7 @@ export function BattleResult({
           </div>
         ) : (
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            시작 마을로 옮겨졌다.
+            시작 마을로 옮겨졌다. 치유소에서 회복이 필요하다.
           </p>
         )}
         <button

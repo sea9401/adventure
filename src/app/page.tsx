@@ -474,8 +474,8 @@ export default function Home() {
         }
       }
     } else {
-      // 패배 — HP 회복 + 시작 마을 강제 이동 + 자동 사냥 해제
-      characterStateHook.restoreHpFull();
+      // 패배 — HP 0 (치유소 유도) + 시작 마을 강제 이동 + 자동 사냥 해제
+      characterStateHook.setHp(0);
       setHuntingActive(false);
       setMapProgress((prev) => ({
         currentRegionId: START_REGION_ID,
@@ -485,7 +485,7 @@ export default function Home() {
       }));
       addNotification(
         "battle_lose",
-        `${payload.enemyName}에게 쓰러졌다... 시작 마을로 돌아왔다.`,
+        `${payload.enemyName}에게 쓰러졌다... 시작 마을 치유소에서 회복이 필요하다.`,
         { battleLog: payload.log },
       );
     }
@@ -531,7 +531,8 @@ export default function Home() {
       // EXP/HP/사망
       if (result.expGained > 0) characterStateHook.addExp(result.expGained);
       if (result.died) {
-        characterStateHook.restoreHpFull();
+        // HP 0 으로 두고 치유소 사용을 유도
+        characterStateHook.setHp(0);
         setMapProgress((prev) => ({
           currentRegionId: START_REGION_ID,
           visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
