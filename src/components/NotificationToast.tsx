@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import type { AppNotification, NotificationKind } from "@/lib/notifications";
 
-const TOAST_DURATION_MS = 3000;
+const TOAST_DURATION_MS = 2000;
 const MAX_VISIBLE_TOASTS = 3;
 
 // 토스트로 띄우지 않을 알림 종류 — 사용자가 직접 일으킨 액션의 결과는 토스트 대신 벨/로그에서만 확인.
-const TOAST_BLOCKED_KINDS = new Set<NotificationKind>(["battle_win"]);
+const TOAST_BLOCKED_KINDS = new Set<NotificationKind>([
+  "battle_win",
+  "battle_lose",
+]);
 
 type ToastItem = {
   id: string;

@@ -6,7 +6,7 @@ import type { Gender } from "@/components/NameSetupModal";
 import type { EquipItem, EquipSlot } from "@/adventure/data/items";
 import type { Character, EquippedSlots } from "./types";
 
-const EQUIP_SLOT_META: {
+export const EQUIP_SLOT_META: {
   slot: EquipSlot;
   icon: ReactNode;
   label: string;

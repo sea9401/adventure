@@ -17,6 +17,7 @@ import {
   User,
 } from "@phosphor-icons/react";
 import { SettingsMenu } from "@/components/SettingsMenu";
+import { ChatButton } from "@/components/ChatButton";
 import { NameSetupModal } from "@/components/NameSetupModal";
 import { MapView } from "@/adventure/MapView";
 import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
@@ -666,6 +667,7 @@ function Home() {
               unreadCount={notifications.unreadCount}
               onOpen={notifications.markRead}
             />
+            <ChatButton name={character.name} level={character.level} />
             <SettingsMenu />
           </div>
         </header>
@@ -933,14 +935,26 @@ function Home() {
                     className="text-rose-500"
                   />
                 }
-                title="치유소"
+                title="치료소"
                 description={
                   character.hp >= character.maxHp &&
                   character.mp >= character.maxMp
                     ? "체력과 마력이 가득 차 있다."
                     : "지친 몸을 회복할 수 있는 곳."
                 }
-                onClick={() => setSubView("healing")}
+                onClick={() => {
+                  if (mapProgress.currentRegionId !== START_REGION_ID) {
+                    setMapProgress((prev) => ({
+                      currentRegionId: START_REGION_ID,
+                      visitedRegionIds: prev.visitedRegionIds.includes(
+                        START_REGION_ID,
+                      )
+                        ? prev.visitedRegionIds
+                        : [...prev.visitedRegionIds, START_REGION_ID],
+                    }));
+                  }
+                  setSubView("healing");
+                }}
               />
               <EntryCard
                 icon={
@@ -993,13 +1007,16 @@ function Home() {
             </div>
           )}
           {tab === "town" && isTown && subView === "healing" && (() => {
-            const healCost = character.gold > 0 ? 1 : 0;
+            const healCost = character.gold < 50 ? 0 : 1;
             const isFull =
               character.hp >= character.maxHp &&
               character.mp >= character.maxMp;
             return (
               <div className="space-y-3">
-                <SubViewHeader title="치유소" onBack={() => setSubView(null)} />
+                <SubViewHeader
+                  title="시작 마을 치료소"
+                  onBack={() => setSubView(null)}
+                />
                 <Card as="section" padding="md">
                   <div className="flex items-center gap-3">
                     <FirstAid
@@ -1008,7 +1025,7 @@ function Home() {
                       className="shrink-0 text-rose-500"
                     />
                     <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                      체력과 마력을 모두 회복할 수 있다. 비용 1 G — 소지금이 없을 때는 무료.
+                      체력과 마력을 모두 회복할 수 있다. 비용 1 G — 소지금이 50 G 미만이면 무료.
                     </p>
                   </div>
                   <div className="mt-4 space-y-2">
