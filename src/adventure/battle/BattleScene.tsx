@@ -9,7 +9,7 @@ import {
   type NotificationKind,
 } from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
-import type { Gender } from "@/components/NameSetupModal";
+import type { Gender } from "@/adventure/profile/avatars";
 
 export type BattlePlayerStatus = {
   gender: Gender;

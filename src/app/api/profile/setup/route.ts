@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { users, savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
-import { AVATARS } from "@/components/NameSetupModal";
+import { AVATARS } from "@/adventure/profile/avatars";
 
 const NAME_MIN = 1;
 const NAME_MAX = 16;
