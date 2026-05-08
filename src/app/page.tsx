@@ -104,6 +104,7 @@ import {
 import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
+import { SaveProvider } from "@/lib/storage/SaveProvider";
 
 type TabKey = "adventure" | "town" | "character";
 
@@ -132,7 +133,15 @@ function MainTabs({
   );
 }
 
-export default function Home() {
+export default function Page() {
+  return (
+    <SaveProvider>
+      <Home />
+    </SaveProvider>
+  );
+}
+
+function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [tab, setTab] = useState<TabKey>("adventure");
   const [subView, setSubView] = useState<string | null>(null);
@@ -142,8 +151,8 @@ export default function Home() {
   const [huntingActive, setHuntingActiveState] = useState(false);
   useEffect(() => {
     try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (sessionStorage.getItem("hunting-active") === "true") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHuntingActiveState(true);
       }
     } catch {}

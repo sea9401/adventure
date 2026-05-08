@@ -10,6 +10,7 @@ export const SYNCED_KEYS = [
   "quest-progress.v1",
   "adventure-log.v1",
   "map.v1",
+  "edge-unlocks.v1",
 ] as const;
 
 export type SyncedKey = (typeof SYNCED_KEYS)[number];
