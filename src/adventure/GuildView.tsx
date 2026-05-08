@@ -1,11 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Coins, Scroll, Star } from "@phosphor-icons/react";
 import { getQuestsForRegion, type Quest } from "./data/quests";
 import type { RegionId } from "./data/world";
 import type { QuestProgressEntry } from "./quests/storage";
+import { cooldownStatus } from "./quests/cooldown";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
+import { formatDuration } from "@/lib/format";
 
 export function GuildView({
   regionId,
@@ -21,6 +24,17 @@ export function GuildView({
   onClaim: (id: string) => void;
 }) {
   const quests = getQuestsForRegion(regionId);
+  const [now, setNow] = useState(() => Date.now());
+
+  // 쿨다운 중인 카드가 하나라도 있을 때만 분 단위 tick.
+  const anyOnCooldown = quests.some((q) =>
+    cooldownStatus(q, getEntry(q.id), now).onCooldown,
+  );
+  useEffect(() => {
+    if (!anyOnCooldown) return;
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, [anyOnCooldown]);
 
   if (quests.length === 0) {
     return (
@@ -40,6 +54,7 @@ export function GuildView({
           quest={q}
           entry={getEntry(q.id)}
           characterLevel={characterLevel}
+          now={now}
           onAccept={() => onAccept(q.id)}
           onClaim={() => onClaim(q.id)}
         />
@@ -52,18 +67,21 @@ function QuestCard({
   quest,
   entry,
   characterLevel,
+  now,
   onAccept,
   onClaim,
 }: {
   quest: Quest;
   entry: QuestProgressEntry;
   characterLevel: number;
+  now: number;
   onAccept: () => void;
   onClaim: () => void;
 }) {
   const meetsLevel = characterLevel >= quest.requiredLevel;
   const targetCount = quest.target.count;
   const pct = Math.min(1, entry.progress / targetCount);
+  const cd = cooldownStatus(quest, entry, now);
 
   let actionLabel: string;
   let actionDisabled = false;
@@ -71,9 +89,16 @@ function QuestCard({
   let actionVariant: "default" | "ready" = "default";
 
   if (entry.state === "available") {
-    actionLabel = meetsLevel ? "수주하기" : `Lv.${quest.requiredLevel} 필요`;
-    actionDisabled = !meetsLevel;
-    actionHandler = onAccept;
+    if (cd.onCooldown) {
+      actionLabel = `재의뢰 ${formatDuration(cd.remaining)}`;
+      actionDisabled = true;
+    } else if (!meetsLevel) {
+      actionLabel = `Lv.${quest.requiredLevel} 필요`;
+      actionDisabled = true;
+    } else {
+      actionLabel = "수주하기";
+      actionHandler = onAccept;
+    }
   } else if (entry.state === "active") {
     actionLabel = `진행 중 ${entry.progress}/${targetCount}`;
     actionDisabled = true;

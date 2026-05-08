@@ -9,6 +9,7 @@ import {
   type QuestProgressEntry,
   type QuestProgressMap,
 } from "./storage";
+import { cooldownStatus } from "./cooldown";
 
 export type ClaimResult =
   | { ok: true; quest: Quest }
@@ -43,6 +44,8 @@ export function useQuests() {
     const cur = progressRef.current;
     const entry = cur[id] ?? defaultQuestEntry();
     if (entry.state !== "available") return;
+    const quest = getQuestById(id);
+    if (quest && cooldownStatus(quest, entry, Date.now()).onCooldown) return;
     const next: QuestProgressMap = {
       ...cur,
       [id]: { ...entry, state: "active", progress: 0 },

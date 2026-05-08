@@ -68,7 +68,7 @@
 ## 6. 의뢰 / 퀘스트
 
 - **길드 의뢰** — `quests.ts`. 몬스터 처치형 (`target.monsterName`, `target.count`). 수주 → 진행 → 보상 받기 → (반복 가능 시) 다시 수주.
-- **반복 의뢰** — `repeatable: true`로 무한 반복 + 누적 완료 횟수 표시.
+- **반복 의뢰** — `repeatable: true`로 무한 반복 + 누적 완료 횟수 표시. 보상 수령 후 12시간 쿨다운 (의뢰별 `cooldownMs` 로 override 가능).
 - **레벨 게이트** — `requiredLevel` 미달 시 수주 버튼 잠금.
 - **저장** — `quest-progress.v1`. 상태(`available`/`active`/`ready`/`completed`) + 진행도 + 누적 완료 횟수.
 

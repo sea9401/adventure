@@ -27,9 +27,14 @@ export type Quest = {
   target: { monsterName: string; count: number };
   reward: QuestReward;
   repeatable: boolean;
+  // 반복 의뢰의 재수주 쿨다운(ms). 미지정 시 REPEAT_COOLDOWN_MS_DEFAULT.
+  // repeatable=false 인 경우 의미 없음.
+  cooldownMs?: number;
   // 설정 시 길드 게시판에 노출되지 않고 해당 NPC 대화에서만 진행.
   giverNpcId?: NpcId;
 };
+
+export const REPEAT_COOLDOWN_MS_DEFAULT = 12 * 60 * 60 * 1000;
 
 export const QUESTS: Quest[] = [
   {
