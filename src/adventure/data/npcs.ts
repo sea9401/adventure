@@ -90,7 +90,7 @@ export const NPCS: Npc[] = [
     id: "diola_fisher",
     region: "diola",
     name: "어부 카이",
-    role: "quest",
+    role: "lore",
     description: "매일 새벽 호수에 나가는 청년. 말수가 적다.",
     greeting:
       "…뭐.\n물고기가 줄었어. 그것뿐이야. 호수에 뭔가 있어.",
