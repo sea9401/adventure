@@ -129,21 +129,22 @@ export const ITEMS = {
     name: "망령의 망토",
     slot: "armor",
     stats: [
-      { label: "방어력", value: "+1" },
+      { label: "방어력", value: "+2" },
+      { label: "민첩", value: "+1" },
       { label: "속도", value: "+2" },
     ],
-    bonus: { def: 1, spd: 2 },
+    bonus: { def: 2, dex: 1, spd: 2 },
     description: "떠도는 망령이 두르고 있던 누더기 망토. 입으면 발걸음이 어딘가 가벼워진다.",
   } satisfies EquipItem,
   sticky_cloak: {
-    name: "끈끈이 망토",
+    name: "비단 로브",
     slot: "armor",
     stats: [
       { label: "방어력", value: "+2" },
-      { label: "민첩", value: "+2" },
+      { label: "행운", value: "+4" },
     ],
-    bonus: { def: 2, dex: 2 },
-    description: "거미줄을 촘촘히 엮은 망토. 옷자락에 닿는 공격이 미끄러진다.",
+    bonus: { def: 2, luk: 4 },
+    description: "거미줄을 비단처럼 곱게 짜낸 로브. 걸치고 있으면 묘하게 운이 따른다고 한다.",
   } satisfies EquipItem,
   bat_hood: {
     name: "박쥐가죽 후드",

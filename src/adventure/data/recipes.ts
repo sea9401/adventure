@@ -18,6 +18,8 @@ export type Recipe = {
   description: string;
   ingredients: RecipeIngredient[];
   result: RecipeResult;
+  /** 거래소 등록 / 우편 선물 가능 여부. 미지정/true → 가능. */
+  tradable?: boolean;
 };
 
 export const RECIPES: Recipe[] = [
@@ -61,8 +63,8 @@ export const RECIPES: Recipe[] = [
   },
   {
     id: "sticky_cloak",
-    name: "끈끈이 망토 제작서",
-    description: `${ITEMS.sticky_cloak.name}을(를) 만든다. 거미줄을 촘촘히 엮어 옷감으로 짠다.`,
+    name: "비단 로브 제작서",
+    description: `${ITEMS.sticky_cloak.name}을(를) 만든다. 거미줄을 비단처럼 곱게 짜낸다.`,
     ingredients: [
       { kind: "material", materialId: "spider_silk", count: 5 },
       { kind: "material", materialId: "slime_chunk", count: 3 },
