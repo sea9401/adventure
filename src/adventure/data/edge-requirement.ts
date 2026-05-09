@@ -22,6 +22,8 @@ export type EvaluateContext = {
   log: AdventureLog;
   /** 이미 해금된 엣지면 모든 조건을 충족된 것으로 간주 (시련 등 영구 해금용). */
   isEdgeUnlocked?: (from: RegionId, to: RegionId) => boolean;
+  /** story flag 검사 — story 종류 엣지 평가에만 사용. */
+  hasStoryFlag?: (flagId: string) => boolean;
   from?: RegionId;
   to?: RegionId;
 };
@@ -72,6 +74,15 @@ export function evaluateEdgeRequirement(
       kind: "trial",
       reason: `${label} 통과 필요`,
       progress: { current: 0, total: req.battles, label },
+    };
+  }
+
+  if (req.kind === "story") {
+    const has = ctx.hasStoryFlag?.(req.flagId) ?? false;
+    return {
+      met: has,
+      kind: "story",
+      reason: has ? undefined : req.reason ?? "아직 길을 알지 못한다.",
     };
   }
 

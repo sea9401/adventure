@@ -4,7 +4,12 @@ import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import {
   SUZY_FLAG_ACCEPTED,
   SUZY_FLAG_KAI_SEEN,
+  SUZY_FLAG_COMPLETE,
 } from "./SuzyDialogue";
+
+// 카이의 두 번째 떡밥 — 수지 의뢰가 완전히 끝난 뒤 새로 열림.
+// 호수에 이상한 게 있다, 후드 쓴 사람이 알지도 모른다는 힌트.
+export const KAI_FLAG_LAKE_HINT = "kai_lake_hint";
 
 type Props = {
   npc: Npc;
@@ -15,8 +20,10 @@ type Props = {
 export function KaiDialogue({ npc, onClose, storyFlags }: Props) {
   const accepted = storyFlags.has(SUZY_FLAG_ACCEPTED);
   const kaiSeen = storyFlags.has(SUZY_FLAG_KAI_SEEN);
+  const suzyComplete = storyFlags.has(SUZY_FLAG_COMPLETE);
+  const lakeHint = storyFlags.has(KAI_FLAG_LAKE_HINT);
 
-  // 수지의 부탁을 받았고, 아직 카이에게 듣지 못한 경우 — 한 번만 진행.
+  // Stage C — 수지의 부탁을 받았고, 아직 카이에게 듣지 못한 경우.
   if (accepted && !kaiSeen) {
     return (
       <NpcDialogue
@@ -29,6 +36,27 @@ export function KaiDialogue({ npc, onClose, storyFlags }: Props) {
           label: "고맙다고 한다",
           onClick: () => {
             storyFlags.set(SUZY_FLAG_KAI_SEEN);
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+
+  // Stage E — 수지 의뢰가 완전히 끝난 뒤(보상까지 수령), 카이가 새로운 이야기.
+  // 일에 쫓겨 말 못 하던 진짜 이유 — 호수가 이상하다.
+  if (suzyComplete && !lakeHint) {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "수지 잘 만나고 오셨다고요? 다행이네요, 정말.\n…사실은요. 일이 바쁜 것도 맞는데, 그것만은 아니에요. 요즘 호수가 이상해요. 새벽마다 그물을 걷으러 나가면 물안개 너머에서 묘한 노랫소리 같은 게 들리고, 어떤 날은 잡혀 올라온 물고기가 전부 굳어서 돌처럼 뻣뻣해요.\n수지한테는 차마 이런 말 못 하겠어서… 누구한테도 말 안 했는데, 여관에 후드 쓴 사람이 묵고 있다고 들었어요. 폐허 쪽 길도 안다고 하더군요. 한번 찾아가 보세요."
+        }
+        primaryAction={{
+          label: "여관으로 가본다",
+          onClick: () => {
+            storyFlags.set(KAI_FLAG_LAKE_HINT);
             onClose();
           },
         }}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Region } from "./data/world";
+import { pickEnemyName, type Region } from "./data/world";
 import { MONSTERS, type Monster } from "./data/monsters";
 import type {
   BattleLogEntry,
@@ -34,9 +34,8 @@ export type BattleEndPayload = {
 };
 
 function pickEnemy(region: Region): Monster | null {
-  if (region.enemies.length === 0) return null;
-  const name = region.enemies[Math.floor(Math.random() * region.enemies.length)];
-  return MONSTERS[name] ?? null;
+  const name = pickEnemyName(region);
+  return name ? (MONSTERS[name] ?? null) : null;
 }
 
 export function BattleView({

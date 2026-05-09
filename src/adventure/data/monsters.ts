@@ -26,6 +26,8 @@ export type Monster = {
   atk: number;
   def: number;
   spd: number;
+  /** 0~100. 플레이어 공격을 % 확률로 회피. 0/undefined = 항상 피격. */
+  evasionPct?: number;
   exp: number;
   drops?: MonsterDrop[];
 };
@@ -122,7 +124,7 @@ export const MONSTERS: Record<string, Monster> = {
     image: "/images/monster/bandit.webp",
     hp: 98,
     atk: 9,
-    def: 4,
+    def: 3,
     spd: 4,
     exp: 8,
     drops: [
@@ -136,12 +138,51 @@ export const MONSTERS: Record<string, Monster> = {
     image: "/images/monster/lakenymph.webp",
     hp: 117,
     atk: 11,
-    def: 5,
+    def: 4,
     spd: 5,
     exp: 10,
     drops: [
       { kind: "material", materialId: "fairy_dust", chance: 0.05 },
       { kind: "equip", itemId: "nymph_ring", chance: 0.005 },
+    ],
+  },
+  "부서진 골렘": {
+    name: "부서진 골렘",
+    tags: ["golem"],
+    hp: 180,
+    atk: 13,
+    def: 6,
+    spd: 2,
+    exp: 14,
+    drops: [
+      { kind: "material", materialId: "ruin_fragment", chance: 0.1 },
+      { kind: "equip", itemId: "golem_hammer", chance: 0.001 },
+    ],
+  },
+  "떠도는 망령": {
+    name: "떠도는 망령",
+    tags: ["undead", "spirit"],
+    hp: 95,
+    atk: 14,
+    def: 3,
+    spd: 8,
+    evasionPct: 20,
+    exp: 13,
+    drops: [
+      { kind: "material", materialId: "soul_crystal", chance: 0.06 },
+      { kind: "equip", itemId: "wraith_cloak", chance: 0.002 },
+    ],
+  },
+  "폐허 늑대": {
+    name: "폐허 늑대",
+    tags: ["beast", "undead"],
+    hp: 130,
+    atk: 12,
+    def: 4,
+    spd: 6,
+    exp: 11,
+    drops: [
+      { kind: "material", materialId: "wilddog_fang", chance: 0.05 },
     ],
   },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.

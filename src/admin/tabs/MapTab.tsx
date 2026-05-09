@@ -124,7 +124,9 @@ export function MapTab() {
                     ? `bestiary:${e.requires.regionId}`
                     : e.requires.kind === "trial"
                       ? `trial:${e.requires.battles}전(${e.requires.enemiesFrom})`
-                      : "—";
+                      : e.requires.kind === "story"
+                        ? `story:${e.requires.flagId}`
+                        : "—";
                 return (
                   <tr
                     key={`${e.from}-${e.to}`}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { WORLD_MAP, type RegionId } from "./data/world";
+import { WORLD_MAP, pickEnemyName, type RegionId } from "./data/world";
 import { MONSTERS, type Monster } from "./data/monsters";
 import {
   useBattle,
@@ -21,10 +21,9 @@ import type { BattleEndPayload } from "./BattleView";
 
 function pickEnemyFor(regionId: RegionId): Monster | null {
   const region = WORLD_MAP.regions.find((r) => r.id === regionId);
-  if (!region || region.enemies.length === 0) return null;
-  const name =
-    region.enemies[Math.floor(Math.random() * region.enemies.length)];
-  return MONSTERS[name] ?? null;
+  if (!region) return null;
+  const name = pickEnemyName(region);
+  return name ? (MONSTERS[name] ?? null) : null;
 }
 
 export type TrialEdge = {

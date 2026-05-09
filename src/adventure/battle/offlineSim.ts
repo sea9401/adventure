@@ -7,7 +7,7 @@
 // - 한 턴당 시간 비용은 useBattle의 TURN_INTERVAL_MS(0.5s)를 그대로 사용
 // - 시뮬 가능 시간은 OFFLINE_SIM_MAX_MS(30분)로 cap — 오래 자리비워도 그 이상은 보상 없음
 
-import type { Region } from "../data/world";
+import { pickEnemyName, type Region } from "../data/world";
 import { MONSTERS } from "../data/monsters";
 import { POTIONS, type PotionId } from "../data/potions";
 import {
@@ -72,8 +72,8 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
   let elapsed = 0;
 
   while (elapsed < cap && currentHp > 0) {
-    const idx = Math.floor(rng() * input.region.enemies.length);
-    const enemyName = input.region.enemies[idx];
+    const enemyName = pickEnemyName(input.region, rng);
+    if (!enemyName) break;
     const enemy = MONSTERS[enemyName];
     if (!enemy) break;
 

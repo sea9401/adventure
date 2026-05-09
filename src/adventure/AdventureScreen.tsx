@@ -12,6 +12,7 @@ import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogu
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { SuzyDialogue } from "@/adventure/town/dialogues/SuzyDialogue";
 import { KaiDialogue } from "@/adventure/town/dialogues/KaiDialogue";
+import { StrangerDialogue } from "@/adventure/town/dialogues/StrangerDialogue";
 import { WoodcutterJimmyDialogue } from "@/adventure/town/dialogues/WoodcutterJimmyDialogue";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
@@ -190,6 +191,15 @@ export function AdventureScreen() {
                 />
               );
             }
+            if (npc.id === "diola_stranger") {
+              return (
+                <StrangerDialogue
+                  npc={npc}
+                  onClose={close}
+                  storyFlags={storyFlags}
+                />
+              );
+            }
             return null;
           }}
         />
@@ -235,6 +245,7 @@ export function AdventureScreen() {
           log={adventureLog.log}
           playerHp={character.hp}
           isEdgeUnlocked={edgeUnlocks.isUnlocked}
+          hasStoryFlag={storyFlags.has}
           onTrialStart={(from, to) => {
             const req = findEdgeRequirement(from, to);
             if (!req || req.kind !== "trial") return;

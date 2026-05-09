@@ -24,6 +24,7 @@ export function MapView({
   log,
   playerHp,
   isEdgeUnlocked,
+  hasStoryFlag,
   onTrialStart,
 }: {
   progress: MapProgress;
@@ -31,6 +32,7 @@ export function MapView({
   log: AdventureLog;
   playerHp: number;
   isEdgeUnlocked: (from: RegionId, to: RegionId) => boolean;
+  hasStoryFlag: (flagId: string) => boolean;
   onTrialStart: (from: RegionId, to: RegionId) => void;
 }) {
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
@@ -66,6 +68,7 @@ export function MapView({
       ? evaluateEdgeRequirement(selectedReq, {
           log,
           isEdgeUnlocked,
+          hasStoryFlag,
           from: progress.currentRegionId,
           to: selectedId,
         })

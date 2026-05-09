@@ -69,6 +69,20 @@ export const MATERIALS = {
     price: 18,
     inShop: false,
   },
+  ruin_fragment: {
+    id: "ruin_fragment",
+    name: "폐허 잔해",
+    description: "옛 문명의 돌 조각. 미세한 마력이 남아 있다.",
+    price: 12,
+    inShop: false,
+  },
+  soul_crystal: {
+    id: "soul_crystal",
+    name: "영혼 결정",
+    description: "망령에게서 떨어진 푸르스름한 결정. 만지면 서늘하다.",
+    price: 25,
+    inShop: false,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;

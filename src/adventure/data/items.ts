@@ -115,6 +115,26 @@ export const ITEMS = {
     bonus: { spd: 2 },
     description: "은은하게 푸른빛이 도는 가는 반지. 호수 님프의 가호가 깃들어 있다.",
   } satisfies EquipItem,
+  golem_hammer: {
+    name: "골렘의 망치",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+7" },
+      { label: "속도", value: "-2" },
+    ],
+    bonus: { atk: 7, spd: -2 },
+    description: "부서진 골렘의 팔에서 떼어낸 둔중한 돌망치. 휘두르려면 두 손이 필요하다.",
+  } satisfies EquipItem,
+  wraith_cloak: {
+    name: "망령의 망토",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+1" },
+      { label: "속도", value: "+2" },
+    ],
+    bonus: { def: 1, spd: 2 },
+    description: "떠도는 망령이 두르고 있던 누더기 망토. 입으면 발걸음이 어딘가 가벼워진다.",
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;

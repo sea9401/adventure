@@ -132,6 +132,27 @@ export function advanceTurn(
         ? player.powerAttackBonus!
         : 0;
 
+    // 적 회피 — 데미지 굴리기 전에 1차 판정. 회피하면 공격 1회가 그대로 빗나간다.
+    const enemyEvasionPct = state.enemy.evasionPct ?? 0;
+    if (enemyEvasionPct > 0 && Math.random() * 100 < enemyEvasionPct) {
+      const log = appendLog(state.log, {
+        kind: "player_attack",
+        text: `${state.enemy.name}이(가) 공격을 피했다.`,
+      });
+      const attacksLeft = state.playerAttacksLeft - 1;
+      if (attacksLeft > 0) {
+        return { ...state, log, playerAttacksLeft: attacksLeft };
+      }
+      return {
+        ...state,
+        log,
+        phase: "enemy",
+        playerAttacksLeft: Math.max(1, player.attackCount),
+        completedPlayerTurns: state.completedPlayerTurns + 1,
+        doubleStrikeUsedThisTurn: false,
+      };
+    }
+
     // 크리티컬 — 매 공격마다 critChancePct 확률로 발동, 강공격 보너스 후 데미지에 ×CRIT_MULT.
     const critRoll = (player.critChancePct ?? 0) > 0
       ? Math.random() * 100 < (player.critChancePct ?? 0)
