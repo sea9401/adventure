@@ -43,7 +43,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 1,
     exp: 1,
     drops: [
-      { kind: "material", materialId: "rusty_nail", chance: 0.1 },
+      { kind: "material", materialId: "rusty_nail", chance: 0.05 },
       { kind: "recipe", recipeId: "nailed_baseball_bat", chance: 0.003 },
     ],
   },
@@ -71,8 +71,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 4,
     exp: 3,
     drops: [
-      { kind: "material", materialId: "wilddog_hide", chance: 0.1 },
-      { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
+      { kind: "material", materialId: "wilddog_hide", chance: 0.03 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.015 },
     ],
   },
   두더지: {
@@ -94,7 +94,7 @@ export const MONSTERS: Record<string, Monster> = {
     def: 2,
     spd: 7,
     exp: 4,
-    drops: [{ kind: "material", materialId: "bat_eye", chance: 0.05 }],
+    drops: [{ kind: "material", materialId: "bat_eye", chance: 0.02 }],
   },
   동굴뱀: {
     name: "동굴뱀",
@@ -105,7 +105,7 @@ export const MONSTERS: Record<string, Monster> = {
     def: 2,
     spd: 5,
     exp: 5,
-    drops: [{ kind: "material", materialId: "hard_crystal", chance: 0.05 }],
+    drops: [{ kind: "material", materialId: "hard_crystal", chance: 0.02 }],
   },
   거미: {
     name: "거미",
@@ -116,7 +116,7 @@ export const MONSTERS: Record<string, Monster> = {
     def: 3,
     spd: 6,
     exp: 6,
-    drops: [{ kind: "material", materialId: "spider_silk", chance: 0.15 }],
+    drops: [{ kind: "material", materialId: "spider_silk", chance: 0.03 }],
   },
   산적: {
     name: "산적",
@@ -142,7 +142,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 10,
     drops: [
-      { kind: "material", materialId: "fairy_dust", chance: 0.05 },
+      { kind: "material", materialId: "fairy_dust", chance: 0.02 },
       { kind: "equip", itemId: "nymph_ring", chance: 0.005 },
     ],
   },
@@ -155,7 +155,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 2,
     exp: 14,
     drops: [
-      { kind: "material", materialId: "ruin_fragment", chance: 0.1 },
+      { kind: "material", materialId: "ruin_fragment", chance: 0.05 },
       { kind: "equip", itemId: "golem_hammer", chance: 0.001 },
     ],
   },
@@ -169,7 +169,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 20,
     exp: 13,
     drops: [
-      { kind: "material", materialId: "soul_crystal", chance: 0.06 },
+      { kind: "material", materialId: "soul_crystal", chance: 0.01 },
       { kind: "equip", itemId: "wraith_cloak", chance: 0.002 },
     ],
   },
@@ -182,7 +182,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 6,
     exp: 11,
     drops: [
-      { kind: "material", materialId: "wilddog_fang", chance: 0.05 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
     ],
   },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
