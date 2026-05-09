@@ -39,6 +39,9 @@ export type OfflineSimulationOptions = {
   // 사용자가 명시적으로 자동 사냥을 시작했는지(전투 시작 버튼 누름 후).
   // false이면 베이스라인만 갱신하고 시뮬은 돌리지 않는다.
   active: boolean;
+  // 사용자가 현재 BattleView 화면에 있는지 (in-app 탭/서브뷰 기준).
+  // false면 in-app 으로 다른 탭(캐릭터/광장 등)을 보는 상태 — 시뮬 대상.
+  isInBattleView: boolean;
   // 자리비운 시간(ms)을 받아 시뮬을 돌리고 결과를 반환. 호출 측에서 입력값을
   // 클로저에 가둬두기 좋다 (현재 player/potions/rules를 매번 새로 읽도록).
   runSim: (awayMs: number) => OfflineSimResult;
@@ -46,13 +49,16 @@ export type OfflineSimulationOptions = {
   onApply: (result: OfflineSimResult) => void;
 };
 
-// 트리거: visibility hidden→visible 한 사이클을 완전히 거친 경우에만.
-//   - mount/active toggle 시점엔 baseline만 갱신 — 새로고침이나 단순 재진입으로는 시뮬 안 됨.
-//   - 사용자가 명시적으로 active=true로 두고 페이지/탭을 떠난 다음 돌아왔을 때만 보상 적용.
+// 트리거: "away → back" 사이클에서 sim 실행.
+// "away" = 브라우저 탭 hidden  OR  in-app 으로 BattleView 가 아님(캐릭터/광장 등).
+// 둘 중 하나라도 true 면 away. 둘 다 false (visible + 배틀뷰) 가 되면 복귀로 간주.
+//   - 마운트 / dep 변경 시점엔 baseline 만 잡음. transition 없으면 시뮬 안 돌림.
+//   - 사용자가 active=true 로 둔 채로 떠난 동안의 시간만 보상 적용.
 export function useOfflineSimulation({
   enabled,
   regionId,
   active,
+  isInBattleView,
   runSim,
   onApply,
 }: OfflineSimulationOptions): void {
@@ -63,33 +69,52 @@ export function useOfflineSimulation({
     onApplyRef.current = onApply;
   });
 
+  // 직전 사이클에서 "away" 였는지. null = 아직 baseline 안 잡힌 상태(최초 마운트).
+  const wasAwayRef = useRef<boolean | null>(null);
+
   useEffect(() => {
     if (!enabled) return;
 
-    // mount/active 변화 시점엔 baseline만 갱신. 시뮬 트리거는 visibility 사이클로 한정.
-    saveTick({ regionId, ts: Date.now(), active });
+    const computeAway = () =>
+      document.visibilityState === "hidden" || !isInBattleView;
 
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") {
+    const handleTransition = () => {
+      const prev = wasAwayRef.current;
+      const now = computeAway();
+      if (prev === null) {
+        // 최초 — baseline 만 잡고 끝.
         saveTick({ regionId, ts: Date.now(), active });
-      } else if (document.visibilityState === "visible") {
-        const stored = loadTick();
-        if (stored?.active && stored.regionId === regionId) {
-          const awayMs = Date.now() - stored.ts;
-          if (awayMs > 0) {
-            const result = runSimRef.current(awayMs);
-            if (result.battles > 0 || result.died) {
-              onApplyRef.current(result);
-            }
+        wasAwayRef.current = now;
+        return;
+      }
+      if (prev === now) return;
+      wasAwayRef.current = now;
+      if (now) {
+        // 막 away 가 됨 — baseline 저장.
+        saveTick({ regionId, ts: Date.now(), active });
+        return;
+      }
+      // 복귀 — 저장된 baseline 으로 sim.
+      const stored = loadTick();
+      if (stored?.active && stored.regionId === regionId) {
+        const awayMs = Date.now() - stored.ts;
+        if (awayMs > 0) {
+          const result = runSimRef.current(awayMs);
+          if (result.battles > 0 || result.died) {
+            onApplyRef.current(result);
           }
         }
-        saveTick({ regionId, ts: Date.now(), active });
       }
+      saveTick({ regionId, ts: Date.now(), active });
     };
 
-    document.addEventListener("visibilitychange", onVisibility);
+    // dep 변경(특히 isInBattleView 토글) 시점에 즉시 한 번 transition 검사.
+    handleTransition();
+
+    // 브라우저 탭 visibility 변화도 같은 로직으로 react.
+    document.addEventListener("visibilitychange", handleTransition);
     return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener("visibilitychange", handleTransition);
     };
-  }, [enabled, regionId, active]);
+  }, [enabled, regionId, active, isInBattleView]);
 }

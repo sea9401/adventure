@@ -658,12 +658,15 @@ function Home() {
     quests.accept(id);
   };
 
-  // 오프라인 자동 사냥 — 페이지를 떠난 동안 일어났을 일을 결정적으로 한 번에 시뮬.
+  // 오프라인 자동 사냥 — 페이지/탭을 떠난 동안 일어났을 일을 결정적으로 한 번에 시뮬.
   // 30분 cap + 사망 시 break + 시작 마을 이동.
+  // "away" 판정은 (브라우저 탭 hidden) || (배틀뷰 아님) — in-app 으로 캐릭터/광장 보는
+  // 동안에도 자동 사냥이 끊기지 않게.
   useOfflineSimulation({
     enabled: currentRegion.enemies.length > 0,
     regionId: currentRegion.id,
     active: huntingActive,
+    isInBattleView: tab === "adventure" && subView === "battle",
     runSim: (awayMs) =>
       simulateOfflineHunt({
         player: playerCombat,
