@@ -2,29 +2,19 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import {
-  Backpack,
-  Barbell,
-  BookOpen,
   Coins,
-  Compass,
   Envelope,
-  FirstAid,
-  Hammer,
   MapPin,
   Note,
-  Scroll,
-  Sparkle,
   Storefront,
-  Sword,
-  User,
 } from "@phosphor-icons/react";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { ChatButton } from "@/components/ChatButton";
 import { NameSetupModal } from "@/components/NameSetupModal";
-import { MapView } from "@/adventure/MapView";
-import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
-import { TownView } from "@/adventure/TownView";
-import { AdventureLogView } from "@/adventure/AdventureLogView";
+import { type BattleEndPayload } from "@/adventure/BattleView";
+import { TownScreen } from "@/adventure/TownScreen";
+import { CharacterScreen } from "@/adventure/CharacterScreen";
+import { AdventureScreen } from "@/adventure/AdventureScreen";
 import { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { WORLD_MAP } from "@/adventure/data/world";
 import {
@@ -34,8 +24,6 @@ import {
 import { START_REGION_ID } from "@/adventure/data/world";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationToast } from "@/components/NotificationToast";
-import { RecentLogView } from "@/adventure/RecentLogView";
-import { GuildView } from "@/adventure/GuildView";
 import { useQuests } from "@/adventure/quests/useQuests";
 import { getQuestById } from "@/adventure/data/quests";
 import {
@@ -58,19 +46,14 @@ import { InboxView } from "@/adventure/marketplace/InboxView";
 import { useInboxCount } from "@/adventure/marketplace/useInboxCount";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
-import { InventoryView } from "@/adventure/InventoryView";
-import { ShopView } from "@/adventure/ShopView";
 import { type Recipe } from "@/adventure/data/recipes";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
 import { requiredExpToNext } from "@/lib/leveling";
-import { CraftingView } from "@/adventure/CraftingView";
 import { BulletinBoardView } from "@/adventure/BulletinBoardView";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 import { useNotifications } from "@/adventure/notifications/useNotifications";
-import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
-import { StatBar } from "@/components/ui/StatBar";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { RegionBackground } from "@/components/ui/RegionBackground";
@@ -78,11 +61,6 @@ import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { formatDuration } from "@/lib/format";
 import type { Character } from "@/adventure/character/types";
 import { ZERO_ALLOCATED } from "@/adventure/character/statMeta";
-import { AdventurerCard } from "@/adventure/character/AdventurerCard";
-import { StatsPanel } from "@/adventure/character/StatsPanel";
-import { CharacterMini } from "@/adventure/character/CharacterMini";
-import { SkillsView } from "@/adventure/character/SkillsView";
-import { TrainingView } from "@/adventure/character/TrainingView";
 import { useTraining } from "@/adventure/training/useTraining";
 import {
   baseCharacter,
@@ -92,17 +70,17 @@ import {
 import { useCharacterState } from "@/adventure/character/useCharacterState";
 import { useProfile } from "@/adventure/profile/useProfile";
 import { useEdgeUnlocks } from "@/adventure/edges/useEdgeUnlocks";
+import { type TrialEdge } from "@/adventure/TrialView";
 import {
-  TrialView,
-  type TrialEdge,
-} from "@/adventure/TrialView";
-import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
-import {
+  critChancePctFor,
   deriveSkills,
+  doubleStrikeIntervalFor,
+  effectiveSkillNames,
+  evadeGuaranteedFor,
+  guardFor,
   powerAttackBonusFor,
 } from "@/adventure/character/skills";
 import { getTitle } from "@/adventure/data/titles";
-import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
 import {
   simulateOfflineHunt,
@@ -111,11 +89,7 @@ import {
 } from "@/adventure/battle/offlineSim";
 import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
-import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
-import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
-import { WoodcutterJimmyDialogue } from "@/adventure/town/dialogues/WoodcutterJimmyDialogue";
-import { SuzyDialogue } from "@/adventure/town/dialogues/SuzyDialogue";
-import { KaiDialogue } from "@/adventure/town/dialogues/KaiDialogue";
+import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
@@ -288,6 +262,11 @@ function Home() {
   const characterMaxMp = maxMpForLevel(characterState.level);
   const equippedTitle = getTitle(characterStateHook.equippedTitleId);
   const characterSkills = deriveSkills(totalStats);
+  const effectiveSkillNameList = effectiveSkillNames(
+    characterSkills,
+    characterState.equippedSkills,
+  );
+  const effectiveSkillSet = new Set(effectiveSkillNameList);
   const character: Character = {
     ...baseCharacter,
     name: profile.name,
@@ -371,7 +350,14 @@ function Home() {
     spd: character.stats.spd,
     evasionPct: character.stats.dex,
     attackCount: 1 + Math.floor(character.stats.spd / 10),
-    powerAttackBonus: powerAttackBonusFor(character.stats),
+    powerAttackBonus: powerAttackBonusFor(character.stats, effectiveSkillSet),
+    guaranteedEvades: evadeGuaranteedFor(character.stats, effectiveSkillSet),
+    extraAttackEveryNTurns: doubleStrikeIntervalFor(
+      character.stats,
+      effectiveSkillSet,
+    ),
+    critChancePct: critChancePctFor(character.stats, effectiveSkillSet),
+    guard: guardFor(character.stats, effectiveSkillSet),
   };
 
   const playerStatus = {
@@ -753,583 +739,78 @@ function Home() {
         <MainTabs active={tab} onChange={handleTabChange} />
 
         <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4 sm:p-6">
-          {tab === "adventure" && subView === null && (
-            <>
-              <CharacterMini character={character} />
-              {(() => {
-                if (currentRegion.id !== "village") return null;
-                if (crafting.state.boldQuestComplete) return null;
-                const message = !crafting.knows("baseball_bat")
-                  ? "지나가던 당신을 대장장이가 부릅니다."
-                  : !crafting.hasCrafted("baseball_bat")
-                    ? "대장장이가 망치질을 멈추고 당신을 흘끗 본다."
-                    : "야구 방망이를 만든 당신을 대장장이가 다시 찾는다.";
-                return (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingTownNpcId("village_blacksmith_bold");
-                      setSubView("town");
-                    }}
-                    className="flex w-full items-center gap-3 rounded-lg border border-amber-300/80 bg-amber-50/70 px-4 py-3 text-left transition-colors hover:bg-amber-100/70 dark:border-amber-900/60 dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
-                  >
-                    <Hammer
-                      size={28}
-                      weight="duotone"
-                      className="shrink-0 text-amber-600 dark:text-amber-400"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[11px] uppercase tracking-wider text-amber-700/80 dark:text-amber-400/80">
-                        알림판
-                      </div>
-                      <p className="mt-0.5 text-sm italic text-zinc-700 dark:text-zinc-300">
-                        {message}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })()}
-              <div className="space-y-2">
-                {currentRegion.tags?.includes("town") && (
-                  <EntryCard
-                    icon={
-                      <User
-                        size={28}
-                        weight="duotone"
-                        className="text-blue-500"
-                      />
-                    }
-                    title={currentRegion.name}
-                    description="마을을 둘러보고 사람들과 이야기합니다."
-                    onClick={() => setSubView("town")}
-                  />
-                )}
-                {currentRegion.enemies.length > 0 && (
-                  <EntryCard
-                    icon={
-                      <Sword
-                        size={28}
-                        weight="duotone"
-                        className="text-rose-500"
-                      />
-                    }
-                    title="전투"
-                    description="적과 맞서 싸웁니다."
-                    onClick={() => setSubView("battle")}
-                  />
-                )}
-                <EntryCard
-                  icon={
-                    <Compass
-                      size={28}
-                      weight="duotone"
-                      className="text-emerald-500"
-                    />
-                  }
-                  title="지도"
-                  description="모험할 곳을 찾아봅니다."
-                  onClick={() => setSubView("map")}
-                />
-              </div>
-            </>
-          )}
-          {tab === "adventure" && subView === "town" && (
-            <div className="space-y-3">
-              <SubViewHeader
-                title={currentRegion.name}
-                onBack={back}
-              />
-              <TownView
-                region={currentRegion}
-                initialNpcId={pendingTownNpcId ?? undefined}
-                onInitialNpcConsumed={() => setPendingTownNpcId(null)}
-                onTalkClose={(npcId, regionId) => {
-                  adventureLog.incrementNpcTalk(npcId);
-                  adventureLog.addTownNpcTalked(regionId, npcId);
-                }}
-                renderNpcDialogue={(npc, close) => {
-                  if (npc.id === "village_blacksmith_bold") {
-                    return (
-                      <BlacksmithDialogue
-                        npc={npc}
-                        onClose={close}
-                        crafting={crafting}
-                        inventory={inventory}
-                        addNotification={addNotification}
-                      />
-                    );
-                  }
-                  if (npc.id === "village_trainer_smith") {
-                    return (
-                      <TrainerDialogue
-                        npc={npc}
-                        onClose={close}
-                        quests={quests}
-                        completeQuest={completeQuest}
-                      />
-                    );
-                  }
-                  if (npc.id === "village_woodcutter_jimmy") {
-                    return (
-                      <WoodcutterJimmyDialogue
-                        npc={npc}
-                        onClose={close}
-                        crafting={crafting}
-                        quests={quests}
-                        completeQuest={completeQuest}
-                      />
-                    );
-                  }
-                  if (npc.id === "village_suzy") {
-                    return (
-                      <SuzyDialogue
-                        npc={npc}
-                        onClose={close}
-                        storyFlags={storyFlags}
-                        inventory={inventory}
-                        characterStateHook={characterStateHook}
-                        addNotification={addNotification}
-                      />
-                    );
-                  }
-                  if (npc.id === "diola_fisher") {
-                    return (
-                      <KaiDialogue
-                        npc={npc}
-                        onClose={close}
-                        storyFlags={storyFlags}
-                      />
-                    );
-                  }
-                  return null;
-                }}
-              />
-            </div>
-          )}
-          {tab === "adventure" && subView === "battle" && (
-            <div className="space-y-3">
-              <SubViewHeader title="전투" onBack={back} />
-              <BattleView
-                region={currentRegion}
-                player={playerCombat}
-                playerName={character.name}
-                playerStatus={playerStatus}
-                onBattleStart={adventureLog.markEncountered}
-                onBattleEnd={handleBattleEnd}
-                pickAutoAction={(state) =>
-                  pickAutoAction(state, {
-                    rules: autoPotion.config.rules,
-                    potions: inventory.state.potions,
-                  })
-                }
-                inventoryState={inventory.state}
-                autoPotionConfig={autoPotion.config}
-                onUpdateAutoPotionRule={autoPotion.updateRule}
-                recentNotifications={notifications.list}
-                huntingActive={huntingActive}
-                onToggleHunting={setHuntingActive}
-              />
-            </div>
-          )}
-          {tab === "adventure" && subView === "map" && !trialEdge && (
-            <div className="space-y-3">
-              <SubViewHeader title="지도" onBack={back} />
-              <MapView
-                progress={mapProgress}
-                onProgressChange={setMapProgress}
-                log={adventureLog.log}
-                playerHp={character.hp}
-                isEdgeUnlocked={edgeUnlocks.isUnlocked}
-                onTrialStart={(from, to) => {
-                  const req = findEdgeRequirement(from, to);
-                  if (!req || req.kind !== "trial") return;
-                  setTrialEdge({
-                    from,
-                    to,
-                    battles: req.battles,
-                    enemiesFrom: req.enemiesFrom,
-                  });
-                }}
-              />
-            </div>
-          )}
-          {tab === "adventure" && subView === "map" && trialEdge && (
-            <div className="space-y-3">
-              <SubViewHeader
-                title="시련"
-                onBack={() => setTrialEdge(null)}
-              />
-              <TrialView
-                trial={trialEdge}
-                player={playerCombat}
-                playerName={character.name}
-                playerStatus={playerStatus}
-                pickAutoAction={(state) =>
-                  pickAutoAction(state, {
-                    rules: autoPotion.config.rules,
-                    potions: inventory.state.potions,
-                  })
-                }
-                inventoryState={inventory.state}
-                onBattleEnd={handleBattleEnd}
-                onTrialEnd={(result) => {
-                  if (result === "win" && trialEdge) {
-                    edgeUnlocks.unlock(trialEdge.from, trialEdge.to);
-                    setMapProgress((prev) => ({
-                      currentRegionId: trialEdge.to,
-                      visitedRegionIds: prev.visitedRegionIds.includes(
-                        trialEdge.to,
-                      )
-                        ? prev.visitedRegionIds
-                        : [...prev.visitedRegionIds, trialEdge.to],
-                    }));
-                    addNotification(
-                      "info",
-                      `시련 통과 — ${
-                        WORLD_MAP.regions.find((r) => r.id === trialEdge.to)
-                          ?.name ?? trialEdge.to
-                      } 진입.`,
-                    );
-                  }
-                  setTrialEdge(null);
-                }}
-                onAbort={() => setTrialEdge(null)}
-                recentNotifications={notifications.list}
-              />
-            </div>
+          {tab === "adventure" && (
+            <AdventureScreen
+              character={character}
+              currentRegion={currentRegion}
+              subView={subView}
+              setSubView={setSubView}
+              back={back}
+              pendingTownNpcId={pendingTownNpcId}
+              setPendingTownNpcId={setPendingTownNpcId}
+              trialEdge={trialEdge}
+              setTrialEdge={setTrialEdge}
+              mapProgress={mapProgress}
+              setMapProgress={setMapProgress}
+              crafting={crafting}
+              inventory={inventory}
+              adventureLog={adventureLog}
+              characterStateHook={characterStateHook}
+              quests={quests}
+              storyFlags={storyFlags}
+              notifications={notifications}
+              autoPotion={autoPotion}
+              edgeUnlocks={edgeUnlocks}
+              huntingActive={huntingActive}
+              setHuntingActive={setHuntingActive}
+              playerCombat={playerCombat}
+              playerStatus={playerStatus}
+              onBattleEnd={handleBattleEnd}
+              completeQuest={completeQuest}
+              addNotification={addNotification}
+            />
           )}
 
-          {tab === "town" && !isTown && (
-            <section className="rounded-lg border border-dashed border-zinc-300 bg-white/40 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/40">
-              <MapPin
-                size={40}
-                weight="duotone"
-                className="mx-auto text-zinc-400 dark:text-zinc-500"
-              />
-              <div className="mt-3 text-base font-medium text-zinc-700 dark:text-zinc-300">
-                이곳은 마을이 아닙니다
-              </div>
-              <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                마을의 시설은 마을 안에서만 이용할 수 있습니다.
-              </div>
-            </section>
+          {tab === "town" && (
+            <TownScreen
+              character={character}
+              currentRegion={currentRegion}
+              isTown={isTown}
+              subView={subView}
+              setSubView={setSubView}
+              back={back}
+              mapProgress={mapProgress}
+              setMapProgress={setMapProgress}
+              characterStateHook={characterStateHook}
+              training={training}
+              crafting={crafting}
+              inventory={inventory}
+              quests={quests}
+              trainingDescription={trainingDescription}
+              onCraft={handleCraft}
+              onPurchasePotion={handlePurchasePotion}
+              onPurchaseMaterial={handlePurchaseMaterial}
+              onSellPotion={handleSellPotion}
+              onSellMaterial={handleSellMaterial}
+              onSellEquipment={handleSellEquipment}
+              onAcceptQuest={handleAcceptQuest}
+              onClaimQuest={handleClaimQuest}
+            />
           )}
-          {tab === "town" && isTown && subView === null && (
-            <div className="space-y-2">
-              <EntryCard
-                icon={
-                  <FirstAid
-                    size={28}
-                    weight="duotone"
-                    className="text-rose-500"
-                  />
-                }
-                title="치료소"
-                description={
-                  character.hp >= character.maxHp &&
-                  character.mp >= character.maxMp
-                    ? "체력과 마력이 가득 차 있다."
-                    : "지친 몸을 회복할 수 있는 곳."
-                }
-                onClick={() => {
-                  if (mapProgress.currentRegionId !== START_REGION_ID) {
-                    setMapProgress((prev) => ({
-                      currentRegionId: START_REGION_ID,
-                      visitedRegionIds: prev.visitedRegionIds.includes(
-                        START_REGION_ID,
-                      )
-                        ? prev.visitedRegionIds
-                        : [...prev.visitedRegionIds, START_REGION_ID],
-                    }));
-                  }
-                  setSubView("healing");
-                }}
-              />
-              <EntryCard
-                icon={
-                  <Storefront
-                    size={28}
-                    weight="duotone"
-                    className="text-emerald-600"
-                  />
-                }
-                title="상점"
-                description="물건을 사고 팔 수 있는 곳."
-                onClick={() => setSubView("shop")}
-              />
-              <EntryCard
-                icon={
-                  <Barbell
-                    size={28}
-                    weight="duotone"
-                    className="text-slate-400"
-                  />
-                }
-                title="훈련장"
-                description={trainingDescription}
-                onClick={() => setSubView("training")}
-              />
-              <EntryCard
-                icon={
-                  <Hammer
-                    size={28}
-                    weight="duotone"
-                    className="text-amber-600"
-                  />
-                }
-                title="대장간"
-                description="장비를 두드려 벼리는 곳."
-                onClick={() => setSubView("crafting")}
-              />
-              <EntryCard
-                icon={
-                  <Scroll
-                    size={28}
-                    weight="duotone"
-                    className="text-stone-100"
-                  />
-                }
-                title="모험가 길드"
-                description="의뢰를 받고 명성을 쌓을 수 있는 곳."
-                onClick={() => setSubView("guild")}
-              />
-            </div>
-          )}
-          {tab === "town" && isTown && subView === "healing" && (() => {
-            const healCost = character.gold < 50 ? 0 : 1;
-            const isFull =
-              character.hp >= character.maxHp &&
-              character.mp >= character.maxMp;
-            return (
-              <div className="space-y-3">
-                <SubViewHeader
-                  title="시작 마을 치료소"
-                  onBack={back}
-                />
-                <Card as="section" padding="md">
-                  <div className="flex items-center gap-3">
-                    <FirstAid
-                      size={32}
-                      weight="duotone"
-                      className="shrink-0 text-rose-500"
-                    />
-                    <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                      체력과 마력을 모두 회복할 수 있다. 비용 1 G — 소지금이 50 G 미만이면 무료.
-                    </p>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    <StatBar
-                      label="HP"
-                      value={character.hp}
-                      max={character.maxHp}
-                      color="bg-red-500"
-                    />
-                    <StatBar
-                      label="MP"
-                      value={character.mp}
-                      max={character.maxMp}
-                      color="bg-sky-500"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      characterStateHook.heal(
-                        healCost,
-                        character.maxHp,
-                        character.maxMp,
-                      )
-                    }
-                    disabled={isFull}
-                    className="mt-4 w-full rounded-md border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400 dark:text-rose-300"
-                  >
-                    {isFull
-                      ? "이미 가득 차 있다"
-                      : healCost > 0
-                      ? `전부 회복 (${healCost} G)`
-                      : "전부 회복 (무료)"}
-                  </button>
-                </Card>
-              </div>
-            );
-          })()}
-          {tab === "town" && isTown && subView === "training" && (
-            <div className="space-y-3">
-              <SubViewHeader title="훈련장" onBack={back} />
-              <TrainingView
-                remaining={training.remaining}
-                isTraining={training.isTraining}
-                unspentPoints={training.unspentPoints}
-                onStartTraining={training.startTraining}
-                onAllocateStat={training.allocateStat}
-              />
-            </div>
-          )}
-          {tab === "town" && isTown && subView === "crafting" && (
-            <div className="space-y-3">
-              <SubViewHeader title="대장간" onBack={back} />
-              <CraftingView
-                knownIds={crafting.state.known}
-                materialCounts={inventory.state.materials}
-                potionCounts={inventory.state.potions}
-                potionMax={inventory.potionMax}
-                onCraft={handleCraft}
-              />
-            </div>
-          )}
-          {tab === "town" && isTown && subView === "shop" && (
-            <div className="space-y-3">
-              <SubViewHeader title="상점" onBack={back} />
-              <ShopView
-                gold={character.gold}
-                inventory={inventory.state}
-                onPurchasePotion={handlePurchasePotion}
-                onPurchaseMaterial={handlePurchaseMaterial}
-                onSellPotion={handleSellPotion}
-                onSellMaterial={handleSellMaterial}
-                onSellEquipment={handleSellEquipment}
-              />
-            </div>
-          )}
-          {tab === "town" && isTown && subView === "guild" && (
-            <div className="space-y-3">
-              <SubViewHeader
-                title={`모험가 길드 · ${currentRegion.name}`}
-                onBack={back}
-              />
-              <GuildView
-                regionId={currentRegion.id}
-                characterLevel={character.level}
-                getEntry={quests.getEntry}
-                onAccept={handleAcceptQuest}
-                onClaim={handleClaimQuest}
-              />
-            </div>
-          )}
-          {tab === "character" && subView === null && (
-            <div className="space-y-2">
-              <EntryCard
-                icon={
-                  <User
-                    size={28}
-                    weight="duotone"
-                    className="text-blue-500"
-                  />
-                }
-                title="내 정보"
-                description="캐릭터 정보와 능력치를 확인합니다."
-                onClick={() => setSubView("info")}
-              />
-              <EntryCard
-                icon={
-                  <Backpack
-                    size={28}
-                    weight="duotone"
-                    className="text-emerald-500"
-                  />
-                }
-                title="가방"
-                description="모험에 필요한 물건들을 챙길 수 있는 가방이다."
-                onClick={() => setSubView("inventory")}
-              />
-              <EntryCard
-                icon={
-                  <Sparkle
-                    size={28}
-                    weight="duotone"
-                    className="text-amber-500"
-                  />
-                }
-                title="스킬"
-                description={
-                  character.skills.length > 0
-                    ? `보유 스킬 ${character.skills.length}개`
-                    : "아직 익힌 스킬이 없습니다."
-                }
-                onClick={() => setSubView("skills")}
-              />
-              <EntryCard
-                icon={
-                  <BookOpen
-                    size={28}
-                    weight="duotone"
-                    className="text-emerald-600"
-                  />
-                }
-                title="모험의 서"
-                description="지금까지의 여정과 발견을 기록합니다."
-                onClick={() => setSubView("adventure-log")}
-              />
-              <EntryCard
-                icon={
-                  <Scroll
-                    size={28}
-                    weight="duotone"
-                    className="text-rose-500"
-                  />
-                }
-                title="최근 기록"
-                description={
-                  notifications.list.length > 0
-                    ? `최근 알림 ${notifications.list.length}개`
-                    : "아직 기록된 알림이 없습니다."
-                }
-                onClick={() => setSubView("recent-log")}
-              />
-            </div>
-          )}
-          {tab === "character" && subView === "info" && (
-            <div className="space-y-3">
-              <SubViewHeader title="내 정보" onBack={back} />
-              <CharacterMini character={character} />
-              <Card as="section" padding="md">
-                <div className="space-y-4">
-                  <AdventurerCard character={character} />
-                  <div className="border-t border-zinc-200 dark:border-zinc-800" />
-                  <StatsPanel stats={character.stats} />
-                </div>
-              </Card>
-            </div>
-          )}
-          {tab === "character" && subView === "inventory" && (
-            <div className="space-y-3">
-              <SubViewHeader title="가방" onBack={back} />
-              <InventoryView
-                inventory={inventory.state}
-                equipped={character.equipped}
-                onEquip={handleEquipFromInventory}
-                onUnequip={handleUnequip}
-              />
-            </div>
-          )}
-          {tab === "character" && subView === "skills" && (
-            <div className="space-y-3">
-              <SubViewHeader title="스킬" onBack={back} />
-              <SkillsView skills={character.skills} />
-            </div>
-          )}
-          {tab === "character" && subView === "adventure-log" && (
-            <div className="space-y-3">
-              <SubViewHeader title="모험의 서" onBack={back} />
-              <AdventureLogView
-                log={adventureLog.log}
-                stats={character.stats}
-                equippedTitleId={characterStateHook.equippedTitleId}
-                onEquipTitle={characterStateHook.setEquippedTitle}
-              />
-            </div>
-          )}
-          {tab === "character" && subView === "recent-log" && (
-            <div className="space-y-3">
-              <SubViewHeader
-                title="최근 기록"
-                onBack={back}
-              />
-              <RecentLogView
-                notifications={notifications.list}
-                onClear={notifications.clear}
-              />
-            </div>
+          {tab === "character" && (
+            <CharacterScreen
+              character={character}
+              subView={subView}
+              setSubView={setSubView}
+              back={back}
+              characterStateHook={characterStateHook}
+              inventory={inventory}
+              adventureLog={adventureLog}
+              notifications={notifications}
+              effectiveSkillNameList={effectiveSkillNameList}
+              onEquipFromInventory={handleEquipFromInventory}
+              onUnequip={handleUnequip}
+            />
           )}
           {tab === "plaza" && subView === null && (
             <div className="space-y-2">

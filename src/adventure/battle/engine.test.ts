@@ -299,3 +299,92 @@ describe("강공격 (powerAttackBonus)", () => {
     expect(recent[1].text).not.toContain("[강공격]");
   });
 });
+
+describe("회피 강화 (guaranteedEvades)", () => {
+  it("미보유면 첫 적 공격이 데미지로 들어온다", () => {
+    const enemy = makeEnemy({ spd: 99 });
+    const s0 = initialBattleState(PLAYER, enemy, "P");
+    expect(s0.phase).toBe("enemy");
+    const s1 = advanceTurn(s0, PLAYER, "P");
+    expect(s1.playerHp).toBeLessThan(PLAYER.hp);
+  });
+
+  it("guaranteedEvades=1 이면 첫 적 공격을 무조건 회피", () => {
+    const guarded: PlayerCombat = { ...PLAYER, guaranteedEvades: 1 };
+    const enemy = makeEnemy({ spd: 99, atk: 100 });
+    const s0 = initialBattleState(guarded, enemy, "P");
+    expect(s0.evadesRemaining).toBe(1);
+    const s1 = advanceTurn(s0, guarded, "P");
+    expect(s1.playerHp).toBe(PLAYER.hp); // 그대로
+    expect(s1.evadesRemaining).toBe(0);
+    expect(s1.log.some((e) => e.text.includes("[회피 강화]"))).toBe(true);
+  });
+});
+
+describe("연타 (extraAttackEveryNTurns)", () => {
+  it("매 5턴마다 마지막 공격 후 추가 1회 공격", () => {
+    const dbl: PlayerCombat = {
+      ...PLAYER,
+      attackCount: 1,
+      extraAttackEveryNTurns: 2,
+      atk: 100, // 즉 1회 처치 가능
+    };
+    let s = initialBattleState(dbl, makeEnemy({ hp: 9999, atk: 0 }), "P");
+    s = advanceTurn(s, dbl, "P"); // turn 1 attack — 연타 안 터짐
+    expect(s.phase).toBe("enemy");
+    s = advanceTurn(s, dbl, "P"); // enemy phase
+    s = advanceTurn(s, dbl, "P"); // turn 2 attack — 연타 트리거
+    // 연타 발동: phase 가 player 로 유지되고 추가 공격 1회 예정
+    expect(s.phase).toBe("player");
+    expect(s.playerAttacksLeft).toBe(1);
+    expect(s.doubleStrikeUsedThisTurn).toBe(true);
+    expect(s.log.some((e) => e.text.includes("[연타]"))).toBe(true);
+  });
+});
+
+describe("크리티컬 (critChancePct)", () => {
+  it("Math.random 모킹 시 크리티컬 발동 → 데미지 ×2", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0); // 항상 발동
+    const lucky: PlayerCombat = { ...PLAYER, critChancePct: 5 };
+    const enemy = makeEnemy({ hp: 9999 });
+    const s0 = initialBattleState(lucky, enemy, "P");
+    const s1 = advanceTurn(s0, lucky, "P");
+    const dmg = enemy.hp - s1.enemyHp;
+    expect(dmg).toBe(damageBetween(PLAYER.atk, 3) * 2);
+    expect(s1.log.some((e) => e.text.includes("[크리티컬]"))).toBe(true);
+  });
+
+  it("Math.random=0.99 면 크리티컬 미발동 → 일반 데미지", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const lucky: PlayerCombat = { ...PLAYER, critChancePct: 5 };
+    const enemy = makeEnemy({ hp: 9999 });
+    const s0 = initialBattleState(lucky, enemy, "P");
+    const s1 = advanceTurn(s0, lucky, "P");
+    const dmg = enemy.hp - s1.enemyHp;
+    expect(dmg).toBe(damageBetween(PLAYER.atk, 3));
+  });
+});
+
+describe("가드 (guard)", () => {
+  it("첫 N턴 동안 받는 데미지 -reduction, 이후엔 정상", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99); // 회피 미발동
+    const tough: PlayerCombat = {
+      ...PLAYER,
+      guard: { turns: 2, reduction: 1 },
+    };
+    const enemy = makeEnemy({ atk: 10, spd: 99 });
+    const expectedDmg = damageBetween(enemy.atk, PLAYER.def);
+    let s = initialBattleState(tough, enemy, "P"); // enemy 선공
+    s = advanceTurn(s, tough, "P"); // turn 1 enemy phase — 가드 적용
+    let dealt = PLAYER.hp - s.playerHp;
+    expect(dealt).toBe(expectedDmg - 1);
+    s = advanceTurn(s, tough, "P"); // turn 1 player attack
+    s = advanceTurn(s, tough, "P"); // turn 2 enemy phase — 가드 적용
+    dealt = PLAYER.hp - s.playerHp;
+    expect(dealt).toBe((expectedDmg - 1) * 2);
+    s = advanceTurn(s, tough, "P"); // turn 2 player attack
+    s = advanceTurn(s, tough, "P"); // turn 3 enemy phase — 가드 만료
+    dealt = PLAYER.hp - s.playerHp;
+    expect(dealt).toBe((expectedDmg - 1) * 2 + expectedDmg);
+  });
+});

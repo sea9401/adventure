@@ -16,6 +16,8 @@ export type CharacterDynamicState = {
   equipped?: EquippedSlots;
   /** 장착 중인 칭호 ID. null/미지정 = 미장착. */
   equippedTitleId?: string | null;
+  /** 장착 중인 스킬 이름 목록 (최대 SKILL_SLOT_COUNT). undefined = 자동 (보유 첫 N개). */
+  equippedSkills?: string[];
 };
 
 export const initialCharacterState: CharacterDynamicState = {
@@ -63,6 +65,7 @@ function readInitial(raw: unknown): CharacterDynamicState {
     fame: parsed.fame ?? initialCharacterState.fame,
     equipped: rehydrateEquipped(parsed.equipped),
     equippedTitleId: parsed.equippedTitleId ?? null,
+    equippedSkills: parsed.equippedSkills,
   };
 }
 
@@ -128,6 +131,9 @@ export function useCharacterState() {
   const setEquippedTitle = (titleId: string | null) =>
     setState((prev) => ({ ...prev, equippedTitleId: titleId }));
 
+  const setEquippedSkills = (names: string[]) =>
+    setState((prev) => ({ ...prev, equippedSkills: names }));
+
   return {
     state,
     hydrated: true,
@@ -141,5 +147,6 @@ export function useCharacterState() {
     addExp,
     setSlot,
     setEquippedTitle,
+    setEquippedSkills,
   };
 }

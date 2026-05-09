@@ -22,6 +22,10 @@ export type BattleState = {
   playerAttacksLeft: number;
   // 완료된 플레이어 턴 수 — 강공격(N턴마다 발동) 트리거에 사용. 진행 중인 턴은 미포함.
   completedPlayerTurns: number;
+  // 회피 강화로 적립된 보장 회피 잔량 — enemy phase 에서 % 회피 판정 전에 우선 소모.
+  evadesRemaining: number;
+  // 연타가 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋.
+  doubleStrikeUsedThisTurn: boolean;
 };
 
 export type PlayerCombat = {
@@ -34,6 +38,14 @@ export type PlayerCombat = {
   attackCount: number; // 한 턴에 가하는 공격 횟수 (>=1)
   // 강공격 보너스 — POWER_ATTACK_TURN_INTERVAL 턴마다 첫 공격에 추가 피해. 0/undefined = 스킬 미보유.
   powerAttackBonus?: number;
+  // 회피 강화 — 전투 시작 시 적립할 보장 회피 횟수. 0/undefined = 스킬 미보유.
+  guaranteedEvades?: number;
+  // 연타 — N턴마다 그 턴 마지막 공격 후 추가 1회 공격. undefined = 스킬 미보유.
+  extraAttackEveryNTurns?: number;
+  // 크리티컬 — 매 공격마다 발동 확률(0~100). 0/undefined = 스킬 미보유.
+  critChancePct?: number;
+  // 가드 — 첫 N턴 동안 받는 피해 -reduction. 둘 다 0 이면 스킬 미보유.
+  guard?: { turns: number; reduction: number };
 };
 
 export type PlayerAction =
@@ -82,6 +94,8 @@ export function initialBattleState(
     outcome: null,
     playerAttacksLeft: Math.max(1, player.attackCount),
     completedPlayerTurns: 0,
+    evadesRemaining: player.guaranteedEvades ?? 0,
+    doubleStrikeUsedThisTurn: false,
   };
 }
 
@@ -118,13 +132,19 @@ export function advanceTurn(
         ? player.powerAttackBonus!
         : 0;
 
-    const dmg = damageBetween(player.atk + bonus, state.enemy.def);
+    // 크리티컬 — 매 공격마다 critChancePct 확률로 발동, 강공격 보너스 후 데미지에 ×CRIT_MULT.
+    const critRoll = (player.critChancePct ?? 0) > 0
+      ? Math.random() * 100 < (player.critChancePct ?? 0)
+      : false;
+    const baseDmg = damageBetween(player.atk + bonus, state.enemy.def);
+    const dmg = critRoll ? baseDmg * 2 : baseDmg;
+    const labels: string[] = [];
+    if (bonus > 0) labels.push("강공격");
+    if (critRoll) labels.push("크리티컬");
+    const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
     const log = appendLog(state.log, {
       kind: "player_attack",
-      text:
-        bonus > 0
-          ? `[강공격] ${state.enemy.name}에게 ${dmg} 피해를 입혔다.`
-          : `${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
+      text: `${prefix}${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
     });
     const enemyHp = Math.max(0, state.enemyHp - dmg);
     if (enemyHp <= 0) {
@@ -144,6 +164,23 @@ export function advanceTurn(
     if (attacksLeft > 0) {
       return { ...state, enemyHp, log, playerAttacksLeft: attacksLeft };
     }
+    // 마지막 공격이 끝난 시점 — 연타 발동 가능 여부 검사.
+    const interval = player.extraAttackEveryNTurns;
+    const canDoubleStrike =
+      !!interval &&
+      interval > 0 &&
+      turnNumber % interval === 0 &&
+      !state.doubleStrikeUsedThisTurn;
+    if (canDoubleStrike) {
+      return {
+        ...state,
+        enemyHp,
+        log: appendLog(log, { kind: "info", text: "[연타] 한 번 더!" }),
+        phase: "player",
+        playerAttacksLeft: 1,
+        doubleStrikeUsedThisTurn: true,
+      };
+    }
     return {
       ...state,
       enemyHp,
@@ -151,10 +188,22 @@ export function advanceTurn(
       phase: "enemy",
       playerAttacksLeft: Math.max(1, player.attackCount),
       completedPlayerTurns: state.completedPlayerTurns + 1,
+      doubleStrikeUsedThisTurn: false,
     };
   }
 
-  // enemy phase — 회피 판정 후 데미지 처리
+  // enemy phase — 보장 회피 → % 회피 → 데미지 (가드 적용) 순.
+  if (state.evadesRemaining > 0) {
+    return {
+      ...state,
+      evadesRemaining: state.evadesRemaining - 1,
+      log: appendLog(state.log, {
+        kind: "info",
+        text: `[회피 강화] ${state.enemy.name}의 공격을 회피했다!`,
+      }),
+      phase: "player",
+    };
+  }
   if (Math.random() * 100 < player.evasionPct) {
     return {
       ...state,
@@ -166,12 +215,32 @@ export function advanceTurn(
     };
   }
 
-  const dmg = damageBetween(state.enemy.atk, player.def);
+  const rawDmg = damageBetween(state.enemy.atk, player.def);
+  // 가드 — 첫 N턴 동안 받는 피해 -reduction. completedPlayerTurns 기준
+  // (현재 턴은 아직 미완 → 첫 턴 enemy phase 도 0 < N 이라 적용됨).
+  const guard = player.guard;
+  const guarded =
+    guard && guard.turns > 0 && state.completedPlayerTurns < guard.turns
+      ? Math.max(0, rawDmg - guard.reduction)
+      : rawDmg;
+  const dmg = guarded;
   const playerHp = Math.max(0, state.playerHp - dmg);
-  const log = appendLog(state.log, {
-    kind: "enemy_attack",
-    text: `${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
-  });
+  const guardApplied = guarded < rawDmg;
+  const log = guardApplied
+    ? appendLog(
+        appendLog(state.log, {
+          kind: "info",
+          text: `[가드] 피해 -${rawDmg - guarded}`,
+        }),
+        {
+          kind: "enemy_attack",
+          text: `${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
+        },
+      )
+    : appendLog(state.log, {
+        kind: "enemy_attack",
+        text: `${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
+      });
   if (playerHp <= 0) {
     return {
       ...state,

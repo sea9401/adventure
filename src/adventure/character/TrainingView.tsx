@@ -1,26 +1,21 @@
 import { Card } from "@/components/ui/Card";
-import { STAT_KEYS, STAT_LABELS, type StatKey } from "@/adventure/data/stats";
 import { formatDuration } from "@/lib/format";
-import { STAT_ICONS, STAT_ICON_COLORS } from "./statMeta";
 
+// 훈련장 — 6시간 훈련으로 단련 포인트 1개 적립. 적립한 포인트는 성장의 신전에서 사용.
 export function TrainingView({
   remaining,
   isTraining,
   unspentPoints,
   onStartTraining,
-  onAllocateStat,
 }: {
   remaining: number;
   isTraining: boolean;
   unspentPoints: number;
   onStartTraining: () => void;
-  onAllocateStat: (key: StatKey) => void;
 }) {
-  const canAllocate = unspentPoints > 0;
-
   return (
     <Card as="section" padding="lg">
-      <div className="space-y-6">
+      <div className="space-y-4">
         <button
           type="button"
           onClick={onStartTraining}
@@ -31,39 +26,14 @@ export function TrainingView({
             ? `훈련 중 · ${formatDuration(remaining)}`
             : "6시간 훈련 시작"}
         </button>
-
-        <div>
-          <div className="mb-3 flex items-center justify-between text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            <span>스탯 단련</span>
-            <span className="tabular-nums">단련 포인트 {unspentPoints}</span>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {STAT_KEYS.map((k) => {
-              const Icon = STAT_ICONS[k];
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => onAllocateStat(k)}
-                  disabled={!canAllocate}
-                  className="flex items-center gap-3 rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-base transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-900"
-                >
-                  <Icon
-                    size={22}
-                    weight="duotone"
-                    className={`shrink-0 ${STAT_ICON_COLORS[k]}`}
-                  />
-                  <span className="flex-1 text-left font-medium text-zinc-700 dark:text-zinc-200">
-                    {STAT_LABELS[k]} 단련
-                  </span>
-                  <span className="shrink-0 text-sm font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
-                    +1
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          훈련을 마치면 단련 포인트 1개를 얻는다. 보유 단련 포인트{" "}
+          <strong className="tabular-nums text-emerald-700 dark:text-emerald-400">
+            {unspentPoints}
+          </strong>
+          개. 능력치로 새겨넣으려면{" "}
+          <strong>성장의 신전</strong>에서 사용한다.
+        </p>
       </div>
     </Card>
   );
