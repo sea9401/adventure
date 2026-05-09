@@ -872,10 +872,14 @@ function Home() {
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/90 px-4 py-3 sm:px-6 dark:border-zinc-800 dark:bg-zinc-950/90">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="inline-flex items-center gap-1 truncate text-base text-zinc-600 dark:text-zinc-400">
+            <button
+              type="button"
+              onClick={() => setTab("adventure")}
+              className="inline-flex items-center gap-1 truncate rounded-md text-base font-semibold text-zinc-700 transition-colors hover:text-emerald-600 dark:text-zinc-200 dark:hover:text-emerald-400"
+            >
               <MapPin size={16} weight="fill" className="text-emerald-500" />
               {currentRegion.name}
-            </span>
+            </button>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span className="inline-flex items-center gap-1.5 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
