@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { CaretDown, ChatCircle, PaperPlaneTilt, Users, X } from "@phosphor-icons/react";
 import { formatRelative } from "@/lib/notifications";
 import { CHAT_MAX_LENGTH } from "@/lib/chat-config";
-import { DEFAULT_CLASS_NAME } from "@/adventure/character/defaults";
 import { SendMessageModal } from "@/adventure/marketplace/SendMessageModal";
 
 export type ChatMessage = {
@@ -203,11 +202,6 @@ export function ChatPanel({
                     className="flex items-center gap-1.5 text-xs"
                   >
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                    {u.className && u.className !== DEFAULT_CLASS_NAME && (
-                      <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                        {u.className}
-                      </span>
-                    )}
                     {u.title && (
                       <span className="font-medium text-amber-600 dark:text-amber-400">
                         {u.title}
@@ -252,11 +246,6 @@ export function ChatPanel({
                 className={`flex flex-col gap-0.5 ${m.mine ? "items-end" : "items-start"}`}
               >
                 <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                  {m.className && m.className !== DEFAULT_CLASS_NAME && (
-                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                      {m.className}
-                    </span>
-                  )}
                   {m.title && (
                     <span className="font-medium text-amber-600 dark:text-amber-400">
                       {m.title}

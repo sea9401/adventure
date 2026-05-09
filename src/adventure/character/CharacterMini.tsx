@@ -211,9 +211,6 @@ export function CharacterMini({ character }: { character: Character }) {
                 </span>
               )}
               <span className="text-base font-semibold">{character.name}</span>
-              <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                {character.className}
-              </span>
               <span className="text-sm text-zinc-400 dark:text-zinc-500">
                 Lv.{character.level}
               </span>

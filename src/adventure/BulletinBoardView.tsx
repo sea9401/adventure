@@ -6,7 +6,6 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { formatRelative } from "@/lib/notifications";
 import { BULLETIN_MAX_LENGTH } from "@/lib/bulletin-config";
-import { DEFAULT_CLASS_NAME } from "@/adventure/character/defaults";
 import { SendMessageModal } from "@/adventure/marketplace/SendMessageModal";
 
 type BulletinPost = {
@@ -180,11 +179,6 @@ function PostCard({
       <Card padding="md">
         <div className="flex items-baseline justify-between gap-2">
           <div className="flex flex-wrap items-baseline gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-            {post.className && post.className !== DEFAULT_CLASS_NAME && (
-              <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                {post.className}
-              </span>
-            )}
             {post.title && (
               <span className="font-medium text-amber-600 dark:text-amber-400">
                 {post.title}

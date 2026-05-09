@@ -206,11 +206,6 @@ export function UsersTab() {
                   >
                     <div className="font-medium text-zinc-900 dark:text-zinc-100">
                       {u.name ?? "(이름 없음)"}
-                      {u.className ? (
-                        <span className="ml-1 text-zinc-500">
-                          [{u.className}]
-                        </span>
-                      ) : null}
                     </div>
                     <div className="font-mono text-[10px] text-zinc-500">
                       {u.email ?? u.id}
@@ -283,12 +278,7 @@ function SelectedUserPanel({
       <div className="rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold">
-              {profile.name}
-              {user.className ? (
-                <span className="ml-2 text-zinc-500">[{user.className}]</span>
-              ) : null}
-            </div>
+            <div className="text-sm font-semibold">{profile.name}</div>
             <div className="font-mono text-[11px] text-zinc-500">
               {user.email ?? "(이메일 없음)"}
             </div>
