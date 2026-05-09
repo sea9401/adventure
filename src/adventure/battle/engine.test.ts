@@ -9,6 +9,7 @@ import {
   type BattleLogEntry,
   type PlayerCombat,
 } from "./engine";
+import { CRIT_MULT } from "../character/skills";
 import type { Monster } from "../data/monsters";
 import type { Potion } from "../data/potions";
 
@@ -343,14 +344,14 @@ describe("연타 (extraAttackEveryNTurns)", () => {
 });
 
 describe("크리티컬 (critChancePct)", () => {
-  it("Math.random 모킹 시 크리티컬 발동 → 데미지 ×2", () => {
+  it("Math.random 모킹 시 크리티컬 발동 → 데미지 ×CRIT_MULT", () => {
     vi.spyOn(Math, "random").mockReturnValue(0); // 항상 발동
     const lucky: PlayerCombat = { ...PLAYER, critChancePct: 5 };
     const enemy = makeEnemy({ hp: 9999 });
     const s0 = initialBattleState(lucky, enemy, "P");
     const s1 = advanceTurn(s0, lucky, "P");
     const dmg = enemy.hp - s1.enemyHp;
-    expect(dmg).toBe(damageBetween(PLAYER.atk, 3) * 2);
+    expect(dmg).toBe(Math.floor(damageBetween(PLAYER.atk, 3) * CRIT_MULT));
     expect(s1.log.some((e) => e.text.includes("[크리티컬]"))).toBe(true);
   });
 

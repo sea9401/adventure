@@ -452,12 +452,29 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
       <ul className="space-y-2">
         {STAT_KEYS.map((k) => {
           const value = stats[k];
-          const skill = STAT_SKILL[k];
-          const skillRevealed = value >= STAT_SKILL_INFO_THRESHOLD;
+          const tiers = STAT_SKILL[k];
+          const tier1 = tiers[0];
+          const tier2 = tiers[1];
+          const tier1Revealed = value >= STAT_SKILL_INFO_THRESHOLD;
           const conversionRevealed = value >= STAT_REVEAL_THRESHOLD;
-          // 스킬 발동 임계가 정보 공개 임계보다 높은 경우 (현재는 spd 의 연타) — 발동 안내 표시.
-          const showActivationNote =
-            skillRevealed && skill.activationThreshold > STAT_SKILL_INFO_THRESHOLD;
+          // 1차 티어 발동 임계가 정보 공개 임계보다 높을 때 발동 안내.
+          const showTier1ActivationNote =
+            !!tier1 &&
+            tier1Revealed &&
+            tier1.activationThreshold > STAT_SKILL_INFO_THRESHOLD;
+          // 2차 티어는 환산 공개와 동시 (15) 에 노출.
+          const tier2Revealed = !!tier2 && conversionRevealed;
+          // 2차 티어 발동 안내 — 정보 공개 (15) 와 발동 임계 (20/30) 차이가 있어 항상 표시.
+          const showTier2ActivationNote =
+            !!tier2 &&
+            tier2Revealed &&
+            tier2.activationThreshold > STAT_REVEAL_THRESHOLD;
+          // 다음 공개 — tier1 → 환산+tier2.
+          const nextRevealAt = tier1Revealed
+            ? conversionRevealed
+              ? "—"
+              : STAT_REVEAL_THRESHOLD
+            : STAT_SKILL_INFO_THRESHOLD;
           return (
             <Card as="li" key={k}>
               <div className="flex items-baseline justify-between gap-2">
@@ -465,49 +482,47 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                   {STAT_LABELS[k]}
                 </span>
                 <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-                  현재 {value} / 다음 공개{" "}
-                  {skillRevealed
-                    ? conversionRevealed
-                      ? "—"
-                      : STAT_REVEAL_THRESHOLD
-                    : STAT_SKILL_INFO_THRESHOLD}
+                  현재 {value} / 다음 공개 {nextRevealAt}
                 </span>
               </div>
 
-              {/* 스킬 정보 — 10 도달 시 공개. */}
-              <div className="mt-2 flex items-start gap-2 text-xs">
-                {skillRevealed ? (
-                  <>
-                    <Sparkle
-                      size={14}
-                      weight="duotone"
-                      className="shrink-0 text-amber-500 mt-0.5"
-                    />
-                    <span className="text-zinc-700 dark:text-zinc-200">
-                      <span className="font-medium">{skill.name}</span> —{" "}
-                      {skill.description}
-                      {showActivationNote && (
-                        <span className="ml-1 text-zinc-500 dark:text-zinc-400">
-                          ({STAT_LABELS[k]} {skill.activationThreshold}에서 발동)
-                        </span>
-                      )}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Lock
-                      size={14}
-                      weight="duotone"
-                      className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
-                    />
-                    <span className="italic text-zinc-500 dark:text-zinc-400">
-                      {STAT_SKILL_INFO_THRESHOLD} 달성 시 스킬 정보 공개
-                    </span>
-                  </>
-                )}
-              </div>
+              {/* 1차 스킬 — STAT_SKILL_INFO_THRESHOLD(5) 도달 시 공개. */}
+              {tier1 && (
+                <div className="mt-2 flex items-start gap-2 text-xs">
+                  {tier1Revealed ? (
+                    <>
+                      <Sparkle
+                        size={14}
+                        weight="duotone"
+                        className="shrink-0 text-amber-500 mt-0.5"
+                      />
+                      <span className="text-zinc-700 dark:text-zinc-200">
+                        <span className="font-medium">{tier1.name}</span> —{" "}
+                        {tier1.description}
+                        {showTier1ActivationNote && (
+                          <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                            ({STAT_LABELS[k]} {tier1.activationThreshold}에서
+                            발동)
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock
+                        size={14}
+                        weight="duotone"
+                        className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
+                      />
+                      <span className="italic text-zinc-500 dark:text-zinc-400">
+                        {STAT_SKILL_INFO_THRESHOLD} 달성 시 스킬 정보 공개
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
 
-              {/* 환산 효과 — 20 도달 시 공개. */}
+              {/* 환산 효과 + 2차 스킬 — STAT_REVEAL_THRESHOLD(15) 도달 시 공개. */}
               <div className="mt-1.5 flex items-start gap-2 text-xs">
                 {conversionRevealed ? (
                   <>
@@ -533,6 +548,26 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                   </>
                 )}
               </div>
+
+              {/* 2차 스킬 — 환산과 같은 타이밍에 공개. */}
+              {tier2 && tier2Revealed && (
+                <div className="mt-1.5 flex items-start gap-2 text-xs">
+                  <Sparkle
+                    size={14}
+                    weight="duotone"
+                    className="shrink-0 text-amber-500 mt-0.5"
+                  />
+                  <span className="text-zinc-700 dark:text-zinc-200">
+                    <span className="font-medium">{tier2.name}</span> —{" "}
+                    {tier2.description}
+                    {showTier2ActivationNote && (
+                      <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                        ({STAT_LABELS[k]} {tier2.activationThreshold}에서 발동)
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
             </Card>
           );
         })}

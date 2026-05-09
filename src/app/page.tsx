@@ -75,14 +75,19 @@ import { useProfile } from "@/adventure/profile/useProfile";
 import { useEdgeUnlocks } from "@/adventure/edges/useEdgeUnlocks";
 import { type TrialEdge } from "@/adventure/TrialView";
 import {
+  counterAtkBonusFor,
   critChancePctFor,
+  crushDefReductionFor,
   deriveSkills,
+  doubleLuckBonusesFor,
   doubleStrikeIntervalFor,
   effectiveSkillNames,
   evadeBonusPctFor,
   evadeGuaranteedFor,
   guardFor,
   powerAttackBonusFor,
+  regenFor,
+  vanguardFirstTurnBonusFor,
 } from "@/adventure/character/skills";
 import { getTitle, COUNTER_TITLES } from "@/adventure/data/titles";
 import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
@@ -380,13 +385,24 @@ function Home() {
     attackCount: 1,
     extraAttackChancePct: Math.min(100, character.stats.spd * 2.5),
     powerAttackBonus: powerAttackBonusFor(character.stats, effectiveSkillSet),
+    crushDefReduction: crushDefReductionFor(
+      character.stats,
+      effectiveSkillSet,
+    ),
     guaranteedEvades: evadeGuaranteedFor(character.stats, effectiveSkillSet),
+    counterAtkBonus: counterAtkBonusFor(character.stats, effectiveSkillSet),
     extraAttackEveryNTurns: doubleStrikeIntervalFor(
       character.stats,
       effectiveSkillSet,
     ),
+    vanguardFirstTurnBonus: vanguardFirstTurnBonusFor(
+      character.stats,
+      effectiveSkillSet,
+    ),
     critChancePct: critChancePctFor(character.stats, effectiveSkillSet),
+    doubleLuck: doubleLuckBonusesFor(character.stats, effectiveSkillSet),
     guard: guardFor(character.stats, effectiveSkillSet),
+    regen: regenFor(character.stats, effectiveSkillSet),
   };
 
   const playerStatus = {
@@ -688,6 +704,8 @@ function Home() {
         potions: inventory.state.potions,
         turnIntervalMs: PLAYER_TURN_INTERVAL_MS,
         awayMs,
+        luk: character.stats.luk,
+        knowsRecipe: crafting.knows,
         pickAction: (state) =>
           pickAutoAction(state, {
             rules: autoPotion.config.rules,
@@ -709,6 +727,18 @@ function Home() {
       // 포션 차감
       for (const [id, n] of Object.entries(result.potionsConsumed)) {
         if (n) inventory.consume(id as PotionId, n);
+      }
+      // 드롭 — 골드/재료/장비/제작서. 학습 가능 여부는 sim 단계에서 이미 필터링됨.
+      if (result.goldGained > 0)
+        characterStateHook.addGoldFame(result.goldGained, 0);
+      for (const [id, n] of Object.entries(result.materialsGained)) {
+        if (n) inventory.addMaterial(id as MaterialId, n);
+      }
+      for (const itemId of result.equipsGained) {
+        inventory.addEquipment(itemId);
+      }
+      for (const recipeId of result.recipesLearned) {
+        crafting.learnRecipe(recipeId);
       }
       // EXP/HP/사망
       if (result.expGained > 0)
