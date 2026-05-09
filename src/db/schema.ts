@@ -128,12 +128,14 @@ export const marketplaceListings = pgTable(
   ],
 );
 
-// 거래 결과 우편함. 사용자가 마을에서 "수령" 누를 때까지 대기.
-// kind: 'sale_proceeds' | 'purchase_item' | 'cancel_return'
+// 거래 결과 + 유저 간 쪽지 우편함. 사용자가 마을에서 "수령/확인" 누를 때까지 대기.
+// kind: 'sale_proceeds' | 'purchase_item' | 'cancel_return' | 'user_message'
 // payload 형식:
 //   sale_proceeds:  { gold: number }
 //   purchase_item:  { item_kind, item_id, quantity }
 //   cancel_return:  { item_kind, item_id, quantity }
+//   user_message:   { text: string }
+// fromUserId/fromName 은 user_message 전용 — 시스템 발송분은 NULL.
 export const marketplaceInbox = pgTable(
   "marketplace_inbox",
   {
@@ -147,6 +149,10 @@ export const marketplaceInbox = pgTable(
     listingId: integer("listing_id").references(() => marketplaceListings.id, {
       onDelete: "set null",
     }),
+    fromUserId: text("from_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    fromName: text("from_name"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     claimedAt: timestamp("claimed_at"),
   },
@@ -155,6 +161,10 @@ export const marketplaceInbox = pgTable(
     index("inbox_unclaimed_idx")
       .on(t.userId, t.createdAt)
       .where(sql`${t.claimedAt} IS NULL`),
+    // 발송자 rate limit 조회용 partial index.
+    index("inbox_from_user_idx")
+      .on(t.fromUserId, t.createdAt)
+      .where(sql`${t.fromUserId} IS NOT NULL`),
   ],
 );
 
