@@ -7,6 +7,7 @@ import {
   MapPin,
   Note,
   Storefront,
+  Trophy,
 } from "@phosphor-icons/react";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { ChatButton } from "@/components/ChatButton";
@@ -45,6 +46,7 @@ import { useInventory } from "@/adventure/inventory/useInventory";
 import { MarketplaceTab } from "@/adventure/marketplace/MarketplaceTab";
 import { InboxView } from "@/adventure/marketplace/InboxView";
 import { useInboxCount } from "@/adventure/marketplace/useInboxCount";
+import { RankingsView } from "@/adventure/rankings/RankingsView";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { type Recipe } from "@/adventure/data/recipes";
@@ -899,6 +901,18 @@ function Home() {
                 }
                 onClick={() => setSubView("inbox")}
               />
+              <EntryCard
+                icon={
+                  <Trophy
+                    size={28}
+                    weight="duotone"
+                    className="text-amber-600"
+                  />
+                }
+                title="랭킹"
+                description="모험가 명부 — 등록한 사람들의 레벨, 명성, 전투 횟수 순위."
+                onClick={() => setSubView("rankings")}
+              />
             </div>
           )}
           {tab === "plaza" && subView === "bulletin" && (
@@ -921,6 +935,19 @@ function Home() {
             <div className="space-y-3">
               <SubViewHeader title="우편함" onBack={back} />
               <InboxView />
+            </div>
+          )}
+          {tab === "plaza" && subView === "rankings" && (
+            <div className="space-y-3">
+              <SubViewHeader title="랭킹" onBack={back} />
+              <RankingsView
+                character={{
+                  name: character.name,
+                  level: character.level,
+                  fame: character.fame,
+                  battleCount: character.battleCount,
+                }}
+              />
             </div>
           )}
         </main>

@@ -168,6 +168,28 @@ export const marketplaceInbox = pgTable(
   ],
 );
 
+// 랭킹 — opt-in. 사용자가 명시적으로 등록한 경우에만 row 가 존재한다.
+// 갱신은 수동 (RankingsView 의 '갱신' 버튼). DELETE 로 빠질 수 있음.
+// name 은 등록/갱신 시점 스냅샷 — 이후 닉네임 변경되면 다음 갱신에서 반영.
+export const rankings = pgTable(
+  "rankings",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    level: integer("level").notNull(),
+    fame: integer("fame").notNull(),
+    battleCount: integer("battle_count").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => [
+    index("rankings_level_idx").on(t.level),
+    index("rankings_fame_idx").on(t.fame),
+    index("rankings_battle_count_idx").on(t.battleCount),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type SavesKvRow = typeof savesKv.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
@@ -175,3 +197,4 @@ export type BulletinPostRow = typeof bulletinPosts.$inferSelect;
 export type PresenceRow = typeof presence.$inferSelect;
 export type MarketplaceListingRow = typeof marketplaceListings.$inferSelect;
 export type MarketplaceInboxRow = typeof marketplaceInbox.$inferSelect;
+export type RankingRow = typeof rankings.$inferSelect;
