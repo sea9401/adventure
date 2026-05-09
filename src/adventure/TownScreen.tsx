@@ -7,6 +7,7 @@ import {
   House,
   MapPin,
   Scroll,
+  Sparkle,
   Storefront,
 } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
@@ -14,9 +15,11 @@ import { EntryCard } from "@/components/ui/EntryCard";
 import { StatBar } from "@/components/ui/StatBar";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { TrainingView } from "@/adventure/character/TrainingView";
+import { GrowthShrineView } from "@/adventure/character/GrowthShrineView";
 import { CraftingView } from "@/adventure/CraftingView";
 import { ShopView } from "@/adventure/ShopView";
 import { GuildView } from "@/adventure/GuildView";
+import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { START_REGION_ID } from "@/adventure/data/world";
 import { useGame } from "@/adventure/GameContext";
 
@@ -98,6 +101,18 @@ export function TownScreen() {
           title="훈련장"
           description={trainingDescription}
           onClick={() => setSubView("training")}
+        />
+        <EntryCard
+          icon={
+            <Sparkle size={28} weight="duotone" className="text-violet-400" />
+          }
+          title="성장의 신전"
+          description={
+            training.unspentPoints > 0
+              ? `단련 포인트 ${training.unspentPoints}개를 능력치로 새겨넣을 수 있다.`
+              : "단련을 능력치로 새겨넣는 곳."
+          }
+          onClick={() => setSubView("shrine")}
         />
         <EntryCard
           icon={
@@ -213,6 +228,31 @@ export function TownScreen() {
           isTraining={training.isTraining}
           unspentPoints={training.unspentPoints}
           onStartTraining={training.startTraining}
+        />
+      </div>
+    );
+  }
+
+  if (subView === "shrine") {
+    // baseStats = 총 스탯에서 분배분만 뺀 값(베이스+장비). GrowthShrineView 가
+    // total = baseStats + allocated 로 합산해 표시하므로 결과는 character.stats 와 일치.
+    const baseStatsForShrine = STAT_KEYS.reduce<Record<StatKey, number>>(
+      (acc, k) => {
+        acc[k] = (character.stats[k] ?? 0) - (training.allocatedStats[k] ?? 0);
+        return acc;
+      },
+      {} as Record<StatKey, number>,
+    );
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="성장의 신전" onBack={back} />
+        <GrowthShrineView
+          unspentPoints={training.unspentPoints}
+          revertPoints={training.revertPoints}
+          allocatedStats={training.allocatedStats}
+          baseStats={baseStatsForShrine}
+          onAllocate={training.allocateStat}
+          onDeallocate={training.deallocateStat}
         />
       </div>
     );
