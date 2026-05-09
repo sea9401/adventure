@@ -19,6 +19,8 @@ import { GrowthShrineView } from "@/adventure/character/GrowthShrineView";
 import { CraftingView } from "@/adventure/CraftingView";
 import { ShopView } from "@/adventure/ShopView";
 import { GuildView } from "@/adventure/GuildView";
+import { SparringView } from "@/adventure/SparringView";
+import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { START_REGION_ID } from "@/adventure/data/world";
 import { useGame } from "@/adventure/GameContext";
@@ -39,6 +41,10 @@ export function TownScreen() {
     inventory,
     quests,
     trainingDescription,
+    playerCombat,
+    playerStatus,
+    autoPotion,
+    notifications,
     handleCraft,
     handlePurchasePotion,
     handlePurchaseMaterial,
@@ -227,7 +233,31 @@ export function TownScreen() {
           remaining={training.remaining}
           isTraining={training.isTraining}
           unspentPoints={training.unspentPoints}
+          completedCount={training.completedCount}
           onStartTraining={training.startTraining}
+          onStartSparring={() => setSubView("sparring")}
+        />
+      </div>
+    );
+  }
+
+  if (subView === "sparring") {
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="스파링" onBack={back} />
+        <SparringView
+          player={playerCombat}
+          playerName={character.name}
+          playerStatus={playerStatus}
+          pickAutoAction={(state) =>
+            pickAutoAction(state, {
+              rules: autoPotion.config.rules,
+              potions: inventory.state.potions,
+            })
+          }
+          inventoryState={inventory.state}
+          recentNotifications={notifications.list}
+          onClose={back}
         />
       </div>
     );

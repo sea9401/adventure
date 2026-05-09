@@ -144,7 +144,20 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "nymph_ring", chance: 0.005 },
     ],
   },
+  // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
+  // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).
+  "훈련용 허수아비": {
+    name: "훈련용 허수아비",
+    tags: ["humanoid"],
+    hp: 80,
+    atk: 4,
+    def: 2,
+    spd: 1,
+    exp: 0,
+  },
 };
+
+export const SPAR_DUMMY_ID = "훈련용 허수아비" as const;
 
 export function getMonstersByTag(tag: MonsterTag): Monster[] {
   return Object.values(MONSTERS).filter((m) => m.tags.includes(tag));
