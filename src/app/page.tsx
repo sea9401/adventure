@@ -81,7 +81,7 @@ import {
   guardFor,
   powerAttackBonusFor,
 } from "@/adventure/character/skills";
-import { getTitle } from "@/adventure/data/titles";
+import { getTitle, TRAINING_COUNT_TITLES } from "@/adventure/data/titles";
 import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
 import {
   simulateOfflineHunt,
@@ -582,6 +582,15 @@ function Home() {
     // grantTitle 안정 참조 — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleLosses]);
+
+  // 누적 훈련 횟수 → 마일스톤 칭호 등록.
+  const trainingCount = training.completedCount;
+  useEffect(() => {
+    for (const m of TRAINING_COUNT_TITLES) {
+      if (trainingCount >= m.count) grantTitle(m.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trainingCount]);
 
   const handleBattleEnd = (payload: BattleEndPayload) =>
     onBattleEnd(payload, {

@@ -12,6 +12,8 @@ type TrainingPersisted = {
   allocated: Record<StatKey, number>;
   // 되돌리기(스탯 차감) 에 필요한 별도 포인트. 첫 시작 시 3개 지급.
   revertPoints: number;
+  // 누적 완료 횟수 — 칭호 마일스톤 트리거에 사용.
+  completedCount: number;
 };
 
 // 첫 시작 보너스 — 신규 유저 + 기존 유저(아직 revertPoints 필드 미저장) 모두 3 부여.
@@ -24,6 +26,7 @@ function readInitial(raw: unknown): TrainingPersisted {
     points: 0,
     allocated: { ...ZERO_ALLOCATED },
     revertPoints: STARTING_REVERT_POINTS,
+    completedCount: 0,
   };
   if (!raw || typeof raw !== "object") return empty;
   const parsed = raw as {
@@ -31,12 +34,14 @@ function readInitial(raw: unknown): TrainingPersisted {
     points?: number;
     allocated?: Partial<Record<StatKey, number>>;
     revertPoints?: number;
+    completedCount?: number;
   };
   return {
     endsAt: parsed.endsAt ?? null,
     points: parsed.points ?? 0,
     allocated: { ...ZERO_ALLOCATED, ...parsed.allocated },
     revertPoints: parsed.revertPoints ?? STARTING_REVERT_POINTS,
+    completedCount: parsed.completedCount ?? 0,
   };
 }
 
@@ -54,6 +59,9 @@ export function useTraining() {
   const [revertPoints, setRevertPoints] = useState(
     initialPersisted.revertPoints,
   );
+  const [completedCount, setCompletedCount] = useState(
+    initialPersisted.completedCount,
+  );
   const [now, setNow] = useState(() => Date.now());
 
   // 영속 — value 변할 때마다 디바운스 patch.
@@ -63,8 +71,15 @@ export function useTraining() {
       points: unspentPoints,
       allocated: allocatedStats,
       revertPoints,
+      completedCount,
     }),
-    [trainingEndsAt, unspentPoints, allocatedStats, revertPoints],
+    [
+      trainingEndsAt,
+      unspentPoints,
+      allocatedStats,
+      revertPoints,
+      completedCount,
+    ],
   );
   useRemotePatch("training.v2", persisted);
 
@@ -80,6 +95,7 @@ export function useTraining() {
     if (trainingEndsAt && now >= trainingEndsAt) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setUnspentPoints((p) => p + 1);
+      setCompletedCount((c) => c + 1);
       setTrainingEndsAt(null);
     }
   }, [trainingEndsAt, now]);
@@ -118,6 +134,7 @@ export function useTraining() {
     unspentPoints,
     allocatedStats,
     revertPoints,
+    completedCount,
     remaining,
     isTraining,
     startTraining,
