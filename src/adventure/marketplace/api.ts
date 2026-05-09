@@ -163,7 +163,16 @@ export async function sendUserMessage(
   });
   if (!r.ok) {
     const body = await r.text();
-    throw new Error(translateError(body, r.status));
+    let code = body;
+    let suffix = "";
+    try {
+      const parsed = JSON.parse(body) as { error?: string; probe?: unknown };
+      if (typeof parsed.error === "string") code = parsed.error;
+      if (parsed.probe) suffix = ` [디버그: ${JSON.stringify(parsed.probe)}]`;
+    } catch {
+      // body 가 plain text 인 기존 응답 — 그대로 code 로 사용.
+    }
+    throw new Error(translateError(code, r.status) + suffix);
   }
   return (await r.json()) as SendMessageResult;
 }

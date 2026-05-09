@@ -1,12 +1,81 @@
 import { and, count, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { marketplaceInbox, users } from "@/db/schema";
+import { marketplaceInbox, savesKv, users } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
 import {
   USER_MESSAGE_DAILY_CAP,
   USER_MESSAGE_MAX_LENGTH,
   USER_MESSAGE_RATE_LIMIT_MS,
 } from "@/lib/inbox-config";
+
+type SenderProbe = {
+  usersRowExists: boolean;
+  usersNamePresent: boolean;
+  profileRowExists: boolean;
+  profileNamePresent: boolean;
+  profileShape: string[] | null;
+};
+
+// 닉네임은 dual-source — `users.name` (신규 유저, authoritative) 와
+// `savesKv[character-profile.v2].name` (레거시 유저). 한쪽이라도 있으면 사용.
+async function resolveSenderName(
+  userId: string,
+): Promise<{ name: string | null; probe: SenderProbe }> {
+  const [u] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const [profile] = await db
+    .select({ value: savesKv.value })
+    .from(savesKv)
+    .where(
+      and(eq(savesKv.userId, userId), eq(savesKv.key, PROFILE_STORAGE_KEY)),
+    )
+    .limit(1);
+  const legacyName = (profile?.value as { name?: unknown } | undefined)?.name;
+
+  const probe: SenderProbe = {
+    usersRowExists: !!u,
+    usersNamePresent: typeof u?.name === "string" && u.name.length > 0,
+    profileRowExists: !!profile,
+    profileNamePresent:
+      typeof legacyName === "string" && legacyName.length > 0,
+    profileShape: profile
+      ? Object.keys((profile.value as Record<string, unknown>) ?? {})
+      : null,
+  };
+
+  if (u?.name) return { name: u.name, probe };
+  if (typeof legacyName === "string" && legacyName.length > 0) {
+    return { name: legacyName, probe };
+  }
+  return { name: null, probe };
+}
+
+async function findRecipientByName(
+  name: string,
+): Promise<{ id: string; name: string } | null> {
+  const [u] = await db
+    .select({ id: users.id, name: users.name })
+    .from(users)
+    .where(sql`lower(${users.name}) = lower(${name})`)
+    .limit(1);
+  if (u?.name) return { id: u.id, name: u.name };
+  const [legacy] = await db
+    .select({ userId: savesKv.userId, value: savesKv.value })
+    .from(savesKv)
+    .where(
+      sql`${savesKv.key} = ${PROFILE_STORAGE_KEY} and lower(${savesKv.value}->>'name') = lower(${name})`,
+    )
+    .limit(1);
+  const legacyName = (legacy?.value as { name?: unknown } | undefined)?.name;
+  if (legacy && typeof legacyName === "string" && legacyName.length > 0) {
+    return { id: legacy.userId, name: legacyName };
+  }
+  return null;
+}
 
 // POST /api/inbox/send — 유저 간 쪽지 1통 발송.
 //   body: { recipientName: string, text: string }
@@ -34,22 +103,15 @@ export async function POST(req: Request) {
     });
   }
 
-  // 발신자 닉네임 조회 — 이름이 아직 설정 안 된 유저(name=NULL) 는 발송 차단.
-  const [sender] = await db
-    .select({ id: users.id, name: users.name })
-    .from(users)
-    .where(eq(users.id, senderId))
-    .limit(1);
-  if (!sender || !sender.name) {
-    return new Response("sender_no_name", { status: 400 });
+  const { name: senderName, probe } = await resolveSenderName(senderId);
+  if (!senderName) {
+    return Response.json(
+      { error: "sender_no_name", probe },
+      { status: 400 },
+    );
   }
 
-  // 수신자 lookup (대소문자 무시 — users_name_lower_idx).
-  const [recipient] = await db
-    .select({ id: users.id, name: users.name })
-    .from(users)
-    .where(sql`lower(${users.name}) = lower(${recipientNameRaw})`)
-    .limit(1);
+  const recipient = await findRecipientByName(recipientNameRaw);
   if (!recipient) {
     return new Response("recipient_not_found", { status: 404 });
   }
@@ -95,7 +157,7 @@ export async function POST(req: Request) {
     kind: "user_message",
     payload: { text },
     fromUserId: senderId,
-    fromName: sender.name,
+    fromName: senderName,
   });
 
   return Response.json({ ok: true, recipientName: recipient.name });
