@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Coins, Scroll, Star } from "@phosphor-icons/react";
-import { getQuestsForRegion, type Quest } from "./data/quests";
+import { getQuestsForRegion, type KillQuest } from "./data/quests";
 import type { RegionId } from "./data/world";
 import type { QuestProgressEntry } from "./quests/storage";
 import { cooldownStatus } from "./quests/cooldown";
@@ -71,7 +71,7 @@ function QuestCard({
   onAccept,
   onClaim,
 }: {
-  quest: Quest;
+  quest: KillQuest;
   entry: QuestProgressEntry;
   characterLevel: number;
   now: number;

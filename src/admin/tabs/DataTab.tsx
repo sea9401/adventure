@@ -291,7 +291,9 @@ function QuestsTable({ q }: { q: string }) {
       Q.id,
       Q.regionId,
       Q.title,
-      `${Q.target.monsterName} ×${Q.target.count}`,
+      Q.target.kind === "kill"
+        ? `${Q.target.monsterName} ×${Q.target.count}`
+        : `${Q.target.materialId} ×${Q.target.count}`,
       [
         Q.reward.gold ? `${Q.reward.gold}G` : null,
         Q.reward.fame ? `${Q.reward.fame}명성` : null,

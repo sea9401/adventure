@@ -75,7 +75,11 @@ export function QuestsTab() {
                   <td className="px-2 py-1">
                     <div className="text-sm font-medium">{q.title}</div>
                     <div className="font-mono text-[11px] text-zinc-500">
-                      {q.id} · {q.target.monsterName}×{q.target.count}
+                      {q.id} ·{" "}
+                      {q.target.kind === "kill"
+                        ? q.target.monsterName
+                        : q.target.materialId}
+                      ×{q.target.count}
                     </div>
                   </td>
                   <td className="px-2 py-1">{q.regionId}</td>

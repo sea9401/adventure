@@ -75,6 +75,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "어머니가 손수 챙겨 준 부적을 두 푼 돈에 넘긴 자.",
     condition: "엄마가 준 부적을 상점에 판매",
   },
+  diola_friend: {
+    id: "diola_friend",
+    name: "디올라의 친구",
+    description: "안개 호숫가의 작은 어촌이 그를 식구처럼 받아들였다.",
+    condition: "촌장 마린의 의뢰까지 모두 완수",
+  },
 };
 
 // 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.

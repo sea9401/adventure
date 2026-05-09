@@ -749,6 +749,8 @@ function Home() {
         ? `${result.quest.title} 완료 — ${tokens.join(", ")}`
         : `${result.quest.title} 완료`,
     );
+    // 마린의 영혼 결정 의뢰 = "안개 너머의 길" 라인의 클로저 → 칭호 부여.
+    if (id === "diola-marin-soul-crystals") grantTitle("diola_friend");
     return true;
   };
 

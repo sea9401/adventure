@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QUESTS, getQuestById, type Quest } from "../data/quests";
+import type { MaterialId } from "../data/materials";
 import {
   defaultQuestEntry,
   type QuestProgressEntry,
@@ -14,6 +15,10 @@ import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 export type ClaimResult =
   | { ok: true; quest: Quest }
   | { ok: false; reason: "not-found" | "not-ready" };
+
+export type DeliverResult =
+  | { ok: true }
+  | { ok: false; reason: "not-found" | "not-deliver" | "not-active" | "insufficient" };
 
 function readInitial(raw: unknown): QuestProgressMap {
   if (!raw || typeof raw !== "object") return {};
@@ -53,7 +58,8 @@ export function useQuests() {
     setProgress(next);
   }, []);
 
-  // 전투 승리 시 호출 — 활성 퀘스트 중 타겟 일치하는 것의 진행도 증가.
+  // 전투 승리 시 호출 — 활성 kill 퀘스트 중 타겟 일치하는 것의 진행도 증가.
+  // deliver 퀘스트는 NPC 대화에서 직접 판정되므로 여기선 건너뜀.
   // 이번 호출에서 막 ready 로 전환된 퀘스트 ID 목록을 반환 (알림 트리거용).
   const recordKill = useCallback((monsterName: string): string[] => {
     const cur = progressRef.current;
@@ -61,6 +67,7 @@ export function useQuests() {
     const justReady: string[] = [];
     let changed = false;
     for (const quest of QUESTS) {
+      if (quest.target.kind !== "kill") continue;
       if (quest.target.monsterName !== monsterName) continue;
       const entry = next[quest.id] ?? defaultQuestEntry();
       if (entry.state !== "active") continue;
@@ -78,6 +85,37 @@ export function useQuests() {
     }
     return justReady;
   }, []);
+
+  // deliver 퀘스트 전용 — NPC 대화에서 호출. 인벤토리 재료를 검사·소비하고
+  // 상태를 active → ready 로 전환. 이후 호출자가 claim 으로 보상까지 마무리.
+  // 인벤토리 접근은 호출자가 주입 (순환 의존 회피).
+  const tryDeliver = useCallback(
+    (
+      id: string,
+      materialCount: (m: MaterialId) => number,
+      consumeMaterial: (m: MaterialId, n: number) => boolean,
+    ): DeliverResult => {
+      const quest = getQuestById(id);
+      if (!quest) return { ok: false, reason: "not-found" };
+      if (quest.target.kind !== "deliver") return { ok: false, reason: "not-deliver" };
+      const cur = progressRef.current;
+      const entry = cur[id] ?? defaultQuestEntry();
+      if (entry.state !== "active") return { ok: false, reason: "not-active" };
+      const need = quest.target.count;
+      if (materialCount(quest.target.materialId) < need)
+        return { ok: false, reason: "insufficient" };
+      if (!consumeMaterial(quest.target.materialId, need))
+        return { ok: false, reason: "insufficient" };
+      const next: QuestProgressMap = {
+        ...cur,
+        [id]: { ...entry, state: "ready" },
+      };
+      progressRef.current = next;
+      setProgress(next);
+      return { ok: true };
+    },
+    [],
+  );
 
   // 보상 수령 — 호출 측이 캐릭터 상태 갱신을 함께 처리.
   const claim = useCallback((id: string): ClaimResult => {
@@ -101,5 +139,13 @@ export function useQuests() {
     return { ok: true, quest };
   }, []);
 
-  return { progress, hydrated: true, getEntry, accept, recordKill, claim };
+  return {
+    progress,
+    hydrated: true,
+    getEntry,
+    accept,
+    recordKill,
+    tryDeliver,
+    claim,
+  };
 }

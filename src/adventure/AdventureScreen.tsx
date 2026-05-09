@@ -13,6 +13,10 @@ import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { SuzyDialogue } from "@/adventure/town/dialogues/SuzyDialogue";
 import { KaiDialogue } from "@/adventure/town/dialogues/KaiDialogue";
 import { StrangerDialogue } from "@/adventure/town/dialogues/StrangerDialogue";
+import { RioDialogue } from "@/adventure/town/dialogues/RioDialogue";
+import { NoraDialogue } from "@/adventure/town/dialogues/NoraDialogue";
+import { BoroDialogue } from "@/adventure/town/dialogues/BoroDialogue";
+import { MarinDialogue } from "@/adventure/town/dialogues/MarinDialogue";
 import { WoodcutterJimmyDialogue } from "@/adventure/town/dialogues/WoodcutterJimmyDialogue";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
@@ -196,6 +200,55 @@ export function AdventureScreen() {
                 <StrangerDialogue
                   npc={npc}
                   onClose={close}
+                  storyFlags={storyFlags}
+                  quests={quests}
+                />
+              );
+            }
+            if (npc.id === "diola_kid") {
+              return (
+                <RioDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                  storyFlags={storyFlags}
+                />
+              );
+            }
+            if (npc.id === "diola_innkeeper") {
+              return (
+                <NoraDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                  storyFlags={storyFlags}
+                />
+              );
+            }
+            if (npc.id === "diola_merchant") {
+              return (
+                <BoroDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                  storyFlags={storyFlags}
+                />
+              );
+            }
+            if (npc.id === "diola_elder") {
+              return (
+                <MarinDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
                   storyFlags={storyFlags}
                 />
               );
