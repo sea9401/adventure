@@ -313,15 +313,30 @@ export function BattleView({
         />
       )}
       {isBossWin && (
-        <BattleResult
-          outcome="win"
-          exp={state.enemy.exp}
-          onConfirm={() => {
-            // 보상은 win effect 가 이미 발화 — 모달 확인은 BattleScene 정리만.
-            bossModeRef.current = false;
-            stop();
-          }}
-        />
+        // 보스 승리는 모달 대신 인라인 — 사용자가 BattleScene 의 전투 로그를 즉시 확인 가능.
+        // 보상/onBattleEnd 는 win effect 에서 이미 발화. "돌아가기" 가 BattleScene 정리만 담당.
+        <Card padding="md">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
+                승리!
+              </div>
+              <div className="text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
+                EXP +{state.enemy.exp}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                bossModeRef.current = false;
+                stop();
+              }}
+              className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              돌아가기
+            </button>
+          </div>
+        </Card>
       )}
     </>
   );

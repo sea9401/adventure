@@ -3,10 +3,9 @@
 import type { BattleOutcome } from "./engine";
 import { Card } from "@/components/ui/Card";
 
-// BattleScene 위에 띄우는 결과 모달. 사용자 확인 후에 종료 처리가 진행된다.
-// - 패배: 시작 마을 이동/HP 0 유지 (HP는 풀회복하지 않고 치유소 사용을 유도).
-// - 보스 승리: 1회 한정 도전이라 cooldown 대신 모달로 BattleScene을 유지한다.
-// - 일반 승리: cooldown 동안 BattleScene이 그대로 보이므로 결과 카드를 띄우지 않는다.
+// 패배 결과 모달 — BattleScene 위에 띄워 사용자 확인 후에 종료 처리가 진행된다.
+// 시작 마을 이동/HP 0 유지 (치유소 사용 유도). 보스 승리는 BattleView 가 인라인 배너로
+// 직접 처리하므로 이 컴포넌트는 호출하지 않는다 — 일반 승리도 cooldown 으로 표시 X.
 export function BattleResult({
   outcome,
   exp,
