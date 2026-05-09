@@ -5,6 +5,7 @@ import { Diamond, Flask, Sword } from "@phosphor-icons/react";
 import {
   ITEMS,
   findItemId,
+  rarityTextClass,
   type EquipBonus,
   type EquipItem,
   type EquipSlot,
@@ -143,7 +144,7 @@ export function InventoryView({
               return (
                 <Card key={id}>
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    <span className={`text-sm font-semibold ${rarityTextClass(item)}`}>
                       {item.name}
                       {count > 1 && (
                         <span className="ml-1 text-xs font-normal tabular-nums text-zinc-500 dark:text-zinc-400">

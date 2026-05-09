@@ -1,5 +1,9 @@
 export type EquipSlot = "weapon" | "armor" | "accessory";
 
+// 4단계 등급. 미지정은 common 으로 취급.
+// uncommon/rare/legendary 만 색깔로 강조하고, common 은 기본 zinc 톤 유지.
+export type ItemRarity = "common" | "uncommon" | "rare" | "legendary";
+
 export type EquipBonus = {
   atk?: number;
   def?: number;
@@ -19,7 +23,28 @@ export type EquipItem = {
   // 거래소 등록 가능 여부. 미지정/true 면 거래 가능.
   // 시작 장비·서사 아이템 등에는 false 로 막는다.
   tradable?: boolean;
+  rarity?: ItemRarity;
 };
+
+// 등급별 텍스트 색상. 인벤토리·장비창·드랍 모달 등 아이템 이름이 노출되는 곳에서 공용으로 쓴다.
+// ITEMS의 const-narrow 타입에서는 rarity 미지정 아이템의 필드 자체가 안 보여서,
+// EquipItem 으로 받아 옵셔널 접근하는 게 타입상 안전하다.
+// fallback 은 common(미지정) 일 때 쓸 색상 — 보통 기본 zinc 톤이지만 보상 모달처럼 다른 톤이 어울리는 곳에서 override.
+export function rarityTextClass(
+  item: EquipItem | null | undefined,
+  fallback = "text-zinc-900 dark:text-zinc-100",
+): string {
+  switch (item?.rarity) {
+    case "uncommon":
+      return "text-emerald-600 dark:text-emerald-400";
+    case "rare":
+      return "text-sky-600 dark:text-sky-400";
+    case "legendary":
+      return "text-amber-600 dark:text-amber-400";
+    default:
+      return fallback;
+  }
+}
 
 export const ITEMS = {
   // 시작 장비
@@ -106,6 +131,7 @@ export const ITEMS = {
     ],
     bonus: { atk: 5, spd: 2 },
     description: "어느 두더지가 품에 꼭 쥐고 있던 작은 드릴. 회전시키면 묘하게 손맛이 좋다. 정말로 두더지왕이 있었는지는 아무도 모른다.",
+    rarity: "rare",
   } satisfies EquipItem,
   spare_hatchet: {
     name: "예비 손도끼",

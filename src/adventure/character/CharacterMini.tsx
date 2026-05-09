@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { StatBar } from "@/components/ui/StatBar";
 import type { Gender } from "@/adventure/profile/avatars";
-import type { EquipItem, EquipSlot } from "@/adventure/data/items";
+import { rarityTextClass, type EquipItem, type EquipSlot } from "@/adventure/data/items";
 import type { Character, EquippedSlots } from "./types";
 
 export const EQUIP_SLOT_META: {
@@ -114,7 +114,7 @@ export function MiniEquipCard({
         </div>
         <div className="truncate text-xs">
           {item ? (
-            <span className="text-zinc-800 dark:text-zinc-200">{item.name}</span>
+            <span className={rarityTextClass(item)}>{item.name}</span>
           ) : (
             <span className="italic text-zinc-400 dark:text-zinc-600">없음</span>
           )}
@@ -126,7 +126,7 @@ export function MiniEquipCard({
           role="tooltip"
           className={`pointer-events-none absolute top-full z-20 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-md border border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900 ${TOOLTIP_ALIGN[tooltipAlign]}`}
         >
-          <div className="font-medium text-zinc-900 dark:text-zinc-100">
+          <div className={`font-medium ${rarityTextClass(item)}`}>
             {item.name}
           </div>
           <div className="mt-1.5 space-y-0.5">

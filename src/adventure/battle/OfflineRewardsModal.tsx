@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { MONSTERS } from "../data/monsters";
 import { POTIONS, type PotionId } from "../data/potions";
 import { MATERIALS, type MaterialId } from "../data/materials";
-import { ITEMS, type ItemId } from "../data/items";
+import { ITEMS, rarityTextClass, type ItemId } from "../data/items";
 import { getRecipeById } from "../data/recipes";
 import { OFFLINE_SIM_MAX_MS, type OfflineSimResult } from "./offlineSim";
 import { useEscapeKey } from "@/lib/useEscapeKey";
@@ -171,12 +171,14 @@ export function OfflineRewardsModal({
                   })}
                   {Array.from(equipCounts.entries()).map(([id, n]) => {
                     const item = ITEMS[id];
+                    // 등급 있는 장비는 등급색, 일반 장비는 보상 모달 톤(amber) 유지.
+                    const nameClass = rarityTextClass(item, "text-amber-700 dark:text-amber-300");
                     return (
                       <li
                         key={`eq-${id}`}
                         className="flex items-center justify-between gap-2"
                       >
-                        <span className="truncate text-amber-700 dark:text-amber-300">
+                        <span className={`truncate ${nameClass}`}>
                           {item?.name ?? id}
                         </span>
                         <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-300">
