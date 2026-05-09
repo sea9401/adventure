@@ -15,7 +15,6 @@ import {
   MARKETPLACE_SLOT_LIMIT,
   addToCategory,
   deductFromCategory,
-  getEquippedItemIds,
   getItemName,
   getKnownArr,
   getShareableArr,
@@ -25,7 +24,6 @@ import {
 } from "@/lib/server/marketplace";
 
 const SAVES_INVENTORY = "inventory.v2";
-const SAVES_CHARACTER = "character.v2";
 const SAVES_PROFILE = "character-profile.v2";
 const SAVES_CRAFTING = "crafting.v2";
 
@@ -316,20 +314,8 @@ export async function POST(req: Request) {
 
         const inv = (invRows[0]?.value ?? {}) as InventoryShape;
 
-        // 장비 장착 중인지 확인 (장비만).
-        if (itemKind === "equip") {
-          const charRows = await tx
-            .select()
-            .from(savesKv)
-            .where(
-              and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_CHARACTER)),
-            );
-          const equippedIds = getEquippedItemIds(charRows[0]?.value ?? null);
-          if (equippedIds.has(itemId)) {
-            return { error: "equipped", status: 400 as const };
-          }
-        }
-
+        // inventory.equipment 는 미장착 사본만 카운트 — 동일 ID 가 슬롯에 장착돼 있어도
+        // 인벤 스택과 무관하다. 차감은 deductFromCategory 가 보유 수량 미달 시 차단.
         const categoryKey = itemKind === "equip" ? "equipment" : "materials";
         const next = deductFromCategory(inv[categoryKey], itemId, quantity);
         if (next === null) {

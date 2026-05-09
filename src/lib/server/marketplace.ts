@@ -113,27 +113,3 @@ export function getShareableArr(craft: CraftingShape | null | undefined): string
   return getKnownArr(craft);
 }
 
-// 장비 슬롯에 장착 중인 itemId 목록 (한 슬롯이라도 매칭되면 막기 위함).
-// character.v2 의 equipped.{weapon,armor,accessory} 는 EquipItem | null 형태로
-// 저장되며 ID 는 별도 필드가 없어 name 매칭으로 ID 를 역추적해야 한다.
-export function getEquippedItemIds(
-  character: unknown,
-): Set<string> {
-  const equipped = (character as { equipped?: Record<string, unknown> } | null)
-    ?.equipped;
-  if (!equipped || typeof equipped !== "object") return new Set();
-  const result = new Set<string>();
-  for (const slot of ["weapon", "armor", "accessory"] as const) {
-    const slotItem = (equipped as Record<string, unknown>)[slot];
-    if (!slotItem || typeof slotItem !== "object") continue;
-    const name = (slotItem as { name?: unknown }).name;
-    if (typeof name !== "string") continue;
-    for (const [id, def] of Object.entries(ITEMS)) {
-      if (def.name === name) {
-        result.add(id);
-        break;
-      }
-    }
-  }
-  return result;
-}
