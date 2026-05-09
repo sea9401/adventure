@@ -79,6 +79,7 @@ import {
   deriveSkills,
   doubleStrikeIntervalFor,
   effectiveSkillNames,
+  evadeBonusPctFor,
   evadeGuaranteedFor,
   guardFor,
   powerAttackBonusFor,
@@ -264,8 +265,9 @@ function Home() {
     },
     {} as Record<StatKey, number>,
   );
-  // VIT 1pt 당 maxHp +1 — 레벨 기준 max 위에 스탯 보너스를 얹는다.
-  const characterMaxHp = maxHpForLevel(characterState.level) + totalStats.vit;
+  // VIT 1pt 당 maxHp +2 — 레벨 기준 max 위에 스탯 보너스를 얹는다.
+  const characterMaxHp =
+    maxHpForLevel(characterState.level) + totalStats.vit * 2;
   const characterMaxMp = maxMpForLevel(characterState.level);
   const equippedTitle = getTitle(characterStateHook.equippedTitleId);
   const characterSkills = deriveSkills(totalStats);
@@ -355,17 +357,19 @@ function Home() {
   );
   // 스탯 → 전투 수치 변환:
   //   힘   STR : +1 atk / pt
-  //   민첩 DEX : +1% 회피 / pt, +1 atk / 5pt
-  //   활력 VIT : +2 def / pt, +1 maxHp / pt (maxHp는 character 빌드 단계에서 반영)
+  //   민첩 DEX : +0.5% 회피 / pt, +1 atk / 5pt
+  //   활력 VIT : +1 def / pt, +2 maxHp / pt (maxHp는 character 빌드 단계에서 반영)
   //   속도 SPD : 10pt 당 공격 횟수 +1 (베이스 1회)
-  //   행운 LUK : +1% 드랍률 / pt (드랍 시스템 도입 시 사용)
+  //   행운 LUK : +1% 드랍률 / pt, +0.5% 크리 확률 / pt
   const playerCombat = {
     hp: character.hp,
     maxHp: character.maxHp,
     atk: character.stats.str + Math.floor(character.stats.dex / 5) + equipAtk,
-    def: character.stats.vit * 2 + equipDef,
+    def: character.stats.vit + equipDef,
     spd: character.stats.spd,
-    evasionPct: character.stats.dex,
+    evasionPct:
+      character.stats.dex * 0.5 +
+      evadeBonusPctFor(character.stats, effectiveSkillSet),
     attackCount: 1 + Math.floor(character.stats.spd / 10),
     powerAttackBonus: powerAttackBonusFor(character.stats, effectiveSkillSet),
     guaranteedEvades: evadeGuaranteedFor(character.stats, effectiveSkillSet),
@@ -647,6 +651,7 @@ function Home() {
         addGoldFame: characterStateHook.addGoldFame,
       },
       vit: character.stats.vit,
+      luk: character.stats.luk,
       respawnRegionId: mapProgress.respawnRegionId ?? START_REGION_ID,
       addNotification,
       setHuntingActive,

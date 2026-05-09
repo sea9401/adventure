@@ -37,6 +37,7 @@ export type BattleEndDeps = {
     addGoldFame: (gold: number, fame: number) => void;
   };
   vit: number;
+  luk: number;
   respawnRegionId: RegionId;
   addNotification: (
     kind: NotificationKind,
@@ -69,8 +70,11 @@ export function onBattleEnd(
     // kind 별로 인벤/골드/장비에 분배.
     const monster = MONSTERS[payload.enemyName];
     if (monster?.drops) {
+      // luk 1pt 당 드랍률 ×1.01 (multiplicative). 1.0 으로 capping 해 100% 초과 방지.
+      const luckMultiplier = 1 + deps.luk * 0.01;
       for (const drop of monster.drops) {
-        if (Math.random() >= drop.chance) continue;
+        const adjustedChance = Math.min(1, drop.chance * luckMultiplier);
+        if (Math.random() >= adjustedChance) continue;
         if (drop.kind === "material") {
           deps.inventory.addMaterial(drop.materialId, 1);
           deps.addNotification(

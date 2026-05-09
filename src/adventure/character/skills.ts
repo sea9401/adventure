@@ -20,9 +20,10 @@ export const POWER_ATTACK_BONUS = 2;
 export const POWER_ATTACK_TURN_INTERVAL = 3;
 
 // 회피 강화 — 민첩 10 도달 시 획득.
-// 전투 시작 시 "보장 회피" 1회 적립. 첫 적 공격을 % 회피 판정 전에 무조건 흡수.
+// 전투 시작 시 "보장 회피" 1회 적립 + 그 전투 동안 회피 확률 +EVADE_BONUS_PCT%.
 export const EVADE_DEX_THRESHOLD = 10;
 export const EVADE_GUARANTEED = 1;
+export const EVADE_BONUS_PCT = 5;
 
 // 연타 — 속도 15 도달 시 획득.
 // 5턴마다 그 턴의 마지막 공격 후 추가 1회 공격.
@@ -30,10 +31,13 @@ export const DOUBLE_STRIKE_SPD_THRESHOLD = 15;
 export const DOUBLE_STRIKE_INTERVAL = 5;
 
 // 크리티컬 — 행운 10 도달 시 획득.
-// 매 공격 5% 확률로 데미지 ×2 (강공격 보너스와 누적).
+// 스킬 효과: 크리티컬 확률 +CRIT_CHANCE_PCT% 추가 (luk 1pt 당 +0.5% 기본과 누적).
+// 발동 시 데미지 ×CRIT_MULT (강공격 보너스 후에 곱해짐).
 export const CRIT_LUK_THRESHOLD = 10;
 export const CRIT_CHANCE_PCT = 5;
-export const CRIT_MULT = 2;
+export const CRIT_MULT = 2.5;
+// luk 1pt 당 추가되는 기본 크리티컬 확률(%). 스킬 미장착 상태에서도 적용.
+export const CRIT_CHANCE_PER_LUK = 0.5;
 
 // 가드 — 활력 10 도달 시 획득.
 // 전투 시작 후 첫 3턴 동안 받는 피해 -1 (최소 0).
@@ -58,7 +62,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo> = {
   },
   dex: {
     name: SKILL_NAMES.EVADE,
-    description: `전투당 첫 ${EVADE_GUARANTEED}회 피격을 무조건 회피`,
+    description: `전투당 첫 ${EVADE_GUARANTEED}회 피격을 무조건 회피 + 회피 +${EVADE_BONUS_PCT}%`,
     activationThreshold: EVADE_DEX_THRESHOLD,
   },
   vit: {
@@ -73,7 +77,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo> = {
   },
   luk: {
     name: SKILL_NAMES.CRIT,
-    description: `매 공격 ${CRIT_CHANCE_PCT}% 확률로 데미지 ×${CRIT_MULT}`,
+    description: `크리티컬 확률 +${CRIT_CHANCE_PCT}% 추가, 발동 시 데미지 ×${CRIT_MULT}`,
     activationThreshold: CRIT_LUK_THRESHOLD,
   },
 };
@@ -124,6 +128,15 @@ export function evadeGuaranteedFor(
     : 0;
 }
 
+export function evadeBonusPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.dex >= EVADE_DEX_THRESHOLD && equipped.has(SKILL_NAMES.EVADE)
+    ? EVADE_BONUS_PCT
+    : 0;
+}
+
 export function doubleStrikeIntervalFor(
   stats: Record<StatKey, number>,
   equipped: ReadonlySet<string>,
@@ -138,9 +151,14 @@ export function critChancePctFor(
   stats: Record<StatKey, number>,
   equipped: ReadonlySet<string>,
 ): number {
-  return stats.luk >= CRIT_LUK_THRESHOLD && equipped.has(SKILL_NAMES.CRIT)
-    ? CRIT_CHANCE_PCT
-    : 0;
+  // 기본 — luk 1pt 당 +CRIT_CHANCE_PER_LUK% (스킬 미장착에도 적용).
+  const base = stats.luk * CRIT_CHANCE_PER_LUK;
+  // 스킬 장착 시 +CRIT_CHANCE_PCT% 추가.
+  const skillBonus =
+    stats.luk >= CRIT_LUK_THRESHOLD && equipped.has(SKILL_NAMES.CRIT)
+      ? CRIT_CHANCE_PCT
+      : 0;
+  return base + skillBonus;
 }
 
 export function guardFor(

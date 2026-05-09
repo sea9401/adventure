@@ -1,6 +1,6 @@
 import type { Monster } from "../data/monsters";
 import { computeHealAmount, type Potion, type PotionId } from "../data/potions";
-import { POWER_ATTACK_TURN_INTERVAL } from "../character/skills";
+import { CRIT_MULT, POWER_ATTACK_TURN_INTERVAL } from "../character/skills";
 
 export type BattleLogEntry = {
   kind: "player_attack" | "enemy_attack" | "info";
@@ -158,7 +158,7 @@ export function advanceTurn(
       ? Math.random() * 100 < (player.critChancePct ?? 0)
       : false;
     const baseDmg = damageBetween(player.atk + bonus, state.enemy.def);
-    const dmg = critRoll ? baseDmg * 2 : baseDmg;
+    const dmg = critRoll ? Math.floor(baseDmg * CRIT_MULT) : baseDmg;
     const labels: string[] = [];
     if (bonus > 0) labels.push("강공격");
     if (critRoll) labels.push("크리티컬");
