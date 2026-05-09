@@ -39,6 +39,9 @@ export function MarketplaceTab() {
   const inboxCount = inbox.count;
   const refreshInbox = inbox.refresh;
   const knownRecipes = crafting.state.known;
+  const shareableRecipes = crafting.state.shareable;
+  const consumeShare = crafting.consumeShare;
+  const learnRecipe = crafting.learnRecipe;
   const pushToast = useCallback(
     (msg: string) => addNotification("info", msg),
     [addNotification],
@@ -82,9 +85,8 @@ export function MarketplaceTab() {
       setError(null);
       try {
         await cancelListing(remote, listing.id);
-        // 서버가 인벤토리에 환불했으므로 클라 로컬 상태도 동일 변경 — 그래야
-        // useRemotePatch 가 보낼 다음 PATCH 가 일관된 값을 보낸다.
-        // recipe 는 등록 시에도 차감하지 않으므로 환불 처리도 없음.
+        // 서버가 인벤토리/공유토큰에 환불했으므로 클라 로컬 상태도 동일 변경 —
+        // 그래야 useRemotePatch 가 보낼 다음 PATCH 가 일관된 값을 보낸다.
         if (listing.itemKind === "equip") {
           if (Object.prototype.hasOwnProperty.call(ITEMS, listing.itemId)) {
             addEquipment(listing.itemId as ItemId, listing.quantity);
@@ -93,6 +95,9 @@ export function MarketplaceTab() {
           if (Object.prototype.hasOwnProperty.call(MATERIALS, listing.itemId)) {
             addMaterial(listing.itemId as MaterialId, listing.quantity);
           }
+        } else if (listing.itemKind === "recipe") {
+          // learnRecipe 는 known no-op + shareable 충전 효과.
+          learnRecipe(listing.itemId);
         }
         pushToast(`${listing.itemName} 매물을 취소했습니다.`);
         setRefresh((v) => v + 1);
@@ -102,7 +107,7 @@ export function MarketplaceTab() {
         pushToast(msg);
       }
     },
-    [remote, pushToast, addEquipment, addMaterial],
+    [remote, pushToast, addEquipment, addMaterial, learnRecipe],
   );
 
   return (
@@ -164,7 +169,7 @@ export function MarketplaceTab() {
         <ListingCreateModal
           inventory={inventory.state}
           equipped={equipped}
-          knownRecipes={knownRecipes}
+          shareableRecipes={shareableRecipes}
           remote={remote}
           onClose={() => setModal(false)}
           onSuccess={() => {
@@ -177,8 +182,10 @@ export function MarketplaceTab() {
               consumeEquipment(s.itemId as ItemId, 1);
             } else if (s.kind === "material") {
               consumeMaterial(s.itemId as MaterialId, qty);
+            } else if (s.kind === "recipe") {
+              // 지식 자체는 보유, 공유 토큰만 1 소비 (서버와 동기화).
+              consumeShare(s.itemId);
             }
-            // recipe: 인벤 차감 없음 (지식이라 본인 보유 유지)
           }}
           showError={(msg) => {
             setError(msg);

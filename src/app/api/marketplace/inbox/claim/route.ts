@@ -4,6 +4,8 @@ import { marketplaceInbox, savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import {
   addToCategory,
+  getKnownArr,
+  getShareableArr,
   type InventoryShape,
 } from "@/lib/server/marketplace";
 
@@ -170,8 +172,10 @@ export async function POST(req: Request) {
         newInventory = next;
       }
 
-      // 레시피 학습 (있을 때만). 이미 알고 있는 id 는 idempotent skip.
-      // 응답에는 "이번에 새로 추가된" id 만 담아 클라이언트 토스트 분기에 사용.
+      // 레시피 학습 (있을 때만).
+      //   - known: 처음이면 추가, 이미 있으면 skip (recipesSkipped 로 보고)
+      //   - shareable: 항상 추가 (= 다시 습득 시 공유 토큰 충전)
+      // 응답에는 새로 추가된 id 만 담는다. 클라이언트는 skipped 까지 받아 학습 호출 → 충전.
       const recipesAdded: string[] = [];
       const recipesSkipped: string[] = [];
       if (recipesToAdd.length > 0) {
@@ -183,22 +187,27 @@ export async function POST(req: Request) {
           )
           .for("update");
         const craft = (craftRows[0]?.value ?? {}) as Record<string, unknown>;
-        const knownRaw = (craft as { known?: unknown }).known;
-        const knownSet = new Set(
-          Array.isArray(knownRaw) ? (knownRaw as unknown[]).filter(
-            (v): v is string => typeof v === "string",
-          ) : [],
-        );
-        const before = knownSet.size;
+        const knownSet = new Set(getKnownArr(craft));
+        const shareableSet = new Set(getShareableArr(craft));
+        const beforeKnown = knownSet.size;
+        const beforeShareable = shareableSet.size;
         for (const r of recipesToAdd) {
           if (knownSet.has(r.id)) recipesSkipped.push(r.id);
           else {
             knownSet.add(r.id);
             recipesAdded.push(r.id);
           }
+          shareableSet.add(r.id); // 충전 — 누락된 경우만 실제 변화
         }
-        if (knownSet.size !== before) {
-          const nextCraft = { ...craft, known: Array.from(knownSet) };
+        if (
+          knownSet.size !== beforeKnown ||
+          shareableSet.size !== beforeShareable
+        ) {
+          const nextCraft = {
+            ...craft,
+            known: Array.from(knownSet),
+            shareable: Array.from(shareableSet),
+          };
           await tx
             .insert(savesKv)
             .values({

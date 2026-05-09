@@ -16,6 +16,8 @@ import {
   deductFromCategory,
   getEquippedItemIds,
   getItemName,
+  getKnownArr,
+  getShareableArr,
   isItemKind,
   isTradable,
   type InventoryShape,
@@ -66,8 +68,40 @@ async function sweepExpiredListings(): Promise<void> {
       const updatedSet = new Set(updated.map((r) => r.id));
       for (const listing of candidates) {
         if (!updatedSet.has(listing.id)) continue;
-        // recipe 는 인벤 환불할 게 없음 — 알림용 row 만 만든다 (quantity:0).
+        // recipe 는 인벤 환불할 게 없음 — shareable 토큰만 환불 + 알림용 row.
         // equip/material 은 cancel_return 과 같은 형식의 payload (수령 시 인벤 복귀).
+        if (listing.itemKind === "recipe") {
+          const craftRows = await tx
+            .select()
+            .from(savesKv)
+            .where(
+              and(
+                eq(savesKv.userId, listing.sellerId),
+                eq(savesKv.key, SAVES_CRAFTING),
+              ),
+            )
+            .for("update");
+          const craft = (craftRows[0]?.value ?? {}) as Record<string, unknown>;
+          const shareableArr = getShareableArr(craft);
+          if (!shareableArr.includes(listing.itemId)) {
+            const nextCraft = {
+              ...craft,
+              shareable: [...shareableArr, listing.itemId],
+            };
+            await tx
+              .insert(savesKv)
+              .values({
+                userId: listing.sellerId,
+                key: SAVES_CRAFTING,
+                value: nextCraft,
+                updatedAt: new Date(),
+              })
+              .onConflictDoUpdate({
+                target: [savesKv.userId, savesKv.key],
+                set: { value: nextCraft, updatedAt: new Date() },
+              });
+          }
+        }
         await tx.insert(marketplaceInbox).values({
           userId: listing.sellerId,
           kind: "listing_expired",
@@ -259,7 +293,8 @@ export async function POST(req: Request) {
         return { error: "slot_limit", status: 400 as const };
       }
 
-      // ── recipe 분기 ── 인벤 차감 없이 crafting.v2.known 검증만.
+      // ── recipe 분기 ── 인벤 차감 없이 crafting.v2.{known,shareable} 검증.
+      // shareable 토큰을 1개 소비 (등록 = 공유 시도). 취소/유찰 시 환불.
       let nextInv: InventoryShape | null = null;
       if (itemKind === "recipe") {
         const craftRows = await tx
@@ -267,13 +302,31 @@ export async function POST(req: Request) {
           .from(savesKv)
           .where(
             and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_CRAFTING)),
-          );
-        const known = (craftRows[0]?.value as { known?: unknown } | undefined)
-          ?.known;
-        const knownArr = Array.isArray(known) ? (known as string[]) : [];
+          )
+          .for("update");
+        const craft = (craftRows[0]?.value ?? {}) as Record<string, unknown>;
+        const knownArr = getKnownArr(craft);
         if (!knownArr.includes(itemId)) {
           return { error: "not_known", status: 400 as const };
         }
+        const shareableArr = getShareableArr(craft);
+        if (!shareableArr.includes(itemId)) {
+          return { error: "already_shared", status: 400 as const };
+        }
+        const nextShareable = shareableArr.filter((x) => x !== itemId);
+        const nextCraft = { ...craft, known: knownArr, shareable: nextShareable };
+        await tx
+          .insert(savesKv)
+          .values({
+            userId,
+            key: SAVES_CRAFTING,
+            value: nextCraft,
+            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [savesKv.userId, savesKv.key],
+            set: { value: nextCraft, updatedAt: new Date() },
+          });
       } else {
         // ── equip / material 분기 ── 기존 인벤 차감 흐름.
         const invRows = await tx
@@ -427,10 +480,37 @@ export async function DELETE(req: Request) {
         return { error: "race", status: 409 as const };
       }
 
-      // recipe 는 인벤 환불 없음 — 등록 시점에 차감하지도 않았음.
-      // equip/material 만 인벤토리에 복귀.
+      // recipe 는 인벤 환불 대신 shareable 토큰 환불. 등록 시 소비했던 토큰을 되돌린다.
       let nextInv: InventoryShape | null = null;
-      if (listing.itemKind === "equip" || listing.itemKind === "material") {
+      if (listing.itemKind === "recipe") {
+        const craftRows = await tx
+          .select()
+          .from(savesKv)
+          .where(
+            and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_CRAFTING)),
+          )
+          .for("update");
+        const craft = (craftRows[0]?.value ?? {}) as Record<string, unknown>;
+        const shareableArr = getShareableArr(craft);
+        if (!shareableArr.includes(listing.itemId)) {
+          const nextCraft = {
+            ...craft,
+            shareable: [...shareableArr, listing.itemId],
+          };
+          await tx
+            .insert(savesKv)
+            .values({
+              userId,
+              key: SAVES_CRAFTING,
+              value: nextCraft,
+              updatedAt: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: [savesKv.userId, savesKv.key],
+              set: { value: nextCraft, updatedAt: new Date() },
+            });
+        }
+      } else if (listing.itemKind === "equip" || listing.itemKind === "material") {
         const invRows = await tx
           .select()
           .from(savesKv)

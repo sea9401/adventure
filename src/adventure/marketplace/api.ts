@@ -209,6 +209,8 @@ function translateError(text: string, status: number): string {
       return "본인이 알지 못하는 제작서는 등록할 수 없습니다.";
     case "already_known":
       return "이미 알고 있는 제작서입니다.";
+    case "already_shared":
+      return "이 제작서는 이미 공유에 사용했습니다. 다시 습득하면 충전됩니다.";
     case "recipe_not_found":
       return "해당 제작서를 찾을 수 없습니다.";
     case "recipe_not_tradable":

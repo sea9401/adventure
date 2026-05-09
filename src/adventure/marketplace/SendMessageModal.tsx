@@ -19,20 +19,21 @@ export function SendMessageModal({
   onSent,
 }: Props) {
   const { crafting } = useGame();
-  const knownRecipes = crafting.state.known;
+  const shareableRecipes = crafting.state.shareable;
+  const consumeShare = crafting.consumeShare;
   const [recipient, setRecipient] = useState(initialRecipient);
   const [draft, setDraft] = useState("");
   const [attachedRecipeId, setAttachedRecipeId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // 본인이 알고 있고 tradable !== false 인 레시피만 첨부 가능.
+  // 공유 토큰을 보유한 레시피만 선물 가능 — 이미 공유에 쓴 건 다시 습득해야 충전.
   const giftable = useMemo(
     () =>
       RECIPES.filter(
-        (r) => r.tradable !== false && knownRecipes.includes(r.id),
+        (r) => r.tradable !== false && shareableRecipes.includes(r.id),
       ),
-    [knownRecipes],
+    [shareableRecipes],
   );
 
   const trimmedRecipient = recipient.trim();
@@ -54,6 +55,8 @@ export function SendMessageModal({
         trimmedDraft,
         attachedRecipeId,
       );
+      // 서버가 토큰 차감 성공 → 클라 로컬 상태도 동일 변경.
+      if (attachedRecipeId) consumeShare(attachedRecipeId);
       onSent?.(r.recipientName);
       onClose();
     } catch (e) {

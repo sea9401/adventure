@@ -74,9 +74,12 @@ export function InboxView() {
           }
         }
       }
-      // 레시피 학습 — 서버가 새로 추가됐다고 보고한 id 만 로컬에도 반영.
-      // learnRecipe 는 원래 idempotent 라 안전.
-      for (const id of r.recipesAdded) learnRecipe(id);
+      // 레시피 학습 — 새로 받은 것 + skipped (이미 알던 것) 모두 learnRecipe 호출.
+      // learnRecipe 는 known idempotent + shareable 충전 효과 — skipped 도 호출해야
+      // 다시 습득 = 토큰 충전 의미가 살아남.
+      for (const id of [...r.recipesAdded, ...r.recipesSkipped]) {
+        learnRecipe(id);
+      }
       // 토스트 — 합산 표시.
       const parts: string[] = [];
       if (r.goldAdded > 0) parts.push(`🪙 ${r.goldAdded.toLocaleString()} G`);

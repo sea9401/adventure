@@ -8,7 +8,11 @@ import {
   USER_MESSAGE_MAX_LENGTH,
   USER_MESSAGE_RATE_LIMIT_MS,
 } from "@/lib/inbox-config";
-import { getRecipeDef } from "@/lib/server/marketplace";
+import {
+  getRecipeDef,
+  getKnownArr,
+  getShareableArr,
+} from "@/lib/server/marketplace";
 
 const SAVES_CRAFTING = "crafting.v2";
 
@@ -116,25 +120,14 @@ export async function POST(req: Request) {
     });
   }
 
-  // 레시피 첨부 검증 — 정의 존재 + tradable + 발송자 보유.
+  // 레시피 첨부: 정의·tradable 만 미리 검사. known/shareable 검증 + 토큰 소비는
+  // 인박스 INSERT 와 같은 트랜잭션에서 처리해 race-free 하게.
   let recipeName: string | null = null;
   if (attachedRecipeId) {
     const recipe = getRecipeDef(attachedRecipeId);
     if (!recipe) return new Response("recipe_not_found", { status: 400 });
     if (recipe.tradable === false) {
       return new Response("recipe_not_tradable", { status: 400 });
-    }
-    const [craft] = await db
-      .select({ value: savesKv.value })
-      .from(savesKv)
-      .where(
-        and(eq(savesKv.userId, senderId), eq(savesKv.key, SAVES_CRAFTING)),
-      )
-      .limit(1);
-    const knownRaw = (craft?.value as { known?: unknown } | undefined)?.known;
-    const knownArr = Array.isArray(knownRaw) ? (knownRaw as unknown[]) : [];
-    if (!knownArr.includes(attachedRecipeId)) {
-      return new Response("recipe_not_known", { status: 400 });
     }
     recipeName = recipe.name;
   }
@@ -190,15 +183,57 @@ export async function POST(req: Request) {
   }
 
   if (attachedRecipeId && recipeName) {
-    // recipe_gift — text 가 있으면 message, 없으면 기본 안내.
-    await db.insert(marketplaceInbox).values({
-      userId: recipient.id,
-      kind: "recipe_gift",
-      payload: { recipe_id: attachedRecipeId, recipe_name: recipeName },
-      message: text || `${recipeName}을(를) 선물로 받았습니다.`,
-      fromUserId: senderId,
-      fromName: senderName,
-    });
+    // recipe_gift — known/shareable 검증 + 토큰 소비 + 인박스 INSERT 를 한 트랜잭션.
+    // 같은 토큰을 이중으로 못 쓰게 FOR UPDATE.
+    try {
+      const txResult = await db.transaction(async (tx) => {
+        const craftRows = await tx
+          .select()
+          .from(savesKv)
+          .where(
+            and(eq(savesKv.userId, senderId), eq(savesKv.key, SAVES_CRAFTING)),
+          )
+          .for("update");
+        const craft = (craftRows[0]?.value ?? {}) as Record<string, unknown>;
+        const knownArr = getKnownArr(craft);
+        if (!knownArr.includes(attachedRecipeId)) {
+          return { error: "recipe_not_known", status: 400 as const };
+        }
+        const shareableArr = getShareableArr(craft);
+        if (!shareableArr.includes(attachedRecipeId)) {
+          return { error: "already_shared", status: 400 as const };
+        }
+        const nextShareable = shareableArr.filter((x) => x !== attachedRecipeId);
+        const nextCraft = { ...craft, known: knownArr, shareable: nextShareable };
+        await tx
+          .insert(savesKv)
+          .values({
+            userId: senderId,
+            key: SAVES_CRAFTING,
+            value: nextCraft,
+            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [savesKv.userId, savesKv.key],
+            set: { value: nextCraft, updatedAt: new Date() },
+          });
+        await tx.insert(marketplaceInbox).values({
+          userId: recipient.id,
+          kind: "recipe_gift",
+          payload: { recipe_id: attachedRecipeId, recipe_name: recipeName },
+          message: text || `${recipeName}을(를) 선물로 받았습니다.`,
+          fromUserId: senderId,
+          fromName: senderName,
+        });
+        return { ok: true as const };
+      });
+      if ("error" in txResult) {
+        return new Response(txResult.error, { status: txResult.status });
+      }
+    } catch (e) {
+      console.error("[inbox.send.recipe_gift] ", e);
+      return new Response("internal error", { status: 500 });
+    }
   } else {
     await db.insert(marketplaceInbox).values({
       userId: recipient.id,

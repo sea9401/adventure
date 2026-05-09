@@ -30,7 +30,7 @@ type Selection =
 export function ListingCreateModal({
   inventory,
   equipped,
-  knownRecipes,
+  shareableRecipes,
   remote,
   onClose,
   onSuccess,
@@ -39,7 +39,8 @@ export function ListingCreateModal({
 }: {
   inventory: InventoryState;
   equipped: EquippedSlots | undefined;
-  knownRecipes: string[];
+  // 공유 토큰을 보유한 레시피만 등록 가능 — 이미 공유에 쓴 건 다시 습득해야 등록 가능.
+  shareableRecipes: string[];
   remote: RemoteSave;
   onClose: () => void;
   onSuccess: () => void;
@@ -96,11 +97,11 @@ export function ListingCreateModal({
     const out: Selection[] = [];
     for (const r of RECIPES) {
       if (r.tradable === false) continue;
-      if (!knownRecipes.includes(r.id)) continue;
+      if (!shareableRecipes.includes(r.id)) continue;
       out.push({ kind: "recipe", itemId: r.id, def: r });
     }
     return out.sort((a, b) => a.def.name.localeCompare(b.def.name));
-  }, [knownRecipes]);
+  }, [shareableRecipes]);
 
   const noItems =
     equipOptions.length === 0 &&

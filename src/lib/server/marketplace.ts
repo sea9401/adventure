@@ -91,6 +91,28 @@ export type InventoryShape = {
   materials?: Record<string, number>;
 };
 
+// crafting.v2 jsonb 의 share-token 보조 헬퍼.
+// shareable 누락된 레거시 데이터는 known 의 사본으로 fallback.
+export type CraftingShape = {
+  known?: unknown;
+  shareable?: unknown;
+  [key: string]: unknown;
+};
+
+export function getKnownArr(craft: CraftingShape | null | undefined): string[] {
+  const k = craft?.known;
+  return Array.isArray(k) ? (k as unknown[]).filter((v): v is string => typeof v === "string") : [];
+}
+
+// shareable 이 없으면 known 그대로 반환 (= 모두 풀 토큰).
+export function getShareableArr(craft: CraftingShape | null | undefined): string[] {
+  const s = craft?.shareable;
+  if (Array.isArray(s)) {
+    return (s as unknown[]).filter((v): v is string => typeof v === "string");
+  }
+  return getKnownArr(craft);
+}
+
 // 장비 슬롯에 장착 중인 itemId 목록 (한 슬롯이라도 매칭되면 막기 위함).
 // character.v2 의 equipped.{weapon,armor,accessory} 는 EquipItem | null 형태로
 // 저장되며 ID 는 별도 필드가 없어 name 매칭으로 ID 를 역추적해야 한다.

@@ -8,9 +8,12 @@ import { emptyCraftingState, type CraftingState } from "./storage";
 function readInitial(raw: unknown): CraftingState {
   if (!raw || typeof raw !== "object") return emptyCraftingState();
   const parsed = raw as Partial<CraftingState>;
+  const known = Array.isArray(parsed.known) ? parsed.known : [];
   return {
-    known: Array.isArray(parsed.known) ? parsed.known : [],
+    known,
     crafted: Array.isArray(parsed.crafted) ? parsed.crafted : [],
+    // 레거시 데이터: shareable 누락 → 알고 있는 것 모두 1회 공유 가능 상태.
+    shareable: Array.isArray(parsed.shareable) ? parsed.shareable : [...known],
     boldQuestComplete: !!parsed.boldQuestComplete,
     boldSlimeQuestComplete: !!parsed.boldSlimeQuestComplete,
   };
@@ -21,11 +24,26 @@ export function useCrafting() {
   const [state, setState] = useState<CraftingState>(() => readInitial(initial));
   useRemotePatch("crafting.v2", state);
 
+  // 학습 시 known + shareable 둘 다 갱신.
+  // 같은 id 재호출 = "다시 습득" → known 은 no-op, shareable 만 충전.
   const learnRecipe = useCallback((id: string) => {
+    setState((prev) => {
+      const knownHas = prev.known.includes(id);
+      const shareableHas = prev.shareable.includes(id);
+      if (knownHas && shareableHas) return prev;
+      return {
+        ...prev,
+        known: knownHas ? prev.known : [...prev.known, id],
+        shareable: shareableHas ? prev.shareable : [...prev.shareable, id],
+      };
+    });
+  }, []);
+
+  const consumeShare = useCallback((id: string) => {
     setState((prev) =>
-      prev.known.includes(id)
-        ? prev
-        : { ...prev, known: [...prev.known, id] },
+      prev.shareable.includes(id)
+        ? { ...prev, shareable: prev.shareable.filter((x) => x !== id) }
+        : prev,
     );
   }, []);
 
@@ -55,8 +73,10 @@ export function useCrafting() {
     state,
     hydrated: true,
     knows: (id: string) => state.known.includes(id),
+    canShare: (id: string) => state.shareable.includes(id),
     hasCrafted: (id: string) => state.crafted.includes(id),
     learnRecipe,
+    consumeShare,
     markCrafted,
     setBoldQuestComplete,
     setBoldSlimeQuestComplete,
