@@ -12,6 +12,7 @@ import {
   createRemoteSave,
   type RemoteSave,
 } from "./remote";
+import { MultiTabOverlay } from "./MultiTabGuard";
 import { SYNCED_KEYS, type SyncedKey } from "./synced-keys";
 
 const MIGRATION_MARKER_KEY = "migrated.v2";
@@ -137,6 +138,7 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
   return (
     <SaveCtx.Provider value={{ initial: state.data, remote: state.remote }}>
       {children}
+      <MultiTabOverlay />
     </SaveCtx.Provider>
   );
 }
