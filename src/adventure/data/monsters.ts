@@ -149,6 +149,7 @@ export const MONSTERS: Record<string, Monster> = {
   "훈련용 허수아비": {
     name: "훈련용 허수아비",
     tags: ["humanoid"],
+    image: "/images/monster/scarecrow.webp",
     hp: 80,
     atk: 4,
     def: 2,
