@@ -101,6 +101,20 @@ export const RECIPES: Recipe[] = [
       slot: "weapon",
     },
   },
+  {
+    id: "fairy_blessing",
+    name: "요정의 가호 제작서",
+    description: `${ITEMS.fairy_blessing.name}을(를) 만든다. ${ITEMS.vitality_ring.name}에 요정가루를 입혀 가호를 깊게 한다.`,
+    ingredients: [
+      { kind: "equip", itemId: "vitality_ring", count: 1 },
+      { kind: "material", materialId: "fairy_dust", count: 3 },
+    ],
+    result: {
+      kind: "equipment",
+      itemId: "fairy_blessing",
+      slot: "accessory",
+    },
+  },
 ];
 
 export function getRecipeById(id: string): Recipe | undefined {

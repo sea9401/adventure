@@ -165,6 +165,16 @@ export const ITEMS = {
     bonus: { atk: 5, dex: 1 },
     description: "단단한 수정을 깎아 만든 날카로운 단검.",
   } satisfies EquipItem,
+  fairy_blessing: {
+    name: "요정의 가호",
+    slot: "accessory",
+    stats: [
+      { label: "활력", value: "+3" },
+      { label: "행운", value: "+2" },
+    ],
+    bonus: { vit: 3, luk: 2 },
+    description: "활력의 반지에 요정가루의 가호를 입힌 것. 끼고 있으면 몸도, 운도 따른다.",
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;
