@@ -26,6 +26,7 @@ import {
 import { START_REGION_ID } from "@/adventure/data/world";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationToast } from "@/components/NotificationToast";
+import { LevelUpOverlay } from "@/components/LevelUpOverlay";
 import { useQuests } from "@/adventure/quests/useQuests";
 import { getQuestById } from "@/adventure/data/quests";
 import {
@@ -540,10 +541,11 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.
+  // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림 + 오버레이.
   // SaveProvider 가 마운트 전에 character.v1 을 hydrate 하므로 첫 effect 의
   // characterState.level 은 이미 저장된 값. ref 로 베이스라인만 잡고,
   // 이후 증가분만 레벨업으로 처리.
+  const [levelUpTrigger, setLevelUpTrigger] = useState(0);
   useEffect(() => {
     if (lastSeenLevelRef.current === null) {
       lastSeenLevelRef.current = characterState.level;
@@ -558,6 +560,8 @@ function Home() {
         "info",
         `레벨업! Lv.${next} (스탯 포인트 +${gained})`,
       );
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLevelUpTrigger((v) => v + 1);
     }
     lastSeenLevelRef.current = next;
     // addNotification/training.addPoints 는 setter — deps 제외.
@@ -1062,6 +1066,7 @@ function Home() {
         </main>
       </div>
       <NotificationToast notifications={notifications.alertable} />
+      <LevelUpOverlay level={character.level} triggerKey={levelUpTrigger} />
       {showModal && <NameSetupModal onSubmit={profile.submit} />}
       {offlineRewards && (
         <OfflineRewardsModal

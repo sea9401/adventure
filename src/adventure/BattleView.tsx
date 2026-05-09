@@ -251,15 +251,16 @@ export function BattleView({
                   aria-hidden
                   className={`inline-block h-2 w-2 rounded-full ${
                     huntingActive
-                      ? "bg-emerald-500"
+                      ? "animate-pulse bg-emerald-500"
                       : "bg-zinc-400 dark:bg-zinc-600"
                   }`}
                 />
-                오프라인 사냥 {huntingActive ? "ON" : "OFF"}
+                자동 / 오프라인 사냥 {huntingActive ? "ON" : "OFF"}
               </span>
             </button>
             <p className="-mt-1 px-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              ON 상태로 페이지/탭을 떠났다가 돌아오면 그 동안의 사냥이 한 번에 적용됩니다 (최대 30분).
+              ON 상태로 다른 탭(캐릭터/광장 등) 또는 브라우저 백그라운드로 가도
+              사냥이 이어집니다. 복귀 시 그 동안의 결과를 한 번에 적용 (최대 30분).
             </p>
             <AutoPotionSection
               autoConfig={autoPotionConfig}

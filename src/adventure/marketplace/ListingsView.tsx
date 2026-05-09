@@ -247,6 +247,20 @@ function ListingCard({
           </span>
           <span className="mt-0.5 block text-[11px] text-zinc-500">
             {formatRelativeTime(item.createdAt)}
+            {(() => {
+              // 등록 24시간 만료 — 4시간 이하 남았으면 임박 뱃지 노출.
+              const ageMs = Date.now() - new Date(item.createdAt).getTime();
+              const remainMs = 24 * 60 * 60 * 1000 - ageMs;
+              if (remainMs > 0 && remainMs < 4 * 60 * 60 * 1000) {
+                const hours = Math.max(1, Math.round(remainMs / (60 * 60 * 1000)));
+                return (
+                  <span className="ml-2 text-amber-600 dark:text-amber-400">
+                    {hours}시간 후 만료
+                  </span>
+                );
+              }
+              return null;
+            })()}
             {item.isMine ? (
               <span className="ml-2 text-emerald-600">내 매물</span>
             ) : null}

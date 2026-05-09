@@ -60,40 +60,75 @@ function HpBar({
   );
 }
 
-function EnemyAvatar({ name }: { name: string }) {
+// 데미지 받은 순간 짧게 빨간 링 + 흔들림. hpDelta 가 변할 때마다 트리거.
+function useDamageFlash(hp: number): boolean {
+  const [flashing, setFlashing] = useState(false);
+  const lastHpRef = useRef(hp);
+  useEffect(() => {
+    if (hp < lastHpRef.current) {
+      setFlashing(true);
+      const id = setTimeout(() => setFlashing(false), 350);
+      lastHpRef.current = hp;
+      return () => clearTimeout(id);
+    }
+    lastHpRef.current = hp;
+  }, [hp]);
+  return flashing;
+}
+
+const FLASH_CLASS =
+  "ring-2 ring-rose-500 ring-offset-1 ring-offset-white animate-pulse dark:ring-offset-zinc-950";
+
+function EnemyAvatar({ name, hp }: { name: string; hp: number }) {
   const image = MONSTERS[name]?.image;
+  const flash = useDamageFlash(hp);
+  const ringClass = flash ? ` ${FLASH_CLASS}` : "";
   if (!image) {
     return (
       <div
         aria-hidden
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 transition-all dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500${ringClass}`}
       >
         ?
       </div>
     );
   }
   return (
-    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+    <div
+      className={`h-12 w-12 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 transition-all dark:border-zinc-700 dark:bg-zinc-800${ringClass}`}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={image} alt={name} className="h-full w-full object-cover" />
     </div>
   );
 }
 
-function PlayerAvatar({ gender, name }: { gender: Gender; name: string }) {
+function PlayerAvatar({
+  gender,
+  name,
+  hp,
+}: {
+  gender: Gender;
+  name: string;
+  hp: number;
+}) {
   const [errored, setErrored] = useState(false);
+  const flash = useDamageFlash(hp);
+  const ringClass = flash ? ` ${FLASH_CLASS}` : "";
   if (errored) {
     return (
       <div
         aria-hidden
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 transition-all dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500${ringClass}`}
       >
         ?
       </div>
     );
   }
   return (
-    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+    <div
+      className={`h-12 w-12 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 transition-all dark:border-zinc-700 dark:bg-zinc-800${ringClass}`}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={`/images/character/${gender}.webp`}
@@ -132,7 +167,7 @@ export function BattleScene({
     <div className="space-y-3">
       <Card padding="md">
         <div className="flex items-center gap-3">
-          <EnemyAvatar name={state.enemy.name} />
+          <EnemyAvatar name={state.enemy.name} hp={state.enemyHp} />
           <div className="flex-1">
             <HpBar
               label={state.enemy.name}
@@ -143,7 +178,11 @@ export function BattleScene({
           </div>
         </div>
         <div className="mt-3 flex items-start gap-3">
-          <PlayerAvatar gender={playerStatus.gender} name={playerName} />
+          <PlayerAvatar
+            gender={playerStatus.gender}
+            name={playerName}
+            hp={state.playerHp}
+          />
           <div className="flex-1 space-y-2">
             <HpBar
               label={playerName}
