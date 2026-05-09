@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ZERO_ALLOCATED } from "@/adventure/character/statMeta";
-import type { StatKey } from "@/adventure/data/stats";
+import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 
@@ -109,22 +109,30 @@ export function useTraining() {
     setNow(Date.now());
   };
 
-  const allocateStat = (key: StatKey) => {
-    if (unspentPoints <= 0) return;
-    setAllocatedStats((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
-    setUnspentPoints((p) => p - 1);
-  };
-
-  // 되돌리기 — 되돌리기 포인트 1 소모, 해당 스탯 -1, 단련 포인트 +1.
-  const deallocateStat = (key: StatKey) => {
-    if (revertPoints <= 0) return;
-    if ((allocatedStats[key] ?? 0) <= 0) return;
-    setAllocatedStats((prev) => ({
-      ...prev,
-      [key]: (prev[key] ?? 0) - 1,
-    }));
-    setUnspentPoints((p) => p + 1);
-    setRevertPoints((r) => r - 1);
+  // 신전 확정 — 스탯별 delta 묶음을 한 번에 적용. 양수는 단련 포인트 소모,
+  // 음수는 되돌리기 포인트 소모 + 단련 포인트 환불. 검증은 호출부(드래프트 UI)에서.
+  const commitAllocations = (deltas: Partial<Record<StatKey, number>>) => {
+    let unspentDelta = 0;
+    let revertSpent = 0;
+    for (const k of STAT_KEYS) {
+      const d = deltas[k] ?? 0;
+      if (d > 0) unspentDelta -= d;
+      else if (d < 0) {
+        unspentDelta += -d;
+        revertSpent += -d;
+      }
+    }
+    if (unspentDelta === 0 && revertSpent === 0) return;
+    setAllocatedStats((prev) => {
+      const next = { ...prev };
+      for (const k of STAT_KEYS) {
+        const d = deltas[k] ?? 0;
+        if (d !== 0) next[k] = (prev[k] ?? 0) + d;
+      }
+      return next;
+    });
+    setUnspentPoints((p) => p + unspentDelta);
+    setRevertPoints((r) => r - revertSpent);
   };
 
   const addPoints = (n: number) => setUnspentPoints((p) => p + n);
@@ -138,8 +146,7 @@ export function useTraining() {
     remaining,
     isTraining,
     startTraining,
-    allocateStat,
-    deallocateStat,
+    commitAllocations,
     addPoints,
     addRevertPoints,
   };

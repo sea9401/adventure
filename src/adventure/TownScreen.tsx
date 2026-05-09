@@ -284,8 +284,7 @@ export function TownScreen() {
           revertPoints={training.revertPoints}
           allocatedStats={training.allocatedStats}
           baseStats={baseStatsForShrine}
-          onAllocate={training.allocateStat}
-          onDeallocate={training.deallocateStat}
+          onCommit={training.commitAllocations}
         />
       </div>
     );
