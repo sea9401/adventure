@@ -71,6 +71,7 @@ export async function POST(req: Request) {
       const itemsToAdd: AddItem[] = [];
       for (const row of rows) {
         const payload = row.payload as Record<string, unknown>;
+        // user_message: 부수효과 없음 — claimedAt 만 마킹되고 사라진다.
         if (row.kind === "sale_proceeds") {
           const g = Number(payload.gold);
           if (Number.isFinite(g) && g > 0) goldTotal += g;
