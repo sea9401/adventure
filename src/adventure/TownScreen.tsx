@@ -16,6 +16,7 @@ import { StatBar } from "@/components/ui/StatBar";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { TrainingView } from "@/adventure/character/TrainingView";
 import { GrowthShrineView } from "@/adventure/character/GrowthShrineView";
+import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CraftingView } from "@/adventure/CraftingView";
 import { ShopView } from "@/adventure/ShopView";
 import { GuildView } from "@/adventure/GuildView";
@@ -275,6 +276,9 @@ export function TownScreen() {
     return (
       <div className="space-y-3">
         <SubViewHeader title="성장의 신전" onBack={back} />
+        <Card as="section" padding="md">
+          <StatsPanel stats={character.stats} />
+        </Card>
         <GrowthShrineView
           unspentPoints={training.unspentPoints}
           revertPoints={training.revertPoints}
