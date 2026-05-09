@@ -60,10 +60,10 @@ export function TrainingView({
             <Sword size={28} weight="duotone" className="text-zinc-500" />
             <span className="flex flex-col">
               <span className="text-base font-medium text-zinc-900 dark:text-zinc-100">
-                스파링
+                허수아비치기
               </span>
               <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                훈련용 허수아비와 모의전. 보상도 손실도 없다.
+                공격력도 방어력도 없는 허수아비다.
               </span>
             </span>
           </span>
