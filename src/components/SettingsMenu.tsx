@@ -4,14 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   Gear,
-  Megaphone,
   Moon,
   Question,
   Sun,
   SignOut,
 } from "@phosphor-icons/react";
 import { useClerk } from "@clerk/nextjs";
-import { AnnouncementsModal } from "./AnnouncementsModal";
 import { HelpModal } from "./HelpModal";
 import { NotificationPrefsModal } from "./NotificationPrefsModal";
 
@@ -19,7 +17,6 @@ export function SettingsMenu() {
   const [open, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [notifPrefsOpen, setNotifPrefsOpen] = useState(false);
-  const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const containerRef = useRef<HTMLDivElement>(null);
   const { signOut } = useClerk();
@@ -70,11 +67,6 @@ export function SettingsMenu() {
     setNotifPrefsOpen(true);
   };
 
-  const handleOpenAnnouncements = () => {
-    setOpen(false);
-    setAnnouncementsOpen(true);
-  };
-
   const isDark = theme === "dark";
 
   return (
@@ -121,16 +113,6 @@ export function SettingsMenu() {
             <li>
               <button
                 type="button"
-                onClick={handleOpenAnnouncements}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                <Megaphone size={18} weight="duotone" />
-                공지 사항
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
                 onClick={handleOpenHelp}
                 className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
@@ -154,9 +136,6 @@ export function SettingsMenu() {
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
       {notifPrefsOpen && (
         <NotificationPrefsModal onClose={() => setNotifPrefsOpen(false)} />
-      )}
-      {announcementsOpen && (
-        <AnnouncementsModal onClose={() => setAnnouncementsOpen(false)} />
       )}
     </div>
   );
