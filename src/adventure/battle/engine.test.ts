@@ -114,6 +114,70 @@ describe("advanceTurn (player phase, attack)", () => {
   });
 });
 
+describe("페이즈 트리거", () => {
+  it("HP 가 hpFraction 미만이 되면 1회 발동 — DEF 증가 + 메시지 로그", () => {
+    // hp 100, threshold = 30. 50 → 25 가 되면 미만 진입.
+    const enemy = makeEnemy({
+      hp: 100,
+      def: 0,
+      phaseTrigger: { hpFraction: 0.3, defBonus: 5, message: "단단해진다." },
+    });
+    const big: PlayerCombat = { ...PLAYER, atk: 25 };
+    const s0 = { ...initialBattleState(big, enemy, "P"), enemyHp: 50 };
+    const s1 = advanceTurn(s0, big, "P");
+    expect(s1.enemyHp).toBe(25);
+    expect(s1.phaseTriggered).toBe(true);
+    expect(s1.enemyDefBonus).toBe(5);
+    expect(s1.log.some((e) => e.text.includes("단단해진다."))).toBe(true);
+  });
+
+  it("발동 후 후속 공격 데미지에 enemyDefBonus 가 적용된다", () => {
+    const enemy = makeEnemy({
+      hp: 100,
+      def: 0,
+      phaseTrigger: { hpFraction: 0.3, defBonus: 5, message: "msg" },
+    });
+    const big: PlayerCombat = { ...PLAYER, atk: 10, attackCount: 2 };
+    // attackCount 2 — 첫 공격이 트리거를 발동시키고, 같은 턴 두 번째 공격은 def +5 적용.
+    const s0 = { ...initialBattleState(big, enemy, "P"), enemyHp: 31 };
+    const s1 = advanceTurn(s0, big, "P"); // 1st: dmg 10 (def 0) → enemyHp 21, 트리거 발동
+    expect(s1.enemyHp).toBe(21);
+    expect(s1.phaseTriggered).toBe(true);
+    expect(s1.phase).toBe("player");
+    const s2 = advanceTurn(s1, big, "P"); // 2nd: dmg 10-5=5 → enemyHp 16
+    expect(s2.enemyHp).toBe(16);
+  });
+
+  it("처치하는 공격에서는 트리거 발동 안 함", () => {
+    const enemy = makeEnemy({
+      hp: 100,
+      def: 0,
+      phaseTrigger: { hpFraction: 0.3, defBonus: 5, message: "msg" },
+    });
+    const big: PlayerCombat = { ...PLAYER, atk: 100 };
+    const s0 = { ...initialBattleState(big, enemy, "P"), enemyHp: 50 };
+    const s1 = advanceTurn(s0, big, "P");
+    expect(s1.enemyHp).toBe(0);
+    expect(s1.outcome).toBe("win");
+    expect(s1.phaseTriggered).toBe(false);
+  });
+
+  it("같은 전투에서 중복 발동 안 함", () => {
+    const enemy = makeEnemy({
+      hp: 100,
+      def: 0,
+      phaseTrigger: { hpFraction: 0.3, defBonus: 5, message: "msg" },
+    });
+    const big: PlayerCombat = { ...PLAYER, atk: 5 };
+    let s = { ...initialBattleState(big, enemy, "P"), enemyHp: 28 };
+    s = advanceTurn(s, big, "P"); // dmg 5, 23 → 트리거
+    expect(s.enemyDefBonus).toBe(5);
+    s = { ...s, phase: "player", enemyHp: 20 };
+    s = advanceTurn(s, big, "P"); // dmg 1 (atk5 - def5, 최소 1)
+    expect(s.enemyDefBonus).toBe(5); // 누적되지 않음
+  });
+});
+
 describe("advanceTurn (enemy phase)", () => {
   it("회피 성공 시 데미지 없이 player phase로 복귀", () => {
     vi.spyOn(Math, "random").mockReturnValue(0); // 0 < evasionPct = 회피

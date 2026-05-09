@@ -20,6 +20,14 @@ export type MonsterDrop =
   | { kind: "recipe"; recipeId: string; chance: number }
   | { kind: "recipe_one_of"; recipeIds: string[]; chance: number };
 
+// 몬스터 페이즈 트리거 — HP가 hpFraction(0~1) 미만으로 떨어지면 1회 발동.
+// defBonus 만큼 적의 DEF 가 영구 증가, 로그에 message 가 출력된다. 보스용.
+export type MonsterPhaseTrigger = {
+  hpFraction: number;
+  defBonus: number;
+  message: string;
+};
+
 export type Monster = {
   name: string;
   tags: MonsterTag[];
@@ -32,6 +40,7 @@ export type Monster = {
   evasionPct?: number;
   exp: number;
   drops?: MonsterDrop[];
+  phaseTrigger?: MonsterPhaseTrigger;
 };
 
 export const MONSTERS: Record<string, Monster> = {
@@ -218,6 +227,11 @@ export const MONSTERS: Record<string, Monster> = {
       },
       { kind: "recipe", recipeId: "mana_bracelet", chance: 0.15 },
     ],
+    phaseTrigger: {
+      hpFraction: 0.3,
+      defBonus: 4,
+      message: "수호자가 단단해지기 시작했다.",
+    },
   },
   "폐허 늑대": {
     name: "폐허 늑대",

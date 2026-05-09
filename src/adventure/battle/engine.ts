@@ -31,6 +31,10 @@ export type BattleState = {
   // 그 턴의 첫 공격이 아직 안 나갔는지 — 강공격(첫 공격에만 보너스) 트리거에 사용.
   // 새 턴 시작 시 true, 첫 공격 후 false. 연타(같은 턴 연장)에는 영향 없음.
   firstAttackPending: boolean;
+  // 적 페이즈 트리거로 누적된 DEF 보너스. 기본 0, 트리거 발동 시 enemy.phaseTrigger.defBonus 만큼 증가.
+  enemyDefBonus: number;
+  // 페이즈 트리거 1회성 가드. 트리거 발동 후 true 로 전환되어 같은 전투에서 중복 발동 방지.
+  phaseTriggered: boolean;
 };
 
 export type PlayerCombat = {
@@ -92,6 +96,23 @@ function rollPlayerAttackCount(player: PlayerCombat): number {
   return base;
 }
 
+// 페이즈 트리거 — 적 HP 가 phaseTrigger.hpFraction 미만으로 떨어진 순간 1회 발동.
+// enemyDefBonus 누적 + 알림 로그. 이미 죽었거나 발동했으면 무시. 호출 측은 enemyHp 가
+// 갱신된 state 를 넘겨야 한다.
+function applyPhaseTriggerIfAny(state: BattleState): BattleState {
+  const trigger = state.enemy.phaseTrigger;
+  if (!trigger || state.phaseTriggered) return state;
+  if (state.enemyHp <= 0) return state;
+  const threshold = state.enemy.hp * trigger.hpFraction;
+  if (state.enemyHp >= threshold) return state;
+  return {
+    ...state,
+    phaseTriggered: true,
+    enemyDefBonus: state.enemyDefBonus + trigger.defBonus,
+    log: appendLog(state.log, { kind: "info", text: trigger.message }),
+  };
+}
+
 // 반격 — 회피 직후 카운터 1회. 적이 죽으면 ended 로 종료.
 // crit / 강공격 등은 적용하지 않음 — 별도 단순 데미지.
 function applyCounterIfAny(
@@ -100,18 +121,25 @@ function applyCounterIfAny(
 ): { state: BattleState; ended: boolean } {
   const bonus = player.counterAtkBonus ?? 0;
   if (bonus <= 0) return { state, ended: false };
-  const dmg = damageBetween(player.atk + bonus, state.enemy.def);
+  const dmg = damageBetween(
+    player.atk + bonus,
+    state.enemy.def + state.enemyDefBonus,
+  );
   const enemyHp = Math.max(0, state.enemyHp - dmg);
-  const log = appendLog(state.log, {
-    kind: "player_attack",
-    text: `[반격] ${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
-  });
+  let next: BattleState = {
+    ...state,
+    enemyHp,
+    log: appendLog(state.log, {
+      kind: "player_attack",
+      text: `[반격] ${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
+    }),
+  };
+  next = applyPhaseTriggerIfAny(next);
   if (enemyHp <= 0) {
     return {
       state: {
-        ...state,
-        enemyHp,
-        log: appendLog(log, {
+        ...next,
+        log: appendLog(next.log, {
           kind: "info",
           text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
         }),
@@ -121,7 +149,7 @@ function applyCounterIfAny(
       ended: true,
     };
   }
-  return { state: { ...state, enemyHp, log }, ended: false };
+  return { state: next, ended: false };
 }
 
 // 재생 — 플레이어 턴 종료 후 (completedPlayerTurns 증가 후) 호출.
@@ -187,6 +215,8 @@ export function initialBattleState(
     doubleStrikeUsedThisTurn: false,
     luckyBuffActive: false,
     firstAttackPending: true,
+    enemyDefBonus: 0,
+    phaseTriggered: false,
   };
 }
 
@@ -254,10 +284,11 @@ export function advanceTurn(
 
     // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF -crushDefReduction.
     const crushReduction = player.crushDefReduction ?? 0;
+    const baseDef = state.enemy.def + state.enemyDefBonus;
     const targetDef =
       bonus > 0 && crushReduction > 0
-        ? Math.max(0, state.enemy.def - crushReduction)
-        : state.enemy.def;
+        ? Math.max(0, baseDef - crushReduction)
+        : baseDef;
     // 크리티컬 — 매 공격마다 critChancePct 확률로 발동. 이중 행운 발동 후엔 +crit 보너스.
     const baseCritPct = player.critChancePct ?? 0;
     const luckCritBonus = state.luckyBuffActive
@@ -290,28 +321,31 @@ export function advanceTurn(
     }
     const luckyBuffActive = state.luckyBuffActive || shouldActivateLucky;
     const enemyHp = Math.max(0, state.enemyHp - dmg);
+    // 페이즈 트리거 검사 — 데미지 적용 직후, 사망 분기 전에 처리해야 트리거된 def 가
+    // 같은 턴 후속 공격(다중공격/연타)에 즉시 반영된다.
+    const afterDamage = applyPhaseTriggerIfAny({
+      ...state,
+      enemyHp,
+      log,
+      luckyBuffActive,
+    });
     if (enemyHp <= 0) {
       return {
-        ...state,
-        enemyHp,
-        log: appendLog(log, {
+        ...afterDamage,
+        log: appendLog(afterDamage.log, {
           kind: "info",
           text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
         }),
         phase: "ended",
         outcome: "win",
         completedPlayerTurns: state.completedPlayerTurns + 1,
-        luckyBuffActive,
       };
     }
     const attacksLeft = state.playerAttacksLeft - 1;
     if (attacksLeft > 0) {
       return {
-        ...state,
-        enemyHp,
-        log,
+        ...afterDamage,
         playerAttacksLeft: attacksLeft,
-        luckyBuffActive,
         firstAttackPending: false,
       };
     }
@@ -324,25 +358,20 @@ export function advanceTurn(
       !state.doubleStrikeUsedThisTurn;
     if (canDoubleStrike) {
       return {
-        ...state,
-        enemyHp,
-        log: appendLog(log, { kind: "info", text: "[연타] 한 번 더!" }),
+        ...afterDamage,
+        log: appendLog(afterDamage.log, { kind: "info", text: "[연타] 한 번 더!" }),
         phase: "player",
         playerAttacksLeft: 1,
         doubleStrikeUsedThisTurn: true,
-        luckyBuffActive,
         firstAttackPending: false,
       };
     }
     const ended: BattleState = {
-      ...state,
-      enemyHp,
-      log,
+      ...afterDamage,
       phase: "enemy",
       playerAttacksLeft: rollPlayerAttackCount(player),
       completedPlayerTurns: state.completedPlayerTurns + 1,
       doubleStrikeUsedThisTurn: false,
-      luckyBuffActive,
       firstAttackPending: true,
     };
     return applyRegenIfAny(ended, player, playerName);
