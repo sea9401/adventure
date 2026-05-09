@@ -154,7 +154,7 @@ export const QUESTS: Quest[] = [
       "요즘 동굴 더 안쪽까지 들어가다가 큰 광맥 하나를 봤는데, 그 너머에서 영 안 좋은 기운이 풍기더라고. 무서워서 도망쳐 나왔어. 모험가 양반이 한 번 가서 무엇이 있는지 확인해 주쇼.",
     requiredLevel: 5,
     target: { kind: "kill", monsterName: "광맥의 수호자", count: 1 },
-    reward: { gold: 80, fame: 5, exp: 120 },
+    reward: { gold: 300, fame: 10, exp: 350, potionCapacityBonus: 1 },
     repeatable: false,
     giverNpcId: "village_woodcutter_jimmy",
   },
