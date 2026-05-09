@@ -588,17 +588,31 @@ function Home() {
   };
 
   // 카운터형 칭호 — COUNTER_TITLES 표를 한 번에 돌며 임계값 도달분 등록.
-  // 외부 상태(battleLosses/trainingCount)를 관찰해 칭호 등록 — 의도적 set-state-in-effect.
+  // 외부 상태(battleLosses/trainingCount/chatCount/healingCount)를 관찰해 칭호 등록 — 의도적 set-state-in-effect.
   const battleLosses = adventureLog.log.battleLosses ?? 0;
   const trainingCount = training.completedCount;
+  const chatCount = adventureLog.log.chatCount ?? 0;
+  const healingCount = adventureLog.log.healingCount ?? 0;
   useEffect(() => {
+    const counters: Record<string, number> = {
+      battleLosses,
+      trainingCount,
+      chatCount,
+      healingCount,
+    };
     for (const t of COUNTER_TITLES) {
-      const current = t.key === "battleLosses" ? battleLosses : trainingCount;
-      if (current >= t.target) grantTitle(t.id);
+      if ((counters[t.key] ?? 0) >= t.target) grantTitle(t.id);
     }
     // grantTitle 안정 참조 — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [battleLosses, trainingCount]);
+  }, [battleLosses, trainingCount, chatCount, healingCount]);
+
+  // 새벽 3~5시 접속 → '새벽반' 칭호 자동 등록. 마운트 시 1회 평가.
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 3 && hour < 5) grantTitle("early_bird");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleBattleEnd = (payload: BattleEndPayload) =>
     onBattleEnd(payload, {
@@ -825,6 +839,7 @@ function Home() {
               name={character.name}
               className={character.className}
               title={character.titleName ?? null}
+              onSent={adventureLog.incrementChatCount}
             />
             <SettingsMenu />
           </div>

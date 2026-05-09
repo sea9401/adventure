@@ -57,6 +57,8 @@ function readInitial(raw: unknown): AdventureLog {
     npcs: parsed.npcs ?? {},
     titles: parsed.titles ?? {},
     battleLosses: parsed.battleLosses ?? 0,
+    chatCount: parsed.chatCount ?? 0,
+    healingCount: parsed.healingCount ?? 0,
   };
 }
 
@@ -172,6 +174,22 @@ export function useAdventureLog() {
     }));
   }, []);
 
+  // 누적 채팅 발화 +1 — '수다쟁이' 칭호용.
+  const incrementChatCount = useCallback(() => {
+    setLog((prev) => ({
+      ...prev,
+      chatCount: (prev.chatCount ?? 0) + 1,
+    }));
+  }, []);
+
+  // 누적 치료소 이용 +1 — '환자' 칭호용.
+  const incrementHealingCount = useCallback(() => {
+    setLog((prev) => ({
+      ...prev,
+      healingCount: (prev.healingCount ?? 0) + 1,
+    }));
+  }, []);
+
   // 칭호 획득 — 도감 등록은 "획득 시"가 트리거. 이미 등록된 경우 중복 무시.
   const markTitleObtained = useCallback((titleId: string) => {
     setLog((prev) => {
@@ -196,5 +214,7 @@ export function useAdventureLog() {
     incrementNpcTalk,
     markTitleObtained,
     incrementBattleLosses,
+    incrementChatCount,
+    incrementHealingCount,
   };
 }

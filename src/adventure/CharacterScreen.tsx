@@ -154,6 +154,8 @@ export function CharacterScreen() {
           titleCounters={{
             battleLosses: adventureLog.log.battleLosses ?? 0,
             trainingCount: training.completedCount,
+            chatCount: adventureLog.log.chatCount ?? 0,
+            healingCount: adventureLog.log.healingCount ?? 0,
           }}
         />
       </div>

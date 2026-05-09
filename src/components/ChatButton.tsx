@@ -28,10 +28,13 @@ export function ChatButton({
   name,
   className,
   title,
+  onSent,
 }: {
   name: string;
   className: string;
   title: string | null;
+  /** 메시지 전송 성공 시 1회 호출 — '수다쟁이' 칭호 카운터 등에 사용. */
+  onSent?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -80,11 +83,15 @@ export function ChatButton({
     });
   }, [open, messages]);
 
-  const handleMessageSent = useCallback((m: ChatMessage) => {
-    setMessages((prev) =>
-      prev.some((x) => x.id === m.id) ? prev : [...prev, m],
-    );
-  }, []);
+  const handleMessageSent = useCallback(
+    (m: ChatMessage) => {
+      setMessages((prev) =>
+        prev.some((x) => x.id === m.id) ? prev : [...prev, m],
+      );
+      onSent?.();
+    },
+    [onSent],
+  );
 
   const hasUnread = messages.some((m) => m.id > lastSeenId && !m.mine);
 

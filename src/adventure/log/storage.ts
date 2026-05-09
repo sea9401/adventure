@@ -28,6 +28,10 @@ export type AdventureLog = {
   titles: Record<string, TitleLogEntry>;
   /** 누적 전투 패배 횟수 — 칭호/통계용. */
   battleLosses?: number;
+  /** 누적 글로벌 채팅 발화 횟수 — '수다쟁이' 칭호용. */
+  chatCount?: number;
+  /** 누적 치료소 이용 횟수 — '환자' 칭호용. */
+  healingCount?: number;
 };
 
 export const ADVENTURE_LOG_KEY = "adventure-log.v2";
@@ -78,6 +82,8 @@ export const emptyAdventureLog = (): AdventureLog => ({
   npcs: {},
   titles: {},
   battleLosses: 0,
+  chatCount: 0,
+  healingCount: 0,
 });
 
 export function loadAdventureLog(): AdventureLog {
@@ -92,6 +98,8 @@ export function loadAdventureLog(): AdventureLog {
       npcs: parsed?.npcs ?? {},
       titles: parsed?.titles ?? {},
       battleLosses: parsed?.battleLosses ?? 0,
+      chatCount: parsed?.chatCount ?? 0,
+      healingCount: parsed?.healingCount ?? 0,
     };
   } catch {
     return emptyAdventureLog();

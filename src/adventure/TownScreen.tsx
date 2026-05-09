@@ -41,6 +41,7 @@ export function TownScreen() {
     crafting,
     inventory,
     quests,
+    adventureLog,
     trainingDescription,
     playerCombat,
     playerStatus,
@@ -179,13 +180,14 @@ export function TownScreen() {
           </div>
           <button
             type="button"
-            onClick={() =>
+            onClick={() => {
               characterStateHook.heal(
                 healCost,
                 character.maxHp,
                 character.maxMp,
-              )
-            }
+              );
+              adventureLog.incrementHealingCount();
+            }}
             disabled={isFull}
             className="mt-4 w-full rounded-md border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400 dark:text-rose-300"
           >
