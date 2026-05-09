@@ -366,7 +366,7 @@ function Home() {
   //   힘   STR : +1 atk / pt
   //   민첩 DEX : +0.5% 회피 / pt, +1 atk / 5pt
   //   활력 VIT : +1 def / pt, +2 maxHp / pt (maxHp는 character 빌드 단계에서 반영)
-  //   속도 SPD : 10pt 당 공격 횟수 +1 (베이스 1회)
+  //   속도 SPD : 1pt 당 추가 공격 확률 +2.5% (매 턴 1회 판정, 100% capping)
   //   행운 LUK : +1% 드랍률 / pt, +0.5% 크리 확률 / pt
   const playerCombat = {
     hp: character.hp,
@@ -377,7 +377,8 @@ function Home() {
     evasionPct:
       character.stats.dex * 0.5 +
       evadeBonusPctFor(character.stats, effectiveSkillSet),
-    attackCount: 1 + Math.floor(character.stats.spd / 10),
+    attackCount: 1,
+    extraAttackChancePct: Math.min(100, character.stats.spd * 2.5),
     powerAttackBonus: powerAttackBonusFor(character.stats, effectiveSkillSet),
     guaranteedEvades: evadeGuaranteedFor(character.stats, effectiveSkillSet),
     extraAttackEveryNTurns: doubleStrikeIntervalFor(

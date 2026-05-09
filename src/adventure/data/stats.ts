@@ -14,7 +14,7 @@ export const STAT_CONVERSIONS: Record<StatKey, string> = {
   str: "1pt 당 공격력 +1",
   dex: "1pt 당 회피 +0.5% / 5pt 당 공격력 +1",
   vit: "1pt 당 방어력 +1 / 1pt 당 최대 HP +2",
-  spd: "10pt 당 공격 횟수 +1 (베이스 1회)",
+  spd: "1pt 당 추가 공격 확률 +2.5% (매 턴 1회 판정)",
   luk: "1pt 당 드랍률 +1% / 1pt 당 크리 확률 +0.5%",
 };
 

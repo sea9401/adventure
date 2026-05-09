@@ -36,6 +36,8 @@ export type PlayerCombat = {
   spd: number; // 선공 판정에 사용
   evasionPct: number; // 0~100, 적 공격 회피 확률
   attackCount: number; // 한 턴에 가하는 공격 횟수 (>=1)
+  // 매 턴 시작 시 이 확률(0~100)로 추가 공격 1회. SPD 의 기본 환산.
+  extraAttackChancePct?: number;
   // 강공격 보너스 — POWER_ATTACK_TURN_INTERVAL 턴마다 첫 공격에 추가 피해. 0/undefined = 스킬 미보유.
   powerAttackBonus?: number;
   // 회피 강화 — 전투 시작 시 적립할 보장 회피 횟수. 0/undefined = 스킬 미보유.
@@ -67,6 +69,14 @@ export function damageBetween(atk: number, def: number): number {
   return Math.max(1, atk - def);
 }
 
+// 다음 플레이어 턴의 공격 횟수 — 기본 attackCount + extraAttackChancePct 1회 판정.
+function rollPlayerAttackCount(player: PlayerCombat): number {
+  const base = Math.max(1, player.attackCount);
+  const chance = player.extraAttackChancePct ?? 0;
+  if (chance > 0 && Math.random() * 100 < chance) return base + 1;
+  return base;
+}
+
 // 선공 — SPD가 높은 쪽이 먼저 공격. 동점이면 플레이어 우선.
 export function initialBattleState(
   player: PlayerCombat,
@@ -92,7 +102,7 @@ export function initialBattleState(
     ],
     phase: playerFirst ? "player" : "enemy",
     outcome: null,
-    playerAttacksLeft: Math.max(1, player.attackCount),
+    playerAttacksLeft: rollPlayerAttackCount(player),
     completedPlayerTurns: 0,
     evadesRemaining: player.guaranteedEvades ?? 0,
     doubleStrikeUsedThisTurn: false,
@@ -116,7 +126,7 @@ export function advanceTurn(
       return {
         ...next,
         phase: "enemy",
-        playerAttacksLeft: Math.max(1, player.attackCount),
+        playerAttacksLeft: rollPlayerAttackCount(player),
       };
     }
 
@@ -147,7 +157,7 @@ export function advanceTurn(
         ...state,
         log,
         phase: "enemy",
-        playerAttacksLeft: Math.max(1, player.attackCount),
+        playerAttacksLeft: rollPlayerAttackCount(player),
         completedPlayerTurns: state.completedPlayerTurns + 1,
         doubleStrikeUsedThisTurn: false,
       };
@@ -207,7 +217,7 @@ export function advanceTurn(
       enemyHp,
       log,
       phase: "enemy",
-      playerAttacksLeft: Math.max(1, player.attackCount),
+      playerAttacksLeft: rollPlayerAttackCount(player),
       completedPlayerTurns: state.completedPlayerTurns + 1,
       doubleStrikeUsedThisTurn: false,
     };
