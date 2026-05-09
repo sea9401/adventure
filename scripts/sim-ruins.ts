@@ -59,7 +59,7 @@ function build(
       guaranteedEvades: 0,
       extraAttackEveryNTurns: 0,
       critChancePct: 0,
-      guard: 0,
+      guard: { turns: 0, reduction: 0 },
     },
   };
 }
