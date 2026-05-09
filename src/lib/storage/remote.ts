@@ -186,16 +186,34 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
 // 페이지 종료/숨김 시 마지막 변경분 강제 전송. fetch keepalive 옵션으로 unload 후에도
 // 요청이 살아남게 함. pagehide 와 visibilitychange→hidden 둘 다 잡아 모바일 사파리·
 // 백그라운드 탭 종료까지 커버. beforeunload 는 모바일에서 신뢰도 낮아 제외.
+//
+// 추가로, 일정 시간 이상 hidden 후 visible 로 복귀하면 location.reload — 그 사이 다른
+// 탭/기기에서 server 가 갱신됐을 가능성을 막는 가드. 이 탭의 stale 메모리 state 가
+// 다음 patch 에서 server 를 덮어쓰는 (멀티탭 clobber) 시나리오 차단용.
+export const RELOAD_AFTER_HIDDEN_MS = 60_000;
+
 export function attachUnloadFlush(remote: RemoteSave) {
   if (typeof window === "undefined") return;
-  const handler = () => remote.flushSync();
+  let hiddenAt: number | null = null;
+  const pageHideHandler = () => remote.flushSync();
   const visibilityHandler = () => {
-    if (document.visibilityState === "hidden") remote.flushSync();
+    if (document.visibilityState === "hidden") {
+      remote.flushSync();
+      hiddenAt = Date.now();
+      return;
+    }
+    if (document.visibilityState === "visible" && hiddenAt !== null) {
+      const hiddenMs = Date.now() - hiddenAt;
+      hiddenAt = null;
+      if (hiddenMs >= RELOAD_AFTER_HIDDEN_MS) {
+        window.location.reload();
+      }
+    }
   };
-  window.addEventListener("pagehide", handler);
+  window.addEventListener("pagehide", pageHideHandler);
   document.addEventListener("visibilitychange", visibilityHandler);
   return () => {
-    window.removeEventListener("pagehide", handler);
+    window.removeEventListener("pagehide", pageHideHandler);
     document.removeEventListener("visibilitychange", visibilityHandler);
   };
 }
