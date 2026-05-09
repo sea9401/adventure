@@ -195,7 +195,7 @@ export const ITEMS = {
     slot: "weapon",
     stats: [
       { label: "공격력", value: "+7" },
-      { label: "근력", value: "+3" },
+      { label: "힘", value: "+3" },
     ],
     bonus: { atk: 7, str: 3 },
     description: "마정석을 칼날에 박아 넣은 한손검. 휘두르면 묵직한 무게가 손에 실린다.",
