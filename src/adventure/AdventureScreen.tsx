@@ -171,6 +171,7 @@ export function AdventureScreen() {
                   crafting={crafting}
                   quests={quests}
                   completeQuest={completeQuest}
+                  storyFlags={storyFlags}
                 />
               );
             }
@@ -283,6 +284,12 @@ export function AdventureScreen() {
           recentNotifications={notifications.list}
           huntingActive={huntingActive}
           onToggleHunting={setHuntingActive}
+          bossAttemptsToday={characterStateHook.getBossAttemptsToday(
+            currentRegion.id,
+          )}
+          onConsumeBossAttempt={() =>
+            characterStateHook.consumeBossAttempt(currentRegion.id)
+          }
         />
       </div>
     );

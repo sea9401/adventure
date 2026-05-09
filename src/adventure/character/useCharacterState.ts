@@ -18,7 +18,17 @@ export type CharacterDynamicState = {
   equippedTitleId?: string | null;
   /** 장착 중인 스킬 이름 목록 (최대 SKILL_SLOT_COUNT). undefined = 자동 (보유 첫 N개). */
   equippedSkills?: string[];
+  /**
+   * region 단위 일일 보스 입장 카운터.
+   * date 는 클라이언트 로컬 'YYYY-MM-DD'. 다른 날짜로 보면 0 부터 새로 카운트.
+   */
+  bossAttempts?: Partial<Record<string, { date: string; count: number }>>;
 };
+
+// 클라이언트 로컬 자정 기준 'YYYY-MM-DD' (sv-SE 가 ISO-like 안전한 포맷).
+function todayLocalDateKey(): string {
+  return new Date().toLocaleDateString("sv-SE");
+}
 
 export const initialCharacterState: CharacterDynamicState = {
   hp: 47,
@@ -134,6 +144,29 @@ export function useCharacterState() {
   const setEquippedSkills = (names: string[]) =>
     setState((prev) => ({ ...prev, equippedSkills: names }));
 
+  // 오늘 기준 region 의 보스 입장 카운터. 다른 날짜 데이터는 0 으로 처리.
+  const getBossAttemptsToday = (regionId: string): number => {
+    const entry = state.bossAttempts?.[regionId];
+    if (!entry || entry.date !== todayLocalDateKey()) return 0;
+    return entry.count;
+  };
+
+  // 입장 1회 소비 — 날짜가 바뀌었으면 0 부터 1 로 리셋. 호출자가 한도 검사를 했다고 가정.
+  const consumeBossAttempt = (regionId: string) => {
+    const today = todayLocalDateKey();
+    setState((prev) => {
+      const cur = prev.bossAttempts?.[regionId];
+      const nextCount = cur && cur.date === today ? cur.count + 1 : 1;
+      return {
+        ...prev,
+        bossAttempts: {
+          ...(prev.bossAttempts ?? {}),
+          [regionId]: { date: today, count: nextCount },
+        },
+      };
+    });
+  };
+
   return {
     state,
     hydrated: true,
@@ -148,5 +181,7 @@ export function useCharacterState() {
     setSlot,
     setEquippedTitle,
     setEquippedSkills,
+    getBossAttemptsToday,
+    consumeBossAttempt,
   };
 }

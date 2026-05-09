@@ -3,6 +3,7 @@ export type RegionId =
   | "plains"
   | "forest"
   | "cave"
+  | "deep_cave"
   | "lake"
   | "diola"
   | "ruins";
@@ -30,6 +31,15 @@ export type Region = {
    * 예: { "골렘": 20, "망령": 40, "늑대": 40 } → 골렘은 평균보다 적게 등장.
    */
   encounterWeights?: Partial<Record<string, number>>;
+  /**
+   * 보스 인카운터 — 별도 도전 버튼으로 진입. 일반 자동 사냥 풀에서 제외된다.
+   * 일일 입장 횟수 제한이 있으며 자정(클라이언트 로컬) 기준 reset.
+   * boss.monsterName 은 MONSTERS 의 키.
+   */
+  boss?: {
+    monsterName: string;
+    dailyEntryLimit: number;
+  };
   tags?: RegionTag[];
   recommendedLevel?: number;
 };
@@ -102,6 +112,22 @@ export const WORLD_MAP: WorldMap = {
       recommendedLevel: 3,
     },
     {
+      id: "deep_cave",
+      name: "깊은 동굴",
+      description:
+        "동굴 안쪽으로 파고들면 광맥이 두꺼워지고 공기가 차가워진다. 무언가 광물을 두른 것이 잠들어 있다.",
+      position: { x: 140, y: 130 },
+      biome: "cave",
+      enemies: ["박쥐", "동굴뱀", "작은 광물 골렘"],
+      encounterWeights: {
+        박쥐: 35,
+        동굴뱀: 35,
+        "작은 광물 골렘": 30,
+      },
+      boss: { monsterName: "광맥의 수호자", dailyEntryLimit: 3 },
+      recommendedLevel: 6,
+    },
+    {
       id: "forest",
       name: "외곽 숲",
       description: "햇빛이 새지 않는 짙은 숲.",
@@ -160,6 +186,15 @@ export const WORLD_MAP: WorldMap = {
       from: "cave",
       to: "lake",
       requires: { kind: "trial", battles: 5, enemiesFrom: "lake" },
+    },
+    {
+      from: "cave",
+      to: "deep_cave",
+      requires: {
+        kind: "story",
+        flagId: "jimmy_deep_cave_quest",
+        reason: "나무꾼 지미가 동굴 안쪽에서 본 무언가에 대해 들려주지 않았다.",
+      },
     },
     {
       from: "forest",

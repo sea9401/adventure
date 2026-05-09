@@ -2,6 +2,10 @@ import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useQuests } from "@/adventure/quests/useQuests";
+import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+
+// 동굴 → 깊은 동굴 통로 해금 플래그. 의뢰 수락 시 set.
+export const JIMMY_FLAG_DEEP_CAVE_QUEST = "jimmy_deep_cave_quest";
 
 type Props = {
   npc: Npc;
@@ -9,6 +13,7 @@ type Props = {
   crafting: ReturnType<typeof useCrafting>;
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
+  storyFlags: ReturnType<typeof useStoryFlags>;
 };
 
 export function WoodcutterJimmyDialogue({
@@ -17,8 +22,10 @@ export function WoodcutterJimmyDialogue({
   crafting,
   quests,
   completeQuest,
+  storyFlags,
 }: Props) {
   const banditQuest = quests.getEntry("village-jimmy-bandits");
+  const deepCaveQuest = quests.getEntry("village-jimmy-deep-cave");
 
   // 사전 조건 — 대장간 입문 퀘스트(볼드)를 끝낸 뒤 의뢰가 발생.
   if (!crafting.state.boldQuestComplete) {
@@ -82,7 +89,70 @@ export function WoodcutterJimmyDialogue({
     );
   }
 
-  // completed
+  // 산적 의뢰 완료 후 ─ 깊은 동굴 의뢰 라인.
+  if (deepCaveQuest.state === "available") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "모험가 양반, 마침 잘 왔어.\n요즘 동굴 더 안쪽까지 들어가서 나무를 패다 보니, 광맥이 두꺼운 자리 너머에서 영 안 좋은 기운이 풍기더라고…\n무서워서 도망쳐 나왔는데, 자꾸 마음에 걸려서. 한 번 가서 무엇이 있는지 봐주지 않을래요?"
+        }
+        primaryAction={{
+          label: "맡겠다",
+          onClick: () => {
+            quests.accept("village-jimmy-deep-cave");
+            storyFlags.set(JIMMY_FLAG_DEEP_CAVE_QUEST);
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+
+  if (deepCaveQuest.state === "active") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "동굴 안쪽까진 가봤수? 그 광맥 너머가 영 으스스하던데.\n조심해요. 무리하지 말고."
+        }
+      />
+    );
+  }
+
+  if (deepCaveQuest.state === "ready") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "광물을 두른 거대한 골렘이라고? 그게 잠들어 있던 거였구먼…\n일단 잡아 줬으니 한동안은 안심하고 나무를 패겠어요. 자, 약속한 거."
+        }
+        primaryAction={{
+          label: "보고를 마친다",
+          onClick: () => {
+            if (completeQuest("village-jimmy-deep-cave")) onClose();
+          },
+        }}
+      />
+    );
+  }
+
+  if (deepCaveQuest.state === "completed") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "덕분에 동굴 안쪽도 마음 편히 다닐 수 있게 됐어요.\n…근데 그놈, 가끔 다시 깨어난다는 소문이 있더라고. 광물 때문인지 뭔지, 가끔 들러서 다잡아 두면 좋을 것 같수."
+        }
+      />
+    );
+  }
+
+  // 산적 의뢰만 완료한 단계 — 깊은 동굴 의뢰가 아직 'available' 이 아닌 경우.
   return (
     <NpcDialogue
       npc={npc}

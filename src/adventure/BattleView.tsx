@@ -52,6 +52,8 @@ export function BattleView({
   recentNotifications,
   huntingActive,
   onToggleHunting,
+  bossAttemptsToday,
+  onConsumeBossAttempt,
 }: {
   region: Region;
   player: PlayerCombat;
@@ -69,6 +71,10 @@ export function BattleView({
   recentNotifications?: AppNotification[];
   huntingActive: boolean;
   onToggleHunting: (next: boolean) => void;
+  /** region.boss 가 정의된 경우 — 오늘 입장한 횟수. */
+  bossAttemptsToday?: number;
+  /** 보스 도전 1회 입장 카운트. 호출자가 한도 검사 후 호출. */
+  onConsumeBossAttempt?: () => void;
 }) {
   const { state, potionsConsumed, start, stop } = useBattle({
     player,
@@ -76,6 +82,9 @@ export function BattleView({
     pickAction: pickAutoAction,
     potions: inventoryState.potions,
   });
+
+  // 보스 전투 모드 — 일반 자동사냥 루프와 분리. 1회 전투 후 종료, 자동 다음 적 X.
+  const bossModeRef = useRef(false);
 
   const startWithLog = (enemy: Monster, hpOverride?: number) => {
     onBattleStart?.(enemy.name);
@@ -120,6 +129,12 @@ export function BattleView({
   });
   useEffect(() => {
     if (!state || state.phase !== "ended" || state.outcome !== "win") return;
+    // 보스 전투는 1회만 — 다음 적 자동 시작 X. 이후 일반 사냥에 영향 없도록 ref 해제.
+    if (bossModeRef.current) {
+      bossModeRef.current = false;
+      stop();
+      return;
+    }
     const cooldown = computeBattleCooldown(state.log.length);
     const finalHp = state.playerHp;
     const id = setTimeout(() => {
@@ -141,6 +156,7 @@ export function BattleView({
     if (!huntingActive) return;
     if (player.hp <= 0) return;
     if (region.enemies.length === 0) return;
+    if (bossModeRef.current) return; // 보스 전투 직후 자동 다음 적 시작 차단
     const enemy = pickEnemy(region);
     if (enemy) startWithLog(enemy);
     // startWithLog 는 setter — deps 제외.
@@ -150,6 +166,13 @@ export function BattleView({
   // 1) 전투 외 — 진입 화면
   if (!state) {
     const hasEnemies = region.enemies.length > 0;
+    const boss = region.boss;
+    const bossMonster = boss ? (MONSTERS[boss.monsterName] ?? null) : null;
+    const attemptsUsed = bossAttemptsToday ?? 0;
+    const attemptsLeft = boss
+      ? Math.max(0, boss.dailyEntryLimit - attemptsUsed)
+      : 0;
+    const canBoss = !!bossMonster && attemptsLeft > 0 && player.hp > 0;
     return (
       <div className="space-y-3">
         <Card padding="md">
@@ -163,6 +186,37 @@ export function BattleView({
             {region.description}
           </p>
         </Card>
+
+        {boss && bossMonster && (
+          <Card padding="md">
+            <div className="text-xs uppercase tracking-wider text-rose-500 dark:text-rose-400">
+              보스
+            </div>
+            <h4 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+              {bossMonster.name}
+            </h4>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              일일 도전 — 오늘 {attemptsUsed}/{boss.dailyEntryLimit} 사용 (자정에 초기화)
+            </p>
+            <button
+              type="button"
+              disabled={!canBoss}
+              onClick={() => {
+                if (!bossMonster || !onConsumeBossAttempt) return;
+                onConsumeBossAttempt();
+                bossModeRef.current = true;
+                startWithLog(bossMonster);
+              }}
+              className="mt-3 w-full rounded-md border border-rose-700 bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {player.hp <= 0
+                ? "회복 필요"
+                : attemptsLeft <= 0
+                  ? "오늘 도전 횟수 소진"
+                  : `보스 도전 (남은 ${attemptsLeft}/${boss.dailyEntryLimit})`}
+            </button>
+          </Card>
+        )}
 
         {hasEnemies ? (
           <>

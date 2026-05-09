@@ -184,6 +184,27 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "wraith_cloak", chance: 0.002 },
     ],
   },
+  "작은 광물 골렘": {
+    name: "작은 광물 골렘",
+    tags: ["golem"],
+    hp: 110,
+    atk: 9,
+    def: 5,
+    spd: 3,
+    exp: 9,
+  },
+  // 깊은 동굴 보스 — region.boss 도전 버튼으로만 진입. 일반 인카운터 풀에선 제외.
+  // 일일 도전 횟수 제한이 region.boss.dailyEntryLimit 으로 정해진다.
+  // 보상(드랍)은 추후 광물 강화 라인 도입 시 추가.
+  "광맥의 수호자": {
+    name: "광맥의 수호자",
+    tags: ["golem"],
+    hp: 380,
+    atk: 18,
+    def: 10,
+    spd: 3,
+    exp: 60,
+  },
   "폐허 늑대": {
     name: "폐허 늑대",
     tags: ["beast", "undead"],

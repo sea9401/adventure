@@ -144,6 +144,20 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "village_woodcutter_jimmy",
   },
+  // 지미 — 산적 의뢰 완료 후 받는 깊은 동굴 조사 의뢰. 보스 1회 처치.
+  // 수락 시 'jimmy_deep_cave_quest' story flag 설정 → 동굴 → 깊은 동굴 통로 해금.
+  {
+    id: "village-jimmy-deep-cave",
+    regionId: "village",
+    title: "동굴 안쪽의 무언가",
+    description:
+      "요즘 동굴 더 안쪽까지 들어가다가 큰 광맥 하나를 봤는데, 그 너머에서 영 안 좋은 기운이 풍기더라고. 무서워서 도망쳐 나왔어. 모험가 양반이 한 번 가서 무엇이 있는지 확인해 주쇼.",
+    requiredLevel: 5,
+    target: { kind: "kill", monsterName: "광맥의 수호자", count: 1 },
+    reward: { gold: 80, fame: 5, exp: 120 },
+    repeatable: false,
+    giverNpcId: "village_woodcutter_jimmy",
+  },
   // ── 디올라 — "안개 너머의 길" 트라이얼 라인 ──────────────────────────────
   // 후드 손님이 폐허로 안내하기 전에 디올라 사람들의 신뢰를 얻어야 한다.
   // 세 의뢰는 마을·동굴·숲을 거쳐 디올라까지 이른 모험가가 그 동선을 다시
