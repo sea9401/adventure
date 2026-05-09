@@ -129,12 +129,9 @@ export function BattleView({
   });
   useEffect(() => {
     if (!state || state.phase !== "ended" || state.outcome !== "win") return;
-    // 보스 전투는 1회만 — 다음 적 자동 시작 X. 이후 일반 사냥에 영향 없도록 ref 해제.
-    if (bossModeRef.current) {
-      bossModeRef.current = false;
-      stop();
-      return;
-    }
+    // 보스 승리는 결과 모달 확인 후 종료 — 자동 cooldown/다음 적 X.
+    // 동기 시뮬 특성상 즉시 stop() 하면 BattleScene 이 한 프레임만 보이고 사라진다.
+    if (bossModeRef.current) return;
     const cooldown = computeBattleCooldown(state.log.length);
     const finalHp = state.playerHp;
     const id = setTimeout(() => {
@@ -274,9 +271,13 @@ export function BattleView({
   }
 
   // 2) 진행 중 / 승리 cooldown — 같은 화면. final state(전체 로그 + final HP)을 그대로 보여준다.
-  // 진짜 "ended && lose"일 때만 결과 모달이 위에 뜬다.
+  // 일반 승리는 cooldown 동안 BattleScene 만 보이고, 패배 / 보스 승리는 결과 모달이 위에 뜬다.
   const isLoss =
     state.phase === "ended" && state.outcome === "lose";
+  const isBossWin =
+    state.phase === "ended" &&
+    state.outcome === "win" &&
+    bossModeRef.current;
   return (
     <>
       <BattleScene
@@ -307,6 +308,17 @@ export function BattleView({
               console.error("onBattleEnd failed:", err);
             }
             // BattleView 로컬 state 초기화 — 모달 닫고 진입 화면으로 복귀.
+            stop();
+          }}
+        />
+      )}
+      {isBossWin && (
+        <BattleResult
+          outcome="win"
+          exp={state.enemy.exp}
+          onConfirm={() => {
+            // 보상은 win effect 가 이미 발화 — 모달 확인은 BattleScene 정리만.
+            bossModeRef.current = false;
             stop();
           }}
         />
