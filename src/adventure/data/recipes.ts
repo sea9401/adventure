@@ -173,6 +173,15 @@ export const RECIPES: Recipe[] = [
     ],
     result: { kind: "equipment", itemId: "mana_knuckle", slot: "weapon" },
   },
+  {
+    id: "mana_bracelet",
+    name: "마정석 팔찌 제작서",
+    description: `${ITEMS.mana_bracelet.name}을(를) 만든다. 마정석 조각을 엮어 손목에 두를 팔찌로 매만진다.`,
+    ingredients: [
+      { kind: "material", materialId: "mana_crystal", count: 2 },
+    ],
+    result: { kind: "equipment", itemId: "mana_bracelet", slot: "accessory" },
+  },
 ];
 
 export function getRecipeById(id: string): Recipe | undefined {

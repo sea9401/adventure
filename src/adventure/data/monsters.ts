@@ -216,6 +216,7 @@ export const MONSTERS: Record<string, Monster> = {
         recipeIds: ["mana_sword", "mana_shield", "mana_spear", "mana_knuckle"],
         chance: 1,
       },
+      { kind: "recipe", recipeId: "mana_bracelet", chance: 0.15 },
     ],
   },
   "폐허 늑대": {

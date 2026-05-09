@@ -230,6 +230,16 @@ export const ITEMS = {
     bonus: { atk: 7, luk: 3 },
     description: "마정석 조각을 손등에 박은 너클. 한 방 한 방이 묘하게 운에 맡겨지는 느낌이 든다.",
   } satisfies EquipItem,
+  mana_bracelet: {
+    name: "마정석 팔찌",
+    slot: "accessory",
+    stats: [
+      { label: "활력", value: "+3" },
+      { label: "속도", value: "+2" },
+    ],
+    bonus: { vit: 3, spd: 2 },
+    description: "마정석 조각을 엮어 만든 팔찌. 손목에 두르면 몸이 단단해지면서도 발이 가벼워진다.",
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;
