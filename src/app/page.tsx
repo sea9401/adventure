@@ -15,6 +15,7 @@ import { type BattleEndPayload } from "@/adventure/BattleView";
 import { TownScreen } from "@/adventure/TownScreen";
 import { CharacterScreen } from "@/adventure/CharacterScreen";
 import { AdventureScreen } from "@/adventure/AdventureScreen";
+import { GameProvider, type GameCtx } from "@/adventure/GameContext";
 import { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { WORLD_MAP } from "@/adventure/data/world";
 import {
@@ -698,8 +699,56 @@ function Home() {
   };
 
 
+  const gameCtx: GameCtx = {
+    inventory,
+    characterStateHook,
+    training,
+    crafting,
+    quests,
+    adventureLog,
+    notifications,
+    edgeUnlocks,
+    storyFlags,
+    autoPotion,
+    remote,
+    inbox,
+    profile,
+    character,
+    currentRegion,
+    isTown,
+    effectiveSkillNameList,
+    trainingDescription,
+    playerCombat,
+    playerStatus,
+    mapProgress,
+    setMapProgress,
+    pendingTownNpcId,
+    setPendingTownNpcId,
+    trialEdge,
+    setTrialEdge,
+    huntingActive,
+    setHuntingActive,
+    tab,
+    subView,
+    setSubView,
+    back,
+    addNotification,
+    handlePurchasePotion,
+    handlePurchaseMaterial,
+    handleSellPotion,
+    handleSellMaterial,
+    handleSellEquipment,
+    handleEquipFromInventory,
+    handleUnequip,
+    handleCraft,
+    handleBattleEnd,
+    handleAcceptQuest,
+    handleClaimQuest,
+    completeQuest,
+  };
+
   return (
-    <>
+    <GameProvider value={gameCtx}>
       <RegionBackground regionId={currentRegion.id} />
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/90 px-4 py-3 sm:px-6 dark:border-zinc-800 dark:bg-zinc-950/90">
@@ -739,79 +788,9 @@ function Home() {
         <MainTabs active={tab} onChange={handleTabChange} />
 
         <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 p-4 sm:p-6">
-          {tab === "adventure" && (
-            <AdventureScreen
-              character={character}
-              currentRegion={currentRegion}
-              subView={subView}
-              setSubView={setSubView}
-              back={back}
-              pendingTownNpcId={pendingTownNpcId}
-              setPendingTownNpcId={setPendingTownNpcId}
-              trialEdge={trialEdge}
-              setTrialEdge={setTrialEdge}
-              mapProgress={mapProgress}
-              setMapProgress={setMapProgress}
-              crafting={crafting}
-              inventory={inventory}
-              adventureLog={adventureLog}
-              characterStateHook={characterStateHook}
-              quests={quests}
-              storyFlags={storyFlags}
-              notifications={notifications}
-              autoPotion={autoPotion}
-              edgeUnlocks={edgeUnlocks}
-              huntingActive={huntingActive}
-              setHuntingActive={setHuntingActive}
-              playerCombat={playerCombat}
-              playerStatus={playerStatus}
-              onBattleEnd={handleBattleEnd}
-              completeQuest={completeQuest}
-              addNotification={addNotification}
-            />
-          )}
-
-          {tab === "town" && (
-            <TownScreen
-              character={character}
-              currentRegion={currentRegion}
-              isTown={isTown}
-              subView={subView}
-              setSubView={setSubView}
-              back={back}
-              mapProgress={mapProgress}
-              setMapProgress={setMapProgress}
-              characterStateHook={characterStateHook}
-              training={training}
-              crafting={crafting}
-              inventory={inventory}
-              quests={quests}
-              trainingDescription={trainingDescription}
-              onCraft={handleCraft}
-              onPurchasePotion={handlePurchasePotion}
-              onPurchaseMaterial={handlePurchaseMaterial}
-              onSellPotion={handleSellPotion}
-              onSellMaterial={handleSellMaterial}
-              onSellEquipment={handleSellEquipment}
-              onAcceptQuest={handleAcceptQuest}
-              onClaimQuest={handleClaimQuest}
-            />
-          )}
-          {tab === "character" && (
-            <CharacterScreen
-              character={character}
-              subView={subView}
-              setSubView={setSubView}
-              back={back}
-              characterStateHook={characterStateHook}
-              inventory={inventory}
-              adventureLog={adventureLog}
-              notifications={notifications}
-              effectiveSkillNameList={effectiveSkillNameList}
-              onEquipFromInventory={handleEquipFromInventory}
-              onUnequip={handleUnequip}
-            />
-          )}
+          {tab === "adventure" && <AdventureScreen />}
+          {tab === "town" && <TownScreen />}
+          {tab === "character" && <CharacterScreen />}
           {tab === "plaza" && subView === null && (
             <div className="space-y-2">
               <EntryCard
@@ -873,39 +852,19 @@ function Home() {
           {tab === "plaza" && subView === "marketplace" && (
             <div className="space-y-3">
               <SubViewHeader title="거래소" onBack={back} />
-              <MarketplaceTab
-                inventory={inventory.state}
-                equipped={equippedSlots}
-                remote={remote}
-                consumeEquipment={inventory.consumeEquipment}
-                consumeMaterial={inventory.consumeMaterial}
-                addEquipment={inventory.addEquipment}
-                addMaterial={inventory.addMaterial}
-                addGold={characterStateHook.addGold}
-                currentGold={character.gold}
-                inboxCount={inbox.count}
-                refreshInbox={inbox.refresh}
-                pushToast={(msg) => addNotification("info", msg)}
-              />
+              <MarketplaceTab />
             </div>
           )}
           {tab === "plaza" && subView === "inbox" && (
             <div className="space-y-3">
               <SubViewHeader title="우편함" onBack={back} />
-              <InboxView
-                remote={remote}
-                addEquipment={inventory.addEquipment}
-                addMaterial={inventory.addMaterial}
-                addGold={characterStateHook.addGold}
-                refreshInbox={inbox.refresh}
-                pushToast={(msg) => addNotification("info", msg)}
-              />
+              <InboxView />
             </div>
           )}
         </main>
       </div>
       <NotificationToast notifications={notifications.alertable} />
       {showModal && <NameSetupModal onSubmit={profile.submit} />}
-    </>
+    </GameProvider>
   );
 }

@@ -6,24 +6,23 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
-import type { RemoteSave } from "@/lib/storage/remote";
+import { useGame } from "@/adventure/GameContext";
 import { claimInbox, fetchInbox, type InboxItem } from "./api";
 
-export function InboxView({
-  remote,
-  addEquipment,
-  addMaterial,
-  addGold,
-  refreshInbox,
-  pushToast,
-}: {
-  remote: RemoteSave;
-  addEquipment: (id: ItemId, n?: number) => void;
-  addMaterial: (id: MaterialId, n?: number) => void;
-  addGold: (delta: number) => void;
-  refreshInbox: () => void;
-  pushToast: (msg: string) => void;
-}) {
+export function InboxView() {
+  const {
+    remote,
+    inventory,
+    characterStateHook,
+    inbox,
+    addNotification,
+  } = useGame();
+  const addEquipment = inventory.addEquipment;
+  const addMaterial = inventory.addMaterial;
+  const addGold = characterStateHook.addGold;
+  const refreshInbox = inbox.refresh;
+  const pushToast = (msg: string) => addNotification("info", msg);
+
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyIds, setBusyIds] = useState<Set<number>>(new Set());

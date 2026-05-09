@@ -4,10 +4,10 @@ import { Compass, Hammer, Sword, User } from "@phosphor-icons/react";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
-import { BattleView, type BattleEndPayload } from "@/adventure/BattleView";
+import { BattleView } from "@/adventure/BattleView";
 import { MapView } from "@/adventure/MapView";
 import { TownView } from "@/adventure/TownView";
-import { TrialView, type TrialEdge } from "@/adventure/TrialView";
+import { TrialView } from "@/adventure/TrialView";
 import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
 import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
 import { SuzyDialogue } from "@/adventure/town/dialogues/SuzyDialogue";
@@ -16,58 +16,9 @@ import { WoodcutterJimmyDialogue } from "@/adventure/town/dialogues/WoodcutterJi
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
 import { WORLD_MAP } from "@/adventure/data/world";
-import type { Character } from "@/adventure/character/types";
-import type { Region } from "@/adventure/data/world";
-import type { MapProgress } from "@/lib/map-progress";
-import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
-import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
-import type { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
-import type { useCharacterState } from "@/adventure/character/useCharacterState";
-import type { useCrafting } from "@/adventure/crafting/useCrafting";
-import type { useEdgeUnlocks } from "@/adventure/edges/useEdgeUnlocks";
-import type { useInventory } from "@/adventure/inventory/useInventory";
-import type { useNotifications } from "@/adventure/notifications/useNotifications";
-import type { useQuests } from "@/adventure/quests/useQuests";
-import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import { useGame } from "@/adventure/GameContext";
 
-type PlayerCombat = React.ComponentProps<typeof BattleView>["player"];
-type PlayerStatus = React.ComponentProps<typeof BattleView>["playerStatus"];
-
-type Props = {
-  character: Character;
-  currentRegion: Region;
-  subView: string | null;
-  setSubView: (next: string | null) => void;
-  back: () => void;
-  pendingTownNpcId: string | null;
-  setPendingTownNpcId: (id: string | null) => void;
-  trialEdge: TrialEdge | null;
-  setTrialEdge: (edge: TrialEdge | null) => void;
-  mapProgress: MapProgress;
-  setMapProgress: React.Dispatch<React.SetStateAction<MapProgress>>;
-  crafting: ReturnType<typeof useCrafting>;
-  inventory: ReturnType<typeof useInventory>;
-  adventureLog: ReturnType<typeof useAdventureLog>;
-  characterStateHook: ReturnType<typeof useCharacterState>;
-  quests: ReturnType<typeof useQuests>;
-  storyFlags: ReturnType<typeof useStoryFlags>;
-  notifications: ReturnType<typeof useNotifications>;
-  autoPotion: ReturnType<typeof useAutoPotionConfig>;
-  edgeUnlocks: ReturnType<typeof useEdgeUnlocks>;
-  huntingActive: boolean;
-  setHuntingActive: (next: boolean) => void;
-  playerCombat: PlayerCombat;
-  playerStatus: PlayerStatus;
-  onBattleEnd: (payload: BattleEndPayload) => void;
-  completeQuest: (id: string) => boolean;
-  addNotification: (
-    kind: NotificationKind,
-    text: string,
-    meta?: NotificationMeta,
-  ) => void;
-};
-
-export function AdventureScreen(props: Props) {
+export function AdventureScreen() {
   const {
     character,
     currentRegion,
@@ -93,10 +44,10 @@ export function AdventureScreen(props: Props) {
     setHuntingActive,
     playerCombat,
     playerStatus,
-    onBattleEnd,
+    handleBattleEnd,
     completeQuest,
     addNotification,
-  } = props;
+  } = useGame();
 
   if (subView === null) {
     return (
@@ -256,7 +207,7 @@ export function AdventureScreen(props: Props) {
           playerName={character.name}
           playerStatus={playerStatus}
           onBattleStart={adventureLog.markEncountered}
-          onBattleEnd={onBattleEnd}
+          onBattleEnd={handleBattleEnd}
           pickAutoAction={(state) =>
             pickAutoAction(state, {
               rules: autoPotion.config.rules,
@@ -315,7 +266,7 @@ export function AdventureScreen(props: Props) {
             })
           }
           inventoryState={inventory.state}
-          onBattleEnd={onBattleEnd}
+          onBattleEnd={handleBattleEnd}
           onTrialEnd={(result) => {
             if (result === "win" && trialEdge) {
               edgeUnlocks.unlock(trialEdge.from, trialEdge.to);

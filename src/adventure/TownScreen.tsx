@@ -16,46 +16,10 @@ import { TrainingView } from "@/adventure/character/TrainingView";
 import { CraftingView } from "@/adventure/CraftingView";
 import { ShopView } from "@/adventure/ShopView";
 import { GuildView } from "@/adventure/GuildView";
-import type { Character } from "@/adventure/character/types";
-import type { ItemId } from "@/adventure/data/items";
-import type { MaterialId } from "@/adventure/data/materials";
-import type { PotionId } from "@/adventure/data/potions";
-import type { Recipe } from "@/adventure/data/recipes";
-import type { Region } from "@/adventure/data/world";
-import type { MapProgress } from "@/lib/map-progress";
 import { START_REGION_ID } from "@/adventure/data/world";
-import type { useCharacterState } from "@/adventure/character/useCharacterState";
-import type { useTraining } from "@/adventure/training/useTraining";
-import type { useCrafting } from "@/adventure/crafting/useCrafting";
-import type { useInventory } from "@/adventure/inventory/useInventory";
-import type { useQuests } from "@/adventure/quests/useQuests";
+import { useGame } from "@/adventure/GameContext";
 
-type Props = {
-  character: Character;
-  currentRegion: Region;
-  isTown: boolean;
-  subView: string | null;
-  setSubView: (next: string | null) => void;
-  back: () => void;
-  mapProgress: MapProgress;
-  setMapProgress: React.Dispatch<React.SetStateAction<MapProgress>>;
-  characterStateHook: ReturnType<typeof useCharacterState>;
-  training: ReturnType<typeof useTraining>;
-  crafting: ReturnType<typeof useCrafting>;
-  inventory: ReturnType<typeof useInventory>;
-  quests: ReturnType<typeof useQuests>;
-  trainingDescription: string;
-  onCraft: (recipe: Recipe) => void;
-  onPurchasePotion: (id: PotionId, quantity: number) => void;
-  onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
-  onSellPotion: (id: PotionId, quantity: number) => void;
-  onSellMaterial: (id: MaterialId, quantity: number) => void;
-  onSellEquipment: (id: ItemId, quantity: number) => void;
-  onAcceptQuest: (id: string) => void;
-  onClaimQuest: (id: string) => void;
-};
-
-export function TownScreen(props: Props) {
+export function TownScreen() {
   const {
     character,
     currentRegion,
@@ -71,15 +35,15 @@ export function TownScreen(props: Props) {
     inventory,
     quests,
     trainingDescription,
-    onCraft,
-    onPurchasePotion,
-    onPurchaseMaterial,
-    onSellPotion,
-    onSellMaterial,
-    onSellEquipment,
-    onAcceptQuest,
-    onClaimQuest,
-  } = props;
+    handleCraft,
+    handlePurchasePotion,
+    handlePurchaseMaterial,
+    handleSellPotion,
+    handleSellMaterial,
+    handleSellEquipment,
+    handleAcceptQuest,
+    handleClaimQuest,
+  } = useGame();
 
   if (!isTown) {
     return (
@@ -245,7 +209,7 @@ export function TownScreen(props: Props) {
           materialCounts={inventory.state.materials}
           potionCounts={inventory.state.potions}
           potionMax={inventory.potionMax}
-          onCraft={onCraft}
+          onCraft={handleCraft}
         />
       </div>
     );
@@ -258,11 +222,11 @@ export function TownScreen(props: Props) {
         <ShopView
           gold={character.gold}
           inventory={inventory.state}
-          onPurchasePotion={onPurchasePotion}
-          onPurchaseMaterial={onPurchaseMaterial}
-          onSellPotion={onSellPotion}
-          onSellMaterial={onSellMaterial}
-          onSellEquipment={onSellEquipment}
+          onPurchasePotion={handlePurchasePotion}
+          onPurchaseMaterial={handlePurchaseMaterial}
+          onSellPotion={handleSellPotion}
+          onSellMaterial={handleSellMaterial}
+          onSellEquipment={handleSellEquipment}
         />
       </div>
     );
@@ -279,8 +243,8 @@ export function TownScreen(props: Props) {
           regionId={currentRegion.id}
           characterLevel={character.level}
           getEntry={quests.getEntry}
-          onAccept={onAcceptQuest}
-          onClaim={onClaimQuest}
+          onAccept={handleAcceptQuest}
+          onClaim={handleClaimQuest}
         />
       </div>
     );
