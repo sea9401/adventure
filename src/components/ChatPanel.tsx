@@ -106,6 +106,8 @@ export function ChatPanel({
     const tick = async () => {
       try {
         const next = await fetchPresence();
+        // 한글 가나다순으로 고정 — 서버가 매번 다른 순서로 줘도 화면은 안정적.
+        next.sort((a, b) => a.name.localeCompare(b.name, "ko"));
         if (!cancelled) setPresence(next);
       } catch {
         // 네트워크 오류는 다음 폴링에서 자동 재시도 — UI 에 띄우지 않음.
