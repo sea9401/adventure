@@ -4,13 +4,8 @@ import { useCallback, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
-import {
-  MATERIALS,
-  type MaterialId,
-} from "@/adventure/data/materials";
-import type { InventoryState } from "@/adventure/inventory/useInventory";
-import type { EquippedSlots } from "@/adventure/character/types";
-import type { RemoteSave } from "@/lib/storage/remote";
+import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
+import { useGame } from "@/adventure/GameContext";
 import { ListingsView } from "./ListingsView";
 import { ListingCreateModal } from "./ListingCreateModal";
 import { BuyConfirmModal } from "./BuyConfirmModal";
@@ -24,33 +19,29 @@ const SUB_TABS: { key: SubTab; label: string }[] = [
   { key: "mine", label: "내 등록" },
 ];
 
-export function MarketplaceTab({
-  inventory,
-  equipped,
-  remote,
-  consumeEquipment,
-  consumeMaterial,
-  addEquipment,
-  addMaterial,
-  addGold,
-  currentGold,
-  inboxCount,
-  refreshInbox,
-  pushToast,
-}: {
-  inventory: InventoryState;
-  equipped: EquippedSlots | undefined;
-  remote: RemoteSave;
-  consumeEquipment: (id: ItemId, n?: number) => boolean;
-  consumeMaterial: (id: MaterialId, n?: number) => boolean;
-  addEquipment: (id: ItemId, n?: number) => void;
-  addMaterial: (id: MaterialId, n?: number) => void;
-  addGold: (delta: number) => void;
-  currentGold: number;
-  inboxCount: number | null;
-  refreshInbox: () => void;
-  pushToast: (msg: string) => void;
-}) {
+export function MarketplaceTab() {
+  const {
+    inventory,
+    characterStateHook,
+    character,
+    remote,
+    inbox,
+    addNotification,
+  } = useGame();
+  const equipped = characterStateHook.equippedSlots;
+  const consumeEquipment = inventory.consumeEquipment;
+  const consumeMaterial = inventory.consumeMaterial;
+  const addEquipment = inventory.addEquipment;
+  const addMaterial = inventory.addMaterial;
+  const addGold = characterStateHook.addGold;
+  const currentGold = character.gold;
+  const inboxCount = inbox.count;
+  const refreshInbox = inbox.refresh;
+  const pushToast = useCallback(
+    (msg: string) => addNotification("info", msg),
+    [addNotification],
+  );
+
   const [sub, setSub] = useState<SubTab>("all");
   const [modal, setModal] = useState(false);
   const [refresh, setRefresh] = useState(0);
@@ -163,7 +154,7 @@ export function MarketplaceTab({
 
       {modal ? (
         <ListingCreateModal
-          inventory={inventory}
+          inventory={inventory.state}
           equipped={equipped}
           remote={remote}
           onClose={() => setModal(false)}

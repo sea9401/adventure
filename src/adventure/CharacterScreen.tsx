@@ -18,28 +18,9 @@ import { SKILL_SLOT_COUNT } from "@/adventure/character/skills";
 import { AdventureLogView } from "@/adventure/AdventureLogView";
 import { InventoryView } from "@/adventure/InventoryView";
 import { RecentLogView } from "@/adventure/RecentLogView";
-import type { Character } from "@/adventure/character/types";
-import type { ItemId, EquipSlot } from "@/adventure/data/items";
-import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
-import type { useCharacterState } from "@/adventure/character/useCharacterState";
-import type { useInventory } from "@/adventure/inventory/useInventory";
-import type { useNotifications } from "@/adventure/notifications/useNotifications";
+import { useGame } from "@/adventure/GameContext";
 
-type Props = {
-  character: Character;
-  subView: string | null;
-  setSubView: (next: string | null) => void;
-  back: () => void;
-  characterStateHook: ReturnType<typeof useCharacterState>;
-  inventory: ReturnType<typeof useInventory>;
-  adventureLog: ReturnType<typeof useAdventureLog>;
-  notifications: ReturnType<typeof useNotifications>;
-  effectiveSkillNameList: string[];
-  onEquipFromInventory: (id: ItemId) => void;
-  onUnequip: (slot: EquipSlot) => void;
-};
-
-export function CharacterScreen(props: Props) {
+export function CharacterScreen() {
   const {
     character,
     subView,
@@ -50,9 +31,9 @@ export function CharacterScreen(props: Props) {
     adventureLog,
     notifications,
     effectiveSkillNameList,
-    onEquipFromInventory,
-    onUnequip,
-  } = props;
+    handleEquipFromInventory,
+    handleUnequip,
+  } = useGame();
 
   if (subView === null) {
     return (
@@ -128,8 +109,8 @@ export function CharacterScreen(props: Props) {
         <InventoryView
           inventory={inventory.state}
           equipped={character.equipped}
-          onEquip={onEquipFromInventory}
-          onUnequip={onUnequip}
+          onEquip={handleEquipFromInventory}
+          onUnequip={handleUnequip}
         />
       </div>
     );
