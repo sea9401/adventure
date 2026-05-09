@@ -594,14 +594,15 @@ function ItemGrantSection({
     return Object.entries(ITEMS).map(([id, it]) => ({ id, name: it.name }));
   }, [category]);
 
-  // 카테고리 변경 시 첫 항목으로 자동 선택.
+  // 카테고리 변경 시 첫 항목으로 자동 선택. 외부 입력(category) 변화에 맞춰
+  // 종속 state(itemId) 를 재정렬하는 동기화 패턴.
   useEffect(() => {
     if (options.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setItemId("");
       return;
     }
     if (!options.some((o) => o.id === itemId)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setItemId(options[0].id);
     }
   }, [options, itemId]);

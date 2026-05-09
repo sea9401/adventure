@@ -283,10 +283,13 @@ export function BattleView({
   // 일반 승리는 cooldown 동안 BattleScene 만 보이고, 패배 / 보스 승리는 결과 모달이 위에 뜬다.
   const isLoss =
     state.phase === "ended" && state.outcome === "lose";
+  // 보스 승리 판정은 state 에서 derive — region.boss 와 enemy 이름 일치.
+  // 보스 몬스터는 일반 인카운터 풀에서 제외돼 있어 안전한 식별자.
   const isBossWin =
     state.phase === "ended" &&
     state.outcome === "win" &&
-    bossModeRef.current;
+    !!region.boss &&
+    state.enemy.name === region.boss.monsterName;
   return (
     <>
       <BattleScene

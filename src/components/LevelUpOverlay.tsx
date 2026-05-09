@@ -19,6 +19,8 @@ export function LevelUpOverlay({
 
   useEffect(() => {
     if (triggerKey === 0) return;
+    // 타이머 기반 일회성 오버레이 — triggerKey 변화에 맞춘 외부 트리거 동기화 패턴.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisible(true);
     const id = setTimeout(() => setVisible(false), SHOW_DURATION_MS);
     return () => clearTimeout(id);

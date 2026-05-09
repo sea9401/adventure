@@ -76,6 +76,8 @@ export function BulletinBoardView({
   }, []);
 
   useEffect(() => {
+    // 마운트 직후 1회 fetch — refresh 안의 setState 는 비동기 응답 시점이라 의도적.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, [refresh]);
 

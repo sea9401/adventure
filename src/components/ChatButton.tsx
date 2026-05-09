@@ -80,9 +80,11 @@ export function ChatButton({
   }, [open]);
 
   // 패널이 열려 있는 동안 도착하는 메시지는 즉시 읽은 것으로 처리.
+  // 외부 변화(messages) 구독 → 로컬 lastSeen 동기화 패턴.
   useEffect(() => {
     if (!open || messages.length === 0) return;
     const latest = messages[messages.length - 1].id;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLastSeenId((prev) => {
       if (latest <= prev) return prev;
       writeLastSeen(latest);

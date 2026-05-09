@@ -53,6 +53,8 @@ export function useRankings(metric: RankingMetric) {
   }, []);
 
   useEffect(() => {
+    // 데이터 fetch 라이프사이클 — loading/error 는 비동기 응답까지 살아있는 외부 상태 동기화.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
     void Promise.all([fetchList(), fetchMe()]).finally(() => setLoading(false));
