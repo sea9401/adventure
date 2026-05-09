@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CaretDown, ChatCircle, PaperPlaneTilt, Users, X } from "@phosphor-icons/react";
 import { formatRelative } from "@/lib/notifications";
 import { CHAT_MAX_LENGTH } from "@/lib/chat-config";
@@ -79,10 +79,26 @@ export function ChatPanel({
   const [presence, setPresence] = useState<PresenceUser[]>([]);
   const [presenceOpen, setPresenceOpen] = useState(false);
   const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pmTarget, setPmTarget] = useState<string | null>(null);
+  // 낙관적 전송 — 서버 응답 전 임시 메시지 큐. 응답 도착 시 큐에서 제거.
+  const [pending, setPending] = useState<ChatMessage[]>([]);
+  const tempIdRef = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
+
+  // 권위적 messages + 낙관적 pending 을 합쳐 화면용 리스트 생성.
+  // 서버 echo 와 임시 메시지가 일시적으로 겹쳐 보이지 않도록, 본인이 보낸
+  // 권위적 메시지가 들어오면 같은 content 의 가장 오래된 pending 을 숨긴다.
+  const visibleMessages = useMemo(() => {
+    if (pending.length === 0) return messages;
+    const remainingPending = [...pending];
+    for (const m of messages) {
+      if (!m.mine) continue;
+      const i = remainingPending.findIndex((p) => p.content === m.content);
+      if (i >= 0) remainingPending.splice(i, 1);
+    }
+    return [...messages, ...remainingPending];
+  }, [messages, pending]);
 
   useEffect(() => {
     if (!open) return;
@@ -112,10 +128,11 @@ export function ChatPanel({
 
   // 새 메시지가 추가되면 자동 스크롤 (이미 하단 근처에 있을 때만).
   // 단, open 직후 첫 메시지 도착 시점엔 강제로 맨 아래로 한 번 정렬.
+  // visibleMessages 를 관찰 — 낙관적 임시 메시지에도 즉시 스크롤이 따라간다.
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
-    if (open && !initialScrolledRef.current && messages.length > 0) {
+    if (open && !initialScrolledRef.current && visibleMessages.length > 0) {
       el.scrollTop = el.scrollHeight;
       initialScrolledRef.current = true;
       return;
@@ -125,23 +142,44 @@ export function ChatPanel({
     if (nearBottom) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [messages, open]);
+  }, [visibleMessages, open]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = draft.trim();
-    if (!trimmed || sending) return;
-    setSending(true);
+    if (!trimmed) return;
+    // 임시 id 는 음수 — 서버 id (양수) 와 절대 충돌하지 않음.
+    const tempId = --tempIdRef.current;
+    const temp: ChatMessage = {
+      id: tempId,
+      name,
+      className,
+      title,
+      content: trimmed,
+      createdAt: Date.now(),
+      mine: true,
+    };
+    setPending((prev) => [...prev, temp]);
+    setDraft("");
     setError(null);
     try {
-      const sent = await postMessage({ name, className, title, content: trimmed });
+      const sent = await postMessage({
+        name,
+        className,
+        title,
+        content: trimmed,
+      });
+      // 서버 응답 도착 — 부모 messages 에 합류. visibleMessages 가 content 매칭으로
+      // pending 의 임시 항목을 자동 숨겨주므로 setPending 정리는 다음 폴링 후에 해도 OK.
+      // 다만 명시적으로 제거해 메모리/길이 누적을 막는다.
+      setPending((prev) => prev.filter((m) => m.id !== tempId));
       onMessageSent(sent);
-      setDraft("");
     } catch (err) {
+      // 실패 — 임시 메시지 회수 + 본문 복원해 재시도 유도.
+      setPending((prev) => prev.filter((m) => m.id !== tempId));
+      setDraft(trimmed);
       const msg = err instanceof Error ? err.message : "";
       setError(translateChatError(msg));
-    } finally {
-      setSending(false);
     }
   };
 
@@ -235,12 +273,12 @@ export function ChatPanel({
           ref={listRef}
           className="flex-1 space-y-2 overflow-y-auto px-3 py-2"
         >
-          {messages.length === 0 ? (
+          {visibleMessages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
               아직 메시지가 없습니다.
             </div>
           ) : (
-            messages.map((m) => (
+            visibleMessages.map((m) => (
               <div
                 key={m.id}
                 className={`flex flex-col gap-0.5 ${m.mine ? "items-end" : "items-start"}`}
@@ -301,7 +339,7 @@ export function ChatPanel({
           />
           <button
             type="submit"
-            disabled={!draft.trim() || sending}
+            disabled={!draft.trim()}
             aria-label="전송"
             className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-zinc-300 dark:disabled:bg-zinc-700"
           >

@@ -4,7 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { ChatCircle } from "@phosphor-icons/react";
 import { ChatPanel, type ChatMessage } from "./ChatPanel";
 
-const POLL_INTERVAL_MS = 3000;
+// 패널이 닫혀 있을 땐 unread 배지 갱신용으로 느리게,
+// 열려 있을 땐 상대 메시지 수신감을 살리려 짧게 폴링.
+const POLL_INTERVAL_BG_MS = 3000;
+const POLL_INTERVAL_OPEN_MS = 1500;
 const LAST_SEEN_KEY = "chat:lastSeenId";
 
 async function fetchMessages(): Promise<ChatMessage[]> {
@@ -41,6 +44,7 @@ export function ChatButton({
   const [lastSeenId, setLastSeenId] = useState<number>(readLastSeen);
 
   // 패널이 닫혀 있어도 항상 폴링 — 새 메시지 도착 감지용.
+  // open 이 바뀌면 effect 가 다시 실행돼 즉시 한 번 fetch + 새 주기로 재시작.
   useEffect(() => {
     let cancelled = false;
     let initialized = false;
@@ -65,12 +69,15 @@ export function ChatButton({
       }
     };
     tick();
-    const interval = setInterval(tick, POLL_INTERVAL_MS);
+    const interval = setInterval(
+      tick,
+      open ? POLL_INTERVAL_OPEN_MS : POLL_INTERVAL_BG_MS,
+    );
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [open]);
 
   // 패널이 열려 있는 동안 도착하는 메시지는 즉시 읽은 것으로 처리.
   useEffect(() => {
