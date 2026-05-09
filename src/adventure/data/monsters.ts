@@ -170,6 +170,7 @@ export const MONSTERS: Record<string, Monster> = {
   "부서진 골렘": {
     name: "부서진 골렘",
     tags: ["golem"],
+    image: "/images/monster/brokengolem.webp",
     hp: 180,
     atk: 13,
     def: 6,
@@ -184,6 +185,7 @@ export const MONSTERS: Record<string, Monster> = {
   "떠도는 망령": {
     name: "떠도는 망령",
     tags: ["undead", "spirit"],
+    image: "/images/monster/wraith.webp",
     hp: 95,
     atk: 14,
     def: 3,
@@ -238,6 +240,7 @@ export const MONSTERS: Record<string, Monster> = {
   "폐허 늑대": {
     name: "폐허 늑대",
     tags: ["beast", "undead"],
+    image: "/images/monster/ruinwolf.webp",
     hp: 130,
     atk: 12,
     def: 4,
