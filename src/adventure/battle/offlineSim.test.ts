@@ -50,8 +50,13 @@ function baseInput(over: Partial<OfflineSimInput> = {}): OfflineSimInput {
     potions: {},
     turnIntervalMs: TURN,
     awayMs: 60_000, // 1분
+    luk: 0,
+    knowsRecipe: () => false,
     pickAction: () => ({ kind: "attack" }),
-    rng: () => 0, // 항상 첫 적 선택
+    // rng=0 — 첫 적 선택 + 드롭 굴림 항상 통과(0 < chance).
+    // 슬라임의 lowest chance 가 0.003 이라 모든 드롭 발동되지만 테스트는 그 효과를
+    // 직접 검증하지 않고 EXP/사망/cap 만 보므로 결과에 영향 없음.
+    rng: () => 0,
     ...over,
   };
 }

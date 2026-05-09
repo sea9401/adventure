@@ -10,6 +10,8 @@
 import { pickEnemyName, type Region } from "../data/world";
 import { MONSTERS } from "../data/monsters";
 import { POTIONS, type PotionId } from "../data/potions";
+import { type MaterialId } from "../data/materials";
+import { type ItemId } from "../data/items";
 import {
   advanceTurn,
   initialBattleState,
@@ -31,7 +33,11 @@ export type OfflineSimInput = {
   awayMs: number;
   // 자동 행동 결정 — pickAutoAction을 그대로 주입.
   pickAction: (state: BattleState) => PlayerAction;
-  // 적 선택 + 회피 등에 쓰일 RNG. 테스트에서 시드 가능.
+  // 드롭률 보정 — onBattleEnd 와 동일 공식 (1 + luk*0.01, cap 1.0).
+  luk: number;
+  // 이미 보유 중인 제작서 판정. recipe 드롭은 미보유 상태에서만 학습.
+  knowsRecipe: (recipeId: string) => boolean;
+  // 적 선택 + 드롭 굴림에 쓰일 RNG. 테스트에서 시드 가능.
   rng?: () => number;
 };
 
@@ -42,6 +48,10 @@ export type OfflineSimResult = {
   wins: number;
   killsByName: Record<string, number>;
   expGained: number;
+  goldGained: number;
+  materialsGained: Partial<Record<MaterialId, number>>;
+  equipsGained: ItemId[]; // 같은 아이템 여러 개면 중복 push.
+  recipesLearned: string[]; // 미보유였던 것만 — onApply 가 그대로 learn 호출.
   potionsConsumed: Partial<Record<PotionId, number>>;
   finalPlayerHp: number;
   died: boolean; // 도중 사망?
@@ -59,6 +69,10 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
     wins: 0,
     killsByName: {},
     expGained: 0,
+    goldGained: 0,
+    materialsGained: {},
+    equipsGained: [],
+    recipesLearned: [],
     potionsConsumed: {},
     finalPlayerHp: input.player.hp,
     died: false,
@@ -68,6 +82,9 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
   if (input.region.enemies.length === 0) return result;
 
   const potions: Partial<Record<PotionId, number>> = { ...input.potions };
+  // 같은 사이클 안에서 같은 제작서를 두 번 굴려 중복 학습되지 않도록.
+  const learnedThisSim = new Set<string>();
+  const luckMultiplier = 1 + input.luk * 0.01;
   let currentHp = input.player.hp;
   let elapsed = 0;
 
@@ -119,6 +136,29 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
         result.killsByName[enemyName] =
           (result.killsByName[enemyName] ?? 0) + 1;
         result.expGained += enemy.exp;
+        // 드롭 — onBattleEnd 와 동일 로직(LUK 멀티 + cap 1.0).
+        if (enemy.drops) {
+          for (const drop of enemy.drops) {
+            const adjustedChance = Math.min(1, drop.chance * luckMultiplier);
+            if (rng() >= adjustedChance) continue;
+            if (drop.kind === "material") {
+              result.materialsGained[drop.materialId] =
+                (result.materialsGained[drop.materialId] ?? 0) + 1;
+            } else if (drop.kind === "gold") {
+              result.goldGained += drop.amount;
+            } else if (drop.kind === "equip") {
+              result.equipsGained.push(drop.itemId);
+            } else if (drop.kind === "recipe") {
+              if (
+                input.knowsRecipe(drop.recipeId) ||
+                learnedThisSim.has(drop.recipeId)
+              )
+                continue;
+              learnedThisSim.add(drop.recipeId);
+              result.recipesLearned.push(drop.recipeId);
+            }
+          }
+        }
         currentHp = state.playerHp;
       } else {
         currentHp = 0;
@@ -140,6 +180,12 @@ export function summarizeOfflineResult(r: OfflineSimResult): string {
   const parts: string[] = [];
   if (r.wins > 0) parts.push(`처치 ${r.wins}`);
   if (r.expGained > 0) parts.push(`EXP +${r.expGained}`);
+  if (r.goldGained > 0) parts.push(`골드 +${r.goldGained}`);
+  const dropCount =
+    Object.values(r.materialsGained).reduce((a, b) => a + (b ?? 0), 0) +
+    r.equipsGained.length +
+    r.recipesLearned.length;
+  if (dropCount > 0) parts.push(`드롭 ${dropCount}`);
   const usedPotions = Object.entries(r.potionsConsumed).filter(
     ([, n]) => (n ?? 0) > 0,
   );
