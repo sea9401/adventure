@@ -142,8 +142,9 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
             const adjustedChance = Math.min(1, drop.chance * luckMultiplier);
             if (rng() >= adjustedChance) continue;
             if (drop.kind === "material") {
+              const amount = drop.amount ?? 1;
               result.materialsGained[drop.materialId] =
-                (result.materialsGained[drop.materialId] ?? 0) + 1;
+                (result.materialsGained[drop.materialId] ?? 0) + amount;
             } else if (drop.kind === "gold") {
               result.goldGained += drop.amount;
             } else if (drop.kind === "equip") {

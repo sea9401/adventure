@@ -76,10 +76,13 @@ export function onBattleEnd(
         const adjustedChance = Math.min(1, drop.chance * luckMultiplier);
         if (Math.random() >= adjustedChance) continue;
         if (drop.kind === "material") {
-          deps.inventory.addMaterial(drop.materialId, 1);
+          const amount = drop.amount ?? 1;
+          deps.inventory.addMaterial(drop.materialId, amount);
           deps.addNotification(
             "info",
-            `${MATERIALS[drop.materialId].name}을(를) 손에 넣었다.`,
+            `${MATERIALS[drop.materialId].name}${
+              amount > 1 ? ` ×${amount}` : ""
+            }을(를) 손에 넣었다.`,
           );
         } else if (drop.kind === "gold") {
           deps.characterState.addGoldFame(drop.amount, 0);

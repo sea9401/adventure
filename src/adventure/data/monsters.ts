@@ -14,7 +14,7 @@ export type MonsterTag =
 // "recipe" 드롭은 해당 제작법을 학습 (이미 알고 있으면 무시).
 // "recipe_one_of" 는 chance 가 통과하면 recipeIds 중 하나를 균등 추첨해 학습 시도.
 export type MonsterDrop =
-  | { kind: "material"; materialId: MaterialId; chance: number }
+  | { kind: "material"; materialId: MaterialId; chance: number; amount?: number }
   | { kind: "gold"; amount: number; chance: number }
   | { kind: "equip"; itemId: ItemId; chance: number }
   | { kind: "recipe"; recipeId: string; chance: number }
@@ -210,7 +210,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 3,
     exp: 60,
     drops: [
-      { kind: "material", materialId: "mana_crystal", chance: 1 },
+      { kind: "material", materialId: "mana_crystal", chance: 1, amount: 2 },
       {
         kind: "recipe_one_of",
         recipeIds: ["mana_sword", "mana_shield", "mana_spear", "mana_knuckle"],
