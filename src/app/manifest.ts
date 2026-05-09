@@ -6,16 +6,31 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "무슨게임",
     description: "어드벤처 RPG",
     start_url: "/",
+    scope: "/",
     display: "standalone",
+    orientation: "any",
     background_color: "#0a0a0a",
     theme_color: "#0a0a0a",
     lang: "ko",
+    categories: ["games", "entertainment"],
     icons: [
       {
-        src: "/icon.png",
-        sizes: "256x256",
+        src: "/icon-192.png",
+        sizes: "192x192",
         type: "image/png",
         purpose: "any",
+      },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
     ],
   };
