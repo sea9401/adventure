@@ -259,6 +259,12 @@ export function attachUnloadFlush(remote: RemoteSave) {
       const hiddenMs = Date.now() - hiddenAt;
       hiddenAt = null;
       if (hiddenMs >= RELOAD_AFTER_HIDDEN_MS) {
+        try {
+          localStorage.setItem(
+            "pending-reload-toast.v1",
+            "장시간 자리를 비워 최신 상태로 새로 불러왔습니다.",
+          );
+        } catch {}
         window.location.reload();
       }
     }

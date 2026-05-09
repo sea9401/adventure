@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { X } from "@phosphor-icons/react";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 
 type Section = { title: string; body: string };
 
@@ -41,13 +41,7 @@ const SECTIONS: Section[] = [
 ];
 
 export function HelpModal({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscapeKey(onClose);
 
   return (
     <div

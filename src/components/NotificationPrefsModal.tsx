@@ -6,9 +6,11 @@ import {
   TOAST_KIND_ORDER,
   useToastPrefs,
 } from "@/lib/notification-prefs";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 
 export function NotificationPrefsModal({ onClose }: { onClose: () => void }) {
   const { prefs, setPref } = useToastPrefs();
+  useEscapeKey(onClose);
 
   return (
     <div

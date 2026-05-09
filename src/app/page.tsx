@@ -52,7 +52,7 @@ import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { type Recipe } from "@/adventure/data/recipes";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
-import { requiredExpToNext } from "@/lib/leveling";
+import { isNewbieBonusActive, requiredExpToNext } from "@/lib/leveling";
 import { BulletinBoardView } from "@/adventure/BulletinBoardView";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 import { useNotifications } from "@/adventure/notifications/useNotifications";
@@ -509,6 +509,36 @@ function Home() {
     );
     if (id === "mom_amulet") grantTitle("unfilial");
   };
+
+  // 마운트 1회 — 신참 보너스 활성 안내, 시련 이어서 진행 안내, reload 사유 안내.
+  // 모두 한 번만 보여줘야 하므로 ref 가드 + 보여준 뒤 localStorage 플래그 정리.
+  const oneTimeNoticesShownRef = useRef(false);
+  useEffect(() => {
+    if (oneTimeNoticesShownRef.current) return;
+    oneTimeNoticesShownRef.current = true;
+    if (isNewbieBonusActive(characterState.level)) {
+      addNotification(
+        "info",
+        `신참 보너스 활성 — 5레벨 미만 동안 사냥/퀘스트 EXP ×2.`,
+      );
+    }
+    if (trial && trial.winCount > 0) {
+      addNotification(
+        "info",
+        `시련 이어서 진행 — ${trial.winCount} / ${trial.edge.battles}.`,
+      );
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const reason = localStorage.getItem("pending-reload-toast.v1");
+        if (reason) {
+          localStorage.removeItem("pending-reload-toast.v1");
+          addNotification("info", reason);
+        }
+      } catch {}
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.
   // SaveProvider 가 마운트 전에 character.v1 을 hydrate 하므로 첫 effect 의

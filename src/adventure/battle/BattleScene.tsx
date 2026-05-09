@@ -171,20 +171,33 @@ export function BattleScene({
         ref={logRef}
         className="max-h-40 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-3 text-sm dark:border-zinc-800 dark:bg-zinc-950/90"
       >
-        {state.log.map((entry, i) => (
-          <div
-            key={i}
-            className={
-              entry.kind === "player_attack"
-                ? "text-emerald-700 dark:text-emerald-400"
-                : entry.kind === "enemy_attack"
-                  ? "text-rose-700 dark:text-rose-400"
-                  : "text-zinc-600 dark:text-zinc-400"
-            }
-          >
-            {entry.text}
-          </div>
-        ))}
+        {state.log.map((entry, i) => {
+          if (entry.kind === "phase_trigger") {
+            return (
+              <div
+                key={i}
+                className="my-1 rounded border border-amber-400/60 bg-amber-100/70 px-2 py-1 text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-900/30 dark:text-amber-200"
+              >
+                <span className="mr-1">⚠</span>
+                <span className="font-semibold">{entry.text}</span>
+              </div>
+            );
+          }
+          return (
+            <div
+              key={i}
+              className={
+                entry.kind === "player_attack"
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : entry.kind === "enemy_attack"
+                    ? "text-rose-700 dark:text-rose-400"
+                    : "text-zinc-600 dark:text-zinc-400"
+              }
+            >
+              {entry.text}
+            </div>
+          );
+        })}
       </div>
 
       {recents.length > 0 && (

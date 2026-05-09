@@ -199,7 +199,7 @@ function BuyRow({
       <div className="mt-2 flex items-center gap-2">
         <div className="inline-flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
           <Coins size={12} weight="fill" className="text-yellow-500" />
-          <span className="tabular-nums">{price}</span>
+          <span className="tabular-nums">{price.toLocaleString()}</span>
           <span>/ 개</span>
         </div>
         <div className="ml-auto inline-flex items-center gap-1">
@@ -225,7 +225,7 @@ function BuyRow({
             {!isFull && (
               <span className="inline-flex items-center gap-0.5 text-xs tabular-nums">
                 <Coins size={10} weight="fill" className="text-yellow-500" />
-                {totalCost}
+                {totalCost.toLocaleString()}
               </span>
             )}
           </button>

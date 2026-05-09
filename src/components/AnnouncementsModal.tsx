@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import { Megaphone, X } from "@phosphor-icons/react";
 import {
   ANNOUNCEMENTS,
   type Announcement,
   type AnnouncementCategory,
 } from "@/lib/announcements";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 
 const CATEGORY_LABEL: Record<AnnouncementCategory, string> = {
   feature: "신규",
@@ -23,13 +23,7 @@ const CATEGORY_STYLE: Record<AnnouncementCategory, string> = {
 };
 
 export function AnnouncementsModal({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscapeKey(onClose);
 
   return (
     <div

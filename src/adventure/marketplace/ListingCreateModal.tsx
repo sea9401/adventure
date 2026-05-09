@@ -11,6 +11,7 @@ import { RECIPES, type Recipe } from "@/adventure/data/recipes";
 import type { InventoryState } from "@/adventure/inventory/useInventory";
 import type { RemoteSave } from "@/lib/storage/remote";
 import { createListing } from "./api";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 
 // 서버 MARKETPLACE_FEE_RATE 와 동기화. 0 이면 수수료 표시 숨김.
 const FEE_RATE = 0;
@@ -44,6 +45,7 @@ export function ListingCreateModal({
   onLocalDeduct: (selection: Selection, quantity: number) => void;
   showError: (msg: string) => void;
 }) {
+  useEscapeKey(onClose);
   const [selection, setSelection] = useState<Selection | null>(null);
   // 입력 중 빈 값/임시 값을 허용하기 위해 string 으로 보관 — 검증은 submit 에서.
   const [quantity, setQuantity] = useState("1");

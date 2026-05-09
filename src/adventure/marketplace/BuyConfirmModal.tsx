@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import type { Listing } from "./types";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 
 export function BuyConfirmModal({
   listing,
@@ -22,6 +23,10 @@ export function BuyConfirmModal({
   const insufficient = after < 0;
   const isRecipe = listing.itemKind === "recipe";
   const blocked = alreadyKnown === true;
+  const handleEscape = useCallback(() => {
+    if (!busy) onClose();
+  }, [busy, onClose]);
+  useEscapeKey(handleEscape);
 
   const submit = async () => {
     if (insufficient || blocked) return;

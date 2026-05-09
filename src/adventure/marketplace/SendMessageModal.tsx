@@ -6,6 +6,7 @@ import { USER_MESSAGE_MAX_LENGTH } from "@/lib/inbox-config";
 import { RECIPES } from "@/adventure/data/recipes";
 import { useGame } from "@/adventure/GameContext";
 import { sendUserMessage } from "./api";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 
 type Props = {
   initialRecipient?: string;
@@ -18,6 +19,7 @@ export function SendMessageModal({
   onClose,
   onSent,
 }: Props) {
+  useEscapeKey(onClose);
   const { crafting } = useGame();
   const shareableRecipes = crafting.state.shareable;
   const consumeShare = crafting.consumeShare;

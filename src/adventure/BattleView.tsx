@@ -269,7 +269,9 @@ export function BattleView({
           </>
         ) : (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/90 dark:text-zinc-400">
-            이곳에는 전투할 적이 없습니다.
+            {region.tags?.includes("town")
+              ? "평화로운 마을이다. 검을 거두자."
+              : "이곳엔 위협이 없다. 다른 곳으로 향하자."}
           </div>
         )}
       </div>

@@ -7,6 +7,7 @@ import { MATERIALS, type MaterialId } from "../data/materials";
 import { ITEMS, type ItemId } from "../data/items";
 import { getRecipeById } from "../data/recipes";
 import { OFFLINE_SIM_MAX_MS, type OfflineSimResult } from "./offlineSim";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 
 // 자동 사냥 켜둔 채 탭/앱을 떠난 동안 누적된 보상을 한 화면에 보여준다.
 // 알림(noti)은 작아서 놓치기 쉬워, 복귀 직후 모달로 가시화.
@@ -17,6 +18,7 @@ export function OfflineRewardsModal({
   result: OfflineSimResult;
   onClose: () => void;
 }) {
+  useEscapeKey(onClose);
   const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
   const capLabel = result.cappedByLimit
     ? `${OFFLINE_SIM_MAX_MS / 60_000}분 cap`

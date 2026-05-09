@@ -92,6 +92,12 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
     // 어긋남. 메모리 state 를 신뢰할 수 없으니 reload 로 fresh server 데이터 다시 로드.
     const unsubscribe = remote.subscribe((s) => {
       if (s.kind === "stale" && typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "pending-reload-toast.v1",
+            "다른 기기/탭에서 갱신을 감지해 새로 불러왔습니다.",
+          );
+        } catch {}
         window.location.reload();
       }
     });

@@ -58,7 +58,7 @@ export const QUESTS: Quest[] = [
       "마을에 주정뱅이가 너무 많다는 민원이 들어오고있어요. 주정뱅이 10명을 혼내주세요.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"주정뱅이", count: 10 },
-    reward: { gold: 10, fame: 1 },
+    reward: { gold: 10, fame: 1, exp: 8 },
     repeatable: true,
   },
   {
@@ -69,7 +69,7 @@ export const QUESTS: Quest[] = [
       "평야에 슬라임이 갑자기 너무 많아져서 농부들이 피해를 보고있어요. 슬라임 20마리를 처치해주세요.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"슬라임", count: 20 },
-    reward: { gold: 15, fame: 2 },
+    reward: { gold: 15, fame: 2, exp: 15 },
     repeatable: true,
   },
   {
@@ -80,7 +80,7 @@ export const QUESTS: Quest[] = [
       "마을 외곽에서 들개가 가축을 노린다는 신고가 들어왔어요. 들개 15마리를 처치해주세요.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"들개", count: 15 },
-    reward: { gold: 18, fame: 2 },
+    reward: { gold: 18, fame: 2, exp: 18 },
     repeatable: true,
   },
   {
@@ -91,7 +91,7 @@ export const QUESTS: Quest[] = [
       "두더지가 밭을 헤집어 놓아 농작물 피해가 심해요. 두더지 20마리를 처치해주세요.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"두더지", count: 20 },
-    reward: { gold: 14, fame: 2 },
+    reward: { gold: 14, fame: 2, exp: 12 },
     repeatable: true,
   },
   {

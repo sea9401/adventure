@@ -3,7 +3,7 @@ import { computeHealAmount, type Potion, type PotionId } from "../data/potions";
 import { CRIT_MULT, POWER_ATTACK_TURN_INTERVAL } from "../character/skills";
 
 export type BattleLogEntry = {
-  kind: "player_attack" | "enemy_attack" | "info";
+  kind: "player_attack" | "enemy_attack" | "info" | "phase_trigger";
   text: string;
 };
 
@@ -109,7 +109,7 @@ function applyPhaseTriggerIfAny(state: BattleState): BattleState {
     ...state,
     phaseTriggered: true,
     enemyDefBonus: state.enemyDefBonus + trigger.defBonus,
-    log: appendLog(state.log, { kind: "info", text: trigger.message }),
+    log: appendLog(state.log, { kind: "phase_trigger", text: trigger.message }),
   };
 }
 
