@@ -1,31 +1,45 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
-import { isSyncedKey, type SyncedKey } from "@/lib/storage/synced-keys";
+import { isSyncedKey } from "@/lib/storage/synced-keys";
 
 // GET /api/save — 로그인한 사용자의 모든 동기화 키-값을 한 번에 반환.
 // 클라이언트는 마운트 시 1회 호출해 Context 에 hydrate.
+// 응답: { <key>: <value>, ..., "_version": { <key>: <number> } }
+//        _version 은 동기화 키가 아니므로 클라이언트의 isSyncedKey 필터에서 자연스럽게 제외됨.
 export async function GET() {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
 
   const rows = await db
-    .select({ key: savesKv.key, value: savesKv.value })
+    .select({
+      key: savesKv.key,
+      value: savesKv.value,
+      version: savesKv.version,
+    })
     .from(savesKv)
     .where(eq(savesKv.userId, userId));
 
-  const out: Partial<Record<SyncedKey, unknown>> = {};
+  const out: Record<string, unknown> = {};
+  const versions: Record<string, number> = {};
   for (const row of rows) {
     if (isSyncedKey(row.key)) {
       out[row.key] = row.value;
+      versions[row.key] = row.version;
     }
   }
+  out["_version"] = versions;
   return Response.json(out);
 }
 
-// PATCH /api/save?key=character.v1 — 단일 키 upsert.
-// 본문: { value: <jsonb> }
+// PATCH /api/save?key=character.v2 — 단일 키 upsert + 낙관적 동시성 제어.
+// 본문: { value: <jsonb>, expectedVersion?: number | null }
+//   - expectedVersion === null: row 가 없을 거라 기대 (INSERT). 이미 있으면 409.
+//   - expectedVersion === <number>: 현재 version 과 일치할 때만 UPDATE. 불일치 → 409.
+//   - expectedVersion === undefined: 기존 호환 — 무조건 덮어쓰기 (blind upsert).
+// 성공 응답: { ok: true, version: <new number> }
+// 충돌 응답 (409): { error: "stale", currentVersion: <number | null> }
 export async function PATCH(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
@@ -36,9 +50,12 @@ export async function PATCH(req: Request) {
     return new Response(`unknown key: ${key}`, { status: 400 });
   }
 
-  let body: { value: unknown };
+  let body: { value: unknown; expectedVersion?: number | null };
   try {
-    body = (await req.json()) as { value: unknown };
+    body = (await req.json()) as {
+      value: unknown;
+      expectedVersion?: number | null;
+    };
   } catch {
     return new Response("invalid json", { status: 400 });
   }
@@ -46,15 +63,84 @@ export async function PATCH(req: Request) {
     return new Response("missing value", { status: 400 });
   }
 
-  await db
-    .insert(savesKv)
-    .values({ userId, key, value: body.value, updatedAt: new Date() })
-    .onConflictDoUpdate({
-      target: [savesKv.userId, savesKv.key],
-      set: { value: body.value, updatedAt: new Date() },
-    });
+  const now = new Date();
+  const expectedVersion = body.expectedVersion;
 
-  return Response.json({ ok: true, updatedAt: Date.now() });
+  // expectedVersion 미지정 — 기존 동작 (blind upsert).
+  if (expectedVersion === undefined) {
+    const result = await db
+      .insert(savesKv)
+      .values({ userId, key, value: body.value, version: 1, updatedAt: now })
+      .onConflictDoUpdate({
+        target: [savesKv.userId, savesKv.key],
+        set: {
+          value: body.value,
+          version: sql`${savesKv.version} + 1`,
+          updatedAt: now,
+        },
+      })
+      .returning({ version: savesKv.version });
+    return Response.json({ ok: true, version: result[0].version });
+  }
+
+  // expectedVersion === null — row 가 없을 거라 기대.
+  if (expectedVersion === null) {
+    const result = await db
+      .insert(savesKv)
+      .values({ userId, key, value: body.value, version: 1, updatedAt: now })
+      .onConflictDoNothing()
+      .returning({ version: savesKv.version });
+    if (result.length === 0) {
+      const current = await db
+        .select({ version: savesKv.version })
+        .from(savesKv)
+        .where(and(eq(savesKv.userId, userId), eq(savesKv.key, key)))
+        .limit(1);
+      return new Response(
+        JSON.stringify({
+          error: "stale",
+          currentVersion: current[0]?.version ?? null,
+        }),
+        { status: 409, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    return Response.json({ ok: true, version: result[0].version });
+  }
+
+  // expectedVersion === <number> — 그 version 과 일치할 때만 UPDATE.
+  if (typeof expectedVersion !== "number" || !Number.isInteger(expectedVersion)) {
+    return new Response("invalid expectedVersion", { status: 400 });
+  }
+  const result = await db
+    .update(savesKv)
+    .set({
+      value: body.value,
+      version: sql`${savesKv.version} + 1`,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(savesKv.userId, userId),
+        eq(savesKv.key, key),
+        eq(savesKv.version, expectedVersion),
+      ),
+    )
+    .returning({ version: savesKv.version });
+  if (result.length === 0) {
+    const current = await db
+      .select({ version: savesKv.version })
+      .from(savesKv)
+      .where(and(eq(savesKv.userId, userId), eq(savesKv.key, key)))
+      .limit(1);
+    return new Response(
+      JSON.stringify({
+        error: "stale",
+        currentVersion: current[0]?.version ?? null,
+      }),
+      { status: 409, headers: { "Content-Type": "application/json" } },
+    );
+  }
+  return Response.json({ ok: true, version: result[0].version });
 }
 
 // DELETE /api/save — 사용자의 모든 동기화 데이터 제거 (관리자 페이지에서 사용).
@@ -79,3 +165,4 @@ export async function DELETE(req: Request) {
 
   return Response.json({ ok: true });
 }
+

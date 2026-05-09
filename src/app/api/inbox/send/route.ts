@@ -2,6 +2,7 @@ import { and, count, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { marketplaceInbox, savesKv, users } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { upsertSave } from "@/lib/server/savesKv";
 import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
 import {
   USER_MESSAGE_DAILY_CAP,
@@ -205,18 +206,7 @@ export async function POST(req: Request) {
         }
         const nextShareable = shareableArr.filter((x) => x !== attachedRecipeId);
         const nextCraft = { ...craft, known: knownArr, shareable: nextShareable };
-        await tx
-          .insert(savesKv)
-          .values({
-            userId: senderId,
-            key: SAVES_CRAFTING,
-            value: nextCraft,
-            updatedAt: new Date(),
-          })
-          .onConflictDoUpdate({
-            target: [savesKv.userId, savesKv.key],
-            set: { value: nextCraft, updatedAt: new Date() },
-          });
+        await upsertSave(tx, senderId, SAVES_CRAFTING, nextCraft);
         await tx.insert(marketplaceInbox).values({
           userId: recipient.id,
           kind: "recipe_gift",

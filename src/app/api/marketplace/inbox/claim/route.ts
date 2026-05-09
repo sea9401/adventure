@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { marketplaceInbox, savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { upsertSave } from "@/lib/server/savesKv";
 import {
   addToCategory,
   getKnownArr,
@@ -130,12 +131,7 @@ export async function POST(req: Request) {
         const cur = Number((character as { gold?: unknown }).gold ?? 0);
         newGold = cur + goldTotal;
         const nextChar = { ...character, gold: newGold };
-        await tx
-          .update(savesKv)
-          .set({ value: nextChar, updatedAt: new Date() })
-          .where(
-            and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_CHARACTER)),
-          );
+        await upsertSave(tx, userId, SAVES_CHARACTER, nextChar);
       }
 
       // 인벤토리 갱신 (아이템 있을 때만).
@@ -157,18 +153,7 @@ export async function POST(req: Request) {
             [categoryKey]: addToCategory(next[categoryKey], it.id, it.quantity),
           };
         }
-        await tx
-          .insert(savesKv)
-          .values({
-            userId,
-            key: SAVES_INVENTORY,
-            value: next,
-            updatedAt: new Date(),
-          })
-          .onConflictDoUpdate({
-            target: [savesKv.userId, savesKv.key],
-            set: { value: next, updatedAt: new Date() },
-          });
+        await upsertSave(tx, userId, SAVES_INVENTORY, next);
         newInventory = next;
       }
 
@@ -205,18 +190,7 @@ export async function POST(req: Request) {
             known: Array.from(knownSet),
             shareable: shareableArr,
           };
-          await tx
-            .insert(savesKv)
-            .values({
-              userId,
-              key: SAVES_CRAFTING,
-              value: nextCraft,
-              updatedAt: new Date(),
-            })
-            .onConflictDoUpdate({
-              target: [savesKv.userId, savesKv.key],
-              set: { value: nextCraft, updatedAt: new Date() },
-            });
+          await upsertSave(tx, userId, SAVES_CRAFTING, nextCraft);
         }
       }
 

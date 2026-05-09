@@ -31,6 +31,8 @@ export const users = pgTable(
 
 // 게임 진행 상태는 키별로 분리 저장. localStorage 패턴과 동일.
 // 새 키 추가 시 마이그레이션 없이 행만 추가.
+// version — 낙관적 동시성 제어. 매 write 마다 증가. PATCH 시 클라이언트가 expectedVersion 을
+// 함께 보내고 서버가 일치할 때만 업데이트 (불일치 = 409, 다른 탭/기기에서 쓰기가 있었음).
 export const savesKv = pgTable(
   "saves_kv",
   {
@@ -39,6 +41,7 @@ export const savesKv = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     key: text("key").notNull(),
     value: jsonb("value").notNull(),
+    version: integer("version").notNull().default(0),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.key] })],

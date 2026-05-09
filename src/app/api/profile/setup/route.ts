@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { users, savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { upsertSave } from "@/lib/server/savesKv";
 import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
 import { AVATARS } from "@/adventure/profile/avatars";
 
@@ -79,18 +80,7 @@ export async function POST(req: Request) {
     }
 
     const profile = { name, gender };
-    await db
-      .insert(savesKv)
-      .values({
-        userId,
-        key: PROFILE_STORAGE_KEY,
-        value: profile,
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: [savesKv.userId, savesKv.key],
-        set: { value: profile, updatedAt: new Date() },
-      });
+    await upsertSave(db, userId, PROFILE_STORAGE_KEY, profile);
 
     return Response.json({ ok: true, profile });
   } catch (e) {

@@ -7,6 +7,7 @@ import {
   users,
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { upsertSave } from "@/lib/server/savesKv";
 import {
   MARKETPLACE_LISTING_TTL_MS,
   MARKETPLACE_PRICE_MAX,
@@ -88,18 +89,7 @@ async function sweepExpiredListings(): Promise<void> {
               ...craft,
               shareable: [...shareableArr, listing.itemId],
             };
-            await tx
-              .insert(savesKv)
-              .values({
-                userId: listing.sellerId,
-                key: SAVES_CRAFTING,
-                value: nextCraft,
-                updatedAt: new Date(),
-              })
-              .onConflictDoUpdate({
-                target: [savesKv.userId, savesKv.key],
-                set: { value: nextCraft, updatedAt: new Date() },
-              });
+            await upsertSave(tx, listing.sellerId, SAVES_CRAFTING, nextCraft);
           }
         }
         await tx.insert(marketplaceInbox).values({
@@ -315,18 +305,7 @@ export async function POST(req: Request) {
         }
         const nextShareable = shareableArr.filter((x) => x !== itemId);
         const nextCraft = { ...craft, known: knownArr, shareable: nextShareable };
-        await tx
-          .insert(savesKv)
-          .values({
-            userId,
-            key: SAVES_CRAFTING,
-            value: nextCraft,
-            updatedAt: new Date(),
-          })
-          .onConflictDoUpdate({
-            target: [savesKv.userId, savesKv.key],
-            set: { value: nextCraft, updatedAt: new Date() },
-          });
+        await upsertSave(tx, userId, SAVES_CRAFTING, nextCraft);
       } else {
         // ── equip / material 분기 ── 기존 인벤 차감 흐름.
         const invRows = await tx
@@ -359,18 +338,7 @@ export async function POST(req: Request) {
         nextInv = { ...inv, [categoryKey]: next };
 
         // 인벤토리 업데이트 — upsert (아직 행이 없을 수도).
-        await tx
-          .insert(savesKv)
-          .values({
-            userId,
-            key: SAVES_INVENTORY,
-            value: nextInv,
-            updatedAt: new Date(),
-          })
-          .onConflictDoUpdate({
-            target: [savesKv.userId, savesKv.key],
-            set: { value: nextInv, updatedAt: new Date() },
-          });
+        await upsertSave(tx, userId, SAVES_INVENTORY, nextInv);
       }
 
       // seller name 스냅샷 — users.name 우선, 없으면 character-profile.v2.name, 그것도
@@ -497,18 +465,7 @@ export async function DELETE(req: Request) {
             ...craft,
             shareable: [...shareableArr, listing.itemId],
           };
-          await tx
-            .insert(savesKv)
-            .values({
-              userId,
-              key: SAVES_CRAFTING,
-              value: nextCraft,
-              updatedAt: new Date(),
-            })
-            .onConflictDoUpdate({
-              target: [savesKv.userId, savesKv.key],
-              set: { value: nextCraft, updatedAt: new Date() },
-            });
+          await upsertSave(tx, userId, SAVES_CRAFTING, nextCraft);
         }
       } else if (listing.itemKind === "equip" || listing.itemKind === "material") {
         const invRows = await tx
@@ -521,18 +478,7 @@ export async function DELETE(req: Request) {
         const next = addToCategory(inv[categoryKey], listing.itemId, listing.quantity);
         nextInv = { ...inv, [categoryKey]: next };
 
-        await tx
-          .insert(savesKv)
-          .values({
-            userId,
-            key: SAVES_INVENTORY,
-            value: nextInv,
-            updatedAt: new Date(),
-          })
-          .onConflictDoUpdate({
-            target: [savesKv.userId, savesKv.key],
-            set: { value: nextInv, updatedAt: new Date() },
-          });
+        await upsertSave(tx, userId, SAVES_INVENTORY, nextInv);
       }
 
       // 우편함 row 도 남겨 추후 거래 이력/감사용 (수령 자동 — 이미 인벤 반영됨).

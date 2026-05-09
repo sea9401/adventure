@@ -7,6 +7,7 @@ import {
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { MARKETPLACE_FEE_RATE } from "@/lib/server/marketplace";
+import { upsertSave } from "@/lib/server/savesKv";
 
 const SAVES_CHARACTER = "character.v2";
 const SAVES_CRAFTING = "crafting.v2";
@@ -104,12 +105,7 @@ export async function POST(req: Request) {
       }
 
       // 캐릭터 골드 차감 저장.
-      await tx
-        .update(savesKv)
-        .set({ value: nextCharacter, updatedAt: new Date() })
-        .where(
-          and(eq(savesKv.userId, buyerId), eq(savesKv.key, SAVES_CHARACTER)),
-        );
+      await upsertSave(tx, buyerId, SAVES_CHARACTER, nextCharacter);
 
       // 수수료 계산 (정수 floor) + 우편함 적재.
       const fee = Math.floor(listing.price * MARKETPLACE_FEE_RATE);

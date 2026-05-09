@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { savesKv, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/server/isAdmin";
+import { upsertSave } from "@/lib/server/savesKv";
 import { isSyncedKey, type SyncedKey } from "@/lib/storage/synced-keys";
 
 async function userExists(userId: string): Promise<boolean> {
@@ -66,13 +67,7 @@ export async function PATCH(req: Request) {
     return new Response("missing value", { status: 400 });
   }
 
-  await db
-    .insert(savesKv)
-    .values({ userId, key, value: body.value, updatedAt: new Date() })
-    .onConflictDoUpdate({
-      target: [savesKv.userId, savesKv.key],
-      set: { value: body.value, updatedAt: new Date() },
-    });
+  await upsertSave(db, userId, key, body.value);
 
   return Response.json({ ok: true, updatedAt: Date.now() });
 }

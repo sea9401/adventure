@@ -40,8 +40,9 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const serverData = await remote.loadAll();
+        const { data: serverData, versions } = await remote.loadAll();
         if (cancelled) return;
+        remote.seedVersions(versions);
 
         // 서버가 비어 있고 로컬에 데이터가 있고 마이그레이션 마커가 없으면
         // 일괄 push (자동 마이그레이션). 사용자 모달 없음.
@@ -86,9 +87,18 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
       }
     })();
 
+    // 낙관적 동시성 충돌 — 다른 탭/기기가 server 를 갱신해 이 탭의 expectedVersion 이
+    // 어긋남. 메모리 state 를 신뢰할 수 없으니 reload 로 fresh server 데이터 다시 로드.
+    const unsubscribe = remote.subscribe((s) => {
+      if (s.kind === "stale" && typeof window !== "undefined") {
+        window.location.reload();
+      }
+    });
+
     return () => {
       cancelled = true;
       detach?.();
+      unsubscribe();
     };
   }, []);
 
