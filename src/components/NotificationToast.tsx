@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X } from "@phosphor-icons/react";
+import {
+  Barbell,
+  CheckCircle,
+  Info,
+  Scroll,
+  Skull,
+  Sword,
+  X,
+} from "@phosphor-icons/react";
 import type { AppNotification, NotificationKind } from "@/lib/notifications";
 import { useToastPrefs } from "@/lib/notification-prefs";
 
@@ -22,6 +30,24 @@ const TOAST_ACCENT: Record<NotificationKind, string> = {
   quest_ready: "bg-yellow-500",
   quest_complete: "bg-violet-500",
   info: "bg-sky-500",
+};
+
+const TOAST_ICON: Record<NotificationKind, React.ComponentType<{ size?: number; weight?: "fill" | "duotone" | "regular" | "bold"; className?: string }>> = {
+  battle_win: Sword,
+  battle_lose: Skull,
+  training_done: Barbell,
+  quest_ready: Scroll,
+  quest_complete: CheckCircle,
+  info: Info,
+};
+
+const TOAST_ICON_COLOR: Record<NotificationKind, string> = {
+  battle_win: "text-emerald-600 dark:text-emerald-400",
+  battle_lose: "text-rose-600 dark:text-rose-400",
+  training_done: "text-amber-600 dark:text-amber-400",
+  quest_ready: "text-yellow-600 dark:text-yellow-400",
+  quest_complete: "text-violet-600 dark:text-violet-400",
+  info: "text-sky-600 dark:text-sky-400",
 };
 
 export function NotificationToast({
@@ -77,7 +103,9 @@ export function NotificationToast({
 
   return (
     <div className="pointer-events-none fixed right-4 top-16 z-50 flex flex-col gap-2 sm:right-6">
-      {toasts.map((t) => (
+      {toasts.map((t) => {
+        const Icon = TOAST_ICON[t.kind];
+        return (
         <div
           key={t.id}
           className="pointer-events-auto relative flex max-w-[calc(100vw-2rem)] items-start gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-right sm:max-w-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
@@ -85,6 +113,11 @@ export function NotificationToast({
           <span
             aria-hidden
             className={`absolute inset-y-0 left-0 w-1 ${TOAST_ACCENT[t.kind]}`}
+          />
+          <Icon
+            size={16}
+            weight="duotone"
+            className={`mt-0.5 shrink-0 ${TOAST_ICON_COLOR[t.kind]}`}
           />
           <span className="flex-1 pt-0.5">{t.text}</span>
           <button
@@ -96,7 +129,8 @@ export function NotificationToast({
             <X size={14} weight="bold" />
           </button>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

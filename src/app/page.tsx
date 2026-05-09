@@ -932,7 +932,7 @@ function Home() {
       <RegionBackground regionId={currentRegion.id} />
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/90 px-4 py-3 sm:px-6 dark:border-zinc-800 dark:bg-zinc-950/90">
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-2">
             <button
               type="button"
               onClick={() => setTab("adventure")}
@@ -941,6 +941,16 @@ function Home() {
               <MapPin size={16} weight="fill" className="text-emerald-500" />
               {currentRegion.name}
             </button>
+            {huntingActive && currentRegion.enemies.length > 0 && (
+              <span
+                title="자동 사냥 ON"
+                aria-label="자동 사냥 진행 중"
+                className="inline-flex items-center gap-1 rounded-full border border-emerald-500/50 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300"
+              >
+                <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                사냥
+              </span>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span className="inline-flex items-center gap-1.5 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
