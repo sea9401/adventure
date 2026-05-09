@@ -222,14 +222,16 @@ export function BattleScene({
               </div>
             );
           }
+          // 크리/강공격/연타 등 [라벨] 시작은 미세 강조 — 일반 공격과 구분.
+          const hasLabel = entry.text.startsWith("[");
           return (
             <div
               key={i}
               className={
                 entry.kind === "player_attack"
-                  ? "text-emerald-700 dark:text-emerald-400"
+                  ? `text-emerald-700 dark:text-emerald-400${hasLabel ? " font-semibold" : ""}`
                   : entry.kind === "enemy_attack"
-                    ? "text-rose-700 dark:text-rose-400"
+                    ? `text-rose-700 dark:text-rose-400${hasLabel ? " font-semibold" : ""}`
                     : "text-zinc-600 dark:text-zinc-400"
               }
             >
