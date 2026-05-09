@@ -104,6 +104,7 @@ export const NPCS: Npc[] = [
     description: "안개 여관의 주인. 따뜻한 미소가 인상적.",
     greeting:
       "피곤해 보이네요. 들어와요.\n방은 비어 있어요. 침대 시트는 갓 갈아둔 거랍니다.",
+    portrait: "/images/npc/nora.webp",
   },
   {
     id: "diola_merchant",
@@ -122,6 +123,7 @@ export const NPCS: Npc[] = [
     description: "또래 친구가 없는지, 모험가에게 들러붙는다.",
     greeting:
       "아저씨! 아니, 누나? 어쨌든!\n어젯밤에 호수에서 등불이 떠다니는 걸 봤어요. 진짜로!",
+    portrait: "/images/npc/rio.webp",
   },
   {
     id: "diola_stranger",
@@ -131,6 +133,7 @@ export const NPCS: Npc[] = [
     description: "여관 구석 자리에 앉아 있는 정체 모를 사람.",
     greeting:
       "…아직 너에게 들려줄 이야기는 없어.\n호수 너머를 봤을 때, 다시 와.",
+    portrait: "/images/npc/hoodguy.webp",
   },
 ];
 
