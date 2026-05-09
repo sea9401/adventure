@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "@phosphor-icons/react";
-import type { AppNotification } from "@/lib/notifications";
+import type { AppNotification, NotificationKind } from "@/lib/notifications";
 import { useToastPrefs } from "@/lib/notification-prefs";
 
 const TOAST_DURATION_MS = 2000;
@@ -11,6 +11,17 @@ const MAX_VISIBLE_TOASTS = 3;
 type ToastItem = {
   id: string;
   text: string;
+  kind: NotificationKind;
+};
+
+// 토스트 좌측 색띠 — 종류 한 눈에 구분.
+const TOAST_ACCENT: Record<NotificationKind, string> = {
+  battle_win: "bg-emerald-500",
+  battle_lose: "bg-rose-500",
+  training_done: "bg-amber-500",
+  quest_ready: "bg-yellow-500",
+  quest_complete: "bg-violet-500",
+  info: "bg-sky-500",
 };
 
 export function NotificationToast({
@@ -43,7 +54,9 @@ export function NotificationToast({
     if (!prefsRef.current[latest.kind]) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setToasts((prev) =>
-      [...prev, { id: latest.id, text: latest.text }].slice(-MAX_VISIBLE_TOASTS),
+      [...prev, { id: latest.id, text: latest.text, kind: latest.kind }].slice(
+        -MAX_VISIBLE_TOASTS,
+      ),
     );
   }, [notifications]);
 
@@ -67,8 +80,12 @@ export function NotificationToast({
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="pointer-events-auto flex max-w-[calc(100vw-2rem)] items-start gap-2 rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-right sm:max-w-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+          className="pointer-events-auto relative flex max-w-[calc(100vw-2rem)] items-start gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-right sm:max-w-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
         >
+          <span
+            aria-hidden
+            className={`absolute inset-y-0 left-0 w-1 ${TOAST_ACCENT[t.kind]}`}
+          />
           <span className="flex-1 pt-0.5">{t.text}</span>
           <button
             type="button"

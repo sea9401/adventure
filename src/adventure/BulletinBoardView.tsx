@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Note, PaperPlaneTilt, Trash, X } from "@phosphor-icons/react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { formatRelative } from "@/lib/notifications";
 import { BULLETIN_MAX_LENGTH } from "@/lib/bulletin-config";
 import { SendMessageModal } from "@/adventure/marketplace/SendMessageModal";
@@ -128,7 +129,16 @@ export function BulletinBoardView({
       ) : null}
 
       {posts === null ? (
-        <p className="text-sm text-zinc-500">불러오는 중…</p>
+        <ul className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <li
+              key={i}
+              className="rounded-lg border border-zinc-200 bg-white/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/60"
+            >
+              <Skeleton rows={2} />
+            </li>
+          ))}
+        </ul>
       ) : posts.length === 0 ? (
         <EmptyState
           icon={<Note size={40} weight="duotone" />}

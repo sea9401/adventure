@@ -5,6 +5,7 @@ import { Crown, Sword, Trophy } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   useRankings,
   type RankingMetric,
@@ -75,11 +76,16 @@ export function RankingsView({
       )}
 
       {loading && list === null ? (
-        <Card as="section" padding="md">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            불러오는 중…
-          </p>
-        </Card>
+        <ul className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <li
+              key={i}
+              className="rounded-lg border border-zinc-200 bg-white/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/60"
+            >
+              <Skeleton rows={2} />
+            </li>
+          ))}
+        </ul>
       ) : !list || list.length === 0 ? (
         <EmptyState
           icon={<Trophy size={40} weight="duotone" />}

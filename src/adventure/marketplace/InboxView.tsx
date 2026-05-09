@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Envelope, PaperPlaneTilt } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { getRecipeById } from "@/adventure/data/recipes";
@@ -157,9 +158,16 @@ export function InboxView() {
       ) : null}
 
       {loading && items.length === 0 ? (
-        <Card padding="md">
-          <div className="text-sm text-zinc-500">로딩…</div>
-        </Card>
+        <ul className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <li
+              key={i}
+              className="rounded-lg border border-zinc-200 bg-white/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/60"
+            >
+              <Skeleton rows={2} />
+            </li>
+          ))}
+        </ul>
       ) : items.length === 0 ? (
         <EmptyState
           icon={<Envelope size={40} weight="duotone" />}
