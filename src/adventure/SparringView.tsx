@@ -17,7 +17,7 @@ import { Card } from "@/components/ui/Card";
 // - 보상/패널티/드롭/EXP/킬 카운터 전부 적용 안 됨 (onBattleEnd 가 호출되지 않음).
 // - 캐릭터 HP/MP 는 시작 시점 그대로 유지 — useBattle 결과를 외부 state 로 전파하지 않음.
 //   (시작 시 자동회복 X — 치료소 대용 악용 방지.)
-// - 패배해도 복귀 마을 이동 없음. 모달 닫으면 끝.
+// - 패배해도 복귀 마을 이동 없음. 종료 후 인라인 '재도전' 카드 노출, 나가기는 상단 SubViewHeader.
 export function SparringView({
   player,
   playerName,
@@ -25,7 +25,6 @@ export function SparringView({
   pickAutoAction,
   inventoryState,
   recentNotifications,
-  onClose,
 }: {
   player: PlayerCombat;
   playerName: string;
@@ -33,7 +32,6 @@ export function SparringView({
   pickAutoAction: (state: BattleState) => PlayerAction;
   inventoryState: InventoryState;
   recentNotifications?: AppNotification[];
-  onClose: () => void;
 }) {
   const dummy: Monster | undefined = MONSTERS[SPAR_DUMMY_ID];
 
@@ -98,40 +96,29 @@ export function SparringView({
       )}
 
       {ended && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
-          <Card padding="lg" className="w-full max-w-sm text-center">
-            <div
-              className={`text-2xl font-semibold ${
-                isWin
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-600 dark:text-rose-400"
-              }`}
-            >
-              {isWin ? "스파링 성공" : "스파링 종료"}
-            </div>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              {isWin
-                ? "더미를 깔끔하게 처리했다."
-                : "한 번 더 부딪혀 봐도 좋다."}
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                훈련장으로
-              </button>
-              <button
-                type="button"
-                onClick={startNext}
-                className="rounded-md border border-emerald-700 bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-              >
-                한 번 더
-              </button>
-            </div>
-          </Card>
-        </div>
+        <Card padding="md">
+          <div
+            className={`text-base font-semibold ${
+              isWin
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-rose-600 dark:text-rose-400"
+            }`}
+          >
+            {isWin ? "스파링 성공" : "스파링 종료"}
+          </div>
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+            {isWin
+              ? "더미를 깔끔하게 처리했다."
+              : "한 번 더 부딪혀 봐도 좋다."}
+          </p>
+          <button
+            type="button"
+            onClick={startNext}
+            className="mt-3 w-full rounded-md border border-emerald-700 bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+          >
+            재도전
+          </button>
+        </Card>
       )}
     </div>
   );

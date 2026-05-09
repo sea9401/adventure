@@ -257,7 +257,6 @@ export function TownScreen() {
           }
           inventoryState={inventory.state}
           recentNotifications={notifications.list}
-          onClose={back}
         />
       </div>
     );
