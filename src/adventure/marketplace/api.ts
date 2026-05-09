@@ -190,8 +190,6 @@ function translateError(text: string, status: number): string {
   switch (text) {
     case "slot_limit":
       return "동시 등록 슬롯 한도(10개)를 넘었습니다.";
-    case "equipped":
-      return "장착 중인 장비는 등록할 수 없습니다.";
     case "insufficient":
       return "인벤토리에 해당 수량이 없습니다.";
     case "insufficient_gold":
