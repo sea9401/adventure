@@ -135,6 +135,36 @@ export const ITEMS = {
     bonus: { def: 1, spd: 2 },
     description: "떠도는 망령이 두르고 있던 누더기 망토. 입으면 발걸음이 어딘가 가벼워진다.",
   } satisfies EquipItem,
+  sticky_cloak: {
+    name: "끈끈이 망토",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+2" },
+      { label: "민첩", value: "+2" },
+    ],
+    bonus: { def: 2, dex: 2 },
+    description: "거미줄을 촘촘히 엮은 망토. 옷자락에 닿는 공격이 미끄러진다.",
+  } satisfies EquipItem,
+  bat_hood: {
+    name: "박쥐가죽 후드",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+1" },
+      { label: "속도", value: "+2" },
+    ],
+    bonus: { def: 1, spd: 2 },
+    description: "박쥐 가죽을 이어 만든 후드. 어둠 속에서도 발이 가볍다.",
+  } satisfies EquipItem,
+  crystal_dagger: {
+    name: "수정 단검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+5" },
+      { label: "민첩", value: "+1" },
+    ],
+    bonus: { atk: 5, dex: 1 },
+    description: "단단한 수정을 깎아 만든 날카로운 단검.",
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;

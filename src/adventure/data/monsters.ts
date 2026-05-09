@@ -94,7 +94,10 @@ export const MONSTERS: Record<string, Monster> = {
     def: 2,
     spd: 7,
     exp: 4,
-    drops: [{ kind: "material", materialId: "bat_eye", chance: 0.02 }],
+    drops: [
+      { kind: "material", materialId: "bat_eye", chance: 0.02 },
+      { kind: "recipe", recipeId: "bat_hood", chance: 0.004 },
+    ],
   },
   동굴뱀: {
     name: "동굴뱀",
@@ -105,7 +108,10 @@ export const MONSTERS: Record<string, Monster> = {
     def: 2,
     spd: 5,
     exp: 5,
-    drops: [{ kind: "material", materialId: "hard_crystal", chance: 0.02 }],
+    drops: [
+      { kind: "material", materialId: "hard_crystal", chance: 0.02 },
+      { kind: "recipe", recipeId: "crystal_dagger", chance: 0.004 },
+    ],
   },
   거미: {
     name: "거미",
@@ -116,7 +122,10 @@ export const MONSTERS: Record<string, Monster> = {
     def: 3,
     spd: 6,
     exp: 6,
-    drops: [{ kind: "material", materialId: "spider_silk", chance: 0.03 }],
+    drops: [
+      { kind: "material", materialId: "spider_silk", chance: 0.03 },
+      { kind: "recipe", recipeId: "sticky_cloak", chance: 0.003 },
+    ],
   },
   산적: {
     name: "산적",

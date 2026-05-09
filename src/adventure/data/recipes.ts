@@ -59,6 +59,48 @@ export const RECIPES: Recipe[] = [
       slot: "weapon",
     },
   },
+  {
+    id: "sticky_cloak",
+    name: "끈끈이 망토 제작서",
+    description: `${ITEMS.sticky_cloak.name}을(를) 만든다. 거미줄을 촘촘히 엮어 옷감으로 짠다.`,
+    ingredients: [
+      { kind: "material", materialId: "spider_silk", count: 5 },
+      { kind: "material", materialId: "slime_chunk", count: 3 },
+    ],
+    result: {
+      kind: "equipment",
+      itemId: "sticky_cloak",
+      slot: "armor",
+    },
+  },
+  {
+    id: "bat_hood",
+    name: "박쥐가죽 후드 제작서",
+    description: `${ITEMS.bat_hood.name}을(를) 만든다. 박쥐 가죽을 이어 후드의 형태를 잡는다.`,
+    ingredients: [
+      { kind: "material", materialId: "bat_eye", count: 2 },
+      { kind: "material", materialId: "wilddog_hide", count: 2 },
+    ],
+    result: {
+      kind: "equipment",
+      itemId: "bat_hood",
+      slot: "armor",
+    },
+  },
+  {
+    id: "crystal_dagger",
+    name: "수정 단검 제작서",
+    description: `${ITEMS.crystal_dagger.name}을(를) 만든다. 단단한 수정을 깎아 들개 송곳니로 손잡이를 감싼다.`,
+    ingredients: [
+      { kind: "material", materialId: "hard_crystal", count: 2 },
+      { kind: "material", materialId: "wilddog_fang", count: 3 },
+    ],
+    result: {
+      kind: "equipment",
+      itemId: "crystal_dagger",
+      slot: "weapon",
+    },
+  },
 ];
 
 export function getRecipeById(id: string): Recipe | undefined {
