@@ -153,9 +153,9 @@ export const QUESTS: Quest[] = [
     regionId: "diola",
     title: "리오의 수집",
     description:
-      "낡은 못을 모은다는 동네 형/누나가 있다더니, 진짜 모험가였구나! 50개만 모아주면 신기한 거 알려줄게.",
+      "낡은 못을 모은다는 동네 형/누나가 있다더니, 진짜 모험가였구나! 20개만 모아주면 신기한 거 알려줄게.",
     requiredLevel: 1,
-    target: { kind: "deliver", materialId: "rusty_nail", count: 50 },
+    target: { kind: "deliver", materialId: "rusty_nail", count: 20 },
     reward: { potionCapacityBonus: 1, gold: 30, fame: 3 },
     repeatable: false,
     giverNpcId: "diola_kid",

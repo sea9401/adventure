@@ -43,7 +43,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 1,
     exp: 1,
     drops: [
-      { kind: "material", materialId: "rusty_nail", chance: 0.05 },
+      { kind: "material", materialId: "rusty_nail", chance: 0.1 },
       { kind: "recipe", recipeId: "nailed_baseball_bat", chance: 0.003 },
     ],
   },

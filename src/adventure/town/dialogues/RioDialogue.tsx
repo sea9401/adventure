@@ -6,7 +6,7 @@ import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { STRANGER_FLAG_TRIAL_STARTED } from "./StrangerDialogue";
 
 const QUEST_ID = "diola-rio-nails";
-const NEED = 50;
+const NEED = 20;
 
 type Props = {
   npc: Npc;
@@ -48,7 +48,7 @@ export function RioDialogue({
       <NpcDialogue
         npc={npc}
         onClose={onClose}
-        text={"아저씨! 아니, 형/누나! 후드 손님이 너 보내준 거지?\n낡은 못 50개만 모아서 가져다줘. 진짜 신기한 거 알려줄게. 진짜로!"}
+        text={"아저씨! 아니, 형/누나! 후드 손님이 너 보내준 거지?\n낡은 못 20개만 모아서 가져다줘. 진짜 신기한 거 알려줄게. 진짜로!"}
         primaryAction={{
           label: "받아들인다",
           onClick: () => {
@@ -67,7 +67,7 @@ export function RioDialogue({
       <NpcDialogue
         npc={npc}
         onClose={onClose}
-        text={"우와아! 진짜 50개 다 모았어?!\n약속한 거, 알려줄게. 우리 마을에서 떠도는 옛날 이야기야. 못이랑 방망이랑 합치면…"}
+        text={"우와아! 진짜 20개 다 모았어?!\n약속한 거, 알려줄게. 우리 마을에서 떠도는 옛날 이야기야. 못이랑 방망이랑 합치면…"}
         primaryAction={{
           label: "건네준다",
           onClick: () => {
@@ -87,7 +87,7 @@ export function RioDialogue({
     <NpcDialogue
       npc={npc}
       onClose={onClose}
-      text={`아직? 50개 모이면 바로 보여줄게! 진행: ${have}/${NEED}\n낡은 못은 시작 마을 주정뱅이들이 잘 떨어뜨리더라.`}
+      text={`아직? 20개 모이면 바로 보여줄게! 진행: ${have}/${NEED}\n낡은 못은 시작 마을 주정뱅이들이 잘 떨어뜨리더라.`}
     />
   );
 }
