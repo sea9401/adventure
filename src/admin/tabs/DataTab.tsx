@@ -172,7 +172,9 @@ function MonstersTable({ q }: { q: string }) {
               ? d.materialId
               : d.kind === "equip"
                 ? d.itemId
-                : `gold ${d.amount}`;
+                : d.kind === "recipe"
+                  ? `recipe ${d.recipeId}`
+                  : `gold ${d.amount}`;
           return `${id}(${d.chance})`;
         })
         .join(", ") ?? "—",
@@ -258,7 +260,13 @@ function RecipesTable({ q }: { q: string }) {
   const rows = RECIPES.filter((r) => match(q, r.id, r.name)).map((r) => [
     r.id,
     r.name,
-    r.ingredients.map((i) => `${i.materialId}×${i.count}`).join(", "),
+    r.ingredients
+      .map((i) =>
+        i.kind === "material"
+          ? `${i.materialId}×${i.count}`
+          : `${i.itemId}×${i.count}`,
+      )
+      .join(", "),
     r.result.kind === "equipment"
       ? `장비 ${r.result.itemId}`
       : `포션 ${r.result.potionId}×${r.result.quantity}`,

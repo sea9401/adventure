@@ -507,13 +507,25 @@ function Home() {
   const handleCraft = (recipe: Recipe) => {
     // 재료 검사 — 부족하면 알림만 띄우고 중단.
     for (const ing of recipe.ingredients) {
-      if (inventory.materialCount(ing.materialId) < ing.count) {
-        const name = MATERIALS[ing.materialId].name;
-        addNotification(
-          "info",
-          `재료가 부족하다 — ${name} ${ing.count}개 필요.`,
-        );
-        return;
+      if (ing.kind === "material") {
+        if (inventory.materialCount(ing.materialId) < ing.count) {
+          const name = MATERIALS[ing.materialId].name;
+          addNotification(
+            "info",
+            `재료가 부족하다 — ${name} ${ing.count}개 필요.`,
+          );
+          return;
+        }
+      } else {
+        const have = inventory.state.equipment[ing.itemId] ?? 0;
+        if (have < ing.count) {
+          const name = ITEMS[ing.itemId].name;
+          addNotification(
+            "info",
+            `재료가 부족하다 — ${name} ${ing.count}개 필요.`,
+          );
+          return;
+        }
       }
     }
     // 포션 결과는 종류별 한도(potionMax) 검사 — 가득 차 있으면 재료만
@@ -528,7 +540,11 @@ function Home() {
     }
     // 차감.
     for (const ing of recipe.ingredients) {
-      inventory.consumeMaterial(ing.materialId, ing.count);
+      if (ing.kind === "material") {
+        inventory.consumeMaterial(ing.materialId, ing.count);
+      } else {
+        inventory.consumeEquipment(ing.itemId, ing.count);
+      }
     }
     crafting.markCrafted(recipe.id);
 
@@ -580,6 +596,10 @@ function Home() {
         incrementBattleLosses: adventureLog.incrementBattleLosses,
       },
       quests: { recordKill: quests.recordKill },
+      crafting: {
+        knows: crafting.knows,
+        learnRecipe: crafting.learnRecipe,
+      },
       characterState: {
         setHp: characterStateHook.setHp,
         addExp: characterStateHook.addExp,

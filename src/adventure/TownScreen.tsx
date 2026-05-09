@@ -265,6 +265,7 @@ export function TownScreen() {
         <CraftingView
           knownIds={crafting.state.known}
           materialCounts={inventory.state.materials}
+          equipmentCounts={inventory.state.equipment}
           potionCounts={inventory.state.potions}
           potionMax={inventory.potionMax}
           onCraft={handleCraft}

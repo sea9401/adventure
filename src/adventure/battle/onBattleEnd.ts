@@ -7,6 +7,7 @@ import { MATERIALS } from "@/adventure/data/materials";
 import { ITEMS } from "@/adventure/data/items";
 import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
 import { getQuestById } from "@/adventure/data/quests";
+import { getRecipeById } from "@/adventure/data/recipes";
 import type { MapProgress } from "@/lib/map-progress";
 import type {
   NotificationKind,
@@ -26,6 +27,10 @@ export type BattleEndDeps = {
     incrementBattleLosses: () => void;
   };
   quests: { recordKill: (name: string) => string[] };
+  crafting: {
+    knows: (id: string) => boolean;
+    learnRecipe: (id: string) => void;
+  };
   characterState: {
     setHp: (n: number) => void;
     addExp: (exp: number, vit: number) => void;
@@ -80,6 +85,14 @@ export function onBattleEnd(
           deps.addNotification(
             "info",
             `${ITEMS[drop.itemId].name}을(를) 손에 넣었다!`,
+          );
+        } else if (drop.kind === "recipe") {
+          if (deps.crafting.knows(drop.recipeId)) continue;
+          deps.crafting.learnRecipe(drop.recipeId);
+          const recipe = getRecipeById(drop.recipeId);
+          deps.addNotification(
+            "info",
+            `${recipe?.name ?? drop.recipeId}을(를) 손에 넣었다!`,
           );
         }
       }

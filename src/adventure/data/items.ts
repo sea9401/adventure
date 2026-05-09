@@ -56,6 +56,16 @@ export const ITEMS = {
     bonus: { atk: 2 },
     description: "단단한 나무를 깎아 만든 묵직한 방망이.",
   } satisfies EquipItem,
+  nailed_baseball_bat: {
+    name: "못박힌 야구방망이",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+3" },
+      { label: "활력", value: "+1" },
+    ],
+    bonus: { atk: 3, vit: 1 },
+    description: "방망이 끝에 낡은 못을 잔뜩 박아 넣었다. 휘두를 때마다 묵직하다.",
+  } satisfies EquipItem,
   old_leather_armor: {
     name: "낡은 가죽갑옷",
     slot: "armor",

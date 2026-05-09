@@ -10,11 +10,13 @@ export type MonsterTag =
   | "undead"
   | "dragon";
 
-// 드롭은 세 가지 — 재료 / 골드 / 장비. chance 는 0~1.
+// 드롭은 네 가지 — 재료 / 골드 / 장비 / 제작서. chance 는 0~1.
+// "recipe" 드롭은 해당 제작법을 학습 (이미 알고 있으면 무시).
 export type MonsterDrop =
   | { kind: "material"; materialId: MaterialId; chance: number }
   | { kind: "gold"; amount: number; chance: number }
-  | { kind: "equip"; itemId: ItemId; chance: number };
+  | { kind: "equip"; itemId: ItemId; chance: number }
+  | { kind: "recipe"; recipeId: string; chance: number };
 
 export type Monster = {
   name: string;
@@ -38,7 +40,10 @@ export const MONSTERS: Record<string, Monster> = {
     def: 0,
     spd: 1,
     exp: 1,
-    drops: [{ kind: "material", materialId: "rusty_nail", chance: 0.1 }],
+    drops: [
+      { kind: "material", materialId: "rusty_nail", chance: 0.1 },
+      { kind: "recipe", recipeId: "nailed_baseball_bat", chance: 0.003 },
+    ],
   },
   슬라임: {
     name: "슬라임",

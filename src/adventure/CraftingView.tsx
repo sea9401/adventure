@@ -1,12 +1,33 @@
 "use client";
 
 import { Hammer } from "@phosphor-icons/react";
-import { ITEMS } from "./data/items";
+import { ITEMS, type ItemId } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, type PotionId } from "./data/potions";
-import { RECIPES, type Recipe } from "./data/recipes";
+import { RECIPES, type Recipe, type RecipeIngredient } from "./data/recipes";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
+
+function ingredientCount(
+  ing: RecipeIngredient,
+  materialCounts: Partial<Record<MaterialId, number>>,
+  equipmentCounts: Partial<Record<ItemId, number>>,
+): { have: number; name: string } {
+  if (ing.kind === "material") {
+    return {
+      have: materialCounts[ing.materialId] ?? 0,
+      name: MATERIALS[ing.materialId].name,
+    };
+  }
+  return {
+    have: equipmentCounts[ing.itemId] ?? 0,
+    name: ITEMS[ing.itemId].name,
+  };
+}
+
+function ingredientKey(ing: RecipeIngredient): string {
+  return ing.kind === "material" ? `m:${ing.materialId}` : `e:${ing.itemId}`;
+}
 
 function summarizeResult(r: Recipe): {
   title: string;
@@ -30,12 +51,14 @@ function summarizeResult(r: Recipe): {
 export function CraftingView({
   knownIds,
   materialCounts,
+  equipmentCounts,
   potionCounts,
   potionMax,
   onCraft,
 }: {
   knownIds: string[];
   materialCounts: Partial<Record<MaterialId, number>>;
+  equipmentCounts: Partial<Record<ItemId, number>>;
   potionCounts: Partial<Record<PotionId, number>>;
   potionMax: number;
   onCraft: (recipe: Recipe) => void;
@@ -61,7 +84,9 @@ export function CraftingView({
         {knownRecipes.map((r) => {
           const { title, meta } = summarizeResult(r);
           const hasMaterials = r.ingredients.every(
-            (ing) => (materialCounts[ing.materialId] ?? 0) >= ing.count,
+            (ing) =>
+              ingredientCount(ing, materialCounts, equipmentCounts).have >=
+              ing.count,
           );
           // 포션 결과는 종류별 한도(potionMax)에 걸리면 제작 불가.
           // 한도까지 가득 차 있으면 재료만 소비되는 버그를 막기 위해 사전 차단.
@@ -89,18 +114,22 @@ export function CraftingView({
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                   <span className="text-zinc-500 dark:text-zinc-400">재료:</span>
                   {r.ingredients.map((ing) => {
-                    const have = materialCounts[ing.materialId] ?? 0;
+                    const { have, name } = ingredientCount(
+                      ing,
+                      materialCounts,
+                      equipmentCounts,
+                    );
                     const enough = have >= ing.count;
                     return (
                       <span
-                        key={ing.materialId}
+                        key={ingredientKey(ing)}
                         className={
                           enough
                             ? "text-zinc-700 dark:text-zinc-300"
                             : "text-rose-600 dark:text-rose-400"
                         }
                       >
-                        {MATERIALS[ing.materialId].name} {have}/{ing.count}
+                        {name} {have}/{ing.count}
                       </span>
                     );
                   })}
