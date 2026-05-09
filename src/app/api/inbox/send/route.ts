@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { marketplaceInbox, savesKv, users } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
@@ -8,6 +8,9 @@ import {
   USER_MESSAGE_MAX_LENGTH,
   USER_MESSAGE_RATE_LIMIT_MS,
 } from "@/lib/inbox-config";
+import { getRecipeDef } from "@/lib/server/marketplace";
+
+const SAVES_CRAFTING = "crafting.v2";
 
 type SenderProbe = {
   usersRowExists: boolean;
@@ -78,13 +81,18 @@ async function findRecipientByName(
 }
 
 // POST /api/inbox/send — 유저 간 쪽지 1통 발송.
-//   body: { recipientName: string, text: string }
+//   body: { recipientName: string, text: string, attachedRecipeId?: string }
 // 검증: 본인 차단, 길이, rate limit (마지막 발송 + 24h 누적), 수신자 존재.
+// attachedRecipeId 가 있으면 inbox kind='recipe_gift' 로 적재 (text 는 message).
 export async function POST(req: Request) {
   const senderId = await ensureUser();
   if (!senderId) return new Response("unauthorized", { status: 401 });
 
-  let body: { recipientName?: unknown; text?: unknown };
+  let body: {
+    recipientName?: unknown;
+    text?: unknown;
+    attachedRecipeId?: unknown;
+  };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -94,13 +102,41 @@ export async function POST(req: Request) {
   const recipientNameRaw =
     typeof body.recipientName === "string" ? body.recipientName.trim() : "";
   const text = typeof body.text === "string" ? body.text.trim() : "";
+  const attachedRecipeId =
+    typeof body.attachedRecipeId === "string" && body.attachedRecipeId.length > 0
+      ? body.attachedRecipeId
+      : null;
 
   if (!recipientNameRaw) return new Response("missing recipient", { status: 400 });
-  if (!text) return new Response("empty text", { status: 400 });
+  // 첨부가 없을 때만 본문 필수. 첨부가 있으면 본문 비어도 됨.
+  if (!attachedRecipeId && !text) return new Response("empty text", { status: 400 });
   if (text.length > USER_MESSAGE_MAX_LENGTH) {
     return new Response(`too long (max ${USER_MESSAGE_MAX_LENGTH})`, {
       status: 400,
     });
+  }
+
+  // 레시피 첨부 검증 — 정의 존재 + tradable + 발송자 보유.
+  let recipeName: string | null = null;
+  if (attachedRecipeId) {
+    const recipe = getRecipeDef(attachedRecipeId);
+    if (!recipe) return new Response("recipe_not_found", { status: 400 });
+    if (recipe.tradable === false) {
+      return new Response("recipe_not_tradable", { status: 400 });
+    }
+    const [craft] = await db
+      .select({ value: savesKv.value })
+      .from(savesKv)
+      .where(
+        and(eq(savesKv.userId, senderId), eq(savesKv.key, SAVES_CRAFTING)),
+      )
+      .limit(1);
+    const knownRaw = (craft?.value as { known?: unknown } | undefined)?.known;
+    const knownArr = Array.isArray(knownRaw) ? (knownRaw as unknown[]) : [];
+    if (!knownArr.includes(attachedRecipeId)) {
+      return new Response("recipe_not_known", { status: 400 });
+    }
+    recipeName = recipe.name;
   }
 
   const { name: senderName, probe } = await resolveSenderName(senderId);
@@ -119,9 +155,10 @@ export async function POST(req: Request) {
     return new Response("self_send", { status: 400 });
   }
 
-  // rate limit — 마지막 발송 시각 + 24h 누적.
+  // rate limit — 마지막 발송 시각 + 24h 누적. recipe_gift 도 같은 한도에 포함.
   const since = new Date(Date.now() - USER_MESSAGE_RATE_LIMIT_MS);
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const senderKinds = ["user_message", "recipe_gift"];
 
   const [last] = await db
     .select({ createdAt: marketplaceInbox.createdAt })
@@ -129,7 +166,7 @@ export async function POST(req: Request) {
     .where(
       and(
         eq(marketplaceInbox.fromUserId, senderId),
-        eq(marketplaceInbox.kind, "user_message"),
+        inArray(marketplaceInbox.kind, senderKinds),
       ),
     )
     .orderBy(desc(marketplaceInbox.createdAt))
@@ -144,7 +181,7 @@ export async function POST(req: Request) {
     .where(
       and(
         eq(marketplaceInbox.fromUserId, senderId),
-        eq(marketplaceInbox.kind, "user_message"),
+        inArray(marketplaceInbox.kind, senderKinds),
         gt(marketplaceInbox.createdAt, dayAgo),
       ),
     );
@@ -152,13 +189,25 @@ export async function POST(req: Request) {
     return new Response("daily_cap", { status: 429 });
   }
 
-  await db.insert(marketplaceInbox).values({
-    userId: recipient.id,
-    kind: "user_message",
-    payload: { text },
-    fromUserId: senderId,
-    fromName: senderName,
-  });
+  if (attachedRecipeId && recipeName) {
+    // recipe_gift — text 가 있으면 message, 없으면 기본 안내.
+    await db.insert(marketplaceInbox).values({
+      userId: recipient.id,
+      kind: "recipe_gift",
+      payload: { recipe_id: attachedRecipeId, recipe_name: recipeName },
+      message: text || `${recipeName}을(를) 선물로 받았습니다.`,
+      fromUserId: senderId,
+      fromName: senderName,
+    });
+  } else {
+    await db.insert(marketplaceInbox).values({
+      userId: recipient.id,
+      kind: "user_message",
+      payload: { text },
+      fromUserId: senderId,
+      fromName: senderName,
+    });
+  }
 
   return Response.json({ ok: true, recipientName: recipient.name });
 }

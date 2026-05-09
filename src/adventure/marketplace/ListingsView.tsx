@@ -5,6 +5,7 @@ import { Storefront } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TabBar } from "@/components/ui/TabBar";
+import { formatRelativeTime } from "@/lib/format";
 import { fetchListings } from "./api";
 import type { ItemKind, Listing, SortMode } from "./types";
 
@@ -14,6 +15,7 @@ const KIND_TABS: { key: KindFilter; label: string }[] = [
   { key: "all", label: "전체" },
   { key: "equip", label: "장비" },
   { key: "material", label: "재료" },
+  { key: "recipe", label: "제작서" },
 ];
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
@@ -28,12 +30,14 @@ export function ListingsView({
   onBuyListing,
   mineOnly = false,
   currentGold,
+  knownRecipes,
 }: {
   refreshKey: number;
   onCancelListing?: (listing: Listing) => Promise<void>;
   onBuyListing?: (listing: Listing) => Promise<void>;
   mineOnly?: boolean;
   currentGold?: number;
+  knownRecipes?: string[];
 }) {
   const [kind, setKind] = useState<KindFilter>("all");
   const [sort, setSort] = useState<SortMode>("recent");
@@ -189,6 +193,10 @@ export function ListingsView({
               onCancel={onCancelListing}
               onBuy={onBuyListing}
               currentGold={currentGold}
+              alreadyKnown={
+                it.itemKind === "recipe" &&
+                !!knownRecipes?.includes(it.itemId)
+              }
             />
           ))}
         </div>
@@ -213,28 +221,39 @@ function ListingCard({
   onCancel,
   onBuy,
   currentGold,
+  alreadyKnown,
 }: {
   item: Listing;
   onCancel?: (listing: Listing) => Promise<void>;
   onBuy?: (listing: Listing) => Promise<void>;
   currentGold?: number;
+  alreadyKnown?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const insufficientGold =
     typeof currentGold === "number" && currentGold < item.price;
+  const blocked = alreadyKnown === true;
+  const isRecipe = item.itemKind === "recipe";
   return (
     <Card padding="sm">
       <div className="flex items-center gap-3">
         <span className="flex-1 min-w-0">
           <span className="block truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            {isRecipe ? "📜 " : ""}
             {item.itemName}
             {item.itemKind === "material" && item.quantity > 1 ? (
               <span className="ml-1 text-zinc-500">×{item.quantity}</span>
             ) : null}
           </span>
-          {item.isMine ? (
-            <span className="block text-xs text-emerald-600">내 매물</span>
-          ) : null}
+          <span className="mt-0.5 block text-[11px] text-zinc-500">
+            {formatRelativeTime(item.createdAt)}
+            {item.isMine ? (
+              <span className="ml-2 text-emerald-600">내 매물</span>
+            ) : null}
+            {blocked ? (
+              <span className="ml-2 text-zinc-500">이미 알고 있음</span>
+            ) : null}
+          </span>
         </span>
         <span className="shrink-0 text-right">
           <span className="block text-base font-semibold text-amber-700 dark:text-amber-400">
@@ -261,8 +280,14 @@ function ListingCard({
           ) : onBuy ? (
             <button
               type="button"
-              disabled={busy || insufficientGold}
-              title={insufficientGold ? "골드 부족" : undefined}
+              disabled={busy || insufficientGold || blocked}
+              title={
+                blocked
+                  ? "이미 알고 있는 제작서"
+                  : insufficientGold
+                    ? "골드 부족"
+                    : undefined
+              }
               onClick={async () => {
                 setBusy(true);
                 try {
@@ -272,12 +297,18 @@ function ListingCard({
                 }
               }}
               className={
-                insufficientGold
+                insufficientGold || blocked
                   ? "mt-1 cursor-not-allowed rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
                   : "mt-1 rounded-md border border-emerald-700 bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               }
             >
-              {busy ? "구매 중…" : insufficientGold ? "골드 부족" : "구매"}
+              {busy
+                ? "구매 중…"
+                : blocked
+                  ? "이미 보유"
+                  : insufficientGold
+                    ? "골드 부족"
+                    : "구매"}
             </button>
           ) : null}
         </span>

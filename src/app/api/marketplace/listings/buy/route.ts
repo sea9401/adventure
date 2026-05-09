@@ -9,6 +9,7 @@ import { ensureUser } from "@/lib/server/ensureUser";
 import { MARKETPLACE_FEE_RATE } from "@/lib/server/marketplace";
 
 const SAVES_CHARACTER = "character.v2";
+const SAVES_CRAFTING = "crafting.v2";
 
 // POST /api/marketplace/listings/buy
 //   body: { id: number }
@@ -46,6 +47,22 @@ export async function POST(req: Request) {
       }
       if (listing.sellerId === buyerId) {
         return { error: "self_buy", status: 400 as const };
+      }
+
+      // recipe 사전 차단 — 이미 알고 있으면 골드 차감 / listing 마킹 없이 종료.
+      if (listing.itemKind === "recipe") {
+        const craftRows = await tx
+          .select()
+          .from(savesKv)
+          .where(
+            and(eq(savesKv.userId, buyerId), eq(savesKv.key, SAVES_CRAFTING)),
+          );
+        const known = (craftRows[0]?.value as { known?: unknown } | undefined)
+          ?.known;
+        const knownArr = Array.isArray(known) ? (known as string[]) : [];
+        if (knownArr.includes(listing.itemId)) {
+          return { error: "already_known", status: 400 as const };
+        }
       }
 
       // 캐릭터 행 잠금 + gold 확인.

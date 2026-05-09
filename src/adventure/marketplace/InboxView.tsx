@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
+import { getRecipeById } from "@/adventure/data/recipes";
 import { useGame } from "@/adventure/GameContext";
 import { claimInbox, fetchInbox, type InboxItem } from "./api";
 import { SendMessageModal } from "./SendMessageModal";
@@ -15,12 +16,14 @@ export function InboxView() {
     remote,
     inventory,
     characterStateHook,
+    crafting,
     inbox,
     addNotification,
   } = useGame();
   const addEquipment = inventory.addEquipment;
   const addMaterial = inventory.addMaterial;
   const addGold = characterStateHook.addGold;
+  const learnRecipe = crafting.learnRecipe;
   const refreshInbox = inbox.refresh;
   const pushToast = (msg: string) => addNotification("info", msg);
 
@@ -71,6 +74,9 @@ export function InboxView() {
           }
         }
       }
+      // 레시피 학습 — 서버가 새로 추가됐다고 보고한 id 만 로컬에도 반영.
+      // learnRecipe 는 원래 idempotent 라 안전.
+      for (const id of r.recipesAdded) learnRecipe(id);
       // 토스트 — 합산 표시.
       const parts: string[] = [];
       if (r.goldAdded > 0) parts.push(`🪙 ${r.goldAdded.toLocaleString()} G`);
@@ -86,7 +92,17 @@ export function InboxView() {
       for (const [name, qty] of grouped) {
         parts.push(`${name}${qty > 1 ? ` ×${qty}` : ""}`);
       }
-      pushToast(`수령 완료 — ${parts.join(", ") || "내용 없음"}`);
+      for (const id of r.recipesAdded) {
+        const name = getRecipeById(id)?.name ?? id;
+        parts.push(`📜 ${name}`);
+      }
+      if (parts.length > 0) {
+        pushToast(`수령 완료 — ${parts.join(", ")}`);
+      } else if (r.recipesSkipped.length > 0) {
+        pushToast("이미 알고 있는 제작서입니다.");
+      } else {
+        pushToast("수령 완료");
+      }
       // 목록 새로고침 + 헤더 카운트 갱신.
       void load();
       refreshInbox();
@@ -246,6 +262,27 @@ function summarizePayload(item: InboxItem): string {
     const g = Number((p as { gold?: unknown }).gold ?? 0);
     return `🪙 판매 대금 ${g.toLocaleString()} G`;
   }
+  if (item.kind === "recipe_gift") {
+    const id = (p as { recipe_id?: unknown }).recipe_id;
+    const name =
+      typeof id === "string" ? (getRecipeById(id)?.name ?? id) : "제작서";
+    const from = item.fromName ?? "알 수 없는 발신자";
+    return `📜 ${from} 의 제작서 선물 — ${name}`;
+  }
+  if (item.kind === "listing_expired") {
+    const kind = (p as { item_kind?: unknown }).item_kind;
+    const id = (p as { item_id?: unknown }).item_id;
+    const qty = Number((p as { quantity?: unknown }).quantity ?? 0);
+    let name = typeof id === "string" ? id : "?";
+    if (kind === "recipe" && typeof id === "string") {
+      name = getRecipeById(id)?.name ?? id;
+    } else if (kind === "equip" && typeof id === "string") {
+      name = ITEMS[id as ItemId]?.name ?? id;
+    } else if (kind === "material" && typeof id === "string") {
+      name = MATERIALS[id as MaterialId]?.name ?? id;
+    }
+    return `⏰ 매물 회수 — ${name}${qty > 1 ? ` ×${qty}` : ""}`;
+  }
   if (item.kind === "purchase_item" || item.kind === "cancel_return") {
     const kind = (p as { item_kind?: unknown }).item_kind;
     const id = (p as { item_id?: unknown }).item_id;
@@ -255,8 +292,15 @@ function summarizePayload(item: InboxItem): string {
       name = ITEMS[id as ItemId]?.name ?? id;
     } else if (kind === "material" && typeof id === "string") {
       name = MATERIALS[id as MaterialId]?.name ?? id;
+    } else if (kind === "recipe" && typeof id === "string") {
+      name = getRecipeById(id)?.name ?? id;
     }
-    const prefix = item.kind === "purchase_item" ? "🎁 구매한 아이템" : "↩️ 환불";
+    const prefix =
+      item.kind === "purchase_item"
+        ? kind === "recipe"
+          ? "📜 구매한 제작서"
+          : "🎁 구매한 아이템"
+        : "↩️ 환불";
     return `${prefix} — ${name}${qty > 1 ? ` ×${qty}` : ""}`;
   }
   return "(알 수 없는 우편)";

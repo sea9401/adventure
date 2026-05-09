@@ -1,6 +1,6 @@
 // 거래소 클라이언트 타입. 서버 응답 shape 와 1:1.
 
-export type ItemKind = "equip" | "material";
+export type ItemKind = "equip" | "material" | "recipe";
 
 export type Listing = {
   id: number;

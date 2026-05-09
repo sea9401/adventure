@@ -1,16 +1,19 @@
 import { ITEMS, type ItemId, type EquipItem } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
+import { getRecipeById, type Recipe } from "@/adventure/data/recipes";
 
 // 거래 성사 수수료. 0 이면 수수료 없음 (UI 에서도 자동 숨김).
 export const MARKETPLACE_FEE_RATE = 0;
 export const MARKETPLACE_SLOT_LIMIT = 10;
 export const MARKETPLACE_PRICE_MIN = 1;
 export const MARKETPLACE_PRICE_MAX = 999_999_999;
+// 매물 자동 유찰 시간 — 등록 후 이 시간이 지나면 expired 처리 + 판매자에게 환불 우편.
+export const MARKETPLACE_LISTING_TTL_MS = 24 * 60 * 60 * 1000;
 
-export type ItemKind = "equip" | "material";
+export type ItemKind = "equip" | "material" | "recipe";
 
 export function isItemKind(s: string): s is ItemKind {
-  return s === "equip" || s === "material";
+  return s === "equip" || s === "material" || s === "recipe";
 }
 
 export function getEquipDef(id: string): EquipItem | null {
@@ -27,22 +30,32 @@ export function getMaterialDef(id: string) {
   return null;
 }
 
+export function getRecipeDef(id: string): Recipe | undefined {
+  return getRecipeById(id);
+}
+
 // 거래 가능 여부. 정의에 tradable === false 면 차단. 미지정 / true → 가능.
 export function isTradable(kind: ItemKind, id: string): boolean {
   if (kind === "equip") {
     const def = getEquipDef(id);
     return def !== null && def.tradable !== false;
   }
-  const mat = getMaterialDef(id);
-  if (!mat) return false;
-  // Material 정의에 tradable 추가 시 동일 패턴.
-  return !("tradable" in mat) || mat.tradable !== false;
+  if (kind === "material") {
+    const mat = getMaterialDef(id);
+    if (!mat) return false;
+    // Material 정의에 tradable 추가 시 동일 패턴.
+    return !("tradable" in mat) || mat.tradable !== false;
+  }
+  // recipe
+  const recipe = getRecipeDef(id);
+  return recipe !== undefined && recipe.tradable !== false;
 }
 
 // 등록 시점 표시용 이름 스냅샷.
 export function getItemName(kind: ItemKind, id: string): string | null {
   if (kind === "equip") return getEquipDef(id)?.name ?? null;
-  return getMaterialDef(id)?.name ?? null;
+  if (kind === "material") return getMaterialDef(id)?.name ?? null;
+  return getRecipeDef(id)?.name ?? null;
 }
 
 // 인벤토리 JSON 의 한 카테고리에서 item_id × quantity 만큼 차감 시도.

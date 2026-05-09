@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, lt, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   marketplaceListings,
@@ -8,6 +8,7 @@ import {
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import {
+  MARKETPLACE_LISTING_TTL_MS,
   MARKETPLACE_PRICE_MAX,
   MARKETPLACE_PRICE_MIN,
   MARKETPLACE_SLOT_LIMIT,
@@ -23,6 +24,71 @@ import {
 const SAVES_INVENTORY = "inventory.v2";
 const SAVES_CHARACTER = "character.v2";
 const SAVES_PROFILE = "character-profile.v2";
+const SAVES_CRAFTING = "crafting.v2";
+
+// 24시간 초과 active listing 을 expired 처리하고 판매자에게 환불 우편 발송.
+// listings GET 호출의 흐름 위에 lazy 하게 1회 sweep — 거래소 페이지 들어가는 누구든
+// 바로 효과를 본다. 별도 cron 없이도 동작 (트래픽 없을 때만 지연됨).
+//
+// 트랜잭션 안에서: 만료 후보 잠금 → status='expired' 마킹 → inbox 'listing_expired' INSERT.
+// 같은 listing 에 대해 두 요청이 동시에 와도 status='active' 조건부 UPDATE 가
+// 한쪽만 통과시키므로 환불 우편 중복 발송은 막힌다.
+async function sweepExpiredListings(): Promise<void> {
+  const cutoff = new Date(Date.now() - MARKETPLACE_LISTING_TTL_MS);
+  try {
+    await db.transaction(async (tx) => {
+      const candidates = await tx
+        .select()
+        .from(marketplaceListings)
+        .where(
+          and(
+            eq(marketplaceListings.status, "active"),
+            lt(marketplaceListings.createdAt, cutoff),
+          ),
+        )
+        .for("update")
+        .limit(50); // 한 sweep 당 처리 상한 — 비정상 폭주 시에도 응답 시간 제한.
+
+      if (candidates.length === 0) return;
+
+      const ids = candidates.map((r) => r.id);
+      const updated = await tx
+        .update(marketplaceListings)
+        .set({ status: "expired", closedAt: new Date() })
+        .where(
+          and(
+            sql`${marketplaceListings.id} = ANY(${ids})`,
+            eq(marketplaceListings.status, "active"),
+          ),
+        )
+        .returning({ id: marketplaceListings.id });
+
+      const updatedSet = new Set(updated.map((r) => r.id));
+      for (const listing of candidates) {
+        if (!updatedSet.has(listing.id)) continue;
+        // recipe 는 인벤 환불할 게 없음 — 알림용 row 만 만든다 (quantity:0).
+        // equip/material 은 cancel_return 과 같은 형식의 payload (수령 시 인벤 복귀).
+        await tx.insert(marketplaceInbox).values({
+          userId: listing.sellerId,
+          kind: "listing_expired",
+          payload: {
+            item_kind: listing.itemKind,
+            item_id: listing.itemId,
+            quantity: listing.itemKind === "recipe" ? 0 : listing.quantity,
+          },
+          message:
+            listing.itemKind === "recipe"
+              ? `${listing.itemName} 매물이 24시간 안에 거래되지 않아 회수되었습니다.`
+              : `${listing.itemName} — 24시간 이내 미거래로 인벤토리에 환불됩니다.`,
+          listingId: listing.id,
+        });
+      }
+    });
+  } catch (e) {
+    // sweep 실패는 응답 차단 사유 아님 — 다음 호출에서 재시도.
+    console.error("[marketplace.sweepExpiredListings] ", e);
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/marketplace/listings — 검색
@@ -36,6 +102,9 @@ const SAVES_PROFILE = "character-profile.v2";
 export async function GET(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
+
+  // 만료 매물 정리 — 본 응답 전에 한 번 sweep. 실패해도 listings 응답에는 영향 X.
+  await sweepExpiredListings();
 
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
@@ -161,9 +230,9 @@ export async function POST(req: Request) {
   ) {
     return new Response("invalid price", { status: 400 });
   }
-  // 장비는 1개만 등록 가능 (스택 개념 없음 — 계정에 같은 장비 여러 개 있어도 따로 등록).
-  if (itemKind === "equip" && quantity !== 1) {
-    return new Response("equip quantity must be 1", { status: 400 });
+  // 장비/제작서는 1개만 등록 가능 (스택 개념 없음).
+  if ((itemKind === "equip" || itemKind === "recipe") && quantity !== 1) {
+    return new Response(`${itemKind} quantity must be 1`, { status: 400 });
   }
 
   const itemName = getItemName(itemKind, itemId);
@@ -190,49 +259,66 @@ export async function POST(req: Request) {
         return { error: "slot_limit", status: 400 as const };
       }
 
-      // 인벤토리 행을 잠금. 아직 한 번도 동기화 안 한 유저면 행 자체가 없음 → 빈 인벤.
-      const invRows = await tx
-        .select()
-        .from(savesKv)
-        .where(and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_INVENTORY)))
-        .for("update");
-
-      const inv = (invRows[0]?.value ?? {}) as InventoryShape;
-
-      // 장비 장착 중인지 확인 (장비만).
-      if (itemKind === "equip") {
-        const charRows = await tx
+      // ── recipe 분기 ── 인벤 차감 없이 crafting.v2.known 검증만.
+      let nextInv: InventoryShape | null = null;
+      if (itemKind === "recipe") {
+        const craftRows = await tx
           .select()
           .from(savesKv)
           .where(
-            and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_CHARACTER)),
+            and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_CRAFTING)),
           );
-        const equippedIds = getEquippedItemIds(charRows[0]?.value ?? null);
-        if (equippedIds.has(itemId)) {
-          return { error: "equipped", status: 400 as const };
+        const known = (craftRows[0]?.value as { known?: unknown } | undefined)
+          ?.known;
+        const knownArr = Array.isArray(known) ? (known as string[]) : [];
+        if (!knownArr.includes(itemId)) {
+          return { error: "not_known", status: 400 as const };
         }
-      }
+      } else {
+        // ── equip / material 분기 ── 기존 인벤 차감 흐름.
+        const invRows = await tx
+          .select()
+          .from(savesKv)
+          .where(and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_INVENTORY)))
+          .for("update");
 
-      const categoryKey = itemKind === "equip" ? "equipment" : "materials";
-      const next = deductFromCategory(inv[categoryKey], itemId, quantity);
-      if (next === null) {
-        return { error: "insufficient", status: 400 as const };
-      }
-      const nextInv: InventoryShape = { ...inv, [categoryKey]: next };
+        const inv = (invRows[0]?.value ?? {}) as InventoryShape;
 
-      // 인벤토리 업데이트 — upsert (아직 행이 없을 수도).
-      await tx
-        .insert(savesKv)
-        .values({
-          userId,
-          key: SAVES_INVENTORY,
-          value: nextInv,
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: [savesKv.userId, savesKv.key],
-          set: { value: nextInv, updatedAt: new Date() },
-        });
+        // 장비 장착 중인지 확인 (장비만).
+        if (itemKind === "equip") {
+          const charRows = await tx
+            .select()
+            .from(savesKv)
+            .where(
+              and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_CHARACTER)),
+            );
+          const equippedIds = getEquippedItemIds(charRows[0]?.value ?? null);
+          if (equippedIds.has(itemId)) {
+            return { error: "equipped", status: 400 as const };
+          }
+        }
+
+        const categoryKey = itemKind === "equip" ? "equipment" : "materials";
+        const next = deductFromCategory(inv[categoryKey], itemId, quantity);
+        if (next === null) {
+          return { error: "insufficient", status: 400 as const };
+        }
+        nextInv = { ...inv, [categoryKey]: next };
+
+        // 인벤토리 업데이트 — upsert (아직 행이 없을 수도).
+        await tx
+          .insert(savesKv)
+          .values({
+            userId,
+            key: SAVES_INVENTORY,
+            value: nextInv,
+            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [savesKv.userId, savesKv.key],
+            set: { value: nextInv, updatedAt: new Date() },
+          });
+      }
 
       // seller name 스냅샷 — users.name 우선, 없으면 character-profile.v2.name, 그것도
       // 없으면 default.
@@ -286,6 +372,7 @@ export async function POST(req: Request) {
         price: result.listing.price,
         createdAt: result.listing.createdAt.toISOString(),
       },
+      // recipe 등록은 인벤 변화 없음 → null 그대로 전달.
       inventory: result.inventory,
     });
   } catch (e) {
@@ -340,29 +427,33 @@ export async function DELETE(req: Request) {
         return { error: "race", status: 409 as const };
       }
 
-      // 인벤토리 환불.
-      const invRows = await tx
-        .select()
-        .from(savesKv)
-        .where(and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_INVENTORY)))
-        .for("update");
-      const inv = (invRows[0]?.value ?? {}) as InventoryShape;
-      const categoryKey = listing.itemKind === "equip" ? "equipment" : "materials";
-      const next = addToCategory(inv[categoryKey], listing.itemId, listing.quantity);
-      const nextInv: InventoryShape = { ...inv, [categoryKey]: next };
+      // recipe 는 인벤 환불 없음 — 등록 시점에 차감하지도 않았음.
+      // equip/material 만 인벤토리에 복귀.
+      let nextInv: InventoryShape | null = null;
+      if (listing.itemKind === "equip" || listing.itemKind === "material") {
+        const invRows = await tx
+          .select()
+          .from(savesKv)
+          .where(and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_INVENTORY)))
+          .for("update");
+        const inv = (invRows[0]?.value ?? {}) as InventoryShape;
+        const categoryKey = listing.itemKind === "equip" ? "equipment" : "materials";
+        const next = addToCategory(inv[categoryKey], listing.itemId, listing.quantity);
+        nextInv = { ...inv, [categoryKey]: next };
 
-      await tx
-        .insert(savesKv)
-        .values({
-          userId,
-          key: SAVES_INVENTORY,
-          value: nextInv,
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: [savesKv.userId, savesKv.key],
-          set: { value: nextInv, updatedAt: new Date() },
-        });
+        await tx
+          .insert(savesKv)
+          .values({
+            userId,
+            key: SAVES_INVENTORY,
+            value: nextInv,
+            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [savesKv.userId, savesKv.key],
+            set: { value: nextInv, updatedAt: new Date() },
+          });
+      }
 
       // 우편함 row 도 남겨 추후 거래 이력/감사용 (수령 자동 — 이미 인벤 반영됨).
       await tx.insert(marketplaceInbox).values({
@@ -371,9 +462,12 @@ export async function DELETE(req: Request) {
         payload: {
           item_kind: listing.itemKind,
           item_id: listing.itemId,
-          quantity: listing.quantity,
+          quantity: listing.itemKind === "recipe" ? 0 : listing.quantity,
         },
-        message: `${listing.itemName} 등록 취소 — 인벤토리로 환불`,
+        message:
+          listing.itemKind === "recipe"
+            ? `${listing.itemName} 등록 취소`
+            : `${listing.itemName} 등록 취소 — 인벤토리로 환불`,
         listingId: listing.id,
         claimedAt: new Date(), // 자동 수령 처리 (취소는 본인이 클릭해 즉시 반영)
       });

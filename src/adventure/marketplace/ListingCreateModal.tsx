@@ -7,6 +7,7 @@ import {
   MATERIALS,
   type MaterialId,
 } from "@/adventure/data/materials";
+import { RECIPES, type Recipe } from "@/adventure/data/recipes";
 import type { InventoryState } from "@/adventure/inventory/useInventory";
 import type { EquippedSlots } from "@/adventure/character/types";
 import type { RemoteSave } from "@/lib/storage/remote";
@@ -23,11 +24,13 @@ type Selection =
       itemId: MaterialId;
       def: (typeof MATERIALS)[MaterialId];
       have: number;
-    };
+    }
+  | { kind: "recipe"; itemId: string; def: Recipe };
 
 export function ListingCreateModal({
   inventory,
   equipped,
+  knownRecipes,
   remote,
   onClose,
   onSuccess,
@@ -36,6 +39,7 @@ export function ListingCreateModal({
 }: {
   inventory: InventoryState;
   equipped: EquippedSlots | undefined;
+  knownRecipes: string[];
   remote: RemoteSave;
   onClose: () => void;
   onSuccess: () => void;
@@ -88,7 +92,20 @@ export function ListingCreateModal({
     return out.sort((a, b) => a.def.name.localeCompare(b.def.name));
   }, [inventory.materials]);
 
-  const noItems = equipOptions.length === 0 && materialOptions.length === 0;
+  const recipeOptions = useMemo<Selection[]>(() => {
+    const out: Selection[] = [];
+    for (const r of RECIPES) {
+      if (r.tradable === false) continue;
+      if (!knownRecipes.includes(r.id)) continue;
+      out.push({ kind: "recipe", itemId: r.id, def: r });
+    }
+    return out.sort((a, b) => a.def.name.localeCompare(b.def.name));
+  }, [knownRecipes]);
+
+  const noItems =
+    equipOptions.length === 0 &&
+    materialOptions.length === 0 &&
+    recipeOptions.length === 0;
 
   const priceNum = Math.floor(Number(price)) || 0;
   const fee = Math.floor(priceNum * FEE_RATE);
@@ -154,6 +171,7 @@ export function ListingCreateModal({
           <ItemPicker
             equipOptions={equipOptions}
             materialOptions={materialOptions}
+            recipeOptions={recipeOptions}
             onPick={(s) => {
               setSelection(s);
               setQuantity("1");
@@ -202,10 +220,12 @@ export function ListingCreateModal({
 function ItemPicker({
   equipOptions,
   materialOptions,
+  recipeOptions,
   onPick,
 }: {
   equipOptions: Selection[];
   materialOptions: Selection[];
+  recipeOptions: Selection[];
   onPick: (s: Selection) => void;
 }) {
   return (
@@ -221,8 +241,10 @@ function ItemPicker({
                   onClick={() => onPick(o)}
                   className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
                 >
-                  <span>{o.def.name}</span>
-                  <span className="text-xs text-zinc-500">{o.have}개 보유</span>
+                  <span>{o.kind === "equip" || o.kind === "material" ? o.def.name : ""}</span>
+                  <span className="text-xs text-zinc-500">
+                    {o.kind === "equip" || o.kind === "material" ? `${o.have}개 보유` : ""}
+                  </span>
                 </button>
               </li>
             ))}
@@ -240,8 +262,29 @@ function ItemPicker({
                   onClick={() => onPick(o)}
                   className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
                 >
-                  <span>{o.def.name}</span>
-                  <span className="text-xs text-zinc-500">{o.have}개 보유</span>
+                  <span>{o.kind === "equip" || o.kind === "material" ? o.def.name : ""}</span>
+                  <span className="text-xs text-zinc-500">
+                    {o.kind === "equip" || o.kind === "material" ? `${o.have}개 보유` : ""}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {recipeOptions.length > 0 && (
+        <section>
+          <h3 className="text-xs font-medium text-zinc-500">제작서</h3>
+          <ul className="mt-1 space-y-1">
+            {recipeOptions.map((o) => (
+              <li key={`recipe-${o.itemId}`}>
+                <button
+                  type="button"
+                  onClick={() => onPick(o)}
+                  className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
+                >
+                  <span>📜 {o.def.name}</span>
+                  <span className="text-xs text-zinc-500">제작서</span>
                 </button>
               </li>
             ))}
@@ -275,7 +318,10 @@ function PriceForm({
     <div className="mt-3 space-y-3">
       <Card padding="sm">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{selection.def.name}</span>
+          <span className="text-sm font-medium">
+            {selection.kind === "recipe" ? "📜 " : ""}
+            {selection.def.name}
+          </span>
           <button
             type="button"
             onClick={onBack}
@@ -285,8 +331,11 @@ function PriceForm({
           </button>
         </div>
         <div className="mt-1 text-xs text-zinc-500">
-          {selection.kind === "equip" ? "장비" : "재료"} · 보유 {selection.have}
-          개
+          {selection.kind === "equip"
+            ? `장비 · 보유 ${selection.have}개`
+            : selection.kind === "material"
+              ? `재료 · 보유 ${selection.have}개`
+              : "제작서 · 학습된 지식"}
         </div>
       </Card>
 

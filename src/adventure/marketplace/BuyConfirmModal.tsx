@@ -7,20 +7,24 @@ import type { Listing } from "./types";
 export function BuyConfirmModal({
   listing,
   currentGold,
+  alreadyKnown,
   onConfirm,
   onClose,
 }: {
   listing: Listing;
   currentGold: number;
+  alreadyKnown?: boolean;
   onConfirm: () => Promise<void>;
   onClose: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const after = currentGold - listing.price;
   const insufficient = after < 0;
+  const isRecipe = listing.itemKind === "recipe";
+  const blocked = alreadyKnown === true;
 
   const submit = async () => {
-    if (insufficient) return;
+    if (insufficient || blocked) return;
     setBusy(true);
     try {
       await onConfirm();
@@ -53,11 +57,17 @@ export function BuyConfirmModal({
         <div className="mt-3 space-y-2">
           <Card padding="sm">
             <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              {isRecipe ? "📜 " : ""}
               {listing.itemName}
               {listing.itemKind === "material" && listing.quantity > 1 ? (
                 <span className="ml-1 text-zinc-500">×{listing.quantity}</span>
               ) : null}
             </div>
+            {blocked ? (
+              <div className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                이미 알고 있는 제작서입니다.
+              </div>
+            ) : null}
           </Card>
 
           <dl className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -107,10 +117,16 @@ export function BuyConfirmModal({
           <button
             type="button"
             onClick={submit}
-            disabled={busy || insufficient}
+            disabled={busy || insufficient || blocked}
             className="rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
           >
-            {busy ? "구매 중…" : insufficient ? "골드 부족" : "구매"}
+            {busy
+              ? "구매 중…"
+              : blocked
+                ? "이미 보유"
+                : insufficient
+                  ? "골드 부족"
+                  : "구매"}
           </button>
         </div>
       </div>

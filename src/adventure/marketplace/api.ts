@@ -105,7 +105,13 @@ export async function buyListing(
 
 export type InboxItem = {
   id: number;
-  kind: "sale_proceeds" | "purchase_item" | "cancel_return" | "user_message";
+  kind:
+    | "sale_proceeds"
+    | "purchase_item"
+    | "cancel_return"
+    | "user_message"
+    | "recipe_gift"
+    | "listing_expired";
   payload: Record<string, unknown>;
   message: string | null;
   listingId: number | null;
@@ -129,6 +135,8 @@ export type ClaimResult = {
   claimed: number[];
   goldAdded: number;
   itemsAdded: { kind: "equip" | "material"; id: string; quantity: number }[];
+  recipesAdded: string[];
+  recipesSkipped: string[];
   newGold: number | null;
   newInventory: unknown | null;
 };
@@ -155,11 +163,12 @@ export type SendMessageResult = { ok: true; recipientName: string };
 export async function sendUserMessage(
   recipientName: string,
   text: string,
+  attachedRecipeId?: string | null,
 ): Promise<SendMessageResult> {
   const r = await fetch("/api/inbox/send", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ recipientName, text }),
+    body: JSON.stringify({ recipientName, text, attachedRecipeId }),
   });
   if (!r.ok) {
     const body = await r.text();
@@ -196,6 +205,16 @@ function translateError(text: string, status: number): string {
     case "not_tradable":
     case "not tradable":
       return "이 아이템은 거래할 수 없습니다.";
+    case "not_known":
+      return "본인이 알지 못하는 제작서는 등록할 수 없습니다.";
+    case "already_known":
+      return "이미 알고 있는 제작서입니다.";
+    case "recipe_not_found":
+      return "해당 제작서를 찾을 수 없습니다.";
+    case "recipe_not_tradable":
+      return "이 제작서는 공유할 수 없습니다.";
+    case "recipe_not_known":
+      return "본인이 알지 못하는 제작서는 보낼 수 없습니다.";
     case "not_active":
       return "이미 판매되었거나 취소된 listing 입니다.";
     case "not_found":

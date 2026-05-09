@@ -24,6 +24,7 @@ export function MarketplaceTab() {
     inventory,
     characterStateHook,
     character,
+    crafting,
     remote,
     inbox,
     addNotification,
@@ -37,6 +38,7 @@ export function MarketplaceTab() {
   const currentGold = character.gold;
   const inboxCount = inbox.count;
   const refreshInbox = inbox.refresh;
+  const knownRecipes = crafting.state.known;
   const pushToast = useCallback(
     (msg: string) => addNotification("info", msg),
     [addNotification],
@@ -82,11 +84,12 @@ export function MarketplaceTab() {
         await cancelListing(remote, listing.id);
         // 서버가 인벤토리에 환불했으므로 클라 로컬 상태도 동일 변경 — 그래야
         // useRemotePatch 가 보낼 다음 PATCH 가 일관된 값을 보낸다.
+        // recipe 는 등록 시에도 차감하지 않으므로 환불 처리도 없음.
         if (listing.itemKind === "equip") {
           if (Object.prototype.hasOwnProperty.call(ITEMS, listing.itemId)) {
             addEquipment(listing.itemId as ItemId, listing.quantity);
           }
-        } else {
+        } else if (listing.itemKind === "material") {
           if (Object.prototype.hasOwnProperty.call(MATERIALS, listing.itemId)) {
             addMaterial(listing.itemId as MaterialId, listing.quantity);
           }
@@ -141,12 +144,17 @@ export function MarketplaceTab() {
         onBuyListing={onBuy}
         mineOnly={sub === "mine"}
         currentGold={currentGold}
+        knownRecipes={knownRecipes}
       />
 
       {pendingBuy ? (
         <BuyConfirmModal
           listing={pendingBuy}
           currentGold={currentGold}
+          alreadyKnown={
+            pendingBuy.itemKind === "recipe" &&
+            knownRecipes.includes(pendingBuy.itemId)
+          }
           onConfirm={() => performBuy(pendingBuy)}
           onClose={() => setPendingBuy(null)}
         />
@@ -156,6 +164,7 @@ export function MarketplaceTab() {
         <ListingCreateModal
           inventory={inventory.state}
           equipped={equipped}
+          knownRecipes={knownRecipes}
           remote={remote}
           onClose={() => setModal(false)}
           onSuccess={() => {
@@ -166,9 +175,10 @@ export function MarketplaceTab() {
           onLocalDeduct={(s, qty) => {
             if (s.kind === "equip") {
               consumeEquipment(s.itemId as ItemId, 1);
-            } else {
+            } else if (s.kind === "material") {
               consumeMaterial(s.itemId as MaterialId, qty);
             }
+            // recipe: 인벤 차감 없음 (지식이라 본인 보유 유지)
           }}
           showError={(msg) => {
             setError(msg);

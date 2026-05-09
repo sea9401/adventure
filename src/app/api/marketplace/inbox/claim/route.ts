@@ -9,11 +9,16 @@ import {
 
 const SAVES_CHARACTER = "character.v2";
 const SAVES_INVENTORY = "inventory.v2";
+const SAVES_CRAFTING = "crafting.v2";
 
 type AddItem = {
   kind: "equip" | "material";
   id: string;
   quantity: number;
+};
+
+type AddRecipe = {
+  id: string;
 };
 
 // POST /api/marketplace/inbox/claim
@@ -69,26 +74,39 @@ export async function POST(req: Request) {
 
       let goldTotal = 0;
       const itemsToAdd: AddItem[] = [];
+      const recipesToAdd: AddRecipe[] = [];
       for (const row of rows) {
         const payload = row.payload as Record<string, unknown>;
-        // user_message: 부수효과 없음 — claimedAt 만 마킹되고 사라진다.
+        // user_message / listing_expired(recipe): 부수효과 없음 — claimedAt 만 마킹.
         if (row.kind === "sale_proceeds") {
           const g = Number(payload.gold);
           if (Number.isFinite(g) && g > 0) goldTotal += g;
         } else if (
           row.kind === "purchase_item" ||
-          row.kind === "cancel_return"
+          row.kind === "cancel_return" ||
+          row.kind === "listing_expired"
         ) {
           const k = payload.item_kind;
           const id = payload.item_id;
           const q = Number(payload.quantity);
-          if (
+          if (k === "recipe" && typeof id === "string") {
+            // purchase_item(recipe) 만 학습. listing_expired(recipe)/cancel_return(recipe)
+            // 는 quantity:0 알림이거나 환불 의미 — 학습 X.
+            if (row.kind === "purchase_item") {
+              recipesToAdd.push({ id });
+            }
+          } else if (
             (k === "equip" || k === "material") &&
             typeof id === "string" &&
             Number.isFinite(q) &&
             q > 0
           ) {
             itemsToAdd.push({ kind: k, id, quantity: q });
+          }
+        } else if (row.kind === "recipe_gift") {
+          const id = payload.recipe_id;
+          if (typeof id === "string" && id.length > 0) {
+            recipesToAdd.push({ id });
           }
         }
       }
@@ -152,6 +170,50 @@ export async function POST(req: Request) {
         newInventory = next;
       }
 
+      // 레시피 학습 (있을 때만). 이미 알고 있는 id 는 idempotent skip.
+      // 응답에는 "이번에 새로 추가된" id 만 담아 클라이언트 토스트 분기에 사용.
+      const recipesAdded: string[] = [];
+      const recipesSkipped: string[] = [];
+      if (recipesToAdd.length > 0) {
+        const craftRows = await tx
+          .select()
+          .from(savesKv)
+          .where(
+            and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_CRAFTING)),
+          )
+          .for("update");
+        const craft = (craftRows[0]?.value ?? {}) as Record<string, unknown>;
+        const knownRaw = (craft as { known?: unknown }).known;
+        const knownSet = new Set(
+          Array.isArray(knownRaw) ? (knownRaw as unknown[]).filter(
+            (v): v is string => typeof v === "string",
+          ) : [],
+        );
+        const before = knownSet.size;
+        for (const r of recipesToAdd) {
+          if (knownSet.has(r.id)) recipesSkipped.push(r.id);
+          else {
+            knownSet.add(r.id);
+            recipesAdded.push(r.id);
+          }
+        }
+        if (knownSet.size !== before) {
+          const nextCraft = { ...craft, known: Array.from(knownSet) };
+          await tx
+            .insert(savesKv)
+            .values({
+              userId,
+              key: SAVES_CRAFTING,
+              value: nextCraft,
+              updatedAt: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: [savesKv.userId, savesKv.key],
+              set: { value: nextCraft, updatedAt: new Date() },
+            });
+        }
+      }
+
       // inbox 마킹.
       const now = new Date();
       await tx
@@ -173,6 +235,8 @@ export async function POST(req: Request) {
         claimed: rows.map((r) => r.id),
         goldAdded: goldTotal,
         itemsAdded: itemsToAdd,
+        recipesAdded,
+        recipesSkipped,
         newGold,
         newInventory,
       };

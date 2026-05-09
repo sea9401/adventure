@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import { USER_MESSAGE_MAX_LENGTH } from "@/lib/inbox-config";
+import { RECIPES } from "@/adventure/data/recipes";
+import { useGame } from "@/adventure/GameContext";
 import { sendUserMessage } from "./api";
 
 type Props = {
@@ -16,16 +18,29 @@ export function SendMessageModal({
   onClose,
   onSent,
 }: Props) {
+  const { crafting } = useGame();
+  const knownRecipes = crafting.state.known;
   const [recipient, setRecipient] = useState(initialRecipient);
   const [draft, setDraft] = useState("");
+  const [attachedRecipeId, setAttachedRecipeId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  // 본인이 알고 있고 tradable !== false 인 레시피만 첨부 가능.
+  const giftable = useMemo(
+    () =>
+      RECIPES.filter(
+        (r) => r.tradable !== false && knownRecipes.includes(r.id),
+      ),
+    [knownRecipes],
+  );
+
   const trimmedRecipient = recipient.trim();
   const trimmedDraft = draft.trim();
+  // 첨부가 있으면 본문 비어도 전송 가능.
   const canSubmit =
     trimmedRecipient.length > 0 &&
-    trimmedDraft.length > 0 &&
+    (attachedRecipeId !== null || trimmedDraft.length > 0) &&
     trimmedDraft.length <= USER_MESSAGE_MAX_LENGTH &&
     !submitting;
 
@@ -34,7 +49,11 @@ export function SendMessageModal({
     setSubmitting(true);
     setErr(null);
     try {
-      const r = await sendUserMessage(trimmedRecipient, trimmedDraft);
+      const r = await sendUserMessage(
+        trimmedRecipient,
+        trimmedDraft,
+        attachedRecipeId,
+      );
       onSent?.(r.recipientName);
       onClose();
     } catch (e) {
@@ -107,6 +126,34 @@ export function SendMessageModal({
           </span>
           {err && <span className="text-rose-600">{err}</span>}
         </div>
+
+        {giftable.length > 0 && (
+          <>
+            <label className="mt-3 block text-xs text-zinc-600 dark:text-zinc-400">
+              제작서 첨부 (선물 — 무료)
+            </label>
+            <select
+              value={attachedRecipeId ?? ""}
+              onChange={(e) =>
+                setAttachedRecipeId(e.target.value ? e.target.value : null)
+              }
+              disabled={submitting}
+              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            >
+              <option value="">— 첨부 없음 —</option>
+              {giftable.map((r) => (
+                <option key={r.id} value={r.id}>
+                  📜 {r.name}
+                </option>
+              ))}
+            </select>
+            {attachedRecipeId ? (
+              <p className="mt-1 text-[11px] text-zinc-500">
+                상대가 이미 알고 있는 제작서면 자동으로 무시됩니다.
+              </p>
+            ) : null}
+          </>
+        )}
 
         <div className="mt-4 flex justify-end gap-2">
           <button
