@@ -76,6 +76,7 @@ function readInitial(raw: unknown): CharacterDynamicState {
     equipped: rehydrateEquipped(parsed.equipped),
     equippedTitleId: parsed.equippedTitleId ?? null,
     equippedSkills: parsed.equippedSkills,
+    bossAttempts: parsed.bossAttempts,
   };
 }
 
