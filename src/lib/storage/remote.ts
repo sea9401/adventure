@@ -15,6 +15,10 @@ export type RemoteSave = {
   loadAll(): Promise<Partial<Record<SyncedKey, unknown>>>;
   patch(key: SyncedKey, value: unknown): void;
   flush(): Promise<void>;
+  // unload 직전 등 비동기 await 가 보장되지 않는 컨텍스트 전용. 모든 pending PATCH 를
+  // keepalive 옵션으로 병렬 발사하고 즉시 리턴 — 결과는 무시. fetch keepalive 는
+  // 페이지 종료 후에도 브라우저가 요청을 살려 보낸다 (~64KB body 한도).
+  flushSync(): void;
   status(): RemoteSaveStatus;
   subscribe(listener: RemoteSaveListener): () => void;
 };
@@ -145,6 +149,30 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
     async flush() {
       await flushNow();
     },
+    flushSync() {
+      if (pending.size === 0) return;
+      if (_status.kind === "session-expired") return;
+      // 디바운스 타이머가 잡혀 있으면 해제 (어차피 지금 다 보냄).
+      if (flushTimer) {
+        _clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+      const snapshot = new Map(pending);
+      pending.clear();
+      // 병렬 발사 — await 없음. unload 컨텍스트라 후속 then/catch 가 실행된다 보장 없음.
+      for (const [key, value] of snapshot) {
+        try {
+          _fetch(`/api/save?key=${encodeURIComponent(key)}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ value }),
+            keepalive: true,
+          }).catch(() => {});
+        } catch {
+          // ignore
+        }
+      }
+    },
     status() {
       return _status;
     },
@@ -155,13 +183,19 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
   };
 }
 
-// 페이지 unload 시 마지막 변경분 강제 전송 (sendBeacon).
-// 모듈 로드 시 자동 등록 — 클라이언트에서만 동작.
+// 페이지 종료/숨김 시 마지막 변경분 강제 전송. fetch keepalive 옵션으로 unload 후에도
+// 요청이 살아남게 함. pagehide 와 visibilitychange→hidden 둘 다 잡아 모바일 사파리·
+// 백그라운드 탭 종료까지 커버. beforeunload 는 모바일에서 신뢰도 낮아 제외.
 export function attachUnloadFlush(remote: RemoteSave) {
   if (typeof window === "undefined") return;
-  const handler = () => {
-    remote.flush().catch(() => {});
+  const handler = () => remote.flushSync();
+  const visibilityHandler = () => {
+    if (document.visibilityState === "hidden") remote.flushSync();
   };
-  window.addEventListener("beforeunload", handler);
-  return () => window.removeEventListener("beforeunload", handler);
+  window.addEventListener("pagehide", handler);
+  document.addEventListener("visibilitychange", visibilityHandler);
+  return () => {
+    window.removeEventListener("pagehide", handler);
+    document.removeEventListener("visibilitychange", visibilityHandler);
+  };
 }

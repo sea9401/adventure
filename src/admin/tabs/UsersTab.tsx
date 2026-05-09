@@ -28,6 +28,9 @@ type TrainingPersisted = {
   points: number;
   allocated: Record<StatKey, number>;
   revertPoints: number;
+  // 누적 훈련 완료 횟수 — 칭호 마일스톤 트리거 + 단련 포인트 정합성 진단용.
+  // 기댓값: (level - 1) + completedCount = points + sum(allocated). 안 맞으면 어딘가 손실.
+  completedCount?: number;
 };
 
 const emptyTraining = (): TrainingPersisted => ({
@@ -35,6 +38,7 @@ const emptyTraining = (): TrainingPersisted => ({
   points: 0,
   allocated: { ...ZERO_ALLOCATED },
   revertPoints: 0,
+  completedCount: 0,
 });
 
 type AdminUserRow = {
@@ -456,6 +460,25 @@ function SelectedUserPanel({
               }
             />
           </Field>
+          <Field label="누적 훈련 횟수">
+            <NumberInput
+              value={training.completedCount ?? 0}
+              min={0}
+              disabled={readOnly || loading}
+              onChange={(completedCount) =>
+                onUpdateTraining({
+                  ...training,
+                  completedCount: Math.max(0, Math.floor(completedCount)),
+                })
+              }
+            />
+          </Field>
+          <Field label="기대 단련 포인트 (진단용)">
+            <ExpectedPointsHint
+              level={character.level}
+              training={training}
+            />
+          </Field>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
@@ -505,6 +528,38 @@ function SelectedUserPanel({
         onUpdateInventory={onUpdateInventory}
       />
     </>
+  );
+}
+
+// 단련 포인트 손실/복구 진단용. 기대값: (level-1) 회의 레벨업 + completedCount 회의
+// 훈련 완료 = 총 획득. 분배(allocated) 와 미사용(points) 의 합과 비교.
+// 차이가 음수면 어딘가 손실 — 그 만큼 단련 포인트로 채워주면 복구.
+function ExpectedPointsHint({
+  level,
+  training,
+}: {
+  level: number;
+  training: TrainingPersisted;
+}) {
+  const earned = Math.max(0, level - 1) + (training.completedCount ?? 0);
+  const allocated = Object.values(training.allocated).reduce((a, b) => a + b, 0);
+  const held = training.points + allocated;
+  const diff = earned - held;
+  const tone =
+    diff > 0
+      ? "text-red-600 dark:text-red-400"
+      : diff < 0
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-zinc-500";
+  return (
+    <div className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
+      <span className="font-mono">
+        {earned} = ({level} - 1) + {training.completedCount ?? 0}
+      </span>
+      <span className={`font-mono tabular-nums ${tone}`}>
+        보유 {held} · 차이 {diff >= 0 ? `+${diff}` : diff}
+      </span>
+    </div>
   );
 }
 
