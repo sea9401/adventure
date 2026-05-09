@@ -440,6 +440,7 @@ function Home() {
         ? `${name}${quantity > 1 ? ` ×${quantity}` : ""}을(를) ${total}G에 팔았다.`
         : `${name}${quantity > 1 ? ` ×${quantity}` : ""}을(를) 버렸다.`,
     );
+    if (id === "mom_amulet") grantTitle("unfilial");
   };
 
   // 레벨업 감지 — character.level 증가 시 스탯 포인트 지급 + 알림.

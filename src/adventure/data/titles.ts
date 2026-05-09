@@ -63,6 +63,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "꺾일 줄 모르는 의지. 훈련장의 전설로 불린다.",
     condition: "훈련 100회 완료",
   },
+  unfilial: {
+    id: "unfilial",
+    name: "불효자",
+    description: "어머니가 손수 챙겨 준 부적을 두 푼 돈에 넘긴 자.",
+    condition: "엄마가 준 부적을 상점에 판매",
+  },
 };
 
 // 훈련 완료 횟수 → 잠금 해제되는 칭호. completedCount 가 임계값 도달 시 적용.
