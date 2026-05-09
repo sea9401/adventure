@@ -54,6 +54,7 @@ export function TownScreen() {
     handleSellEquipment,
     handleAcceptQuest,
     handleClaimQuest,
+    shopUnlocks,
   } = useGame();
 
   if (!isTown) {
@@ -313,6 +314,7 @@ export function TownScreen() {
         <ShopView
           gold={character.gold}
           inventory={inventory.state}
+          isMaterialBuyable={shopUnlocks.isUnlocked}
           onPurchasePotion={handlePurchasePotion}
           onPurchaseMaterial={handlePurchaseMaterial}
           onSellPotion={handleSellPotion}

@@ -9,7 +9,18 @@ const POTION_SELL: Partial<Record<PotionId, number>> = {
   potion_heal_s: 1,
 };
 
-const MATERIAL_SELL: Partial<Record<MaterialId, number>> = {};
+const MATERIAL_SELL: Partial<Record<MaterialId, number>> = {
+  // 0G 항목(나뭇가지/슬라임 조각/낡은 못)은 생략 — 디폴트가 0.
+  slime_core: 1,
+  wilddog_hide: 1,
+  wilddog_fang: 2,
+  spider_silk: 2,
+  bat_eye: 2,
+  hard_crystal: 3,
+  fairy_dust: 3,
+  ruin_fragment: 4,
+  soul_crystal: 5,
+};
 
 const ITEM_SELL: Partial<Record<ItemId, number>> = {};
 

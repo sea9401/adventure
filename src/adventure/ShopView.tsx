@@ -38,6 +38,7 @@ const SELL_TABS: { key: SellCategoryKey; label: string }[] = [
 export function ShopView({
   gold,
   inventory,
+  isMaterialBuyable,
   onPurchasePotion,
   onPurchaseMaterial,
   onSellPotion,
@@ -46,6 +47,7 @@ export function ShopView({
 }: {
   gold: number;
   inventory: InventoryState;
+  isMaterialBuyable: (id: MaterialId) => boolean;
   onPurchasePotion: (id: PotionId, quantity: number) => void;
   onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
   onSellPotion: (id: PotionId, quantity: number) => void;
@@ -66,6 +68,7 @@ export function ShopView({
         <BuyTab
           gold={gold}
           inventory={inventory}
+          isMaterialBuyable={isMaterialBuyable}
           onPurchasePotion={onPurchasePotion}
           onPurchaseMaterial={onPurchaseMaterial}
         />
@@ -85,16 +88,19 @@ export function ShopView({
 function BuyTab({
   gold,
   inventory,
+  isMaterialBuyable,
   onPurchasePotion,
   onPurchaseMaterial,
 }: {
   gold: number;
   inventory: InventoryState;
+  isMaterialBuyable: (id: MaterialId) => boolean;
   onPurchasePotion: (id: PotionId, quantity: number) => void;
   onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
 }) {
+  // 구매 가능 재료 = 항상 취급(`inShop`) 또는 누적 100개 이상 판매로 잠금 해제된 것.
   const materialIds = (Object.keys(MATERIALS) as MaterialId[]).filter(
-    (id) => MATERIALS[id].inShop,
+    (id) => MATERIALS[id].inShop || isMaterialBuyable(id),
   );
   const cap = potionMax(inventory.potionCapacityBonus ?? 0);
   return (

@@ -63,6 +63,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "꺾일 줄 모르는 의지. 훈련장의 전설로 불린다.",
     condition: "훈련 200회 완료",
   },
+  merchant: {
+    id: "merchant",
+    name: "상인",
+    description: "상점에 같은 물건을 잔뜩 넘겨 단골이 된 자.",
+    condition: "한 종류의 재료를 상점에 100개 이상 판매",
+  },
   unfilial: {
     id: "unfilial",
     name: "불효자",

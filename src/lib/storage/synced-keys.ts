@@ -12,6 +12,7 @@ export const SYNCED_KEYS = [
   "map.v2",
   "edge-unlocks.v2",
   "storyFlags.v2",
+  "shop.unlocks.v1",
 ] as const;
 
 export type SyncedKey = (typeof SYNCED_KEYS)[number];

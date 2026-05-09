@@ -19,6 +19,7 @@ import type { useInventory } from "@/adventure/inventory/useInventory";
 import type { useNotifications } from "@/adventure/notifications/useNotifications";
 import type { useProfile } from "@/adventure/profile/useProfile";
 import type { useQuests } from "@/adventure/quests/useQuests";
+import type { useShopUnlocks } from "@/adventure/shop/useShopUnlocks";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import type { useTraining } from "@/adventure/training/useTraining";
 import type { TrialEdge } from "@/adventure/TrialView";
@@ -51,6 +52,7 @@ export type GameCtx = {
   notifications: ReturnType<typeof useNotifications>;
   edgeUnlocks: ReturnType<typeof useEdgeUnlocks>;
   storyFlags: ReturnType<typeof useStoryFlags>;
+  shopUnlocks: ReturnType<typeof useShopUnlocks>;
   autoPotion: ReturnType<typeof useAutoPotionConfig>;
   remote: RemoteSave;
   inbox: ReturnType<typeof useInboxCount>;

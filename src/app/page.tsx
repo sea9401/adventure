@@ -91,6 +91,7 @@ import {
 import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
+import { useShopUnlocks } from "@/adventure/shop/useShopUnlocks";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
@@ -191,6 +192,7 @@ function Home() {
   const notifications = useNotifications();
   const edgeUnlocks = useEdgeUnlocks();
   const storyFlags = useStoryFlags();
+  const shopUnlocks = useShopUnlocks();
 
   // 마을 탭에 있는데 현재 위치가 마을이 아니면 서브뷰 강제 종료
   useEffect(() => {
@@ -426,6 +428,16 @@ function Home() {
         ? `${MATERIALS[id].name} ×${quantity}을(를) ${total}G에 팔았다.`
         : `${MATERIALS[id].name} ×${quantity}을(를) 버렸다.`,
     );
+    // 누적 판매량 100 도달 시 상점에서 구매 가능. 처음 도달한 순간만 알림.
+    // 임계치를 처음 넘긴 시점에 '상인' 칭호도 함께 부여 (이미 보유면 idempotent).
+    const crossed = shopUnlocks.recordSale(id, quantity);
+    if (crossed) {
+      addNotification(
+        "info",
+        `상점에서 ${MATERIALS[id].name}을(를) 취급하기 시작했다.`,
+      );
+      grantTitle("merchant");
+    }
   };
 
   const handleSellEquipment = (id: ItemId, quantity: number) => {
@@ -741,6 +753,7 @@ function Home() {
     notifications,
     edgeUnlocks,
     storyFlags,
+    shopUnlocks,
     autoPotion,
     remote,
     inbox,
