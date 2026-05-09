@@ -198,6 +198,53 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "diola_elder",
   },
+  // ── 디올라 길드 게시판 — 반복 의뢰 ────────────────────────────────────
+  // 호수·폐허 두 인접 지역의 적을 디올라 거점에서 처리. 폐허 적 3종은 트라이얼
+  // 통과 후에야 실제로 잡을 수 있어, 길드판 노출이 트라이얼 동기 강화에도 기여.
+  {
+    id: "diola-lake-nymph",
+    regionId: "diola",
+    title: "호숫가의 노랫소리",
+    description:
+      "안개 너머에서 노랫소리가 짙어지고 있어요. 어부들이 그물을 거두지 못하고 있습니다. 호수 님프 15을 잠재워 주세요.",
+    requiredLevel: 7,
+    target: { kind: "kill", monsterName: "호수 님프", count: 15 },
+    reward: { gold: 30, fame: 5, exp: 30 },
+    repeatable: true,
+  },
+  {
+    id: "diola-ruin-wolves",
+    regionId: "diola",
+    title: "폐허의 야성",
+    description:
+      "폐허 어귀에서 늑대들이 떼를 지어 마을 쪽으로 내려옵니다. 15마리를 정리해 주세요.",
+    requiredLevel: 9,
+    target: { kind: "kill", monsterName: "폐허 늑대", count: 15 },
+    reward: { gold: 40, fame: 6, exp: 40 },
+    repeatable: true,
+  },
+  {
+    id: "diola-wandering-wraiths",
+    regionId: "diola",
+    title: "떠도는 자들",
+    description:
+      "안개 짙은 밤마다 폐허에서 새어 나온 망령이 디올라까지 흘러옵니다. 12체를 잠재워 주세요.",
+    requiredLevel: 9,
+    target: { kind: "kill", monsterName: "떠도는 망령", count: 12 },
+    reward: { gold: 50, fame: 7, exp: 50 },
+    repeatable: true,
+  },
+  {
+    id: "diola-broken-golems",
+    regionId: "diola",
+    title: "잊힌 수호자",
+    description:
+      "폐허를 지키던 골렘들이 깨어나 무너진 돌담을 짓밟고 있습니다. 10체를 부숴 주세요.",
+    requiredLevel: 9,
+    target: { kind: "kill", monsterName: "부서진 골렘", count: 10 },
+    reward: { gold: 60, fame: 8, exp: 60 },
+    repeatable: true,
+  },
 ];
 
 // 길드 게시판 노출용 — NPC 전속 퀘스트는 제외, kill 형만 노출.
