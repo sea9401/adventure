@@ -10,13 +10,15 @@ export type MonsterTag =
   | "undead"
   | "dragon";
 
-// 드롭은 네 가지 — 재료 / 골드 / 장비 / 제작서. chance 는 0~1.
+// 드롭은 다섯 가지 — 재료 / 골드 / 장비 / 제작서 / 제작서 풀(랜덤 1). chance 는 0~1.
 // "recipe" 드롭은 해당 제작법을 학습 (이미 알고 있으면 무시).
+// "recipe_one_of" 는 chance 가 통과하면 recipeIds 중 하나를 균등 추첨해 학습 시도.
 export type MonsterDrop =
   | { kind: "material"; materialId: MaterialId; chance: number }
   | { kind: "gold"; amount: number; chance: number }
   | { kind: "equip"; itemId: ItemId; chance: number }
-  | { kind: "recipe"; recipeId: string; chance: number };
+  | { kind: "recipe"; recipeId: string; chance: number }
+  | { kind: "recipe_one_of"; recipeIds: string[]; chance: number };
 
 export type Monster = {
   name: string;
@@ -192,10 +194,13 @@ export const MONSTERS: Record<string, Monster> = {
     def: 5,
     spd: 3,
     exp: 9,
+    drops: [
+      { kind: "material", materialId: "mana_crystal", chance: 0.03 },
+    ],
   },
   // 깊은 동굴 보스 — region.boss 도전 버튼으로만 진입. 일반 인카운터 풀에선 제외.
   // 일일 도전 횟수 제한이 region.boss.dailyEntryLimit 으로 정해진다.
-  // 보상(드랍)은 추후 광물 강화 라인 도입 시 추가.
+  // 처치 시 항상 마정석 1 + 마정석 무기 제작서 4종 중 1종 학습 (이미 안다면 무시).
   "광맥의 수호자": {
     name: "광맥의 수호자",
     tags: ["golem"],
@@ -204,6 +209,14 @@ export const MONSTERS: Record<string, Monster> = {
     def: 10,
     spd: 3,
     exp: 60,
+    drops: [
+      { kind: "material", materialId: "mana_crystal", chance: 1 },
+      {
+        kind: "recipe_one_of",
+        recipeIds: ["mana_sword", "mana_shield", "mana_spear", "mana_knuckle"],
+        chance: 1,
+      },
+    ],
   },
   "폐허 늑대": {
     name: "폐허 늑대",

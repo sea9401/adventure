@@ -132,6 +132,35 @@ export const RECIPES: Recipe[] = [
       slot: "accessory",
     },
   },
+  // 마정석 무기 4종 — 광맥의 수호자 보스 보상 라인. 모두 마정석 ×3 으로 제작.
+  {
+    id: "mana_sword",
+    name: "마정석 검 제작서",
+    description: `${ITEMS.mana_sword.name}을(를) 만든다. 마정석을 칼날 형태로 깎아 자루에 끼운다.`,
+    ingredients: [{ kind: "material", materialId: "mana_crystal", count: 3 }],
+    result: { kind: "equipment", itemId: "mana_sword", slot: "weapon" },
+  },
+  {
+    id: "mana_shield",
+    name: "마정석 방패 제작서",
+    description: `${ITEMS.mana_shield.name}을(를) 만든다. 마정석을 두텁게 다져 방패의 중심에 박아 넣는다.`,
+    ingredients: [{ kind: "material", materialId: "mana_crystal", count: 3 }],
+    result: { kind: "equipment", itemId: "mana_shield", slot: "weapon" },
+  },
+  {
+    id: "mana_spear",
+    name: "마정석 창 제작서",
+    description: `${ITEMS.mana_spear.name}을(를) 만든다. 마정석을 길고 가늘게 깎아 창대 끝에 박는다.`,
+    ingredients: [{ kind: "material", materialId: "mana_crystal", count: 3 }],
+    result: { kind: "equipment", itemId: "mana_spear", slot: "weapon" },
+  },
+  {
+    id: "mana_knuckle",
+    name: "마정석 너클 제작서",
+    description: `${ITEMS.mana_knuckle.name}을(를) 만든다. 마정석 조각을 손등 너클의 면에 박아 고정한다.`,
+    ingredients: [{ kind: "material", materialId: "mana_crystal", count: 3 }],
+    result: { kind: "equipment", itemId: "mana_knuckle", slot: "weapon" },
+  },
 ];
 
 export function getRecipeById(id: string): Recipe | undefined {

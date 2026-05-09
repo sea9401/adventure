@@ -98,6 +98,20 @@ export function onBattleEnd(
             "info",
             `${recipe?.name ?? drop.recipeId}을(를) 손에 넣었다!`,
           );
+        } else if (drop.kind === "recipe_one_of") {
+          // 풀에서 1개 균등 추첨 후 학습 시도. 이미 알고 있으면 무시 — 중복 학습 X.
+          // (다음에 다른 것이 나올 때까지 빈손) — 풀에서 미보유 우선 추첨은 의도적으로 X,
+          // 운에 맡기는 게 도전의 일부.
+          if (drop.recipeIds.length === 0) continue;
+          const pick =
+            drop.recipeIds[Math.floor(Math.random() * drop.recipeIds.length)];
+          if (deps.crafting.knows(pick)) continue;
+          deps.crafting.learnRecipe(pick);
+          const recipe = getRecipeById(pick);
+          deps.addNotification(
+            "info",
+            `${recipe?.name ?? pick}을(를) 손에 넣었다!`,
+          );
         }
       }
     }

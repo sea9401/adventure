@@ -187,6 +187,49 @@ export const ITEMS = {
     bonus: { vit: 3, luk: 2 },
     description: "활력의 반지에 요정가루의 가호를 입힌 것. 끼고 있으면 몸도, 운도 따른다.",
   } satisfies EquipItem,
+
+  // 마정석 무기 4종 — 광맥의 수호자 처치 보상으로 풀리는 동굴 강화 라인.
+  // 모두 weapon 슬롯, atk +7 공통 + 보조 스탯이 다름.
+  mana_sword: {
+    name: "마정석 검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+7" },
+      { label: "근력", value: "+3" },
+    ],
+    bonus: { atk: 7, str: 3 },
+    description: "마정석을 칼날에 박아 넣은 한손검. 휘두르면 묵직한 무게가 손에 실린다.",
+  } satisfies EquipItem,
+  mana_shield: {
+    name: "마정석 방패",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+7" },
+      { label: "활력", value: "+3" },
+    ],
+    bonus: { atk: 7, vit: 3 },
+    description: "마정석을 박은 묵직한 방패. 막아내며 받아치는 데에도 쓴다.",
+  } satisfies EquipItem,
+  mana_spear: {
+    name: "마정석 창",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+7" },
+      { label: "민첩", value: "+3" },
+    ],
+    bonus: { atk: 7, dex: 3 },
+    description: "끝에 마정석을 깎아 박은 긴 창. 가벼우면서도 묘하게 정확하다.",
+  } satisfies EquipItem,
+  mana_knuckle: {
+    name: "마정석 너클",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+7" },
+      { label: "행운", value: "+3" },
+    ],
+    bonus: { atk: 7, luk: 3 },
+    description: "마정석 조각을 손등에 박은 너클. 한 방 한 방이 묘하게 운에 맡겨지는 느낌이 든다.",
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;

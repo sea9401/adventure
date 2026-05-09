@@ -23,7 +23,11 @@ export function GuildView({
   onAccept: (id: string) => void;
   onClaim: (id: string) => void;
 }) {
-  const quests = getQuestsForRegion(regionId);
+  // 메인 의뢰 완료를 전제하는 의뢰는 prerequisite 가 충족되기 전엔 게시판에서 숨김.
+  const quests = getQuestsForRegion(regionId).filter((q) => {
+    if (!q.requiresQuestCompleted) return true;
+    return getEntry(q.requiresQuestCompleted).state === "completed";
+  });
   const [now, setNow] = useState(() => Date.now());
 
   // 쿨다운 중인 카드가 하나라도 있을 때만 분 단위 tick.

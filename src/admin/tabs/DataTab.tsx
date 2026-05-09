@@ -174,7 +174,9 @@ function MonstersTable({ q }: { q: string }) {
                 ? d.itemId
                 : d.kind === "recipe"
                   ? `recipe ${d.recipeId}`
-                  : `gold ${d.amount}`;
+                  : d.kind === "recipe_one_of"
+                    ? `recipe one_of [${d.recipeIds.join(",")}]`
+                    : `gold ${d.amount}`;
           return `${id}(${d.chance})`;
         })
         .join(", ") ?? "—",

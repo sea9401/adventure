@@ -156,6 +156,14 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
                 continue;
               learnedThisSim.add(drop.recipeId);
               result.recipesLearned.push(drop.recipeId);
+            } else if (drop.kind === "recipe_one_of") {
+              if (drop.recipeIds.length === 0) continue;
+              const pick =
+                drop.recipeIds[Math.floor(rng() * drop.recipeIds.length)];
+              if (input.knowsRecipe(pick) || learnedThisSim.has(pick))
+                continue;
+              learnedThisSim.add(pick);
+              result.recipesLearned.push(pick);
             }
           }
         }

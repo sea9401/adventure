@@ -42,6 +42,9 @@ export type Quest = {
   cooldownMs?: number;
   // 설정 시 길드 게시판에 노출되지 않고 해당 NPC 대화에서만 진행.
   giverNpcId?: NpcId;
+  // 설정 시 지정된 의뢰가 'completed' 상태일 때만 게시판/UI 에 노출.
+  // 메인 라인을 끝낸 모험가에게만 풀리는 후속 반복 의뢰 등에 사용.
+  requiresQuestCompleted?: string;
 };
 
 export const REPEAT_COOLDOWN_MS_DEFAULT = 6 * 60 * 60 * 1000;
@@ -157,6 +160,20 @@ export const QUESTS: Quest[] = [
     reward: { gold: 300, fame: 10, exp: 350, potionCapacityBonus: 1 },
     repeatable: false,
     giverNpcId: "village_woodcutter_jimmy",
+  },
+  // 시작 마을 길드판 반복 의뢰 — 메인 깊은 동굴 의뢰 완료 후에만 노출.
+  // 보스 일일 3회 제한이라 1일에 1회 완료 가능. 누적 파밍 동기.
+  {
+    id: "village-deep-cave-recurring",
+    regionId: "village",
+    title: "광맥의 수호자 토벌 ─ 정기",
+    description:
+      "동굴 안쪽 광맥에서 다시 깨어나는 그놈을 정기적으로 잠재워 주시오. 세 번이면 한동안은 잠잠할 것이오.",
+    requiredLevel: 6,
+    target: { kind: "kill", monsterName: "광맥의 수호자", count: 3 },
+    reward: { gold: 250, fame: 8, exp: 300 },
+    repeatable: true,
+    requiresQuestCompleted: "village-jimmy-deep-cave",
   },
   // ── 디올라 — "안개 너머의 길" 트라이얼 라인 ──────────────────────────────
   // 후드 손님이 폐허로 안내하기 전에 디올라 사람들의 신뢰를 얻어야 한다.

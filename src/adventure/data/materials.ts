@@ -83,6 +83,14 @@ export const MATERIALS = {
     price: 25,
     inShop: false,
   },
+  mana_crystal: {
+    id: "mana_crystal",
+    name: "마정석",
+    description:
+      "깊은 동굴 광맥에서만 캐낼 수 있는 강한 마력을 머금은 결정. 무기에 박아 넣으면 한층 단단해진다.",
+    price: 30,
+    inShop: false,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;
