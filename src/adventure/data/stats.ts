@@ -18,5 +18,10 @@ export const STAT_CONVERSIONS: Record<StatKey, string> = {
   luk: "1pt 당 드랍률 +1% (드랍 시스템 도입 시 사용)",
 };
 
+// 도감에서 스탯별 스킬 정보를 공개하는 임계값.
+// 모든 스탯 공통 — 10pt 도달 시 그 스탯이 주는 스킬의 이름·설명이 공개된다.
+// (스킬 실제 활성 임계는 스탯별로 다를 수 있음 — skills.ts 의 STAT_SKILL 참조.)
+export const STAT_SKILL_INFO_THRESHOLD = 10;
+
 // 도감에서 환산 정보를 공개하는 임계값.
 export const STAT_REVEAL_THRESHOLD = 20;

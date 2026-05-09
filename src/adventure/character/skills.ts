@@ -1,4 +1,4 @@
-import type { StatKey } from "@/adventure/data/stats";
+import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import type { Skill } from "./types";
 
 // 캐릭터가 동시에 활성화할 수 있는 스킬 수.
@@ -41,41 +41,52 @@ export const GUARD_VIT_THRESHOLD = 10;
 export const GUARD_TURNS = 3;
 export const GUARD_REDUCTION = 1;
 
+// 스탯 → 그 스탯이 주는 스킬 메타. 도감 노출 / 발동 판정 모두 이 매핑을 사용.
+// activationThreshold 는 실제 효과가 발동되는 스탯값 — 도감 공개 임계
+// (STAT_SKILL_INFO_THRESHOLD) 와 다를 수 있다 (예: 연타는 정보 공개 10, 발동 15).
+export type StatSkillInfo = {
+  name: string;
+  description: string;
+  activationThreshold: number;
+};
+
+export const STAT_SKILL: Record<StatKey, StatSkillInfo> = {
+  str: {
+    name: SKILL_NAMES.POWER_ATTACK,
+    description: `${POWER_ATTACK_TURN_INTERVAL}턴마다 자동 발동 — ATK +${POWER_ATTACK_BONUS} 데미지로 공격`,
+    activationThreshold: POWER_ATTACK_STR_THRESHOLD,
+  },
+  dex: {
+    name: SKILL_NAMES.EVADE,
+    description: `전투당 첫 ${EVADE_GUARANTEED}회 피격을 무조건 회피`,
+    activationThreshold: EVADE_DEX_THRESHOLD,
+  },
+  vit: {
+    name: SKILL_NAMES.GUARD,
+    description: `전투 시작 후 첫 ${GUARD_TURNS}턴 동안 받는 피해 -${GUARD_REDUCTION}`,
+    activationThreshold: GUARD_VIT_THRESHOLD,
+  },
+  spd: {
+    name: SKILL_NAMES.DOUBLE_STRIKE,
+    description: `${DOUBLE_STRIKE_INTERVAL}턴마다 자동 발동 — 그 턴 마지막 공격 후 추가 1회 공격`,
+    activationThreshold: DOUBLE_STRIKE_SPD_THRESHOLD,
+  },
+  luk: {
+    name: SKILL_NAMES.CRIT,
+    description: `매 공격 ${CRIT_CHANCE_PCT}% 확률로 데미지 ×${CRIT_MULT}`,
+    activationThreshold: CRIT_LUK_THRESHOLD,
+  },
+};
+
 // 현재 스탯에서 보유(획득) 스킬 목록 도출. 스킬은 별도 저장 없이 스탯에서 파생.
 // "보유" ≠ "장착" — 보유한 스킬 중 SKILL_SLOT_COUNT 개만 effective.
 export function deriveSkills(stats: Record<StatKey, number>): Skill[] {
-  const out: Skill[] = [];
-  if (stats.str >= POWER_ATTACK_STR_THRESHOLD) {
-    out.push({
-      name: SKILL_NAMES.POWER_ATTACK,
-      description: `${POWER_ATTACK_TURN_INTERVAL}턴마다 자동 발동 — ATK +${POWER_ATTACK_BONUS} 데미지로 공격`,
-    });
-  }
-  if (stats.dex >= EVADE_DEX_THRESHOLD) {
-    out.push({
-      name: SKILL_NAMES.EVADE,
-      description: `전투당 첫 ${EVADE_GUARANTEED}회 피격을 무조건 회피`,
-    });
-  }
-  if (stats.spd >= DOUBLE_STRIKE_SPD_THRESHOLD) {
-    out.push({
-      name: SKILL_NAMES.DOUBLE_STRIKE,
-      description: `${DOUBLE_STRIKE_INTERVAL}턴마다 자동 발동 — 그 턴 마지막 공격 후 추가 1회 공격`,
-    });
-  }
-  if (stats.luk >= CRIT_LUK_THRESHOLD) {
-    out.push({
-      name: SKILL_NAMES.CRIT,
-      description: `매 공격 ${CRIT_CHANCE_PCT}% 확률로 데미지 ×${CRIT_MULT}`,
-    });
-  }
-  if (stats.vit >= GUARD_VIT_THRESHOLD) {
-    out.push({
-      name: SKILL_NAMES.GUARD,
-      description: `전투 시작 후 첫 ${GUARD_TURNS}턴 동안 받는 피해 -${GUARD_REDUCTION}`,
-    });
-  }
-  return out;
+  return STAT_KEYS.filter(
+    (k) => stats[k] >= STAT_SKILL[k].activationThreshold,
+  ).map((k) => ({
+    name: STAT_SKILL[k].name,
+    description: STAT_SKILL[k].description,
+  }));
 }
 
 // 보유 스킬 + 사용자 명시 선택 → 실제 발동될 스킬 이름 set.

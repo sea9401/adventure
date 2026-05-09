@@ -29,8 +29,10 @@ import {
   STAT_KEYS,
   STAT_LABELS,
   STAT_REVEAL_THRESHOLD,
+  STAT_SKILL_INFO_THRESHOLD,
   type StatKey,
 } from "./data/stats";
+import { STAT_SKILL } from "./character/skills";
 import { WORLD_MAP } from "./data/world";
 import type { AdventureLog } from "./log/storage";
 import { getRevealStage, type MonsterRevealStage } from "./log/thresholds";
@@ -51,7 +53,7 @@ const LOG_TABS: { key: LogTabKey; label: string }[] = [
   { key: "npcs", label: "NPC" },
   { key: "towns", label: "마을" },
   { key: "places", label: "장소" },
-  { key: "etc", label: "기타" },
+  { key: "etc", label: "스탯" },
   { key: "titles", label: "칭호" },
 ];
 
@@ -212,7 +214,12 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
       <ul className="space-y-2">
         {STAT_KEYS.map((k) => {
           const value = stats[k];
-          const revealed = value >= STAT_REVEAL_THRESHOLD;
+          const skill = STAT_SKILL[k];
+          const skillRevealed = value >= STAT_SKILL_INFO_THRESHOLD;
+          const conversionRevealed = value >= STAT_REVEAL_THRESHOLD;
+          // 스킬 발동 임계가 정보 공개 임계보다 높은 경우 (현재는 spd 의 연타) — 발동 안내 표시.
+          const showActivationNote =
+            skillRevealed && skill.activationThreshold > STAT_SKILL_INFO_THRESHOLD;
           return (
             <Card as="li" key={k}>
               <div className="flex items-baseline justify-between gap-2">
@@ -220,16 +227,56 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                   {STAT_LABELS[k]}
                 </span>
                 <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-                  현재 {value} / 공개 {STAT_REVEAL_THRESHOLD}
+                  현재 {value} / 다음 공개{" "}
+                  {skillRevealed
+                    ? conversionRevealed
+                      ? "—"
+                      : STAT_REVEAL_THRESHOLD
+                    : STAT_SKILL_INFO_THRESHOLD}
                 </span>
               </div>
-              <div className="mt-2 flex items-center gap-2 text-xs">
-                {revealed ? (
+
+              {/* 스킬 정보 — 10 도달 시 공개. */}
+              <div className="mt-2 flex items-start gap-2 text-xs">
+                {skillRevealed ? (
                   <>
                     <Sparkle
                       size={14}
                       weight="duotone"
-                      className="shrink-0 text-amber-500"
+                      className="shrink-0 text-amber-500 mt-0.5"
+                    />
+                    <span className="text-zinc-700 dark:text-zinc-200">
+                      <span className="font-medium">{skill.name}</span> —{" "}
+                      {skill.description}
+                      {showActivationNote && (
+                        <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                          ({STAT_LABELS[k]} {skill.activationThreshold}에서 발동)
+                        </span>
+                      )}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Lock
+                      size={14}
+                      weight="duotone"
+                      className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
+                    />
+                    <span className="italic text-zinc-500 dark:text-zinc-400">
+                      {STAT_SKILL_INFO_THRESHOLD} 달성 시 스킬 정보 공개
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* 환산 효과 — 20 도달 시 공개. */}
+              <div className="mt-1.5 flex items-start gap-2 text-xs">
+                {conversionRevealed ? (
+                  <>
+                    <Sparkle
+                      size={14}
+                      weight="duotone"
+                      className="shrink-0 text-amber-500 mt-0.5"
                     />
                     <span className="text-zinc-700 dark:text-zinc-200">
                       {STAT_CONVERSIONS[k]}
@@ -240,10 +287,10 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                     <Lock
                       size={14}
                       weight="duotone"
-                      className="shrink-0 text-zinc-400 dark:text-zinc-500"
+                      className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
                     />
                     <span className="italic text-zinc-500 dark:text-zinc-400">
-                      {STAT_REVEAL_THRESHOLD} 달성 시 정보 공개
+                      {STAT_REVEAL_THRESHOLD} 달성 시 효과 정보 공개
                     </span>
                   </>
                 )}
