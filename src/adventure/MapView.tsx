@@ -96,6 +96,7 @@ export function MapView({
     }
     if (!canMove) return;
     onProgressChange({
+      ...progress,
       currentRegionId: selectedId,
       visitedRegionIds: progress.visitedRegionIds.includes(selectedId)
         ? progress.visitedRegionIds

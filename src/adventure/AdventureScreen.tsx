@@ -271,6 +271,7 @@ export function AdventureScreen() {
             if (result === "win" && trialEdge) {
               edgeUnlocks.unlock(trialEdge.from, trialEdge.to);
               setMapProgress((prev) => ({
+                ...prev,
                 currentRegionId: trialEdge.to,
                 visitedRegionIds: prev.visitedRegionIds.includes(trialEdge.to)
                   ? prev.visitedRegionIds
