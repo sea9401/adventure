@@ -67,7 +67,7 @@ export function NotificationToast({
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="pointer-events-auto flex max-w-sm items-start gap-2 rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-right dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+          className="pointer-events-auto flex max-w-[calc(100vw-2rem)] items-start gap-2 rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-right sm:max-w-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
         >
           <span className="flex-1 pt-0.5">{t.text}</span>
           <button
