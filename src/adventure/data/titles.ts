@@ -41,7 +41,7 @@ export const TITLES: Record<TitleId, Title> = {
   },
   early_bird: {
     id: "early_bird",
-    name: "새벽형 인간",
+    name: "새벽반",
     description: "남들이 잘 때 모험을 떠나는 자.",
     condition: "새벽 3~5시 접속",
   },
