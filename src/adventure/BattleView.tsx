@@ -134,6 +134,19 @@ export function BattleView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
+  // 자동 사냥 ON 상태로 BattleView 에 진입 — state 가 비어있고 싸울 수 있으면 즉시 첫 전투 시작.
+  // 다른 in-app 탭(캐릭터/광장 등) 갔다 돌아왔을 때 "전투 시작" 버튼 누르지 않아도 이어서 진행.
+  useEffect(() => {
+    if (state !== null) return;
+    if (!huntingActive) return;
+    if (player.hp <= 0) return;
+    if (region.enemies.length === 0) return;
+    const enemy = pickEnemy(region);
+    if (enemy) startWithLog(enemy);
+    // startWithLog 는 setter — deps 제외.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, huntingActive, player.hp, region]);
+
   // 1) 전투 외 — 진입 화면
   if (!state) {
     const hasEnemies = region.enemies.length > 0;
