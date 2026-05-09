@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Envelope } from "@phosphor-icons/react";
+import { Envelope, PaperPlaneTilt } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useGame } from "@/adventure/GameContext";
 import { claimInbox, fetchInbox, type InboxItem } from "./api";
+import { SendMessageModal } from "./SendMessageModal";
 
 export function InboxView() {
   const {
@@ -27,6 +28,7 @@ export function InboxView() {
   const [loading, setLoading] = useState(true);
   const [busyIds, setBusyIds] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [composer, setComposer] = useState<{ recipient: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -103,6 +105,20 @@ export function InboxView() {
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          거래 결과와 다른 모험가의 쪽지가 도착합니다.
+        </p>
+        <button
+          type="button"
+          onClick={() => setComposer({ recipient: "" })}
+          className="inline-flex items-center gap-1.5 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+        >
+          <PaperPlaneTilt size={14} weight="fill" />
+          쪽지 보내기
+        </button>
+      </div>
+
       {error ? (
         <Card padding="sm">
           <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
@@ -130,7 +146,7 @@ export function InboxView() {
         <EmptyState
           icon={<Envelope size={40} weight="duotone" />}
           title="수령할 우편이 없습니다"
-          message="거래소에서 거래가 성사되면 여기에 도착합니다."
+          message="거래 결과나 다른 모험가의 쪽지가 여기에 도착합니다."
         />
       ) : (
         <div className="space-y-2">
@@ -140,9 +156,22 @@ export function InboxView() {
               item={it}
               busy={busyIds.has(it.id)}
               onClaim={() => claim([it.id])}
+              onReply={
+                it.kind === "user_message" && it.fromName
+                  ? () => setComposer({ recipient: it.fromName as string })
+                  : undefined
+              }
             />
           ))}
         </div>
+      )}
+
+      {composer && (
+        <SendMessageModal
+          initialRecipient={composer.recipient}
+          onClose={() => setComposer(null)}
+          onSent={(name) => pushToast(`${name} 에게 쪽지를 보냈습니다.`)}
+        />
       )}
     </div>
   );
@@ -152,31 +181,56 @@ function InboxRow({
   item,
   busy,
   onClaim,
+  onReply,
 }: {
   item: InboxItem;
   busy: boolean;
   onClaim: () => void;
+  onReply?: () => void;
 }) {
+  const isMessage = item.kind === "user_message";
   const summary = summarizePayload(item);
+  const messageText =
+    isMessage && typeof (item.payload as { text?: unknown }).text === "string"
+      ? ((item.payload as { text: string }).text)
+      : null;
+
   return (
     <Card padding="sm">
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">
             {summary}
           </span>
-          {item.message ? (
+          {messageText ? (
+            <span className="mt-1 block whitespace-pre-wrap break-words text-sm text-zinc-700 dark:text-zinc-300">
+              {messageText}
+            </span>
+          ) : null}
+          {!isMessage && item.message ? (
             <span className="block text-xs text-zinc-500">{item.message}</span>
           ) : null}
         </span>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onClaim}
-          className="shrink-0 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {busy ? "수령 중…" : "수령"}
-        </button>
+        <div className="flex shrink-0 flex-col items-stretch gap-1">
+          {onReply ? (
+            <button
+              type="button"
+              onClick={onReply}
+              disabled={busy}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              답장
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onClaim}
+            className="rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {busy ? "처리 중…" : isMessage ? "확인" : "수령"}
+          </button>
+        </div>
       </div>
     </Card>
   );
@@ -184,6 +238,10 @@ function InboxRow({
 
 function summarizePayload(item: InboxItem): string {
   const p = item.payload;
+  if (item.kind === "user_message") {
+    const from = item.fromName ?? "알 수 없는 발신자";
+    return `✉️ ${from} 의 쪽지`;
+  }
   if (item.kind === "sale_proceeds") {
     const g = Number((p as { gold?: unknown }).gold ?? 0);
     return `🪙 판매 대금 ${g.toLocaleString()} G`;

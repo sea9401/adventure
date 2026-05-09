@@ -105,10 +105,11 @@ export async function buyListing(
 
 export type InboxItem = {
   id: number;
-  kind: "sale_proceeds" | "purchase_item" | "cancel_return";
+  kind: "sale_proceeds" | "purchase_item" | "cancel_return" | "user_message";
   payload: Record<string, unknown>;
   message: string | null;
   listingId: number | null;
+  fromName: string | null;
   createdAt: string;
 };
 
@@ -149,6 +150,24 @@ export async function claimInbox(
   return (await r.json()) as ClaimResult;
 }
 
+export type SendMessageResult = { ok: true; recipientName: string };
+
+export async function sendUserMessage(
+  recipientName: string,
+  text: string,
+): Promise<SendMessageResult> {
+  const r = await fetch("/api/inbox/send", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ recipientName, text }),
+  });
+  if (!r.ok) {
+    const body = await r.text();
+    throw new Error(translateError(body, r.status));
+  }
+  return (await r.json()) as SendMessageResult;
+}
+
 function translateError(text: string, status: number): string {
   switch (text) {
     case "slot_limit":
@@ -176,7 +195,22 @@ function translateError(text: string, status: number): string {
       return "권한이 없습니다.";
     case "race":
       return "다른 작업과 충돌했습니다. 다시 시도하세요.";
+    case "recipient_not_found":
+      return "해당 닉네임의 유저를 찾을 수 없습니다.";
+    case "self_send":
+      return "자기 자신에게는 보낼 수 없습니다.";
+    case "sender_no_name":
+      return "닉네임을 먼저 설정해야 합니다.";
+    case "empty text":
+      return "내용을 입력하세요.";
+    case "missing recipient":
+      return "받는 사람을 입력하세요.";
+    case "rate limited":
+      return "조금 천천히 보내주세요.";
+    case "daily_cap":
+      return "오늘 발송 한도를 초과했습니다.";
     default:
+      if (text.startsWith("too long")) return "내용이 너무 깁니다.";
       return `요청 실패 (${status}): ${text}`;
   }
 }

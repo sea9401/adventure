@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { formatRelative } from "@/lib/notifications";
 import { BULLETIN_MAX_LENGTH } from "@/lib/bulletin-config";
 import { DEFAULT_CLASS_NAME } from "@/adventure/character/defaults";
+import { SendMessageModal } from "@/adventure/marketplace/SendMessageModal";
 
 type BulletinPost = {
   id: number;
@@ -62,6 +63,7 @@ export function BulletinBoardView({
   const [posts, setPosts] = useState<BulletinPost[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [pmTarget, setPmTarget] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -137,7 +139,12 @@ export function BulletinBoardView({
       ) : (
         <ul className="space-y-2">
           {posts.map((p) => (
-            <PostCard key={p.id} post={p} onDelete={handleDelete} />
+            <PostCard
+              key={p.id}
+              post={p}
+              onDelete={handleDelete}
+              onSendMessage={p.mine ? undefined : () => setPmTarget(p.name)}
+            />
           ))}
         </ul>
       )}
@@ -148,6 +155,13 @@ export function BulletinBoardView({
           onSubmit={handleSubmit}
         />
       )}
+
+      {pmTarget && (
+        <SendMessageModal
+          initialRecipient={pmTarget}
+          onClose={() => setPmTarget(null)}
+        />
+      )}
     </div>
   );
 }
@@ -155,9 +169,11 @@ export function BulletinBoardView({
 function PostCard({
   post,
   onDelete,
+  onSendMessage,
 }: {
   post: BulletinPost;
   onDelete: (id: number) => void;
+  onSendMessage?: () => void;
 }) {
   return (
     <li>
@@ -174,9 +190,20 @@ function PostCard({
                 {post.title}
               </span>
             )}
-            <span className="font-semibold text-zinc-700 dark:text-zinc-200">
-              {post.name}
-            </span>
+            {onSendMessage ? (
+              <button
+                type="button"
+                onClick={onSendMessage}
+                title="쪽지 보내기"
+                className="rounded font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
+              >
+                {post.name}
+              </button>
+            ) : (
+              <span className="font-semibold text-zinc-700 dark:text-zinc-200">
+                {post.name}
+              </span>
+            )}
             <span>{formatRelative(post.createdAt)}</span>
           </div>
           {post.mine && (
