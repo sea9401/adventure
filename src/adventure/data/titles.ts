@@ -49,19 +49,19 @@ export const TITLES: Record<TitleId, Title> = {
     id: "training_10",
     name: "수련생",
     description: "훈련의 첫 호흡을 익힌 자.",
-    condition: "훈련 10회 완료",
+    condition: "훈련 50회 완료",
   },
   training_50: {
     id: "training_50",
-    name: "단련된 자",
+    name: "유단자",
     description: "땀으로 다져진 몸. 가벼운 한 걸음에도 무게가 실린다.",
-    condition: "훈련 50회 완료",
+    condition: "훈련 100회 완료",
   },
   training_100: {
     id: "training_100",
-    name: "강철의 의지",
+    name: "검은띠",
     description: "꺾일 줄 모르는 의지. 훈련장의 전설로 불린다.",
-    condition: "훈련 100회 완료",
+    condition: "훈련 200회 완료",
   },
   unfilial: {
     id: "unfilial",
@@ -73,9 +73,9 @@ export const TITLES: Record<TitleId, Title> = {
 
 // 훈련 완료 횟수 → 잠금 해제되는 칭호. completedCount 가 임계값 도달 시 적용.
 export const TRAINING_COUNT_TITLES: { count: number; id: TitleId }[] = [
-  { count: 10, id: "training_10" },
-  { count: 50, id: "training_50" },
-  { count: 100, id: "training_100" },
+  { count: 50, id: "training_10" },
+  { count: 100, id: "training_50" },
+  { count: 200, id: "training_100" },
 ];
 
 export function getTitle(id: TitleId | null | undefined): Title | undefined {
