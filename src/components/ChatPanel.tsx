@@ -5,6 +5,7 @@ import { CaretDown, ChatCircle, PaperPlaneTilt, Users, X } from "@phosphor-icons
 import { formatRelative } from "@/lib/notifications";
 import { CHAT_MAX_LENGTH } from "@/lib/chat-config";
 import { DEFAULT_CLASS_NAME } from "@/adventure/character/defaults";
+import { SendMessageModal } from "@/adventure/marketplace/SendMessageModal";
 
 export type ChatMessage = {
   id: number;
@@ -81,6 +82,7 @@ export function ChatPanel({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pmTarget, setPmTarget] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -211,20 +213,23 @@ export function ChatPanel({
                         {u.title}
                       </span>
                     )}
-                    <span
-                      className={
-                        u.mine
-                          ? "font-semibold text-emerald-700 dark:text-emerald-400"
-                          : "font-semibold text-zinc-700 dark:text-zinc-200"
-                      }
-                    >
-                      {u.name}
-                      {u.mine && (
+                    {u.mine ? (
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                        {u.name}
                         <span className="ml-1 text-[10px] font-normal text-zinc-500 dark:text-zinc-400">
                           (나)
                         </span>
-                      )}
-                    </span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setPmTarget(u.name)}
+                        title="쪽지 보내기"
+                        className="rounded font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
+                      >
+                        {u.name}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -257,9 +262,20 @@ export function ChatPanel({
                       {m.title}
                     </span>
                   )}
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-200">
-                    {m.name}
-                  </span>
+                  {m.mine ? (
+                    <span className="font-semibold text-zinc-700 dark:text-zinc-200">
+                      {m.name}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setPmTarget(m.name)}
+                      title="쪽지 보내기"
+                      className="rounded font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
+                    >
+                      {m.name}
+                    </button>
+                  )}
                   <span>{formatRelative(m.createdAt)}</span>
                 </div>
                 <div
@@ -304,6 +320,13 @@ export function ChatPanel({
           </button>
         </form>
       </div>
+
+      {pmTarget && (
+        <SendMessageModal
+          initialRecipient={pmTarget}
+          onClose={() => setPmTarget(null)}
+        />
+      )}
     </div>
   );
 }
