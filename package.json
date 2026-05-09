@@ -5,14 +5,17 @@
   "scripts": {
     "predev": "npm run optimize-images && npm run check-images",
     "dev": "next dev",
-    "prebuild": "npm run optimize-images && npm run check-images",
+    "prebuild": "npm run optimize-images && npm run check-images && npm run db:migrate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "optimize-images": "node scripts/optimize-images.mjs",
-    "check-images": "node scripts/check-images.mjs"
+    "check-images": "node scripts/check-images.mjs",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node src/db/migrate.mjs",
+    "db:baseline-mark": "node src/db/baseline-mark.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.2",
