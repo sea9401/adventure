@@ -16,7 +16,14 @@ import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { MONSTERS } from "./data/monsters";
 import { NPCS, type NpcRole } from "./data/npcs";
-import { TITLES, type TitleId } from "./data/titles";
+import {
+  COUNTER_TITLES,
+  TITLES,
+  type TitleCounterKey,
+  type TitleId,
+} from "./data/titles";
+
+export type TitleCounterValues = Partial<Record<TitleCounterKey, number>>;
 import {
   STAT_CONVERSIONS,
   STAT_KEYS,
@@ -63,11 +70,14 @@ export function AdventureLogView({
   stats,
   equippedTitleId,
   onEquipTitle,
+  titleCounters,
 }: {
   log: AdventureLog;
   stats: Record<StatKey, number>;
   equippedTitleId?: string | null;
   onEquipTitle?: (titleId: TitleId | null) => void;
+  /** 카운터형 칭호의 현재 진행도 — 절반 도달 시 조건 미리보기. */
+  titleCounters?: TitleCounterValues;
 }) {
   const [tab, setTab] = useState<LogTabKey>("monsters");
 
@@ -98,6 +108,7 @@ export function AdventureLogView({
           log={log}
           equippedTitleId={equippedTitleId ?? null}
           onEquipTitle={onEquipTitle}
+          titleCounters={titleCounters ?? {}}
         />
       )}
     </div>
@@ -110,10 +121,12 @@ function TitlesTab({
   log,
   equippedTitleId,
   onEquipTitle,
+  titleCounters,
 }: {
   log: AdventureLog;
   equippedTitleId: string | null;
   onEquipTitle?: (titleId: TitleId | null) => void;
+  titleCounters: TitleCounterValues;
 }) {
   const all = Object.values(TITLES);
   if (all.length === 0) {
@@ -131,6 +144,13 @@ function TitlesTab({
         const entry = log.titles[title.id];
         const obtained = !!entry;
         const isEquipped = equippedTitleId === title.id;
+        // 카운터형 칭호: 미획득 상태에서도 절반 도달 시 조건만 미리 공개.
+        const counter = COUNTER_TITLES.find((c) => c.id === title.id);
+        const counterValue = counter
+          ? (titleCounters[counter.key] ?? 0)
+          : 0;
+        const conditionRevealed =
+          !obtained && !!counter && counterValue >= counter.target / 2;
         return (
           <Card key={title.id}>
             <div className="flex items-baseline justify-between gap-2">
@@ -158,6 +178,10 @@ function TitlesTab({
             <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
               {obtained ? (
                 title.description
+              ) : conditionRevealed ? (
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  달성 조건 — {title.condition} ({counterValue}/{counter!.target})
+                </span>
               ) : (
                 <span className="italic text-zinc-400 dark:text-zinc-500">
                   달성 조건 ???

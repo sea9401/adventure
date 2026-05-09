@@ -31,6 +31,7 @@ export function CharacterScreen() {
     adventureLog,
     notifications,
     effectiveSkillNameList,
+    training,
     handleEquipFromInventory,
     handleUnequip,
   } = useGame();
@@ -150,6 +151,10 @@ export function CharacterScreen() {
           stats={character.stats}
           equippedTitleId={characterStateHook.equippedTitleId}
           onEquipTitle={characterStateHook.setEquippedTitle}
+          titleCounters={{
+            battleLosses: adventureLog.log.battleLosses ?? 0,
+            trainingCount: training.completedCount,
+          }}
         />
       </div>
     );

@@ -71,11 +71,20 @@ export const TITLES: Record<TitleId, Title> = {
   },
 };
 
-// 훈련 완료 횟수 → 잠금 해제되는 칭호. completedCount 가 임계값 도달 시 적용.
-export const TRAINING_COUNT_TITLES: { count: number; id: TitleId }[] = [
-  { count: 50, id: "training_10" },
-  { count: 100, id: "training_50" },
-  { count: 200, id: "training_100" },
+// 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.
+// 1) 임계값 도달 시 자동 등록 (page.tsx 의 useEffect 가 이 표를 돌면서 grantTitle).
+// 2) 절반 도달 시 모험의 서에서 조건만 미리 공개 (이름은 여전히 ???).
+export type TitleCounterKey = "battleLosses" | "trainingCount";
+
+export const COUNTER_TITLES: {
+  id: TitleId;
+  key: TitleCounterKey;
+  target: number;
+}[] = [
+  { id: "frail", key: "battleLosses", target: 10 },
+  { id: "training_10", key: "trainingCount", target: 50 },
+  { id: "training_50", key: "trainingCount", target: 100 },
+  { id: "training_100", key: "trainingCount", target: 200 },
 ];
 
 export function getTitle(id: TitleId | null | undefined): Title | undefined {

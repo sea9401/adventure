@@ -81,7 +81,7 @@ import {
   guardFor,
   powerAttackBonusFor,
 } from "@/adventure/character/skills";
-import { getTitle, TRAINING_COUNT_TITLES } from "@/adventure/data/titles";
+import { getTitle, COUNTER_TITLES } from "@/adventure/data/titles";
 import { useOfflineSimulation } from "@/adventure/battle/useOfflineSimulation";
 import {
   simulateOfflineHunt,
@@ -575,23 +575,18 @@ function Home() {
     if (title) addNotification("info", `칭호 획득 — ${title.name}`);
   };
 
-  // 누적 패배 카운트가 임계 도달하면 약골 칭호 자동 등록.
-  // 외부 상태(battleLosses)를 관찰해 칭호 등록 — 의도적 set-state-in-effect.
+  // 카운터형 칭호 — COUNTER_TITLES 표를 한 번에 돌며 임계값 도달분 등록.
+  // 외부 상태(battleLosses/trainingCount)를 관찰해 칭호 등록 — 의도적 set-state-in-effect.
   const battleLosses = adventureLog.log.battleLosses ?? 0;
-  useEffect(() => {
-    if (battleLosses >= 10) grantTitle("frail");
-    // grantTitle 안정 참조 — deps 제외.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [battleLosses]);
-
-  // 누적 훈련 횟수 → 마일스톤 칭호 등록.
   const trainingCount = training.completedCount;
   useEffect(() => {
-    for (const m of TRAINING_COUNT_TITLES) {
-      if (trainingCount >= m.count) grantTitle(m.id);
+    for (const t of COUNTER_TITLES) {
+      const current = t.key === "battleLosses" ? battleLosses : trainingCount;
+      if (current >= t.target) grantTitle(t.id);
     }
+    // grantTitle 안정 참조 — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trainingCount]);
+  }, [battleLosses, trainingCount]);
 
   const handleBattleEnd = (payload: BattleEndPayload) =>
     onBattleEnd(payload, {
