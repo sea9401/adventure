@@ -16,6 +16,7 @@ export async function GET() {
       payload: marketplaceInbox.payload,
       message: marketplaceInbox.message,
       listingId: marketplaceInbox.listingId,
+      fromName: marketplaceInbox.fromName,
       createdAt: marketplaceInbox.createdAt,
     })
     .from(marketplaceInbox)
@@ -34,6 +35,7 @@ export async function GET() {
       payload: r.payload,
       message: r.message,
       listingId: r.listingId,
+      fromName: r.fromName,
       createdAt: r.createdAt.toISOString(),
     })),
     unclaimedCount: rows.length,
