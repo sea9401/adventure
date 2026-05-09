@@ -3,6 +3,7 @@
 import {
   Backpack,
   BookOpen,
+  ClipboardText,
   Scroll,
   Sparkle,
   User,
@@ -18,6 +19,8 @@ import { SKILL_SLOT_COUNT } from "@/adventure/character/skills";
 import { AdventureLogView } from "@/adventure/AdventureLogView";
 import { InventoryView } from "@/adventure/InventoryView";
 import { RecentLogView } from "@/adventure/RecentLogView";
+import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
+import { QUESTS } from "@/adventure/data/quests";
 import { useGame } from "@/adventure/GameContext";
 
 export function CharacterScreen() {
@@ -34,7 +37,13 @@ export function CharacterScreen() {
     training,
     handleEquipFromInventory,
     handleUnequip,
+    quests,
   } = useGame();
+
+  const activeQuestCount = QUESTS.reduce((n, q) => {
+    const e = quests.getEntry(q.id);
+    return e.state === "active" || e.state === "ready" ? n + 1 : n;
+  }, 0);
 
   if (subView === null) {
     return (
@@ -72,6 +81,22 @@ export function CharacterScreen() {
           title="모험의 서"
           description="지금까지의 여정과 발견을 기록합니다."
           onClick={() => setSubView("adventure-log")}
+        />
+        <EntryCard
+          icon={
+            <ClipboardText
+              size={28}
+              weight="duotone"
+              className="text-yellow-700"
+            />
+          }
+          title="의뢰 수첩"
+          description={
+            activeQuestCount > 0
+              ? `진행 중인 의뢰 ${activeQuestCount}건`
+              : "진행 중인 의뢰가 없습니다."
+          }
+          onClick={() => setSubView("quests")}
         />
         <EntryCard
           icon={<Scroll size={28} weight="duotone" className="text-rose-500" />}
@@ -158,6 +183,15 @@ export function CharacterScreen() {
             healingCount: adventureLog.log.healingCount ?? 0,
           }}
         />
+      </div>
+    );
+  }
+
+  if (subView === "quests") {
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="의뢰 수첩" onBack={back} />
+        <QuestJournalView getEntry={quests.getEntry} />
       </div>
     );
   }
