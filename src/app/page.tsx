@@ -90,7 +90,9 @@ import {
   simulateOfflineHunt,
   summarizeOfflineResult,
   OFFLINE_SIM_MAX_MS,
+  type OfflineSimResult,
 } from "@/adventure/battle/offlineSim";
+import { OfflineRewardsModal } from "@/adventure/battle/OfflineRewardsModal";
 import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
@@ -166,6 +168,11 @@ function Home() {
       sessionStorage.setItem("hunting-active", next ? "true" : "false");
     } catch {}
   };
+  // 자동 사냥 중 탭/앱이 백그라운드 → 복귀 시 누적 보상 모달.
+  // 한 번에 하나만 표시 — 새 결과가 들어오면 직전 것을 덮어쓴다.
+  const [offlineRewards, setOfflineRewards] = useState<OfflineSimResult | null>(
+    null,
+  );
   // 마을 진입 직후 자동으로 열 NPC 대화 — 알림판 클릭 시 세팅, TownView 가 마운트 직후 소비.
   const [pendingTownNpcId, setPendingTownNpcId] = useState<string | null>(null);
   // 시련(trial) 진행 중인 엣지. 세팅되면 지도 서브뷰에서 TrialView 가 대신 렌더링됨.
@@ -742,6 +749,8 @@ function Home() {
           );
         }
       }
+      // 누적 보상을 모달로 가시화 — 알림은 작아 놓치기 쉬움.
+      setOfflineRewards(result);
     },
   });
 
@@ -962,6 +971,12 @@ function Home() {
       </div>
       <NotificationToast notifications={notifications.alertable} />
       {showModal && <NameSetupModal onSubmit={profile.submit} />}
+      {offlineRewards && (
+        <OfflineRewardsModal
+          result={offlineRewards}
+          onClose={() => setOfflineRewards(null)}
+        />
+      )}
     </GameProvider>
   );
 }
