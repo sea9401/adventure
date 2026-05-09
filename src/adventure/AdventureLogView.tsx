@@ -156,7 +156,13 @@ function TitlesTab({
               )}
             </div>
             <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-              {obtained ? title.description : title.condition}
+              {obtained ? (
+                title.description
+              ) : (
+                <span className="italic text-zinc-400 dark:text-zinc-500">
+                  달성 조건 ???
+                </span>
+              )}
             </p>
             {obtained && onEquipTitle && (
               <button

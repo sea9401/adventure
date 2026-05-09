@@ -173,6 +173,8 @@ function Home() {
       initialMap?.visitedRegionIds && initialMap.visitedRegionIds.length > 0
         ? initialMap.visitedRegionIds
         : initialMapProgress.visitedRegionIds,
+    respawnRegionId:
+      initialMap?.respawnRegionId ?? initialMapProgress.respawnRegionId,
   }));
   useRemotePatch("map.v2", mapProgress);
   const adventureLog = useAdventureLog();
@@ -302,18 +304,20 @@ function Home() {
     adventureLog.markRegionVisited(currentRegion.id);
   }, [currentRegion.id, adventureLog]);
 
-  // 안전망 — HP<=0 인데 마을이 아닌 곳(사냥 지역 등)에 있으면 시작 마을로 강제 복귀.
+  // 안전망 — HP<=0 인데 마을이 아닌 곳(사냥 지역 등)에 있으면 복귀 마을로 강제 이동.
   // 패배 모달을 확인하기 전에 새로고침/탭 닫기 등으로 빠져나가 stuck 된 유저를 다음 진입에서 구출.
   // 외부 상태(hp/region)를 관찰해 위치 보정 — 의도적 set-state-in-effect.
   useEffect(() => {
     if (characterState.hp > 0) return;
     if (isTown) return;
+    const respawnId = mapProgress.respawnRegionId ?? START_REGION_ID;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMapProgress((prev) => ({
-      currentRegionId: START_REGION_ID,
-      visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
+      ...prev,
+      currentRegionId: respawnId,
+      visitedRegionIds: prev.visitedRegionIds.includes(respawnId)
         ? prev.visitedRegionIds
-        : [...prev.visitedRegionIds, START_REGION_ID],
+        : [...prev.visitedRegionIds, respawnId],
     }));
     replaceSubView(null);
     // setMapProgress/replaceSubView 안정 참조 — deps 제외.
@@ -582,6 +586,7 @@ function Home() {
         addGoldFame: characterStateHook.addGoldFame,
       },
       vit: character.stats.vit,
+      respawnRegionId: mapProgress.respawnRegionId ?? START_REGION_ID,
       addNotification,
       setHuntingActive,
       replaceLocation,
@@ -632,16 +637,18 @@ function Home() {
       if (result.expGained > 0)
         characterStateHook.addExp(result.expGained, character.stats.vit);
       if (result.died) {
-        // HP 0 + 시작 마을 강제 이동 + 마을 탭 치료소 sub 로 점프.
+        // HP 0 + 복귀 마을 강제 이동 + 마을 탭 치료소 sub 로 점프.
         // replace — 사망 시점은 history 에 남기지 않음.
         adventureLog.incrementBattleLosses();
         characterStateHook.setHp(0);
         replaceLocation("town", "healing");
+        const respawnId = mapProgress.respawnRegionId ?? START_REGION_ID;
         setMapProgress((prev) => ({
-          currentRegionId: START_REGION_ID,
-          visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
+          ...prev,
+          currentRegionId: respawnId,
+          visitedRegionIds: prev.visitedRegionIds.includes(respawnId)
             ? prev.visitedRegionIds
-            : [...prev.visitedRegionIds, START_REGION_ID],
+            : [...prev.visitedRegionIds, respawnId],
         }));
       } else {
         characterStateHook.setHp(result.finalPlayerHp);

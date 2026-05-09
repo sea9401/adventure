@@ -4,8 +4,10 @@ import {
   Barbell,
   FirstAid,
   Hammer,
+  House,
   MapPin,
   Scroll,
+  Sparkle,
   Storefront,
 } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
@@ -13,9 +15,11 @@ import { EntryCard } from "@/components/ui/EntryCard";
 import { StatBar } from "@/components/ui/StatBar";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { TrainingView } from "@/adventure/character/TrainingView";
+import { GrowthShrineView } from "@/adventure/character/GrowthShrineView";
 import { CraftingView } from "@/adventure/CraftingView";
 import { ShopView } from "@/adventure/ShopView";
 import { GuildView } from "@/adventure/GuildView";
+import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { START_REGION_ID } from "@/adventure/data/world";
 import { useGame } from "@/adventure/GameContext";
 
@@ -76,19 +80,7 @@ export function TownScreen() {
               ? "체력과 마력이 가득 차 있다."
               : "지친 몸을 회복할 수 있는 곳."
           }
-          onClick={() => {
-            if (mapProgress.currentRegionId !== START_REGION_ID) {
-              setMapProgress((prev) => ({
-                currentRegionId: START_REGION_ID,
-                visitedRegionIds: prev.visitedRegionIds.includes(
-                  START_REGION_ID,
-                )
-                  ? prev.visitedRegionIds
-                  : [...prev.visitedRegionIds, START_REGION_ID],
-              }));
-            }
-            setSubView("healing");
-          }}
+          onClick={() => setSubView("healing")}
         />
         <EntryCard
           icon={
@@ -109,6 +101,18 @@ export function TownScreen() {
           title="훈련장"
           description={trainingDescription}
           onClick={() => setSubView("training")}
+        />
+        <EntryCard
+          icon={
+            <Sparkle size={28} weight="duotone" className="text-violet-400" />
+          }
+          title="성장의 신전"
+          description={
+            training.unspentPoints > 0
+              ? `단련 포인트 ${training.unspentPoints}개를 능력치로 새겨넣을 수 있다.`
+              : "단련을 능력치로 새겨넣는 곳."
+          }
+          onClick={() => setSubView("shrine")}
         />
         <EntryCard
           icon={
@@ -134,9 +138,11 @@ export function TownScreen() {
     const healCost = character.gold < 50 ? 0 : 1;
     const isFull =
       character.hp >= character.maxHp && character.mp >= character.maxMp;
+    const respawnId = mapProgress.respawnRegionId ?? START_REGION_ID;
+    const isRespawnHere = respawnId === currentRegion.id;
     return (
       <div className="space-y-3">
-        <SubViewHeader title="시작 마을 치료소" onBack={back} />
+        <SubViewHeader title={`${currentRegion.name} 치료소`} onBack={back} />
         <Card as="section" padding="md">
           <div className="flex items-center gap-3">
             <FirstAid
@@ -182,6 +188,33 @@ export function TownScreen() {
                 : "전부 회복 (무료)"}
           </button>
         </Card>
+        <Card as="section" padding="md">
+          <div className="flex items-center gap-3">
+            <House
+              size={28}
+              weight="duotone"
+              className="shrink-0 text-amber-500"
+            />
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">
+              패배 시 이 마을의 치유소로 복귀한다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setMapProgress((prev) => ({
+                ...prev,
+                respawnRegionId: currentRegion.id,
+              }))
+            }
+            disabled={isRespawnHere}
+            className="mt-3 w-full rounded-md border border-amber-500 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-400 dark:text-amber-300"
+          >
+            {isRespawnHere
+              ? "이미 복귀 지점입니다"
+              : "이곳을 복귀 지점으로 설정"}
+          </button>
+        </Card>
       </div>
     );
   }
@@ -195,6 +228,31 @@ export function TownScreen() {
           isTraining={training.isTraining}
           unspentPoints={training.unspentPoints}
           onStartTraining={training.startTraining}
+        />
+      </div>
+    );
+  }
+
+  if (subView === "shrine") {
+    // baseStats = 총 스탯에서 분배분만 뺀 값(베이스+장비). GrowthShrineView 가
+    // total = baseStats + allocated 로 합산해 표시하므로 결과는 character.stats 와 일치.
+    const baseStatsForShrine = STAT_KEYS.reduce<Record<StatKey, number>>(
+      (acc, k) => {
+        acc[k] = (character.stats[k] ?? 0) - (training.allocatedStats[k] ?? 0);
+        return acc;
+      },
+      {} as Record<StatKey, number>,
+    );
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="성장의 신전" onBack={back} />
+        <GrowthShrineView
+          unspentPoints={training.unspentPoints}
+          revertPoints={training.revertPoints}
+          allocatedStats={training.allocatedStats}
+          baseStats={baseStatsForShrine}
+          onAllocate={training.allocateStat}
+          onDeallocate={training.deallocateStat}
         />
       </div>
     );

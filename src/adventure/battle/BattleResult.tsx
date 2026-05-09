@@ -34,7 +34,7 @@ export function BattleResult({
           </div>
         ) : (
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            시작 마을로 옮겨졌다. 치유소에서 회복이 필요하다.
+            복귀 마을로 옮겨졌다. 치유소에서 회복이 필요하다.
           </p>
         )}
         <button
