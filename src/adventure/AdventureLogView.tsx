@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { MONSTERS } from "./data/monsters";
 import { NPCS, type NpcRole } from "./data/npcs";
+import { getRecipeById } from "./data/recipes";
 import {
   COUNTER_TITLES,
   TITLES,
@@ -75,6 +76,8 @@ export function AdventureLogView({
   equippedTitleId,
   onEquipTitle,
   titleCounters,
+  knownRecipes,
+  shareableRecipes,
 }: {
   log: AdventureLog;
   stats: Record<StatKey, number>;
@@ -82,6 +85,10 @@ export function AdventureLogView({
   onEquipTitle?: (titleId: TitleId | null) => void;
   /** 카운터형 칭호의 현재 진행도 — 절반 도달 시 조건 미리보기. */
   titleCounters?: TitleCounterValues;
+  /** 학습한 제작서 id 목록. 미지정 시 빈 목록으로 처리. */
+  knownRecipes?: string[];
+  /** 거래/우편 공유 가능한 제작서 id 목록. 학습 시 자동 부여, 공유 시 소비. */
+  shareableRecipes?: string[];
 }) {
   const [tab, setTab] = useState<LogTabKey>("monsters");
 
@@ -97,10 +104,9 @@ export function AdventureLogView({
 
       {tab === "monsters" && <MonstersTab log={log} />}
       {tab === "items" && (
-        <EmptyState
-          icon={<Diamond size={40} weight="duotone" />}
-          title="아직 기록된 아이템이 없습니다"
-          message="획득·장착한 아이템이 여기에 모입니다."
+        <ItemsTab
+          knownRecipes={knownRecipes ?? []}
+          shareableRecipes={shareableRecipes ?? []}
         />
       )}
       {tab === "npcs" && <NpcsTab log={log} />}
@@ -115,6 +121,75 @@ export function AdventureLogView({
           titleCounters={titleCounters ?? {}}
         />
       )}
+    </div>
+  );
+}
+
+// 보유 제작법 — 학습한 제작서를 카드로. 거래 토큰 보유/소진 상태 같이 표기.
+// 토큰 = 1 (거래 가능) / 0 (이미 공유에 사용 — 다시 습득해야 충전).
+// 거래/우편 출처 학습은 토큰을 부여하지 않으므로 거래 횟수에 자연 상한이 생긴다.
+function ItemsTab({
+  knownRecipes,
+  shareableRecipes,
+}: {
+  knownRecipes: string[];
+  shareableRecipes: string[];
+}) {
+  const recipes = knownRecipes
+    .map((id) => ({ id, def: getRecipeById(id) }))
+    .filter((r): r is { id: string; def: NonNullable<typeof r.def> } => !!r.def)
+    .sort((a, b) => a.def.name.localeCompare(b.def.name));
+
+  if (recipes.length === 0) {
+    return (
+      <EmptyState
+        icon={<Diamond size={40} weight="duotone" />}
+        title="아직 학습한 제작서가 없습니다"
+        message="NPC 보상이나 몬스터 드랍으로 제작서를 얻으면 여기에 표시됩니다."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <section>
+        <h3 className="mb-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          보유 제작법 ({recipes.length})
+        </h3>
+        <div className="space-y-2">
+          {recipes.map(({ id, def }) => {
+            const canShare = shareableRecipes.includes(id);
+            return (
+              <Card key={id}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    📜 {def.name}
+                  </span>
+                  <span
+                    className={
+                      canShare
+                        ? "shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-normal text-emerald-700 dark:text-emerald-400"
+                        : "shrink-0 rounded-full bg-zinc-500/10 px-2 py-0.5 text-[11px] font-normal text-zinc-500 dark:text-zinc-400"
+                    }
+                    title={
+                      canShare
+                        ? "거래소 등록 또는 우편 첨부 가능"
+                        : "이미 공유에 사용 — 다시 습득하면 충전됩니다"
+                    }
+                  >
+                    거래 {canShare ? 1 : 0}/1
+                  </span>
+                </div>
+                {def.description ? (
+                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                    {def.description}
+                  </p>
+                ) : null}
+              </Card>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

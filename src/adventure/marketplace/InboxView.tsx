@@ -23,7 +23,8 @@ export function InboxView() {
   const addEquipment = inventory.addEquipment;
   const addMaterial = inventory.addMaterial;
   const addGold = characterStateHook.addGold;
-  const learnRecipe = crafting.learnRecipe;
+  // 거래/우편으로 받은 제작서는 공유 토큰 없이 학습.
+  const learnRecipeFromTrade = crafting.learnRecipeFromTrade;
   const refreshInbox = inbox.refresh;
   const pushToast = (msg: string) => addNotification("info", msg);
 
@@ -74,12 +75,10 @@ export function InboxView() {
           }
         }
       }
-      // 레시피 학습 — 새로 받은 것 + skipped (이미 알던 것) 모두 learnRecipe 호출.
-      // learnRecipe 는 known idempotent + shareable 충전 효과 — skipped 도 호출해야
-      // 다시 습득 = 토큰 충전 의미가 살아남.
-      for (const id of [...r.recipesAdded, ...r.recipesSkipped]) {
-        learnRecipe(id);
-      }
+      // 거래/우편 출처 학습 — 새로 받은 것만 known 에 추가. 토큰 부여는 X
+      // (재거래 사이클로 토큰을 영구 갱신하지 못하도록).
+      // skipped (이미 알던 것) 는 무시 — 받은 사람 입장에서 바뀌는 것 없음.
+      for (const id of r.recipesAdded) learnRecipeFromTrade(id);
       // 토스트 — 합산 표시.
       const parts: string[] = [];
       if (r.goldAdded > 0) parts.push(`🪙 ${r.goldAdded.toLocaleString()} G`);

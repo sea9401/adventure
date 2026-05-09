@@ -24,8 +24,8 @@ export function useCrafting() {
   const [state, setState] = useState<CraftingState>(() => readInitial(initial));
   useRemotePatch("crafting.v2", state);
 
-  // 학습 시 known + shareable 둘 다 갱신.
-  // 같은 id 재호출 = "다시 습득" → known 은 no-op, shareable 만 충전.
+  // 학습 — 1차 출처 (NPC/퀘스트/드랍 보상). known + shareable 둘 다 갱신.
+  // 같은 id 재호출 = 다시 습득 → known 은 no-op, shareable 만 충전.
   const learnRecipe = useCallback((id: string) => {
     setState((prev) => {
       const knownHas = prev.known.includes(id);
@@ -37,6 +37,16 @@ export function useCrafting() {
         shareable: shareableHas ? prev.shareable : [...prev.shareable, id],
       };
     });
+  }, []);
+
+  // 거래/우편으로 받은 제작서 — known 만 갱신, shareable 은 건드리지 않는다.
+  // (= 받은 사람이 즉시 다시 거래에 올리는 무한 laundering 방지)
+  const learnRecipeFromTrade = useCallback((id: string) => {
+    setState((prev) =>
+      prev.known.includes(id)
+        ? prev
+        : { ...prev, known: [...prev.known, id] },
+    );
   }, []);
 
   const consumeShare = useCallback((id: string) => {
@@ -76,6 +86,7 @@ export function useCrafting() {
     canShare: (id: string) => state.shareable.includes(id),
     hasCrafted: (id: string) => state.crafted.includes(id),
     learnRecipe,
+    learnRecipeFromTrade,
     consumeShare,
     markCrafted,
     setBoldQuestComplete,

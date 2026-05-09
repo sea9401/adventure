@@ -38,6 +38,7 @@ export function CharacterScreen() {
     handleEquipFromInventory,
     handleUnequip,
     quests,
+    crafting,
   } = useGame();
 
   const activeQuestCount = QUESTS.reduce((n, q) => {
@@ -182,6 +183,8 @@ export function CharacterScreen() {
             chatCount: adventureLog.log.chatCount ?? 0,
             healingCount: adventureLog.log.healingCount ?? 0,
           }}
+          knownRecipes={crafting.state.known}
+          shareableRecipes={crafting.state.shareable}
         />
       </div>
     );
