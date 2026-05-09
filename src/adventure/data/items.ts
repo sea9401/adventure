@@ -125,6 +125,17 @@ export const ITEMS = {
     bonus: { atk: 7, spd: -2 },
     description: "부서진 골렘의 팔에서 떼어낸 둔중한 돌망치. 휘두르려면 두 손이 필요하다.",
   } satisfies EquipItem,
+  golem_armor: {
+    name: "골렘갑주",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+7" },
+      { label: "속도", value: "-3" },
+      { label: "행운", value: "-1" },
+    ],
+    bonus: { def: 7, spd: -3, luk: -1 },
+    description: "골렘의 잔해를 덧대어 만든 두꺼운 갑주. 묵직한 만큼 발걸음과 운이 따라 무거워진다.",
+  } satisfies EquipItem,
   wraith_cloak: {
     name: "망령의 망토",
     slot: "armor",

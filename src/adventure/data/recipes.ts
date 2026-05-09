@@ -90,6 +90,21 @@ export const RECIPES: Recipe[] = [
     },
   },
   {
+    id: "golem_armor",
+    name: "골렘갑주 제작서",
+    description: `${ITEMS.golem_armor.name}을(를) 만든다. 폐허 잔해를 다듬어 거미줄로 안을 덧대고 슬라임 점액으로 이음새를 메운다.`,
+    ingredients: [
+      { kind: "material", materialId: "ruin_fragment", count: 5 },
+      { kind: "material", materialId: "spider_silk", count: 5 },
+      { kind: "material", materialId: "slime_chunk", count: 3 },
+    ],
+    result: {
+      kind: "equipment",
+      itemId: "golem_armor",
+      slot: "armor",
+    },
+  },
+  {
     id: "crystal_dagger",
     name: "수정 단검 제작서",
     description: `${ITEMS.crystal_dagger.name}을(를) 만든다. 단단한 수정을 깎아 들개 송곳니로 손잡이를 감싼다.`,

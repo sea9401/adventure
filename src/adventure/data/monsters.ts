@@ -166,6 +166,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 14,
     drops: [
       { kind: "material", materialId: "ruin_fragment", chance: 0.05 },
+      { kind: "recipe", recipeId: "golem_armor", chance: 0.02 },
       { kind: "equip", itemId: "golem_hammer", chance: 0.001 },
     ],
   },
