@@ -198,6 +198,7 @@ export const MONSTERS: Record<string, Monster> = {
   "작은 광물 골렘": {
     name: "작은 광물 골렘",
     tags: ["golem"],
+    image: "/images/monster/minigolem.webp",
     hp: 110,
     atk: 9,
     def: 5,
@@ -213,6 +214,7 @@ export const MONSTERS: Record<string, Monster> = {
   "광맥의 수호자": {
     name: "광맥의 수호자",
     tags: ["golem"],
+    image: "/images/monster/oreguardian.webp",
     hp: 380,
     atk: 18,
     def: 10,
