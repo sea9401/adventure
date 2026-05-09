@@ -94,6 +94,7 @@ export const NPCS: Npc[] = [
     description: "매일 새벽 호수에 나가는 청년. 말수가 적다.",
     greeting:
       "…뭐.\n물고기가 줄었어. 그것뿐이야. 호수에 뭔가 있어.",
+    portrait: "/images/npc/kai.webp",
   },
   {
     id: "diola_innkeeper",
