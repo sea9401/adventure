@@ -195,7 +195,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 3,
     exp: 9,
     drops: [
-      { kind: "material", materialId: "mana_crystal", chance: 0.03 },
+      { kind: "material", materialId: "mana_crystal", chance: 0.001 },
     ],
   },
   // 깊은 동굴 보스 — region.boss 도전 버튼으로만 진입. 일반 인카운터 풀에선 제외.
