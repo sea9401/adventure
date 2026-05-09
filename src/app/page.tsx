@@ -272,6 +272,13 @@ function Home() {
     characterState.equippedSkills,
   );
   const effectiveSkillSet = new Set(effectiveSkillNameList);
+  // 전투 전적 = 누적 처치 + 누적 패배. 도주 경로가 없어 둘의 합이 곧 전투 횟수.
+  const totalMonsterKills = Object.values(adventureLog.log.monsters).reduce(
+    (sum, m) => sum + (m.kills ?? 0),
+    0,
+  );
+  const battleCount =
+    totalMonsterKills + (adventureLog.log.battleLosses ?? 0);
   const character: Character = {
     ...baseCharacter,
     name: profile.name,
@@ -286,6 +293,7 @@ function Home() {
     maxExp: requiredExpToNext(characterState.level) ?? 0,
     gold: characterState.gold,
     fame: characterState.fame,
+    battleCount,
     equipped: equippedSlots,
     stats: totalStats,
     skills: characterSkills,
