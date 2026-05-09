@@ -4,6 +4,7 @@ import {
   Barbell,
   FirstAid,
   Hammer,
+  House,
   MapPin,
   Scroll,
   Storefront,
@@ -76,19 +77,7 @@ export function TownScreen() {
               ? "체력과 마력이 가득 차 있다."
               : "지친 몸을 회복할 수 있는 곳."
           }
-          onClick={() => {
-            if (mapProgress.currentRegionId !== START_REGION_ID) {
-              setMapProgress((prev) => ({
-                currentRegionId: START_REGION_ID,
-                visitedRegionIds: prev.visitedRegionIds.includes(
-                  START_REGION_ID,
-                )
-                  ? prev.visitedRegionIds
-                  : [...prev.visitedRegionIds, START_REGION_ID],
-              }));
-            }
-            setSubView("healing");
-          }}
+          onClick={() => setSubView("healing")}
         />
         <EntryCard
           icon={
@@ -134,9 +123,11 @@ export function TownScreen() {
     const healCost = character.gold < 50 ? 0 : 1;
     const isFull =
       character.hp >= character.maxHp && character.mp >= character.maxMp;
+    const respawnId = mapProgress.respawnRegionId ?? START_REGION_ID;
+    const isRespawnHere = respawnId === currentRegion.id;
     return (
       <div className="space-y-3">
-        <SubViewHeader title="시작 마을 치료소" onBack={back} />
+        <SubViewHeader title={`${currentRegion.name} 치료소`} onBack={back} />
         <Card as="section" padding="md">
           <div className="flex items-center gap-3">
             <FirstAid
@@ -180,6 +171,33 @@ export function TownScreen() {
               : healCost > 0
                 ? `전부 회복 (${healCost} G)`
                 : "전부 회복 (무료)"}
+          </button>
+        </Card>
+        <Card as="section" padding="md">
+          <div className="flex items-center gap-3">
+            <House
+              size={28}
+              weight="duotone"
+              className="shrink-0 text-amber-500"
+            />
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">
+              패배 시 이 마을의 치유소로 복귀한다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setMapProgress((prev) => ({
+                ...prev,
+                respawnRegionId: currentRegion.id,
+              }))
+            }
+            disabled={isRespawnHere}
+            className="mt-3 w-full rounded-md border border-amber-500 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-400 dark:text-amber-300"
+          >
+            {isRespawnHere
+              ? "이미 복귀 지점입니다"
+              : "이곳을 복귀 지점으로 설정"}
           </button>
         </Card>
       </div>

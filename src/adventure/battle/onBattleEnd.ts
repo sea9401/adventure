@@ -5,7 +5,7 @@ import type { ItemId } from "@/adventure/data/items";
 import { MONSTERS } from "@/adventure/data/monsters";
 import { MATERIALS } from "@/adventure/data/materials";
 import { ITEMS } from "@/adventure/data/items";
-import { START_REGION_ID } from "@/adventure/data/world";
+import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
 import { getQuestById } from "@/adventure/data/quests";
 import type { MapProgress } from "@/lib/map-progress";
 import type {
@@ -32,6 +32,7 @@ export type BattleEndDeps = {
     addGoldFame: (gold: number, fame: number) => void;
   };
   vit: number;
+  respawnRegionId: RegionId;
   addNotification: (
     kind: NotificationKind,
     text: string,
@@ -102,21 +103,25 @@ export function onBattleEnd(
     return;
   }
 
-  // 패배 — HP 0 + 시작 마을 강제 이동 + 마을 탭 치료소 sub 로 점프 + 자동 사냥 해제.
+  // 패배 — HP 0 + 복귀 마을 강제 이동 + 마을 탭 치료소 sub 로 점프 + 자동 사냥 해제.
   // replace 로 history 에 남기지 않음 (사망 직후로 back 되돌아갈 일 없음).
   deps.adventureLog.incrementBattleLosses();
   deps.characterState.setHp(0);
   deps.setHuntingActive(false);
   deps.replaceLocation("town", "healing");
+  const respawnId = deps.respawnRegionId;
   deps.setMapProgress((prev) => ({
-    currentRegionId: START_REGION_ID,
-    visitedRegionIds: prev.visitedRegionIds.includes(START_REGION_ID)
+    ...prev,
+    currentRegionId: respawnId,
+    visitedRegionIds: prev.visitedRegionIds.includes(respawnId)
       ? prev.visitedRegionIds
-      : [...prev.visitedRegionIds, START_REGION_ID],
+      : [...prev.visitedRegionIds, respawnId],
   }));
+  const respawnName =
+    WORLD_MAP.regions.find((r) => r.id === respawnId)?.name ?? "마을";
   deps.addNotification(
     "battle_lose",
-    `${payload.enemyName}에게 쓰러졌다... 시작 마을 치유소에서 회복이 필요하다.`,
+    `${payload.enemyName}에게 쓰러졌다... ${respawnName} 치유소에서 회복이 필요하다.`,
     { battleLog: payload.log },
   );
 }
