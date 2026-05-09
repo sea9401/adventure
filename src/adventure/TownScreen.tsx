@@ -15,7 +15,10 @@ import { EntryCard } from "@/components/ui/EntryCard";
 import { StatBar } from "@/components/ui/StatBar";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { TrainingView } from "@/adventure/character/TrainingView";
-import { GrowthShrineView } from "@/adventure/character/GrowthShrineView";
+import {
+  GrowthShrineView,
+  REVERT_POINT_PRICE,
+} from "@/adventure/character/GrowthShrineView";
 import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CraftingView } from "@/adventure/CraftingView";
 import { ShopView } from "@/adventure/ShopView";
@@ -287,7 +290,13 @@ export function TownScreen() {
           revertPoints={training.revertPoints}
           allocatedStats={training.allocatedStats}
           baseStats={baseStatsForShrine}
+          gold={character.gold}
           onCommit={training.commitAllocations}
+          onBuyRevertPoint={() => {
+            if (character.gold < REVERT_POINT_PRICE) return;
+            characterStateHook.addGold(-REVERT_POINT_PRICE);
+            training.addRevertPoints(1);
+          }}
         />
       </div>
     );

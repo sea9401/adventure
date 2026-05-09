@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Minus, Plus, X } from "@phosphor-icons/react";
+import { Check, Coins, Minus, Plus, X } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { STAT_KEYS, STAT_LABELS, type StatKey } from "@/adventure/data/stats";
 import { STAT_ICONS, STAT_ICON_COLORS } from "./statMeta";
@@ -14,6 +14,9 @@ const ZERO_DRAFT: Record<StatKey, number> = STAT_KEYS.reduce(
   {} as Record<StatKey, number>,
 );
 
+// 되돌리기 포인트 1개 구매 비용. 신전에서 골드로 즉시 구매 — 드래프트와 무관.
+export const REVERT_POINT_PRICE = 100;
+
 // 성장의 신전 — 드래프트 모드. +/- 로 분배안을 미리 짜고, '확정' 으로 일괄 반영.
 // 확정 전에는 실제 단련/되돌리기 포인트가 소모되지 않아 실수로 잘못 누른 분배를 되돌릴 수 있다.
 export function GrowthShrineView({
@@ -21,13 +24,17 @@ export function GrowthShrineView({
   revertPoints,
   allocatedStats,
   baseStats,
+  gold,
   onCommit,
+  onBuyRevertPoint,
 }: {
   unspentPoints: number;
   revertPoints: number;
   allocatedStats: Record<StatKey, number>;
   baseStats: Record<StatKey, number>;
+  gold: number;
   onCommit: (deltas: Record<StatKey, number>) => void;
+  onBuyRevertPoint: () => void;
 }) {
   const [draft, setDraft] = useState<Record<StatKey, number>>(ZERO_DRAFT);
 
@@ -95,6 +102,28 @@ export function GrowthShrineView({
             total={revertPoints}
             tone="amber"
           />
+        </div>
+
+        <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50/60 px-3 py-2 dark:border-amber-900 dark:bg-amber-950/30">
+          <Coins
+            size={16}
+            weight="fill"
+            className="shrink-0 text-yellow-500"
+          />
+          <div className="min-w-0 flex-1 text-xs text-amber-900 dark:text-amber-200">
+            되돌리기 포인트 1개를 {REVERT_POINT_PRICE}G 에 살 수 있다.
+            <span className="ml-2 tabular-nums text-zinc-500 dark:text-zinc-400">
+              잔액 {gold.toLocaleString()} G
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onBuyRevertPoint}
+            disabled={gold < REVERT_POINT_PRICE}
+            className="shrink-0 rounded-md border border-amber-700 bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            +1 구매
+          </button>
         </div>
 
         <div className="space-y-2">
