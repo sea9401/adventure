@@ -90,8 +90,11 @@ export const ITEMS = {
   spare_hatchet: {
     name: "예비 손도끼",
     slot: "weapon",
-    stats: [{ label: "공격력", value: "+3" }],
-    bonus: { atk: 3 },
+    stats: [
+      { label: "공격력", value: "+2" },
+      { label: "민첩", value: "+1" },
+    ],
+    bonus: { atk: 2, dex: 1 },
     description: "나무꾼 지미가 챙겨 다니던 예비 손도끼. 손에 익으면 제법 매섭다.",
     tradable: false,
   } satisfies EquipItem,
