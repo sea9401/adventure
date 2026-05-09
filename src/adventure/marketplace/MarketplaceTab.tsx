@@ -29,7 +29,6 @@ export function MarketplaceTab() {
     inbox,
     addNotification,
   } = useGame();
-  const equipped = characterStateHook.equippedSlots;
   const consumeEquipment = inventory.consumeEquipment;
   const consumeMaterial = inventory.consumeMaterial;
   const addEquipment = inventory.addEquipment;
@@ -168,7 +167,6 @@ export function MarketplaceTab() {
       {modal ? (
         <ListingCreateModal
           inventory={inventory.state}
-          equipped={equipped}
           shareableRecipes={shareableRecipes}
           remote={remote}
           onClose={() => setModal(false)}

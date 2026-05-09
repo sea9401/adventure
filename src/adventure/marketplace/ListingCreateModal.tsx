@@ -9,7 +9,6 @@ import {
 } from "@/adventure/data/materials";
 import { RECIPES, type Recipe } from "@/adventure/data/recipes";
 import type { InventoryState } from "@/adventure/inventory/useInventory";
-import type { EquippedSlots } from "@/adventure/character/types";
 import type { RemoteSave } from "@/lib/storage/remote";
 import { createListing } from "./api";
 
@@ -29,7 +28,6 @@ type Selection =
 
 export function ListingCreateModal({
   inventory,
-  equipped,
   shareableRecipes,
   remote,
   onClose,
@@ -38,7 +36,6 @@ export function ListingCreateModal({
   showError,
 }: {
   inventory: InventoryState;
-  equipped: EquippedSlots | undefined;
   // 공유 토큰을 보유한 레시피만 등록 가능 — 이미 공유에 쓴 건 다시 습득해야 등록 가능.
   shareableRecipes: string[];
   remote: RemoteSave;
@@ -53,22 +50,8 @@ export function ListingCreateModal({
   const [price, setPrice] = useState("1");
   const [submitting, setSubmitting] = useState(false);
 
-  const equippedIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const slot of ["weapon", "armor", "accessory"] as const) {
-      const item = equipped?.[slot];
-      if (!item) continue;
-      // ITEMS 안에서 name 으로 ID 역추적.
-      for (const [id, def] of Object.entries(ITEMS)) {
-        if (def.name === item.name) {
-          ids.add(id);
-          break;
-        }
-      }
-    }
-    return ids;
-  }, [equipped]);
-
+  // inventory.equipment 는 미장착 사본만 카운트 — 동일 ID 가 슬롯에 장착돼 있어도
+  // 인벤 스택은 별개라 거래 가능하다. 장착 여부 필터를 두지 않는 이유.
   const equipOptions = useMemo<Selection[]>(() => {
     const out: Selection[] = [];
     for (const [id, count] of Object.entries(inventory.equipment ?? {})) {
@@ -76,11 +59,10 @@ export function ListingCreateModal({
       const def = ITEMS[id as ItemId];
       if (!def) continue;
       if ("tradable" in def && def.tradable === false) continue;
-      if (equippedIds.has(id)) continue;
       out.push({ kind: "equip", itemId: id as ItemId, def, have: count });
     }
     return out.sort((a, b) => a.def.name.localeCompare(b.def.name));
-  }, [inventory.equipment, equippedIds]);
+  }, [inventory.equipment]);
 
   const materialOptions = useMemo<Selection[]>(() => {
     const out: Selection[] = [];
