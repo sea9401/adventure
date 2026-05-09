@@ -73,7 +73,11 @@ export type GameCtx = {
   pendingTownNpcId: string | null;
   setPendingTownNpcId: Dispatch<SetStateAction<string | null>>;
   trialEdge: TrialEdge | null;
-  setTrialEdge: Dispatch<SetStateAction<TrialEdge | null>>;
+  /** 영구 저장된 누적 승수. trialEdge 가 null 이면 0. */
+  trialWinCount: number;
+  startTrial: (edge: TrialEdge) => void;
+  endTrial: () => void;
+  recordTrialWin: (winCount: number) => void;
   huntingActive: boolean;
   setHuntingActive: (next: boolean) => void;
 

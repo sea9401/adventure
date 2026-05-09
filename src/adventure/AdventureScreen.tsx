@@ -33,7 +33,10 @@ export function AdventureScreen() {
     pendingTownNpcId,
     setPendingTownNpcId,
     trialEdge,
-    setTrialEdge,
+    trialWinCount,
+    startTrial,
+    endTrial,
+    recordTrialWin,
     mapProgress,
     setMapProgress,
     crafting,
@@ -310,7 +313,7 @@ export function AdventureScreen() {
           onTrialStart={(from, to) => {
             const req = findEdgeRequirement(from, to);
             if (!req || req.kind !== "trial") return;
-            setTrialEdge({
+            startTrial({
               from,
               to,
               battles: req.battles,
@@ -325,7 +328,7 @@ export function AdventureScreen() {
   if (subView === "map" && trialEdge) {
     return (
       <div className="space-y-3">
-        <SubViewHeader title="시련" onBack={() => setTrialEdge(null)} />
+        <SubViewHeader title="시련" onBack={endTrial} />
         <TrialView
           trial={trialEdge}
           player={playerCombat}
@@ -340,6 +343,8 @@ export function AdventureScreen() {
           }
           inventoryState={inventory.state}
           onBattleEnd={handleBattleEnd}
+          initialWinCount={trialWinCount}
+          onWinUpdate={recordTrialWin}
           onTrialEnd={(result) => {
             if (result === "win" && trialEdge) {
               edgeUnlocks.unlock(trialEdge.from, trialEdge.to);
@@ -358,9 +363,9 @@ export function AdventureScreen() {
                 } 진입.`,
               );
             }
-            setTrialEdge(null);
+            endTrial();
           }}
-          onAbort={() => setTrialEdge(null)}
+          onAbort={endTrial}
           recentNotifications={notifications.list}
         />
       </div>

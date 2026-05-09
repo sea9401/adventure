@@ -46,6 +46,8 @@ export function TrialView({
   onTrialEnd,
   onAbort,
   recentNotifications,
+  initialWinCount = 0,
+  onWinUpdate,
 }: {
   trial: TrialEdge;
   player: PlayerCombat;
@@ -62,6 +64,10 @@ export function TrialView({
   /** 사용자가 시련을 포기하고 지도로 돌아가고 싶을 때. */
   onAbort: () => void;
   recentNotifications?: AppNotification[];
+  /** 저장된 진행도부터 이어 시작. reload/백그라운드 복귀 후 시련 재개용. */
+  initialWinCount?: number;
+  /** 한 전투 승리할 때마다 부모에 알림 — 부모가 영구 저장을 갱신. */
+  onWinUpdate?: (winCount: number) => void;
 }) {
   const targetRegion = WORLD_MAP.regions.find(
     (r) => r.id === trial.enemiesFrom,
@@ -75,9 +81,10 @@ export function TrialView({
     potions: inventoryState.potions,
   });
 
-  // 누적 승수.
-  const winCountRef = useRef(0);
-  const [winCount, setWinCount] = useState(0);
+  // 누적 승수. initialWinCount 로 시드 → reload 후 이어서 진행 가능.
+  // 컴포넌트 마운트 시 한 번만 적용 (이후 prop 변경은 무시).
+  const winCountRef = useRef(initialWinCount);
+  const [winCount, setWinCount] = useState(initialWinCount);
 
   // 마운트 시 첫 전투 시작.
   const startedRef = useRef(false);
@@ -115,7 +122,8 @@ export function TrialView({
     });
     winCountRef.current += 1;
     setWinCount(winCountRef.current);
-  }, [state, potionsConsumed, playerLevel]);
+    onWinUpdate?.(winCountRef.current);
+  }, [state, potionsConsumed, playerLevel, onWinUpdate]);
 
   // 승리 카운트가 임계 도달 → 시련 완료. 아니면 cooldown 후 다음 적.
   useEffect(() => {

@@ -180,8 +180,23 @@ function Home() {
   );
   // 마을 진입 직후 자동으로 열 NPC 대화 — 알림판 클릭 시 세팅, TownView 가 마운트 직후 소비.
   const [pendingTownNpcId, setPendingTownNpcId] = useState<string | null>(null);
-  // 시련(trial) 진행 중인 엣지. 세팅되면 지도 서브뷰에서 TrialView 가 대신 렌더링됨.
-  const [trialEdge, setTrialEdge] = useState<TrialEdge | null>(null);
+  // 시련(trial) 진행 상태 — 엣지 + 누적 승수. 영구 저장 (trial.v1) 으로 reload /
+  // 백그라운드 복귀 후 location.reload 가 발생해도 진행도가 살아남는다.
+  // 사용자가 모험/지도 외 화면으로 나가면 자동 취소(아래 useEffect 에서 setTrial(null)).
+  type PersistedTrial = { edge: TrialEdge; winCount: number };
+  const initialTrial = useSavedValue<PersistedTrial | null>("trial.v1");
+  const [trial, setTrial] = useState<PersistedTrial | null>(() => {
+    if (!initialTrial || typeof initialTrial !== "object") return null;
+    if (!initialTrial.edge || typeof initialTrial.winCount !== "number") return null;
+    return initialTrial;
+  });
+  useRemotePatch("trial.v1", trial);
+  const trialEdge = trial?.edge ?? null;
+  const trialWinCount = trial?.winCount ?? 0;
+  const startTrial = (edge: TrialEdge) => setTrial({ edge, winCount: 0 });
+  const endTrial = () => setTrial(null);
+  const recordTrialWin = (winCount: number) =>
+    setTrial((prev) => (prev ? { ...prev, winCount } : prev));
   const initialMap = useSavedValue<Partial<MapProgress>>("map.v2");
   const [mapProgress, setMapProgress] = useState<MapProgress>(() => ({
     currentRegionId: initialMap?.currentRegionId ?? initialMapProgress.currentRegionId,
@@ -223,14 +238,16 @@ function Home() {
   }, [tab, mapProgress.currentRegionId]);
 
   // 시련 중 사용자가 다른 탭/서브뷰로 이동하면 시련 자동 취소.
-  // 다시 돌아오면 처음부터 새로 도전. (도중 EXP/킬은 이미 적용됐으므로 손해 없음.)
+  // (저장된 trial 이 있어도 사용자가 명시적으로 다른 곳으로 가면 끊는다 — 의도적 abort.)
+  // reload/visibilitychange 로 인한 location.reload 후엔 URL 이 보존돼 같은 위치에서
+  // 복귀하므로 trial 도 그대로 살아남는다.
   useEffect(() => {
-    if (!trialEdge) return;
+    if (!trial) return;
     if (tab !== "adventure" || subView !== "map") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTrialEdge(null);
+      endTrial();
     }
-  }, [tab, subView, trialEdge]);
+  }, [tab, subView, trial]);
 
   // region 변경 시 자동 사냥 해제 — 다른 곳으로 이동했으면 그 region에서의 자동 사냥은 끝.
   // 첫 mount(baseline 기록) 시에는 변경 감지하지 않도록 ref로 분기.
@@ -847,7 +864,10 @@ function Home() {
     pendingTownNpcId,
     setPendingTownNpcId,
     trialEdge,
-    setTrialEdge,
+    trialWinCount,
+    startTrial,
+    endTrial,
+    recordTrialWin,
     huntingActive,
     setHuntingActive,
     tab,
