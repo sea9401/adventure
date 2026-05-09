@@ -5,6 +5,7 @@ import { CaretDown, ChatCircle, PaperPlaneTilt, Users, X } from "@phosphor-icons
 import { formatRelative } from "@/lib/notifications";
 import { CHAT_MAX_LENGTH } from "@/lib/chat-config";
 import { DEFAULT_CLASS_NAME } from "@/adventure/character/defaults";
+import { SendMessageModal } from "@/adventure/marketplace/SendMessageModal";
 
 export type ChatMessage = {
   id: number;
@@ -81,6 +82,7 @@ export function ChatPanel({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pmTarget, setPmTarget] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -201,28 +203,33 @@ export function ChatPanel({
                     className="flex items-center gap-1.5 text-xs"
                   >
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                    <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                      {u.className}
-                    </span>
+                    {u.className && u.className !== DEFAULT_CLASS_NAME && (
+                      <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                        {u.className}
+                      </span>
+                    )}
                     {u.title && (
                       <span className="font-medium text-amber-600 dark:text-amber-400">
                         {u.title}
                       </span>
                     )}
-                    <span
-                      className={
-                        u.mine
-                          ? "font-semibold text-emerald-700 dark:text-emerald-400"
-                          : "font-semibold text-zinc-700 dark:text-zinc-200"
-                      }
-                    >
-                      {u.name}
-                      {u.mine && (
+                    {u.mine ? (
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                        {u.name}
                         <span className="ml-1 text-[10px] font-normal text-zinc-500 dark:text-zinc-400">
                           (나)
                         </span>
-                      )}
-                    </span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setPmTarget(u.name)}
+                        title="쪽지 보내기"
+                        className="rounded font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
+                      >
+                        {u.name}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -255,9 +262,20 @@ export function ChatPanel({
                       {m.title}
                     </span>
                   )}
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-200">
-                    {m.name}
-                  </span>
+                  {m.mine ? (
+                    <span className="font-semibold text-zinc-700 dark:text-zinc-200">
+                      {m.name}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setPmTarget(m.name)}
+                      title="쪽지 보내기"
+                      className="rounded font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
+                    >
+                      {m.name}
+                    </button>
+                  )}
                   <span>{formatRelative(m.createdAt)}</span>
                 </div>
                 <div
@@ -302,6 +320,13 @@ export function ChatPanel({
           </button>
         </form>
       </div>
+
+      {pmTarget && (
+        <SendMessageModal
+          initialRecipient={pmTarget}
+          onClose={() => setPmTarget(null)}
+        />
+      )}
     </div>
   );
 }
