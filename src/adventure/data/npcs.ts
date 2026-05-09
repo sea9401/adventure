@@ -114,6 +114,7 @@ export const NPCS: Npc[] = [
     description: "어딘지 음흉한 미소의 잡화상.",
     greeting:
       "어이~ 좋은 거 들여놨는데, 한번 봐요.\n호수에서만 잡히는 미끼도 있다구요?",
+    portrait: "/images/npc/boro.webp",
   },
   {
     id: "diola_kid",
