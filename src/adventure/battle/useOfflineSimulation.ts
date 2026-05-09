@@ -1,12 +1,21 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useAuth } from "@clerk/nextjs";
 import type { RegionId } from "../data/world";
 import type { OfflineSimResult } from "./offlineSim";
 
-const STORAGE_KEY = "last-active-tick.v2";
+const STORAGE_KEY = "last-active-tick.v3";
 
-type StoredTick = { regionId: RegionId; ts: number; active: boolean };
+type StoredTick = {
+  regionId: RegionId;
+  ts: number;
+  active: boolean;
+  /** baseline 시점의 player HP — 마을 회복 후 부풀린 HP 로 sim 안 되도록 (Fix #4). */
+  playerHp: number;
+  /** baseline 을 저장한 Clerk userId — 다른 계정 로그인 시 무시 (Fix #2). null = 로그인 정보 없음. */
+  userId: string | null;
+};
 
 function loadTick(): StoredTick | null {
   if (typeof window === "undefined") return null;
@@ -18,8 +27,12 @@ function loadTick(): StoredTick | null {
     return {
       regionId: parsed.regionId,
       ts: parsed.ts,
-      // 구버전 데이터(v.0)에 active 없으면 false로 간주 — 사용자가 명시적으로 활성화하지 않은 한 시뮬 X.
       active: parsed.active === true,
+      playerHp:
+        typeof parsed.playerHp === "number" && parsed.playerHp >= 0
+          ? parsed.playerHp
+          : 0,
+      userId: typeof parsed.userId === "string" ? parsed.userId : null,
     };
   } catch {
     return null;
@@ -42,9 +55,10 @@ export type OfflineSimulationOptions = {
   // 사용자가 현재 BattleView 화면에 있는지 (in-app 탭/서브뷰 기준).
   // false면 in-app 으로 다른 탭(캐릭터/광장 등)을 보는 상태 — 시뮬 대상.
   isInBattleView: boolean;
-  // 자리비운 시간(ms)을 받아 시뮬을 돌리고 결과를 반환. 호출 측에서 입력값을
-  // 클로저에 가둬두기 좋다 (현재 player/potions/rules를 매번 새로 읽도록).
-  runSim: (awayMs: number) => OfflineSimResult;
+  /** baseline 박을 시점의 player HP. 마을 회복 익스플로잇 차단용. */
+  playerHp: number;
+  // baseline 시점의 HP 를 받아 그 HP 로 시뮬을 돌리고 결과를 반환.
+  runSim: (awayMs: number, baselineHp: number) => OfflineSimResult;
   // 시뮬 결과를 캐릭터/인벤토리/알림에 반영.
   onApply: (result: OfflineSimResult) => void;
 };
@@ -52,60 +66,103 @@ export type OfflineSimulationOptions = {
 // 트리거: "away → back" 사이클에서 sim 실행.
 // "away" = 브라우저 탭 hidden  OR  in-app 으로 BattleView 가 아님(캐릭터/광장 등).
 // 둘 중 하나라도 true 면 away. 둘 다 false (visible + 배틀뷰) 가 되면 복귀로 간주.
-//   - 마운트 / dep 변경 시점엔 baseline 만 잡음. transition 없으면 시뮬 안 돌림.
-//   - 사용자가 active=true 로 둔 채로 떠난 동안의 시간만 보상 적용.
+//
+// 최초 마운트(prev=null)에서 사용자가 이미 "back" 상태면 저장된 baseline 으로 즉시 sim.
+// 이로써 (a) 탭 종료 후 재진입 (b) SaveProvider 의 60초 hidden 후 location.reload —
+// 두 케이스 모두 다음 mount 에서 그 동안 흐른 시간만큼 보상 적용 (Fix #1, #2).
+//
+// baseline 의 userId/regionId 가 현재와 다르면 다른 계정/region 의 stale 데이터로 보고 무시.
+// 회복 (현재 HP > baseline HP) 도 검출해 그 사이클은 sim skip — 마을에서 회복하고 돌아온
+// 시간을 가짜 사냥으로 환산하지 않게 (Fix #4).
 export function useOfflineSimulation({
   enabled,
   regionId,
   active,
   isInBattleView,
+  playerHp,
   runSim,
   onApply,
 }: OfflineSimulationOptions): void {
+  // Clerk 세션 hydrate 전에 baseline 을 userId=null 로 잡으면 이후 valid check 실패.
+  // isLoaded 까지 기다려서 일관된 userId 로만 baseline / sim 진행.
+  const { userId, isLoaded: authLoaded } = useAuth();
   const runSimRef = useRef(runSim);
   const onApplyRef = useRef(onApply);
+  const playerHpRef = useRef(playerHp);
   useEffect(() => {
     runSimRef.current = runSim;
     onApplyRef.current = onApply;
+    playerHpRef.current = playerHp;
   });
 
   // 직전 사이클에서 "away" 였는지. null = 아직 baseline 안 잡힌 상태(최초 마운트).
   const wasAwayRef = useRef<boolean | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !authLoaded) return;
 
     const computeAway = () =>
       document.visibilityState === "hidden" || !isInBattleView;
 
+    const isStoredValid = (stored: StoredTick | null): stored is StoredTick =>
+      !!stored &&
+      stored.active &&
+      stored.regionId === regionId &&
+      stored.userId === userId;
+
+    const trySimFromBaseline = () => {
+      const stored = loadTick();
+      if (!isStoredValid(stored)) return;
+      const awayMs = Date.now() - stored.ts;
+      if (awayMs <= 0) return;
+      // 회복 검출 — 현재 HP 가 baseline 보다 높으면 마을 회복 등 비-사냥 이벤트 발생.
+      // 그 사이클은 sim skip (가짜 HP 로 사냥 시뮬 방지).
+      if (playerHpRef.current > stored.playerHp) return;
+      const result = runSimRef.current(awayMs, stored.playerHp);
+      if (result.battles > 0 || result.died) {
+        onApplyRef.current(result);
+      }
+    };
+
+    const writeBaseline = () => {
+      saveTick({
+        regionId,
+        ts: Date.now(),
+        active,
+        playerHp: playerHpRef.current,
+        userId: userId ?? null,
+      });
+    };
+
     const handleTransition = () => {
       const prev = wasAwayRef.current;
       const now = computeAway();
+
       if (prev === null) {
-        // 최초 — baseline 만 잡고 끝.
-        saveTick({ regionId, ts: Date.now(), active });
+        // 최초 — 사용자가 이미 "back" 상태면 옛 baseline 으로 즉시 sim.
+        // away 상태라면 저장된 baseline 을 보존하고 다음 back 까지 대기 (없거나 무효면 새로 잡음).
+        if (!now) {
+          trySimFromBaseline();
+          writeBaseline();
+        } else {
+          const stored = loadTick();
+          if (!isStoredValid(stored)) writeBaseline();
+        }
         wasAwayRef.current = now;
         return;
       }
+
       if (prev === now) return;
       wasAwayRef.current = now;
+
       if (now) {
         // 막 away 가 됨 — baseline 저장.
-        saveTick({ regionId, ts: Date.now(), active });
+        writeBaseline();
         return;
       }
-      // 복귀 — 저장된 baseline 으로 sim.
-      const stored = loadTick();
-      if (stored?.active && stored.regionId === regionId) {
-        const awayMs = Date.now() - stored.ts;
-        if (awayMs > 0) {
-          const result = runSimRef.current(awayMs);
-          if (result.battles > 0 || result.died) {
-            onApplyRef.current(result);
-          }
-        }
-      }
-      saveTick({ regionId, ts: Date.now(), active });
+      // 복귀 — sim 시도.
+      trySimFromBaseline();
+      writeBaseline();
     };
 
     // dep 변경(특히 isInBattleView 토글) 시점에 즉시 한 번 transition 검사.
@@ -116,5 +173,5 @@ export function useOfflineSimulation({
     return () => {
       document.removeEventListener("visibilitychange", handleTransition);
     };
-  }, [enabled, regionId, active, isInBattleView]);
+  }, [enabled, regionId, active, isInBattleView, userId, authLoaded]);
 }

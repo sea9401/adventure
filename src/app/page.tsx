@@ -713,12 +713,15 @@ function Home() {
     regionId: currentRegion.id,
     active: huntingActive,
     isInBattleView: tab === "adventure" && subView === "battle",
-    runSim: (awayMs) =>
+    playerHp: character.hp,
+    runSim: (awayMs, baselineHp) =>
       simulateOfflineHunt({
-        player: playerCombat,
+        // baseline 시점의 HP 로 sim — 마을 회복 후 부풀린 HP 가 sim 에 반영되는 익스플로잇 차단.
+        player: { ...playerCombat, hp: baselineHp },
         playerName: profile.name,
         region: currentRegion,
         playerLevel: character.level,
+        playerExp: character.exp,
         potions: inventory.state.potions,
         turnIntervalMs: PLAYER_TURN_INTERVAL_MS,
         awayMs,
@@ -781,8 +784,9 @@ function Home() {
       // 요약 알림
       const summary = summarizeOfflineResult(result);
       const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
+      // cap 라벨은 실제로 30분에 걸려 끊긴 경우에만 표시 — 사망/적 부재 등으로 일찍 끝났으면 의미 없음.
       const cap =
-        result.cappedByLimit
+        result.cappedByLimit && result.simulatedMs >= OFFLINE_SIM_MAX_MS
           ? ` (${OFFLINE_SIM_MAX_MS / 60_000}분 cap)`
           : "";
       addNotification(

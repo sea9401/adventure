@@ -19,7 +19,7 @@ import {
   type PlayerAction,
   type PlayerCombat,
 } from "./engine";
-import { applyNewbieBonus } from "@/lib/leveling";
+import { applyExpGain, applyNewbieBonus } from "@/lib/leveling";
 
 export const OFFLINE_SIM_MAX_MS = 30 * 60 * 1000;
 
@@ -27,8 +27,10 @@ export type OfflineSimInput = {
   player: PlayerCombat;
   playerName: string;
   region: Region;
-  /** 신참 보너스(<5) 판정용 — 시뮬 시작 시점의 레벨 스냅샷. 사이클 중 레벨업해도 그대로. */
+  /** 신참 보너스(<5) 판정 시작 레벨. 사이클 중 누적 EXP 로 레벨업하면 그 시점부터 보너스 OFF. */
   playerLevel: number;
+  /** 시뮬 시작 시점의 누적 EXP — 사이클 중 레벨업 판정에 사용. 미지정 시 0. */
+  playerExp?: number;
   potions: Partial<Record<PotionId, number>>;
   // 한 턴(player or enemy)당 흘러간 것으로 칠 시간. 보통 PLAYER_TURN_INTERVAL_MS.
   turnIntervalMs: number;
@@ -93,6 +95,10 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
   const luckMultiplier = 1 + input.luk * 0.01;
   let currentHp = input.player.hp;
   let elapsed = 0;
+  // 신참 보너스 ×2 판정용 — 매 처치마다 누적 EXP 로 레벨업 추적.
+  // 레벨이 임계치 (5) 도달하는 순간부터 다음 처치에는 보너스 OFF.
+  let runningLevel = input.playerLevel;
+  let runningExp = input.playerExp ?? 0;
 
   while (elapsed < cap && currentHp > 0) {
     const enemyName = pickEnemyName(input.region, rng);
@@ -141,9 +147,13 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
         result.wins += 1;
         result.killsByName[enemyName] =
           (result.killsByName[enemyName] ?? 0) + 1;
-        const expBonus = applyNewbieBonus(enemy.exp, input.playerLevel);
+        const expBonus = applyNewbieBonus(enemy.exp, runningLevel);
         result.expGained += expBonus.gained;
         if (expBonus.bonusApplied) result.expBonusApplied = true;
+        // 누적 EXP → 레벨 재계산. 다음 처치는 갱신된 runningLevel 로 보너스 판정.
+        const after = applyExpGain(runningLevel, runningExp, expBonus.gained);
+        runningLevel = after.level;
+        runningExp = after.exp;
         // 드롭 — onBattleEnd 와 동일 로직(LUK 멀티 + cap 1.0).
         if (enemy.drops) {
           for (const drop of enemy.drops) {
