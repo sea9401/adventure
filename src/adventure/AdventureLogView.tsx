@@ -23,6 +23,7 @@ import {
   type ItemId,
 } from "./data/items";
 import { MONSTERS } from "./data/monsters";
+import { MATERIALS } from "./data/materials";
 import { NPCS, type NpcRole } from "./data/npcs";
 import { getRecipeById } from "./data/recipes";
 import type { EquippedSlots } from "./character/types";
@@ -626,10 +627,41 @@ function MonsterLogCard({ name, kills }: { name: string; kills: number }) {
               <Stat label="SPD" value={monster.spd} unlocked={stage >= 3} />
             </div>
           )}
+          {monster?.drops && monster.drops.length > 0 && stage >= 3 && (
+            <div className="mt-2 border-t border-dashed border-zinc-200 pt-1 dark:border-zinc-700">
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                드랍
+              </div>
+              <ul className="mt-0.5 space-y-0.5 text-[11px] text-zinc-700 dark:text-zinc-300">
+                {monster.drops.map((d, i) => (
+                  <li key={i} className="flex items-baseline justify-between gap-2">
+                    <span className="truncate">{describeDrop(d)}</span>
+                    <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">
+                      {stage >= 4
+                        ? `${(d.chance * 100).toFixed(d.chance < 0.01 ? 2 : 1)}%`
+                        : "?"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </Card>
   );
+}
+
+function describeDrop(d: NonNullable<(typeof MONSTERS)[string]["drops"]>[number]): string {
+  if (d.kind === "material") {
+    const name = MATERIALS[d.materialId]?.name ?? d.materialId;
+    return d.amount && d.amount > 1 ? `${name} ×${d.amount}` : name;
+  }
+  if (d.kind === "gold") return `골드 +${d.amount}`;
+  if (d.kind === "equip") return ITEMS[d.itemId]?.name ?? d.itemId;
+  if (d.kind === "recipe") return getRecipeById(d.recipeId)?.name ?? d.recipeId;
+  // recipe_one_of
+  return `${d.recipeIds.length}종 중 1`;
 }
 
 function Stat({

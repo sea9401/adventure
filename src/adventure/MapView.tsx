@@ -17,6 +17,7 @@ import { MapEdge } from "./MapEdge";
 import { MapNode, type NodeState } from "./MapNode";
 import { RegionDetail } from "./RegionDetail";
 import { Card } from "@/components/ui/Card";
+import { useGame } from "./GameContext";
 
 export function MapView({
   progress,
@@ -35,6 +36,7 @@ export function MapView({
   hasStoryFlag: (flagId: string) => boolean;
   onTrialStart: (from: RegionId, to: RegionId) => void;
 }) {
+  const { addNotification } = useGame();
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
   const [lowHpBlocked, setLowHpBlocked] = useState(false);
 
@@ -98,13 +100,23 @@ export function MapView({
       return;
     }
     if (!canMove) return;
+    const isFirstVisit = !progress.visitedRegionIds.includes(selectedId);
     onProgressChange({
       ...progress,
       currentRegionId: selectedId,
-      visitedRegionIds: progress.visitedRegionIds.includes(selectedId)
-        ? progress.visitedRegionIds
-        : [...progress.visitedRegionIds, selectedId],
+      visitedRegionIds: isFirstVisit
+        ? [...progress.visitedRegionIds, selectedId]
+        : progress.visitedRegionIds,
     });
+    if (isFirstVisit) {
+      const region = WORLD_MAP.regions.find((r) => r.id === selectedId);
+      if (region) {
+        addNotification(
+          "info",
+          `${region.name}에 처음 도착했다 — ${region.description}`,
+        );
+      }
+    }
   };
 
   return (

@@ -95,6 +95,9 @@ export const MONSTERS: Record<string, Monster> = {
     def: 0,
     spd: 3,
     exp: 2,
+    drops: [
+      { kind: "equip", itemId: "mole_king_drill", chance: 0.0002 },
+    ],
   },
   박쥐: {
     name: "박쥐",

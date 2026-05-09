@@ -97,6 +97,16 @@ export const ITEMS = {
     bonus: { atk: 4, dex: 2 },
     description: "산적이 품에 숨기고 다니던 단검. 짧지만 손에 착 감긴다.",
   } satisfies EquipItem,
+  mole_king_drill: {
+    name: "두더지왕의 드릴",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+5" },
+      { label: "속도", value: "+2" },
+    ],
+    bonus: { atk: 5, spd: 2 },
+    description: "어느 두더지가 품에 꼭 쥐고 있던 작은 드릴. 회전시키면 묘하게 손맛이 좋다. 정말로 두더지왕이 있었는지는 아무도 모른다.",
+  } satisfies EquipItem,
   spare_hatchet: {
     name: "예비 손도끼",
     slot: "weapon",
