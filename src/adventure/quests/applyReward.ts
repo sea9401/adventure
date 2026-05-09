@@ -3,6 +3,7 @@ import { MATERIALS, type MaterialId } from "../data/materials";
 import { POTIONS, type PotionId } from "../data/potions";
 import { RECIPES } from "../data/recipes";
 import type { QuestReward } from "../data/quests";
+import { applyNewbieBonus } from "@/lib/leveling";
 
 export type RewardServices = {
   addPotion: (id: PotionId, count: number) => void;
@@ -14,6 +15,11 @@ export type RewardServices = {
   // EXP는 applyExpGain을 거쳐 레벨업까지 자동 처리되어야 한다.
   addExp: (amount: number) => void;
   addPotionCapacity: (n: number) => void;
+};
+
+export type RewardContext = {
+  /** 신참 EXP ×2 보너스 판정용. 미지정 시 보너스 미적용. */
+  playerLevel?: number;
 };
 
 function recipeName(id: string): string {
@@ -29,6 +35,7 @@ function plural(name: string, count: number): string {
 export function applyQuestReward(
   reward: QuestReward,
   services: RewardServices,
+  ctx: RewardContext = {},
 ): string[] {
   const summary: string[] = [];
 
@@ -40,10 +47,16 @@ export function applyQuestReward(
     if (fame > 0) summary.push(`명성 +${fame}`);
   }
 
-  const exp = reward.exp ?? 0;
-  if (exp > 0) {
-    services.addExp(exp);
-    summary.push(`EXP +${exp}`);
+  const baseExp = reward.exp ?? 0;
+  if (baseExp > 0) {
+    const expBonus =
+      ctx.playerLevel != null
+        ? applyNewbieBonus(baseExp, ctx.playerLevel)
+        : { gained: baseExp, bonusApplied: false };
+    services.addExp(expBonus.gained);
+    summary.push(
+      `EXP +${expBonus.gained}${expBonus.bonusApplied ? " (신참 ×2)" : ""}`,
+    );
   }
 
   for (const p of reward.potions ?? []) {

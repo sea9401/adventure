@@ -23,12 +23,14 @@ import type {
 import { AutoPotionSection } from "./inventory/AutoPotionSection";
 import type { AppNotification } from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
+import { applyNewbieBonus } from "@/lib/leveling";
 
 export type BattleEndPayload = {
   outcome: BattleOutcome;
   enemyName: string;
   finalPlayerHp: number;
-  rewards: { exp: number };
+  /** exp 는 신참 보너스가 적용된 최종 적립값. expBonusApplied 는 토스트/표시 단서. */
+  rewards: { exp: number; expBonusApplied: boolean };
   potionsConsumed: Partial<Record<PotionId, number>>;
   log: BattleLogEntry[];
 };
@@ -41,6 +43,7 @@ function pickEnemy(region: Region): Monster | null {
 export function BattleView({
   region,
   player,
+  playerLevel,
   playerName,
   playerStatus,
   onBattleStart,
@@ -57,6 +60,8 @@ export function BattleView({
 }: {
   region: Region;
   player: PlayerCombat;
+  /** 신참 EXP ×2 보너스 판정용. */
+  playerLevel: number;
   playerName: string;
   playerStatus: BattlePlayerStatus;
   onBattleStart?: (enemyName: string) => void;
@@ -105,12 +110,13 @@ export function BattleView({
     if (firedForStateRef.current === state) return;
     if (state.outcome !== "win") return; // 패배는 confirm 시 발화
     firedForStateRef.current = state;
+    const expBonus = applyNewbieBonus(state.enemy.exp, playerLevel);
     try {
       onBattleEndRef.current({
         outcome: state.outcome,
         enemyName: state.enemy.name,
         finalPlayerHp: state.playerHp,
-        rewards: { exp: state.enemy.exp },
+        rewards: { exp: expBonus.gained, expBonusApplied: expBonus.bonusApplied },
         potionsConsumed,
         log: state.log,
       });
@@ -119,7 +125,7 @@ export function BattleView({
       firedForStateRef.current = null;
       console.error("onBattleEnd failed:", err);
     }
-  }, [state, potionsConsumed]);
+  }, [state, potionsConsumed, playerLevel]);
 
   // 승리 시 로그 길이에 비례한 cooldown 후 다음 적 자동 시작.
   // ref로 latest region/state 캡처해 setTimeout 클로저 stale 방지.
@@ -299,7 +305,7 @@ export function BattleView({
                 outcome: "lose",
                 enemyName: state.enemy.name,
                 finalPlayerHp: 0,
-                rewards: { exp: 0 },
+                rewards: { exp: 0, expBonusApplied: false },
                 potionsConsumed,
                 log: state.log,
               });
@@ -312,7 +318,9 @@ export function BattleView({
           }}
         />
       )}
-      {isBossWin && (
+      {isBossWin && (() => {
+        const expBonus = applyNewbieBonus(state.enemy.exp, playerLevel);
+        return (
         // 보스 승리는 모달 대신 인라인 — 사용자가 BattleScene 의 전투 로그를 즉시 확인 가능.
         // 보상/onBattleEnd 는 win effect 에서 이미 발화. "돌아가기" 가 BattleScene 정리만 담당.
         <Card padding="md">
@@ -322,7 +330,12 @@ export function BattleView({
                 승리!
               </div>
               <div className="text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
-                EXP +{state.enemy.exp}
+                EXP +{expBonus.gained}
+                {expBonus.bonusApplied && (
+                  <span className="ml-1 text-amber-600 dark:text-amber-400">
+                    (신참 ×2)
+                  </span>
+                )}
               </div>
             </div>
             <button
@@ -337,7 +350,8 @@ export function BattleView({
             </button>
           </div>
         </Card>
-      )}
+        );
+      })()}
     </>
   );
 }

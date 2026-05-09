@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/Card";
 import type { InventoryState } from "./inventory/useInventory";
 import type { AppNotification } from "@/lib/notifications";
 import type { BattleEndPayload } from "./BattleView";
+import { applyNewbieBonus } from "@/lib/leveling";
 
 function pickEnemyFor(regionId: RegionId): Monster | null {
   const region = WORLD_MAP.regions.find((r) => r.id === regionId);
@@ -36,6 +37,7 @@ export type TrialEdge = {
 export function TrialView({
   trial,
   player,
+  playerLevel,
   playerName,
   playerStatus,
   pickAutoAction,
@@ -47,6 +49,8 @@ export function TrialView({
 }: {
   trial: TrialEdge;
   player: PlayerCombat;
+  /** 신참 EXP ×2 보너스 판정용. */
+  playerLevel: number;
   playerName: string;
   playerStatus: BattlePlayerStatus;
   pickAutoAction: (state: BattleState) => PlayerAction;
@@ -99,18 +103,19 @@ export function TrialView({
     if (firedForStateRef.current === state) return;
     if (state.outcome !== "win") return; // 패배는 모달 confirm 시 처리
     firedForStateRef.current = state;
+    const expBonus = applyNewbieBonus(state.enemy.exp, playerLevel);
     // 외부에 승리 후처리 (EXP/kill/drop/notif).
     onBattleEndRef.current({
       outcome: "win",
       enemyName: state.enemy.name,
       finalPlayerHp: state.playerHp,
-      rewards: { exp: state.enemy.exp },
+      rewards: { exp: expBonus.gained, expBonusApplied: expBonus.bonusApplied },
       potionsConsumed,
       log: state.log,
     });
     winCountRef.current += 1;
     setWinCount(winCountRef.current);
-  }, [state, potionsConsumed]);
+  }, [state, potionsConsumed, playerLevel]);
 
   // 승리 카운트가 임계 도달 → 시련 완료. 아니면 cooldown 후 다음 적.
   useEffect(() => {
@@ -188,7 +193,7 @@ export function TrialView({
               outcome: "lose",
               enemyName: state.enemy.name,
               finalPlayerHp: 0,
-              rewards: { exp: 0 },
+              rewards: { exp: 0, expBonusApplied: false },
               potionsConsumed,
               log: state.log,
             });

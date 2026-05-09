@@ -118,7 +118,14 @@ export function OfflineRewardsModal({
             <div className="space-y-1.5 border-t border-zinc-200 pt-3 dark:border-zinc-800">
               {result.expGained > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-500 dark:text-zinc-400">EXP</span>
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    EXP
+                    {result.expBonusApplied && (
+                      <span className="ml-1 text-amber-600 dark:text-amber-400">
+                        (신참 ×2)
+                      </span>
+                    )}
+                  </span>
                   <span className="font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
                     +{result.expGained}
                   </span>

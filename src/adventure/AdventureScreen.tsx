@@ -268,6 +268,7 @@ export function AdventureScreen() {
         <BattleView
           region={currentRegion}
           player={playerCombat}
+          playerLevel={character.level}
           playerName={character.name}
           playerStatus={playerStatus}
           onBattleStart={adventureLog.markEncountered}
@@ -328,6 +329,7 @@ export function AdventureScreen() {
         <TrialView
           trial={trialEdge}
           player={playerCombat}
+          playerLevel={character.level}
           playerName={character.name}
           playerStatus={playerStatus}
           pickAutoAction={(state) =>

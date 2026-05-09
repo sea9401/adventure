@@ -19,6 +19,7 @@ import {
   type PlayerAction,
   type PlayerCombat,
 } from "./engine";
+import { applyNewbieBonus } from "@/lib/leveling";
 
 export const OFFLINE_SIM_MAX_MS = 30 * 60 * 1000;
 
@@ -26,6 +27,8 @@ export type OfflineSimInput = {
   player: PlayerCombat;
   playerName: string;
   region: Region;
+  /** 신참 보너스(<5) 판정용 — 시뮬 시작 시점의 레벨 스냅샷. 사이클 중 레벨업해도 그대로. */
+  playerLevel: number;
   potions: Partial<Record<PotionId, number>>;
   // 한 턴(player or enemy)당 흘러간 것으로 칠 시간. 보통 PLAYER_TURN_INTERVAL_MS.
   turnIntervalMs: number;
@@ -48,6 +51,8 @@ export type OfflineSimResult = {
   wins: number;
   killsByName: Record<string, number>;
   expGained: number;
+  /** 신참 보너스가 한 번이라도 적용됐는지 — UI 배지용. */
+  expBonusApplied: boolean;
   goldGained: number;
   materialsGained: Partial<Record<MaterialId, number>>;
   equipsGained: ItemId[]; // 같은 아이템 여러 개면 중복 push.
@@ -69,6 +74,7 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
     wins: 0,
     killsByName: {},
     expGained: 0,
+    expBonusApplied: false,
     goldGained: 0,
     materialsGained: {},
     equipsGained: [],
@@ -135,7 +141,9 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
         result.wins += 1;
         result.killsByName[enemyName] =
           (result.killsByName[enemyName] ?? 0) + 1;
-        result.expGained += enemy.exp;
+        const expBonus = applyNewbieBonus(enemy.exp, input.playerLevel);
+        result.expGained += expBonus.gained;
+        if (expBonus.bonusApplied) result.expBonusApplied = true;
         // 드롭 — onBattleEnd 와 동일 로직(LUK 멀티 + cap 1.0).
         if (enemy.drops) {
           for (const drop of enemy.drops) {
@@ -188,7 +196,8 @@ export function summarizeOfflineResult(r: OfflineSimResult): string {
   if (r.battles === 0 && !r.died) return "";
   const parts: string[] = [];
   if (r.wins > 0) parts.push(`처치 ${r.wins}`);
-  if (r.expGained > 0) parts.push(`EXP +${r.expGained}`);
+  if (r.expGained > 0)
+    parts.push(`EXP +${r.expGained}${r.expBonusApplied ? " (신참 ×2)" : ""}`);
   if (r.goldGained > 0) parts.push(`골드 +${r.goldGained}`);
   const dropCount =
     Object.values(r.materialsGained).reduce((a, b) => a + (b ?? 0), 0) +

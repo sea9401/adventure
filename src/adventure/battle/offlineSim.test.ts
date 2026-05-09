@@ -47,6 +47,7 @@ function baseInput(over: Partial<OfflineSimInput> = {}): OfflineSimInput {
     player: STRONG_PLAYER,
     playerName: "테스터",
     region: makeRegion(["슬라임"]),
+    playerLevel: 99, // 신참 보너스 미적용 (기본 테스트는 base exp 검증)
     potions: {},
     turnIntervalMs: TURN,
     awayMs: 60_000, // 1분
@@ -104,6 +105,14 @@ describe("simulateOfflineHunt", () => {
     const r = simulateOfflineHunt(baseInput({ awayMs: 10_000 }));
     // 슬라임 EXP는 monsters.ts에 정의된 값을 그대로 누적.
     expect(r.expGained).toBeGreaterThan(0);
+    expect(r.expBonusApplied).toBe(false); // baseInput 은 playerLevel 99
+  });
+
+  it("신참 보너스 — playerLevel < 5 면 expGained ×2 + 플래그 true", () => {
+    const baseR = simulateOfflineHunt(baseInput({ awayMs: 10_000, playerLevel: 99 }));
+    const newbieR = simulateOfflineHunt(baseInput({ awayMs: 10_000, playerLevel: 1 }));
+    expect(newbieR.expGained).toBe(baseR.expGained * 2);
+    expect(newbieR.expBonusApplied).toBe(true);
   });
 
   it("pickAction이 use_potion을 돌려도 보유량 0이면 attack으로 폴백 + 소비 0", () => {

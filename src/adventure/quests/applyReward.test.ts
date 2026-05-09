@@ -77,6 +77,27 @@ describe("applyQuestReward", () => {
     expect(s.addExp).not.toHaveBeenCalled();
   });
 
+  it("신참 보너스 — playerLevel < 5 면 EXP ×2 + 표기에 (신참 ×2)", () => {
+    const s = makeServices();
+    const tokens = applyQuestReward({ exp: 50 }, s, { playerLevel: 3 });
+    expect(s.addExp).toHaveBeenCalledWith(100);
+    expect(tokens).toEqual(["EXP +100 (신참 ×2)"]);
+  });
+
+  it("신참 보너스 — playerLevel >= 5 면 미적용", () => {
+    const s = makeServices();
+    const tokens = applyQuestReward({ exp: 50 }, s, { playerLevel: 5 });
+    expect(s.addExp).toHaveBeenCalledWith(50);
+    expect(tokens).toEqual(["EXP +50"]);
+  });
+
+  it("신참 보너스 — playerLevel 미지정 시 미적용 (기본 동작 유지)", () => {
+    const s = makeServices();
+    const tokens = applyQuestReward({ exp: 50 }, s);
+    expect(s.addExp).toHaveBeenCalledWith(50);
+    expect(tokens).toEqual(["EXP +50"]);
+  });
+
   it("potionCapacityBonus는 addPotionCapacity 호출 + '+n' 토큰", () => {
     const s = makeServices();
     const tokens = applyQuestReward({ potionCapacityBonus: 1 }, s);

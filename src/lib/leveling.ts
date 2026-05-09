@@ -5,6 +5,25 @@
 
 export const MAX_LEVEL = 50;
 
+// 신참 보너스 — 5레벨 미만이면 사냥/퀘스트 EXP 가 ×2.
+// 레벨업으로 조건이 깨지는 순간 자동으로 꺼진다 (기존 캐릭터 포함).
+export const NEWBIE_BONUS_LEVEL_THRESHOLD = 5;
+export const NEWBIE_EXP_MULTIPLIER = 2;
+
+export function isNewbieBonusActive(level: number): boolean {
+  return level < NEWBIE_BONUS_LEVEL_THRESHOLD;
+}
+
+export function applyNewbieBonus(
+  exp: number,
+  level: number,
+): { gained: number; bonusApplied: boolean } {
+  if (exp <= 0 || !isNewbieBonusActive(level)) {
+    return { gained: exp, bonusApplied: false };
+  }
+  return { gained: exp * NEWBIE_EXP_MULTIPLIER, bonusApplied: true };
+}
+
 export function requiredExpToNext(level: number): number | null {
   if (level >= MAX_LEVEL) return null;
   if (level < 1) return null;

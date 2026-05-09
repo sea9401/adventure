@@ -701,6 +701,7 @@ function Home() {
         player: playerCombat,
         playerName: profile.name,
         region: currentRegion,
+        playerLevel: character.level,
         potions: inventory.state.potions,
         turnIntervalMs: PLAYER_TURN_INTERVAL_MS,
         awayMs,
@@ -800,7 +801,9 @@ function Home() {
   const completeQuest = (id: string): boolean => {
     const result = quests.claim(id);
     if (!result.ok) return false;
-    const tokens = applyQuestReward(result.quest.reward, rewardServices);
+    const tokens = applyQuestReward(result.quest.reward, rewardServices, {
+      playerLevel: character.level,
+    });
     addNotification(
       "quest_complete",
       tokens.length > 0

@@ -119,7 +119,11 @@ export function onBattleEnd(
       }
     }
     const reward =
-      payload.rewards.exp > 0 ? `EXP +${payload.rewards.exp}` : "보상 없음";
+      payload.rewards.exp > 0
+        ? `EXP +${payload.rewards.exp}${
+            payload.rewards.expBonusApplied ? " (신참 ×2)" : ""
+          }`
+        : "보상 없음";
     deps.addNotification(
       "battle_win",
       `${payload.enemyName}을(를) 쓰러뜨렸다 — ${reward}`,
