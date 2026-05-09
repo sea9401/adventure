@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import {
   genNotificationId,
   loadNotifications,
+  pruneNotifications,
   saveNotifications,
-  MAX_NOTIFICATIONS,
   type AppNotification,
   type NotificationKind,
   type NotificationMeta,
@@ -40,7 +40,7 @@ export function useNotifications() {
       text,
       ...(meta ? { meta } : {}),
     };
-    setList((prev) => [notif, ...prev].slice(0, MAX_NOTIFICATIONS));
+    setList((prev) => pruneNotifications([notif, ...prev]));
   };
 
   const markRead = () => setLastReadAt(Date.now());

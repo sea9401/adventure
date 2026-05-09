@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CaretDown, CaretRight, Trash } from "@phosphor-icons/react";
 import {
   formatRelative,
+  isBattleNotification,
   type AppNotification,
   type NotificationKind,
 } from "@/lib/notifications";
@@ -85,6 +86,8 @@ function NotificationRow({ n }: { n: AppNotification }) {
   );
 }
 
+type Tab = "system" | "battle";
+
 export function RecentLogView({
   notifications,
   onClear,
@@ -92,19 +95,28 @@ export function RecentLogView({
   notifications: AppNotification[];
   onClear?: () => void;
 }) {
-  if (notifications.length === 0) {
-    return (
-      <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
-        <div className="text-sm text-zinc-500 dark:text-zinc-400">
-          아직 기록된 알림이 없습니다.
-        </div>
-      </section>
-    );
-  }
+  const [tab, setTab] = useState<Tab>("system");
+
+  const battle = notifications.filter((n) => isBattleNotification(n.kind));
+  const system = notifications.filter((n) => !isBattleNotification(n.kind));
+  const list = tab === "battle" ? battle : system;
+
   return (
     <div className="space-y-2">
-      {onClear && (
-        <div className="flex justify-end">
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900/60">
+          <TabButton
+            label={`시스템 ${system.length}`}
+            active={tab === "system"}
+            onClick={() => setTab("system")}
+          />
+          <TabButton
+            label={`전투 로그 ${battle.length}`}
+            active={tab === "battle"}
+            onClick={() => setTab("battle")}
+          />
+        </div>
+        {onClear && notifications.length > 0 && (
           <button
             type="button"
             onClick={() => {
@@ -115,15 +127,50 @@ export function RecentLogView({
             <Trash size={12} weight="bold" />
             전체 삭제
           </button>
-        </div>
+        )}
+      </div>
+
+      {list.length === 0 ? (
+        <section className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-8 text-center dark:border-zinc-700 dark:bg-zinc-950/90">
+          <div className="text-sm text-zinc-500 dark:text-zinc-400">
+            {tab === "battle"
+              ? "기록된 전투가 없습니다."
+              : "기록된 시스템 알림이 없습니다."}
+          </div>
+        </section>
+      ) : (
+        <Card as="section" padding="none" className="overflow-hidden">
+          <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            {list.map((n) => (
+              <NotificationRow key={n.id} n={n} />
+            ))}
+          </ul>
+        </Card>
       )}
-      <Card as="section" padding="none" className="overflow-hidden">
-        <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-          {notifications.map((n) => (
-            <NotificationRow key={n.id} n={n} />
-          ))}
-        </ul>
-      </Card>
     </div>
+  );
+}
+
+function TabButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        active
+          ? "flex-1 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-50"
+          : "flex-1 rounded-md px-3 py-1.5 text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+      }
+    >
+      {label}
+    </button>
   );
 }

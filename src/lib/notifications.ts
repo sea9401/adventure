@@ -21,7 +21,35 @@ export type AppNotification = {
 };
 
 export const NOTIFICATIONS_STORAGE_KEY = "notifications.v2";
-export const MAX_NOTIFICATIONS = 10;
+export const MAX_NOTIFICATIONS_PER_GROUP = 10;
+
+const BATTLE_KINDS: ReadonlySet<NotificationKind> = new Set([
+  "battle_win",
+  "battle_lose",
+]);
+
+export function isBattleNotification(kind: NotificationKind): boolean {
+  return BATTLE_KINDS.has(kind);
+}
+
+// 전투 / 시스템 두 그룹으로 나눠 각 그룹을 MAX_NOTIFICATIONS_PER_GROUP 개로 제한.
+// 입력 list 는 newest-first 가정 — 그룹 카운터를 채우면서 순서는 그대로 유지.
+export function pruneNotifications(
+  list: AppNotification[],
+): AppNotification[] {
+  let battle = 0;
+  let system = 0;
+  return list.filter((n) => {
+    if (isBattleNotification(n.kind)) {
+      if (battle >= MAX_NOTIFICATIONS_PER_GROUP) return false;
+      battle++;
+      return true;
+    }
+    if (system >= MAX_NOTIFICATIONS_PER_GROUP) return false;
+    system++;
+    return true;
+  });
+}
 
 export type NotificationStorage = {
   list: AppNotification[];
@@ -36,9 +64,7 @@ export function loadNotifications(): NotificationStorage {
     if (!raw) return initial;
     const parsed = JSON.parse(raw) as Partial<NotificationStorage>;
     return {
-      list: Array.isArray(parsed.list)
-        ? parsed.list.slice(0, MAX_NOTIFICATIONS)
-        : [],
+      list: Array.isArray(parsed.list) ? pruneNotifications(parsed.list) : [],
       lastReadAt: parsed.lastReadAt ?? 0,
     };
   } catch {
