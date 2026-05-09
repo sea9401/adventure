@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import {
+  CaretDown,
+  CaretRight,
   Compass,
   Crown,
   Diamond,
@@ -130,6 +132,7 @@ function TitlesTab({
   onEquipTitle?: (titleId: TitleId | null) => void;
   titleCounters: TitleCounterValues;
 }) {
+  const [lockedOpen, setLockedOpen] = useState(false);
   const all = Object.values(TITLES);
   if (all.length === 0) {
     return (
@@ -140,70 +143,105 @@ function TitlesTab({
       />
     );
   }
-  return (
-    <div className="space-y-2">
-      {all.map((title) => {
-        const entry = log.titles[title.id];
-        const obtained = !!entry;
-        const isEquipped = equippedTitleId === title.id;
-        // 카운터형 칭호: 미획득 상태에서도 절반 도달 시 조건만 미리 공개.
-        const counter = COUNTER_TITLES.find((c) => c.id === title.id);
-        const counterValue = counter
-          ? (titleCounters[counter.key] ?? 0)
-          : 0;
-        const conditionRevealed =
-          !obtained && !!counter && counterValue >= counter.target / 2;
-        return (
-          <Card key={title.id}>
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="flex items-baseline gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                {obtained ? (
-                  title.name
-                ) : (
-                  <span className="flex items-center gap-1 italic text-zinc-400 dark:text-zinc-500">
-                    <Lock size={12} weight="duotone" />
-                    ???
-                  </span>
-                )}
-                {isEquipped && (
-                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-normal text-emerald-700 dark:text-emerald-400">
-                    장착중
-                  </span>
-                )}
+  const obtained = all.filter((t) => !!log.titles[t.id]);
+  const locked = all.filter((t) => !log.titles[t.id]);
+
+  const renderCard = (title: (typeof all)[number]) => {
+    const entry = log.titles[title.id];
+    const isObtained = !!entry;
+    const isEquipped = equippedTitleId === title.id;
+    // 카운터형 칭호: 미획득 상태에서도 절반 도달 시 조건만 미리 공개.
+    const counter = COUNTER_TITLES.find((c) => c.id === title.id);
+    const counterValue = counter ? (titleCounters[counter.key] ?? 0) : 0;
+    const conditionRevealed =
+      !isObtained && !!counter && counterValue >= counter.target / 2;
+    return (
+      <Card key={title.id}>
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="flex items-baseline gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {isObtained ? (
+              title.name
+            ) : (
+              <span className="flex items-center gap-1 italic text-zinc-400 dark:text-zinc-500">
+                <Lock size={12} weight="duotone" />
+                ???
               </span>
-              {obtained && entry && (
-                <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-                  {new Date(entry.obtainedAt).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-              {obtained ? (
-                title.description
-              ) : conditionRevealed ? (
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  달성 조건 — {title.condition} ({counterValue}/{counter!.target})
-                </span>
-              ) : (
-                <span className="italic text-zinc-400 dark:text-zinc-500">
-                  달성 조건 ???
-                </span>
-              )}
-            </p>
-            {obtained && onEquipTitle && (
-              <button
-                type="button"
-                onClick={() =>
-                  onEquipTitle(isEquipped ? null : (title.id as TitleId))
-                }
-                className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                {isEquipped ? "해제" : "장착"}
-              </button>
             )}
-          </Card>
-        );
-      })}
+            {isEquipped && (
+              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-normal text-emerald-700 dark:text-emerald-400">
+                장착중
+              </span>
+            )}
+          </span>
+          {isObtained && entry && (
+            <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+              {new Date(entry.obtainedAt).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+          {isObtained ? (
+            title.description
+          ) : conditionRevealed ? (
+            <span className="text-zinc-500 dark:text-zinc-400">
+              달성 조건 — {title.condition} ({counterValue}/{counter!.target})
+            </span>
+          ) : (
+            <span className="italic text-zinc-400 dark:text-zinc-500">
+              달성 조건 ???
+            </span>
+          )}
+        </p>
+        {isObtained && onEquipTitle && (
+          <button
+            type="button"
+            onClick={() =>
+              onEquipTitle(isEquipped ? null : (title.id as TitleId))
+            }
+            className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            {isEquipped ? "해제" : "장착"}
+          </button>
+        )}
+      </Card>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <section>
+        <h3 className="mb-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          획득한 칭호 ({obtained.length})
+        </h3>
+        {obtained.length === 0 ? (
+          <p className="text-xs italic text-zinc-400 dark:text-zinc-500">
+            아직 획득한 칭호가 없습니다.
+          </p>
+        ) : (
+          <div className="space-y-2">{obtained.map(renderCard)}</div>
+        )}
+      </section>
+
+      {locked.length > 0 && (
+        <section>
+          <button
+            type="button"
+            onClick={() => setLockedOpen((v) => !v)}
+            aria-expanded={lockedOpen}
+            className="mb-2 flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+          >
+            {lockedOpen ? (
+              <CaretDown size={12} weight="bold" />
+            ) : (
+              <CaretRight size={12} weight="bold" />
+            )}
+            미획득 칭호 ({locked.length})
+          </button>
+          {lockedOpen && (
+            <div className="space-y-2">{locked.map(renderCard)}</div>
+          )}
+        </section>
+      )}
     </div>
   );
 }
