@@ -814,17 +814,9 @@ function Home() {
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/90 px-4 py-3 sm:px-6 dark:border-zinc-800 dark:bg-zinc-950/90">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="truncate text-base text-zinc-600 dark:text-zinc-400">
-              <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                {character.name}
-              </span>
-              <span className="ml-2 text-zinc-500 dark:text-zinc-500">
-                Lv.{character.level}
-              </span>
-              <span className="ml-2 inline-flex items-center gap-1 text-zinc-500 dark:text-zinc-500">
-                <MapPin size={14} weight="fill" className="text-rose-500" />
-                {currentRegion.name}
-              </span>
+            <span className="inline-flex items-center gap-1 truncate text-base text-zinc-600 dark:text-zinc-400">
+              <MapPin size={16} weight="fill" className="text-emerald-500" />
+              {currentRegion.name}
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-3">
