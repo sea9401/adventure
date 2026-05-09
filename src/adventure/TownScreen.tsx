@@ -136,7 +136,7 @@ export function TownScreen() {
         />
         <EntryCard
           icon={
-            <Scroll size={28} weight="duotone" className="text-stone-100" />
+            <Scroll size={28} weight="duotone" className="text-yellow-700" />
           }
           title="모험가 길드"
           description="의뢰를 받고 명성을 쌓을 수 있는 곳."
