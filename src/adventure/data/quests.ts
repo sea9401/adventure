@@ -276,6 +276,49 @@ export const QUESTS: Quest[] = [
     reward: { gold: 60, fame: 8, exp: 60 },
     repeatable: true,
   },
+  // ── 운향 ────────────────────────────────────────────────────────────────
+  // 백운 (메인 라인) 의뢰는 운봉의 거인 보스가 들어온 후 추가. 지금은 사이드만.
+  {
+    id: "unhyang-doyeon-wolves",
+    regionId: "unhyang",
+    title: "협곡의 무리",
+    description:
+      "협곡의 절벽 늑대가 너무 늘었어. 10마리만 정리해 주면 산이 좀 조용해질 거야.",
+    requiredLevel: 20,
+    target: { kind: "kill", monsterName: "절벽 늑대", count: 10 },
+    reward: { gold: 120, fame: 6, exp: 200 },
+    repeatable: true,
+    giverNpcId: "unhyang_guide",
+  },
+  {
+    id: "unhyang-sanha-herbs",
+    regionId: "unhyang",
+    title: "산초꽃 채집",
+    description:
+      "산기슭에 피는 산초꽃이 필요해요. 8송이만 모아다 주시면, 약 만드는 솜씨로 보답할게요.",
+    requiredLevel: 18,
+    target: { kind: "deliver", materialId: "sancho_blossom", count: 8 },
+    reward: { gold: 100, exp: 150, potionCapacityBonus: 1 },
+    repeatable: true,
+    cooldownMs: 12 * 60 * 60 * 1000,
+    giverNpcId: "unhyang_herbalist",
+  },
+  {
+    id: "unhyang-sanha-bones",
+    regionId: "unhyang",
+    title: "거인 비늘 다섯",
+    description:
+      "거인의 비늘은 약을 갈무리하기에 그만이에요. 5개만 모아다 주시면 회복약을 가득 챙겨드릴게요.",
+    requiredLevel: 20,
+    target: { kind: "deliver", materialId: "giant_scale", count: 5 },
+    reward: {
+      gold: 200,
+      exp: 250,
+      potions: [{ id: "potion_heal_s", count: 3 }],
+    },
+    repeatable: false,
+    giverNpcId: "unhyang_herbalist",
+  },
 ];
 
 // 길드 게시판 노출용 — NPC 전속 퀘스트는 제외, kill 형만 노출.

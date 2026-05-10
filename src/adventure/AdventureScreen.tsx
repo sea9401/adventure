@@ -18,6 +18,11 @@ import { NoraDialogue } from "@/adventure/town/dialogues/NoraDialogue";
 import { BoroDialogue } from "@/adventure/town/dialogues/BoroDialogue";
 import { MarinDialogue } from "@/adventure/town/dialogues/MarinDialogue";
 import { WoodcutterJimmyDialogue } from "@/adventure/town/dialogues/WoodcutterJimmyDialogue";
+import { BaekunDialogue } from "@/adventure/town/dialogues/BaekunDialogue";
+import { ManwolDialogue } from "@/adventure/town/dialogues/ManwolDialogue";
+import { DoyeonDialogue } from "@/adventure/town/dialogues/DoyeonDialogue";
+import { SanhaDialogue } from "@/adventure/town/dialogues/SanhaDialogue";
+import { PilgrimDialogue } from "@/adventure/town/dialogues/PilgrimDialogue";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -256,6 +261,36 @@ export function AdventureScreen() {
                   storyFlags={storyFlags}
                 />
               );
+            }
+            if (npc.id === "unhyang_elder") {
+              return <BaekunDialogue npc={npc} onClose={close} />;
+            }
+            if (npc.id === "unhyang_smith") {
+              return <ManwolDialogue npc={npc} onClose={close} />;
+            }
+            if (npc.id === "unhyang_guide") {
+              return (
+                <DoyeonDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                />
+              );
+            }
+            if (npc.id === "unhyang_herbalist") {
+              return (
+                <SanhaDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "unhyang_pilgrim") {
+              return <PilgrimDialogue npc={npc} onClose={close} />;
             }
             return null;
           }}

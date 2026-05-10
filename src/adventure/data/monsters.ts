@@ -151,7 +151,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 4,
     exp: 8,
     drops: [
-      { kind: "gold", amount: 1, chance: 0.2 },
+      { kind: "gold", amount: 1, chance: 0.0777 },
       { kind: "equip", itemId: "bandit_dagger", chance: 0.005 },
     ],
   },
@@ -251,6 +251,74 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 11,
     drops: [
       { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
+    ],
+  },
+  // ── 운향 라인 (highland / canyon) ───────────────────────────────────────
+  // image 필드는 아직 없음 — 사용자가 추후 추가.
+  산양: {
+    name: "산양",
+    tags: ["beast"],
+    hp: 180,
+    atk: 22,
+    def: 7,
+    spd: 5,
+    exp: 24,
+    drops: [
+      { kind: "material", materialId: "sancho_blossom", chance: 0.08 },
+      { kind: "material", materialId: "wilddog_hide", chance: 0.05 },
+    ],
+  },
+  "바위 두꺼비": {
+    name: "바위 두꺼비",
+    tags: ["beast"],
+    hp: 240,
+    atk: 19,
+    def: 12,
+    spd: 3,
+    exp: 28,
+    drops: [
+      { kind: "material", materialId: "unbong_ore", chance: 0.04 },
+      { kind: "material", materialId: "hard_crystal", chance: 0.05 },
+    ],
+  },
+  "절벽 늑대": {
+    name: "절벽 늑대",
+    tags: ["beast"],
+    hp: 280,
+    atk: 25,
+    def: 9,
+    spd: 7,
+    exp: 32,
+    drops: [
+      { kind: "material", materialId: "wilddog_fang", chance: 0.05 },
+      { kind: "material", materialId: "sancho_blossom", chance: 0.03 },
+    ],
+  },
+  "돌풍 정령": {
+    name: "돌풍 정령",
+    tags: ["spirit"],
+    hp: 220,
+    atk: 24,
+    def: 9,
+    spd: 8,
+    evasionPct: 20,
+    exp: 35,
+    drops: [
+      { kind: "material", materialId: "fairy_dust", chance: 0.04 },
+    ],
+  },
+  "늑대 무리장": {
+    name: "늑대 무리장",
+    tags: ["beast"],
+    hp: 280,
+    atk: 25,
+    def: 12,
+    spd: 8,
+    exp: 50,
+    drops: [
+      { kind: "material", materialId: "wilddog_fang", chance: 0.08, amount: 2 },
+      { kind: "material", materialId: "giant_scale", chance: 0.08 },
+      { kind: "equip", itemId: "wraith_cloak", chance: 0.005 },
     ],
   },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.

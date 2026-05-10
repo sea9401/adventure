@@ -91,6 +91,27 @@ export const MATERIALS = {
     price: 30,
     inShop: false,
   },
+  giant_scale: {
+    id: "giant_scale",
+    name: "거인 비늘",
+    description: "운봉의 거인이 떨군 회청색 비늘. 단단하면서도 가볍다.",
+    price: 28,
+    inShop: false,
+  },
+  unbong_ore: {
+    id: "unbong_ore",
+    name: "운봉석",
+    description: "협곡 깊숙한 광맥에서만 캐낼 수 있는 반짝이는 광석.",
+    price: 32,
+    inShop: false,
+  },
+  sancho_blossom: {
+    id: "sancho_blossom",
+    name: "산초꽃",
+    description: "산기슭에서만 피는 작고 매운 꽃. 약초로 쓴다.",
+    price: 14,
+    inShop: false,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;

@@ -6,7 +6,10 @@ export type RegionId =
   | "deep_cave"
   | "lake"
   | "diola"
-  | "ruins";
+  | "ruins"
+  | "highland"
+  | "canyon"
+  | "unhyang";
 
 export type Biome =
   | "village"
@@ -81,7 +84,9 @@ export type WorldMap = {
 };
 
 export const WORLD_MAP: WorldMap = {
-  viewBox: { width: 800, height: 500 },
+  // 폐허(680, 400) 동쪽으로 산기슭(880)→협곡(1080)→운향(1280) 추가로 width 800→1400 확장.
+  // 기존 region 좌표는 그대로 유지.
+  viewBox: { width: 1400, height: 500 },
   regions: [
     {
       id: "village",
@@ -169,6 +174,43 @@ export const WORLD_MAP: WorldMap = {
       },
       recommendedLevel: 9,
     },
+    {
+      id: "highland",
+      name: "북풍 산기슭",
+      description:
+        "폐허 동쪽으로 솟은 비탈. 바람이 거칠고 돌투성이라 발 디딜 곳을 골라야 한다.",
+      position: { x: 880, y: 380 },
+      biome: "plains",
+      enemies: ["산양", "바위 두꺼비"],
+      encounterWeights: { 산양: 60, "바위 두꺼비": 40 },
+      recommendedLevel: 18,
+    },
+    {
+      id: "canyon",
+      name: "운무 협곡",
+      description:
+        "구름이 낮게 깔리는 좁은 협곡. 발소리가 메아리치고, 무언가 거대한 것이 안쪽을 막고 있다.",
+      position: { x: 1080, y: 320 },
+      biome: "ruins",
+      enemies: ["절벽 늑대", "돌풍 정령", "늑대 무리장"],
+      encounterWeights: {
+        "절벽 늑대": 50,
+        "돌풍 정령": 35,
+        "늑대 무리장": 15,
+      },
+      recommendedLevel: 20,
+    },
+    {
+      id: "unhyang",
+      name: "운향",
+      description:
+        "구름이 발치에 깔리는 산정의 작은 도시. 산악을 피해 모인 장인과 순례자들이 산다.",
+      position: { x: 1280, y: 260 },
+      biome: "village",
+      enemies: [],
+      tags: ["town"],
+      recommendedLevel: 22,
+    },
   ],
   edges: [
     { from: "village", to: "plains" },
@@ -209,6 +251,32 @@ export const WORLD_MAP: WorldMap = {
         kind: "story",
         flagId: "stranger_ruins_guide",
         reason: "아직 길을 알지 못한다. 디올라의 후드 쓴 손님이 안다고 한다.",
+      },
+    },
+    // 운향 라인 (highland → canyon → unhyang).
+    // 입구 (ruins→highland) 는 콘텐츠 준비가 끝날 때까지 "locked" 로 막아둔다.
+    // 보스 + 운봉 무기 라인이 들어오면 trial 5전으로 교체.
+    {
+      from: "ruins",
+      to: "highland",
+      requires: {
+        kind: "locked",
+        reason: "운향 라인은 아직 콘텐츠 준비 중이다.",
+      },
+    },
+    {
+      from: "highland",
+      to: "canyon",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "canyon" },
+    },
+    // 운봉의 거인 (보스) 처치 시 set 되는 storyFlag. 보스 미구현이라 사실상 잠금 상태.
+    {
+      from: "canyon",
+      to: "unhyang",
+      requires: {
+        kind: "story",
+        flagId: "peak_giant_defeated",
+        reason: "운봉의 거인이 길목을 가로막아 더 갈 수 없다.",
       },
     },
   ],
