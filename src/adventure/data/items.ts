@@ -340,11 +340,11 @@ export const ITEMS = {
     name: "운봉 견갑",
     slot: "accessory",
     stats: [
-      { label: "활력", value: "+4" },
-      { label: "속도", value: "+3" },
+      { label: "민첩", value: "+5" },
+      { label: "속도", value: "+4" },
     ],
-    bonus: { vit: 4, spd: 3 },
-    description: "운봉의 거인 어깨 비늘을 깎아 만든 견갑. 두르면 우직해지면서 발이 가벼워진다.",
+    bonus: { dex: 5, spd: 4 },
+    description: "운봉의 거인 어깨 비늘을 가볍게 깎아 만든 견갑. 두르면 손이 빨라지고 발이 가벼워진다.",
     rarity: "rare",
   } satisfies EquipItem,
 } as const;

@@ -199,7 +199,7 @@ export const WORLD_MAP: WorldMap = {
         "돌풍 정령": 35,
         "늑대 무리장": 15,
       },
-      boss: { monsterName: "운봉의 거인", dailyEntryLimit: 3 },
+      // 운봉의 거인은 협동 보스 시스템으로만 진입 (region.boss 솔로 인스턴스 제거).
       recommendedLevel: 20,
     },
     {
