@@ -295,12 +295,7 @@ export function CoopBossCard({
                       )}
                     </span>
                     <span className="shrink-0">
-                      +{row.damageDealt.toLocaleString()}
-                      {row.damageTaken > 0 && (
-                        <span className="ml-1 text-rose-600/80 dark:text-rose-400/80">
-                          −{row.damageTaken.toLocaleString()}
-                        </span>
-                      )}
+                      가한 데미지 {row.damageDealt.toLocaleString()}
                     </span>
                   </summary>
                   {row.log.length > 0 && (
