@@ -192,7 +192,7 @@ export const WORLD_MAP: WorldMap = {
       description:
         "구름이 낮게 깔리는 좁은 협곡. 발소리가 메아리치고, 무언가 거대한 것이 안쪽을 막고 있다.",
       position: { x: 1080, y: 320 },
-      biome: "ruins",
+      biome: "mountain",
       enemies: ["절벽 늑대", "돌풍 정령", "늑대 무리장"],
       encounterWeights: {
         "절벽 늑대": 50,

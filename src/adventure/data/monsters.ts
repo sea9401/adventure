@@ -304,6 +304,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 35,
     drops: [
       { kind: "material", materialId: "fairy_dust", chance: 0.04 },
+      { kind: "material", materialId: "wind_mana_stone", chance: 0.02 },
     ],
   },
   "늑대 무리장": {
@@ -315,9 +316,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 8,
     exp: 50,
     drops: [
-      { kind: "material", materialId: "wilddog_fang", chance: 0.08, amount: 2 },
+      { kind: "material", materialId: "wolf_king_fang", chance: 0.005 },
       { kind: "material", materialId: "giant_scale", chance: 0.08 },
-      { kind: "equip", itemId: "wraith_cloak", chance: 0.005 },
     ],
   },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.

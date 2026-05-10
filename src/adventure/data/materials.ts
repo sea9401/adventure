@@ -95,7 +95,8 @@ export const MATERIALS = {
     id: "giant_scale",
     name: "거인 비늘",
     description: "운봉의 거인이 떨군 회청색 비늘. 단단하면서도 가볍다.",
-    price: 28,
+    // 가격 추후 재설정.
+    price: 0,
     inShop: false,
   },
   unbong_ore: {
@@ -118,6 +119,20 @@ export const MATERIALS = {
     id: "tough_hide",
     name: "단단한 가죽",
     description: "산기슭의 짐승에게서 얻는 두텁고 질긴 가죽.",
+    price: 0,
+    inShop: false,
+  },
+  wind_mana_stone: {
+    id: "wind_mana_stone",
+    name: "바람 마석",
+    description: "협곡의 정령이 흩뿌리는 푸르스름한 결정. 손에 쥐면 바람을 머금은 듯 가볍다.",
+    price: 0,
+    inShop: false,
+  },
+  wolf_king_fang: {
+    id: "wolf_king_fang",
+    name: "늑대왕의 송곳니",
+    description: "무리를 이끄는 늑대만이 갖는 길고 굵은 송곳니. 흔치 않다.",
     price: 0,
     inShop: false,
   },
