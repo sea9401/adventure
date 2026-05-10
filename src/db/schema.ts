@@ -193,6 +193,83 @@ export const rankings = pgTable(
   ],
 );
 
+// 유저 자치 길드 — 정원 3명, 마스터 초대제, 자동 해체 정책.
+// disbandedAt != NULL 이면 tombstone — 30일 후 cron 이 hard delete (이름 재사용 차단 기간).
+// 활성 + tombstone 모두 unique 이므로 자연스레 30일 cooldown 이 됨.
+export const guilds = pgTable(
+  "guilds",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    masterId: text("master_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    disbandedAt: timestamp("disbanded_at"),
+  },
+  (t) => [
+    uniqueIndex("guilds_name_lower_idx").on(sql`lower(${t.name})`),
+  ],
+);
+
+// 길드 소속. 1인 1길드 — userId 유니크 인덱스로 enforce.
+// role: 'master' | 'member'.
+export const guildMembers = pgTable(
+  "guild_members",
+  {
+    guildId: integer("guild_id")
+      .notNull()
+      .references(() => guilds.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.guildId, t.userId] }),
+    uniqueIndex("guild_members_user_unique_idx").on(t.userId),
+  ],
+);
+
+// 길드 초대장. 7일 유효, 만료 시 cron 이 status='expired' 처리.
+// status: 'pending' | 'accepted' | 'declined' | 'expired'.
+// (guild, target) 쌍의 pending 중복은 partial unique 로 막음.
+export const guildInvites = pgTable(
+  "guild_invites",
+  {
+    id: serial("id").primaryKey(),
+    guildId: integer("guild_id")
+      .notNull()
+      .references(() => guilds.id, { onDelete: "cascade" }),
+    fromUserId: text("from_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    toUserId: text("to_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    status: text("status").notNull().default("pending"),
+  },
+  (t) => [
+    uniqueIndex("guild_invites_pending_unique_idx")
+      .on(t.guildId, t.toUserId)
+      .where(sql`${t.status} = 'pending'`),
+    index("guild_invites_recipient_idx")
+      .on(t.toUserId, t.createdAt)
+      .where(sql`${t.status} = 'pending'`),
+  ],
+);
+
+// 길드 탈퇴/추방 후 7일 쿨다운 — 다른 길드 가입 차단.
+export const guildLeaveCooldown = pgTable("guild_leave_cooldown", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  cooldownUntil: timestamp("cooldown_until").notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type SavesKvRow = typeof savesKv.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
@@ -201,3 +278,7 @@ export type PresenceRow = typeof presence.$inferSelect;
 export type MarketplaceListingRow = typeof marketplaceListings.$inferSelect;
 export type MarketplaceInboxRow = typeof marketplaceInbox.$inferSelect;
 export type RankingRow = typeof rankings.$inferSelect;
+export type GuildRow = typeof guilds.$inferSelect;
+export type GuildMemberRow = typeof guildMembers.$inferSelect;
+export type GuildInviteRow = typeof guildInvites.$inferSelect;
+export type GuildLeaveCooldownRow = typeof guildLeaveCooldown.$inferSelect;

@@ -8,6 +8,13 @@
       "when": 1778329289570,
       "tag": "0000_sticky_wiccan",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778383336403,
+      "tag": "0001_colossal_firebrand",
+      "breakpoints": true
     }
   ]
 }

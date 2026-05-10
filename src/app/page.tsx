@@ -349,6 +349,8 @@ function Home() {
     equipped: equippedSlots,
     stats: totalStats,
     skills: characterSkills,
+    affiliation:
+      characterStateHook.state.affiliation ?? baseCharacter.affiliation,
   };
   usePresenceHeartbeat({
     name: character.name,

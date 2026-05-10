@@ -13,6 +13,8 @@ export type CharacterDynamicState = {
   exp: number;
   gold: number;
   fame: number;
+  /** 길드 시스템에서 자동 갱신. 미가입 시 "무소속". */
+  affiliation?: string;
   equipped?: EquippedSlots;
   /** 장착 중인 칭호 ID. null/미지정 = 미장착. */
   equippedTitleId?: string | null;
@@ -73,6 +75,7 @@ function readInitial(raw: unknown): CharacterDynamicState {
     exp: parsed.exp ?? initialCharacterState.exp,
     gold: parsed.gold ?? initialCharacterState.gold,
     fame: parsed.fame ?? initialCharacterState.fame,
+    affiliation: parsed.affiliation,
     equipped: rehydrateEquipped(parsed.equipped),
     equippedTitleId: parsed.equippedTitleId ?? null,
     equippedSkills: parsed.equippedSkills,
@@ -145,6 +148,12 @@ export function useCharacterState() {
   const setEquippedSkills = (names: string[]) =>
     setState((prev) => ({ ...prev, equippedSkills: names }));
 
+  // 길드 가입/탈퇴/해체/위임 시 호출. 서버는 이미 character.v2 에 affiliation 을
+  // 반영했지만 클라이언트의 in-memory state 도 같이 끌어줘야 AdventurerCard 등이
+  // 즉시 새 값을 표시.
+  const setAffiliation = (affiliation: string) =>
+    setState((prev) => ({ ...prev, affiliation }));
+
   // 오늘 기준 region 의 보스 입장 카운터. 다른 날짜 데이터는 0 으로 처리.
   const getBossAttemptsToday = (regionId: string): number => {
     const entry = state.bossAttempts?.[regionId];
@@ -182,6 +191,7 @@ export function useCharacterState() {
     setSlot,
     setEquippedTitle,
     setEquippedSkills,
+    setAffiliation,
     getBossAttemptsToday,
     consumeBossAttempt,
   };

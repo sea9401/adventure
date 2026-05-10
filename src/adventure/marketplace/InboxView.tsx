@@ -9,6 +9,11 @@ import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { getRecipeById } from "@/adventure/data/recipes";
 import { useGame } from "@/adventure/GameContext";
+import {
+  acceptGuildInvite,
+  declineGuildInvite,
+  GuildError,
+} from "@/adventure/guild/api";
 import { claimInbox, fetchInbox, type InboxItem } from "./api";
 import { SendMessageModal } from "./SendMessageModal";
 
@@ -52,6 +57,47 @@ export function InboxView() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
+
+  // 길드 초대 수락/거절 — claim 흐름과 별개. 응답 후 우편 목록만 새로고침.
+  const respondToGuildInvite = async (
+    inviteId: number,
+    inboxRowId: number,
+    accept: boolean,
+  ) => {
+    setError(null);
+    setBusyIds((prev) => {
+      const next = new Set(prev);
+      next.add(inboxRowId);
+      return next;
+    });
+    try {
+      if (accept) {
+        const r = await acceptGuildInvite(inviteId);
+        characterStateHook.setAffiliation(r.guildName);
+        pushToast(`${r.guildName} 길드에 가입했습니다.`);
+      } else {
+        await declineGuildInvite(inviteId);
+        pushToast("초대를 거절했습니다.");
+      }
+      void load();
+      refreshInbox();
+    } catch (e) {
+      const msg =
+        e instanceof GuildError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : "처리 실패";
+      setError(msg);
+      pushToast(msg);
+    } finally {
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(inboxRowId);
+        return next;
+      });
+    }
+  };
 
   const claim = async (ids: number[]) => {
     if (ids.length === 0) return;
@@ -144,18 +190,23 @@ export function InboxView() {
         </Card>
       ) : null}
 
-      {items.length > 1 ? (
-        <Card padding="sm">
-          <button
-            type="button"
-            disabled={busyIds.size > 0 || loading}
-            onClick={() => claim(items.map((i) => i.id))}
-            className="w-full rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            전체 수령 ({items.length}건)
-          </button>
-        </Card>
-      ) : null}
+      {(() => {
+        // 전체 수령 — 길드 초대는 별도 흐름이라 제외.
+        const claimable = items.filter((i) => i.kind !== "guild_invite");
+        if (claimable.length <= 1) return null;
+        return (
+          <Card padding="sm">
+            <button
+              type="button"
+              disabled={busyIds.size > 0 || loading}
+              onClick={() => claim(claimable.map((i) => i.id))}
+              className="w-full rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              전체 수령 ({claimable.length}건)
+            </button>
+          </Card>
+        );
+      })()}
 
       {loading && items.length === 0 ? (
         <ul className="space-y-2">
@@ -176,19 +227,35 @@ export function InboxView() {
         />
       ) : (
         <div className="space-y-2">
-          {items.map((it) => (
-            <InboxRow
-              key={it.id}
-              item={it}
-              busy={busyIds.has(it.id)}
-              onClaim={() => claim([it.id])}
-              onReply={
-                it.kind === "user_message" && it.fromName
-                  ? () => setComposer({ recipient: it.fromName as string })
-                  : undefined
-              }
-            />
-          ))}
+          {items.map((it) => {
+            const inviteId =
+              it.kind === "guild_invite"
+                ? Number((it.payload as { invite_id?: unknown }).invite_id)
+                : null;
+            return (
+              <InboxRow
+                key={it.id}
+                item={it}
+                busy={busyIds.has(it.id)}
+                onClaim={() => claim([it.id])}
+                onReply={
+                  it.kind === "user_message" && it.fromName
+                    ? () => setComposer({ recipient: it.fromName as string })
+                    : undefined
+                }
+                onAccept={
+                  inviteId !== null && Number.isInteger(inviteId)
+                    ? () => respondToGuildInvite(inviteId, it.id, true)
+                    : undefined
+                }
+                onDecline={
+                  inviteId !== null && Number.isInteger(inviteId)
+                    ? () => respondToGuildInvite(inviteId, it.id, false)
+                    : undefined
+                }
+              />
+            );
+          })}
         </div>
       )}
 
@@ -208,13 +275,18 @@ function InboxRow({
   busy,
   onClaim,
   onReply,
+  onAccept,
+  onDecline,
 }: {
   item: InboxItem;
   busy: boolean;
   onClaim: () => void;
   onReply?: () => void;
+  onAccept?: () => void;
+  onDecline?: () => void;
 }) {
   const isMessage = item.kind === "user_message";
+  const isGuildInvite = item.kind === "guild_invite" && !!onAccept && !!onDecline;
   const summary = summarizePayload(item);
   const messageText =
     isMessage && typeof (item.payload as { text?: unknown }).text === "string"
@@ -238,24 +310,47 @@ function InboxRow({
           ) : null}
         </span>
         <div className="flex shrink-0 flex-col items-stretch gap-1">
-          {onReply ? (
-            <button
-              type="button"
-              onClick={onReply}
-              disabled={busy}
-              className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-              답장
-            </button>
-          ) : null}
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onClaim}
-            className="rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {busy ? "처리 중…" : isMessage ? "확인" : "수령"}
-          </button>
+          {isGuildInvite ? (
+            <>
+              <button
+                type="button"
+                onClick={onAccept}
+                disabled={busy}
+                className="rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {busy ? "처리 중…" : "수락"}
+              </button>
+              <button
+                type="button"
+                onClick={onDecline}
+                disabled={busy}
+                className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                거절
+              </button>
+            </>
+          ) : (
+            <>
+              {onReply ? (
+                <button
+                  type="button"
+                  onClick={onReply}
+                  disabled={busy}
+                  className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  답장
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onClaim}
+                className="rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {busy ? "처리 중…" : isMessage ? "확인" : "수령"}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </Card>
@@ -292,6 +387,14 @@ function summarizePayload(item: InboxItem): string {
       name = MATERIALS[id as MaterialId]?.name ?? id;
     }
     return `⏰ 매물 회수 — ${name}${qty > 1 ? ` ×${qty}` : ""}`;
+  }
+  if (item.kind === "guild_invite") {
+    const guildName =
+      typeof (p as { guild_name?: unknown }).guild_name === "string"
+        ? (p as { guild_name: string }).guild_name
+        : "?";
+    const from = item.fromName ?? "알 수 없는 발신자";
+    return `🤝 ${from} 의 길드 초대 — ${guildName}`;
   }
   if (item.kind === "purchase_item" || item.kind === "cancel_return") {
     const kind = (p as { item_kind?: unknown }).item_kind;

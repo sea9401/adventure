@@ -7,6 +7,10 @@
     {
       "path": "/api/bulletin/cleanup",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/guilds-cleanup",
+      "schedule": "0 4 * * *"
     }
   ]
 }

@@ -9,6 +9,7 @@ import {
   Scroll,
   Sparkle,
   Storefront,
+  UsersThree,
 } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EntryCard } from "@/components/ui/EntryCard";
@@ -23,6 +24,7 @@ import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CraftingView } from "@/adventure/CraftingView";
 import { ShopView } from "@/adventure/ShopView";
 import { GuildView } from "@/adventure/GuildView";
+import { GuildHallView } from "@/adventure/guild/GuildHallView";
 import { SparringView } from "@/adventure/SparringView";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
@@ -141,6 +143,14 @@ export function TownScreen() {
           title="모험가 길드"
           description="의뢰를 받고 명성을 쌓을 수 있는 곳."
           onClick={() => setSubView("guild")}
+        />
+        <EntryCard
+          icon={
+            <UsersThree size={28} weight="duotone" className="text-violet-600" />
+          }
+          title="길드 회관"
+          description="모험가들이 서로 작은 길드를 꾸리는 곳."
+          onClick={() => setSubView("guild_hall")}
         />
       </div>
     );
@@ -352,6 +362,15 @@ export function TownScreen() {
           onAccept={handleAcceptQuest}
           onClaim={handleClaimQuest}
         />
+      </div>
+    );
+  }
+
+  if (subView === "guild_hall") {
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="길드 회관" onBack={back} />
+        <GuildHallView />
       </div>
     );
   }
