@@ -17,6 +17,7 @@ export function RegionDetail({
   canChallenge,
   onMove,
   requirementStatus,
+  scrollMove,
 }: {
   region: Region | null;
   state: NodeState | null;
@@ -24,6 +25,8 @@ export function RegionDetail({
   canChallenge?: boolean;
   onMove: () => void;
   requirementStatus?: EdgeRequirementStatus | null;
+  /** 마을 귀환 주문서로 이동 가능한 경우 — 보유 수량 노출. count<=0 이면 비활성. */
+  scrollMove?: { count: number };
 }) {
   if (!region || !state) {
     return (
@@ -55,17 +58,25 @@ export function RegionDetail({
       )}
       <button
         type="button"
-        disabled={!canMove && !canChallenge}
+        disabled={
+          !canMove &&
+          !canChallenge &&
+          !(scrollMove && scrollMove.count > 0)
+        }
         onClick={onMove}
         className="mt-3 w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-[transform,background-color] duration-100 hover:bg-zinc-100 active:scale-[0.97] active:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:active:bg-zinc-700"
       >
         {state === "current"
           ? "이미 이곳에 있음"
-          : canChallenge && !canMove
-            ? "시련 도전"
-            : canMove
-              ? "이동"
-              : "지금은 갈 수 없음"}
+          : canMove
+            ? "이동"
+            : canChallenge
+              ? "시련 도전"
+              : scrollMove
+                ? scrollMove.count > 0
+                  ? `주문서로 이동 (×${scrollMove.count})`
+                  : "귀환 주문서가 없다"
+                : "지금은 갈 수 없음"}
       </button>
     </Card>
   );

@@ -37,7 +37,8 @@ export function MapView({
   hasStoryFlag: (flagId: string) => boolean;
   onTrialStart: (from: RegionId, to: RegionId) => void;
 }) {
-  const { addNotification } = useGame();
+  const { addNotification, inventory, handleUseTownReturn } = useGame();
+  const scrollCount = inventory.consumableCount("scroll_town_return");
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
   const [lowHpBlocked, setLowHpBlocked] = useState(false);
 
@@ -95,6 +96,23 @@ export function MapView({
     (requirementStatus?.met ?? true);
   const canChallenge = isTrialEdge;
 
+  // 마을 귀환 주문서로 이동 가능 여부 — 가본 마을이고, 정상 경로(canMove/canChallenge)
+  // 가 안 풀리는 상황에서만 노출. 출발지가 마을이면 fast-travel 엣지로 무료 이동 가능
+  // 하므로 주문서 모드 자체를 띄우지 않는다 (count 표시 + 소비 일관성).
+  const fromRegion = WORLD_MAP.regions.find(
+    (r) => r.id === progress.currentRegionId,
+  );
+  const fromIsTown = !!fromRegion?.tags?.includes("town");
+  const targetIsTown = !!selectedRegion?.tags?.includes("town");
+  const isScrollEligible =
+    !!selectedId &&
+    selectedId !== progress.currentRegionId &&
+    targetIsTown &&
+    visitedSet.has(selectedId) &&
+    !fromIsTown &&
+    !canMove &&
+    !canChallenge;
+
   const performMove = (toId: RegionId) => {
     const isFirstVisit = !progress.visitedRegionIds.includes(toId);
     onProgressChange({
@@ -126,8 +144,15 @@ export function MapView({
       onTrialStart(progress.currentRegionId, selectedId);
       return;
     }
-    if (!canMove) return;
-    performMove(selectedId);
+    if (canMove) {
+      performMove(selectedId);
+      return;
+    }
+    if (isScrollEligible && scrollCount > 0) {
+      // 주문서 소비 + 텔레포트 — handleUseTownReturn 가 mapProgress 까지 갱신.
+      handleUseTownReturn(selectedId);
+      return;
+    }
   };
 
   const currentRegion = WORLD_MAP.regions.find(
@@ -177,6 +202,7 @@ export function MapView({
         canChallenge={canChallenge}
         onMove={handleMove}
         requirementStatus={requirementStatus}
+        scrollMove={isScrollEligible ? { count: scrollCount } : undefined}
       />
       {lowHpBlocked && (
         <LowHpBlockModal onConfirm={() => setLowHpBlocked(false)} />
