@@ -33,7 +33,7 @@ import {
   applyQuestReward,
   type RewardServices,
 } from "@/adventure/quests/applyReward";
-import { ITEMS, findItemId, type EquipSlot, type ItemId } from "@/adventure/data/items";
+import { ITEMS, findItemId, rarityTextClass, type EquipSlot, type ItemId } from "@/adventure/data/items";
 import {
   getItemSellPrice,
   getMaterialSellPrice,
@@ -560,7 +560,6 @@ function Home() {
         "info",
         `레벨업! Lv.${next} (스탯 포인트 +${gained})`,
       );
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLevelUpTrigger((v) => v + 1);
     }
     lastSeenLevelRef.current = next;
@@ -594,7 +593,9 @@ function Home() {
     const oldId = findItemId(characterStateHook.equippedSlots[item.slot]);
     if (oldId) inventory.addEquipment(oldId, 1);
     characterStateHook.setSlot(item.slot, item);
-    addNotification("info", `${item.name}을(를) 장착했다.`);
+    addNotification("info", `${item.name}을(를) 장착했다.`, {
+      highlight: { name: item.name, className: rarityTextClass(item) },
+    });
   };
 
   const handleUnequip = (slot: EquipSlot) => {
@@ -603,7 +604,9 @@ function Home() {
     const id = findItemId(current);
     if (id) inventory.addEquipment(id, 1);
     characterStateHook.setSlot(slot, null);
-    addNotification("info", `${current.name}을(를) 해제했다.`);
+    addNotification("info", `${current.name}을(를) 해제했다.`, {
+      highlight: { name: current.name, className: rarityTextClass(current) },
+    });
   };
 
   const handleCraft = (recipe: Recipe) => {
@@ -653,7 +656,9 @@ function Home() {
     if (recipe.result.kind === "equipment") {
       const item = ITEMS[recipe.result.itemId];
       inventory.addEquipment(recipe.result.itemId);
-      addNotification("info", `${item.name}을(를) 만들었다.`);
+      addNotification("info", `${item.name}을(를) 만들었다.`, {
+        highlight: { name: item.name, className: rarityTextClass(item) },
+      });
     } else {
       const potion = POTIONS[recipe.result.potionId];
       inventory.add(recipe.result.potionId, recipe.result.quantity);

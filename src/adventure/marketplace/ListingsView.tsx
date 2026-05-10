@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TabBar } from "@/components/ui/TabBar";
 import { formatRelativeTime } from "@/lib/format";
+import { ITEMS, rarityTextClass, type ItemId } from "@/adventure/data/items";
 import { fetchListings } from "./api";
 import type { ItemKind, Listing, SortMode } from "./types";
 
@@ -234,11 +235,14 @@ function ListingCard({
     typeof currentGold === "number" && currentGold < item.price;
   const blocked = alreadyKnown === true;
   const isRecipe = item.itemKind === "recipe";
+  // 장비 매물이면 등급색으로 강조 — 다른 종류는 기본 zinc 톤.
+  const equipDef = item.itemKind === "equip" ? ITEMS[item.itemId as ItemId] : null;
+  const nameClass = rarityTextClass(equipDef, "text-zinc-900 dark:text-zinc-100");
   return (
     <Card padding="sm">
       <div className="flex items-center gap-3">
         <span className="flex-1 min-w-0">
-          <span className="block truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          <span className={`block truncate text-sm font-medium ${nameClass}`}>
             {isRecipe ? "📜 " : ""}
             {item.itemName}
             {item.itemKind === "material" && item.quantity > 1 ? (
@@ -249,6 +253,8 @@ function ListingCard({
             {formatRelativeTime(item.createdAt)}
             {(() => {
               // 등록 24시간 만료 — 4시간 이하 남았으면 임박 뱃지 노출.
+              // 시간 기반 1회성 표시라 Date.now() 가 매 렌더 다른 값이어도 무해.
+              // eslint-disable-next-line react-hooks/purity
               const ageMs = Date.now() - new Date(item.createdAt).getTime();
               const remainMs = 24 * 60 * 60 * 1000 - ageMs;
               if (remainMs > 0 && remainMs < 4 * 60 * 60 * 1000) {

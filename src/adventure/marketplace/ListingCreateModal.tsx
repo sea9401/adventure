@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
-import { ITEMS, type ItemId, type EquipItem } from "@/adventure/data/items";
+import { ITEMS, rarityTextClass, type ItemId, type EquipItem } from "@/adventure/data/items";
 import {
   MATERIALS,
   type MaterialId,
@@ -226,7 +226,7 @@ function ItemPicker({
                   onClick={() => onPick(o)}
                   className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
                 >
-                  <span>{o.kind === "equip" || o.kind === "material" ? o.def.name : ""}</span>
+                  <span className={o.kind === "equip" ? rarityTextClass(o.def) : undefined}>{o.kind === "equip" || o.kind === "material" ? o.def.name : ""}</span>
                   <span className="text-xs text-zinc-500">
                     {o.kind === "equip" || o.kind === "material" ? `${o.have}개 보유` : ""}
                   </span>
@@ -303,7 +303,7 @@ function PriceForm({
     <div className="mt-3 space-y-3">
       <Card padding="sm">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">
+          <span className={`text-sm font-medium ${selection.kind === "equip" ? rarityTextClass(selection.def) : ""}`}>
             {selection.kind === "recipe" ? "📜 " : ""}
             {selection.def.name}
           </span>

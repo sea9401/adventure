@@ -9,6 +9,7 @@ import {
   type NotificationKind,
 } from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
+import { renderHighlightedText } from "@/components/NotificationToast";
 
 const KIND_COLOR: Record<NotificationKind, string> = {
   battle_win: "text-emerald-600 dark:text-emerald-400",
@@ -65,7 +66,7 @@ function NotificationRow({ n }: { n: AppNotification }) {
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <div className={`text-sm ${KIND_COLOR[n.kind]}`}>{n.text}</div>
+          <div className={`text-sm ${KIND_COLOR[n.kind]}`}>{renderHighlightedText(n.text, n.meta?.highlight)}</div>
           <div className="mt-1 flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
             <span>{formatAbsolute(n.timestamp)}</span>
             <span aria-hidden>·</span>

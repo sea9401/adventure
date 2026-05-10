@@ -1,8 +1,9 @@
 export type EquipSlot = "weapon" | "armor" | "accessory";
 
-// 4단계 등급. 미지정은 common 으로 취급.
-// uncommon/rare/legendary 만 색깔로 강조하고, common 은 기본 zinc 톤 유지.
-export type ItemRarity = "common" | "uncommon" | "rare" | "legendary";
+// 5단계 등급. 미지정은 common 으로 취급.
+// common 은 기본 zinc 톤, 나머지는 색깔로 강조.
+// unique 는 rare 위 / legendary 아래 — "특별한 한 자루" 급 보라색.
+export type ItemRarity = "common" | "uncommon" | "rare" | "unique" | "legendary";
 
 export type EquipBonus = {
   atk?: number;
@@ -39,6 +40,8 @@ export function rarityTextClass(
       return "text-emerald-600 dark:text-emerald-400";
     case "rare":
       return "text-sky-600 dark:text-sky-400";
+    case "unique":
+      return "text-violet-600 dark:text-violet-400";
     case "legendary":
       return "text-amber-600 dark:text-amber-400";
     default:

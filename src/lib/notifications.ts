@@ -8,8 +8,11 @@ export type NotificationKind =
 
 // 알림 종류별로 부착될 수 있는 부가 데이터. UI에서 expand 시 사용.
 // kind = "battle_win" | "battle_lose" 일 때 battleLog가 있으면 RecentLogView에서 클릭 시 전투 로그 펼쳐 보기.
+// highlight 가 있으면 토스트/알림 패널에서 메시지 안의 name 부분만 className 으로 강조한다.
+//   — lib 레이어가 adventure 도메인(ItemId, rarity)을 모르도록 색상 className 자체를 직접 담는다.
 export type NotificationMeta = {
   battleLog?: { kind: string; text: string }[];
+  highlight?: { name: string; className: string };
 };
 
 export type AppNotification = {

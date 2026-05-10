@@ -10,7 +10,11 @@ import {
   Sword,
   X,
 } from "@phosphor-icons/react";
-import type { AppNotification, NotificationKind } from "@/lib/notifications";
+import type {
+  AppNotification,
+  NotificationKind,
+  NotificationMeta,
+} from "@/lib/notifications";
 import { useToastPrefs } from "@/lib/notification-prefs";
 
 const TOAST_DURATION_MS = 2000;
@@ -20,7 +24,27 @@ type ToastItem = {
   id: string;
   text: string;
   kind: NotificationKind;
+  highlight?: NotificationMeta["highlight"];
 };
+
+// 메시지 안에서 highlight.name 부분만 className 으로 강조해 ReactNode 로 렌더.
+// 일치하는 부분이 없으면 plain text 그대로 반환.
+// 토스트와 알림 패널 양쪽에서 공용으로 쓴다.
+export function renderHighlightedText(
+  text: string,
+  highlight: NotificationMeta["highlight"],
+): React.ReactNode {
+  if (!highlight) return text;
+  const idx = text.indexOf(highlight.name);
+  if (idx < 0) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <span className={highlight.className}>{highlight.name}</span>
+      {text.slice(idx + highlight.name.length)}
+    </>
+  );
+}
 
 // 토스트 좌측 색띠 — 종류 한 눈에 구분.
 const TOAST_ACCENT: Record<NotificationKind, string> = {
@@ -60,8 +84,11 @@ export function NotificationToast({
   const lastIdRef = useRef<string | null>(null);
   const { prefs } = useToastPrefs();
   // useEffect deps 안정화를 위한 ref — prefs 가 바뀐다고 옛 알림을 토스트로 띄우진 않음.
+  // ref 할당은 render 중이 아닌 useEffect 안에서 (render 중 ref mutate 금지 규칙).
   const prefsRef = useRef(prefs);
-  prefsRef.current = prefs;
+  useEffect(() => {
+    prefsRef.current = prefs;
+  });
 
   // 신규 알림 감지 — 마운트 시점 이전 알림은 토스트 안 띄움.
   // 외부 props(notifications)를 관찰해 큐 누적 — set-state-in-effect 패턴이지만
@@ -78,11 +105,16 @@ export function NotificationToast({
     lastIdRef.current = latest.id;
     // 사용자 선호 — 해당 종류가 OFF 면 토스트 안 띄움.
     if (!prefsRef.current[latest.kind]) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToasts((prev) =>
-      [...prev, { id: latest.id, text: latest.text, kind: latest.kind }].slice(
-        -MAX_VISIBLE_TOASTS,
-      ),
+      [
+        ...prev,
+        {
+          id: latest.id,
+          text: latest.text,
+          kind: latest.kind,
+          highlight: latest.meta?.highlight,
+        },
+      ].slice(-MAX_VISIBLE_TOASTS),
     );
   }, [notifications]);
 
@@ -119,7 +151,7 @@ export function NotificationToast({
             weight="duotone"
             className={`mt-0.5 shrink-0 ${TOAST_ICON_COLOR[t.kind]}`}
           />
-          <span className="flex-1 pt-0.5">{t.text}</span>
+          <span className="flex-1 pt-0.5">{renderHighlightedText(t.text, t.highlight)}</span>
           <button
             type="button"
             aria-label="알림 닫기"

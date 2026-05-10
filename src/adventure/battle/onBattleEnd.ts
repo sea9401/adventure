@@ -4,7 +4,7 @@ import type { MaterialId } from "@/adventure/data/materials";
 import type { ItemId } from "@/adventure/data/items";
 import { MONSTERS } from "@/adventure/data/monsters";
 import { MATERIALS } from "@/adventure/data/materials";
-import { ITEMS } from "@/adventure/data/items";
+import { ITEMS, rarityTextClass } from "@/adventure/data/items";
 import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
 import { getQuestById } from "@/adventure/data/quests";
 import { getRecipeById } from "@/adventure/data/recipes";
@@ -89,9 +89,11 @@ export function onBattleEnd(
           deps.addNotification("info", `골드 +${drop.amount}`);
         } else if (drop.kind === "equip") {
           deps.inventory.addEquipment(drop.itemId);
+          const equipDef = ITEMS[drop.itemId];
           deps.addNotification(
             "info",
-            `${ITEMS[drop.itemId].name}을(를) 손에 넣었다!`,
+            `${equipDef.name}을(를) 손에 넣었다!`,
+            { highlight: { name: equipDef.name, className: rarityTextClass(equipDef) } },
           );
         } else if (drop.kind === "recipe") {
           if (deps.crafting.knows(drop.recipeId)) continue;
