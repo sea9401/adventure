@@ -15,6 +15,8 @@ export type CoopBossDef = {
   respawnMs: number;
   /** 보스 처치 시 set 할 storyFlag. */
   onDefeatFlag?: string;
+  /** 보스에 1회 이상 attack 한 시점에 set 할 storyFlag (참여 unlock 용). */
+  onAttackFlag?: string;
 };
 
 export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
@@ -24,6 +26,7 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     expirationMs: 24 * 60 * 60 * 1000, // 24h
     respawnMs: 1 * 60 * 60 * 1000, // 1h (처치/만료 동일)
     onDefeatFlag: "peak_giant_defeated",
+    onAttackFlag: "peak_giant_engaged",
   },
 };
 

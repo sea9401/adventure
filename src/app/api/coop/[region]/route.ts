@@ -332,6 +332,10 @@ async function handleAttack(
   if (defeated && def.onDefeatFlag) {
     await setStoryFlagServer(userId, def.onDefeatFlag);
   }
+  // 1회 이상 attack 한 유저에게 set 되는 참여 flag — idempotent (이미 있으면 skip).
+  if (def.onAttackFlag) {
+    await setStoryFlagServer(userId, def.onAttackFlag);
+  }
 
   // 처치 broadcast — 광장 게시판에 1줄 시스템 글.
   if (defeated) {

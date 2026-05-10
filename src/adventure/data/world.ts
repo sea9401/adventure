@@ -266,14 +266,15 @@ export const WORLD_MAP: WorldMap = {
       to: "canyon",
       requires: { kind: "trial", battles: 5, enemiesFrom: "canyon" },
     },
-    // 운봉의 거인 (보스) 처치 시 set 되는 storyFlag. 보스 미구현이라 사실상 잠금 상태.
+    // 협동 보스 운봉의 거인에 한 번이라도 공격을 가하면 unlock (참여 flag).
+    // peak_giant_defeated 가 아닌 peak_giant_engaged — 처치까진 안 가도 진입 가능.
     {
       from: "canyon",
       to: "unhyang",
       requires: {
         kind: "story",
-        flagId: "peak_giant_defeated",
-        reason: "운봉의 거인이 길목을 가로막아 더 갈 수 없다.",
+        flagId: "peak_giant_engaged",
+        reason: "운봉의 거인과 한 번이라도 맞붙어야 길목이 열린다.",
       },
     },
   ],
