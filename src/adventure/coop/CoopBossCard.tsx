@@ -12,6 +12,7 @@ import { useCoopBoss, type CoopClaimResponse } from "./useCoopBoss";
 import type { AppliedCoopReward } from "./applyReward";
 import type { RegionId } from "@/adventure/data/world";
 import type { BattleLogEntry } from "@/adventure/battle/engine";
+import { MONSTERS } from "@/adventure/data/monsters";
 
 type Props = {
   regionId: string;
@@ -74,6 +75,7 @@ export function CoopBossCard({
 
   const s = data.session;
   const bossDef = COOP_BOSSES[regionId as RegionId];
+  const bossImage = MONSTERS[s.bossName]?.image;
   const my = data.myContribution;
   const top = data.top;
   const recentLogs = data.recentLogs ?? [];
@@ -150,9 +152,21 @@ export function CoopBossCard({
           </span>
         )}
       </div>
-      <h4 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
-        {s.bossName}
-      </h4>
+      <div className="mt-1 flex items-center gap-3">
+        {bossImage && (
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={bossImage}
+              alt={s.bossName}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        )}
+        <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          {s.bossName}
+        </h4>
+      </div>
 
       {/* HP bar */}
       <div className="mt-2">
