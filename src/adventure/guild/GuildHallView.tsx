@@ -126,6 +126,7 @@ export function GuildHallView() {
     try {
       const r = await leaveGuild(data.guild.id);
       setAffiliation(NO_AFFILIATION);
+      if (r.disbanded) grantTitle("closed_shop");
       pushToast(r.disbanded ? "길드를 해체했습니다." : "길드에서 탈퇴했습니다.");
       await load();
     } catch (e) {
@@ -182,6 +183,7 @@ export function GuildHallView() {
     try {
       await disbandGuild(data.guild.id);
       setAffiliation(NO_AFFILIATION);
+      grantTitle("closed_shop");
       pushToast("길드를 해체했습니다.");
       await load();
     } catch (e) {

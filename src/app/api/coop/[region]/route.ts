@@ -19,6 +19,7 @@ import {
 } from "@/adventure/coop/data";
 import { computeCoopReward } from "@/adventure/coop/rewards";
 import { simulateCoopAttack } from "@/adventure/coop/simulate";
+import { respawnCoopRegion } from "@/lib/server/coopRespawn";
 import type { RegionId } from "@/adventure/data/world";
 
 const VALID_REGIONS = Object.keys(COOP_BOSSES) as RegionId[];
@@ -39,6 +40,11 @@ export async function GET(_req: Request, { params }: Ctx) {
   if (!VALID_REGIONS.includes(region as RegionId)) {
     return new Response("invalid region", { status: 400 });
   }
+
+  // self-healing — cron 미동작(dev) / Vercel Hobby 의 cron 강등 환경에서도 카드를
+  // 여는 순간 만료 정리 + 도달한 nextSpawnAt 에 신규 spawn 이 일어나도록.
+  // partial uniqueIndex 가 동시성 막아줌.
+  await respawnCoopRegion(region);
 
   // 활성 세션 (defeatedAt IS NULL) 우선, 없으면 가장 최근 정리된 세션 (nextSpawnAt 정보 표시용).
   const active = await db

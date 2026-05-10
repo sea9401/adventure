@@ -795,15 +795,19 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 상태 관찰형 칭호 — gold 0 도달, 동일 NPC 100회 대화, 외골수 빌드.
+  // 상태 관찰형 칭호 — gold 0 도달, 동일 NPC 100회 대화, 외골수 빌드, 레벨/골드 마일스톤.
   // 외골수: 한 스탯 30↑, 나머지 모두 10↓ (11~29 구간이 있으면 미부여).
   const goldZero = characterState.gold === 0;
+  const goldRich = characterState.gold >= 10000;
+  const levelVeteran = characterState.level >= 30;
   const maxNpcTalkCount = Object.values(adventureLog.log.npcs).reduce(
     (max, e) => Math.max(max, e?.talkCount ?? 0),
     0,
   );
   useEffect(() => {
     if (goldZero) grantTitle("beggar");
+    if (goldRich) grantTitle("wealthy");
+    if (levelVeteran) grantTitle("level_30");
     if (maxNpcTalkCount >= 100) grantTitle("phisher");
     const high = STAT_KEYS.filter((k) => totalStats[k] >= 30).length;
     const low = STAT_KEYS.filter((k) => totalStats[k] <= 10).length;
@@ -811,6 +815,8 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     goldZero,
+    goldRich,
+    levelVeteran,
     maxNpcTalkCount,
     totalStats.str,
     totalStats.dex,

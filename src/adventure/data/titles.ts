@@ -123,6 +123,30 @@ export const TITLES: Record<TitleId, Title> = {
     description: "운봉의 거인을 홀로 절반 이상 깎아낸 자. 산정의 메아리가 그를 기억한다.",
     condition: "운봉의 거인 협동 처치에서 누적 데미지 50% 이상 (legend 티어)",
   },
+  level_30: {
+    id: "level_30",
+    name: "베테랑",
+    description: "수많은 전장에서 살아남은 자. 한 발 한 발이 가볍지 않다.",
+    condition: "레벨 30 도달",
+  },
+  wealthy: {
+    id: "wealthy",
+    name: "부자",
+    description: "지갑이 두툼해진 자. 호주머니의 무게가 발걸음을 늦춘다.",
+    condition: "보유 골드 10,000 도달",
+  },
+  closed_shop: {
+    id: "closed_shop",
+    name: "폐업점주",
+    description: "직접 세운 깃발을 직접 내린 자. 정리는 시작보다 어렵다.",
+    condition: "본인이 마스터인 길드 해체",
+  },
+  stagnant: {
+    id: "stagnant",
+    name: "고인물",
+    description: "맨몸으로도 보스 앞에 선 자. 장비 따위는 거추장스러워졌다.",
+    condition: "장비 미착용 상태로 보스 도전",
+  },
 };
 
 // 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.

@@ -63,6 +63,7 @@ export function AdventureScreen() {
     handleBattleEnd,
     completeQuest,
     addNotification,
+    grantTitle,
   } = useGame();
 
   if (subView === null) {
@@ -418,6 +419,12 @@ export function AdventureScreen() {
           onConsumeBossAttempt={() =>
             characterStateHook.consumeBossAttempt(currentRegion.id)
           }
+          onBossAttempt={() => {
+            const slots = characterStateHook.equippedSlots;
+            if (!slots.weapon && !slots.armor && !slots.accessory) {
+              grantTitle("stagnant");
+            }
+          }}
           bossOnlyMode
         />
       </div>

@@ -57,6 +57,7 @@ export function BattleView({
   onToggleHunting,
   bossAttemptsToday,
   onConsumeBossAttempt,
+  onBossAttempt,
   bossOnlyMode = false,
 }: {
   region: Region;
@@ -81,6 +82,8 @@ export function BattleView({
   bossAttemptsToday?: number;
   /** 보스 도전 1회 입장 카운트. 호출자가 한도 검사 후 호출. */
   onConsumeBossAttempt?: () => void;
+  /** 보스 도전 클릭 시점에 호출 — 부모에서 장비 미착용 등 조건성 칭호 판정. */
+  onBossAttempt?: () => void;
   /**
    * true 면 일반 사냥 섹션 숨기고 보스 카드만 노출. 모험 탭의 "보스" 서브뷰용.
    * false (기본) 면 사냥 섹션만 노출하고 보스 카드는 숨김 — 보스는 별도 서브뷰에 있음.
@@ -225,6 +228,7 @@ export function BattleView({
                 onClick={() => {
                   if (!bossMonster || !onConsumeBossAttempt) return;
                   onConsumeBossAttempt();
+                  onBossAttempt?.();
                   bossModeRef.current = true;
                   if (huntingActive) onToggleHunting(false);
                   startWithLog(bossMonster);
