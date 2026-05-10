@@ -52,14 +52,14 @@ export const REGEN_VIT_THRESHOLD = 20;
 export const REGEN_INTERVAL = 5;
 export const REGEN_AMOUNT = 5;
 
-// 연타 — 속도 15 도달 시 획득.
+// 연타 — 속도 10 도달 시 획득.
 // 5턴마다 그 턴의 마지막 공격 후 추가 1회 공격.
-export const DOUBLE_STRIKE_SPD_THRESHOLD = 15;
+export const DOUBLE_STRIKE_SPD_THRESHOLD = 10;
 export const DOUBLE_STRIKE_INTERVAL = 5;
 
-// 기습 — 속도 30 도달 시 획득.
+// 기습 — 속도 20 도달 시 획득.
 // 효과: 전투 첫 플레이어 턴, 추가 공격 1회.
-export const VANGUARD_SPD_THRESHOLD = 30;
+export const VANGUARD_SPD_THRESHOLD = 20;
 export const VANGUARD_FIRST_TURN_BONUS = 1;
 
 // 크리티컬 — 행운 10 도달 시 획득.
