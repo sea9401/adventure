@@ -71,6 +71,48 @@ export async function PATCH(req: Request) {
   const now = new Date();
   const expectedVersion = body.expectedVersion;
 
+  // value === null → row 삭제. savesKv.value 가 NOT NULL jsonb 라 null upsert 시
+  // DB constraint 위반으로 500 이 나던 버그 (예: 시련 완료 후 setTrial(null) PATCH).
+  // 의미상 null = "이 키는 비어있다" 라 row 자체를 지우는 게 자연스러움.
+  // expectedVersion 은 일치 검사 후 삭제 — 다른 디바이스가 갱신했으면 stale 응답.
+  if (body.value === null) {
+    if (expectedVersion === undefined || expectedVersion === null) {
+      // blind 삭제 — row 가 없으면 no-op.
+      await db
+        .delete(savesKv)
+        .where(and(eq(savesKv.userId, userId), eq(savesKv.key, key)));
+      return Response.json({ ok: true, version: 0 });
+    }
+    if (typeof expectedVersion !== "number" || !Number.isInteger(expectedVersion)) {
+      return new Response("invalid expectedVersion", { status: 400 });
+    }
+    const deleted = await db
+      .delete(savesKv)
+      .where(
+        and(
+          eq(savesKv.userId, userId),
+          eq(savesKv.key, key),
+          eq(savesKv.version, expectedVersion),
+        ),
+      )
+      .returning({ version: savesKv.version });
+    if (deleted.length === 0) {
+      const current = await db
+        .select({ version: savesKv.version })
+        .from(savesKv)
+        .where(and(eq(savesKv.userId, userId), eq(savesKv.key, key)))
+        .limit(1);
+      return new Response(
+        JSON.stringify({
+          error: "stale",
+          currentVersion: current[0]?.version ?? null,
+        }),
+        { status: 409, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    return Response.json({ ok: true, version: 0 });
+  }
+
   // expectedVersion 미지정 — 기존 동작 (blind upsert).
   if (expectedVersion === undefined) {
     const result = await db
