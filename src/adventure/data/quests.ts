@@ -287,7 +287,7 @@ export const QUESTS: Quest[] = [
     requiredLevel: 20,
     target: { kind: "kill", monsterName: "절벽 늑대", count: 10 },
     reward: { gold: 120, fame: 6, exp: 200 },
-    repeatable: true,
+    repeatable: false,
     giverNpcId: "unhyang_guide",
   },
   {
@@ -299,8 +299,7 @@ export const QUESTS: Quest[] = [
     requiredLevel: 18,
     target: { kind: "deliver", materialId: "sancho_blossom", count: 8 },
     reward: { gold: 100, exp: 150, potionCapacityBonus: 1 },
-    repeatable: true,
-    cooldownMs: 12 * 60 * 60 * 1000,
+    repeatable: false,
     giverNpcId: "unhyang_herbalist",
   },
   {
