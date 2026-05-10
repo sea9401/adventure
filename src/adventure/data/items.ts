@@ -170,11 +170,12 @@ export const ITEMS = {
     slot: "armor",
     stats: [
       { label: "방어력", value: "+7" },
+      { label: "공격력", value: "-1" },
       { label: "속도", value: "-3" },
       { label: "행운", value: "-1" },
     ],
-    bonus: { def: 7, spd: -3, luk: -1 },
-    description: "골렘의 잔해를 덧대어 만든 두꺼운 갑주. 묵직한 만큼 발걸음과 운이 따라 무거워진다.",
+    bonus: { def: 7, atk: -1, spd: -3, luk: -1 },
+    description: "골렘의 잔해를 덧대어 만든 두꺼운 갑주. 묵직한 만큼 휘두름과 발걸음, 운이 따라 무거워진다.",
     rarity: "uncommon",
   } satisfies EquipItem,
   wraith_cloak: {
@@ -272,9 +273,9 @@ export const ITEMS = {
     slot: "weapon",
     stats: [
       { label: "공격력", value: "+7" },
-      { label: "행운", value: "+3" },
+      { label: "행운", value: "+5" },
     ],
-    bonus: { atk: 7, luk: 3 },
+    bonus: { atk: 7, luk: 5 },
     description: "마정석 조각을 손등에 박은 너클. 한 방 한 방이 묘하게 운에 맡겨지는 느낌이 든다.",
     rarity: "uncommon",
   } satisfies EquipItem,
