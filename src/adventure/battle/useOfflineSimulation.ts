@@ -152,7 +152,17 @@ export function useOfflineSimulation({
         return;
       }
 
-      if (prev === now) return;
+      if (prev === now) {
+        // 전환 없음. 단, 여전히 away 인 채로 effect 가 re-run 됐다면 (regionId / active /
+        // userId 같은 deps 가 바뀐 것) 저장된 baseline 의 stale 값으로 다음 복귀 시
+        // sim 이 잘못 돌아가는 걸 막기 위해 baseline 을 현재 값으로 다시 쓴다.
+        // 예: A 에서 사냥 ON → map 으로 → 지역 A→B (regionId 변경 + 부수효과로
+        // active=false) → B→A → 배틀. 옛 baseline (A, true) 가 매치돼 의도치 않게
+        // sim 이 실행되던 사고 차단. ts 도 now 로 리셋되므로 그 사이의 시간은 forfeit
+        // (= "지역 변경 / 토글 OFF" 같은 명시 행동이 일어났으면 그 전 시간은 무효).
+        if (now) writeBaseline();
+        return;
+      }
       wasAwayRef.current = now;
 
       if (now) {
