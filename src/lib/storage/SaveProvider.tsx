@@ -31,13 +31,31 @@ const SaveCtx = createContext<{
   remote: RemoteSave;
 } | null>(null);
 
-// 마운트 시 새 세션 토큰을 생성·서버에 claim. 다른 디바이스가 같은 계정으로 진입하면
-// 그쪽이 새 토큰을 박고 이쪽은 다음 PATCH/GET 에서 410 → session-invalidated → 모달.
-function generateSessionId(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
+// 디바이스 단위 영속 세션 ID. 같은 디바이스에선 reload / 새 탭 / 컴퓨터 재시작에도
+// 동일 ID 재사용 — 옛 탭의 keepalive PATCH 가 새 마운트의 claim 이후 도착해도
+// session ID 가 같아 410 거절 안 됨. 다른 디바이스는 자기 localStorage 가 비어있어
+// 새 UUID 생성, claim 시 서버 active_session_id 갱신 → 기존 디바이스 invalidate.
+const DEVICE_SESSION_KEY = "device-session-id.v1";
+
+function getOrCreateSessionId(): string {
+  if (typeof window === "undefined") {
+    // SSR — 의미 없는 fallback, 실제 사용은 브라우저에서.
+    return "";
   }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  try {
+    const existing = localStorage.getItem(DEVICE_SESSION_KEY);
+    if (existing && existing.length > 0 && existing.length <= 100) {
+      return existing;
+    }
+  } catch {}
+  const fresh =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  try {
+    localStorage.setItem(DEVICE_SESSION_KEY, fresh);
+  } catch {}
+  return fresh;
 }
 
 export function SaveProvider({ children }: { children: React.ReactNode }) {
@@ -46,7 +64,7 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
   const { signOut } = useClerk();
 
   useEffect(() => {
-    const sessionId = generateSessionId();
+    const sessionId = getOrCreateSessionId();
     const remote = createRemoteSave({ sessionId });
     remoteRef.current = remote;
     const detach = attachUnloadFlush(remote);
