@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/guilds-quests-cycle",
       "schedule": "0 15 * * 0"
+    },
+    {
+      "path": "/api/cron/coop-respawn",
+      "schedule": "0 * * * *"
     }
   ]
 }

@@ -308,6 +308,53 @@ export const guildQuestInstances = pgTable(
   ],
 );
 
+// 협동 보스 세션 — region 별 활성 인스턴스 1개 (uniqueIndex 로 enforce).
+// hp 가 0 이 되거나 expiresAt 이 지나면 비활성. nextSpawnAt 후 cron 이 새 세션 생성.
+export const coopBossSessions = pgTable(
+  "coop_boss_sessions",
+  {
+    id: text("id").primaryKey(),
+    regionId: text("region_id").notNull(),
+    bossName: text("boss_name").notNull(),
+    hp: integer("hp").notNull(),
+    maxHp: integer("max_hp").notNull(),
+    spawnedAt: timestamp("spawned_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    defeatedAt: timestamp("defeated_at"),
+    nextSpawnAt: timestamp("next_spawn_at"),
+  },
+  (t) => [
+    // region 당 활성 세션은 1개만 (defeatedAt IS NULL && expiresAt > now 가 활성).
+    // 부분 unique 인덱스로 활성 세션만 제약.
+    uniqueIndex("coop_boss_active_region_idx")
+      .on(t.regionId)
+      .where(sql`${t.defeatedAt} IS NULL`),
+    index("coop_boss_next_spawn_idx").on(t.nextSpawnAt),
+  ],
+);
+
+// 유저별 누적 데미지 + claim 상태.
+export const coopBossContributors = pgTable(
+  "coop_boss_contributors",
+  {
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => coopBossSessions.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    damage: integer("damage").notNull().default(0),
+    attackCount: integer("attack_count").notNull().default(0),
+    lastAttackAt: timestamp("last_attack_at"),
+    claimedAt: timestamp("claimed_at"),
+    claimedTier: text("claimed_tier"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sessionId, t.userId] }),
+    index("coop_boss_contributors_user_idx").on(t.userId),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type SavesKvRow = typeof savesKv.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
@@ -321,3 +368,5 @@ export type GuildMemberRow = typeof guildMembers.$inferSelect;
 export type GuildInviteRow = typeof guildInvites.$inferSelect;
 export type GuildLeaveCooldownRow = typeof guildLeaveCooldown.$inferSelect;
 export type GuildQuestInstanceRow = typeof guildQuestInstances.$inferSelect;
+export type CoopBossSessionRow = typeof coopBossSessions.$inferSelect;
+export type CoopBossContributorRow = typeof coopBossContributors.$inferSelect;
