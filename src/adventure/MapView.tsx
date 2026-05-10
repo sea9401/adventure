@@ -37,10 +37,9 @@ export function MapView({
   hasStoryFlag: (flagId: string) => boolean;
   onTrialStart: (from: RegionId, to: RegionId) => void;
 }) {
-  const { addNotification, huntingActive } = useGame();
+  const { addNotification } = useGame();
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
   const [lowHpBlocked, setLowHpBlocked] = useState(false);
-  const [pendingMoveTo, setPendingMoveTo] = useState<RegionId | null>(null);
 
   const visitedSet = new Set(progress.visitedRegionIds);
   const adjacentToCurrent = new Set(
@@ -122,11 +121,6 @@ export function MapView({
       return;
     }
     if (!canMove) return;
-    // 사냥 중이면 확인 모달 — 무조건 노출 (스킵 옵션 없음).
-    if (huntingActive) {
-      setPendingMoveTo(selectedId);
-      return;
-    }
     performMove(selectedId);
   };
 
@@ -177,72 +171,6 @@ export function MapView({
       {lowHpBlocked && (
         <LowHpBlockModal onConfirm={() => setLowHpBlocked(false)} />
       )}
-      {pendingMoveTo && (
-        <ConfirmHuntStopModal
-          fromName={
-            WORLD_MAP.regions.find((r) => r.id === progress.currentRegionId)
-              ?.name ?? ""
-          }
-          toName={
-            WORLD_MAP.regions.find((r) => r.id === pendingMoveTo)?.name ?? ""
-          }
-          onCancel={() => setPendingMoveTo(null)}
-          onConfirm={() => {
-            const to = pendingMoveTo;
-            setPendingMoveTo(null);
-            performMove(to);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function ConfirmHuntStopModal({
-  fromName,
-  toName,
-  onCancel,
-  onConfirm,
-}: {
-  fromName: string;
-  toName: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
-      <Card padding="lg" className="w-full max-w-sm">
-        <div className="text-lg font-semibold text-amber-700 dark:text-amber-300">
-          자동 사냥이 정지됩니다
-        </div>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          <span className="font-medium text-zinc-800 dark:text-zinc-200">
-            {fromName}
-          </span>
-          에서 자동 사냥 중입니다.
-          <br />
-          <span className="font-medium text-zinc-800 dark:text-zinc-200">
-            {toName}
-          </span>
-          (으)로 이동하면 사냥이 멈춥니다.
-        </p>
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="flex-1 rounded-md border border-amber-700 bg-amber-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700"
-          >
-            이동 (사냥 정지)
-          </button>
-        </div>
-      </Card>
     </div>
   );
 }
