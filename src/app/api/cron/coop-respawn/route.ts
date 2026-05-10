@@ -1,8 +1,19 @@
 import { and, isNull, lt, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db } from "@/db";
-import { coopBossSessions } from "@/db/schema";
+import { coopBossSessions, messages, users } from "@/db/schema";
 import { COOP_BOSSES } from "@/adventure/coop/data";
+
+// 시스템 broadcast 용 가짜 유저 — messages.userId 가 NOT NULL + users.id FK 라
+// 시스템 글도 어떤 user row 를 참조해야 함. id="system" 으로 한 번만 INSERT 해
+// 두고 spawn 알림에 재사용.
+const SYSTEM_USER_ID = "system";
+async function ensureSystemUser(): Promise<void> {
+  await db
+    .insert(users)
+    .values({ id: SYSTEM_USER_ID, email: null, name: null })
+    .onConflictDoNothing({ target: users.id });
+}
 
 // 매시간 실행 — 만료/처치된 세션 정리 + nextSpawnAt 도달한 region 에 새 세션 생성.
 //
@@ -84,6 +95,19 @@ export async function GET(req: Request) {
         expiresAt: new Date(now.getTime() + def.expirationMs),
       });
       spawned.push(newId);
+      // 채팅 broadcast — 부수 효과라 실패해도 cron 응답은 정상.
+      try {
+        await ensureSystemUser();
+        await db.insert(messages).values({
+          userId: SYSTEM_USER_ID,
+          name: "시스템",
+          className: "협동 보스",
+          title: null,
+          content: `${def.monsterName}이(가) 나타났다 — 24시간 안에 쓰러뜨려야 한다.`,
+        });
+      } catch (err) {
+        console.warn("[coop] spawn broadcast failed", err);
+      }
     } catch {
       // 동시 cron 호출에서 unique 인덱스 위반 — silent skip.
     }
