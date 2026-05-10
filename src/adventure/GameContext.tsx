@@ -13,7 +13,7 @@ import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import type { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import type { useCharacterState } from "@/adventure/character/useCharacterState";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
-import type { useEdgeUnlocks } from "@/adventure/edges/useEdgeUnlocks";
+import type { useTrialUnlocks } from "@/adventure/edges/useTrialUnlocks";
 import type { useInboxCount } from "@/adventure/marketplace/useInboxCount";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import type { useNotifications } from "@/adventure/notifications/useNotifications";
@@ -50,7 +50,7 @@ export type GameCtx = {
   quests: ReturnType<typeof useQuests>;
   adventureLog: ReturnType<typeof useAdventureLog>;
   notifications: ReturnType<typeof useNotifications>;
-  edgeUnlocks: ReturnType<typeof useEdgeUnlocks>;
+  trialUnlocks: ReturnType<typeof useTrialUnlocks>;
   storyFlags: ReturnType<typeof useStoryFlags>;
   shopUnlocks: ReturnType<typeof useShopUnlocks>;
   autoPotion: ReturnType<typeof useAutoPotionConfig>;

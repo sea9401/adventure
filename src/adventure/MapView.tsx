@@ -24,7 +24,7 @@ export function MapView({
   onProgressChange,
   log,
   playerHp,
-  isEdgeUnlocked,
+  isTrialCleared,
   hasStoryFlag,
   onTrialStart,
 }: {
@@ -32,7 +32,7 @@ export function MapView({
   onProgressChange: (next: MapProgress) => void;
   log: AdventureLog;
   playerHp: number;
-  isEdgeUnlocked: (from: RegionId, to: RegionId) => boolean;
+  isTrialCleared: (regionId: RegionId) => boolean;
   hasStoryFlag: (flagId: string) => boolean;
   onTrialStart: (from: RegionId, to: RegionId) => void;
 }) {
@@ -69,7 +69,7 @@ export function MapView({
     selectedId && isAdjacent
       ? evaluateEdgeRequirement(selectedReq, {
           log,
-          isEdgeUnlocked,
+          isTrialCleared,
           hasStoryFlag,
           from: progress.currentRegionId,
           to: selectedId,
@@ -79,7 +79,7 @@ export function MapView({
     !!selectedId &&
     isAdjacent &&
     selectedReq?.kind === "trial" &&
-    !isEdgeUnlocked(progress.currentRegionId, selectedId);
+    !isTrialCleared(selectedReq.enemiesFrom);
   // 시련 엣지는 met=false 라도 "도전" 액션으로 진입 가능 — canMove 와 별도로 처리.
   const canMove =
     !!selectedId &&

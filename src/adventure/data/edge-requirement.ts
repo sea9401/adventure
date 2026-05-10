@@ -20,8 +20,11 @@ export type EdgeRequirementStatus = {
 
 export type EvaluateContext = {
   log: AdventureLog;
-  /** 이미 해금된 엣지면 모든 조건을 충족된 것으로 간주 (시련 등 영구 해금용). */
-  isEdgeUnlocked?: (from: RegionId, to: RegionId) => boolean;
+  /**
+   * 시련 통과한 지역 검사 — req.kind === "trial" 일 때 enemiesFrom 으로 조회.
+   * 한 번 통과하면 같은 enemiesFrom 을 요구하는 모든 엣지가 자동 해금된다.
+   */
+  isTrialCleared?: (regionId: RegionId) => boolean;
   /** story flag 검사 — story 종류 엣지 평가에만 사용. */
   hasStoryFlag?: (flagId: string) => boolean;
   from?: RegionId;
@@ -33,15 +36,6 @@ export function evaluateEdgeRequirement(
   ctx: EvaluateContext,
 ): EdgeRequirementStatus {
   if (!req) return { met: true };
-
-  // 영구 해금된 엣지는 종류 무관 즉시 통과.
-  if (
-    ctx.from &&
-    ctx.to &&
-    ctx.isEdgeUnlocked?.(ctx.from, ctx.to)
-  ) {
-    return { met: true, kind: req.kind };
-  }
 
   if (req.kind === "bestiary") {
     const region = WORLD_MAP.regions.find((r) => r.id === req.regionId);
@@ -68,6 +62,10 @@ export function evaluateEdgeRequirement(
     const label = target
       ? `${target.name} 시련 (${req.battles}전 연승)`
       : `시련 (${req.battles}전 연승)`;
+    // enemiesFrom 지역의 시련을 이미 다른 진입로에서 통과했다면 자동 해금.
+    if (ctx.isTrialCleared?.(req.enemiesFrom)) {
+      return { met: true, kind: "trial" };
+    }
     return {
       met: false,
       challengeable: true,

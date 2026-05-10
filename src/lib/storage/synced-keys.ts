@@ -10,7 +10,7 @@ export const SYNCED_KEYS = [
   "quest-progress.v2",
   "adventure-log.v2",
   "map.v2",
-  "edge-unlocks.v2",
+  "trial-unlocks.v1",
   "storyFlags.v2",
   "shop.unlocks.v1",
   "trial.v1",

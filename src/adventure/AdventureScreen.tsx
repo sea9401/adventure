@@ -47,7 +47,7 @@ export function AdventureScreen() {
     storyFlags,
     notifications,
     autoPotion,
-    edgeUnlocks,
+    trialUnlocks,
     huntingActive,
     setHuntingActive,
     playerCombat,
@@ -308,7 +308,7 @@ export function AdventureScreen() {
           onProgressChange={setMapProgress}
           log={adventureLog.log}
           playerHp={character.hp}
-          isEdgeUnlocked={edgeUnlocks.isUnlocked}
+          isTrialCleared={trialUnlocks.isCleared}
           hasStoryFlag={storyFlags.has}
           onTrialStart={(from, to) => {
             const req = findEdgeRequirement(from, to);
@@ -347,7 +347,9 @@ export function AdventureScreen() {
           onWinUpdate={recordTrialWin}
           onTrialEnd={(result) => {
             if (result === "win" && trialEdge) {
-              edgeUnlocks.unlock(trialEdge.from, trialEdge.to);
+              // 시련 통과 — enemiesFrom 지역을 영구 해금. 같은 enemiesFrom 을 요구하는
+              // 모든 진입로(예: cave→lake / forest→lake) 가 한 번에 풀린다.
+              trialUnlocks.markCleared(trialEdge.enemiesFrom);
               setMapProgress((prev) => ({
                 ...prev,
                 currentRegionId: trialEdge.to,

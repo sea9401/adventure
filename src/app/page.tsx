@@ -73,7 +73,7 @@ import {
 } from "@/adventure/character/defaults";
 import { useCharacterState } from "@/adventure/character/useCharacterState";
 import { useProfile } from "@/adventure/profile/useProfile";
-import { useEdgeUnlocks } from "@/adventure/edges/useEdgeUnlocks";
+import { useTrialUnlocks } from "@/adventure/edges/useTrialUnlocks";
 import { type TrialEdge } from "@/adventure/TrialView";
 import {
   counterAtkBonusFor,
@@ -221,7 +221,7 @@ function Home() {
   const characterState = characterStateHook.state;
   const profile = useProfile();
   const notifications = useNotifications();
-  const edgeUnlocks = useEdgeUnlocks();
+  const trialUnlocks = useTrialUnlocks();
   const storyFlags = useStoryFlags();
   const shopUnlocks = useShopUnlocks();
 
@@ -888,7 +888,7 @@ function Home() {
     quests,
     adventureLog,
     notifications,
-    edgeUnlocks,
+    trialUnlocks,
     storyFlags,
     shopUnlocks,
     autoPotion,
