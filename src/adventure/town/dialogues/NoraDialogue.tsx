@@ -74,7 +74,10 @@ export function NoraDialogue({
               inventory.materialCount,
               inventory.consumeMaterial,
             );
-            if (r.ok && completeQuest(QUEST_ID)) onClose();
+            if (r.ok) {
+              completeQuest(QUEST_ID);
+              onClose();
+            }
           },
         }}
       />

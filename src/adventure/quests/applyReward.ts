@@ -3,10 +3,11 @@ import { MATERIALS, type MaterialId } from "../data/materials";
 import { POTIONS, type PotionId } from "../data/potions";
 import { RECIPES } from "../data/recipes";
 import type { QuestReward } from "../data/quests";
-import { applyNewbieBonus } from "@/lib/leveling";
+import { MAX_LEVEL, applyNewbieBonus } from "@/lib/leveling";
 
 export type RewardServices = {
-  addPotion: (id: PotionId, count: number) => void;
+  // 포션 cap 초과분은 silently 잘림 — 실제 추가량 반환해 호출 측이 부족분 안내 가능.
+  addPotion: (id: PotionId, count: number) => number;
   addMaterial: (id: MaterialId, count: number) => void;
   addEquipment: (id: ItemId) => void;
   learnRecipe: (id: string) => void;
@@ -49,19 +50,34 @@ export function applyQuestReward(
 
   const baseExp = reward.exp ?? 0;
   if (baseExp > 0) {
+    // 만렙은 applyExpGain 이 nextExp=0 으로 zeroing — addExp 자체는 호출하되 토스트는
+    // 거짓말이 되지 않도록 "(만렙)" 표시. 신참 ×2 상태일 가능성도 같이 안내.
+    const atMaxLevel = ctx.playerLevel != null && ctx.playerLevel >= MAX_LEVEL;
     const expBonus =
       ctx.playerLevel != null
         ? applyNewbieBonus(baseExp, ctx.playerLevel)
         : { gained: baseExp, bonusApplied: false };
     services.addExp(expBonus.gained);
-    summary.push(
-      `EXP +${expBonus.gained}${expBonus.bonusApplied ? " (신참 ×2)" : ""}`,
-    );
+    if (atMaxLevel) {
+      summary.push(`EXP +${expBonus.gained} (만렙)`);
+    } else {
+      summary.push(
+        `EXP +${expBonus.gained}${expBonus.bonusApplied ? " (신참 ×2)" : ""}`,
+      );
+    }
   }
 
   for (const p of reward.potions ?? []) {
-    services.addPotion(p.id, p.count);
-    summary.push(plural(POTIONS[p.id]?.name ?? p.id, p.count));
+    const added = services.addPotion(p.id, p.count);
+    const name = POTIONS[p.id]?.name ?? p.id;
+    if (added < p.count) {
+      // cap 초과로 일부 잘림 — 거짓 토스트("+5") 대신 실제 수령량 + 잘림 표시.
+      const lost = p.count - added;
+      if (added > 0) summary.push(`${plural(name, added)} (${lost}개는 가방 가득 차 폐기)`);
+      else summary.push(`${plural(name, p.count)} (가방 가득 차 폐기)`);
+    } else {
+      summary.push(plural(name, p.count));
+    }
   }
 
   for (const m of reward.materials ?? []) {

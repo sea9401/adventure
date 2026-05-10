@@ -386,6 +386,8 @@ function Home() {
   // HP 도 1 로 끌어올림 — region 패치가 409 등으로 실패해 다음 mount 에서 같은 위치/HP=0 로
   // 돌아와도 hp>0 가드가 안전망 재발동을 차단해 무한 루프 (매 새로고침마다 같은 곳으로
   // 텔레포트) 를 끊는다.
+  // huntingActive 도 함께 정리 — 다음 render 의 region 변경 effect 가 huntingActiveRef
+  // 를 false 로 보고 "지역 이동으로 자동 사냥이 정지됐다" 유령 토스트를 띄우지 않게.
   useEffect(() => {
     if (characterState.hp > 0) return;
     if (isTown) return;
@@ -400,8 +402,9 @@ function Home() {
     }));
     // eslint-disable-next-line react-hooks/set-state-in-effect
     characterStateHook.setHp(1);
+    setHuntingActive(false);
     replaceSubView(null);
-    // setMapProgress/replaceSubView/setHp 안정 참조 — deps 제외.
+    // setMapProgress/replaceSubView/setHp/setHuntingActive 안정 참조 — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [characterState.hp, isTown]);
 

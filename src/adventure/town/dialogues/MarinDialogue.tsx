@@ -83,7 +83,13 @@ export function MarinDialogue({
               inventory.materialCount,
               inventory.consumeMaterial,
             );
-            if (r.ok && completeQuest(QUEST_ID)) onClose();
+            if (r.ok) {
+              // deliver 성공하면 재료는 이미 소비됨 — completeQuest 가 어떤 이유로 false 라도
+              // (현재 코드상 일어나기 어렵지만 방어적으로) 다이얼로그는 닫아 stuck 방지.
+              // 보상은 길드 게시판의 ready 큐에서 회수 가능.
+              completeQuest(QUEST_ID);
+              onClose();
+            }
           },
         }}
       />
