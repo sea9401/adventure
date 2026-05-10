@@ -306,7 +306,6 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 8,
     evasionPct: 20,
     exp: 35,
-    image: "/images/monster/icespirit.webp",
     drops: [
       { kind: "material", materialId: "fairy_dust", chance: 0.04 },
       { kind: "material", materialId: "wind_mana_stone", chance: 0.02 },
@@ -320,7 +319,6 @@ export const MONSTERS: Record<string, Monster> = {
     def: 12,
     spd: 8,
     exp: 50,
-    image: "/images/monster/wolfchieftain.webp",
     drops: [
       { kind: "material", materialId: "wolf_king_fang", chance: 0.005 },
       { kind: "material", materialId: "giant_scale", chance: 0.08 },
