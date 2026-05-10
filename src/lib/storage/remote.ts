@@ -7,7 +7,10 @@ export type RemoteSaveStatus =
   | { kind: "session-expired" }
   // 낙관적 동시성 충돌 — 다른 탭/기기가 server 를 갱신했음. 이 탭의 큐는 버려진다.
   // SaveProvider 가 listener 로 받아 location.reload 등으로 처리.
-  | { kind: "stale" };
+  | { kind: "stale" }
+  // 다른 디바이스가 새 세션을 claim 함 — 서버가 410 으로 거절. SaveProvider 가
+  // listener 로 받아 Clerk signOut + 안내 모달 처리.
+  | { kind: "session-invalidated" };
 
 export type RemoteSaveListener = (status: RemoteSaveStatus) => void;
 
@@ -47,6 +50,8 @@ type Options = {
   fetchImpl?: typeof fetch;
   setTimeoutImpl?: typeof setTimeout;
   clearTimeoutImpl?: typeof clearTimeout;
+  /** 단일 세션 enforce 용 토큰 — 모든 PATCH/GET 의 X-Session-Id 헤더로 동봉. */
+  sessionId?: string;
 };
 
 export function createRemoteSave(options: Options = {}): RemoteSave {
@@ -54,6 +59,10 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
   const _fetch = options.fetchImpl ?? globalThis.fetch.bind(globalThis);
   const _setTimeout = options.setTimeoutImpl ?? globalThis.setTimeout;
   const _clearTimeout = options.clearTimeoutImpl ?? globalThis.clearTimeout;
+  const sessionId = options.sessionId;
+  const sessionHeader: Record<string, string> = sessionId
+    ? { "X-Session-Id": sessionId }
+    : {};
 
   // 같은 키로 들어온 patch 는 항상 최신값으로 덮어쓰기.
   const pending = new Map<SyncedKey, unknown>();
@@ -106,7 +115,7 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
           `/api/save?key=${encodeURIComponent(key)}`,
           {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...sessionHeader },
             body: JSON.stringify({ value, expectedVersion }),
           },
         );
@@ -116,6 +125,13 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
           for (const [k, v] of snapshot) {
             if (!pending.has(k)) pending.set(k, v);
           }
+          return;
+        }
+        if (res.status === 410) {
+          // 다른 디바이스가 새 세션 claim — 이 디바이스는 무효. SaveProvider 가
+          // listener 로 받아 Clerk signOut + 안내. 큐 폐기.
+          pending.clear();
+          setStatus({ kind: "session-invalidated" });
           return;
         }
         if (res.status === 409) {
@@ -212,10 +228,17 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
 
   return {
     async loadAll() {
-      const res = await _fetch("/api/save", { cache: "no-store" });
+      const res = await _fetch("/api/save", {
+        cache: "no-store",
+        headers: { ...sessionHeader },
+      });
       if (res.status === 401) {
         setStatus({ kind: "session-expired" });
         throw new Error("session expired");
+      }
+      if (res.status === 410) {
+        setStatus({ kind: "session-invalidated" });
+        throw new Error("session invalidated");
       }
       if (!res.ok) throw new Error(`GET /api/save -> ${res.status}`);
       const raw = (await res.json()) as Record<string, unknown>;
@@ -248,10 +271,15 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
     },
     flushSync() {
       if (pending.size === 0) return;
-      // session-expired 는 인증 만료라 어차피 401. stale 은 어떤 한 키가 한도 초과한
-      // 케이스 — 충돌 안 난 다른 키들은 expectedVersion 으로 안전하게 발사 가능 (서버
-      // 가 stale 이면 무시되니 무결성도 안전). 따라서 stale 차단은 제거.
-      if (_status.kind === "session-expired") return;
+      // session-expired 는 인증 만료라 어차피 401. session-invalidated 는 다른 디바이스
+      // 가 점령 — 발사하면 410. 둘 다 의미 없으니 차단. stale 은 어떤 한 키가 한도 초과한
+      // 케이스 — 충돌 안 난 다른 키들은 expectedVersion 으로 안전하게 발사 가능.
+      if (
+        _status.kind === "session-expired" ||
+        _status.kind === "session-invalidated"
+      ) {
+        return;
+      }
       // 디바운스 타이머가 잡혀 있으면 해제 (어차피 지금 다 보냄).
       if (flushTimer) {
         _clearTimeout(flushTimer);
@@ -269,7 +297,7 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
         try {
           _fetch(`/api/save?key=${encodeURIComponent(key)}`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...sessionHeader },
             body: JSON.stringify({ value, expectedVersion }),
             keepalive: true,
           }).catch(() => {});

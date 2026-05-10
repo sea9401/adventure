@@ -2,15 +2,18 @@ import { eq, and, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { checkSession } from "@/lib/server/checkSession";
 import { isSyncedKey } from "@/lib/storage/synced-keys";
 
 // GET /api/save — 로그인한 사용자의 모든 동기화 키-값을 한 번에 반환.
 // 클라이언트는 마운트 시 1회 호출해 Context 에 hydrate.
 // 응답: { <key>: <value>, ..., "_version": { <key>: <number> } }
 //        _version 은 동기화 키가 아니므로 클라이언트의 isSyncedKey 필터에서 자연스럽게 제외됨.
-export async function GET() {
+export async function GET(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
+  const sessionFail = await checkSession(userId, req);
+  if (sessionFail) return sessionFail;
 
   const rows = await db
     .select({
@@ -43,6 +46,8 @@ export async function GET() {
 export async function PATCH(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
+  const sessionFail = await checkSession(userId, req);
+  if (sessionFail) return sessionFail;
 
   const url = new URL(req.url);
   const key = url.searchParams.get("key");

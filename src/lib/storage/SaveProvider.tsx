@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useClerk } from "@clerk/nextjs";
 import {
   attachUnloadFlush,
   createRemoteSave,
@@ -22,25 +23,49 @@ type SaveData = Partial<Record<SyncedKey, unknown>>;
 type ProviderState =
   | { status: "loading" }
   | { status: "ready"; data: SaveData; remote: RemoteSave }
-  | { status: "error"; err: string };
+  | { status: "error"; err: string }
+  | { status: "session-invalidated" };
 
 const SaveCtx = createContext<{
   initial: SaveData;
   remote: RemoteSave;
 } | null>(null);
 
+// 마운트 시 새 세션 토큰을 생성·서버에 claim. 다른 디바이스가 같은 계정으로 진입하면
+// 그쪽이 새 토큰을 박고 이쪽은 다음 PATCH/GET 에서 410 → session-invalidated → 모달.
+function generateSessionId(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 export function SaveProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<ProviderState>({ status: "loading" });
   const remoteRef = useRef<RemoteSave | null>(null);
+  const { signOut } = useClerk();
 
   useEffect(() => {
-    const remote = createRemoteSave();
+    const sessionId = generateSessionId();
+    const remote = createRemoteSave({ sessionId });
     remoteRef.current = remote;
     const detach = attachUnloadFlush(remote);
 
     let cancelled = false;
     (async () => {
       try {
+        // 1) 이 디바이스를 활성 세션으로 claim. 다른 디바이스의 다음 호출은 410.
+        //    실패해도 (네트워크 등) 진행 — 첫 GET 도 헤더는 보내니 다른 디바이스가
+        //    먼저 claim 한 상태면 그 GET 이 410 으로 바로 처리됨.
+        try {
+          await fetch("/api/session/claim", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId }),
+          });
+        } catch {}
+        if (cancelled) return;
+
         const { data: serverData, versions } = await remote.loadAll();
         if (cancelled) return;
         remote.seedVersions(versions);
@@ -99,6 +124,8 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
     // 어긋남. 메모리 state 를 신뢰할 수 없으니 reload 로 fresh server 데이터 다시 로드.
     // reload 직전 flushSync 호출 — 충돌 안 난 다른 키들 (전투 보상 / EXP / 드롭 등) 이
     // 큐에 남아있으면 keepalive 로 발사해서 일괄 손실 차단.
+    // session-invalidated — 다른 디바이스가 새 세션 claim 함. 이 디바이스의 PATCH 는
+    // 이제 항상 410. Clerk signOut + 안내 화면. flushSync 안 함 (어차피 410).
     const unsubscribe = remote.subscribe((s) => {
       if (s.kind === "stale" && typeof window !== "undefined") {
         try {
@@ -111,6 +138,10 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
           remote.flushSync();
         } catch {}
         window.location.reload();
+      }
+      if (s.kind === "session-invalidated") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setState({ status: "session-invalidated" });
       }
     });
 
@@ -148,6 +179,34 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
           className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
           다시 시도
+        </button>
+      </div>
+    );
+  }
+
+  if (state.status === "session-invalidated") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-zinc-50 p-6 dark:bg-zinc-950">
+        <div className="max-w-sm text-center">
+          <div className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+            다른 디바이스에서 로그인됐습니다
+          </div>
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            동시 접속을 막기 위해 이 세션은 종료됩니다. 이 디바이스에서 계속 플레이하려면
+            로그아웃 후 다시 로그인하세요.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await signOut();
+            } catch {}
+            window.location.href = "/";
+          }}
+          className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          로그아웃
         </button>
       </div>
     );

@@ -14,12 +14,15 @@ import {
 // Clerk userId 와 게임 사용자 1:1 매핑.
 // name: 닉네임. 중복 방지용 권위적(authoritative) 컬럼 — 최초 설정 시 등록.
 // 기존 유저는 NULL 인 상태로 시작하고, 새로 시작하는 유저만 unique 제약 적용.
+// activeSessionId: 현재 활성 디바이스의 임의 토큰. 새 디바이스 로그인 시 새 토큰을
+//   claim → 기존 디바이스의 다음 PATCH/GET 가 410 으로 거절돼 강제 로그아웃.
 export const users = pgTable(
   "users",
   {
     id: text("id").primaryKey(),
     email: text("email"),
     name: text("name"),
+    activeSessionId: text("active_session_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
