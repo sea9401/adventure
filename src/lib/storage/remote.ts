@@ -14,6 +14,13 @@ export type RemoteSaveListener = (status: RemoteSaveStatus) => void;
 const RETRY_BACKOFF_MS = [1_000, 3_000, 10_000];
 const MAX_ATTEMPTS = RETRY_BACKOFF_MS.length + 1;
 
+// 409 (낙관적 동시성 충돌) 시 같은 키에 대해 허용하는 자동 재시도 횟수.
+// 이 한도까지는 server 가 알려준 currentVersion 으로 expectedVersion 을 갱신해
+// 같은 값을 재발사 (last-writer-wins) — 멀티탭은 BroadcastChannel 가드가 이미
+// 막아주므로 대부분의 409 는 일시적 race / 첫 mount 시 seed 누락. 한도를 넘어가면
+// 진짜 멀티 디바이스 활성 편집으로 보고 stale → SaveProvider 가 reload.
+const MAX_KEY_CONFLICT_RETRIES = 3;
+
 export type LoadAllResult = {
   data: Partial<Record<SyncedKey, unknown>>;
   versions: Partial<Record<SyncedKey, number>>;
@@ -53,6 +60,9 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
   // 키별 마지막 본 version. PATCH 시 expectedVersion 으로 사용. undefined = 본 적 없음
   // (= null 로 INSERT path).
   const versionPerKey = new Map<SyncedKey, number>();
+  // 키별 연속 409 카운트. 성공 시 0 으로 리셋. MAX_KEY_CONFLICT_RETRIES 까지는
+  // currentVersion 갱신 + 재발사로 자동 회복, 그 이상이면 stale 처리.
+  const conflictCount = new Map<SyncedKey, number>();
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
   let flushing = false;
   let attempts = 0;
@@ -105,16 +115,36 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
           return;
         }
         if (res.status === 409) {
-          // 다른 탭/기기가 갱신 — 이 탭의 메모리 state 는 stale. 큐 폐기 + 알림.
-          // SaveProvider 가 status listener 로 잡아 reload 등 처리.
-          pending.clear();
-          setStatus({ kind: "stale" });
-          return;
+          // 낙관적 동시성 충돌 — server 의 currentVersion 으로 expectedVersion 을 갱신해
+          // 자동 재시도 (last-writer-wins). MAX_KEY_CONFLICT_RETRIES 한도까지만.
+          // 한도 초과 = 진짜 멀티 디바이스 활성 편집으로 보고 큐 폐기 + stale.
+          const count = (conflictCount.get(key) ?? 0) + 1;
+          if (count > MAX_KEY_CONFLICT_RETRIES) {
+            conflictCount.delete(key);
+            pending.clear();
+            setStatus({ kind: "stale" });
+            return;
+          }
+          conflictCount.set(key, count);
+          try {
+            const body = (await res.json()) as { currentVersion?: number };
+            if (typeof body.currentVersion === "number") {
+              versionPerKey.set(key, body.currentVersion);
+            } else {
+              versionPerKey.delete(key);
+            }
+          } catch {
+            versionPerKey.delete(key);
+          }
+          // 같은 값을 다음 사이클에 재발사. 그 사이 더 새로운 값이 왔으면 그게 우선.
+          if (!pending.has(key)) pending.set(key, value);
+          continue;
         }
         if (!res.ok) {
           throw new Error(`PATCH ${key} -> ${res.status}`);
         }
-        // 성공 응답 본문에서 새 version 을 받아 추적.
+        // 성공 — 카운트 리셋 + 새 version 추적.
+        conflictCount.delete(key);
         try {
           const body = (await res.json()) as { version?: number };
           if (typeof body.version === "number") {
@@ -125,10 +155,9 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
         }
       }
       attempts = 0;
-      // flush 중에 새로 쌓인 게 있으면 다음 사이클로.
-      if (pending.size > 0) {
-        scheduleFlush();
-      } else {
+      // flush 중에 새로 쌓인 게 있으면 다음 사이클로 — flushing=false 이후에 schedule
+      // 해야 scheduleFlush 의 (flushTimer || flushing) 가드가 통과한다.
+      if (pending.size === 0) {
         setStatus({ kind: "idle" });
       }
     } catch (err) {
@@ -150,6 +179,20 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
       }
     } finally {
       flushing = false;
+      // 재시도 큐가 남아있으면 (409 retry / 401 보존) 다음 디바운스 사이클로 예약.
+      // error 는 catch 분기가 자체 backoff timer 를 잡아두므로 여기선 건드리지 않음.
+      // stale/session-expired 는 큐가 이미 폐기됐거나 (stale) 보존돼 (401) — 어느 쪽이든
+      // 자동 재발사 X. setStatus 가 _status 를 외부 클로저로 갱신하므로 TS 의 narrowing
+      // 을 피하기 위해 string 변수로 한 번 우회.
+      const kind: string = _status.kind;
+      if (
+        pending.size > 0 &&
+        kind !== "stale" &&
+        kind !== "session-expired" &&
+        kind !== "error"
+      ) {
+        scheduleFlush();
+      }
     }
   };
 

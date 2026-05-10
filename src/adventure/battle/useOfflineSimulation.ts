@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import type { RegionId } from "../data/world";
 import type { OfflineSimResult } from "./offlineSim";
 
@@ -86,6 +87,7 @@ export function useOfflineSimulation({
   // Clerk 세션 hydrate 전에 baseline 을 userId=null 로 잡으면 이후 valid check 실패.
   // isLoaded 까지 기다려서 일관된 userId 로만 baseline / sim 진행.
   const { userId, isLoaded: authLoaded } = useAuth();
+  const remote = useRemoteSave();
   const runSimRef = useRef(runSim);
   const onApplyRef = useRef(onApply);
   const playerHpRef = useRef(playerHp);
@@ -97,6 +99,37 @@ export function useOfflineSimulation({
 
   // 직전 사이클에서 "away" 였는지. null = 아직 baseline 안 잡힌 상태(최초 마운트).
   const wasAwayRef = useRef<boolean | null>(null);
+  // sim 적용 직후 advance 할 baseline ts. 기록만 해두고 PATCH 큐가 saving→idle
+  // 사이클을 한 번 거치면 그때 실제로 saveTick. PATCH 가 stale/error 로 끝나면
+  // advance 하지 않아 다음 mount 에서 sim 이 같은 baseline 으로 재실행 → 보상 회복.
+  const pendingAdvanceTsRef = useRef<number | null>(null);
+  // 직전에 본 remote.status. saving→idle 전환을 검출해 advance 발화 (= flush 완료).
+  const lastStatusKindRef = useRef(remote.status().kind);
+
+  // remote 큐가 saving→idle 로 정착하는 순간, 보류 중이던 baseline advance 적용.
+  // saving 단계 없이 바로 idle 이 들어오면 (false-positive) advance 안 함 — 큐가
+  // 실제로 한 사이클 돌았다는 증거가 saving 관찰.
+  useEffect(() => {
+    return remote.subscribe((s) => {
+      const prev = lastStatusKindRef.current;
+      lastStatusKindRef.current = s.kind;
+      if (
+        s.kind === "idle" &&
+        prev === "saving" &&
+        pendingAdvanceTsRef.current !== null
+      ) {
+        const ts = pendingAdvanceTsRef.current;
+        pendingAdvanceTsRef.current = null;
+        saveTick({
+          regionId,
+          ts,
+          active,
+          playerHp: playerHpRef.current,
+          userId: userId ?? null,
+        });
+      }
+    });
+  }, [remote, regionId, active, userId]);
 
   useEffect(() => {
     if (!enabled || !authLoaded) return;
@@ -110,21 +143,25 @@ export function useOfflineSimulation({
       stored.regionId === regionId &&
       stored.userId === userId;
 
-    const trySimFromBaseline = () => {
+    // 반환값: sim 이 onApply 까지 갔으면 true. true 면 baseline advance 를 PATCH
+    // 성공 후로 미뤄야 함 (보상 손실 차단).
+    const trySimFromBaseline = (): boolean => {
       const stored = loadTick();
-      if (!isStoredValid(stored)) return;
+      if (!isStoredValid(stored)) return false;
       const awayMs = Date.now() - stored.ts;
-      if (awayMs <= 0) return;
+      if (awayMs <= 0) return false;
       // 회복 검출 — 현재 HP 가 baseline 보다 높으면 마을 회복 등 비-사냥 이벤트 발생.
       // 그 사이클은 sim skip (가짜 HP 로 사냥 시뮬 방지).
-      if (playerHpRef.current > stored.playerHp) return;
+      if (playerHpRef.current > stored.playerHp) return false;
       const result = runSimRef.current(awayMs, stored.playerHp);
       if (result.battles > 0 || result.died) {
         onApplyRef.current(result);
+        return true;
       }
+      return false;
     };
 
-    const writeBaseline = () => {
+    const writeBaselineNow = () => {
       saveTick({
         regionId,
         ts: Date.now(),
@@ -132,6 +169,13 @@ export function useOfflineSimulation({
         playerHp: playerHpRef.current,
         userId: userId ?? null,
       });
+    };
+
+    // sim 결과를 적용한 직후 호출. 즉시 saveTick 하면 PATCH 가 409 등으로 실패
+    // 했을 때 보상이 영원히 손실 — 대신 deferred 로 표시해 saving→idle 사이클
+    // 한 번이 관찰되면 그때 advance.
+    const writeBaselineDeferred = () => {
+      pendingAdvanceTsRef.current = Date.now();
     };
 
     const handleTransition = () => {
@@ -142,11 +186,12 @@ export function useOfflineSimulation({
         // 최초 — 사용자가 이미 "back" 상태면 옛 baseline 으로 즉시 sim.
         // away 상태라면 저장된 baseline 을 보존하고 다음 back 까지 대기 (없거나 무효면 새로 잡음).
         if (!now) {
-          trySimFromBaseline();
-          writeBaseline();
+          const applied = trySimFromBaseline();
+          if (applied) writeBaselineDeferred();
+          else writeBaselineNow();
         } else {
           const stored = loadTick();
-          if (!isStoredValid(stored)) writeBaseline();
+          if (!isStoredValid(stored)) writeBaselineNow();
         }
         wasAwayRef.current = now;
         return;
@@ -160,19 +205,20 @@ export function useOfflineSimulation({
         // active=false) → B→A → 배틀. 옛 baseline (A, true) 가 매치돼 의도치 않게
         // sim 이 실행되던 사고 차단. ts 도 now 로 리셋되므로 그 사이의 시간은 forfeit
         // (= "지역 변경 / 토글 OFF" 같은 명시 행동이 일어났으면 그 전 시간은 무효).
-        if (now) writeBaseline();
+        if (now) writeBaselineNow();
         return;
       }
       wasAwayRef.current = now;
 
       if (now) {
         // 막 away 가 됨 — baseline 저장.
-        writeBaseline();
+        writeBaselineNow();
         return;
       }
-      // 복귀 — sim 시도.
-      trySimFromBaseline();
-      writeBaseline();
+      // 복귀 — sim 시도. 적용했으면 advance 는 PATCH 성공 후로.
+      const applied = trySimFromBaseline();
+      if (applied) writeBaselineDeferred();
+      else writeBaselineNow();
     };
 
     // dep 변경(특히 isInBattleView 토글) 시점에 즉시 한 번 transition 검사.

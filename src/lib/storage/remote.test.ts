@@ -10,9 +10,12 @@ type Recorded = {
 function makeFakeFetch(opts: {
   patchStatuses?: number[];
   loadResponse?: unknown;
+  /** 409 응답에 함께 보낼 currentVersion 값 (없으면 omit). */
+  conflictCurrentVersions?: (number | null)[];
 }) {
   const recorded: Recorded[] = [];
   let patchCallIndex = 0;
+  let conflictIndex = 0;
   const fakeFetch = vi.fn(async (url: string, init?: RequestInit) => {
     recorded.push({
       url,
@@ -22,10 +25,16 @@ function makeFakeFetch(opts: {
     if (init?.method === "PATCH") {
       const status = opts.patchStatuses?.[patchCallIndex++] ?? 200;
       // 200 응답에는 새 version 동봉 — createRemoteSave 가 내부 추적에 사용.
-      const body =
-        status === 200
-          ? { ok: true, version: 1 }
-          : { error: "stale" };
+      // 409 응답에는 currentVersion 동봉 — 클라이언트가 expectedVersion 갱신 후 재시도.
+      let body: unknown;
+      if (status === 200) {
+        body = { ok: true, version: 1 };
+      } else if (status === 409) {
+        const cv = opts.conflictCurrentVersions?.[conflictIndex++];
+        body = cv === undefined ? { error: "stale" } : { error: "stale", currentVersion: cv };
+      } else {
+        body = { error: "stale" };
+      }
       return new Response(JSON.stringify(body), { status });
     }
     return new Response(JSON.stringify(opts.loadResponse ?? {}), {
@@ -155,22 +164,82 @@ describe("createRemoteSave", () => {
     vi.useRealTimers();
   });
 
-  it("409 stale 수신 시 status 가 stale 로 전환 + 큐 폐기", async () => {
+  it("409 1회 → currentVersion 으로 expectedVersion 갱신 후 자동 재시도 → 성공", async () => {
     vi.useFakeTimers();
-    const { fakeFetch } = makeFakeFetch({ patchStatuses: [409] });
+    const { fakeFetch, recorded } = makeFakeFetch({
+      patchStatuses: [409, 200],
+      conflictCurrentVersions: [42],
+    });
+    const remote = createRemoteSave({
+      flushDelayMs: 100,
+      fetchImpl: fakeFetch as unknown as typeof fetch,
+    });
+
+    remote.seedVersions({ "character.v2": 7 });
+    remote.patch("character.v2", { hp: 50 });
+    await vi.advanceTimersByTimeAsync(100);
+    // 첫 PATCH: expectedVersion 7 → 409 (server 는 42).
+    // 재시도 큐 → 다음 사이클로 scheduleFlush.
+    await vi.advanceTimersByTimeAsync(100);
+    // 두 번째 PATCH: expectedVersion 42 (currentVersion 으로 갱신) → 200.
+
+    const patches = recorded.filter((r) => r.method === "PATCH");
+    expect(patches).toHaveLength(2);
+    expect((patches[0].body as { expectedVersion: unknown }).expectedVersion).toBe(7);
+    expect((patches[1].body as { expectedVersion: unknown }).expectedVersion).toBe(42);
+    expect(remote.status().kind).toBe("idle");
+
+    vi.useRealTimers();
+  });
+
+  it("409 가 MAX_KEY_CONFLICT_RETRIES(3) 초과 → stale 로 전환 + 큐 폐기", async () => {
+    vi.useFakeTimers();
+    const { fakeFetch } = makeFakeFetch({
+      patchStatuses: [409, 409, 409, 409],
+      conflictCurrentVersions: [10, 11, 12, 13],
+    });
     const remote = createRemoteSave({
       flushDelayMs: 100,
       fetchImpl: fakeFetch as unknown as typeof fetch,
     });
 
     remote.patch("character.v2", { hp: 50 });
-    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(100); // 1차 409 → 재시도
+    await vi.advanceTimersByTimeAsync(100); // 2차 409 → 재시도
+    await vi.advanceTimersByTimeAsync(100); // 3차 409 → 재시도
+    await vi.advanceTimersByTimeAsync(100); // 4차 409 → 한도 초과 → stale
 
+    expect(fakeFetch).toHaveBeenCalledTimes(4);
     expect(remote.status().kind).toBe("stale");
-    // 추가 patch 도 stale 상태에선 안 보냄.
+    // stale 상태에선 추가 patch 안 보냄.
     remote.patch("character.v2", { hp: 60 });
     await vi.advanceTimersByTimeAsync(1_000);
-    expect(fakeFetch).toHaveBeenCalledTimes(1);
+    expect(fakeFetch).toHaveBeenCalledTimes(4);
+
+    vi.useRealTimers();
+  });
+
+  it("409 → 200 성공 후 다시 409 가 와도 카운트가 리셋되어 재시도 가능", async () => {
+    vi.useFakeTimers();
+    const { fakeFetch } = makeFakeFetch({
+      patchStatuses: [409, 200, 409, 200],
+      conflictCurrentVersions: [5, 9],
+    });
+    const remote = createRemoteSave({
+      flushDelayMs: 100,
+      fetchImpl: fakeFetch as unknown as typeof fetch,
+    });
+
+    remote.patch("character.v2", { hp: 50 });
+    await vi.advanceTimersByTimeAsync(100); // 409
+    await vi.advanceTimersByTimeAsync(100); // 200 → idle
+    expect(remote.status().kind).toBe("idle");
+
+    remote.patch("character.v2", { hp: 60 });
+    await vi.advanceTimersByTimeAsync(100); // 409 (카운트 리셋됐으므로 retry 1회 가능)
+    await vi.advanceTimersByTimeAsync(100); // 200
+    expect(remote.status().kind).toBe("idle");
+    expect(fakeFetch).toHaveBeenCalledTimes(4);
 
     vi.useRealTimers();
   });
