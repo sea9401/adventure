@@ -20,6 +20,13 @@ const MATERIAL_SELL: Partial<Record<MaterialId, number>> = {
   fairy_dust: 3,
   ruin_fragment: 4,
   soul_crystal: 5,
+  mana_crystal: 10,
+  giant_scale: 15,
+  unbong_ore: 6,
+  sancho_blossom: 6,
+  wind_mana_stone: 7,
+  tough_hide: 7,
+  wolf_king_fang: 20,
 };
 
 const ITEM_SELL: Partial<Record<ItemId, number>> = {};
