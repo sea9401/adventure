@@ -41,6 +41,8 @@ export type Monster = {
   exp: number;
   drops?: MonsterDrop[];
   phaseTrigger?: MonsterPhaseTrigger;
+  /** 처치 시 set 할 storyFlag id — 보스용. 두 번째 처치부터는 useStoryFlags.set 이 idempotent 라 무시. */
+  onDefeatFlag?: string;
 };
 
 export const MONSTERS: Record<string, Monster> = {
@@ -321,6 +323,34 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "wolf_king_fang", chance: 0.005 },
       { kind: "material", materialId: "giant_scale", chance: 0.08 },
     ],
+  },
+  // 운향 협곡 보스 — region.boss 도전 버튼으로만 진입. 일반 인카운터 풀에선 제외.
+  // 처치 시 거인 비늘 ×3 + 운봉석 ×2 확정 + 운봉 무기 4종 중 1 + 견갑 15% 학습.
+  // onDefeatFlag 가 peak_giant_defeated 를 set 하여 운향 도시 진입로가 열림.
+  "운봉의 거인": {
+    name: "운봉의 거인",
+    tags: ["golem"],
+    hp: 420,
+    atk: 25,
+    def: 14,
+    spd: 4,
+    exp: 200,
+    drops: [
+      { kind: "material", materialId: "giant_scale", chance: 1, amount: 3 },
+      { kind: "material", materialId: "unbong_ore", chance: 1, amount: 2 },
+      {
+        kind: "recipe_one_of",
+        recipeIds: ["peak_sword", "peak_shield", "peak_spear", "peak_claw"],
+        chance: 1,
+      },
+      { kind: "recipe", recipeId: "peak_mantle", chance: 0.15 },
+    ],
+    phaseTrigger: {
+      hpFraction: 0.4,
+      defBonus: 3,
+      message: "거인이 두 발을 단단히 박아 넣는다.",
+    },
+    onDefeatFlag: "peak_giant_defeated",
   },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).

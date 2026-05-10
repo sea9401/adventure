@@ -182,6 +182,62 @@ export const RECIPES: Recipe[] = [
     ],
     result: { kind: "equipment", itemId: "mana_bracelet", slot: "accessory" },
   },
+  // 운봉 무기 4종 + 견갑 — 운봉의 거인 보스 보상 라인.
+  // 무기 4종 공통 재료: 거인 비늘 ×2 + 운봉석 ×3 + 단단한 수정 ×5 (호환재로 동굴 재방문 동기).
+  {
+    id: "peak_sword",
+    name: "운봉 대검 제작서",
+    description: `${ITEMS.peak_sword.name}을(를) 만든다. 거인의 뼛조각을 운봉석으로 다져 검의 형태로 단련한다.`,
+    ingredients: [
+      { kind: "material", materialId: "giant_scale", count: 2 },
+      { kind: "material", materialId: "unbong_ore", count: 3 },
+      { kind: "material", materialId: "hard_crystal", count: 5 },
+    ],
+    result: { kind: "equipment", itemId: "peak_sword", slot: "weapon" },
+  },
+  {
+    id: "peak_shield",
+    name: "운봉 방벽 제작서",
+    description: `${ITEMS.peak_shield.name}을(를) 만든다. 거인의 비늘을 운봉석으로 결합해 방패의 면을 잡는다.`,
+    ingredients: [
+      { kind: "material", materialId: "giant_scale", count: 2 },
+      { kind: "material", materialId: "unbong_ore", count: 3 },
+      { kind: "material", materialId: "hard_crystal", count: 5 },
+    ],
+    result: { kind: "equipment", itemId: "peak_shield", slot: "weapon" },
+  },
+  {
+    id: "peak_spear",
+    name: "운봉 장창 제작서",
+    description: `${ITEMS.peak_spear.name}을(를) 만든다. 운봉석 끝을 길고 가늘게 깎아 창대 끝에 박는다.`,
+    ingredients: [
+      { kind: "material", materialId: "giant_scale", count: 2 },
+      { kind: "material", materialId: "unbong_ore", count: 3 },
+      { kind: "material", materialId: "hard_crystal", count: 5 },
+    ],
+    result: { kind: "equipment", itemId: "peak_spear", slot: "weapon" },
+  },
+  {
+    id: "peak_claw",
+    name: "운봉 발톱 제작서",
+    description: `${ITEMS.peak_claw.name}을(를) 만든다. 거인의 손가락뼈를 깎아 운봉석을 박은 발톱으로 매만진다.`,
+    ingredients: [
+      { kind: "material", materialId: "giant_scale", count: 2 },
+      { kind: "material", materialId: "unbong_ore", count: 3 },
+      { kind: "material", materialId: "hard_crystal", count: 5 },
+    ],
+    result: { kind: "equipment", itemId: "peak_claw", slot: "weapon" },
+  },
+  {
+    id: "peak_mantle",
+    name: "운봉 견갑 제작서",
+    description: `${ITEMS.peak_mantle.name}을(를) 만든다. 거인의 어깨 비늘을 운봉석으로 묶어 견갑으로 매만진다.`,
+    ingredients: [
+      { kind: "material", materialId: "giant_scale", count: 3 },
+      { kind: "material", materialId: "unbong_ore", count: 2 },
+    ],
+    result: { kind: "equipment", itemId: "peak_mantle", slot: "accessory" },
+  },
 ];
 
 export function getRecipeById(id: string): Recipe | undefined {

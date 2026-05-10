@@ -36,6 +36,7 @@ export type BattleEndDeps = {
     addExp: (exp: number, vit: number) => void;
     addGoldFame: (gold: number, fame: number) => void;
   };
+  storyFlags: { set: (id: string) => void };
   vit: number;
   luk: number;
   respawnRegionId: RegionId;
@@ -69,9 +70,14 @@ export function onBattleEnd(
     deps.reportGuildKill?.(payload.enemyName);
     deps.characterState.setHp(payload.finalPlayerHp);
     deps.characterState.addExp(payload.rewards.exp, deps.vit);
+    // 보스 처치 시 storyFlag 발급 (data-driven, monster.onDefeatFlag).
+    // useStoryFlags.set 은 idempotent 라 두 번째 처치는 무시 — 안전하게 매 처치마다 호출.
+    const monster = MONSTERS[payload.enemyName];
+    if (monster?.onDefeatFlag) {
+      deps.storyFlags.set(monster.onDefeatFlag);
+    }
     // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
     // kind 별로 인벤/골드/장비에 분배.
-    const monster = MONSTERS[payload.enemyName];
     if (monster?.drops) {
       // luk 1pt 당 드랍률 ×1.01 (multiplicative). 1.0 으로 capping 해 100% 초과 방지.
       const luckMultiplier = 1 + deps.luk * 0.01;

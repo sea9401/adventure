@@ -199,6 +199,7 @@ export const WORLD_MAP: WorldMap = {
         "돌풍 정령": 35,
         "늑대 무리장": 15,
       },
+      boss: { monsterName: "운봉의 거인", dailyEntryLimit: 3 },
       recommendedLevel: 20,
     },
     {

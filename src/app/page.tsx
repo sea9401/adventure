@@ -858,6 +858,7 @@ function Home() {
         addExp: characterStateHook.addExp,
         addGoldFame: characterStateHook.addGoldFame,
       },
+      storyFlags: { set: storyFlags.set },
       vit: character.stats.vit,
       luk: character.stats.luk,
       respawnRegionId: mapProgress.respawnRegionId ?? START_REGION_ID,

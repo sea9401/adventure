@@ -266,7 +266,13 @@ export function AdventureScreen() {
               return <BaekunDialogue npc={npc} onClose={close} />;
             }
             if (npc.id === "unhyang_smith") {
-              return <ManwolDialogue npc={npc} onClose={close} />;
+              return (
+                <ManwolDialogue
+                  npc={npc}
+                  onClose={close}
+                  storyFlags={storyFlags}
+                />
+              );
             }
             if (npc.id === "unhyang_guide") {
               return (
