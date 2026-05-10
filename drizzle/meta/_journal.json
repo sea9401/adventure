@@ -57,6 +57,13 @@
       "when": 1778424289041,
       "tag": "0007_simple_sue_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778425000000,
+      "tag": "0008_storyflags_v1_to_v2_backfill",
+      "breakpoints": true
     }
   ]
 }

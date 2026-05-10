@@ -452,10 +452,12 @@ async function broadcastBossKill(
   });
 }
 
-// storyFlag 서버 set — savesKv 의 storyFlags.v1 row 갱신.
+// storyFlag 서버 set — savesKv 의 storyFlags.v2 row 갱신.
 // 클라이언트가 다음 reload 에서 useSavedValue 로 가져가 반영.
 async function setStoryFlagServer(userId: string, flagId: string): Promise<void> {
-  const STORAGE_KEY = "storyFlags.v1";
+  // 클라 STORY_FLAGS_STORAGE_KEY 와 반드시 일치 — 안 그러면 서버가 박은 플래그가
+  // 클라에 영원히 안 보임 (예: 운봉의 거인 처치/공격 후 운향 진입로가 안 열리던 버그).
+  const STORAGE_KEY = "storyFlags.v2";
   // 기존 값 조회 → 합치기 → upsertSave.
   const existing = await db
     .select({ value: savesKv.value })
