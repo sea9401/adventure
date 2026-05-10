@@ -42,13 +42,14 @@ export function TownView({
   const [openNpc, setOpenNpc] = useState<Npc | null>(null);
 
   // 외부에서 특정 NPC 자동 오픈 요청. 마운트 시 한 번만 처리하고 부모에 소비 알림.
+  // NPC 가 이 region 에 없으면 consume 하지 않음 — 부모 state 유지해 올바른 town 진입
+  // 시 재시도. (예전: 잘못된 town 에 잠깐 떨어져도 무조건 consume → intent 영구 손실.)
   useEffect(() => {
     if (!initialNpcId) return;
     const npc = npcs.find((n) => n.id === initialNpcId);
-    if (npc) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setOpenNpc(npc);
-    }
+    if (!npc) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOpenNpc(npc);
     onInitialNpcConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
