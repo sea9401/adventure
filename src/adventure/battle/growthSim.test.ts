@@ -37,8 +37,14 @@ function buildPlayer(level: number): PlayerCombat {
   if (level >= 10) armorDef = 2;   // 비단 로브 (luk +4 추가지만 무시)
   if (level >= 14) armorDef = 7;   // 골렘갑주
 
-  const atk = str + Math.floor(dex / 5) + weaponAtk;
   const def = vit + armorDef;
+  const atk =
+    str +
+    Math.floor(dex / 5) +
+    Math.floor(def / 5) +
+    Math.floor(luk / 5) +
+    Math.floor(spd / 5) +
+    weaponAtk;
   const maxHp = maxHpForLevel(level) + vit * 2;
   const evasionPct = dex * 0.5;
   const extraAttackChancePct = Math.min(100, spd * 2.5);

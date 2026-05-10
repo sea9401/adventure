@@ -13,9 +13,9 @@ export const STAT_LABELS: Record<StatKey, string> = {
 export const STAT_CONVERSIONS: Record<StatKey, string> = {
   str: "1pt 당 공격력 +1",
   dex: "1pt 당 회피 +0.5% / 5pt 당 공격력 +1",
-  vit: "1pt 당 방어력 +1 / 1pt 당 최대 HP +2",
-  spd: "1pt 당 추가 공격 확률 +2.5% (매 턴 1회 판정)",
-  luk: "1pt 당 드랍률 +1% / 1pt 당 크리 확률 +0.5% / 1pt 당 크리 데미지 +0.025배",
+  vit: "1pt 당 방어력 +1 / 1pt 당 최대 HP +2 / 방어력 5 당 공격력 +1 (방어구 합산)",
+  spd: "1pt 당 추가 공격 확률 +2.5% (매 턴 1회 판정) / 5pt 당 공격력 +1",
+  luk: "1pt 당 드랍률 +1% / 1pt 당 크리 확률 +0.5% / 1pt 당 크리 데미지 +0.025배 / 5pt 당 공격력 +1",
 };
 
 // 도감에서 스탯별 스킬 정보를 공개하는 임계값.

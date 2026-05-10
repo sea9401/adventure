@@ -318,9 +318,16 @@ function Home() {
     },
     {} as Record<StatKey, number>,
   );
-  // VIT 1pt 당 maxHp +2 — 레벨 기준 max 위에 스탯 보너스를 얹는다.
-  const characterMaxHp =
-    maxHpForLevel(characterState.level) + totalStats.vit * 2;
+  const equippedSkillSet = new Set(characterState.equippedSkills);
+  // VIT 1pt 당 maxHp +2 — 레벨 기준 max 위에 스탯 보너스를 얹고, 불굴 장착 시 +N%.
+  const enduranceHpBonusPct = enduranceMaxHpBonusPctFor(
+    totalStats,
+    equippedSkillSet,
+  );
+  const characterMaxHp = Math.floor(
+    (maxHpForLevel(characterState.level) + totalStats.vit * 2) *
+      (1 + enduranceHpBonusPct / 100),
+  );
   const characterMaxMp = maxMpForLevel(characterState.level);
   const equippedTitle = getTitle(characterStateHook.equippedTitleId);
   const characterSkills = deriveSkills(totalStats);
@@ -419,13 +426,23 @@ function Home() {
   //   힘   STR : +1 atk / pt
   //   민첩 DEX : +0.5% 회피 / pt, +1 atk / 5pt
   //   활력 VIT : +1 def / pt, +2 maxHp / pt (maxHp는 character 빌드 단계에서 반영)
-  //   속도 SPD : 1pt 당 추가 공격 확률 +2.5% (매 턴 1회 판정, 100% capping)
-  //   행운 LUK : +1% 드랍률 / pt, +0.5% 크리 확률 / pt, +0.025x 크리 데미지 / pt
+  //                — 추가: 최종 def(=vit + 방어구) 5당 +1 atk (테마: 두꺼운 갑옷이 묵직한 일격)
+  //   속도 SPD : 1pt 당 추가 공격 확률 +2.5% (매 턴 1회 판정, 100% capping), +1 atk / 5pt
+  //   행운 LUK : +1% 드랍률 / pt, +0.5% 크리 확률 / pt, +0.025x 크리 데미지 / pt, +1 atk / 5pt
+  // 비-str 스탯의 5pt=+1 atk 환산은 보스 def 한계(1 데미지 함정) 회피와 빌드 다양성을
+  // 위한 의도적 조정. str 의 1pt=+1 우위는 그대로 유지된다.
+  const playerDef = character.stats.vit + equipDef;
   const playerCombat = {
     hp: character.hp,
     maxHp: character.maxHp,
-    atk: character.stats.str + Math.floor(character.stats.dex / 5) + equipAtk,
-    def: character.stats.vit + equipDef,
+    atk:
+      character.stats.str +
+      Math.floor(character.stats.dex / 5) +
+      Math.floor(playerDef / 5) +
+      Math.floor(character.stats.luk / 5) +
+      Math.floor(character.stats.spd / 5) +
+      equipAtk,
+    def: playerDef,
     spd: character.stats.spd,
     evasionPct:
       character.stats.dex * 0.5 +
