@@ -238,6 +238,16 @@ export const RECIPES: Recipe[] = [
     ],
     result: { kind: "equipment", itemId: "peak_mantle", slot: "accessory" },
   },
+  {
+    id: "peak_heart",
+    name: "운봉의 심장 제작서",
+    description: `${ITEMS.peak_heart.name}을(를) 만든다. 거인의 심장을 운봉석으로 봉인해 손에 쥘 수 있는 형태로 다진다.`,
+    ingredients: [
+      { kind: "material", materialId: "giant_scale", count: 2 },
+      { kind: "material", materialId: "unbong_ore", count: 2 },
+    ],
+    result: { kind: "equipment", itemId: "peak_heart", slot: "accessory" },
+  },
 ];
 
 export function getRecipeById(id: string): Recipe | undefined {

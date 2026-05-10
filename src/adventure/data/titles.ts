@@ -117,6 +117,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "한 길에만 모든 것을 쏟아부은 자. 다른 길은 보이지 않았다.",
     condition: "한 스탯 30 이상, 나머지 모두 10 이하",
   },
+  giant_slayer: {
+    id: "giant_slayer",
+    name: "거인살해자",
+    description: "운봉의 거인을 홀로 절반 이상 깎아낸 자. 산정의 메아리가 그를 기억한다.",
+    condition: "운봉의 거인 협동 처치에서 누적 데미지 50% 이상 (legend 티어)",
+  },
 };
 
 // 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.

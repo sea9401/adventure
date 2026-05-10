@@ -290,16 +290,17 @@ export const ITEMS = {
     description: "마정석 조각을 엮어 만든 팔찌. 손목에 두르면 몸이 단단해지면서도 발이 가벼워진다.",
   } satisfies EquipItem,
 
-  // 운봉 무기 4종 + 견갑 1 — 운봉의 거인 처치 보상으로 풀리는 산정 강화 라인.
-  // 마정석 라인의 한 단계 위. 무기는 모두 atk +8 + 보조 stat +4. rare 등급.
+  // 운봉 무기 4종 + 액세서리 2 — 운봉의 거인 협동 처치 보상으로 풀리는 산정 강화 라인.
+  // 마정석 라인의 한 단계 위. 무기 atk +9 공통 + 보조 stat 검 +5 / 다른 +6.
+  // 검은 str 1:1 환산으로 +5 atk, 다른 무기는 보조 임계 도달로 부수 효과 강화 (D 안).
   peak_sword: {
     name: "운봉 대검",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+8" },
-      { label: "힘", value: "+4" },
+      { label: "공격력", value: "+9" },
+      { label: "힘", value: "+5" },
     ],
-    bonus: { atk: 8, str: 4 },
+    bonus: { atk: 9, str: 5 },
     description: "운봉의 거인 뼛조각으로 단련한 한손 대검. 무게가 손에 그대로 실린다.",
     rarity: "rare",
   } satisfies EquipItem,
@@ -307,10 +308,10 @@ export const ITEMS = {
     name: "운봉 방벽",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+8" },
-      { label: "활력", value: "+4" },
+      { label: "공격력", value: "+9" },
+      { label: "활력", value: "+6" },
     ],
-    bonus: { atk: 8, vit: 4 },
+    bonus: { atk: 9, vit: 6 },
     description: "거인의 비늘을 그대로 두른 방패형 무기. 막으며 쳐낸다.",
     rarity: "rare",
   } satisfies EquipItem,
@@ -318,10 +319,10 @@ export const ITEMS = {
     name: "운봉 장창",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+8" },
-      { label: "민첩", value: "+4" },
+      { label: "공격력", value: "+9" },
+      { label: "민첩", value: "+6" },
     ],
-    bonus: { atk: 8, dex: 4 },
+    bonus: { atk: 9, dex: 6 },
     description: "운봉석 끝을 깎아 박은 긴 창. 멀리서도 정확하다.",
     rarity: "rare",
   } satisfies EquipItem,
@@ -329,10 +330,10 @@ export const ITEMS = {
     name: "운봉 발톱",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+8" },
-      { label: "행운", value: "+4" },
+      { label: "공격력", value: "+9" },
+      { label: "행운", value: "+6" },
     ],
-    bonus: { atk: 8, luk: 4 },
+    bonus: { atk: 9, luk: 6 },
     description: "거인의 손가락뼈를 갈아 만든 발톱형 너클. 한 방 한 방이 운에 맡겨진다.",
     rarity: "rare",
   } satisfies EquipItem,
@@ -345,6 +346,18 @@ export const ITEMS = {
     ],
     bonus: { dex: 5, spd: 4 },
     description: "운봉의 거인 어깨 비늘을 가볍게 깎아 만든 견갑. 두르면 손이 빨라지고 발이 가벼워진다.",
+    rarity: "rare",
+  } satisfies EquipItem,
+  // 운봉의 심장 — 협동 보스 epic 확정 보상. str 중심 공격형 액세서리.
+  peak_heart: {
+    name: "운봉의 심장",
+    slot: "accessory",
+    stats: [
+      { label: "힘", value: "+5" },
+      { label: "활력", value: "+3" },
+    ],
+    bonus: { str: 5, vit: 3 },
+    description: "운봉의 거인의 가슴에서 떼어낸 작은 심장. 손에 쥐면 어깨가 묵직해진다.",
     rarity: "rare",
   } satisfies EquipItem,
 } as const;
