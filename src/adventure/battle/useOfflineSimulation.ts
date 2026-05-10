@@ -5,6 +5,11 @@ import { useAuth } from "@clerk/nextjs";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import type { RegionId } from "../data/world";
 import type { OfflineSimResult } from "./offlineSim";
+import {
+  clearRewardOutbox,
+  readRewardOutbox,
+  writeRewardOutbox,
+} from "./offlineRewardOutbox";
 
 const STORAGE_KEY = "last-active-tick.v3";
 
@@ -144,6 +149,9 @@ export function useOfflineSimulation({
           playerHp: playerHpRef.current,
           userId: userId ?? null,
         });
+        // PATCH 사이클 1회가 server 까지 정착했음을 관찰 — outbox 도 안전하게 비움.
+        // 만약 PATCH 가 stale/error 였다면 saving→idle 정착 자체가 안 일어나 outbox 보존.
+        clearRewardOutbox();
       }
     });
   }, [remote, regionId, active, userId]);
@@ -198,16 +206,30 @@ export function useOfflineSimulation({
     // 성공 후로 미뤄야 함 (보상 손실 차단).
     // baseline 의 regionId 를 그대로 runSim 에 전달 — 명시 중지 시 region 이 바뀌었어도
     // 사냥하던 그 region 의 적/드롭 풀로 시뮬.
+    //
+    // outbox 우선순위:
+    // 직전 사이클에 onApply 까지 마쳤지만 PATCH 가 stale-reload 등으로 확정되지 못한
+    // 결과가 localStorage 에 남아있으면, 새 sim 을 돌리지 말고 그 결과를 그대로 재적용.
+    // 같은 결정값을 흘려보내야 RNG 변동·재시뮬로 인한 결과 변동을 막을 수 있다.
     const trySimFromBaseline = (): boolean => {
+      const pending = readRewardOutbox(userId ?? null);
+      if (pending) {
+        onApplyRef.current(pending);
+        return true;
+      }
       const stored = loadTick();
       if (!isStoredValid(stored)) return false;
       const awayMs = Date.now() - stored.ts;
       if (awayMs <= 0) return false;
-      // 회복 검출 — 현재 HP 가 baseline 보다 높으면 마을 회복 등 비-사냥 이벤트 발생.
-      // 그 사이클은 sim skip (가짜 HP 로 사냥 시뮬 방지).
-      if (playerHpRef.current > stored.playerHp) return false;
+      // sim 은 항상 stored.playerHp 로 돌기 때문에 "baseline 이후 HP 가 올라갔으면 sim skip"
+      // 이라는 옛 가드는 막으려는 침입 경로 자체가 없는 유령 가드 — 레벨업 시 HP 풀회복으로
+      // 멀쩡한 사이클이 통째로 forfeit 되는 부작용만 있어 제거. 적용 단(onApply) 에서 현재 HP
+      // 와 max 처리해 회복분이 깎이지 않도록 보호.
       const result = runSimRef.current(awayMs, stored.playerHp, stored.regionId);
       if (result.battles > 0 || result.died) {
+        // outbox 박은 직후 onApply — onApply 도중 reload 되어도 outbox 가 살아남아
+        // 다음 mount 에서 같은 결과를 재적용. saving→idle subscriber 가 정착하면 비움.
+        writeRewardOutbox(result, userId ?? null);
         onApplyRef.current(result);
         return true;
       }

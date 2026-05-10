@@ -341,7 +341,6 @@ export function AdventureScreen() {
             COOP_BOSSES[currentRegion.id] ? (
               <CoopBossCard
                 regionId={currentRegion.id}
-                player={playerCombat}
                 playerName={character.name}
                 onPlayerHpChange={characterStateHook.setHp}
                 applyReward={(reward) =>

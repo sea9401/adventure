@@ -271,33 +271,16 @@ function Home() {
     }
   }, [tab, subView, trial]);
 
-  // region 변경 시 자동 사냥 해제 — 다른 곳으로 이동했으면 그 region에서의 자동 사냥은 끝.
-  // 첫 mount(baseline 기록) 시에는 변경 감지하지 않도록 ref로 분기.
-  // huntingActive 가 ON 이었던 경우만 안내 토스트 — 사용자가 정지 사실을 명확히 인지.
-  // (effect deps 에 huntingActive 를 넣지 않기 위해 ref 로 latest 캡처.)
-  // 누적 보상 flush 는 setHuntingActive(false) 안쪽에서 일괄 처리 — 모든 OFF 경로가
-  // 동일한 흐름을 타도록 통일.
-  const lastRegionForHuntRef = useRef<string | null>(null);
+  // 사냥 ON 인 채로 region 이 바뀌어도 자동 정지 / 알림은 띄우지 않는다.
+  // baseline.regionId 가 옛 region 으로 잠깐 남아있어도 trySim 이 stored.regionId 로 시뮬해
+  // 정상적으로 옛 region 의 드롭으로 보상 처리. 새 region 진입 후엔 prev===now 분기에서
+  // baseline 이 새 region 으로 갱신돼 그 다음 사이클부터 새 region 풀로 돌아간다.
+  // (사망 / 명시적 토글 OFF / HP=0 안전망은 별도 경로에서 그대로 사냥 정지 처리.)
   const huntingActiveRef = useRef(huntingActive);
   const flushOfflineSimRef = useRef<() => void>(() => {});
   useEffect(() => {
     huntingActiveRef.current = huntingActive;
   });
-  useEffect(() => {
-    if (lastRegionForHuntRef.current === null) {
-      lastRegionForHuntRef.current = mapProgress.currentRegionId;
-      return;
-    }
-    if (lastRegionForHuntRef.current !== mapProgress.currentRegionId) {
-      if (huntingActiveRef.current) {
-        addNotification("info", "지역 이동으로 자동 사냥이 정지됐다.");
-      }
-      setHuntingActive(false);
-      lastRegionForHuntRef.current = mapProgress.currentRegionId;
-    }
-    // addNotification/setHuntingActive 는 setter — deps 제외.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapProgress.currentRegionId]);
 
   // setTab 은 항상 sub 를 비우므로 추가 처리 없음.
   const handleTabChange = setTab;
@@ -942,14 +925,22 @@ function Home() {
       for (const recipeId of result.recipesLearned) {
         crafting.learnRecipe(recipeId);
       }
-      // EXP/HP/사망
-      if (result.expGained > 0)
-        characterStateHook.addExp(result.expGained, character.stats.vit);
+      // HP/EXP/사망
+      // setHp 가 addExp 보다 먼저 — addExp 의 레벨업 풀회복 분이 sim 종료 HP 로 덮여
+      // "레벨업 로그는 떴는데 HP/레벨이 안 오른" 증상의 원인이었음. 순서를 뒤집어
+      // setHp(sim 종료 HP) → addExp(레벨업 시 풀회복) 으로 복구분이 살아남게 함.
+      // 추가로 max 로 감싸 크로스디바이스 회복 등 외부 회복분도 보존.
       if (result.died) {
-        // HP 0 + 복귀 마을 강제 이동 + 마을 탭 치료소 sub 로 점프.
+        // HP 0 + 자동 사냥 정지 + 복귀 마을 강제 이동 + 마을 탭 치료소 sub 로 점프.
         // replace — 사망 시점은 history 에 남기지 않음.
+        // 사냥 정지는 raw setter 직접 호출 — setHuntingActive(false) 는 flushOfflineSim 을
+        // 트리거해 onApply 안에서 같은 outbox 를 재진입 적용하는 무한 루프 위험이 있음.
         adventureLog.incrementBattleLosses();
         characterStateHook.setHp(0);
+        setHuntingActiveState(false);
+        try {
+          sessionStorage.setItem("hunting-active", "false");
+        } catch {}
         replaceLocation("town", "healing");
         const respawnId = mapProgress.respawnRegionId ?? START_REGION_ID;
         setMapProgress((prev) => ({
@@ -960,8 +951,10 @@ function Home() {
             : [...prev.visitedRegionIds, respawnId],
         }));
       } else {
-        characterStateHook.setHp(result.finalPlayerHp);
+        characterStateHook.setHp(Math.max(character.hp, result.finalPlayerHp));
       }
+      if (result.expGained > 0)
+        characterStateHook.addExp(result.expGained, character.stats.vit);
       // 요약 알림
       const summary = summarizeOfflineResult(result);
       const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
