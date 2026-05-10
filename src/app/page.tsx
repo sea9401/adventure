@@ -376,6 +376,9 @@ function Home() {
   // 안전망 — HP<=0 인데 마을이 아닌 곳(사냥 지역 등)에 있으면 복귀 마을로 강제 이동.
   // 패배 모달을 확인하기 전에 새로고침/탭 닫기 등으로 빠져나가 stuck 된 유저를 다음 진입에서 구출.
   // 외부 상태(hp/region)를 관찰해 위치 보정 — 의도적 set-state-in-effect.
+  // HP 도 1 로 끌어올림 — region 패치가 409 등으로 실패해 다음 mount 에서 같은 위치/HP=0 로
+  // 돌아와도 hp>0 가드가 안전망 재발동을 차단해 무한 루프 (매 새로고침마다 같은 곳으로
+  // 텔레포트) 를 끊는다.
   useEffect(() => {
     if (characterState.hp > 0) return;
     if (isTown) return;
@@ -388,8 +391,10 @@ function Home() {
         ? prev.visitedRegionIds
         : [...prev.visitedRegionIds, respawnId],
     }));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    characterStateHook.setHp(1);
     replaceSubView(null);
-    // setMapProgress/replaceSubView 안정 참조 — deps 제외.
+    // setMapProgress/replaceSubView/setHp 안정 참조 — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [characterState.hp, isTown]);
 
