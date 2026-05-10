@@ -9,7 +9,7 @@ import {
   type BattleLogEntry,
   type PlayerCombat,
 } from "./engine";
-import { CRIT_MULT } from "../character/skills";
+import { CRIT_MULT_BASE } from "../character/skills";
 import type { Monster } from "../data/monsters";
 import type { Potion } from "../data/potions";
 
@@ -408,15 +408,25 @@ describe("연타 (extraAttackEveryNTurns)", () => {
 });
 
 describe("크리티컬 (critChancePct)", () => {
-  it("Math.random 모킹 시 크리티컬 발동 → 데미지 ×CRIT_MULT", () => {
+  it("Math.random 모킹 시 크리티컬 발동 → 데미지 ×critMult (기본)", () => {
     vi.spyOn(Math, "random").mockReturnValue(0); // 항상 발동
     const lucky: PlayerCombat = { ...PLAYER, critChancePct: 5 };
     const enemy = makeEnemy({ hp: 9999 });
     const s0 = initialBattleState(lucky, enemy, "P");
     const s1 = advanceTurn(s0, lucky, "P");
     const dmg = enemy.hp - s1.enemyHp;
-    expect(dmg).toBe(Math.floor(damageBetween(PLAYER.atk, 3) * CRIT_MULT));
+    expect(dmg).toBe(Math.floor(damageBetween(PLAYER.atk, 3) * CRIT_MULT_BASE));
     expect(s1.log.some((e) => e.text.includes("[크리티컬]"))).toBe(true);
+  });
+
+  it("critMult 명시 시 그 값으로 곱해짐 (luk 비례 가정)", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const lucky: PlayerCombat = { ...PLAYER, critChancePct: 5, critMult: 3.0 };
+    const enemy = makeEnemy({ hp: 9999 });
+    const s0 = initialBattleState(lucky, enemy, "P");
+    const s1 = advanceTurn(s0, lucky, "P");
+    const dmg = enemy.hp - s1.enemyHp;
+    expect(dmg).toBe(Math.floor(damageBetween(PLAYER.atk, 3) * 3.0));
   });
 
   it("Math.random=0.99 면 크리티컬 미발동 → 일반 데미지", () => {

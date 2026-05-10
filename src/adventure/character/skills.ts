@@ -64,10 +64,13 @@ export const VANGUARD_FIRST_TURN_BONUS = 1;
 
 // 크리티컬 — 행운 10 도달 시 획득.
 // 스킬 효과: 크리티컬 확률 +CRIT_CHANCE_PCT% 추가 (luk 1pt 당 +0.5% 기본과 누적).
-// 발동 시 데미지 ×CRIT_MULT (강공격 보너스 후에 곱해짐).
+// 발동 시 데미지 ×critMult (강공격 보너스 후에 곱해짐). critMult 는 luk 비례 — 아래 critMultFor.
 export const CRIT_LUK_THRESHOLD = 10;
 export const CRIT_CHANCE_PCT = 5;
-export const CRIT_MULT = 2.5;
+// 크리 데미지 배수 — luk 0 일 때의 기본 + luk 1pt 당 추가.
+// luk 20 = 2.5 (이전 고정값과 동일), luk 50 = 3.25. 스킬 미장착에도 적용 (크리 자체가 luk 1pt 당 +0.5% 라 어차피 luk 빌드용).
+export const CRIT_MULT_BASE = 2.0;
+export const CRIT_MULT_PER_LUK = 0.025;
 // luk 1pt 당 추가되는 기본 크리티컬 확률(%). 스킬 미장착 상태에서도 적용.
 export const CRIT_CHANCE_PER_LUK = 0.5;
 
@@ -138,7 +141,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
   luk: [
     {
       name: SKILL_NAMES.CRIT,
-      description: `크리티컬 확률 +${CRIT_CHANCE_PCT}% 추가, 발동 시 데미지 ×${CRIT_MULT}`,
+      description: `크리티컬 확률 +${CRIT_CHANCE_PCT}% 추가, 발동 시 데미지 ×(${CRIT_MULT_BASE} + luk × ${CRIT_MULT_PER_LUK}) — luk 20=×2.5`,
       activationThreshold: CRIT_LUK_THRESHOLD,
     },
     {
@@ -267,6 +270,12 @@ export function critChancePctFor(
       ? CRIT_CHANCE_PCT
       : 0;
   return base + skillBonus;
+}
+
+// 크리 데미지 배수 — luk 비례. 크리 자체가 luk 의존이라 별도 스킬 게이트 없이 항상 적용.
+// 결과: luk 0=2.0 / luk 10=2.25 / luk 20=2.5 / luk 50=3.25.
+export function critMultFor(stats: Record<StatKey, number>): number {
+  return CRIT_MULT_BASE + stats.luk * CRIT_MULT_PER_LUK;
 }
 
 export function doubleLuckBonusesFor(

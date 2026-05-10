@@ -1,6 +1,6 @@
 import type { Monster } from "../data/monsters";
 import { computeHealAmount, type Potion, type PotionId } from "../data/potions";
-import { CRIT_MULT, POWER_ATTACK_TURN_INTERVAL } from "../character/skills";
+import { CRIT_MULT_BASE, POWER_ATTACK_TURN_INTERVAL } from "../character/skills";
 
 export type BattleLogEntry = {
   kind: "player_attack" | "enemy_attack" | "info" | "phase_trigger";
@@ -61,6 +61,8 @@ export type PlayerCombat = {
   vanguardFirstTurnBonus?: number;
   // 크리티컬 — 매 공격마다 발동 확률(0~100). 0/undefined = 스킬 미보유.
   critChancePct?: number;
+  // 크리 데미지 배수. undefined = CRIT_MULT_BASE 사용. luk 비례로 호출 측이 계산.
+  critMult?: number;
   // 이중 행운 — 첫 크리 발동 시 회피/크리 +bonus% 발동, 전투 종료까지 유지. 0 이면 미보유.
   doubleLuck?: { evade: number; crit: number };
   // 가드 — 첫 N턴 동안 받는 피해 -reduction. 둘 다 0 이면 스킬 미보유.
@@ -298,7 +300,8 @@ export function advanceTurn(
     const critRoll =
       effectiveCritPct > 0 ? Math.random() * 100 < effectiveCritPct : false;
     const baseDmg = damageBetween(player.atk + bonus, targetDef);
-    const dmg = critRoll ? Math.floor(baseDmg * CRIT_MULT) : baseDmg;
+    const critMult = player.critMult ?? CRIT_MULT_BASE;
+    const dmg = critRoll ? Math.floor(baseDmg * critMult) : baseDmg;
     const labels: string[] = [];
     if (bonus > 0) labels.push("강공격");
     if (bonus > 0 && crushReduction > 0) labels.push("분쇄");

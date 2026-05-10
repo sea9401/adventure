@@ -78,6 +78,7 @@ import { type TrialEdge } from "@/adventure/TrialView";
 import {
   counterAtkBonusFor,
   critChancePctFor,
+  critMultFor,
   crushDefReductionFor,
   deriveSkills,
   doubleLuckBonusesFor,
@@ -401,7 +402,7 @@ function Home() {
   //   민첩 DEX : +0.5% 회피 / pt, +1 atk / 5pt
   //   활력 VIT : +1 def / pt, +2 maxHp / pt (maxHp는 character 빌드 단계에서 반영)
   //   속도 SPD : 1pt 당 추가 공격 확률 +2.5% (매 턴 1회 판정, 100% capping)
-  //   행운 LUK : +1% 드랍률 / pt, +0.5% 크리 확률 / pt
+  //   행운 LUK : +1% 드랍률 / pt, +0.5% 크리 확률 / pt, +0.025x 크리 데미지 / pt
   const playerCombat = {
     hp: character.hp,
     maxHp: character.maxHp,
@@ -429,6 +430,7 @@ function Home() {
       effectiveSkillSet,
     ),
     critChancePct: critChancePctFor(character.stats, effectiveSkillSet),
+    critMult: critMultFor(character.stats),
     doubleLuck: doubleLuckBonusesFor(character.stats, effectiveSkillSet),
     guard: guardFor(character.stats, effectiveSkillSet),
     regen: regenFor(character.stats, effectiveSkillSet),

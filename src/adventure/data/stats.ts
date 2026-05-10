@@ -15,7 +15,7 @@ export const STAT_CONVERSIONS: Record<StatKey, string> = {
   dex: "1pt 당 회피 +0.5% / 5pt 당 공격력 +1",
   vit: "1pt 당 방어력 +1 / 1pt 당 최대 HP +2",
   spd: "1pt 당 추가 공격 확률 +2.5% (매 턴 1회 판정)",
-  luk: "1pt 당 드랍률 +1% / 1pt 당 크리 확률 +0.5%",
+  luk: "1pt 당 드랍률 +1% / 1pt 당 크리 확률 +0.5% / 1pt 당 크리 데미지 +0.025배",
 };
 
 // 도감에서 스탯별 스킬 정보를 공개하는 임계값.
