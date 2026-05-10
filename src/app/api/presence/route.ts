@@ -2,6 +2,7 @@ import { gt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { presence } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { APP_BUILD_VERSION } from "@/lib/clientVersion";
 
 const ONLINE_WINDOW_SECONDS = 60;
 
@@ -59,5 +60,7 @@ export async function POST(req: Request) {
       set: { name, className, title, lastSeenAt: sql`now()` },
     });
 
-  return new Response(null, { status: 204 });
+  // build version 동봉 — 옛 클라이언트가 새 deploy 후 이 응답으로 자기 버전과
+  // 비교해 강제 reload. 30초 heartbeat 주기로 모든 활성 유저가 분 단위로 갱신됨.
+  return Response.json({ buildVersion: APP_BUILD_VERSION });
 }
