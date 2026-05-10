@@ -255,15 +255,10 @@ export const WORLD_MAP: WorldMap = {
       },
     },
     // 운향 라인 (highland → canyon → unhyang).
-    // 입구 (ruins→highland) 는 콘텐츠 준비가 끝날 때까지 "locked" 로 막아둔다.
-    // 보스 + 운봉 무기 라인이 들어오면 trial 5전으로 교체.
     {
       from: "ruins",
       to: "highland",
-      requires: {
-        kind: "locked",
-        reason: "운향 라인은 아직 콘텐츠 준비 중이다.",
-      },
+      requires: { kind: "trial", battles: 5, enemiesFrom: "highland" },
     },
     {
       from: "highland",
