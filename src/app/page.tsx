@@ -84,10 +84,16 @@ import {
   doubleLuckBonusesFor,
   doubleStrikeIntervalFor,
   effectiveSkillNames,
+  enduranceActiveFor,
+  enduranceMaxHpBonusPctFor,
   evadeBonusPctFor,
   evadeGuaranteedFor,
+  executionDamageMultFor,
+  executionHpFractionFor,
   guardFor,
+  lightspeedExtraAttackPctFor,
   powerAttackBonusFor,
+  precisionEvasionMultFor,
   regenFor,
   vanguardFirstTurnBonusFor,
 } from "@/adventure/character/skills";
@@ -430,10 +436,27 @@ function Home() {
       effectiveSkillSet,
     ),
     critChancePct: critChancePctFor(character.stats, effectiveSkillSet),
-    critMult: critMultFor(character.stats),
+    critMult: critMultFor(character.stats, effectiveSkillSet),
     doubleLuck: doubleLuckBonusesFor(character.stats, effectiveSkillSet),
     guard: guardFor(character.stats, effectiveSkillSet),
     regen: regenFor(character.stats, effectiveSkillSet),
+    executionDamageMult: executionDamageMultFor(
+      character.stats,
+      effectiveSkillSet,
+    ),
+    executionHpFraction: executionHpFractionFor(
+      character.stats,
+      effectiveSkillSet,
+    ),
+    precisionEvasionMult: precisionEvasionMultFor(
+      character.stats,
+      effectiveSkillSet,
+    ),
+    enduranceActive: enduranceActiveFor(character.stats, effectiveSkillSet),
+    lightspeedExtraAttackPct: lightspeedExtraAttackPctFor(
+      character.stats,
+      effectiveSkillSet,
+    ),
   };
 
   const playerStatus = {
