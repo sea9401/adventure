@@ -14,8 +14,16 @@ const ZERO_DRAFT: Record<StatKey, number> = STAT_KEYS.reduce(
   {} as Record<StatKey, number>,
 );
 
-// 되돌리기 포인트 1개 구매 비용. 신전에서 골드로 즉시 구매 — 드래프트와 무관.
-export const REVERT_POINT_PRICE = 100;
+// 되돌리기 포인트 1개 구매 비용 — 캐릭터 레벨 비례. 초반엔 가벼워 빌드 실험 자유,
+// 후반엔 부담 늘어 잦은 리셋을 억제. 세 점 (Lv 1=30 / Lv 5=50 / Lv 10=100) 을
+// 정확히 지나는 piecewise — 슬로프가 5→10→20 으로 단조 가속.
+// 참고: Lv 22≈340G / Lv 30=500G / Lv 50=900G.
+export function revertPointPriceFor(level: number): number {
+  const lv = Math.max(1, Math.floor(level));
+  if (lv <= 5) return 30 + (lv - 1) * 5;     // 30→50  (구간 +5/Lv)
+  if (lv <= 10) return 50 + (lv - 5) * 10;   // 50→100 (+10/Lv)
+  return 100 + (lv - 10) * 20;               // 100→…  (+20/Lv)
+}
 
 // 성장의 신전 — 드래프트 모드. +/- 로 분배안을 미리 짜고, '확정' 으로 일괄 반영.
 // 확정 전에는 실제 단련/되돌리기 포인트가 소모되지 않아 실수로 잘못 누른 분배를 되돌릴 수 있다.
@@ -25,6 +33,7 @@ export function GrowthShrineView({
   allocatedStats,
   baseStats,
   gold,
+  level,
   onCommit,
   onBuyRevertPoint,
 }: {
@@ -33,9 +42,11 @@ export function GrowthShrineView({
   allocatedStats: Record<StatKey, number>;
   baseStats: Record<StatKey, number>;
   gold: number;
+  level: number;
   onCommit: (deltas: Record<StatKey, number>) => void;
   onBuyRevertPoint: () => void;
 }) {
+  const revertPrice = revertPointPriceFor(level);
   const [draft, setDraft] = useState<Record<StatKey, number>>(ZERO_DRAFT);
 
   const draftPlus = STAT_KEYS.reduce(
@@ -111,7 +122,10 @@ export function GrowthShrineView({
             className="shrink-0 text-yellow-500"
           />
           <div className="min-w-0 flex-1 text-xs text-amber-900 dark:text-amber-200">
-            되돌리기 포인트 1개를 {REVERT_POINT_PRICE}G 에 살 수 있다.
+            되돌리기 포인트 1개를 {revertPrice.toLocaleString()}G 에 살 수 있다.
+            <span className="ml-1 text-[10px] text-amber-700/80 dark:text-amber-300/70">
+              (Lv 비례)
+            </span>
             <span className="ml-2 tabular-nums text-zinc-500 dark:text-zinc-400">
               잔액 {gold.toLocaleString()} G
             </span>
@@ -119,7 +133,7 @@ export function GrowthShrineView({
           <button
             type="button"
             onClick={onBuyRevertPoint}
-            disabled={gold < REVERT_POINT_PRICE}
+            disabled={gold < revertPrice}
             className="shrink-0 rounded-md border border-amber-700 bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             +1 구매

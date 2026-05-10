@@ -17,7 +17,7 @@ import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { TrainingView } from "@/adventure/character/TrainingView";
 import {
   GrowthShrineView,
-  REVERT_POINT_PRICE,
+  revertPointPriceFor,
 } from "@/adventure/character/GrowthShrineView";
 import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CraftingView } from "@/adventure/CraftingView";
@@ -291,10 +291,12 @@ export function TownScreen() {
           allocatedStats={training.allocatedStats}
           baseStats={baseStatsForShrine}
           gold={character.gold}
+          level={character.level}
           onCommit={training.commitAllocations}
           onBuyRevertPoint={() => {
-            if (character.gold < REVERT_POINT_PRICE) return;
-            characterStateHook.addGold(-REVERT_POINT_PRICE);
+            const price = revertPointPriceFor(character.level);
+            if (character.gold < price) return;
+            characterStateHook.addGold(-price);
             training.addRevertPoints(1);
           }}
         />
