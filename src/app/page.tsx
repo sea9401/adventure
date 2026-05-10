@@ -204,7 +204,13 @@ function Home() {
   const trialEdge = trial?.edge ?? null;
   const trialWinCount = trial?.winCount ?? 0;
   const startTrial = (edge: TrialEdge) => setTrial({ edge, winCount: 0 });
-  const endTrial = () => setTrial(null);
+  const endTrial = () => {
+    setTrial(null);
+    // 다음 시련 진입 시 resume 안내가 정상적으로 다시 뜨도록 가드 플래그 해제.
+    try {
+      sessionStorage.removeItem("trial-resume-toast-shown.v1");
+    } catch {}
+  };
   const recordTrialWin = (winCount: number) =>
     setTrial((prev) => (prev ? { ...prev, winCount } : prev));
   const initialMap = useSavedValue<Partial<MapProgress>>("map.v2");
@@ -595,10 +601,22 @@ function Home() {
       );
     }
     if (trial && trial.winCount > 0) {
-      addNotification(
-        "info",
-        `시련 이어서 진행 — ${trial.winCount} / ${trial.edge.battles}.`,
-      );
+      // 60초 hidden→자동 reload 가 같은 탭에서 발생하면 마운트가 다시 일어나
+      // 같은 알림이 최근 기록에 누적된다. sessionStorage 로 탭 단위 1회 가드.
+      let alreadyShown = false;
+      try {
+        alreadyShown =
+          sessionStorage.getItem("trial-resume-toast-shown.v1") === "1";
+      } catch {}
+      if (!alreadyShown) {
+        addNotification(
+          "info",
+          `시련 이어서 진행 — ${trial.winCount} / ${trial.edge.battles}.`,
+        );
+        try {
+          sessionStorage.setItem("trial-resume-toast-shown.v1", "1");
+        } catch {}
+      }
     }
     if (typeof window !== "undefined") {
       try {
