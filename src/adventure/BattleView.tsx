@@ -138,6 +138,9 @@ export function BattleView({
     // 보스 승리는 결과 모달 확인 후 종료 — 자동 cooldown/다음 적 X.
     // 동기 시뮬 특성상 즉시 stop() 하면 BattleScene 이 한 프레임만 보이고 사라진다.
     if (bossModeRef.current) return;
+    // 사냥 OFF 면 직전 전투의 결과만 표시하고 다음 적은 잡지 않는다 — 사용자가 정지를
+    // 선택했음을 존중. (deps 에 huntingActive 가 있어 토글 시 cleanup 으로 timer 해제.)
+    if (!huntingActive) return;
     const cooldown = computeBattleCooldown(state.log.length);
     const finalHp = state.playerHp;
     const id = setTimeout(() => {
@@ -150,7 +153,7 @@ export function BattleView({
     }, cooldown);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  }, [state, huntingActive]);
 
   // 자동 사냥 ON 상태로 BattleView 에 진입 — state 가 비어있고 싸울 수 있으면 즉시 첫 전투 시작.
   // 다른 in-app 탭(캐릭터/광장 등) 갔다 돌아왔을 때 "전투 시작" 버튼 누르지 않아도 이어서 진행.
@@ -226,24 +229,13 @@ export function BattleView({
             <EnemyEncounterSection region={region} />
             <button
               type="button"
-              onClick={() => {
-                const enemy = pickEnemy(region);
-                if (enemy) startWithLog(enemy);
-              }}
-              disabled={player.hp <= 0}
-              className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-              {player.hp <= 0 ? "회복 필요" : "전투 시작"}
-            </button>
-            <button
-              type="button"
               onClick={() => onToggleHunting(!huntingActive)}
               aria-pressed={huntingActive}
               disabled={player.hp <= 0}
-              className={`w-full rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`w-full rounded-md border px-3 py-3 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 huntingActive
-                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:border-emerald-400 dark:text-emerald-300"
-                  : "border-zinc-300 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  ? "border-rose-500 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:border-rose-400 dark:text-rose-300"
+                  : "border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700"
               }`}
             >
               <span className="inline-flex items-center gap-2">
@@ -251,16 +243,22 @@ export function BattleView({
                   aria-hidden
                   className={`inline-block h-2 w-2 rounded-full ${
                     huntingActive
-                      ? "animate-pulse bg-emerald-500"
-                      : "bg-zinc-400 dark:bg-zinc-600"
+                      ? "animate-pulse bg-rose-500"
+                      : "bg-white/90"
                   }`}
                 />
-                자동 / 오프라인 사냥 {huntingActive ? "ON" : "OFF"}
+                {player.hp <= 0
+                  ? "회복 필요"
+                  : huntingActive
+                    ? "사냥 정지"
+                    : "사냥 시작"}
               </span>
             </button>
             <p className="-mt-1 px-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              ON 상태로 다른 탭(캐릭터/광장 등) 또는 브라우저 백그라운드로 가도
-              사냥이 이어집니다. 복귀 시 그 동안의 결과를 한 번에 적용 (최대 30분).
+              사냥 시작 시 자동 전투가 진행되며, 다른 탭(캐릭터/광장 등) 또는 브라우저
+              백그라운드로 가도 사냥이 이어집니다. 복귀 시 그 동안의 결과를 한 번에
+              적용 (최대 30분). 정지 시 진행 중 전투는 끝까지 처리되고 다음 적은
+              잡지 않습니다.
             </p>
             <AutoPotionSection
               autoConfig={autoPotionConfig}
