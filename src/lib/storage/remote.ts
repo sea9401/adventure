@@ -92,6 +92,10 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
     // 보내는 동안 들어오는 새 patch 는 새 Map 으로 받기.
     const snapshot = new Map(pending);
     pending.clear();
+    // 한 키가 stale 한도까지 가도 다른 키는 살림. snapshot 순회는 끝까지 가고 마지막에
+    // overall status 를 stale 로 표기. SaveProvider 가 reload 직전 flushSync 로 살아남은
+    // 다른 키들을 keepalive 로 발사 — cross-key 일괄 손실 차단.
+    let staleEncountered = false;
 
     try {
       for (const [key, value] of snapshot) {
@@ -117,13 +121,13 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
         if (res.status === 409) {
           // 낙관적 동시성 충돌 — server 의 currentVersion 으로 expectedVersion 을 갱신해
           // 자동 재시도 (last-writer-wins). MAX_KEY_CONFLICT_RETRIES 한도까지만.
-          // 한도 초과 = 진짜 멀티 디바이스 활성 편집으로 보고 큐 폐기 + stale.
+          // 한도 초과 = 진짜 멀티 디바이스 활성 편집. 이 키만 폐기하고 다른 키는 계속 처리.
           const count = (conflictCount.get(key) ?? 0) + 1;
           if (count > MAX_KEY_CONFLICT_RETRIES) {
             conflictCount.delete(key);
-            pending.clear();
-            setStatus({ kind: "stale" });
-            return;
+            // 이 키만 큐/추적에서 제외. snapshot 의 나머지 키는 계속 PATCH.
+            staleEncountered = true;
+            continue;
           }
           conflictCount.set(key, count);
           try {
@@ -157,7 +161,9 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
       attempts = 0;
       // flush 중에 새로 쌓인 게 있으면 다음 사이클로 — flushing=false 이후에 schedule
       // 해야 scheduleFlush 의 (flushTimer || flushing) 가드가 통과한다.
-      if (pending.size === 0) {
+      if (staleEncountered) {
+        setStatus({ kind: "stale" });
+      } else if (pending.size === 0) {
         setStatus({ kind: "idle" });
       }
     } catch (err) {
@@ -242,7 +248,10 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
     },
     flushSync() {
       if (pending.size === 0) return;
-      if (_status.kind === "session-expired" || _status.kind === "stale") return;
+      // session-expired 는 인증 만료라 어차피 401. stale 은 어떤 한 키가 한도 초과한
+      // 케이스 — 충돌 안 난 다른 키들은 expectedVersion 으로 안전하게 발사 가능 (서버
+      // 가 stale 이면 무시되니 무결성도 안전). 따라서 stale 차단은 제거.
+      if (_status.kind === "session-expired") return;
       // 디바운스 타이머가 잡혀 있으면 해제 (어차피 지금 다 보냄).
       if (flushTimer) {
         _clearTimeout(flushTimer);

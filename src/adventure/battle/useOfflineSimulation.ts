@@ -148,6 +148,40 @@ export function useOfflineSimulation({
     });
   }, [remote, regionId, active, userId]);
 
+  // 탭 종료 / hidden 직전 보류 중 advance 가 있으면 옵티미스틱하게 baseline 을 advance.
+  // attachUnloadFlush 가 keepalive 로 PATCH 를 발사하긴 하지만 그 사이클은 saving→idle
+  // 으로 안 들어와 subscriber 가 못 잡음 → 다음 mount 의 trySim 이 같은 baseline 으로
+  // 다시 적용 → 보상 중복. status 가 stale/error 면 PATCH 실패 가능성 높아 advance 미룸
+  // (그 경로는 reload 후 재시도가 정답).
+  useEffect(() => {
+    const flushPendingAdvance = () => {
+      if (pendingAdvanceTsRef.current === null) return;
+      const kind: string = remote.status().kind;
+      if (kind === "stale" || kind === "session-expired" || kind === "error") {
+        return;
+      }
+      const ts = pendingAdvanceTsRef.current;
+      pendingAdvanceTsRef.current = null;
+      saveTick({
+        regionId,
+        ts,
+        active,
+        playerHp: playerHpRef.current,
+        userId: userId ?? null,
+      });
+    };
+    const onPageHide = () => flushPendingAdvance();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushPendingAdvance();
+    };
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [remote, regionId, active, userId]);
+
   useEffect(() => {
     if (!enabled || !authLoaded) return;
 

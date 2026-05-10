@@ -192,7 +192,7 @@ describe("createRemoteSave", () => {
     vi.useRealTimers();
   });
 
-  it("409 가 MAX_KEY_CONFLICT_RETRIES(3) 초과 → stale 로 전환 + 큐 폐기", async () => {
+  it("409 가 MAX_KEY_CONFLICT_RETRIES(3) 초과 → 그 키만 폐기 + stale 표시", async () => {
     vi.useFakeTimers();
     const { fakeFetch } = makeFakeFetch({
       patchStatuses: [409, 409, 409, 409],
@@ -211,10 +211,55 @@ describe("createRemoteSave", () => {
 
     expect(fakeFetch).toHaveBeenCalledTimes(4);
     expect(remote.status().kind).toBe("stale");
-    // stale 상태에선 추가 patch 안 보냄.
+    // stale 상태에서도 새 patch 는 큐에 쌓이지만 자동 flush 는 안 함 (SaveProvider 가
+    // reload 직전 flushSync 로 발사).
     remote.patch("character.v2", { hp: 60 });
     await vi.advanceTimersByTimeAsync(1_000);
     expect(fakeFetch).toHaveBeenCalledTimes(4);
+
+    vi.useRealTimers();
+  });
+
+  it("staleEncountered: 한 키가 stale 한도 초과해도 같은 snapshot 의 다른 키는 정상 PATCH", async () => {
+    vi.useFakeTimers();
+    let charCalls = 0;
+    let invCalled = false;
+    const fakeFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method !== "PATCH") {
+        return new Response("{}", { status: 200 });
+      }
+      const u = new URL(url, "http://x");
+      const key = u.searchParams.get("key");
+      if (key === "character.v2") {
+        charCalls += 1;
+        return new Response(
+          JSON.stringify({ error: "stale", currentVersion: 99 }),
+          { status: 409 },
+        );
+      }
+      if (key === "inventory.v2") {
+        invCalled = true;
+        return new Response(JSON.stringify({ ok: true, version: 1 }), {
+          status: 200,
+        });
+      }
+      return new Response("{}", { status: 200 });
+    });
+    const remote = createRemoteSave({
+      flushDelayMs: 100,
+      fetchImpl: fakeFetch as unknown as typeof fetch,
+    });
+
+    remote.patch("character.v2", { hp: 50 });
+    remote.patch("inventory.v2", { gold: 100 });
+    await vi.advanceTimersByTimeAsync(100); // 1차: char 409, inv 200
+    await vi.advanceTimersByTimeAsync(100); // 2차: char 409 retry
+    await vi.advanceTimersByTimeAsync(100); // 3차: char 409
+    await vi.advanceTimersByTimeAsync(100); // 4차: char 한도 초과 → stale
+
+    expect(charCalls).toBe(4);
+    expect(invCalled).toBe(true); // 핵심 — 다른 키는 첫 사이클에 정상 처리
+    expect(remote.status().kind).toBe("stale");
 
     vi.useRealTimers();
   });

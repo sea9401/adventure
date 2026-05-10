@@ -45,36 +45,43 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         remote.seedVersions(versions);
 
-        // 서버가 비어 있고 로컬에 데이터가 있고 마이그레이션 마커가 없으면
-        // 일괄 push (자동 마이그레이션). 사용자 모달 없음.
+        // 마이그레이션 — 서버에 없는 키 중 로컬에 있는 걸 일괄 push. 사용자 모달 없음.
+        // 마커는 모든 시도가 성공한 경우에만 박음. 부분 실패면 다음 진입에서 누락 키만 재시도.
+        // (예전: serverEmpty 만 보고 결정 → 한 번 부분 마이그레이션 후엔 server 가 비지 않아
+        // 영원히 재시도 안 됐고, 미전송 키는 영구 손실.)
         let final: SaveData = serverData;
-        const serverEmpty = Object.keys(serverData).length === 0;
         const alreadyMigrated =
           typeof window !== "undefined" &&
           localStorage.getItem(MIGRATION_MARKER_KEY) === "1";
 
-        if (serverEmpty && !alreadyMigrated) {
-          const local: SaveData = {};
+        if (!alreadyMigrated) {
+          const toMigrate: SaveData = {};
           for (const key of SYNCED_KEYS) {
+            // 서버에 이미 있는 키는 건너뛰기 — 로컬이 더 옛날일 수 있어 덮으면 안 됨.
+            if (serverData[key] !== undefined) continue;
             const raw = localStorage.getItem(key);
             if (raw) {
               try {
-                local[key] = JSON.parse(raw);
+                toMigrate[key] = JSON.parse(raw);
               } catch {}
             }
           }
-          if (Object.keys(local).length > 0) {
-            for (const [k, v] of Object.entries(local)) {
+          if (Object.keys(toMigrate).length > 0) {
+            for (const [k, v] of Object.entries(toMigrate)) {
               remote.patch(k as SyncedKey, v);
             }
             try {
               await remote.flush();
-              // 성공한 경우만 마커 박음 — 실패하면 다음 진입 때 재시도.
+              // 모두 성공 — marker 박음 + 메모리 final 에 합침.
               localStorage.setItem(MIGRATION_MARKER_KEY, "1");
-              final = local;
+              final = { ...serverData, ...toMigrate };
             } catch {
-              // flush 실패 — 일단 서버 데이터(빈) 로 시작하고 다음번에 재시도.
+              // 부분 실패 — marker 안 박음. 다음 진입에서 server 에 아직 없는 키만 재시도.
+              // (이번에 성공한 키는 다음 mount 의 serverData 에 포함돼 자연스레 skip 됨.)
             }
+          } else {
+            // 옮길 게 없음 — 마이그레이션 완료로 본다.
+            localStorage.setItem(MIGRATION_MARKER_KEY, "1");
           }
         }
 
@@ -90,6 +97,8 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
 
     // 낙관적 동시성 충돌 — 다른 탭/기기가 server 를 갱신해 이 탭의 expectedVersion 이
     // 어긋남. 메모리 state 를 신뢰할 수 없으니 reload 로 fresh server 데이터 다시 로드.
+    // reload 직전 flushSync 호출 — 충돌 안 난 다른 키들 (전투 보상 / EXP / 드롭 등) 이
+    // 큐에 남아있으면 keepalive 로 발사해서 일괄 손실 차단.
     const unsubscribe = remote.subscribe((s) => {
       if (s.kind === "stale" && typeof window !== "undefined") {
         try {
@@ -97,6 +106,9 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
             "pending-reload-toast.v1",
             "다른 기기/탭에서 갱신을 감지해 새로 불러왔습니다.",
           );
+        } catch {}
+        try {
+          remote.flushSync();
         } catch {}
         window.location.reload();
       }

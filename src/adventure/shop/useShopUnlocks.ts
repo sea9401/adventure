@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import type { MaterialId } from "@/adventure/data/materials";
@@ -28,18 +28,26 @@ export function useShopUnlocks() {
   const [state, setState] = useState<ShopUnlocksState>(() => read(initial));
   useRemotePatch(SHOP_UNLOCK_STORAGE_KEY, state);
 
+  // setState 의 updater 함수는 다음 render 의 commit 시점에 실행 — 그래서 closure 변수에
+  // crossed 를 담아 즉시 return 하면 항상 false 가 나간다 (React 18+ 배칭). ref 로 latest
+  // state 를 추적해 동기적으로 임계 도달 판정 가능하게 함.
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
+
   // 판매할 때마다 호출. 임계치를 새로 넘긴 경우 true 반환 — 호출부에서 알림 발화에 사용.
   const recordSale = useCallback((id: MaterialId, qty: number): boolean => {
     if (qty <= 0) return false;
-    let crossed = false;
-    setState((prev) => {
-      const before = prev.sold[id] ?? 0;
-      const after = before + qty;
-      if (before < SHOP_UNLOCK_THRESHOLD && after >= SHOP_UNLOCK_THRESHOLD) {
-        crossed = true;
-      }
-      return { sold: { ...prev.sold, [id]: after } };
-    });
+    const before = stateRef.current.sold[id] ?? 0;
+    const after = before + qty;
+    const crossed =
+      before < SHOP_UNLOCK_THRESHOLD && after >= SHOP_UNLOCK_THRESHOLD;
+    const next: ShopUnlocksState = {
+      sold: { ...stateRef.current.sold, [id]: after },
+    };
+    stateRef.current = next;
+    setState(next);
     return crossed;
   }, []);
 
