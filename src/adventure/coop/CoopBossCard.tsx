@@ -246,43 +246,7 @@ export function CoopBossCard({
         </div>
       )}
 
-      {/* 공격 활동 피드 — 모든 참여자의 공격을 시간순. 본인 공격은 강조. */}
-      {recentLogs.length > 0 && (
-        <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
-          <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            전투 로그
-          </div>
-          <ul className="max-h-40 space-y-1 overflow-y-auto">
-            {recentLogs.map((row) => (
-              <li
-                key={row.id}
-                className={`flex items-baseline justify-between gap-2 tabular-nums ${row.mine ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"}`}
-              >
-                <span className="min-w-0 truncate">
-                  <span className={row.mine ? "font-semibold" : ""}>
-                    {row.name}
-                  </span>
-                  {row.diedEarly && (
-                    <span className="ml-1 text-rose-600 dark:text-rose-400">
-                      (쓰러짐)
-                    </span>
-                  )}
-                </span>
-                <span className="shrink-0">
-                  +{row.damageDealt.toLocaleString()}
-                  {row.damageTaken > 0 && (
-                    <span className="ml-1 text-rose-600/80 dark:text-rose-400/80">
-                      −{row.damageTaken.toLocaleString()}
-                    </span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* top contributors */}
+      {/* 순위 보기 — 누적 데미지 상위 기여자. */}
       {top.length > 0 && (
         <details className="mt-3 text-xs">
           <summary className="cursor-pointer text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
@@ -302,6 +266,66 @@ export function CoopBossCard({
             ))}
           </ol>
         </details>
+      )}
+
+      {/* 전투 로그 — 모든 참여자의 공격을 시간순으로, 펼치면 실제 BattleLogEntry 노출. */}
+      {recentLogs.length > 0 && (
+        <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
+          <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            전투 로그
+          </div>
+          <ul className="max-h-72 space-y-2 overflow-y-auto">
+            {recentLogs.map((row) => (
+              <li
+                key={row.id}
+                className={`rounded border p-1.5 ${row.mine ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/30" : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/40"}`}
+              >
+                <div
+                  className={`flex items-baseline justify-between gap-2 tabular-nums ${row.mine ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"}`}
+                >
+                  <span className="min-w-0 truncate">
+                    <span className={row.mine ? "font-semibold" : ""}>
+                      {row.name}
+                    </span>
+                    {row.diedEarly && (
+                      <span className="ml-1 text-rose-600 dark:text-rose-400">
+                        (쓰러짐)
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0">
+                    +{row.damageDealt.toLocaleString()}
+                    {row.damageTaken > 0 && (
+                      <span className="ml-1 text-rose-600/80 dark:text-rose-400/80">
+                        −{row.damageTaken.toLocaleString()}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                {row.log.length > 0 && (
+                  <ul className="mt-1 space-y-0.5 pl-2 text-[11px]">
+                    {row.log.map((entry, i) => (
+                      <li
+                        key={i}
+                        className={
+                          entry.kind === "phase_trigger"
+                            ? "text-amber-700 dark:text-amber-400"
+                            : entry.kind === "player_attack"
+                              ? "text-zinc-700 dark:text-zinc-300"
+                              : entry.kind === "enemy_attack"
+                                ? "text-rose-600/80 dark:text-rose-400/80"
+                                : "text-zinc-500 dark:text-zinc-400"
+                        }
+                      >
+                        {entry.text}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {error && (

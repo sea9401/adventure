@@ -372,6 +372,7 @@ export type GuildQuestInstanceRow = typeof guildQuestInstances.$inferSelect;
 // 공격마다 1줄씩 기록되는 협동 보스 전투 로그.
 // 모든 참여자의 공격을 시간순으로 모아 보스 카드 밑에 노출 — "다른 사람들 공격도 같이 본다".
 // session 삭제 시 cascade. session 당 최근 N개만 의미가 있어 GET 에서 LIMIT.
+// log: BattleLogEntry[] 그대로 저장 — 카드에서 펼치면 실제 전투 흐름 (강공격, 크리, 회피 등).
 export const coopBossAttackLog = pgTable(
   "coop_boss_attack_log",
   {
@@ -386,6 +387,7 @@ export const coopBossAttackLog = pgTable(
     damageDealt: integer("damage_dealt").notNull(),
     damageTaken: integer("damage_taken").notNull(),
     diedEarly: boolean("died_early").notNull().default(false),
+    log: jsonb("log").notNull().default(sql`'[]'::jsonb`),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [

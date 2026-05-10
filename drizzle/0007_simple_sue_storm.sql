@@ -1,0 +1,1 @@
+ALTER TABLE "coop_boss_attack_log" ADD COLUMN "log" jsonb DEFAULT '[]'::jsonb NOT NULL;

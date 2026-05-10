@@ -134,6 +134,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       damageDealt: coopBossAttackLog.damageDealt,
       damageTaken: coopBossAttackLog.damageTaken,
       diedEarly: coopBossAttackLog.diedEarly,
+      log: coopBossAttackLog.log,
       createdAt: coopBossAttackLog.createdAt,
     })
     .from(coopBossAttackLog)
@@ -184,6 +185,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       damageDealt: r.damageDealt,
       damageTaken: r.damageTaken,
       diedEarly: r.diedEarly,
+      log: r.log ?? [],
       createdAt: r.createdAt.toISOString(),
       mine: r.userId === userId,
     })),
@@ -315,7 +317,7 @@ async function handleAttack(
         },
       });
 
-    // 공격 로그 1줄 — 다른 사람도 보스 카드 밑에서 볼 수 있게.
+    // 공격 로그 1줄 — 다른 사람도 보스 카드 밑에서 볼 수 있게. log 는 BattleLogEntry[] 그대로.
     await tx.insert(coopBossAttackLog).values({
       sessionId: session.id,
       userId,
@@ -323,6 +325,7 @@ async function handleAttack(
       damageDealt: result.damageDealt,
       damageTaken: result.damageTaken,
       diedEarly: result.diedEarly,
+      log: result.log,
       createdAt: now,
     });
   });

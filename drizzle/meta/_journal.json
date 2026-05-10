@@ -50,6 +50,13 @@
       "when": 1778422972684,
       "tag": "0006_equal_shriek",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778424289041,
+      "tag": "0007_simple_sue_storm",
+      "breakpoints": true
     }
   ]
 }

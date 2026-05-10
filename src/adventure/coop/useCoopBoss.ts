@@ -41,6 +41,7 @@ export type CoopAttackLogRow = {
   damageDealt: number;
   damageTaken: number;
   diedEarly: boolean;
+  log: BattleLogEntry[];
   createdAt: string;
   mine: boolean;
 };
