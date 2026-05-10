@@ -144,13 +144,19 @@ export function BattleView({
     // 보스 승리는 결과 모달 확인 후 종료 — 자동 cooldown/다음 적 X.
     // 동기 시뮬 특성상 즉시 stop() 하면 BattleScene 이 한 프레임만 보이고 사라진다.
     if (bossModeRef.current) return;
-    // 사냥 OFF 면 직전 전투의 결과만 표시하고 다음 적은 잡지 않는다 — 사용자가 정지를
-    // 선택했음을 존중. (deps 에 huntingActive 가 있어 토글 시 cleanup 으로 timer 해제.)
-    if (!huntingActive) return;
     // 로그는 전체 보관하지만 쿨다운은 보이는 마지막 부분 기준이면 충분 — 8줄로 클램프해
     // 자동 사냥 페이싱을 종전 그대로 유지한다.
     const cooldown = computeBattleCooldown(Math.min(state.log.length, 8));
     const finalHp = state.playerHp;
+    // 사냥 OFF 면 직전 전투의 결과만 잠깐 보여주고 stop() 으로 사전 화면 복귀 — 거기서
+    // AutoPotionSection / "사냥 시작" 버튼에 다시 접근 가능. (예전엔 그냥 return 이라
+    // ended 상태로 멈춰서 사용자가 물약 규칙 등을 못 바꾸는 데드락이 있었음.)
+    if (!huntingActive) {
+      const id = setTimeout(() => {
+        stop();
+      }, cooldown);
+      return () => clearTimeout(id);
+    }
     const id = setTimeout(() => {
       const nextEnemy = pickEnemy(region_ref.current);
       if (nextEnemy) {
@@ -308,6 +314,20 @@ export function BattleView({
         playerStatus={playerStatus}
         recentNotifications={recentNotifications}
       />
+      {/* 진행 중 사냥 정지 — 클릭 시 현재 전투는 끝까지 진행되고, 끝나면 사전 화면으로
+          복귀해 AutoPotionSection / "사냥 시작" 버튼에 다시 접근 가능. */}
+      {huntingActive && !bossModeRef.current && (
+        <button
+          type="button"
+          onClick={() => onToggleHunting(false)}
+          className="w-full rounded-md border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-500/20 dark:border-rose-400 dark:text-rose-300"
+        >
+          <span className="inline-flex items-center gap-2">
+            <span aria-hidden className="inline-block h-2 w-2 animate-pulse rounded-full bg-rose-500" />
+            사냥 정지 — 사전 화면으로
+          </span>
+        </button>
+      )}
       {isLoss && (
         <BattleResult
           outcome="lose"
