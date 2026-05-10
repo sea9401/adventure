@@ -64,7 +64,7 @@ export function GuildHallView() {
   const [busy, setBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
-  const [tab, setTab] = useState<Tab>("quests");
+  const [tab, setTab] = useState<Tab>("members");
 
   const pushToast = (msg: string) => addNotification("info", msg);
 
@@ -242,22 +242,20 @@ export function GuildHallView() {
 
           <div className="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900/60">
             <TabButton
-              icon={<Scroll size={14} weight="bold" />}
-              label="의뢰"
-              active={tab === "quests"}
-              onClick={() => setTab("quests")}
-            />
-            <TabButton
               icon={<UsersThree size={14} weight="bold" />}
-              label={`멤버 ${data.guild.members.length}/${GUILD_MAX_MEMBERS}`}
+              label={`길드원 목록 ${data.guild.members.length}/${GUILD_MAX_MEMBERS}`}
               active={tab === "members"}
               onClick={() => setTab("members")}
             />
+            <TabButton
+              icon={<Scroll size={14} weight="bold" />}
+              label="길드 의뢰"
+              active={tab === "quests"}
+              onClick={() => setTab("quests")}
+            />
           </div>
 
-          {tab === "quests" ? (
-            <GuildQuestsPanel />
-          ) : (
+          {tab === "members" ? (
             <MembersPanel
               guild={data.guild}
               busy={busy}
@@ -267,6 +265,8 @@ export function GuildHallView() {
               onTransfer={handleTransfer}
               onDisband={handleDisband}
             />
+          ) : (
+            <GuildQuestsPanel />
           )}
         </>
       ) : (
