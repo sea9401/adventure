@@ -19,6 +19,24 @@ import { RegionDetail } from "./RegionDetail";
 import { Card } from "@/components/ui/Card";
 import { useGame } from "./GameContext";
 
+// "다시 묻지 않기" 영속 — 디바이스별 설정이라 SaveProvider 미경유 raw localStorage.
+const SKIP_HUNT_CONFIRM_KEY = "map.skipHuntStopConfirm.v1";
+function readSkipHuntConfirm(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(SKIP_HUNT_CONFIRM_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function writeSkipHuntConfirm(skip: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (skip) localStorage.setItem(SKIP_HUNT_CONFIRM_KEY, "1");
+    else localStorage.removeItem(SKIP_HUNT_CONFIRM_KEY);
+  } catch {}
+}
+
 export function MapView({
   progress,
   onProgressChange,
@@ -36,9 +54,10 @@ export function MapView({
   hasStoryFlag: (flagId: string) => boolean;
   onTrialStart: (from: RegionId, to: RegionId) => void;
 }) {
-  const { addNotification } = useGame();
+  const { addNotification, huntingActive } = useGame();
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
   const [lowHpBlocked, setLowHpBlocked] = useState(false);
+  const [pendingMoveTo, setPendingMoveTo] = useState<RegionId | null>(null);
 
   const visitedSet = new Set(progress.visitedRegionIds);
   const adjacentToCurrent = new Set(
@@ -88,6 +107,26 @@ export function MapView({
     (requirementStatus?.met ?? true);
   const canChallenge = isTrialEdge;
 
+  const performMove = (toId: RegionId) => {
+    const isFirstVisit = !progress.visitedRegionIds.includes(toId);
+    onProgressChange({
+      ...progress,
+      currentRegionId: toId,
+      visitedRegionIds: isFirstVisit
+        ? [...progress.visitedRegionIds, toId]
+        : progress.visitedRegionIds,
+    });
+    if (isFirstVisit) {
+      const region = WORLD_MAP.regions.find((r) => r.id === toId);
+      if (region) {
+        addNotification(
+          "info",
+          `${region.name}에 처음 도착했다 — ${region.description}`,
+        );
+      }
+    }
+  };
+
   const handleMove = () => {
     if (!selectedId) return;
     if (playerHp <= 0) {
@@ -100,23 +139,12 @@ export function MapView({
       return;
     }
     if (!canMove) return;
-    const isFirstVisit = !progress.visitedRegionIds.includes(selectedId);
-    onProgressChange({
-      ...progress,
-      currentRegionId: selectedId,
-      visitedRegionIds: isFirstVisit
-        ? [...progress.visitedRegionIds, selectedId]
-        : progress.visitedRegionIds,
-    });
-    if (isFirstVisit) {
-      const region = WORLD_MAP.regions.find((r) => r.id === selectedId);
-      if (region) {
-        addNotification(
-          "info",
-          `${region.name}에 처음 도착했다 — ${region.description}`,
-        );
-      }
+    // 사냥 중이면 확인 모달 — "다시 묻지 않기" 가 켜져 있으면 즉시 이동.
+    if (huntingActive && !readSkipHuntConfirm()) {
+      setPendingMoveTo(selectedId);
+      return;
     }
+    performMove(selectedId);
   };
 
   return (
@@ -164,6 +192,83 @@ export function MapView({
       {lowHpBlocked && (
         <LowHpBlockModal onConfirm={() => setLowHpBlocked(false)} />
       )}
+      {pendingMoveTo && (
+        <ConfirmHuntStopModal
+          fromName={
+            WORLD_MAP.regions.find((r) => r.id === progress.currentRegionId)
+              ?.name ?? ""
+          }
+          toName={
+            WORLD_MAP.regions.find((r) => r.id === pendingMoveTo)?.name ?? ""
+          }
+          onCancel={() => setPendingMoveTo(null)}
+          onConfirm={(skipFuture) => {
+            if (skipFuture) writeSkipHuntConfirm(true);
+            const to = pendingMoveTo;
+            setPendingMoveTo(null);
+            performMove(to);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ConfirmHuntStopModal({
+  fromName,
+  toName,
+  onCancel,
+  onConfirm,
+}: {
+  fromName: string;
+  toName: string;
+  onCancel: () => void;
+  onConfirm: (skipFuture: boolean) => void;
+}) {
+  const [skipFuture, setSkipFuture] = useState(false);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
+      <Card padding="lg" className="w-full max-w-sm">
+        <div className="text-lg font-semibold text-amber-700 dark:text-amber-300">
+          자동 사냥이 정지됩니다
+        </div>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          <span className="font-medium text-zinc-800 dark:text-zinc-200">
+            {fromName}
+          </span>
+          에서 자동 사냥 중입니다.
+          <br />
+          <span className="font-medium text-zinc-800 dark:text-zinc-200">
+            {toName}
+          </span>
+          (으)로 이동하면 사냥이 멈춥니다.
+        </p>
+        <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+          <input
+            type="checkbox"
+            checked={skipFuture}
+            onChange={(e) => setSkipFuture(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
+          />
+          <span>다시 묻지 않기</span>
+        </label>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(skipFuture)}
+            className="flex-1 rounded-md border border-amber-700 bg-amber-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700"
+          >
+            이동 (사냥 정지)
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }
