@@ -93,6 +93,8 @@ export type GameCtx = {
     text: string,
     meta?: NotificationMeta,
   ) => void;
+  /** 칭호 부여 — idempotent. 신규 등록 시 토스트 동반. */
+  grantTitle: (titleId: string) => void;
   handlePurchasePotion: (id: PotionId, quantity: number) => void;
   handlePurchaseMaterial: (id: MaterialId, quantity: number) => void;
   handleSellPotion: (id: PotionId, quantity: number) => void;

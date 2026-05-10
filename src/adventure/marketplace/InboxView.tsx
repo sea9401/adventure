@@ -27,6 +27,7 @@ export function InboxView() {
     crafting,
     inbox,
     addNotification,
+    grantTitle,
   } = useGame();
   const addEquipment = inventory.addEquipment;
   const addMaterial = inventory.addMaterial;
@@ -76,6 +77,7 @@ export function InboxView() {
       if (accept) {
         const r = await acceptGuildInvite(inviteId);
         characterStateHook.setAffiliation(r.guildName);
+        grantTitle("guild_member");
         pushToast(`${r.guildName} 길드에 가입했습니다.`);
       } else {
         await declineGuildInvite(inviteId);

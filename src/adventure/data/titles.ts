@@ -81,6 +81,42 @@ export const TITLES: Record<TitleId, Title> = {
     description: "안개 호숫가의 작은 어촌이 그를 식구처럼 받아들였다.",
     condition: "촌장 마린의 의뢰까지 모두 완수",
   },
+  beggar: {
+    id: "beggar",
+    name: "거지",
+    description: "한 푼 없는 신세를 한 번이라도 겪은 자.",
+    condition: "보유 골드 0 도달",
+  },
+  phisher: {
+    id: "phisher",
+    name: "보이스피싱범",
+    description: "한 사람을 붙들고 백 번을 캐물은 자. 의심받기 충분하다.",
+    condition: "동일 NPC 와 100회 대화",
+  },
+  guild_founder: {
+    id: "guild_founder",
+    name: "창립자",
+    description: "직접 깃발을 세워 길드를 연 자.",
+    condition: "길드 창설",
+  },
+  guild_member: {
+    id: "guild_member",
+    name: "사원",
+    description: "어느 깃발 아래 처음 이름을 올린 자.",
+    condition: "길드 가입",
+  },
+  unknown_soldier: {
+    id: "unknown_soldier",
+    name: "무명소졸",
+    description: "이름 없는 자리에서 거듭 쓰러져도 또 일어선 자.",
+    condition: "전투 패배 100회",
+  },
+  one_track: {
+    id: "one_track",
+    name: "외골수",
+    description: "한 길에만 모든 것을 쏟아부은 자. 다른 길은 보이지 않았다.",
+    condition: "한 스탯 30 이상, 나머지 모두 10 이하",
+  },
 };
 
 // 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.
@@ -98,6 +134,7 @@ export const COUNTER_TITLES: {
   target: number;
 }[] = [
   { id: "frail", key: "battleLosses", target: 10 },
+  { id: "unknown_soldier", key: "battleLosses", target: 100 },
   { id: "training_10", key: "trainingCount", target: 50 },
   { id: "training_50", key: "trainingCount", target: 100 },
   { id: "training_100", key: "trainingCount", target: 200 },

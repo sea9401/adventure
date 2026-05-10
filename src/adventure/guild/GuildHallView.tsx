@@ -33,7 +33,7 @@ import { GuildQuestsPanel } from "./GuildQuestsPanel";
 const NO_AFFILIATION = "무소속";
 
 export function GuildHallView() {
-  const { character, characterStateHook, addNotification } = useGame();
+  const { character, characterStateHook, addNotification, grantTitle } = useGame();
   const setAffiliation = characterStateHook.setAffiliation;
 
   const [data, setData] = useState<GuildMeResponse | null>(null);
@@ -80,6 +80,7 @@ export function GuildHallView() {
     try {
       const r = await createGuild(name);
       setAffiliation(r.name);
+      grantTitle("guild_founder");
       pushToast(`${r.name} 길드를 만들었습니다.`);
       setShowCreate(false);
       await load();

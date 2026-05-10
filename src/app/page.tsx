@@ -797,6 +797,30 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 상태 관찰형 칭호 — gold 0 도달, 동일 NPC 100회 대화, 외골수 빌드.
+  // 외골수: 한 스탯 30↑, 나머지 모두 10↓ (11~29 구간이 있으면 미부여).
+  const goldZero = characterState.gold === 0;
+  const maxNpcTalkCount = Object.values(adventureLog.log.npcs).reduce(
+    (max, e) => Math.max(max, e?.talkCount ?? 0),
+    0,
+  );
+  useEffect(() => {
+    if (goldZero) grantTitle("beggar");
+    if (maxNpcTalkCount >= 100) grantTitle("phisher");
+    const high = STAT_KEYS.filter((k) => totalStats[k] >= 30).length;
+    const low = STAT_KEYS.filter((k) => totalStats[k] <= 10).length;
+    if (high === 1 && low === STAT_KEYS.length - 1) grantTitle("one_track");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    goldZero,
+    maxNpcTalkCount,
+    totalStats.str,
+    totalStats.dex,
+    totalStats.vit,
+    totalStats.spd,
+    totalStats.luk,
+  ]);
+
   const handleBattleEnd = (payload: BattleEndPayload) =>
     onBattleEnd(payload, {
       inventory: {
@@ -1023,6 +1047,7 @@ function Home() {
     setSubView,
     back,
     addNotification,
+    grantTitle,
     handlePurchasePotion,
     handlePurchaseMaterial,
     handleSellPotion,
