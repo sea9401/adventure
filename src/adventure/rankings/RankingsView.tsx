@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Trophy } from "@phosphor-icons/react";
+import { Trophy, UsersThree } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
+  useGuildRankings,
   useRankings,
+  type GuildRankingEntry,
+  type GuildRankingMe,
   type RankingMetric,
   type RankingEntry,
   type RankingMe,
@@ -17,17 +20,29 @@ const TABS: { key: RankingMetric; label: string }[] = [
   { key: "level", label: "레벨" },
   { key: "fame", label: "명성" },
   { key: "battleCount", label: "전투 횟수" },
+  { key: "guild", label: "길드 랭킹" },
 ];
 
-const METRIC_LABEL: Record<RankingMetric, string> = {
+const METRIC_LABEL: Record<Exclude<RankingMetric, "guild">, string> = {
   level: "Lv.",
   fame: "명성",
   battleCount: "전투",
 };
 
+const GRADE_COLOR: Record<string, string> = {
+  G: "text-zinc-500 dark:text-zinc-400",
+  F: "text-zinc-600 dark:text-zinc-300",
+  E: "text-emerald-600 dark:text-emerald-400",
+  D: "text-sky-600 dark:text-sky-400",
+  C: "text-blue-600 dark:text-blue-400",
+  B: "text-violet-600 dark:text-violet-400",
+  A: "text-amber-600 dark:text-amber-400",
+  S: "text-rose-600 dark:text-rose-400",
+};
+
 const valueFor = (
   e: { level: number; fame: number; battleCount: number },
-  metric: RankingMetric,
+  metric: Exclude<RankingMetric, "guild">,
 ): number => {
   if (metric === "level") return e.level;
   if (metric === "fame") return e.fame;
@@ -36,10 +51,6 @@ const valueFor = (
 
 export function RankingsView() {
   const [metric, setMetric] = useState<RankingMetric>("level");
-  const { list, me, loading, error } = useRankings(metric);
-
-  const meInList = !!me && !!list?.some((e) => e.mine);
-
   return (
     <div className="space-y-3">
       <Card as="section" padding="sm">
@@ -51,6 +62,21 @@ export function RankingsView() {
         />
       </Card>
 
+      {metric === "guild" ? <GuildRankingsBody /> : <UserRankingsBody metric={metric} />}
+    </div>
+  );
+}
+
+function UserRankingsBody({
+  metric,
+}: {
+  metric: Exclude<RankingMetric, "guild">;
+}) {
+  const { list, me, loading, error } = useRankings(metric);
+  const meInList = !!me && !!list?.some((e) => e.mine);
+
+  return (
+    <>
       {error && (
         <Card as="section" padding="md">
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -90,14 +116,64 @@ export function RankingsView() {
             내 순위
           </div>
           <div className="border-t border-zinc-200 dark:border-zinc-800">
-            <RankingRow
-              entry={{ ...me, mine: true }}
-              metric={metric}
-            />
+            <RankingRow entry={{ ...me, mine: true }} metric={metric} />
           </div>
         </Card>
       )}
-    </div>
+    </>
+  );
+}
+
+function GuildRankingsBody() {
+  const { list, me, loading, error } = useGuildRankings(true);
+  const meInList = !!me && !!list?.some((e) => e.mine);
+
+  return (
+    <>
+      {error && (
+        <Card as="section" padding="md">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </Card>
+      )}
+
+      {loading && list === null ? (
+        <ul className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <li
+              key={i}
+              className="rounded-lg border border-zinc-200 bg-white/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/60"
+            >
+              <Skeleton rows={2} />
+            </li>
+          ))}
+        </ul>
+      ) : !list || list.length === 0 ? (
+        <EmptyState
+          icon={<UsersThree size={40} weight="duotone" />}
+          title="아직 등록된 길드가 없습니다"
+          message="새 길드를 만들거나 기존 길드에 가입해 보세요."
+        />
+      ) : (
+        <Card as="section" padding="none">
+          <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            {list.map((e) => (
+              <GuildRankingRow key={`${e.rank}-${e.name}`} entry={e} />
+            ))}
+          </ol>
+        </Card>
+      )}
+
+      {me && !meInList && (
+        <Card as="section" padding="none">
+          <div className="px-4 py-2 text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            내 길드
+          </div>
+          <div className="border-t border-zinc-200 dark:border-zinc-800">
+            <GuildRankingRow entry={{ ...me, mine: true }} />
+          </div>
+        </Card>
+      )}
+    </>
   );
 }
 
@@ -106,7 +182,7 @@ function RankingRow({
   metric,
 }: {
   entry: RankingEntry | (RankingMe & { mine: true });
-  metric: RankingMetric;
+  metric: Exclude<RankingMetric, "guild">;
 }) {
   return (
     <div
@@ -127,6 +203,43 @@ function RankingRow({
       </span>
       <span className="shrink-0 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
         {METRIC_LABEL[metric]} {valueFor(entry, metric)}
+      </span>
+    </div>
+  );
+}
+
+function GuildRankingRow({
+  entry,
+}: {
+  entry: GuildRankingEntry | (GuildRankingMe & { mine: true });
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between gap-3 px-4 py-2 ${
+        entry.mine ? "bg-emerald-50 dark:bg-emerald-950/40" : ""
+      }`}
+    >
+      <span className="flex items-center gap-3 min-w-0">
+        <RankBadge rank={entry.rank} />
+        <span className="min-w-0 truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">
+          {entry.name}
+          <span
+            className={`ml-1.5 text-[11px] font-bold ${GRADE_COLOR[entry.grade] ?? ""}`}
+          >
+            [{entry.grade}]
+          </span>
+          {entry.mine && (
+            <span className="ml-1 text-[10px] font-normal text-emerald-700 dark:text-emerald-400">
+              (내 길드)
+            </span>
+          )}
+        </span>
+      </span>
+      <span className="flex shrink-0 items-center gap-2 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
+        <span>명성 {entry.fameTotal.toLocaleString()}</span>
+        <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+          {entry.memberCount}명
+        </span>
       </span>
     </div>
   );
