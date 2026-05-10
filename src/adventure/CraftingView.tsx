@@ -84,7 +84,7 @@ export function CraftingView({
   const knownRecipes = RECIPES.filter((r) => knownIds.includes(r.id));
   const [tab, setTab] = useState<CraftCategory>("weapon");
   const filtered = knownRecipes.filter((r) => recipeCategory(r) === tab);
-  const pager = usePagination(filtered, 15);
+  const pager = usePagination(filtered, 10);
   const tabLabel = CATEGORY_TABS.find((t) => t.key === tab)?.label ?? "";
 
   if (knownRecipes.length === 0) {

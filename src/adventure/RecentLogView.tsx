@@ -103,7 +103,7 @@ export function RecentLogView({
   const battle = notifications.filter((n) => isBattleNotification(n.kind));
   const system = notifications.filter((n) => !isBattleNotification(n.kind));
   const list = tab === "battle" ? battle : system;
-  const pager = usePagination(list, 15);
+  const pager = usePagination(list, 10);
 
   return (
     <div className="space-y-2">

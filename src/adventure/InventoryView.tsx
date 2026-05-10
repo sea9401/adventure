@@ -95,9 +95,9 @@ export function InventoryView({
   const filteredEquipment = ownedEquipment.filter(
     (e) => e.item.slot === equipSlotTab,
   );
-  const equipPager = usePagination(filteredEquipment, 15);
-  const materialsPager = usePagination(ownedMaterials, 15);
-  const potionsPager = usePagination(ownedPotions, 15);
+  const equipPager = usePagination(filteredEquipment, 10);
+  const materialsPager = usePagination(ownedMaterials, 10);
+  const potionsPager = usePagination(ownedPotions, 10);
 
   return (
     <div className="space-y-3">

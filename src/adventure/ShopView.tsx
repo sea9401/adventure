@@ -346,7 +346,7 @@ function SellRows({
     onSell: (qty: number) => void;
   }>;
 }) {
-  const pager = usePagination(rows, 15);
+  const pager = usePagination(rows, 10);
   return (
     <div className="space-y-2">
       {pager.pageItems.map(({ key, ...rest }) => (

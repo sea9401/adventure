@@ -172,7 +172,7 @@ export function InboxView() {
     }
   };
 
-  const pager = usePagination(items, 15);
+  const pager = usePagination(items, 10);
 
   return (
     <div className="space-y-3">

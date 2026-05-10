@@ -108,7 +108,7 @@ export function BulletinBoardView({
     }
   };
 
-  const pager = usePagination(posts ?? [], 15);
+  const pager = usePagination(posts ?? [], 10);
 
   return (
     <div className="space-y-3">

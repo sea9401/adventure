@@ -212,7 +212,7 @@ function EquipmentSubTab({
     .map((id) => ({ id, def: ITEMS[id], count: ownedEquipment[id] ?? 0 }))
     .filter((e) => e.count > 0 && e.def.slot === slot)
     .sort((a, b) => a.def.name.localeCompare(b.def.name));
-  const pager = usePagination(items, 15);
+  const pager = usePagination(items, 10);
 
   if (items.length === 0) {
     return (
@@ -281,7 +281,7 @@ function RecipesSubTab({
     .map((id) => ({ id, def: getRecipeById(id) }))
     .filter((r): r is { id: string; def: NonNullable<typeof r.def> } => !!r.def)
     .sort((a, b) => a.def.name.localeCompare(b.def.name));
-  const pager = usePagination(recipes, 15);
+  const pager = usePagination(recipes, 10);
 
   if (recipes.length === 0) {
     return (
@@ -642,7 +642,7 @@ function MonstersTab({ log }: { log: AdventureLog }) {
   const entries = Object.entries(log.monsters)
     .filter(([, e]) => e.encountered)
     .sort((a, b) => (a[0] < b[0] ? -1 : 1));
-  const pager = usePagination(entries, 15);
+  const pager = usePagination(entries, 10);
   if (entries.length === 0) {
     return (
       <EmptyState
@@ -791,7 +791,7 @@ function TownsTab({ log }: { log: AdventureLog }) {
   const towns = WORLD_MAP.regions.filter(
     (r) => r.tags?.includes("town") && log.towns[r.id]?.visited,
   );
-  const pager = usePagination(towns, 15);
+  const pager = usePagination(towns, 10);
   if (towns.length === 0) {
     return (
       <EmptyState
@@ -938,7 +938,7 @@ function PlacesTab({ log }: { log: AdventureLog }) {
   const places = WORLD_MAP.regions.filter(
     (r) => !r.tags?.includes("town") && log.towns[r.id]?.visited,
   );
-  const pager = usePagination(places, 15);
+  const pager = usePagination(places, 10);
   if (places.length === 0) {
     return (
       <EmptyState
@@ -1117,7 +1117,7 @@ function NpcsTab({ log }: { log: AdventureLog }) {
     ? regionTab
     : (townTabs[0]?.key ?? "");
   const inTown = talked.filter((n) => n.region === activeTab);
-  const pager = usePagination(inTown, 15);
+  const pager = usePagination(inTown, 10);
 
   if (talked.length === 0) {
     return (

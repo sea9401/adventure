@@ -36,7 +36,7 @@ export function QuestJournalView({
   });
 
   const list = tab === "active" ? active : completed;
-  const pager = usePagination(list, 15);
+  const pager = usePagination(list, 10);
 
   return (
     <div className="space-y-3">

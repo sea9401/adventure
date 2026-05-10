@@ -107,7 +107,7 @@ export function ListingsView({
     };
   }, [load]);
 
-  const pager = usePagination(items, 15);
+  const pager = usePagination(items, 10);
 
   const loadMore = async () => {
     if (!nextCursor || loadingMore) return;

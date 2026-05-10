@@ -76,7 +76,7 @@ function UserRankingsBody({
 }) {
   const { list, me, loading, error } = useRankings(metric);
   const meInList = !!me && !!list?.some((e) => e.mine);
-  const pager = usePagination(list ?? [], 15);
+  const pager = usePagination(list ?? [], 10);
 
   return (
     <>
@@ -137,7 +137,7 @@ function UserRankingsBody({
 function GuildRankingsBody() {
   const { list, me, loading, error } = useGuildRankings(true);
   const meInList = !!me && !!list?.some((e) => e.mine);
-  const pager = usePagination(list ?? [], 15);
+  const pager = usePagination(list ?? [], 10);
 
   return (
     <>

@@ -42,7 +42,7 @@ export function GuildView({
     return () => clearInterval(id);
   }, [anyOnCooldown]);
 
-  const pager = usePagination(quests, 15);
+  const pager = usePagination(quests, 10);
 
   if (quests.length === 0) {
     return (

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 // items 가 줄어 현재 페이지가 비면 자동으로 마지막 유효 페이지로 보정 (필터 변경 시 등).
 export function usePagination<T>(
   items: T[],
-  pageSize: number = 15,
+  pageSize: number = 10,
 ): {
   page: number;
   pageCount: number;
