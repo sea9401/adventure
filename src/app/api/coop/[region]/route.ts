@@ -1,6 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  bulletinPosts,
   coopBossContributors,
   coopBossSessions,
   savesKv,
@@ -262,6 +263,14 @@ async function handleAttack(
     await setStoryFlagServer(userId, def.onDefeatFlag);
   }
 
+  // 처치 broadcast — 광장 게시판에 1줄 시스템 글.
+  if (defeated) {
+    await broadcastBossKill(userId, session.id, session.bossName).catch((err) => {
+      // 부수 효과 — 실패해도 attack 응답은 정상 처리.
+      console.warn("[coop] broadcast failed", err);
+    });
+  }
+
   return Response.json({
     damageDealt: result.damageDealt,
     damageTaken: result.damageTaken,
@@ -321,6 +330,34 @@ async function handleClaim(userId: string, region: string): Promise<Response> {
     );
 
   return Response.json({ tier, ratio, reward });
+}
+
+// 처치 broadcast — 광장 게시판에 1줄 시스템 글.
+async function broadcastBossKill(
+  killerId: string,
+  sessionId: string,
+  bossName: string,
+): Promise<void> {
+  const contribs = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(coopBossContributors)
+    .where(eq(coopBossContributors.sessionId, sessionId));
+  const count = Number(contribs[0]?.count ?? 0);
+
+  const killer = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, killerId))
+    .limit(1);
+  const killerName = killer[0]?.name ?? "이름 없는 모험가";
+
+  await db.insert(bulletinPosts).values({
+    userId: killerId,
+    name: killerName,
+    className: "협동 토벌",
+    title: null,
+    content: `${bossName}이(가) 쓰러졌다 — 마지막 일격: ${killerName} · 기여자 ${count}명`,
+  });
 }
 
 // storyFlag 서버 set — savesKv 의 storyFlags.v1 row 갱신.
