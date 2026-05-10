@@ -59,7 +59,18 @@ export function simulateCoopAttack(input: CoopAttackInput): CoopAttackResult {
   );
   // 시작 시점 보스 hp 를 협동 세션의 현재 hp 로 덮어쓴다.
   // (initialBattleState 가 maxHp 로 시작하므로, 진행 중 세션은 그 차이만큼 감소된 상태로 입장)
-  state = { ...state, enemyHp: input.bossCurrentHp };
+  // 페이즈 트리거는 hp 비율로 implicit — 이미 threshold 아래면 발동된 것으로 간주.
+  // (그렇지 않으면 매 공격마다 트리거 메시지가 다시 노출됨)
+  const trigger = bossForBattle.phaseTrigger;
+  const alreadyTriggered =
+    !!trigger &&
+    input.bossCurrentHp < bossForBattle.hp * trigger.hpFraction;
+  state = {
+    ...state,
+    enemyHp: input.bossCurrentHp,
+    phaseTriggered: alreadyTriggered,
+    enemyDefBonus: alreadyTriggered ? trigger.defBonus : 0,
+  };
 
   const log: BattleLogEntry[] = [];
   let turnsRun = 0;
