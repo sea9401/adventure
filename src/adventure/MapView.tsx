@@ -15,6 +15,7 @@ import type { MapProgress } from "@/lib/map-progress";
 import type { AdventureLog } from "./log/storage";
 import { MapEdge } from "./MapEdge";
 import { MapNode, type NodeState } from "./MapNode";
+import { MapCanvas } from "./MapCanvas";
 import { RegionDetail } from "./RegionDetail";
 import { Card } from "@/components/ui/Card";
 import { useGame } from "./GameContext";
@@ -147,15 +148,17 @@ export function MapView({
     performMove(selectedId);
   };
 
+  const currentRegion = WORLD_MAP.regions.find(
+    (r) => r.id === progress.currentRegionId,
+  );
+
   return (
     <div className="space-y-3">
       <Card padding="none" className="overflow-hidden">
-        <svg
-          viewBox={`0 0 ${WORLD_MAP.viewBox.width} ${WORLD_MAP.viewBox.height}`}
-          preserveAspectRatio="xMidYMid meet"
-          className="block h-auto w-full"
-          role="img"
-          aria-label="월드맵"
+        <MapCanvas
+          world={WORLD_MAP.viewBox}
+          focusX={currentRegion?.position.x ?? WORLD_MAP.viewBox.width / 2}
+          focusY={currentRegion?.position.y ?? WORLD_MAP.viewBox.height / 2}
         >
           {WORLD_MAP.edges.map((edge) => {
             const from = WORLD_MAP.regions.find((r) => r.id === edge.from);
@@ -179,7 +182,7 @@ export function MapView({
               onClick={() => setSelectedId(region.id)}
             />
           ))}
-        </svg>
+        </MapCanvas>
       </Card>
       <RegionDetail
         region={selectedRegion}
