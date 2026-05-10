@@ -174,3 +174,76 @@ export async function disbandGuild(
   if (!r.ok) throw await parseError(r);
   return (await r.json()) as { ok: true };
 }
+
+// ───── 길드 의뢰 (Phase A) ─────
+
+export type GuildQuestInstanceShape = {
+  id: number;
+  questDefId: string;
+  grade: string;
+  status: "proposed" | "active" | "completed" | "dismissed" | "expired";
+  progress: number;
+  target: number;
+  activatedAt: string | null;
+  completedAt: string | null;
+};
+
+export type GuildQuestsThisWeekResponse = {
+  guild: {
+    id: number;
+    name: string;
+    masterId: string;
+    fameTotal: number;
+    fameAvailable: number;
+    grade: string;
+    isMaster: boolean;
+  } | null;
+  weekStart: string | null;
+  active: GuildQuestInstanceShape | null;
+  proposed: GuildQuestInstanceShape[];
+};
+
+export async function fetchThisWeekGuildQuests(): Promise<GuildQuestsThisWeekResponse> {
+  const r = await fetch("/api/guilds/quests/this-week");
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as GuildQuestsThisWeekResponse;
+}
+
+export async function acceptGuildQuest(
+  instanceId: number,
+): Promise<{ ok: true }> {
+  const r = await fetch(`/api/guilds/quests/${instanceId}/accept`, {
+    method: "POST",
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as { ok: true };
+}
+
+// 멤버의 활동을 활성 의뢰 카운터에 반영. 활성 의뢰가 없거나 task 와 안 맞으면
+// silent ignore 라 호출자는 거의 신경 안 써도 됨 — 응답의 matched 로 판단.
+export type ProgressReportBody =
+  | { kind: "kill_monster"; name: string; count: number }
+  | { kind: "kill_boss"; name: string; count: number }
+  | { kind: "collect_material"; materialId: string; count: number };
+
+export type ProgressReportResponse = {
+  ok: true;
+  matched: boolean;
+  reason?: string;
+  progress?: number;
+  target?: number;
+  completed?: boolean;
+  fameAdded?: number;
+};
+
+export async function reportGuildQuestProgress(
+  body: ProgressReportBody,
+): Promise<ProgressReportResponse> {
+  const r = await fetch("/api/guilds/quests/progress", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as ProgressReportResponse;
+}
