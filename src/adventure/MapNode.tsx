@@ -1,27 +1,34 @@
-import type { Biome, Region } from "./data/world";
+import type { Region } from "./data/world";
+import { COOP_BOSSES } from "./coop/data";
 
 const NODE_RADIUS = 24;
 
 export type NodeState = "current" | "visited" | "reachable" | "locked";
 
-const BIOME_FILL: Record<Biome, string> = {
-  village: "fill-amber-200 dark:fill-amber-900/60",
-  plains: "fill-lime-200 dark:fill-lime-900/60",
-  forest: "fill-emerald-200 dark:fill-emerald-900/60",
-  cave: "fill-stone-300 dark:fill-stone-800",
-  lake: "fill-sky-200 dark:fill-sky-900/60",
-  ruins: "fill-rose-200 dark:fill-rose-900/60",
-  mountain: "fill-slate-300 dark:fill-slate-800/60",
+// 지도 노드 색은 행동 유형으로 분류 — biome (데이터/설명용) 대신 마을 / 사냥터 /
+// 솔로 보스 / 협동 보스 4종으로 묶어 한눈에 무엇을 할 곳인지 드러낸다.
+// 우선순위: town → coop_boss → solo_boss → hunting.
+type RegionKind = "town" | "coop_boss" | "solo_boss" | "hunting";
+
+function regionKind(region: Region): RegionKind {
+  if (region.tags?.includes("town")) return "town";
+  if (COOP_BOSSES[region.id]) return "coop_boss";
+  if (region.boss) return "solo_boss";
+  return "hunting";
+}
+
+const KIND_FILL: Record<RegionKind, string> = {
+  town: "fill-amber-200 dark:fill-amber-900/60",
+  hunting: "fill-emerald-200 dark:fill-emerald-900/60",
+  solo_boss: "fill-violet-200 dark:fill-violet-900/60",
+  coop_boss: "fill-rose-200 dark:fill-rose-900/60",
 };
 
-const BIOME_STROKE: Record<Biome, string> = {
-  village: "stroke-amber-500 dark:stroke-amber-700",
-  plains: "stroke-lime-500 dark:stroke-lime-700",
-  forest: "stroke-emerald-500 dark:stroke-emerald-700",
-  cave: "stroke-stone-500 dark:stroke-stone-600",
-  lake: "stroke-sky-500 dark:stroke-sky-700",
-  ruins: "stroke-rose-500 dark:stroke-rose-700",
-  mountain: "stroke-slate-500 dark:stroke-slate-700",
+const KIND_STROKE: Record<RegionKind, string> = {
+  town: "stroke-amber-500 dark:stroke-amber-700",
+  hunting: "stroke-emerald-500 dark:stroke-emerald-700",
+  solo_boss: "stroke-violet-500 dark:stroke-violet-700",
+  coop_boss: "stroke-rose-500 dark:stroke-rose-700",
 };
 
 export function MapNode({
@@ -39,9 +46,10 @@ export function MapNode({
   const isReachable = state === "reachable";
   const isLocked = state === "locked";
 
+  const kind = regionKind(region);
   const fillClass = isLocked
     ? "fill-zinc-100 dark:fill-zinc-900"
-    : BIOME_FILL[region.biome];
+    : KIND_FILL[kind];
 
   const strokeClass = selected
     ? "stroke-zinc-900 dark:stroke-zinc-100"
@@ -49,7 +57,7 @@ export function MapNode({
       ? "stroke-emerald-600 dark:stroke-emerald-400"
       : isLocked
         ? "stroke-zinc-300 dark:stroke-zinc-700"
-        : BIOME_STROKE[region.biome];
+        : KIND_STROKE[kind];
 
   const labelClass = isLocked
     ? "fill-zinc-400 dark:fill-zinc-600"
