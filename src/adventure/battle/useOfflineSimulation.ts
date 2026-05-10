@@ -211,9 +211,15 @@ export function useOfflineSimulation({
     // 직전 사이클에 onApply 까지 마쳤지만 PATCH 가 stale-reload 등으로 확정되지 못한
     // 결과가 localStorage 에 남아있으면, 새 sim 을 돌리지 말고 그 결과를 그대로 재적용.
     // 같은 결정값을 흘려보내야 RNG 변동·재시뮬로 인한 결과 변동을 막을 수 있다.
+    //
+    // consume-on-read: 한 번 재적용한 결과는 즉시 outbox 에서 제거. 재적용 후 PATCH 가
+    // 또 stale/error 로 실패해도 같은 결과를 또 재적용하지는 않게 — 이전엔 사망 결과가
+    // outbox 에 남고 매 새로고침마다 사망 onApply (URL=town/healing + hp=0) 가 재발화해
+    // "특정 위치로 반복 이동"으로 보이던 루프가 발생했음.
     const trySimFromBaseline = (): boolean => {
       const pending = readRewardOutbox(userId ?? null);
       if (pending) {
+        clearRewardOutbox();
         onApplyRef.current(pending);
         return true;
       }
