@@ -114,6 +114,7 @@ export const ITEMS = {
     stats: [{ label: "방어력", value: "+3" }],
     bonus: { def: 3 },
     description: "슬라임 핵을 심으로 두른 갑옷. 충격을 부드럽게 흡수한다.",
+    rarity: "uncommon",
   } satisfies EquipItem,
   bandit_dagger: {
     name: "산적의 단검",
@@ -174,6 +175,7 @@ export const ITEMS = {
     ],
     bonus: { def: 7, spd: -3, luk: -1 },
     description: "골렘의 잔해를 덧대어 만든 두꺼운 갑주. 묵직한 만큼 발걸음과 운이 따라 무거워진다.",
+    rarity: "uncommon",
   } satisfies EquipItem,
   wraith_cloak: {
     name: "망령의 망토",
@@ -185,6 +187,7 @@ export const ITEMS = {
     ],
     bonus: { def: 2, dex: 1, spd: 2 },
     description: "떠도는 망령이 두르고 있던 누더기 망토. 입으면 발걸음이 어딘가 가벼워진다.",
+    rarity: "uncommon",
   } satisfies EquipItem,
   sticky_cloak: {
     name: "비단 로브",
@@ -215,6 +218,7 @@ export const ITEMS = {
     ],
     bonus: { atk: 5, dex: 1 },
     description: "단단한 수정을 깎아 만든 날카로운 단검.",
+    rarity: "uncommon",
   } satisfies EquipItem,
   fairy_blessing: {
     name: "요정의 가호",
@@ -225,6 +229,7 @@ export const ITEMS = {
     ],
     bonus: { vit: 3, luk: 2 },
     description: "활력의 반지에 요정가루의 가호를 입힌 것. 끼고 있으면 몸도, 운도 따른다.",
+    rarity: "uncommon",
   } satisfies EquipItem,
 
   // 마정석 무기 4종 — 광맥의 수호자 처치 보상으로 풀리는 동굴 강화 라인.
@@ -238,6 +243,7 @@ export const ITEMS = {
     ],
     bonus: { atk: 7, str: 3 },
     description: "마정석을 칼날에 박아 넣은 한손검. 휘두르면 묵직한 무게가 손에 실린다.",
+    rarity: "uncommon",
   } satisfies EquipItem,
   mana_shield: {
     name: "마정석 방패",
@@ -248,6 +254,7 @@ export const ITEMS = {
     ],
     bonus: { atk: 7, vit: 3 },
     description: "마정석을 박은 묵직한 방패. 막아내며 받아치는 데에도 쓴다.",
+    rarity: "uncommon",
   } satisfies EquipItem,
   mana_spear: {
     name: "마정석 창",
@@ -258,6 +265,7 @@ export const ITEMS = {
     ],
     bonus: { atk: 7, dex: 3 },
     description: "끝에 마정석을 깎아 박은 긴 창. 가벼우면서도 묘하게 정확하다.",
+    rarity: "uncommon",
   } satisfies EquipItem,
   mana_knuckle: {
     name: "마정석 너클",
@@ -268,6 +276,7 @@ export const ITEMS = {
     ],
     bonus: { atk: 7, luk: 3 },
     description: "마정석 조각을 손등에 박은 너클. 한 방 한 방이 묘하게 운에 맡겨지는 느낌이 든다.",
+    rarity: "uncommon",
   } satisfies EquipItem,
   mana_bracelet: {
     name: "마정석 팔찌",
