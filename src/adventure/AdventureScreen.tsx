@@ -5,6 +5,9 @@ import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { BattleView } from "@/adventure/BattleView";
+import { CoopBossCard } from "@/adventure/coop/CoopBossCard";
+import { COOP_BOSSES } from "@/adventure/coop/data";
+import { applyCoopReward } from "@/adventure/coop/applyReward";
 import { MapView } from "@/adventure/MapView";
 import { TownView } from "@/adventure/TownView";
 import { TrialView } from "@/adventure/TrialView";
@@ -333,6 +336,25 @@ export function AdventureScreen() {
           )}
           onConsumeBossAttempt={() =>
             characterStateHook.consumeBossAttempt(currentRegion.id)
+          }
+          coopBossSlot={
+            COOP_BOSSES[currentRegion.id] ? (
+              <CoopBossCard
+                regionId={currentRegion.id}
+                player={playerCombat}
+                playerName={character.name}
+                onPlayerHpChange={characterStateHook.setHp}
+                applyReward={(reward) =>
+                  applyCoopReward(reward, {
+                    addMaterial: inventory.addMaterial,
+                    learnRecipe: crafting.learnRecipe,
+                    knowsRecipe: crafting.knows,
+                    markTitleObtained: adventureLog.markTitleObtained,
+                  })
+                }
+                notify={(text) => addNotification("info", text)}
+              />
+            ) : null
           }
         />
       </div>
