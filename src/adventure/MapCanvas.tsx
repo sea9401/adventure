@@ -26,7 +26,7 @@ export function MapCanvas({
   focusX,
   focusY,
   children,
-  height = "min(72vh, 560px)",
+  height = "min(54vh, 460px)",
 }: {
   world: { width: number; height: number };
   focusX: number;
