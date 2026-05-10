@@ -48,7 +48,7 @@ export function CoopBossCard({
   if (!data) return null;
   if (!data.session) {
     // 세션 row 가 아예 없는 region — 다음 cron 정각에 첫 spawn.
-    const waitMs = nextHourBoundary(now) - now;
+    const waitMs = ceilToHour(now) - now;
     return (
       <Card padding="md">
         <div className="text-xs uppercase tracking-wider text-rose-500/70 dark:text-rose-400/70">
@@ -70,8 +70,11 @@ export function CoopBossCard({
   const top = data.top;
   const hpPct = Math.max(0, Math.min(100, (s.hp / s.maxHp) * 100));
   const expiresMs = new Date(s.expiresAt).getTime() - now;
+  // nextSpawnAt 은 처치시점+respawnMs 지만, cron(`0 * * * *`)이 정각에만 돌아
+  // 실제 spawn 은 그 다음 정각까지 미뤄진다. 표기에도 ceilToHour 반영해 카운트가
+  // 0 에서 멈춰있다가 정각에 갑자기 새 세션으로 점프하는 인상을 막는다.
   const nextSpawnMs = s.nextSpawnAt
-    ? new Date(s.nextSpawnAt).getTime() - now
+    ? Math.max(0, ceilToHour(new Date(s.nextSpawnAt).getTime()) - now)
     : 0;
   const cooldownMs = my?.cooldownEndsAt
     ? new Date(my.cooldownEndsAt).getTime() - now
@@ -88,7 +91,7 @@ export function CoopBossCard({
     expired && bossDef
       ? Math.max(
           0,
-          nextHourBoundary(new Date(s.expiresAt).getTime()) +
+          ceilToHour(new Date(s.expiresAt).getTime()) +
             bossDef.respawnMs -
             now,
         )
@@ -279,12 +282,12 @@ function NextTierHint({ ratio }: { ratio: number }) {
   );
 }
 
-// 주어진 시각 이후의 첫 정각 (분/초/ms = 0). cron(`0 * * * *`) 이 도는 시점.
-// 시각이 정확히 정각이면 그 자체가 아닌 다음 정각을 반환 — 다음 cron 까지의 대기 표기를 위함.
-function nextHourBoundary(t: number): number {
+// 주어진 시각 이후 (또는 같은) 첫 정각. cron(`0 * * * *`) 이 도는 시점.
+// t 가 정확히 정각이면 t 자신을 반환 (cron 이 그 정각에 호출되어 즉시 반응).
+function ceilToHour(t: number): number {
   const d = new Date(t);
   d.setMinutes(0, 0, 0);
-  if (d.getTime() <= t) d.setHours(d.getHours() + 1);
+  if (d.getTime() < t) d.setHours(d.getHours() + 1);
   return d.getTime();
 }
 
