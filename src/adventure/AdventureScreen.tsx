@@ -308,7 +308,6 @@ export function AdventureScreen() {
   if (subView === "battle") {
     return (
       <div className="space-y-3">
-        <SubViewHeader title="전투" onBack={back} />
         <BattleView
           region={currentRegion}
           player={playerCombat}
@@ -343,7 +342,6 @@ export function AdventureScreen() {
   if (subView === "map" && !trialEdge) {
     return (
       <div className="space-y-3">
-        <SubViewHeader title="지도" onBack={back} />
         <MapView
           progress={mapProgress}
           onProgressChange={setMapProgress}
