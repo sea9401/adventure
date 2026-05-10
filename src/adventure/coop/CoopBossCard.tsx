@@ -47,18 +47,14 @@ export function CoopBossCard({
 
   if (!data) return null;
   if (!data.session) {
-    // 세션 row 가 아예 없는 region — 다음 cron 정각에 첫 spawn.
-    const waitMs = ceilToHour(now) - now;
+    // 세션 row 가 아예 없는 region — cron(매분) 이 곧 첫 spawn.
     return (
       <Card padding="md">
         <div className="text-xs uppercase tracking-wider text-rose-500/70 dark:text-rose-400/70">
           협동 보스
         </div>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          현재 등장한 협동 보스가 없습니다.
-        </p>
-        <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-          다음 등장까지 약 {formatDuration(waitMs)} (정각 cron 기준)
+          현재 등장한 협동 보스가 없습니다 — 곧 등장합니다.
         </p>
       </Card>
     );
@@ -70,11 +66,9 @@ export function CoopBossCard({
   const top = data.top;
   const hpPct = Math.max(0, Math.min(100, (s.hp / s.maxHp) * 100));
   const expiresMs = new Date(s.expiresAt).getTime() - now;
-  // nextSpawnAt 은 처치시점+respawnMs 지만, cron(`0 * * * *`)이 정각에만 돌아
-  // 실제 spawn 은 그 다음 정각까지 미뤄진다. 표기에도 ceilToHour 반영해 카운트가
-  // 0 에서 멈춰있다가 정각에 갑자기 새 세션으로 점프하는 인상을 막는다.
+  // cron 이 매분 도므로 nextSpawnAt(=처치시점+respawnMs) 도달 후 1분 안에 spawn.
   const nextSpawnMs = s.nextSpawnAt
-    ? Math.max(0, ceilToHour(new Date(s.nextSpawnAt).getTime()) - now)
+    ? Math.max(0, new Date(s.nextSpawnAt).getTime() - now)
     : 0;
   const cooldownMs = my?.cooldownEndsAt
     ? new Date(my.cooldownEndsAt).getTime() - now
@@ -84,16 +78,13 @@ export function CoopBossCard({
   const expired = !defeated && expiresMs <= 0;
   const canAttack = !defeated && !expired && !onCooldown && !working;
 
-  // cron 이 만료 처리 전인 짧은 window — expiresAt 후 첫 정각에 cron 이
-  // defeatedAt + nextSpawnAt(=+respawnMs) 을 채우고, 그 다음 정각에 spawn.
-  // 추정 등장 시점 = ceilToHour(expiresAt) + respawnMs.
+  // cron(매분) 이 곧 만료 처리하고 nextSpawnAt(=+respawnMs) 을 채운다.
+  // 그 직전의 짧은 window 만 fallback 표기 — 추정 = expiresAt + respawnMs.
   const expiredEstimateMs =
     expired && bossDef
       ? Math.max(
           0,
-          ceilToHour(new Date(s.expiresAt).getTime()) +
-            bossDef.respawnMs -
-            now,
+          new Date(s.expiresAt).getTime() + bossDef.respawnMs - now,
         )
       : 0;
 
@@ -160,7 +151,7 @@ export function CoopBossCard({
             : "처치됨"
           : expired
             ? bossDef
-              ? `만료됨 — 다음 등장까지 약 ${formatDuration(expiredEstimateMs)} (정각 cron)`
+              ? `만료됨 — 다음 등장까지 약 ${formatDuration(expiredEstimateMs)}`
               : "만료됨 — 다음 등장 대기"
             : `잔여 ${formatDuration(expiresMs)} · 기여자 ${top.length}`}
       </p>
@@ -280,15 +271,6 @@ function NextTierHint({ ratio }: { ratio: number }) {
       다음 {COOP_TIER_LABEL[next]} 까지 +{need.toFixed(1)}%
     </p>
   );
-}
-
-// 주어진 시각 이후 (또는 같은) 첫 정각. cron(`0 * * * *`) 이 도는 시점.
-// t 가 정확히 정각이면 t 자신을 반환 (cron 이 그 정각에 호출되어 즉시 반응).
-function ceilToHour(t: number): number {
-  const d = new Date(t);
-  d.setMinutes(0, 0, 0);
-  if (d.getTime() < t) d.setHours(d.getHours() + 1);
-  return d.getTime();
 }
 
 function formatDuration(ms: number): string {

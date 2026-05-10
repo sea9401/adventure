@@ -22,7 +22,7 @@
     },
     {
       "path": "/api/cron/coop-respawn",
-      "schedule": "0 * * * *"
+      "schedule": "* * * * *"
     }
   ]
 }
