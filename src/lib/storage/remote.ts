@@ -320,50 +320,16 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
 // 요청이 살아남게 함. pagehide 와 visibilitychange→hidden 둘 다 잡아 모바일 사파리·
 // 백그라운드 탭 종료까지 커버. beforeunload 는 모바일에서 신뢰도 낮아 제외.
 //
-// 추가로, 일정 시간 이상 hidden 후 visible 로 복귀하면 location.reload — 그 사이 다른
-// 탭/기기에서 server 가 갱신됐을 가능성을 막는 가드. 이 탭의 stale 메모리 state 가
-// 다음 patch 에서 server 를 덮어쓰는 (멀티탭 clobber) 시나리오 차단용.
-//
-// 모바일 화면 잠금이 60초만에도 자주 걸려서 reload 가 너무 빈번하게 트리거됐고, 그
-// 사이에 옵티미스틱 sim 결과가 PATCH 큐에 들어가기 전에 navigate 되어 보상이 손실되는
-// 사고가 잦았다. 10분으로 늘려 일반적인 잠금 사이클은 reload 없이 지나가게 하고,
-// 진짜 장기간 자리비움(다른 디바이스 동시 사용 위험 구간) 만 reload 트리거.
-export const RELOAD_AFTER_HIDDEN_MS = 600_000;
-
+// 옛 버전엔 "장시간 hidden 후 visible 복귀 시 자동 reload" 가드가 있었지만 제거함:
+// 1) 멀티 디바이스 clobber 는 expectedVersion(409)→stale→SaveProvider reload 로 이미 잡힘
+// 2) 다른 디바이스 활성 진입은 active_session_id 로 410 → session-invalidated 처리
+// 3) 모바일 화면 잠금이 트리거가 자주 돼 옵티미스틱 sim 결과가 navigate race 로 손실되는
+//    사고를 만들었음. 다른 방어 장치들과 중복이라 제거가 깔끔.
 export function attachUnloadFlush(remote: RemoteSave) {
   if (typeof window === "undefined") return;
-  let hiddenAt: number | null = null;
   const pageHideHandler = () => remote.flushSync();
   const visibilityHandler = () => {
-    if (document.visibilityState === "hidden") {
-      remote.flushSync();
-      hiddenAt = Date.now();
-      return;
-    }
-    if (document.visibilityState === "visible" && hiddenAt !== null) {
-      const hiddenMs = Date.now() - hiddenAt;
-      hiddenAt = null;
-      if (hiddenMs >= RELOAD_AFTER_HIDDEN_MS) {
-        try {
-          localStorage.setItem(
-            "pending-reload-toast.v1",
-            "장시간 자리를 비워 최신 상태로 새로 불러왔습니다.",
-          );
-        } catch {}
-        // useOfflineSimulation 의 visibilitychange 핸들러도 같은 tick 에 발화해 sim 을
-        // 돌리고 setState 를 큐잉한다. 그 setState 가 commit → useRemotePatch effect →
-        // PATCH 큐에 들어갈 시간을 한 frame 정도 (~100ms) 주고, 그 다음 flushSync 로
-        // keepalive 발사 + reload. delay 가 없으면 navigate 가 먼저 일어나 sim 보상 손실.
-        // (안전장치: useOfflineSimulation 의 다음 mount 에서도 baseline 기반 재시도가
-        // 동작하지만 현재 세션에서 보낼 수 있는 건 보낸 뒤 reload 하는 게 race window 최소화.)
-        setTimeout(() => {
-          try {
-            remote.flushSync();
-          } catch {}
-          window.location.reload();
-        }, 100);
-      }
-    }
+    if (document.visibilityState === "hidden") remote.flushSync();
   };
   window.addEventListener("pagehide", pageHideHandler);
   document.addEventListener("visibilitychange", visibilityHandler);
