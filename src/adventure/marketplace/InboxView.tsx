@@ -396,6 +396,14 @@ function summarizePayload(item: InboxItem): string {
     const from = item.fromName ?? "알 수 없는 발신자";
     return `🤝 ${from} 의 길드 초대 — ${guildName}`;
   }
+  if (item.kind === "guild_quest_reward") {
+    const name =
+      typeof (p as { quest_name?: unknown }).quest_name === "string"
+        ? (p as { quest_name: string }).quest_name
+        : "길드 의뢰";
+    const g = Number((p as { gold?: unknown }).gold ?? 0);
+    return `🏆 길드 의뢰 보상 — ${name}${g > 0 ? ` (+${g.toLocaleString()} G)` : ""}`;
+  }
   if (item.kind === "purchase_item" || item.kind === "cancel_return") {
     const kind = (p as { item_kind?: unknown }).item_kind;
     const id = (p as { item_id?: unknown }).item_id;

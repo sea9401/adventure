@@ -111,6 +111,30 @@ export async function POST(req: Request) {
           if (typeof id === "string" && id.length > 0) {
             recipesToAdd.push({ id });
           }
+        } else if (row.kind === "guild_quest_reward") {
+          // 길드 의뢰 보상 — 골드 + 멤버당 재료/아이템.
+          const g = Number(payload.gold);
+          if (Number.isFinite(g) && g > 0) goldTotal += g;
+          const mats = payload.materials;
+          if (Array.isArray(mats)) {
+            for (const m of mats) {
+              const id = (m as { materialId?: unknown }).materialId;
+              const q = Number((m as { count?: unknown }).count);
+              if (typeof id === "string" && Number.isFinite(q) && q > 0) {
+                itemsToAdd.push({ kind: "material", id, quantity: q });
+              }
+            }
+          }
+          const its = payload.items;
+          if (Array.isArray(its)) {
+            for (const it of its) {
+              const id = (it as { itemId?: unknown }).itemId;
+              const q = Number((it as { count?: unknown }).count);
+              if (typeof id === "string" && Number.isFinite(q) && q > 0) {
+                itemsToAdd.push({ kind: "equip", id, quantity: q });
+              }
+            }
+          }
         }
       }
 

@@ -108,6 +108,8 @@ import {
 import { OfflineRewardsModal } from "@/adventure/battle/OfflineRewardsModal";
 import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
+import { useGuildFameSync } from "@/adventure/guild/useGuildFameSync";
+import { reportGuildQuestProgress } from "@/adventure/guild/api";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useShopUnlocks } from "@/adventure/shop/useShopUnlocks";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
@@ -369,6 +371,7 @@ function Home() {
     className: character.className,
     title: character.titleName ?? null,
   });
+  useGuildFameSync(character.fame);
 
   const showModal = profile.needsSetup;
   const currentRegion =
@@ -805,6 +808,13 @@ function Home() {
       setHuntingActive,
       replaceLocation,
       setMapProgress,
+      reportGuildKill: (enemyName) => {
+        void reportGuildQuestProgress({
+          kind: "kill_monster",
+          name: enemyName,
+          count: 1,
+        }).catch(() => {});
+      },
     });
 
   const handleAcceptQuest = (id: string) => {

@@ -47,6 +47,8 @@ export type BattleEndDeps = {
   setHuntingActive: (next: boolean) => void;
   replaceLocation: (tab: TabKey, subView: string | null) => void;
   setMapProgress: (updater: (prev: MapProgress) => MapProgress) => void;
+  /** 길드 의뢰 진행도 보고 — 길드 미가입/미매칭이면 서버가 silent ignore. */
+  reportGuildKill?: (enemyName: string) => void;
 };
 
 // BattleView 의 onBattleEnd 콜백 본체. 의존성을 명시적으로 주입받는 형태로
@@ -64,6 +66,7 @@ export function onBattleEnd(
     deps.adventureLog.addKill(payload.enemyName);
     deps.adventureLog.markTitleObtained("first_blood");
     const readyQuestIds = deps.quests.recordKill(payload.enemyName);
+    deps.reportGuildKill?.(payload.enemyName);
     deps.characterState.setHp(payload.finalPlayerHp);
     deps.characterState.addExp(payload.rewards.exp, deps.vit);
     // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
