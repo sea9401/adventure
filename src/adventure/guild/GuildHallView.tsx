@@ -10,6 +10,7 @@ import {
   GUILD_CREATE_GOLD,
   GUILD_CREATE_LEVEL,
   GUILD_CREATE_QUEST_COUNT,
+  GUILD_LEAVE_COOLDOWN_DAYS,
   GUILD_MAX_MEMBERS,
   GUILD_NAME_MAX,
   GUILD_NAME_MIN,
@@ -91,7 +92,7 @@ export function GuildHallView() {
   const handleLeave = async () => {
     if (!data?.guild) return;
     const confirmed = window.confirm(
-      `${data.guild.name} 길드에서 정말 탈퇴하시겠습니까?\n탈퇴 후 7일간 다른 길드에 가입할 수 없습니다.`,
+      `${data.guild.name} 길드에서 정말 탈퇴하시겠습니까?\n탈퇴 후 ${GUILD_LEAVE_COOLDOWN_DAYS}일간 다른 길드에 가입할 수 없습니다.`,
     );
     if (!confirmed) return;
     setBusy(true);
@@ -147,7 +148,7 @@ export function GuildHallView() {
   const handleDisband = async () => {
     if (!data?.guild) return;
     const confirmed = window.confirm(
-      `${data.guild.name} 길드를 정말 해체하시겠습니까?\n해체 후 본인은 7일 쿨다운, 다른 멤버는 즉시 무소속이 됩니다.`,
+      `${data.guild.name} 길드를 정말 해체하시겠습니까?\n해체 후 본인은 ${GUILD_LEAVE_COOLDOWN_DAYS}일 쿨다운, 다른 멤버는 즉시 무소속이 됩니다.`,
     );
     if (!confirmed) return;
     setBusy(true);
