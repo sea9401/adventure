@@ -41,6 +41,7 @@ import {
   STAT_LABELS,
   STAT_REVEAL_THRESHOLD,
   STAT_SKILL_INFO_THRESHOLD,
+  STAT_TIER3_REVEAL_THRESHOLD,
   type StatKey,
 } from "./data/stats";
 import { STAT_SKILL } from "./character/skills";
@@ -456,8 +457,10 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
           const tiers = STAT_SKILL[k];
           const tier1 = tiers[0];
           const tier2 = tiers[1];
+          const tier3 = tiers[2];
           const tier1Revealed = value >= STAT_SKILL_INFO_THRESHOLD;
           const conversionRevealed = value >= STAT_REVEAL_THRESHOLD;
+          const tier3Revealed = value >= STAT_TIER3_REVEAL_THRESHOLD;
           // 1차 티어 발동 임계가 정보 공개 임계보다 높을 때 발동 안내.
           const showTier1ActivationNote =
             !!tier1 &&
@@ -470,10 +473,17 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
             !!tier2 &&
             tier2Revealed &&
             tier2.activationThreshold > STAT_REVEAL_THRESHOLD;
-          // 다음 공개 — tier1 → 환산+tier2.
+          // 3차 티어 발동 안내 — 정보 공개 (30) 와 발동 임계 (35) 차이.
+          const showTier3ActivationNote =
+            !!tier3 &&
+            tier3Revealed &&
+            tier3.activationThreshold > STAT_TIER3_REVEAL_THRESHOLD;
+          // 다음 공개 — tier1 → 환산+tier2 → tier3.
           const nextRevealAt = tier1Revealed
             ? conversionRevealed
-              ? "—"
+              ? tier3Revealed
+                ? "—"
+                : STAT_TIER3_REVEAL_THRESHOLD
               : STAT_REVEAL_THRESHOLD
             : STAT_SKILL_INFO_THRESHOLD;
           return (
@@ -567,6 +577,43 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                       </span>
                     )}
                   </span>
+                </div>
+              )}
+
+              {/* 3차 스킬 — STAT_TIER3_REVEAL_THRESHOLD(30) 도달 시 공개. */}
+              {tier3 && (
+                <div className="mt-1.5 flex items-start gap-2 text-xs">
+                  {tier3Revealed ? (
+                    <>
+                      <Sparkle
+                        size={14}
+                        weight="duotone"
+                        className="shrink-0 text-amber-500 mt-0.5"
+                      />
+                      <span className="text-zinc-700 dark:text-zinc-200">
+                        <span className="font-medium">{tier3.name}</span> —{" "}
+                        {tier3.description}
+                        {showTier3ActivationNote && (
+                          <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                            ({STAT_LABELS[k]} {tier3.activationThreshold}에서 발동)
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  ) : (
+                    conversionRevealed && (
+                      <>
+                        <Lock
+                          size={14}
+                          weight="duotone"
+                          className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
+                        />
+                        <span className="italic text-zinc-500 dark:text-zinc-400">
+                          {STAT_TIER3_REVEAL_THRESHOLD} 달성 시 3차 스킬 공개
+                        </span>
+                      </>
+                    )
+                  )}
                 </div>
               )}
             </Card>

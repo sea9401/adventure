@@ -16,6 +16,11 @@ export const SKILL_NAMES = {
   VANGUARD: "기습",
   CRIT: "크리티컬",
   DOUBLE_LUCK: "이중 행운",
+  EXECUTION: "처형",
+  PRECISION: "정확",
+  ENDURANCE: "불굴",
+  LIGHTSPEED: "광속",
+  BLOOM: "만개",
 } as const;
 
 // 강공격 — 힘 10 도달 시 획득.
@@ -80,9 +85,41 @@ export const DOUBLE_LUCK_LUK_THRESHOLD = 20;
 export const DOUBLE_LUCK_EVADE_BONUS = 5;
 export const DOUBLE_LUCK_CRIT_BONUS = 5;
 
+// 처형 — 힘 35 도달 시 획득.
+// 효과: 적 HP 가 EXECUTION_HP_FRACTION 미만일 때 모든 공격 데미지 ×EXECUTION_DAMAGE_MULT.
+// 강공격/분쇄와 누적되며, 크리티컬은 처형 후 데미지에 곱해진다.
+export const EXECUTION_STR_THRESHOLD = 35;
+export const EXECUTION_HP_FRACTION = 0.3;
+export const EXECUTION_DAMAGE_MULT = 1.5;
+
+// 정확 — 민첩 35 도달 시 획득.
+// 효과: 모든 공격에 대해 적 evasion ×PRECISION_EVASION_MULT (절반). 회피 무력화가 아닌 비례 감소.
+export const PRECISION_DEX_THRESHOLD = 35;
+export const PRECISION_EVASION_MULT = 0.5;
+
+// 불굴 — 활력 35 도달 시 획득.
+// 효과 1) 전투당 1회, HP 가 0 이 되는 데미지 받으면 HP 1 로 버틴다.
+// 효과 2) max HP +ENDURANCE_MAX_HP_BONUS_PCT% (계산은 호출 측에서 vit 보너스 위에 곱).
+export const ENDURANCE_VIT_THRESHOLD = 35;
+export const ENDURANCE_MAX_HP_BONUS_PCT = 10;
+
+// 광속 — 속도 35 도달 시 획득.
+// 효과: 매 턴 마지막 공격 후 LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT% 확률로 추가 1회 공격.
+// 연타와 별개 발동 — 연타 슬롯이 없어도 단독으로 작동, 둘 다 슬롯 시 한 턴에 +2 공격까지 가능.
+export const LIGHTSPEED_SPD_THRESHOLD = 35;
+export const LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT = 5;
+
+// 만개 — 행운 35 도달 시 획득.
+// 효과 1) 크리티컬 데미지 배수 +BLOOM_CRIT_MULT_BONUS (현재 luk 비례 위에 누적).
+// 효과 2) 크리티컬 확률 +BLOOM_CRIT_CHANCE_BONUS_PCT% (luk×0.5 + 크리티컬 슬롯 5% 위에 누적).
+export const BLOOM_LUK_THRESHOLD = 35;
+export const BLOOM_CRIT_MULT_BONUS = 0.5;
+export const BLOOM_CRIT_CHANCE_BONUS_PCT = 3;
+
 // 스탯 → 그 스탯이 주는 스킬 티어들 (낮은 임계 → 높은 임계 순). 도감 노출 / 발동 판정 모두 이 매핑을 사용.
 // 1차 티어는 STAT_SKILL_INFO_THRESHOLD(5) 도달 시 도감 공개,
-// 2차 티어는 STAT_REVEAL_THRESHOLD(15) 도달 시 도감 공개. 발동 임계는 별도 (1차 10/15, 2차 20/30).
+// 2차 티어는 STAT_REVEAL_THRESHOLD(15) 도달 시 도감 공개,
+// 3차 티어는 STAT_TIER3_REVEAL_THRESHOLD(30) 도달 시 도감 공개. 발동 임계는 1차 10, 2차 20, 3차 35.
 export type StatSkillInfo = {
   name: string;
   description: string;
@@ -101,6 +138,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `강공격 발동 턴, 그 공격이 적 방어력 -${CRUSH_DEF_REDUCTION} 으로 계산`,
       activationThreshold: CRUSH_STR_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.EXECUTION,
+      description: `적 HP ${Math.round(EXECUTION_HP_FRACTION * 100)}% 미만일 때 모든 공격 데미지 ×${EXECUTION_DAMAGE_MULT}`,
+      activationThreshold: EXECUTION_STR_THRESHOLD,
+    },
   ],
   dex: [
     {
@@ -112,6 +154,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       name: SKILL_NAMES.COUNTER,
       description: `회피 성공 시 즉시 카운터 1회 (ATK +${COUNTER_ATK_BONUS})`,
       activationThreshold: COUNTER_DEX_THRESHOLD,
+    },
+    {
+      name: SKILL_NAMES.PRECISION,
+      description: `모든 공격에 대해 적 회피 ×${PRECISION_EVASION_MULT} (비례 절반)`,
+      activationThreshold: PRECISION_DEX_THRESHOLD,
     },
   ],
   vit: [
@@ -125,6 +172,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `${REGEN_INTERVAL}턴마다 HP +${REGEN_AMOUNT} 회복`,
       activationThreshold: REGEN_VIT_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.ENDURANCE,
+      description: `전투당 1회, HP 0 이 되는 데미지를 HP 1 로 버틴다 + 최대 HP +${ENDURANCE_MAX_HP_BONUS_PCT}%`,
+      activationThreshold: ENDURANCE_VIT_THRESHOLD,
+    },
   ],
   spd: [
     {
@@ -136,6 +188,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       name: SKILL_NAMES.VANGUARD,
       description: `전투 첫 턴 추가 공격 ${VANGUARD_FIRST_TURN_BONUS}회`,
       activationThreshold: VANGUARD_SPD_THRESHOLD,
+    },
+    {
+      name: SKILL_NAMES.LIGHTSPEED,
+      description: `매 턴 마지막 공격 후 ${LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT}% 확률로 추가 1회 공격`,
+      activationThreshold: LIGHTSPEED_SPD_THRESHOLD,
     },
   ],
   luk: [
@@ -149,15 +206,21 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `크리티컬 발동 시 그 전투 동안 회피 +${DOUBLE_LUCK_EVADE_BONUS}%, 크리 +${DOUBLE_LUCK_CRIT_BONUS}% (누적 X)`,
       activationThreshold: DOUBLE_LUCK_LUK_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.BLOOM,
+      description: `크리티컬 데미지 배수 +${BLOOM_CRIT_MULT_BONUS} + 크리티컬 확률 +${BLOOM_CRIT_CHANCE_BONUS_PCT}%`,
+      activationThreshold: BLOOM_LUK_THRESHOLD,
+    },
   ],
 };
 
 // 현재 스탯에서 보유(획득) 스킬 목록 도출. 스킬은 별도 저장 없이 스탯에서 파생.
 // "보유" ≠ "장착" — 보유한 스킬 중 SKILL_SLOT_COUNT 개만 effective.
-// 1차 티어 → 2차 티어 순으로 묶어 반환 — 자동 슬롯 채움 시 1차가 우선되도록.
+// 1차 → 2차 → 3차 순으로 묶어 반환 — 자동 슬롯 채움 시 낮은 티어가 우선되도록.
 export function deriveSkills(stats: Record<StatKey, number>): Skill[] {
   const tier1: Skill[] = [];
   const tier2: Skill[] = [];
+  const tier3: Skill[] = [];
   for (const k of STAT_KEYS) {
     const tiers = STAT_SKILL[k];
     if (tiers[0] && stats[k] >= tiers[0].activationThreshold) {
@@ -172,8 +235,14 @@ export function deriveSkills(stats: Record<StatKey, number>): Skill[] {
         description: tiers[1].description,
       });
     }
+    if (tiers[2] && stats[k] >= tiers[2].activationThreshold) {
+      tier3.push({
+        name: tiers[2].name,
+        description: tiers[2].description,
+      });
+    }
   }
-  return [...tier1, ...tier2];
+  return [...tier1, ...tier2, ...tier3];
 }
 
 // 보유 스킬 + 사용자 명시 선택 → 실제 발동될 스킬 이름 set.
@@ -264,18 +333,31 @@ export function critChancePctFor(
 ): number {
   // 기본 — luk 1pt 당 +CRIT_CHANCE_PER_LUK% (스킬 미장착에도 적용).
   const base = stats.luk * CRIT_CHANCE_PER_LUK;
-  // 스킬 장착 시 +CRIT_CHANCE_PCT% 추가.
-  const skillBonus =
+  // 크리티컬 슬롯 시 +CRIT_CHANCE_PCT% 추가.
+  const critSkillBonus =
     stats.luk >= CRIT_LUK_THRESHOLD && equipped.has(SKILL_NAMES.CRIT)
       ? CRIT_CHANCE_PCT
       : 0;
-  return base + skillBonus;
+  // 만개 슬롯 시 +BLOOM_CRIT_CHANCE_BONUS_PCT% 추가 (크리티컬 슬롯 무관).
+  const bloomBonus =
+    stats.luk >= BLOOM_LUK_THRESHOLD && equipped.has(SKILL_NAMES.BLOOM)
+      ? BLOOM_CRIT_CHANCE_BONUS_PCT
+      : 0;
+  return base + critSkillBonus + bloomBonus;
 }
 
-// 크리 데미지 배수 — luk 비례. 크리 자체가 luk 의존이라 별도 스킬 게이트 없이 항상 적용.
-// 결과: luk 0=2.0 / luk 10=2.25 / luk 20=2.5 / luk 50=3.25.
-export function critMultFor(stats: Record<StatKey, number>): number {
-  return CRIT_MULT_BASE + stats.luk * CRIT_MULT_PER_LUK;
+// 크리 데미지 배수 — luk 비례. 만개 슬롯 시 +BLOOM_CRIT_MULT_BONUS 추가.
+// 결과: luk 0=2.0 / luk 10=2.25 / luk 20=2.5 / luk 50=3.25 (만개 미장착 기준).
+export function critMultFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  const base = CRIT_MULT_BASE + stats.luk * CRIT_MULT_PER_LUK;
+  const bloomBonus =
+    stats.luk >= BLOOM_LUK_THRESHOLD && equipped.has(SKILL_NAMES.BLOOM)
+      ? BLOOM_CRIT_MULT_BONUS
+      : 0;
+  return base + bloomBonus;
 }
 
 export function doubleLuckBonusesFor(
@@ -304,4 +386,68 @@ export function regenFor(
   return stats.vit >= REGEN_VIT_THRESHOLD && equipped.has(SKILL_NAMES.REGEN)
     ? { interval: REGEN_INTERVAL, amount: REGEN_AMOUNT }
     : { interval: 0, amount: 0 };
+}
+
+// 처형 — 데미지 배수. 적 HP 비율은 엔진이 직접 검사하고 이 배수만 곱한다.
+// 미장착 시 1 (no-op).
+export function executionDamageMultFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.str >= EXECUTION_STR_THRESHOLD &&
+    equipped.has(SKILL_NAMES.EXECUTION)
+    ? EXECUTION_DAMAGE_MULT
+    : 1;
+}
+
+// 처형 발동 임계 HP 비율 (0~1). 엔진이 적 HP / 적 max HP < 임계 일 때 처형 데미지 적용.
+export function executionHpFractionFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.str >= EXECUTION_STR_THRESHOLD &&
+    equipped.has(SKILL_NAMES.EXECUTION)
+    ? EXECUTION_HP_FRACTION
+    : 0;
+}
+
+// 정확 — 적 evasion 배수. 미장착 시 1 (no-op).
+export function precisionEvasionMultFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.dex >= PRECISION_DEX_THRESHOLD &&
+    equipped.has(SKILL_NAMES.PRECISION)
+    ? PRECISION_EVASION_MULT
+    : 1;
+}
+
+// 불굴 활성 여부 — 엔진이 HP 0 데미지 직전 분기.
+export function enduranceActiveFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): boolean {
+  return (
+    stats.vit >= ENDURANCE_VIT_THRESHOLD &&
+    equipped.has(SKILL_NAMES.ENDURANCE)
+  );
+}
+
+// 불굴 max HP 보너스 % — 호출 측이 베이스 max HP 위에 곱한다.
+export function enduranceMaxHpBonusPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return enduranceActiveFor(stats, equipped) ? ENDURANCE_MAX_HP_BONUS_PCT : 0;
+}
+
+// 광속 — 매 턴 마지막 공격 후 추가 1회 공격 확률(%).
+export function lightspeedExtraAttackPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.spd >= LIGHTSPEED_SPD_THRESHOLD &&
+    equipped.has(SKILL_NAMES.LIGHTSPEED)
+    ? LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT
+    : 0;
 }

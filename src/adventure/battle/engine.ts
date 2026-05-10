@@ -35,6 +35,10 @@ export type BattleState = {
   enemyDefBonus: number;
   // 페이즈 트리거 1회성 가드. 트리거 발동 후 true 로 전환되어 같은 전투에서 중복 발동 방지.
   phaseTriggered: boolean;
+  // 광속이 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋. 연타와 별개.
+  lightspeedUsedThisTurn: boolean;
+  // 불굴 1회성 가드. 발동 후 true — 같은 전투에서 두 번째 치명타에는 정상 사망.
+  enduranceTriggered: boolean;
 };
 
 export type PlayerCombat = {
@@ -69,6 +73,15 @@ export type PlayerCombat = {
   guard?: { turns: number; reduction: number };
   // 재생 — interval 턴마다 HP +amount. 둘 다 0 이면 스킬 미보유.
   regen?: { interval: number; amount: number };
+  // 처형 — 적 HP 비율이 hpFraction 미만일 때 데미지 ×mult. mult <= 1 또는 hpFraction <= 0 = 미보유.
+  executionDamageMult?: number;
+  executionHpFraction?: number;
+  // 정확 — 적 evasionPct 에 곱할 배수 (0~1). undefined/1 = 미보유 (정상 회피).
+  precisionEvasionMult?: number;
+  // 불굴 — true 면 전투당 1회 HP 0 데미지를 HP 1 로 막아준다.
+  enduranceActive?: boolean;
+  // 광속 — 매 턴 마지막 공격 후 추가 1회 공격 확률(%). 0/undefined = 미보유.
+  lightspeedExtraAttackPct?: number;
 };
 
 export type PlayerAction =
@@ -219,6 +232,8 @@ export function initialBattleState(
     firstAttackPending: true,
     enemyDefBonus: 0,
     phaseTriggered: false,
+    lightspeedUsedThisTurn: false,
+    enduranceTriggered: false,
   };
 }
 
@@ -257,7 +272,9 @@ export function advanceTurn(
         : 0;
 
     // 적 회피 — 데미지 굴리기 전에 1차 판정. 회피하면 공격 1회가 그대로 빗나간다.
-    const enemyEvasionPct = state.enemy.evasionPct ?? 0;
+    // 정확 슬롯 시 적 evasion 에 배수(<1) 가 곱해져 부분 무력화.
+    const precisionMult = player.precisionEvasionMult ?? 1;
+    const enemyEvasionPct = (state.enemy.evasionPct ?? 0) * precisionMult;
     if (enemyEvasionPct > 0 && Math.random() * 100 < enemyEvasionPct) {
       const log = appendLog(state.log, {
         kind: "player_attack",
@@ -300,11 +317,22 @@ export function advanceTurn(
     const critRoll =
       effectiveCritPct > 0 ? Math.random() * 100 < effectiveCritPct : false;
     const baseDmg = damageBetween(player.atk + bonus, targetDef);
+    // 처형 — 적 HP 비율 < executionHpFraction 일 때 데미지 ×executionDamageMult.
+    // 강공격/분쇄 후 데미지에 곱하고, 크리티컬은 그 위에 다시 곱한다 (다단 누적).
+    const exMult = player.executionDamageMult ?? 1;
+    const exFraction = player.executionHpFraction ?? 0;
+    const enemyMaxHp = state.enemy.hp;
+    const executionActive =
+      exMult > 1 && exFraction > 0 && state.enemyHp / enemyMaxHp < exFraction;
+    const dmgAfterExecution = executionActive
+      ? Math.max(1, Math.floor(baseDmg * exMult))
+      : baseDmg;
     const critMult = player.critMult ?? CRIT_MULT_BASE;
-    const dmg = critRoll ? Math.floor(baseDmg * critMult) : baseDmg;
+    const dmg = critRoll ? Math.floor(dmgAfterExecution * critMult) : dmgAfterExecution;
     const labels: string[] = [];
     if (bonus > 0) labels.push("강공격");
     if (bonus > 0 && crushReduction > 0) labels.push("분쇄");
+    if (executionActive) labels.push("처형");
     if (critRoll) labels.push("크리티컬");
     const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
     let log = appendLog(state.log, {
@@ -369,12 +397,33 @@ export function advanceTurn(
         firstAttackPending: false,
       };
     }
+    // 광속 — 마지막 공격 후 일정 확률로 추가 1회. 연타와 별개라 둘 다 슬롯 시
+    // 한 턴에 +2 까지 발동 가능 (연타 → 광속 순서 — 연타가 먼저 빠져나간 다음 광속).
+    const lightspeedPct = player.lightspeedExtraAttackPct ?? 0;
+    const canLightspeed =
+      lightspeedPct > 0 &&
+      !state.lightspeedUsedThisTurn &&
+      Math.random() * 100 < lightspeedPct;
+    if (canLightspeed) {
+      return {
+        ...afterDamage,
+        log: appendLog(afterDamage.log, {
+          kind: "info",
+          text: "[광속] 잔상이 한 번 더 휘둘렀다!",
+        }),
+        phase: "player",
+        playerAttacksLeft: 1,
+        lightspeedUsedThisTurn: true,
+        firstAttackPending: false,
+      };
+    }
     const ended: BattleState = {
       ...afterDamage,
       phase: "enemy",
       playerAttacksLeft: rollPlayerAttackCount(player),
       completedPlayerTurns: state.completedPlayerTurns + 1,
       doubleStrikeUsedThisTurn: false,
+      lightspeedUsedThisTurn: false,
       firstAttackPending: true,
     };
     return applyRegenIfAny(ended, player, playerName);
@@ -423,27 +472,34 @@ export function advanceTurn(
       ? Math.max(0, rawDmg - guard.reduction)
       : rawDmg;
   const dmg = guarded;
-  const playerHp = Math.max(0, state.playerHp - dmg);
   const guardApplied = guarded < rawDmg;
-  const log = guardApplied
-    ? appendLog(
-        appendLog(state.log, {
-          kind: "info",
-          text: `[가드] 피해 -${rawDmg - guarded}`,
-        }),
-        {
-          kind: "enemy_attack",
-          text: `${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
-        },
-      )
-    : appendLog(state.log, {
-        kind: "enemy_attack",
-        text: `${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
-      });
+  // 불굴 — HP 0 이 되는 데미지를 HP 1 로 막는다. 전투당 1회 (enduranceTriggered).
+  const wouldKill = state.playerHp - dmg <= 0;
+  const enduranceFires =
+    wouldKill && !!player.enduranceActive && !state.enduranceTriggered;
+  const playerHp = enduranceFires ? 1 : Math.max(0, state.playerHp - dmg);
+  const enduranceTriggered = state.enduranceTriggered || enduranceFires;
+  const baseLogStart = guardApplied
+    ? appendLog(state.log, {
+        kind: "info",
+        text: `[가드] 피해 -${rawDmg - guarded}`,
+      })
+    : state.log;
+  const afterAttackLog = appendLog(baseLogStart, {
+    kind: "enemy_attack",
+    text: `${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
+  });
+  const log = enduranceFires
+    ? appendLog(afterAttackLog, {
+        kind: "info",
+        text: `[불굴] 마지막 한 숨 — HP 1 로 버텼다!`,
+      })
+    : afterAttackLog;
   if (playerHp <= 0) {
     return {
       ...state,
       playerHp,
+      enduranceTriggered,
       log: appendLog(log, {
         kind: "info",
         text: `${playerName}이(가) 쓰러졌다...`,
@@ -452,7 +508,7 @@ export function advanceTurn(
       outcome: "lose",
     };
   }
-  return { ...state, playerHp, log, phase: "player" };
+  return { ...state, playerHp, enduranceTriggered, log, phase: "player" };
 }
 
 // 한 전투를 시작부터 끝까지 한 번에 시뮬한다. 결과(최종 상태 + 로그 + 턴 수 + 소비된 포션)만

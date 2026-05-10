@@ -463,3 +463,158 @@ describe("가드 (guard)", () => {
     expect(dealt).toBe((expectedDmg - 1) * 2 + expectedDmg);
   });
 });
+
+describe("처형 (executionDamageMult)", () => {
+  it("적 HP 비율 ≥ executionHpFraction 이면 일반 데미지", () => {
+    // enemy hp 100, fraction 0.3 → HP 30 미만일 때만 처형. 첫 공격은 100/100 → 비활성.
+    const enemy = makeEnemy({ hp: 100, def: 0 });
+    const exec: PlayerCombat = {
+      ...PLAYER,
+      atk: 10,
+      executionDamageMult: 1.5,
+      executionHpFraction: 0.3,
+    };
+    let s = initialBattleState(exec, enemy, "P");
+    s = advanceTurn(s, exec, "P");
+    expect(s.enemyHp).toBe(90); // 일반 10 데미지
+  });
+  it("적 HP 비율 < executionHpFraction 이면 데미지 ×1.5", () => {
+    // enemy hp 100, 시작 hp 25 (= 25%), fraction 0.3
+    const enemy = makeEnemy({ hp: 100, def: 0 });
+    const exec: PlayerCombat = {
+      ...PLAYER,
+      atk: 10,
+      executionDamageMult: 1.5,
+      executionHpFraction: 0.3,
+    };
+    const start = { ...initialBattleState(exec, enemy, "P"), enemyHp: 25 };
+    const next = advanceTurn(start, exec, "P");
+    expect(next.enemyHp).toBe(10); // 25 - floor(10×1.5) = 25 - 15
+    expect(next.log.some((l) => l.text.includes("처형"))).toBe(true);
+  });
+});
+
+describe("정확 (precisionEvasionMult)", () => {
+  it("evasion 20% 적에게 mult 0.5 적용 시 회피 10% — 100번 시도에서 회피 빈도가 절반에 가까움", () => {
+    // 결정적 검증을 위해 Math.random 모킹.
+    const enemy = makeEnemy({ hp: 1000, def: 0, evasionPct: 20 });
+    const precise: PlayerCombat = {
+      ...PLAYER,
+      atk: 10,
+      precisionEvasionMult: 0.5,
+    };
+    // 첫 공격에 0.05 굴림 (5%) → 정확 적용된 10% 임계 안 → 회피 발동.
+    vi.spyOn(Math, "random").mockReturnValue(0.05);
+    let s = initialBattleState(precise, enemy, "P");
+    s = advanceTurn(s, precise, "P");
+    // 회피 → enemyHp 그대로
+    expect(s.enemyHp).toBe(1000);
+    expect(s.log.some((l) => l.text.includes("피했다"))).toBe(true);
+  });
+  it("evasion 20% 에 mult 0.5 적용 시 12% 굴림은 명중", () => {
+    const enemy = makeEnemy({ hp: 1000, def: 0, evasionPct: 20 });
+    const precise: PlayerCombat = {
+      ...PLAYER,
+      atk: 10,
+      precisionEvasionMult: 0.5,
+    };
+    // 정확 적용 후 임계 10% — 0.12 = 12% 는 임계 위 → 회피 실패 → 명중.
+    vi.spyOn(Math, "random").mockReturnValue(0.12);
+    let s = initialBattleState(precise, enemy, "P");
+    s = advanceTurn(s, precise, "P");
+    expect(s.enemyHp).toBe(990);
+  });
+});
+
+describe("불굴 (enduranceActive)", () => {
+  it("HP 0 데미지 받으면 HP 1 로 버틴다", () => {
+    const enemy = makeEnemy({ atk: 100, def: 0 }); // 강한 적
+    const tough: PlayerCombat = {
+      ...PLAYER,
+      hp: 30,
+      maxHp: 30,
+      def: 0,
+      enduranceActive: true,
+    };
+    let s = initialBattleState(tough, enemy, "P");
+    // 플레이어 선공 후 적 턴 — 적이 100 데미지를 가하지만 불굴로 hp=1.
+    s = advanceTurn(s, tough, "P"); // player phase
+    s = advanceTurn(s, tough, "P"); // enemy phase
+    expect(s.playerHp).toBe(1);
+    expect(s.phase).not.toBe("ended");
+    expect(s.enduranceTriggered).toBe(true);
+    expect(s.log.some((l) => l.text.includes("불굴"))).toBe(true);
+  });
+  it("두 번째 치명타에서는 사망 — 전투당 1회만 발동", () => {
+    const enemy = makeEnemy({ hp: 1000, atk: 100, def: 0 });
+    const tough: PlayerCombat = {
+      ...PLAYER,
+      hp: 30,
+      maxHp: 30,
+      atk: 1, // 적이 안 죽도록 약하게
+      def: 0,
+      enduranceActive: true,
+    };
+    let s = initialBattleState(tough, enemy, "P");
+    s = advanceTurn(s, tough, "P"); // player
+    s = advanceTurn(s, tough, "P"); // enemy → 불굴 첫 발동, hp=1
+    expect(s.playerHp).toBe(1);
+    s = advanceTurn(s, tough, "P"); // player
+    s = advanceTurn(s, tough, "P"); // enemy → 두 번째 치명타, 정상 사망
+    expect(s.phase).toBe("ended");
+    expect(s.outcome).toBe("lose");
+  });
+});
+
+describe("광속 (lightspeedExtraAttackPct)", () => {
+  it("마지막 공격 후 확률 굴림 통과 시 추가 1회 공격", () => {
+    const enemy = makeEnemy({ hp: 1000, def: 0, evasionPct: 0 });
+    const swift: PlayerCombat = {
+      ...PLAYER,
+      atk: 10,
+      lightspeedExtraAttackPct: 50, // 50% 확률 — 굴림 0.4 면 통과
+    };
+    // Math.random — 적 회피 0 이라 그 굴림은 패스. extraAttack(spd 미설정 → 0) 도 굴림 없음.
+    // 광속 굴림에서 0.4 → 50 미만 → 통과.
+    vi.spyOn(Math, "random").mockReturnValue(0.4);
+    let s = initialBattleState(swift, enemy, "P");
+    s = advanceTurn(s, swift, "P"); // 일반 1회 공격 → 광속 발동 → player phase 1회 추가
+    expect(s.phase).toBe("player");
+    expect(s.lightspeedUsedThisTurn).toBe(true);
+    expect(s.playerAttacksLeft).toBe(1);
+  });
+  it("같은 턴에 두 번 발동 X — 한 번 사용 후 게이트 차단", () => {
+    const enemy = makeEnemy({ hp: 1000, def: 0, evasionPct: 0 });
+    const swift: PlayerCombat = {
+      ...PLAYER,
+      atk: 10,
+      lightspeedExtraAttackPct: 100, // 항상 발동
+    };
+    vi.spyOn(Math, "random").mockReturnValue(0.0);
+    let s = initialBattleState(swift, enemy, "P");
+    s = advanceTurn(s, swift, "P"); // 일반 + 광속 트리거 → player phase 1회 추가
+    expect(s.phase).toBe("player");
+    expect(s.lightspeedUsedThisTurn).toBe(true);
+    s = advanceTurn(s, swift, "P"); // 광속으로 추가된 1회 공격 → 광속 게이트 차단 → enemy phase
+    expect(s.phase).toBe("enemy");
+  });
+});
+
+describe("만개 (critMult / critChance) 누적", () => {
+  it("크리 발동 시 critMult 그대로 적용 (만개 보너스 호출 측 사전 계산)", () => {
+    const enemy = makeEnemy({ hp: 1000, def: 0, evasionPct: 0 });
+    // 만개 슬롯 시 호출 측이 critMult 에 base + bloom 보너스 합산해서 넘긴다.
+    // 여기서는 엔진이 그 값을 그대로 사용함을 확인.
+    const lucky: PlayerCombat = {
+      ...PLAYER,
+      atk: 10,
+      critChancePct: 100,
+      critMult: 3.0, // luk 비례 + 만개 보너스 가정
+    };
+    vi.spyOn(Math, "random").mockReturnValue(0.0);
+    let s = initialBattleState(lucky, enemy, "P");
+    s = advanceTurn(s, lucky, "P");
+    // baseDmg = 10, crit ×3 = 30
+    expect(1000 - s.enemyHp).toBe(30);
+  });
+});

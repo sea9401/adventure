@@ -25,3 +25,6 @@ export const STAT_SKILL_INFO_THRESHOLD = 5;
 
 // 도감에서 환산 정보를 공개하는 임계값.
 export const STAT_REVEAL_THRESHOLD = 15;
+
+// 3차 스킬 정보를 공개하는 임계값. 활성은 35 — gap 5.
+export const STAT_TIER3_REVEAL_THRESHOLD = 30;
