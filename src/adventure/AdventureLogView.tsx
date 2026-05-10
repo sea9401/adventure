@@ -719,6 +719,7 @@ function MonsterAvatar({
   );
 }
 
+// 마을별 인연 회고 — 첫 방문, 대화한 NPC 목록, 가장 자주 만난 사람.
 function TownsTab({ log }: { log: AdventureLog }) {
   const towns = WORLD_MAP.regions.filter(
     (r) => r.tags?.includes("town") && log.towns[r.id]?.visited,
@@ -734,37 +735,132 @@ function TownsTab({ log }: { log: AdventureLog }) {
   }
   return (
     <div className="space-y-2">
-      {towns.map((r) => {
-        const entry = log.towns[r.id]!;
-        const totalNpcs = NPCS.filter((n) => n.region === r.id).length;
-        const talked = entry.npcsTalkedTo.length;
-        return (
-          <Card key={r.id}>
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                {r.name}
-              </span>
-              {r.recommendedLevel !== undefined && (
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                  적정 Lv.{r.recommendedLevel}
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-              {r.description}
-            </p>
-            {totalNpcs > 0 && (
-              <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                만난 사람 {talked} / {totalNpcs}
-              </div>
-            )}
-          </Card>
-        );
-      })}
+      {towns.map((r) => (
+        <TownCard key={r.id} region={r} log={log} />
+      ))}
     </div>
   );
 }
 
+function TownCard({
+  region,
+  log,
+}: {
+  region: (typeof WORLD_MAP.regions)[number];
+  log: AdventureLog;
+}) {
+  const [open, setOpen] = useState(false);
+  const town = log.towns[region.id];
+  const npcEntries = NPCS.filter((n) => n.region === region.id).map((npc) => ({
+    npc,
+    entry: log.npcs[npc.id],
+  }));
+  const totalNpcs = npcEntries.length;
+  const talked = npcEntries.filter(
+    (e) => (e.entry?.talkCount ?? 0) > 0,
+  ).length;
+  const totalTalks = npcEntries.reduce(
+    (a, e) => a + (e.entry?.talkCount ?? 0),
+    0,
+  );
+  const sorted = [...npcEntries].sort(
+    (a, b) => (b.entry?.talkCount ?? 0) - (a.entry?.talkCount ?? 0),
+  );
+  const topTalker =
+    sorted[0] && (sorted[0].entry?.talkCount ?? 0) > 0 ? sorted[0] : null;
+
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="-mx-1 -my-0.5 flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+      >
+        <span className="flex items-center gap-1.5">
+          {open ? (
+            <CaretDown size={14} className="text-zinc-400" />
+          ) : (
+            <CaretRight size={14} className="text-zinc-400" />
+          )}
+          <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            {region.name}
+          </span>
+        </span>
+        {region.recommendedLevel !== undefined && (
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            적정 Lv.{region.recommendedLevel}
+          </span>
+        )}
+      </button>
+      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+        {region.description}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+        <span>첫 방문 {relativeTime(town?.firstVisitedAt)}</span>
+        {totalNpcs > 0 && (
+          <>
+            <span>
+              만난 사람 {talked} / {totalNpcs}
+            </span>
+            <span>총 대화 {totalTalks.toLocaleString()}회</span>
+            {topTalker && (
+              <span>가장 자주 만난 이: {topTalker.npc.name}</span>
+            )}
+          </>
+        )}
+      </div>
+      {open && totalNpcs > 0 && (
+        <ul className="mt-2 space-y-1 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+          {sorted.map((e) => {
+            const count = e.entry?.talkCount ?? 0;
+            const isTop = topTalker?.npc.id === e.npc.id;
+            return (
+              <li
+                key={e.npc.id}
+                className={
+                  "flex items-center justify-between gap-2 rounded px-1 py-0.5 text-xs " +
+                  (isTop ? "bg-amber-50 dark:bg-amber-950/30" : "")
+                }
+              >
+                <span className="flex items-center gap-2">
+                  <NpcAvatar npc={e.npc} size={20} />
+                  <span
+                    className={
+                      count > 0
+                        ? "text-zinc-800 dark:text-zinc-200"
+                        : "text-zinc-400 dark:text-zinc-600"
+                    }
+                  >
+                    {e.npc.name}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    [{ROLE_LABEL[e.npc.role]}]
+                  </span>
+                </span>
+                <span className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                  {count > 0 ? (
+                    <>
+                      <span className="tabular-nums">{count.toLocaleString()}회</span>
+                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                        · 처음 {relativeTime(e.entry?.firstTalkAt)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[10px]">미대면</span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+// 사냥터별 회고 — 첫 발자국, 누적 처치, 몬스터별 디테일.
+// 주의: log.monsters[name].kills 는 region 무관 누적이므로, 같은 몬스터가 여러 지역에
+// 등장하면 양쪽 카드에 동일 수치가 보인다. 현재 데이터 모델 한계 (region 별 분리 추적은 별도 작업).
 function PlacesTab({ log }: { log: AdventureLog }) {
   const places = WORLD_MAP.regions.filter(
     (r) => !r.tags?.includes("town") && log.towns[r.id]?.visited,
@@ -780,36 +876,150 @@ function PlacesTab({ log }: { log: AdventureLog }) {
   }
   return (
     <div className="space-y-2">
-      {places.map((r) => {
-        const totalEnemies = r.enemies.length;
-        const encountered = r.enemies.filter(
-          (e) => log.monsters[e]?.encountered,
-        ).length;
-        return (
-          <Card key={r.id}>
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                {r.name}
-              </span>
-              {r.recommendedLevel !== undefined && (
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                  적정 Lv.{r.recommendedLevel}
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-              {r.description}
-            </p>
-            {totalEnemies > 0 && (
-              <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                만난 몬스터 {encountered} / {totalEnemies}
-              </div>
-            )}
-          </Card>
-        );
-      })}
+      {places.map((r) => (
+        <PlaceCard key={r.id} region={r} log={log} />
+      ))}
     </div>
   );
+}
+
+function PlaceCard({
+  region,
+  log,
+}: {
+  region: (typeof WORLD_MAP.regions)[number];
+  log: AdventureLog;
+}) {
+  const [open, setOpen] = useState(false);
+  const town = log.towns[region.id];
+  const enemyEntries = region.enemies.map((name) => ({
+    name,
+    monster: MONSTERS[name],
+    entry: log.monsters[name],
+  }));
+  const totalEnemies = enemyEntries.length;
+  const encountered = enemyEntries.filter((e) => e.entry?.encountered).length;
+  const totalKills = enemyEntries.reduce(
+    (a, e) => a + (e.entry?.kills ?? 0),
+    0,
+  );
+
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="-mx-1 -my-0.5 flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+      >
+        <span className="flex items-center gap-1.5">
+          {open ? (
+            <CaretDown size={14} className="text-zinc-400" />
+          ) : (
+            <CaretRight size={14} className="text-zinc-400" />
+          )}
+          <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            {region.name}
+          </span>
+        </span>
+        {region.recommendedLevel !== undefined && (
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            적정 Lv.{region.recommendedLevel}
+          </span>
+        )}
+      </button>
+      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+        {region.description}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+        <span>첫 발자국 {relativeTime(town?.firstVisitedAt)}</span>
+        {totalEnemies > 0 && (
+          <>
+            <span>
+              만난 종 {encountered} / {totalEnemies}
+            </span>
+            <span>누적 처치 {totalKills.toLocaleString()}</span>
+          </>
+        )}
+      </div>
+      {open && totalEnemies > 0 && (
+        <ul className="mt-2 space-y-1 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+          {enemyEntries
+            .slice()
+            .sort((a, b) => (b.entry?.kills ?? 0) - (a.entry?.kills ?? 0))
+            .map((e) => (
+              <li
+                key={e.name}
+                className="flex items-center justify-between gap-2 text-xs"
+              >
+                <span className="flex items-center gap-2">
+                  <MonsterAvatarMini name={e.name} encountered={!!e.entry?.encountered} />
+                  <span
+                    className={
+                      e.entry?.encountered
+                        ? "text-zinc-800 dark:text-zinc-200"
+                        : "text-zinc-400 dark:text-zinc-600"
+                    }
+                  >
+                    {e.entry?.encountered ? e.name : "???"}
+                  </span>
+                </span>
+                <span className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                  {e.entry?.kills ? (
+                    <>
+                      <span className="tabular-nums">{e.entry.kills.toLocaleString()}회</span>
+                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                        · 마지막 {relativeTime(e.entry.lastKilledAt)}
+                      </span>
+                    </>
+                  ) : e.entry?.encountered ? (
+                    <span className="text-[10px]">조우만</span>
+                  ) : (
+                    <span className="text-[10px]">미발견</span>
+                  )}
+                </span>
+              </li>
+            ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function MonsterAvatarMini({
+  name,
+  encountered,
+}: {
+  name: string;
+  encountered: boolean;
+}) {
+  const image = MONSTERS[name]?.image;
+  if (!image) {
+    return (
+      <span className="inline-flex h-5 w-5 items-center justify-center rounded-sm bg-zinc-100 text-[10px] text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500">
+        ?
+      </span>
+    );
+  }
+  return (
+    <span className="inline-block h-5 w-5 overflow-hidden rounded-sm bg-zinc-100 dark:bg-zinc-800">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={image}
+        alt={encountered ? name : ""}
+        className={`h-full w-full object-cover ${encountered ? "" : "opacity-30 brightness-0"}`}
+      />
+    </span>
+  );
+}
+
+// "오늘" / "어제" / "N일 전" / 한 달 넘으면 절대 날짜.
+function relativeTime(ts?: number): string {
+  if (!ts) return "—";
+  const days = Math.floor((Date.now() - ts) / 86_400_000);
+  if (days < 1) return "오늘";
+  if (days === 1) return "어제";
+  if (days < 30) return `${days}일 전`;
+  return new Date(ts).toLocaleDateString("ko-KR");
 }
 
 function NpcsTab({ log }: { log: AdventureLog }) {
