@@ -8,7 +8,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 //
 // - setTab/setSubView: history 에 entry 추가 (push). 사용자가 직접 일으킨 이동.
 // - replaceSubView: history entry 추가 없이 교체 (replace). 사망·강제 복귀 같은 system cleanup.
-// - back: router.back() 으로 직전 entry 로. in-app back 버튼용.
+// - back: 현재 탭의 entry 화면(sub=null)으로 replace. SubViewHeader 의 뒤로 버튼용.
+//   router.back() 은 직접 URL 입장 / replaceLocation 이후 / 다른 탭에서 들어온 경우
+//   SPA 밖으로 나가거나 엉뚱한 위치로 가는 사고가 있어 history 가 아닌 명시적
+//   "상위로 이동" 으로 정의.
 
 const TAB_KEYS = ["adventure", "town", "character", "plaza"] as const;
 export type TabKey = (typeof TAB_KEYS)[number];
@@ -69,8 +72,8 @@ export function useNavTabs() {
   );
 
   const back = useCallback(() => {
-    router.back();
-  }, [router]);
+    router.replace(buildHref(pathname, tab, null));
+  }, [router, pathname, tab]);
 
   return {
     tab,
