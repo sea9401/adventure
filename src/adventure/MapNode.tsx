@@ -11,6 +11,7 @@ const BIOME_FILL: Record<Biome, string> = {
   cave: "fill-stone-300 dark:fill-stone-800",
   lake: "fill-sky-200 dark:fill-sky-900/60",
   ruins: "fill-rose-200 dark:fill-rose-900/60",
+  mountain: "fill-slate-300 dark:fill-slate-800/60",
 };
 
 const BIOME_STROKE: Record<Biome, string> = {
@@ -20,6 +21,7 @@ const BIOME_STROKE: Record<Biome, string> = {
   cave: "stroke-stone-500 dark:stroke-stone-600",
   lake: "stroke-sky-500 dark:stroke-sky-700",
   ruins: "stroke-rose-500 dark:stroke-rose-700",
+  mountain: "stroke-slate-500 dark:stroke-slate-700",
 };
 
 export function MapNode({

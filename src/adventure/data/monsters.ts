@@ -264,8 +264,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 24,
     drops: [
-      { kind: "material", materialId: "sancho_blossom", chance: 0.08 },
-      { kind: "material", materialId: "wilddog_hide", chance: 0.05 },
+      { kind: "material", materialId: "sancho_blossom", chance: 0.02 },
+      { kind: "material", materialId: "tough_hide", chance: 0.03 },
     ],
   },
   "바위 두꺼비": {
@@ -277,8 +277,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 3,
     exp: 28,
     drops: [
-      { kind: "material", materialId: "unbong_ore", chance: 0.04 },
-      { kind: "material", materialId: "hard_crystal", chance: 0.05 },
+      { kind: "material", materialId: "unbong_ore", chance: 0.02 },
     ],
   },
   "절벽 늑대": {

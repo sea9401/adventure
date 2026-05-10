@@ -17,7 +17,8 @@ export type Biome =
   | "forest"
   | "cave"
   | "lake"
-  | "ruins";
+  | "ruins"
+  | "mountain";
 
 export type RegionTag = "town";
 
@@ -180,7 +181,7 @@ export const WORLD_MAP: WorldMap = {
       description:
         "폐허 동쪽으로 솟은 비탈. 바람이 거칠고 돌투성이라 발 디딜 곳을 골라야 한다.",
       position: { x: 880, y: 380 },
-      biome: "plains",
+      biome: "mountain",
       enemies: ["산양", "바위 두꺼비"],
       encounterWeights: { 산양: 60, "바위 두꺼비": 40 },
       recommendedLevel: 18,

@@ -102,14 +102,23 @@ export const MATERIALS = {
     id: "unbong_ore",
     name: "운봉석",
     description: "협곡 깊숙한 광맥에서만 캐낼 수 있는 반짝이는 광석.",
-    price: 32,
+    // 가격 추후 재설정.
+    price: 0,
     inShop: false,
   },
   sancho_blossom: {
     id: "sancho_blossom",
     name: "산초꽃",
     description: "산기슭에서만 피는 작고 매운 꽃. 약초로 쓴다.",
-    price: 14,
+    // 가격 추후 재설정.
+    price: 0,
+    inShop: false,
+  },
+  tough_hide: {
+    id: "tough_hide",
+    name: "단단한 가죽",
+    description: "산기슭의 짐승에게서 얻는 두텁고 질긴 가죽.",
+    price: 0,
     inShop: false,
   },
 } as const;
