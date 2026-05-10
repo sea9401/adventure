@@ -255,13 +255,13 @@ export function useOfflineSimulation({
       const now = computeAway();
 
       if (prev === null) {
-        // 최초 — 사용자가 이미 "back" 상태면 옛 baseline 으로 즉시 sim.
-        // away 상태라면 저장된 baseline 을 보존하고 다음 back 까지 대기 (없거나 무효면 새로 잡음).
-        if (!now) {
-          const applied = trySimFromBaseline();
-          if (applied) writeBaselineDeferred();
-          else writeBaselineNow();
-        } else {
+        // 최초 마운트 — baseline 의 active=true + userId/regionId 매치 = 직전 세션이
+        // 사냥 중이었다는 뜻. 현재 사용자가 BattleView 에 있는지 (back) 와 무관하게
+        // 그 동안 흘러간 시간만큼 sim 적용. (옛 동작: back 일 때만 sim → reload 후
+        // 다른 탭에 떨어진 사용자는 sim forfeit 되던 회귀.)
+        const applied = trySimFromBaseline();
+        if (applied) writeBaselineDeferred();
+        else {
           const stored = loadTick();
           if (!isStoredValid(stored)) writeBaselineNow();
         }

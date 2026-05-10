@@ -6,4 +6,4 @@
 //
 // 모든 활성 유저 강제 리로드가 필요한 변경을 deploy 하기 전에 이 값을 bump.
 // 예: 단일 세션 enforce 추가, 데이터 contract 변경, 등.
-export const APP_BUILD_VERSION = "2026-05-10-safe-reload";
+export const APP_BUILD_VERSION = "2026-05-10-sim-recover";
