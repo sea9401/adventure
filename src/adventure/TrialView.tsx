@@ -86,11 +86,17 @@ export function TrialView({
   const winCountRef = useRef(initialWinCount);
   const [winCount, setWinCount] = useState(initialWinCount);
 
-  // 마운트 시 첫 전투 시작.
+  // 마운트 시 첫 전투 시작 — 단, initialWinCount 가 이미 임계 이상이면 새 전투 X
+  // 곧장 완료 분기로. 800ms 완료 타이머 발화 전 hidden→reload 가 끼면 다음 mount 에서
+  // 새 전투를 또 시작해 winCount 가 battles 를 넘어 누적되던 결함의 복구 경로.
   const startedRef = useRef(false);
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
+    if (winCountRef.current >= trial.battles) {
+      onTrialEndRef.current("win");
+      return;
+    }
     const enemy = pickEnemyFor(trial.enemiesFrom);
     if (enemy) start(enemy);
     // eslint-disable-next-line react-hooks/exhaustive-deps
