@@ -332,6 +332,7 @@ export const MONSTERS: Record<string, Monster> = {
   "운봉의 거인": {
     name: "운봉의 거인",
     tags: ["golem"],
+    image: "/images/monster/frostgiant.webp",
     hp: 420,
     atk: 25,
     def: 14,
