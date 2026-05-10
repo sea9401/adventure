@@ -141,7 +141,9 @@ export function BattleView({
     // 사냥 OFF 면 직전 전투의 결과만 표시하고 다음 적은 잡지 않는다 — 사용자가 정지를
     // 선택했음을 존중. (deps 에 huntingActive 가 있어 토글 시 cleanup 으로 timer 해제.)
     if (!huntingActive) return;
-    const cooldown = computeBattleCooldown(state.log.length);
+    // 로그는 전체 보관하지만 쿨다운은 보이는 마지막 부분 기준이면 충분 — 8줄로 클램프해
+    // 자동 사냥 페이싱을 종전 그대로 유지한다.
+    const cooldown = computeBattleCooldown(Math.min(state.log.length, 8));
     const finalHp = state.playerHp;
     const id = setTimeout(() => {
       const nextEnemy = pickEnemy(region_ref.current);

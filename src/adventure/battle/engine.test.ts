@@ -57,14 +57,14 @@ describe("damageBetween", () => {
 });
 
 describe("appendLog", () => {
-  it("로그를 누적하되 LOG_LIMIT(8) 초과분은 앞에서 잘라낸다", () => {
+  it("로그를 자르지 않고 전부 누적한다 — 종료 후 알림에 전체 로그를 남기기 위함", () => {
     let log: BattleLogEntry[] = [];
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < 20; i += 1) {
       log = appendLog(log, { kind: "info", text: `${i}` });
     }
-    expect(log.length).toBe(8);
-    expect(log[0].text).toBe("2");
-    expect(log[7].text).toBe("9");
+    expect(log.length).toBe(20);
+    expect(log[0].text).toBe("0");
+    expect(log[19].text).toBe("19");
   });
 });
 
@@ -282,13 +282,13 @@ describe("resolveBattle", () => {
     expect(r.outcome).toBe("win"); // 폴백 attack으로 어쨌든 진행
   });
 
-  it("로그가 LOG_LIMIT(8)을 넘지 않는다", () => {
+  it("로그는 전체가 보존된다 — 턴 수만큼 누적", () => {
     const r = resolveBattle(PLAYER, makeEnemy({ hp: 200 }), "P", {
       pickAction: () => ({ kind: "attack" }),
       potions: {},
     });
-    expect(r.finalState.log.length).toBeLessThanOrEqual(8);
-    expect(r.turns).toBeGreaterThan(8); // 잘려야 의미 있음
+    expect(r.turns).toBeGreaterThan(8); // 충분히 긴 전투
+    expect(r.finalState.log.length).toBeGreaterThan(8);
   });
 });
 

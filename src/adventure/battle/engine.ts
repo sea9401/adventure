@@ -88,15 +88,13 @@ export type PlayerAction =
   | { kind: "attack" }
   | { kind: "use_potion"; potionId: PotionId; potion: Potion };
 
-const LOG_LIMIT = 8;
-
+// 로그는 전체 보관 — 종료 후 알림에 첨부되는 battleLog 도 같은 배열을 사용한다.
+// BattleScene 은 스크롤 컨테이너라 길이가 늘어도 UX 영향 없음.
 export function appendLog(
   log: BattleLogEntry[],
   entry: BattleLogEntry,
 ): BattleLogEntry[] {
-  const next = [...log, entry];
-  if (next.length > LOG_LIMIT) next.splice(0, next.length - LOG_LIMIT);
-  return next;
+  return [...log, entry];
 }
 
 export function damageBetween(atk: number, def: number): number {
