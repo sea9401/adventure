@@ -10,6 +10,7 @@ import {
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { upsertSave } from "@/lib/server/savesKv";
+import { derivePlayerCombatFromSaves } from "@/lib/server/derivePlayerCombatFromSaves";
 import {
   COOP_ATTACK_COOLDOWN_MS,
   COOP_BOSSES,
@@ -18,15 +19,15 @@ import {
 } from "@/adventure/coop/data";
 import { computeCoopReward } from "@/adventure/coop/rewards";
 import { simulateCoopAttack } from "@/adventure/coop/simulate";
-import type { PlayerCombat } from "@/adventure/battle/engine";
 import type { RegionId } from "@/adventure/data/world";
 
 const VALID_REGIONS = Object.keys(COOP_BOSSES) as RegionId[];
 
 type Ctx = { params: Promise<{ region: string }> };
 
-// 본문이 client 에서 보내는 PlayerCombat 그대로 (서버에서 신뢰 — 추후 서버 스탯 derive 로 교체 권장).
-type AttackBody = { action: "attack"; player: PlayerCombat; playerName: string };
+// playerName 만 클라가 보내고, PlayerCombat 은 서버에서 character.v2 + training.v2 로 재계산.
+// (이전: 클라가 PlayerCombat 그대로 — 위변조로 데미지 부풀리기 가능했음)
+type AttackBody = { action: "attack"; playerName: string };
 type ClaimBody = { action: "claim" };
 type Body = AttackBody | ClaimBody;
 
@@ -209,10 +210,18 @@ async function handleAttack(
     }
   }
 
-  // 시뮬 — 클라이언트가 보낸 player stat 그대로 사용.
-  // (TODO: 서버에서 character.v2 + 장비 + 스킬 derive 로 검증 — 현재는 신뢰)
+  // 서버측 PlayerCombat 재계산 — 저장된 character.v2 + training.v2 로 derive.
+  // (클라가 보낸 stat 은 더 이상 신뢰하지 않음)
+  const derived = await derivePlayerCombatFromSaves(userId);
+  if (!derived) {
+    return new Response("character not found", { status: 404 });
+  }
+  if (derived.player.hp <= 0) {
+    return new Response("character is incapacitated", { status: 409 });
+  }
+
   const result = simulateCoopAttack({
-    player: body.player,
+    player: derived.player,
     playerName: body.playerName ?? "모험가",
     bossName: session.bossName,
     bossCurrentHp: session.hp,

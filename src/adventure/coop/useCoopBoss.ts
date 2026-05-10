@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CoopRewardTier } from "./data";
-import type { BattleLogEntry, PlayerCombat } from "@/adventure/battle/engine";
+import type { BattleLogEntry } from "@/adventure/battle/engine";
 
 export type CoopSession = {
   id: string;
@@ -95,14 +95,14 @@ export function useCoopBoss(regionId: string, enabled: boolean) {
   }, [enabled, fetchOnce]);
 
   const attack = useCallback(
-    async (player: PlayerCombat, playerName: string): Promise<CoopAttackResponse | null> => {
+    async (playerName: string): Promise<CoopAttackResponse | null> => {
       setWorking(true);
       setError(null);
       try {
         const r = await fetch(`/api/coop/${regionId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "attack", player, playerName }),
+          body: JSON.stringify({ action: "attack", playerName }),
         });
         if (!r.ok) {
           const txt = await r.text().catch(() => `HTTP ${r.status}`);

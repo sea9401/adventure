@@ -8,7 +8,6 @@ import {
   type CoopRewardTier,
 } from "./data";
 import { useCoopBoss, type CoopAttackResponse, type CoopClaimResponse } from "./useCoopBoss";
-import type { PlayerCombat } from "@/adventure/battle/engine";
 import type { MaterialId } from "@/adventure/data/materials";
 import { MATERIALS } from "@/adventure/data/materials";
 import { getRecipeById } from "@/adventure/data/recipes";
@@ -16,9 +15,8 @@ import { TITLES } from "@/adventure/data/titles";
 
 type Props = {
   regionId: string;
-  player: PlayerCombat;
   playerName: string;
-  /** 공격 직후 캐릭터 hp 갱신. */
+  /** 공격 직후 캐릭터 hp 갱신. 서버가 derive 한 hp 를 그대로 반영. */
   onPlayerHpChange: (hp: number) => void;
   /** claim 보상 적용 — 재료/제작서/칭호. */
   applyReward: (reward: CoopClaimResponse["reward"]) => void;
@@ -28,7 +26,6 @@ type Props = {
 
 export function CoopBossCard({
   regionId,
-  player,
   playerName,
   onPlayerHpChange,
   applyReward,
@@ -78,7 +75,7 @@ export function CoopBossCard({
 
   const handleAttack = async () => {
     setLastAttack(null);
-    const r = await attack(player, playerName);
+    const r = await attack(playerName);
     if (!r) return;
     setLastAttack(r);
     onPlayerHpChange(r.finalPlayerHp);
