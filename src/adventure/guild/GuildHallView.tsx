@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Crown,
+  Gear,
   PencilSimple,
   Scroll,
   UserMinus,
@@ -52,7 +53,7 @@ const GRADE_COLOR: Record<string, string> = {
   S: "text-rose-600 dark:text-rose-400",
 };
 
-type Tab = "quests" | "members";
+type Tab = "members" | "quests" | "manage";
 
 export function GuildHallView() {
   const { character, characterStateHook, addNotification, grantTitle } = useGame();
@@ -253,20 +254,33 @@ export function GuildHallView() {
               active={tab === "quests"}
               onClick={() => setTab("quests")}
             />
+            {data.guild.isMaster ? (
+              <TabButton
+                icon={<Gear size={14} weight="bold" />}
+                label="길드 관리"
+                active={tab === "manage"}
+                onClick={() => setTab("manage")}
+              />
+            ) : null}
           </div>
 
-          {tab === "members" ? (
-            <MembersPanel
+          {tab === "manage" && data.guild.isMaster ? (
+            <ManagePanel
               guild={data.guild}
               busy={busy}
               onInviteClick={() => setShowInvite(true)}
+              onDisband={handleDisband}
+            />
+          ) : tab === "quests" ? (
+            <GuildQuestsPanel />
+          ) : (
+            <MembersPanel
+              guild={data.guild}
+              busy={busy}
               onLeave={handleLeave}
               onKick={handleKick}
               onTransfer={handleTransfer}
-              onDisband={handleDisband}
             />
-          ) : (
-            <GuildQuestsPanel />
           )}
         </>
       ) : (
@@ -611,26 +625,18 @@ function CreateForm({
 function MembersPanel({
   guild,
   busy,
-  onInviteClick,
   onLeave,
   onKick,
   onTransfer,
-  onDisband,
 }: {
   guild: GuildInfo;
   busy: boolean;
-  onInviteClick: () => void;
   onLeave: () => void;
   onKick: (userId: string, name: string) => void;
   onTransfer: (userId: string, name: string) => void;
-  onDisband: () => void;
 }) {
-  // 마스터/멤버 여부는 멤버 목록의 role 로 판정. 클라이언트가 자신의 userId 를 직접
-  // 다루지 않고도 마스터만 사용할 수 있는 액션(추방/양도)은 권한 없을 시 서버가 401 로
-  // 거른다 — Phase 1 에서는 모든 액션 노출하고 서버 권위적 검증에 의존.
-  const memberCount = guild.members.length;
-  const isFull = memberCount >= GUILD_MAX_MEMBERS;
-
+  // 멤버 양도/추방의 row 인라인 버튼은 마스터가 아닌 유저에게도 보이지만 — 권한 없으면
+  // 서버에서 403. 마스터 전용 일괄 액션(초대/해체)은 길드 관리 탭으로 분리되어 있다.
   return (
     <Card padding="md">
       <div className="space-y-3">
@@ -647,38 +653,74 @@ function MembersPanel({
           ))}
         </ul>
 
-        <div className="flex flex-wrap gap-2 border-t border-zinc-200 pt-3 dark:border-zinc-800">
-          {!isFull ? (
-            <button
-              type="button"
-              onClick={onInviteClick}
-              disabled={busy}
-              className="inline-flex items-center gap-1 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
-              <UserPlus size={14} weight="bold" />
-              멤버 초대
-            </button>
-          ) : null}
+        <div className="border-t border-zinc-200 pt-3 dark:border-zinc-800">
           <button
             type="button"
             onClick={onLeave}
             disabled={busy}
             className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           >
-            탈퇴
+            길드 탈퇴
           </button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// 마스터 전용 — 멤버 초대 + 길드 해체 등 일괄 운영 액션. 탭 자체가 마스터에게만 노출.
+function ManagePanel({
+  guild,
+  busy,
+  onInviteClick,
+  onDisband,
+}: {
+  guild: GuildInfo;
+  busy: boolean;
+  onInviteClick: () => void;
+  onDisband: () => void;
+}) {
+  const memberCount = guild.members.length;
+  const isFull = memberCount >= GUILD_MAX_MEMBERS;
+
+  return (
+    <Card padding="md">
+      <div className="space-y-3">
+        <div>
+          <h4 className="text-sm font-semibold">멤버 모집</h4>
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+            {isFull
+              ? `정원이 가득 찼습니다 (${memberCount}/${GUILD_MAX_MEMBERS}).`
+              : `현재 ${memberCount}/${GUILD_MAX_MEMBERS} — 우편으로 초대장을 보내 모집할 수 있습니다.`}
+          </p>
+          <button
+            type="button"
+            onClick={onInviteClick}
+            disabled={busy || isFull}
+            className="mt-2 inline-flex items-center gap-1 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            <UserPlus size={14} weight="bold" />
+            멤버 초대
+          </button>
+        </div>
+
+        <div className="border-t border-zinc-200 pt-3 dark:border-zinc-800">
+          <h4 className="text-sm font-semibold text-rose-700 dark:text-rose-400">
+            위험 구역
+          </h4>
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+            해체 후 본인은 {GUILD_LEAVE_COOLDOWN_DAYS}일 쿨다운, 다른 멤버는 즉시
+            무소속이 됩니다.
+          </p>
           <button
             type="button"
             onClick={onDisband}
             disabled={busy}
-            className="rounded-md border border-rose-700 bg-rose-600/90 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+            className="mt-2 rounded-md border border-rose-700 bg-rose-600/90 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
           >
             길드 해체
           </button>
         </div>
-        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-          탈퇴/해체/추방/양도는 권한이 있을 때만 동작합니다 — 권한 없으면 서버에서 거부됩니다.
-        </p>
       </div>
     </Card>
   );
