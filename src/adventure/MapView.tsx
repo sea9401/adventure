@@ -20,24 +20,6 @@ import { RegionDetail } from "./RegionDetail";
 import { Card } from "@/components/ui/Card";
 import { useGame } from "./GameContext";
 
-// "다시 묻지 않기" 영속 — 디바이스별 설정이라 SaveProvider 미경유 raw localStorage.
-const SKIP_HUNT_CONFIRM_KEY = "map.skipHuntStopConfirm.v1";
-function readSkipHuntConfirm(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return localStorage.getItem(SKIP_HUNT_CONFIRM_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-function writeSkipHuntConfirm(skip: boolean): void {
-  if (typeof window === "undefined") return;
-  try {
-    if (skip) localStorage.setItem(SKIP_HUNT_CONFIRM_KEY, "1");
-    else localStorage.removeItem(SKIP_HUNT_CONFIRM_KEY);
-  } catch {}
-}
-
 export function MapView({
   progress,
   onProgressChange,
@@ -140,8 +122,8 @@ export function MapView({
       return;
     }
     if (!canMove) return;
-    // 사냥 중이면 확인 모달 — "다시 묻지 않기" 가 켜져 있으면 즉시 이동.
-    if (huntingActive && !readSkipHuntConfirm()) {
+    // 사냥 중이면 확인 모달 — 무조건 노출 (스킵 옵션 없음).
+    if (huntingActive) {
       setPendingMoveTo(selectedId);
       return;
     }
@@ -205,8 +187,7 @@ export function MapView({
             WORLD_MAP.regions.find((r) => r.id === pendingMoveTo)?.name ?? ""
           }
           onCancel={() => setPendingMoveTo(null)}
-          onConfirm={(skipFuture) => {
-            if (skipFuture) writeSkipHuntConfirm(true);
+          onConfirm={() => {
             const to = pendingMoveTo;
             setPendingMoveTo(null);
             performMove(to);
@@ -226,9 +207,8 @@ function ConfirmHuntStopModal({
   fromName: string;
   toName: string;
   onCancel: () => void;
-  onConfirm: (skipFuture: boolean) => void;
+  onConfirm: () => void;
 }) {
-  const [skipFuture, setSkipFuture] = useState(false);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
       <Card padding="lg" className="w-full max-w-sm">
@@ -246,15 +226,6 @@ function ConfirmHuntStopModal({
           </span>
           (으)로 이동하면 사냥이 멈춥니다.
         </p>
-        <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-          <input
-            type="checkbox"
-            checked={skipFuture}
-            onChange={(e) => setSkipFuture(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <span>다시 묻지 않기</span>
-        </label>
         <div className="mt-4 flex gap-2">
           <button
             type="button"
@@ -265,7 +236,7 @@ function ConfirmHuntStopModal({
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(skipFuture)}
+            onClick={onConfirm}
             className="flex-1 rounded-md border border-amber-700 bg-amber-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700"
           >
             이동 (사냥 정지)

@@ -178,6 +178,12 @@ function Home() {
     } catch {}
   }, []);
   const setHuntingActive = (next: boolean) => {
+    // 사냥 ON → OFF 전이 시 누적 보상 flush — 사냥 정지 버튼 / 지역 이동 / 사망 모두 동일.
+    // BattleView 에 머물던 중이면 useOfflineSimulation 의 double-count 가드가 no-op 처리하므로
+    // 안전. away 상태에서 OFF 가 걸리면(예: 마을 이동) 그 시점까지의 보상이 유실 없이 들어간다.
+    if (huntingActiveRef.current && !next) {
+      flushOfflineSimRef.current();
+    }
     setHuntingActiveState(next);
     try {
       sessionStorage.setItem("hunting-active", next ? "true" : "false");
@@ -204,7 +210,13 @@ function Home() {
   const trialEdge = trial?.edge ?? null;
   const trialWinCount = trial?.winCount ?? 0;
   const startTrial = (edge: TrialEdge) => setTrial({ edge, winCount: 0 });
-  const endTrial = () => setTrial(null);
+  const endTrial = () => {
+    setTrial(null);
+    // 다음 시련의 재개 안내가 정상 동작하도록 dedup 키 클리어.
+    try {
+      sessionStorage.removeItem("trial-resume-shown.v1");
+    } catch {}
+  };
   const recordTrialWin = (winCount: number) =>
     setTrial((prev) => (prev ? { ...prev, winCount } : prev));
   const initialMap = useSavedValue<Partial<MapProgress>>("map.v2");
@@ -263,9 +275,8 @@ function Home() {
   // 첫 mount(baseline 기록) 시에는 변경 감지하지 않도록 ref로 분기.
   // huntingActive 가 ON 이었던 경우만 안내 토스트 — 사용자가 정지 사실을 명확히 인지.
   // (effect deps 에 huntingActive 를 넣지 않기 위해 ref 로 latest 캡처.)
-  // huntingActive 가 ON 이면 setHuntingActive(false) 직전에 offline sim flush —
-  // 사용자가 사냥 ON 상태로 지도/마을로 이동한 경우 그 사이에 누적된 보상이 손실되지
-  // 않도록. flushOfflineSim 은 useOfflineSimulation 이 나중에 정의돼 ref bridging 사용.
+  // 누적 보상 flush 는 setHuntingActive(false) 안쪽에서 일괄 처리 — 모든 OFF 경로가
+  // 동일한 흐름을 타도록 통일.
   const lastRegionForHuntRef = useRef<string | null>(null);
   const huntingActiveRef = useRef(huntingActive);
   const flushOfflineSimRef = useRef<() => void>(() => {});
@@ -279,7 +290,6 @@ function Home() {
     }
     if (lastRegionForHuntRef.current !== mapProgress.currentRegionId) {
       if (huntingActiveRef.current) {
-        flushOfflineSimRef.current();
         addNotification("info", "지역 이동으로 자동 사냥이 정지됐다.");
       }
       setHuntingActive(false);
@@ -594,20 +604,34 @@ function Home() {
         `신참 보너스 활성 — 5레벨 미만 동안 사냥/퀘스트 EXP ×2.`,
       );
     }
-    // 시련 재개 안내는 사용자가 실제 시련 화면(adventure/map) 으로 들어왔을 때만.
-    // 자동사냥(adventure/battle)/마을/캐릭터 등 다른 곳에서는 곧 L260 effect 가
-    // trial 을 자동 취소하므로 안내가 무의미하고, reload 사이클마다 stale 한
-    // trial.v1 로 인해 알림이 반복 누적되는 원인이 된다.
+    // 시련 재개 안내 — 사용자가 실제 시련 화면(adventure/map) 으로 들어왔을 때만.
+    //   - winCount < battles : 임계 도달은 TrialView mount 가 곧 자동 완료 처리 → 안내 불필요.
+    //   - sessionStorage dedup by winCount : 60초 hidden→reload 가 반복돼도 같은
+    //     winCount 면 1회만 발화. 탭 종료/새 시련 시작 시 endTrial 에서 자동 클리어.
     if (
       tab === "adventure" &&
       subView === "map" &&
       trial &&
-      trial.winCount > 0
+      trial.winCount > 0 &&
+      trial.winCount < trial.edge.battles
     ) {
-      addNotification(
-        "info",
-        `시련 이어서 진행 — ${trial.winCount} / ${trial.edge.battles}.`,
-      );
+      let lastShown = -1;
+      try {
+        const v = sessionStorage.getItem("trial-resume-shown.v1");
+        if (v !== null) lastShown = Number(v);
+      } catch {}
+      if (lastShown !== trial.winCount) {
+        addNotification(
+          "info",
+          `시련 이어서 진행 — ${trial.winCount} / ${trial.edge.battles}.`,
+        );
+        try {
+          sessionStorage.setItem(
+            "trial-resume-shown.v1",
+            String(trial.winCount),
+          );
+        } catch {}
+      }
     }
     if (typeof window !== "undefined") {
       try {
@@ -962,8 +986,8 @@ function Home() {
       setOfflineRewards(result);
     },
   });
-  // ref bridging — 위쪽 region 변경 useEffect 가 setHuntingActive(false) 직전에
-  // 호출. flushOfflineSim 자체는 stable 하므로 매 render 갱신해도 비용 없음.
+  // ref bridging — setHuntingActive 가 OFF 전이 시 직접 호출 (사냥 정지 버튼/지역
+  // 이동/사망 모두 동일). flushOfflineSim 자체는 stable 하므로 매 render 갱신 무비용.
   flushOfflineSimRef.current = flushOfflineSim;
 
   const rewardServices: RewardServices = {
