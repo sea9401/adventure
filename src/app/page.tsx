@@ -204,13 +204,7 @@ function Home() {
   const trialEdge = trial?.edge ?? null;
   const trialWinCount = trial?.winCount ?? 0;
   const startTrial = (edge: TrialEdge) => setTrial({ edge, winCount: 0 });
-  const endTrial = () => {
-    setTrial(null);
-    // 다음 시련 진입 시 resume 안내가 정상적으로 다시 뜨도록 가드 플래그 해제.
-    try {
-      sessionStorage.removeItem("trial-resume-toast-shown.v1");
-    } catch {}
-  };
+  const endTrial = () => setTrial(null);
   const recordTrialWin = (winCount: number) =>
     setTrial((prev) => (prev ? { ...prev, winCount } : prev));
   const initialMap = useSavedValue<Partial<MapProgress>>("map.v2");
@@ -600,23 +594,20 @@ function Home() {
         `신참 보너스 활성 — 5레벨 미만 동안 사냥/퀘스트 EXP ×2.`,
       );
     }
-    if (trial && trial.winCount > 0) {
-      // 60초 hidden→자동 reload 가 같은 탭에서 발생하면 마운트가 다시 일어나
-      // 같은 알림이 최근 기록에 누적된다. sessionStorage 로 탭 단위 1회 가드.
-      let alreadyShown = false;
-      try {
-        alreadyShown =
-          sessionStorage.getItem("trial-resume-toast-shown.v1") === "1";
-      } catch {}
-      if (!alreadyShown) {
-        addNotification(
-          "info",
-          `시련 이어서 진행 — ${trial.winCount} / ${trial.edge.battles}.`,
-        );
-        try {
-          sessionStorage.setItem("trial-resume-toast-shown.v1", "1");
-        } catch {}
-      }
+    // 시련 재개 안내는 사용자가 실제 시련 화면(adventure/map) 으로 들어왔을 때만.
+    // 자동사냥(adventure/battle)/마을/캐릭터 등 다른 곳에서는 곧 L260 effect 가
+    // trial 을 자동 취소하므로 안내가 무의미하고, reload 사이클마다 stale 한
+    // trial.v1 로 인해 알림이 반복 누적되는 원인이 된다.
+    if (
+      tab === "adventure" &&
+      subView === "map" &&
+      trial &&
+      trial.winCount > 0
+    ) {
+      addNotification(
+        "info",
+        `시련 이어서 진행 — ${trial.winCount} / ${trial.edge.battles}.`,
+      );
     }
     if (typeof window !== "undefined") {
       try {
