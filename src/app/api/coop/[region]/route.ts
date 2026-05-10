@@ -1,6 +1,7 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  coopBossAttackLog,
   coopBossContributors,
   coopBossSessions,
   messages,
@@ -100,6 +101,46 @@ export async function GET(_req: Request, { params }: Ctx) {
     .orderBy(sql`${coopBossContributors.damage} DESC`)
     .limit(5);
 
+  // users.name 이 NULL 인 레거시 유저 — character-profile.v2.name 으로 fallback.
+  // (marketplace / guilds / inbox 와 동일 dual-source 패턴)
+  const missingNameUserIds = topRows
+    .filter((r) => !r.name)
+    .map((r) => r.userId);
+  const profileNameByUser = new Map<string, string>();
+  if (missingNameUserIds.length > 0) {
+    const profRows = await db
+      .select({ userId: savesKv.userId, value: savesKv.value })
+      .from(savesKv)
+      .where(
+        and(
+          inArray(savesKv.userId, missingNameUserIds),
+          eq(savesKv.key, "character-profile.v2"),
+        ),
+      );
+    for (const p of profRows) {
+      const n = (p.value as { name?: unknown } | null)?.name;
+      if (typeof n === "string" && n.trim()) {
+        profileNameByUser.set(p.userId, n.trim());
+      }
+    }
+  }
+
+  // 최근 공격 로그 (모든 참여자, 최신 20) — 보스 카드 밑 활동 피드용.
+  const recentLogs = await db
+    .select({
+      id: coopBossAttackLog.id,
+      userId: coopBossAttackLog.userId,
+      name: coopBossAttackLog.name,
+      damageDealt: coopBossAttackLog.damageDealt,
+      damageTaken: coopBossAttackLog.damageTaken,
+      diedEarly: coopBossAttackLog.diedEarly,
+      createdAt: coopBossAttackLog.createdAt,
+    })
+    .from(coopBossAttackLog)
+    .where(eq(coopBossAttackLog.sessionId, session.id))
+    .orderBy(sql`${coopBossAttackLog.createdAt} DESC`)
+    .limit(20);
+
   const cooldownEndsAt = myRow?.lastAttackAt
     ? new Date(myRow.lastAttackAt.getTime() + COOP_ATTACK_COOLDOWN_MS)
     : null;
@@ -132,9 +173,18 @@ export async function GET(_req: Request, { params }: Ctx) {
         }
       : null,
     top: topRows.map((r) => ({
-      name: r.name ?? "이름 없음",
+      name: r.name ?? profileNameByUser.get(r.userId) ?? "모험가",
       damage: r.damage,
       attackCount: r.attackCount,
+      mine: r.userId === userId,
+    })),
+    recentLogs: recentLogs.map((r) => ({
+      id: r.id,
+      name: r.name,
+      damageDealt: r.damageDealt,
+      damageTaken: r.damageTaken,
+      diedEarly: r.diedEarly,
+      createdAt: r.createdAt.toISOString(),
       mine: r.userId === userId,
     })),
   });
@@ -264,6 +314,17 @@ async function handleAttack(
           lastAttackAt: now,
         },
       });
+
+    // 공격 로그 1줄 — 다른 사람도 보스 카드 밑에서 볼 수 있게.
+    await tx.insert(coopBossAttackLog).values({
+      sessionId: session.id,
+      userId,
+      name: body.playerName ?? "모험가",
+      damageDealt: result.damageDealt,
+      damageTaken: result.damageTaken,
+      diedEarly: result.diedEarly,
+      createdAt: now,
+    });
   });
 
   // 처치 시 storyFlag set — savesKv 의 storyFlags.v1 갱신.
@@ -358,7 +419,22 @@ async function broadcastBossKill(
     .from(users)
     .where(eq(users.id, killerId))
     .limit(1);
-  const killerName = killer[0]?.name ?? "이름 없는 모험가";
+  let killerName = killer[0]?.name ?? null;
+  if (!killerName) {
+    const [profRow] = await db
+      .select({ value: savesKv.value })
+      .from(savesKv)
+      .where(
+        and(
+          eq(savesKv.userId, killerId),
+          eq(savesKv.key, "character-profile.v2"),
+        ),
+      )
+      .limit(1);
+    const n = (profRow?.value as { name?: unknown } | null)?.name;
+    if (typeof n === "string" && n.trim()) killerName = n.trim();
+  }
+  if (!killerName) killerName = "이름 없는 모험가";
 
   await db.insert(messages).values({
     userId: killerId,

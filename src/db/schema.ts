@@ -9,6 +9,7 @@ import {
   integer,
   index,
   uniqueIndex,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 // Clerk userId 와 게임 사용자 1:1 매핑.
@@ -368,5 +369,30 @@ export type GuildMemberRow = typeof guildMembers.$inferSelect;
 export type GuildInviteRow = typeof guildInvites.$inferSelect;
 export type GuildLeaveCooldownRow = typeof guildLeaveCooldown.$inferSelect;
 export type GuildQuestInstanceRow = typeof guildQuestInstances.$inferSelect;
+// 공격마다 1줄씩 기록되는 협동 보스 전투 로그.
+// 모든 참여자의 공격을 시간순으로 모아 보스 카드 밑에 노출 — "다른 사람들 공격도 같이 본다".
+// session 삭제 시 cascade. session 당 최근 N개만 의미가 있어 GET 에서 LIMIT.
+export const coopBossAttackLog = pgTable(
+  "coop_boss_attack_log",
+  {
+    id: serial("id").primaryKey(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => coopBossSessions.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    damageDealt: integer("damage_dealt").notNull(),
+    damageTaken: integer("damage_taken").notNull(),
+    diedEarly: boolean("died_early").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    index("coop_boss_attack_log_session_idx").on(t.sessionId, t.createdAt),
+  ],
+);
+
 export type CoopBossSessionRow = typeof coopBossSessions.$inferSelect;
 export type CoopBossContributorRow = typeof coopBossContributors.$inferSelect;
+export type CoopBossAttackLogRow = typeof coopBossAttackLog.$inferSelect;

@@ -8,7 +8,7 @@ import {
   COOP_TIER_THRESHOLDS,
   type CoopRewardTier,
 } from "./data";
-import { useCoopBoss, type CoopAttackResponse, type CoopClaimResponse } from "./useCoopBoss";
+import { useCoopBoss, type CoopClaimResponse } from "./useCoopBoss";
 import type { MaterialId } from "@/adventure/data/materials";
 import { MATERIALS } from "@/adventure/data/materials";
 import { getRecipeById } from "@/adventure/data/recipes";
@@ -34,7 +34,6 @@ export function CoopBossCard({
   notify,
 }: Props) {
   const { data, error, working, attack, claim } = useCoopBoss(regionId, true);
-  const [lastAttack, setLastAttack] = useState<CoopAttackResponse | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const tickRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -64,6 +63,7 @@ export function CoopBossCard({
   const bossDef = COOP_BOSSES[regionId as RegionId];
   const my = data.myContribution;
   const top = data.top;
+  const recentLogs = data.recentLogs ?? [];
   const hpPct = Math.max(0, Math.min(100, (s.hp / s.maxHp) * 100));
   const expiresMs = new Date(s.expiresAt).getTime() - now;
   // cron 이 매분 도므로 nextSpawnAt(=처치시점+respawnMs) 도달 후 1분 안에 spawn.
@@ -89,10 +89,8 @@ export function CoopBossCard({
       : 0;
 
   const handleAttack = async () => {
-    setLastAttack(null);
     const r = await attack(playerName);
     if (!r) return;
-    setLastAttack(r);
     onPlayerHpChange(r.finalPlayerHp);
     if (r.session.defeated) {
       notify?.("운봉의 거인이 쓰러졌다 — 보상을 수령할 수 있다.");
@@ -215,20 +213,39 @@ export function CoopBossCard({
         )}
       </div>
 
-      {/* attack result */}
-      {lastAttack && (
+      {/* 공격 활동 피드 — 모든 참여자의 공격을 시간순. 본인 공격은 강조. */}
+      {recentLogs.length > 0 && (
         <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
-          <div className="flex justify-between gap-2 tabular-nums">
-            <span>가한 피해 +{lastAttack.damageDealt.toLocaleString()}</span>
-            <span className="text-rose-600 dark:text-rose-400">
-              받은 피해 −{lastAttack.damageTaken.toLocaleString()}
-            </span>
+          <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            전투 로그
           </div>
-          {lastAttack.diedEarly && (
-            <p className="mt-1 text-rose-600 dark:text-rose-400">
-              쓰러짐 — 마을로 회귀 후 회복 필요
-            </p>
-          )}
+          <ul className="max-h-40 space-y-1 overflow-y-auto">
+            {recentLogs.map((row) => (
+              <li
+                key={row.id}
+                className={`flex items-baseline justify-between gap-2 tabular-nums ${row.mine ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"}`}
+              >
+                <span className="min-w-0 truncate">
+                  <span className={row.mine ? "font-semibold" : ""}>
+                    {row.name}
+                  </span>
+                  {row.diedEarly && (
+                    <span className="ml-1 text-rose-600 dark:text-rose-400">
+                      (쓰러짐)
+                    </span>
+                  )}
+                </span>
+                <span className="shrink-0">
+                  +{row.damageDealt.toLocaleString()}
+                  {row.damageTaken > 0 && (
+                    <span className="ml-1 text-rose-600/80 dark:text-rose-400/80">
+                      −{row.damageTaken.toLocaleString()}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

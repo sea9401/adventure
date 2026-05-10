@@ -35,10 +35,21 @@ export type CoopTopRow = {
   mine: boolean;
 };
 
+export type CoopAttackLogRow = {
+  id: number;
+  name: string;
+  damageDealt: number;
+  damageTaken: number;
+  diedEarly: boolean;
+  createdAt: string;
+  mine: boolean;
+};
+
 export type CoopFetchResult = {
   session: CoopSession | null;
   myContribution: CoopMyContribution | null;
   top: CoopTopRow[];
+  recentLogs: CoopAttackLogRow[];
 };
 
 export type CoopAttackResponse = {
