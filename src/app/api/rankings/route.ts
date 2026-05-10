@@ -1,6 +1,5 @@
-import { desc, eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { rankings } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 
 const VALID_METRICS = ["level", "fame", "battleCount"] as const;
@@ -8,11 +7,11 @@ type Metric = (typeof VALID_METRICS)[number];
 const isMetric = (v: string): v is Metric =>
   (VALID_METRICS as readonly string[]).includes(v);
 
-const DEFAULT_LIMIT = 100;
-const MAX_LIMIT = 200;
+const LIST_LIMIT = 100;
 
-// GET /api/rankings?metric=level|fame|battleCount&limit=100
-// 상위 N 명 + 본인 row(있으면) 반환. mine 플래그로 본인 강조 가능.
+// GET /api/rankings?metric=level|fame|battleCount
+// 닉네임 보유 유저 전체를 character.v2 + adventure-log.v2 에서 derive 해 정렬.
+// 응답: { list: 상위 LIST_LIMIT, me: 본인 row+rank | null }.
 export async function GET(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
@@ -22,109 +21,83 @@ export async function GET(req: Request) {
   if (!isMetric(metric)) {
     return new Response(`unknown metric: ${metric}`, { status: 400 });
   }
-  const limitRaw = Number(url.searchParams.get("limit") ?? DEFAULT_LIMIT);
-  const limit = Math.max(
-    1,
-    Math.min(MAX_LIMIT, Number.isFinite(limitRaw) ? limitRaw : DEFAULT_LIMIT),
-  );
 
-  const sortColumn =
+  // metric 은 isMetric 으로 검증된 닫힌 enum — sql 템플릿에 안전하게 합성.
+  const orderBy =
     metric === "level"
-      ? rankings.level
+      ? sql`level DESC, updated_at ASC`
       : metric === "fame"
-        ? rankings.fame
-        : rankings.battleCount;
+        ? sql`fame DESC, updated_at ASC`
+        : sql`battle_count DESC, updated_at ASC`;
 
-  // 동률 시 updatedAt 오름차순 (먼저 도달한 사람이 위) — 약한 tiebreak.
-  const rows = await db
-    .select({
-      userId: rankings.userId,
-      name: rankings.name,
-      level: rankings.level,
-      fame: rankings.fame,
-      battleCount: rankings.battleCount,
-      updatedAt: rankings.updatedAt,
-    })
-    .from(rankings)
-    .orderBy(desc(sortColumn), rankings.updatedAt)
-    .limit(limit);
+  const result = await db.execute(sql`
+    WITH stats AS (
+      SELECT
+        u.id AS user_id,
+        u.name AS name,
+        COALESCE((c.value->>'level')::int, 1) AS level,
+        COALESCE((c.value->>'fame')::int, 0) AS fame,
+        (
+          COALESCE((
+            SELECT SUM((m.value->>'kills')::int)
+            FROM jsonb_each(l.value->'monsters') AS m
+            WHERE (m.value->>'kills') IS NOT NULL
+          ), 0)
+          + COALESCE((l.value->>'battleLosses')::int, 0)
+        ) AS battle_count,
+        COALESCE(c.updated_at, u.created_at) AS updated_at
+      FROM users u
+      LEFT JOIN saves_kv c ON c.user_id = u.id AND c.key = 'character.v2'
+      LEFT JOIN saves_kv l ON l.user_id = u.id AND l.key = 'adventure-log.v2'
+      WHERE u.name IS NOT NULL
+    ),
+    ranked AS (
+      SELECT
+        *,
+        ROW_NUMBER() OVER (ORDER BY ${orderBy})::int AS rank
+      FROM stats
+    )
+    SELECT user_id, name, level, fame, battle_count, rank
+    FROM ranked
+    ORDER BY rank
+  `);
 
-  return Response.json(
-    rows.map((r, i) => ({
-      rank: i + 1,
-      name: r.name,
-      level: r.level,
-      fame: r.fame,
-      battleCount: r.battleCount,
-      mine: r.userId === userId,
-    })),
-  );
-}
-
-// POST /api/rankings — 본인 row upsert. body: { name, level, fame, battleCount }
-// 미가입 상태면 신규 등록, 가입 상태면 갱신.
-export async function POST(req: Request) {
-  const userId = await ensureUser();
-  if (!userId) return new Response("unauthorized", { status: 401 });
-
-  let body: {
-    name?: unknown;
-    level?: unknown;
-    fame?: unknown;
-    battleCount?: unknown;
+  type Row = {
+    user_id: string;
+    name: string;
+    level: number;
+    fame: number;
+    battle_count: number;
+    rank: number;
   };
-  try {
-    body = (await req.json()) as typeof body;
-  } catch {
-    return new Response("invalid json", { status: 400 });
-  }
+  const rows = (result.rows as unknown as Row[]).map((r) => ({
+    rank: Number(r.rank),
+    userId: String(r.user_id),
+    name: String(r.name),
+    level: Number(r.level),
+    fame: Number(r.fame),
+    battleCount: Number(r.battle_count),
+  }));
 
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  const level = Number(body.level);
-  const fame = Number(body.fame);
-  const battleCount = Number(body.battleCount);
+  const list = rows.slice(0, LIST_LIMIT).map((r) => ({
+    rank: r.rank,
+    name: r.name,
+    level: r.level,
+    fame: r.fame,
+    battleCount: r.battleCount,
+    mine: r.userId === userId,
+  }));
 
-  if (!name) return new Response("missing name", { status: 400 });
-  if (!Number.isFinite(level) || level < 1)
-    return new Response("invalid level", { status: 400 });
-  if (!Number.isFinite(fame) || fame < 0)
-    return new Response("invalid fame", { status: 400 });
-  if (!Number.isFinite(battleCount) || battleCount < 0)
-    return new Response("invalid battleCount", { status: 400 });
+  const myRow = rows.find((r) => r.userId === userId);
+  const me = myRow
+    ? {
+        rank: myRow.rank,
+        name: myRow.name,
+        level: myRow.level,
+        fame: myRow.fame,
+        battleCount: myRow.battleCount,
+      }
+    : null;
 
-  await db
-    .insert(rankings)
-    .values({
-      userId,
-      name,
-      level: Math.floor(level),
-      fame: Math.floor(fame),
-      battleCount: Math.floor(battleCount),
-      updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: rankings.userId,
-      set: {
-        name,
-        level: Math.floor(level),
-        fame: Math.floor(fame),
-        battleCount: Math.floor(battleCount),
-        updatedAt: new Date(),
-      },
-    });
-
-  return Response.json({ ok: true });
+  return Response.json({ list, me });
 }
-
-// DELETE /api/rankings — 본인 row 제거 (랭킹에서 빠지기).
-export async function DELETE() {
-  const userId = await ensureUser();
-  if (!userId) return new Response("unauthorized", { status: 401 });
-
-  await db.delete(rankings).where(eq(rankings.userId, userId));
-  return Response.json({ ok: true });
-}
-
-// GET /api/rankings/me — 본인 row 단독 조회용은 별도 라우트로 두는 게 깔끔하지만
-// 위 GET 응답에 mine 플래그가 있어 클라이언트에서 그걸로 파악 가능. 또한 본인이
-// Top N 밖이어도 가입 여부는 알아야 하므로, 간단히 별도 endpoint 로 분리.

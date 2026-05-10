@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Crown, Sword, Trophy } from "@phosphor-icons/react";
+import { Trophy } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -10,6 +10,7 @@ import {
   useRankings,
   type RankingMetric,
   type RankingEntry,
+  type RankingMe,
 } from "./useRankings";
 
 const TABS: { key: RankingMetric; label: string }[] = [
@@ -24,42 +25,23 @@ const METRIC_LABEL: Record<RankingMetric, string> = {
   battleCount: "전투",
 };
 
-const valueFor = (e: RankingEntry, metric: RankingMetric): number => {
+const valueFor = (
+  e: { level: number; fame: number; battleCount: number },
+  metric: RankingMetric,
+): number => {
   if (metric === "level") return e.level;
   if (metric === "fame") return e.fame;
   return e.battleCount;
 };
 
-export function RankingsView({
-  character,
-}: {
-  character: {
-    name: string;
-    level: number;
-    fame: number;
-    battleCount: number;
-  };
-}) {
+export function RankingsView() {
   const [metric, setMetric] = useState<RankingMetric>("level");
-  const { list, me, loading, error, register, leave } = useRankings(metric);
+  const { list, me, loading, error } = useRankings(metric);
 
-  const handleRegister = () =>
-    register({
-      name: character.name,
-      level: character.level,
-      fame: character.fame,
-      battleCount: character.battleCount,
-    });
+  const meInList = !!me && !!list?.some((e) => e.mine);
 
   return (
     <div className="space-y-3">
-      <Card as="section" padding="md">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          모험가 명부에 등록한 사람만 표시됩니다. 등록 시 현재 캐릭터의 레벨,
-          명성, 전투 횟수가 스냅샷으로 기록되며 갱신은 수동입니다.
-        </p>
-      </Card>
-
       <Card as="section" padding="sm">
         <TabBar
           tabs={TABS}
@@ -89,94 +71,63 @@ export function RankingsView({
       ) : !list || list.length === 0 ? (
         <EmptyState
           icon={<Trophy size={40} weight="duotone" />}
-          title="아직 등록된 사람이 없습니다"
-          message="첫 번째로 모험가 명부에 이름을 올려보세요."
+          title="아직 등록된 모험가가 없습니다"
+          message="닉네임을 가진 모험가가 자동으로 명부에 오릅니다."
         />
       ) : (
         <Card as="section" padding="none">
           <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
             {list.map((e) => (
-              <li
-                key={`${e.rank}-${e.name}`}
-                className={`flex items-center justify-between gap-3 px-4 py-2 ${
-                  e.mine
-                    ? "bg-emerald-50 dark:bg-emerald-950/40"
-                    : ""
-                }`}
-              >
-                <span className="flex items-center gap-3 min-w-0">
-                  <RankBadge rank={e.rank} />
-                  <span className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">
-                    {e.name}
-                    {e.mine && (
-                      <span className="ml-1 text-[10px] font-normal text-emerald-700 dark:text-emerald-400">
-                        (나)
-                      </span>
-                    )}
-                  </span>
-                </span>
-                <span className="shrink-0 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
-                  {METRIC_LABEL[metric]} {valueFor(e, metric)}
-                </span>
-              </li>
+              <RankingRow key={`${e.rank}-${e.name}`} entry={e} metric={metric} />
             ))}
           </ol>
         </Card>
       )}
 
-      <Card as="section" padding="md">
-        {me === null ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            본인 상태 확인 중…
-          </p>
-        ) : me.registered ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2 text-sm">
-              <span className="flex items-center gap-2 text-zinc-700 dark:text-zinc-200">
-                <Crown
-                  size={18}
-                  weight="duotone"
-                  className="text-amber-500"
-                />
-                내 등록 정보
-              </span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums">
-                Lv.{me.level} · 명성 {me.fame} · 전투 {me.battleCount}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleRegister}
-                className="flex-1 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-              >
-                갱신
-              </button>
-              <button
-                type="button"
-                onClick={leave}
-                className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                랭킹에서 빠지기
-              </button>
-            </div>
+      {me && !meInList && (
+        <Card as="section" padding="none">
+          <div className="px-4 py-2 text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            내 순위
           </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-zinc-700 dark:text-zinc-200">
-              모험가 명부에 등록되어 있지 않습니다.
-            </p>
-            <button
-              type="button"
-              onClick={handleRegister}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-            >
-              <Sword size={16} weight="duotone" />
-              명부에 이름 올리기
-            </button>
+          <div className="border-t border-zinc-200 dark:border-zinc-800">
+            <RankingRow
+              entry={{ ...me, mine: true }}
+              metric={metric}
+            />
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function RankingRow({
+  entry,
+  metric,
+}: {
+  entry: RankingEntry | (RankingMe & { mine: true });
+  metric: RankingMetric;
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between gap-3 px-4 py-2 ${
+        entry.mine ? "bg-emerald-50 dark:bg-emerald-950/40" : ""
+      }`}
+    >
+      <span className="flex items-center gap-3 min-w-0">
+        <RankBadge rank={entry.rank} />
+        <span className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-100">
+          {entry.name}
+          {entry.mine && (
+            <span className="ml-1 text-[10px] font-normal text-emerald-700 dark:text-emerald-400">
+              (나)
+            </span>
+          )}
+        </span>
+      </span>
+      <span className="shrink-0 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
+        {METRIC_LABEL[metric]} {valueFor(entry, metric)}
+      </span>
     </div>
   );
 }

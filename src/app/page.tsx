@@ -1120,14 +1120,7 @@ function Home() {
           {tab === "plaza" && subView === "rankings" && (
             <div className="space-y-3">
               <SubViewHeader title="랭킹" onBack={back} />
-              <RankingsView
-                character={{
-                  name: character.name,
-                  level: character.level,
-                  fame: character.fame,
-                  battleCount: character.battleCount,
-                }}
-              />
+              <RankingsView />
             </div>
           )}
         </main>
