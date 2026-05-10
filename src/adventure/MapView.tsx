@@ -146,20 +146,16 @@ export function MapView({
             const from = WORLD_MAP.regions.find((r) => r.id === edge.from);
             const to = WORLD_MAP.regions.find((r) => r.id === edge.to);
             if (!from || !to) return null;
-            const active = isEdgeActive(edge.from, edge.to);
-            // 마을 직통 (fast-travel) 엣지는 양쪽 모두 발견했을 때만 표시 — 미발견
-            // 시 길게 가로지르는 점선이 지도에 어지럽게 깔리는 걸 막는다. 또한 양방향
-            // 엣지가 모두 등록돼 있어 활성 시엔 한 줄만 그리도록 from < to 만 그린다.
-            if (edge.requires?.kind === "visited") {
-              if (!active) return null;
-              if (edge.from > edge.to) return null;
-            }
+            // 마을 직통 (fast-travel) 엣지는 지도에 그리지 않는다 — 길게 가로지르는
+            // 라인이 다른 엣지/노드 위로 어지럽게 겹친다. 발견된 마을 노드가 "방문함"
+            // 상태로 표시되고 클릭하면 이동 버튼이 뜨므로 기능은 유지된다.
+            if (edge.requires?.kind === "visited") return null;
             return (
               <MapEdge
                 key={`${edge.from}-${edge.to}`}
                 from={from}
                 to={to}
-                active={active}
+                active={isEdgeActive(edge.from, edge.to)}
               />
             );
           })}
