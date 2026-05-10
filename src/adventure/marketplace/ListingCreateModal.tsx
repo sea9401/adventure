@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { TabBar } from "@/components/ui/TabBar";
 import { ITEMS, rarityTextClass, type ItemId, type EquipItem } from "@/adventure/data/items";
 import {
   MATERIALS,
@@ -202,6 +203,8 @@ export function ListingCreateModal({
   );
 }
 
+type PickerTab = "equip" | "material" | "recipe";
+
 function ItemPicker({
   equipOptions,
   materialOptions,
@@ -213,69 +216,61 @@ function ItemPicker({
   recipeOptions: Selection[];
   onPick: (s: Selection) => void;
 }) {
+  // 보유 0 인 카테고리는 탭에서 제외 — 클릭해도 빈 화면 보이는 경우 방지.
+  const tabs = useMemo(() => {
+    const out: { key: PickerTab; label: string }[] = [];
+    if (equipOptions.length > 0)
+      out.push({ key: "equip", label: `장비 ${equipOptions.length}` });
+    if (materialOptions.length > 0)
+      out.push({ key: "material", label: `재료 ${materialOptions.length}` });
+    if (recipeOptions.length > 0)
+      out.push({ key: "recipe", label: `제작서 ${recipeOptions.length}` });
+    return out;
+  }, [equipOptions.length, materialOptions.length, recipeOptions.length]);
+
+  const [tab, setTab] = useState<PickerTab>(() => tabs[0]?.key ?? "equip");
+  // tabs 가 바뀌어 현재 tab 이 무효화되면 첫 탭으로 폴백 (state 는 안 건드림 — 다음 렌더에서 정합).
+  const activeTab = tabs.some((t) => t.key === tab) ? tab : tabs[0]?.key;
+
+  const items =
+    activeTab === "equip"
+      ? equipOptions
+      : activeTab === "material"
+        ? materialOptions
+        : recipeOptions;
+
   return (
     <div className="mt-3 space-y-3">
-      {equipOptions.length > 0 && (
-        <section>
-          <h3 className="text-xs font-medium text-zinc-500">장비</h3>
-          <ul className="mt-1 space-y-1">
-            {equipOptions.map((o) => (
-              <li key={`equip-${o.itemId}`}>
-                <button
-                  type="button"
-                  onClick={() => onPick(o)}
-                  className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
-                >
-                  <span className={o.kind === "equip" ? rarityTextClass(o.def) : undefined}>{o.kind === "equip" || o.kind === "material" ? o.def.name : ""}</span>
-                  <span className="text-xs text-zinc-500">
-                    {o.kind === "equip" || o.kind === "material" ? `${o.have}개 보유` : ""}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {tabs.length > 1 && (
+        <TabBar
+          tabs={tabs}
+          active={activeTab ?? "equip"}
+          onChange={setTab}
+          ariaLabel="아이템 종류"
+          size="sm"
+        />
       )}
-      {materialOptions.length > 0 && (
-        <section>
-          <h3 className="text-xs font-medium text-zinc-500">재료</h3>
-          <ul className="mt-1 space-y-1">
-            {materialOptions.map((o) => (
-              <li key={`material-${o.itemId}`}>
-                <button
-                  type="button"
-                  onClick={() => onPick(o)}
-                  className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
-                >
-                  <span>{o.kind === "equip" || o.kind === "material" ? o.def.name : ""}</span>
-                  <span className="text-xs text-zinc-500">
-                    {o.kind === "equip" || o.kind === "material" ? `${o.have}개 보유` : ""}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {recipeOptions.length > 0 && (
-        <section>
-          <h3 className="text-xs font-medium text-zinc-500">제작서</h3>
-          <ul className="mt-1 space-y-1">
-            {recipeOptions.map((o) => (
-              <li key={`recipe-${o.itemId}`}>
-                <button
-                  type="button"
-                  onClick={() => onPick(o)}
-                  className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
-                >
-                  <span>📜 {o.def.name}</span>
-                  <span className="text-xs text-zinc-500">제작서</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <ul className="space-y-1">
+        {items.map((o) => (
+          <li key={`${o.kind}-${o.itemId}`}>
+            <button
+              type="button"
+              onClick={() => onPick(o)}
+              className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
+            >
+              <span
+                className={o.kind === "equip" ? rarityTextClass(o.def) : undefined}
+              >
+                {o.kind === "recipe" ? "📜 " : ""}
+                {o.def.name}
+              </span>
+              <span className="text-xs text-zinc-500">
+                {o.kind === "recipe" ? "제작서" : `${o.have}개 보유`}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
