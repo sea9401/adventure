@@ -381,6 +381,9 @@ export function AdventureScreen() {
             })
           }
           notify={(text) => addNotification("info", text)}
+          notifyBattle={(kind, text, log) =>
+            addNotification(kind, text, { battleLog: log })
+          }
           onStopHunting={() => setHuntingActive(false)}
         />
       </div>

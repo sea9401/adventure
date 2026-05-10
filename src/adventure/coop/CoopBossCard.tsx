@@ -11,6 +11,7 @@ import {
 import { useCoopBoss, type CoopClaimResponse } from "./useCoopBoss";
 import type { AppliedCoopReward } from "./applyReward";
 import type { RegionId } from "@/adventure/data/world";
+import type { BattleLogEntry } from "@/adventure/battle/engine";
 
 type Props = {
   regionId: string;
@@ -21,6 +22,12 @@ type Props = {
   applyReward: (reward: CoopClaimResponse["reward"]) => AppliedCoopReward;
   /** 토스트 등 알림. */
   notify?: (text: string) => void;
+  /** 협동 공격 라운드 1회의 결과를 최근 기록의 "전투 로그" 탭에 남기기 위한 콜백. */
+  notifyBattle?: (
+    kind: "battle_win" | "battle_lose",
+    text: string,
+    log: BattleLogEntry[],
+  ) => void;
   /** 보스 공격 시작 시 자동 사냥을 끄기 위한 콜백. */
   onStopHunting?: () => void;
 };
@@ -31,6 +38,7 @@ export function CoopBossCard({
   onPlayerHpChange,
   applyReward,
   notify,
+  notifyBattle,
   onStopHunting,
 }: Props) {
   const { data, error, working, attack, claim } = useCoopBoss(regionId, true);
@@ -98,6 +106,20 @@ export function CoopBossCard({
     const r = await attack(playerName);
     if (!r) return;
     onPlayerHpChange(r.finalPlayerHp);
+    // 라운드 1회의 결과를 최근 기록 → 전투 로그에 남긴다. 일반 사냥과 동일한 펼치기 UX.
+    if (r.diedEarly) {
+      notifyBattle?.(
+        "battle_lose",
+        `${s.bossName}의 일격에 쓰러졌다 — ${r.damageDealt.toLocaleString()} 데미지 누적.`,
+        r.log,
+      );
+    } else {
+      notifyBattle?.(
+        "battle_win",
+        `${s.bossName}에게 ${r.damageDealt.toLocaleString()} 데미지를 가했다.`,
+        r.log,
+      );
+    }
     if (r.session.defeated) {
       notify?.("운봉의 거인이 쓰러졌다 — 보상을 수령할 수 있다.");
     }
