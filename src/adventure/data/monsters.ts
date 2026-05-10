@@ -254,7 +254,6 @@ export const MONSTERS: Record<string, Monster> = {
     ],
   },
   // ── 운향 라인 (highland / canyon) ───────────────────────────────────────
-  // image 필드는 아직 없음 — 사용자가 추후 추가.
   산양: {
     name: "산양",
     tags: ["beast"],
@@ -263,6 +262,7 @@ export const MONSTERS: Record<string, Monster> = {
     def: 7,
     spd: 5,
     exp: 24,
+    image: "/images/monster/mountaingoat.webp",
     drops: [
       { kind: "material", materialId: "sancho_blossom", chance: 0.02 },
       { kind: "material", materialId: "tough_hide", chance: 0.03 },
@@ -276,6 +276,7 @@ export const MONSTERS: Record<string, Monster> = {
     def: 12,
     spd: 3,
     exp: 28,
+    image: "/images/monster/stonefrog.webp",
     drops: [
       { kind: "material", materialId: "unbong_ore", chance: 0.02 },
     ],
@@ -283,11 +284,12 @@ export const MONSTERS: Record<string, Monster> = {
   "절벽 늑대": {
     name: "절벽 늑대",
     tags: ["beast"],
-    hp: 280,
-    atk: 25,
+    hp: 240,
+    atk: 22,
     def: 9,
     spd: 7,
     exp: 32,
+    image: "/images/monster/mountainwolf.webp",
     drops: [
       { kind: "material", materialId: "wilddog_fang", chance: 0.05 },
       { kind: "material", materialId: "sancho_blossom", chance: 0.03 },
@@ -296,8 +298,8 @@ export const MONSTERS: Record<string, Monster> = {
   "돌풍 정령": {
     name: "돌풍 정령",
     tags: ["spirit"],
-    hp: 220,
-    atk: 24,
+    hp: 190,
+    atk: 21,
     def: 9,
     spd: 8,
     evasionPct: 20,
@@ -310,8 +312,8 @@ export const MONSTERS: Record<string, Monster> = {
   "늑대 무리장": {
     name: "늑대 무리장",
     tags: ["beast"],
-    hp: 280,
-    atk: 25,
+    hp: 240,
+    atk: 22,
     def: 12,
     spd: 8,
     exp: 50,
