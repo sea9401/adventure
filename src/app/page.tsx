@@ -863,7 +863,7 @@ function Home() {
   };
 
   // 오프라인 자동 사냥 — 페이지/탭을 떠난 동안 일어났을 일을 결정적으로 한 번에 시뮬.
-  // 30분 cap + 사망 시 break + 시작 마을 이동.
+  // 1시간 cap + 사망 시 break + 시작 마을 이동.
   // "away" 판정은 (브라우저 탭 hidden) || (배틀뷰 아님) — in-app 으로 캐릭터/광장 보는
   // 동안에도 자동 사냥이 끊기지 않게.
   const { flushNow: flushOfflineSim } = useOfflineSimulation({
@@ -958,10 +958,10 @@ function Home() {
       // 요약 알림
       const summary = summarizeOfflineResult(result);
       const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
-      // cap 라벨은 실제로 30분에 걸려 끊긴 경우에만 표시 — 사망/적 부재 등으로 일찍 끝났으면 의미 없음.
+      // cap 라벨은 실제로 1시간에 걸려 끊긴 경우에만 표시 — 사망/적 부재 등으로 일찍 끝났으면 의미 없음.
       const cap =
         result.cappedByLimit && result.simulatedMs >= OFFLINE_SIM_MAX_MS
-          ? ` (${OFFLINE_SIM_MAX_MS / 60_000}분 cap)`
+          ? ` (${OFFLINE_SIM_MAX_MS / 3_600_000}시간 cap)`
           : "";
       addNotification(
         result.died ? "battle_lose" : "info",

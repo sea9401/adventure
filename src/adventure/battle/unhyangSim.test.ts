@@ -261,7 +261,7 @@ function avgOfRuns(
   };
 }
 
-// 벽 체감 — 포션 한도 10개 + 마을 회복 없음 (한 사이클 30분).
+// 벽 체감 — 포션 한도 10개 + 마을 회복 없음 (한 사이클 1시간).
 // 사망 / 포션 소비를 측정해 "처음 진입했을 때 막히는가" 판정.
 function simWallFeel(opts: {
   level: number;
@@ -346,7 +346,7 @@ function runMod(label: string, mod: { atkDelta?: number; hpScale?: number }) {
 }
 
 describe("운향 라인 시뮬", () => {
-  it("벽 체감 — 포션 10개로 30분 사냥 (10 시드, 빌드별)", () => {
+  it("벽 체감 — 포션 10개로 1시간 사냥 (10 시드, 빌드별)", () => {
     type Scenario = {
       name: string;
       level: number;
@@ -367,7 +367,7 @@ describe("운향 라인 시뮬", () => {
       { name: "Lv22 canyon  · full    · warrior", level: 22, region: "canyon", kit: "full", dist: "warrior" },
     ];
 
-    console.log("\n=== 포션 10개 + 30분 cap, 10시드 평균 ===");
+    console.log("\n=== 포션 10개 + 1시간 cap, 10시드 평균 ===");
     console.log("(kit=partial: 마정석 셋 미보유 / full: 마정석 검+골렘갑주+팔찌)");
     console.log("(dist=even: 균등 분배 / warrior: str·vit 위주 plan §9 빌드)");
     console.log(
@@ -519,7 +519,7 @@ describe("운향 라인 시뮬", () => {
 
     for (const start of STARTS) {
       console.log(`\n[${start.name}] → Lv 22`);
-      console.log("일일 플레이 | 도달 일수 | 누적 전투 | 사망/30분 cap × N | 일평균 전투");
+      console.log("일일 플레이 | 도달 일수 | 누적 전투 | 사망/1시간 cap × N | 일평균 전투");
       console.log("-".repeat(75));
       for (const hours of [1, 2, 4, 8]) {
         const runs = [0, 17, 34].map((s) =>

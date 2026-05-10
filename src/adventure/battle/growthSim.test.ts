@@ -73,7 +73,7 @@ function buildPlayer(level: number): PlayerCombat {
 
 const TURN = 500; // PLAYER_TURN_INTERVAL_MS — 실시간 자동전투와 동일
 
-// 연속 플레이 시뮬 — N시간을 30분 단위로 쪼개 simulateOfflineHunt 반복 호출.
+// 연속 플레이 시뮬 — N시간을 1시간 단위로 쪼개 simulateOfflineHunt 반복 호출.
 // 각 chunk 사이에 hp 풀회복 (마을 회귀 모사). 포션은 무한 가정 (헤비 플레이어 best case).
 function simulateContinuousPlay(opts: {
   startLevel: number;

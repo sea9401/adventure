@@ -21,7 +21,7 @@ export function OfflineRewardsModal({
   useEscapeKey(onClose);
   const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
   const capLabel = result.cappedByLimit
-    ? `${OFFLINE_SIM_MAX_MS / 60_000}분 cap`
+    ? `${OFFLINE_SIM_MAX_MS / 3_600_000}시간 cap`
     : null;
 
   const kills = Object.entries(result.killsByName)

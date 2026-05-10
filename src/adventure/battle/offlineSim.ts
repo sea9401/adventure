@@ -5,7 +5,7 @@
 // 정확성보다 일관성/단순성을 우선:
 // - engine.ts의 advanceTurn 그대로 재사용 — 실시간 자동 전투와 결과 분포 동일
 // - 한 턴당 시간 비용은 useBattle의 TURN_INTERVAL_MS(0.5s)를 그대로 사용
-// - 시뮬 가능 시간은 OFFLINE_SIM_MAX_MS(30분)로 cap — 오래 자리비워도 그 이상은 보상 없음
+// - 시뮬 가능 시간은 OFFLINE_SIM_MAX_MS(1시간)로 cap — 오래 자리비워도 그 이상은 보상 없음
 
 import { pickEnemyName, type Region } from "../data/world";
 import { MONSTERS } from "../data/monsters";
@@ -21,7 +21,7 @@ import {
 } from "./engine";
 import { applyExpGain, applyNewbieBonus } from "@/lib/leveling";
 
-export const OFFLINE_SIM_MAX_MS = 30 * 60 * 1000;
+export const OFFLINE_SIM_MAX_MS = 60 * 60 * 1000;
 
 export type OfflineSimInput = {
   player: PlayerCombat;

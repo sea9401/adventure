@@ -135,12 +135,12 @@ function huntOneHour(player: PlayerCombat, regionId: string, seed: number) {
     rngState = (rngState * 1664525 + 1013904223) >>> 0;
     return rngState / 0x100000000;
   };
-  // 30분 단위 2회 (1시간) — OFFLINE_SIM_MAX_MS = 30분.
+  // 1시간 1회 — OFFLINE_SIM_MAX_MS = 1시간.
   let battles = 0;
   let wins = 0;
   let exp = 0;
   let died = 0;
-  for (let chunk = 0; chunk < 2; chunk += 1) {
+  for (let chunk = 0; chunk < 1; chunk += 1) {
     const r = simulateOfflineHunt({
       player: { ...player, hp: player.maxHp },
       playerName: "Sim",

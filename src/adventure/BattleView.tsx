@@ -226,6 +226,7 @@ export function BattleView({
                   if (!bossMonster || !onConsumeBossAttempt) return;
                   onConsumeBossAttempt();
                   bossModeRef.current = true;
+                  if (huntingActive) onToggleHunting(false);
                   startWithLog(bossMonster);
                 }}
                 className="mt-3 w-full rounded-md border border-rose-700 bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
@@ -275,7 +276,7 @@ export function BattleView({
             <p className="-mt-1 px-1 text-[11px] text-zinc-500 dark:text-zinc-400">
               사냥 시작 시 자동 전투가 진행되며, 다른 탭(캐릭터/광장 등) 또는 브라우저
               백그라운드로 가도 사냥이 이어집니다. 복귀 시 그 동안의 결과를 한 번에
-              적용 (최대 30분). 정지 시 진행 중 전투는 끝까지 처리되고 다음 적은
+              적용 (최대 1시간). 정지 시 진행 중 전투는 끝까지 처리되고 다음 적은
               잡지 않습니다.
             </p>
             <AutoPotionSection

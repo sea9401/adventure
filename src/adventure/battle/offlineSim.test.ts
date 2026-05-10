@@ -83,7 +83,7 @@ describe("simulateOfflineHunt", () => {
     expect(r.simulatedMs).toBeLessThanOrEqual(30_000);
   });
 
-  it("OFFLINE_SIM_MAX_MS(30분)을 넘는 awayMs는 cap + cappedByLimit=true", () => {
+  it("OFFLINE_SIM_MAX_MS(1시간)을 넘는 awayMs는 cap + cappedByLimit=true", () => {
     const r = simulateOfflineHunt(
       baseInput({ awayMs: OFFLINE_SIM_MAX_MS * 5 }),
     );
