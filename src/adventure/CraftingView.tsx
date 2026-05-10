@@ -9,6 +9,8 @@ import { RECIPES, type Recipe, type RecipeIngredient } from "./data/recipes";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 type CraftCategory = "weapon" | "armor" | "accessory" | "potion";
 
@@ -81,6 +83,9 @@ export function CraftingView({
 }) {
   const knownRecipes = RECIPES.filter((r) => knownIds.includes(r.id));
   const [tab, setTab] = useState<CraftCategory>("weapon");
+  const filtered = knownRecipes.filter((r) => recipeCategory(r) === tab);
+  const pager = usePagination(filtered, 15);
+  const tabLabel = CATEGORY_TABS.find((t) => t.key === tab)?.label ?? "";
 
   if (knownRecipes.length === 0) {
     return (
@@ -91,9 +96,6 @@ export function CraftingView({
       />
     );
   }
-
-  const filtered = knownRecipes.filter((r) => recipeCategory(r) === tab);
-  const tabLabel = CATEGORY_TABS.find((t) => t.key === tab)?.label ?? "";
 
   return (
     <div className="space-y-3">
@@ -112,7 +114,7 @@ export function CraftingView({
       ) : (
         <Card as="section" padding="md">
           <div className="space-y-2">
-            {filtered.map((r) => {
+            {pager.pageItems.map((r) => {
               const { title, meta } = summarizeResult(r);
               const hasMaterials = r.ingredients.every(
                 (ing) =>
@@ -189,6 +191,11 @@ export function CraftingView({
                 </div>
               );
             })}
+            <Pagination
+              page={pager.page}
+              pageCount={pager.pageCount}
+              setPage={pager.setPage}
+            />
           </div>
         </Card>
       )}

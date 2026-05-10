@@ -16,6 +16,8 @@ import {
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import {
   ITEMS,
   findItemId,
@@ -210,6 +212,7 @@ function EquipmentSubTab({
     .map((id) => ({ id, def: ITEMS[id], count: ownedEquipment[id] ?? 0 }))
     .filter((e) => e.count > 0 && e.def.slot === slot)
     .sort((a, b) => a.def.name.localeCompare(b.def.name));
+  const pager = usePagination(items, 15);
 
   if (items.length === 0) {
     return (
@@ -225,7 +228,7 @@ function EquipmentSubTab({
 
   return (
     <div className="space-y-2">
-      {items.map(({ id, def, count }) => {
+      {pager.pageItems.map(({ id, def, count }) => {
         const isEquipped = equippedId === id;
         return (
           <Card key={id}>
@@ -255,6 +258,11 @@ function EquipmentSubTab({
           </Card>
         );
       })}
+      <Pagination
+        page={pager.page}
+        pageCount={pager.pageCount}
+        setPage={pager.setPage}
+      />
     </div>
   );
 }
@@ -273,6 +281,7 @@ function RecipesSubTab({
     .map((id) => ({ id, def: getRecipeById(id) }))
     .filter((r): r is { id: string; def: NonNullable<typeof r.def> } => !!r.def)
     .sort((a, b) => a.def.name.localeCompare(b.def.name));
+  const pager = usePagination(recipes, 15);
 
   if (recipes.length === 0) {
     return (
@@ -286,7 +295,7 @@ function RecipesSubTab({
 
   return (
     <div className="space-y-2">
-      {recipes.map(({ id, def }) => {
+      {pager.pageItems.map(({ id, def }) => {
         const canShare = shareableRecipes.includes(id);
         return (
           <Card key={id}>
@@ -317,6 +326,11 @@ function RecipesSubTab({
           </Card>
         );
       })}
+      <Pagination
+        page={pager.page}
+        pageCount={pager.pageCount}
+        setPage={pager.setPage}
+      />
     </div>
   );
 }
@@ -625,9 +639,10 @@ function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
 }
 
 function MonstersTab({ log }: { log: AdventureLog }) {
-  const entries = Object.entries(log.monsters).filter(
-    ([, e]) => e.encountered,
-  );
+  const entries = Object.entries(log.monsters)
+    .filter(([, e]) => e.encountered)
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  const pager = usePagination(entries, 15);
   if (entries.length === 0) {
     return (
       <EmptyState
@@ -638,12 +653,17 @@ function MonstersTab({ log }: { log: AdventureLog }) {
     );
   }
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-      {entries
-        .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-        .map(([name, entry]) => (
+    <div className="space-y-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {pager.pageItems.map(([name, entry]) => (
           <MonsterLogCard key={name} name={name} kills={entry.kills} />
         ))}
+      </div>
+      <Pagination
+        page={pager.page}
+        pageCount={pager.pageCount}
+        setPage={pager.setPage}
+      />
     </div>
   );
 }
@@ -771,6 +791,7 @@ function TownsTab({ log }: { log: AdventureLog }) {
   const towns = WORLD_MAP.regions.filter(
     (r) => r.tags?.includes("town") && log.towns[r.id]?.visited,
   );
+  const pager = usePagination(towns, 15);
   if (towns.length === 0) {
     return (
       <EmptyState
@@ -782,9 +803,14 @@ function TownsTab({ log }: { log: AdventureLog }) {
   }
   return (
     <div className="space-y-2">
-      {towns.map((r) => (
+      {pager.pageItems.map((r) => (
         <TownCard key={r.id} region={r} log={log} />
       ))}
+      <Pagination
+        page={pager.page}
+        pageCount={pager.pageCount}
+        setPage={pager.setPage}
+      />
     </div>
   );
 }
@@ -912,6 +938,7 @@ function PlacesTab({ log }: { log: AdventureLog }) {
   const places = WORLD_MAP.regions.filter(
     (r) => !r.tags?.includes("town") && log.towns[r.id]?.visited,
   );
+  const pager = usePagination(places, 15);
   if (places.length === 0) {
     return (
       <EmptyState
@@ -923,9 +950,14 @@ function PlacesTab({ log }: { log: AdventureLog }) {
   }
   return (
     <div className="space-y-2">
-      {places.map((r) => (
+      {pager.pageItems.map((r) => (
         <PlaceCard key={r.id} region={r} log={log} />
       ))}
+      <Pagination
+        page={pager.page}
+        pageCount={pager.pageCount}
+        setPage={pager.setPage}
+      />
     </div>
   );
 }
@@ -1080,6 +1112,13 @@ function NpcsTab({ log }: { log: AdventureLog }) {
     () => townTabs[0]?.key ?? "",
   );
 
+  // 새 마을이 추가됐는데 이전 선택이 무효화된 경우 첫 탭으로 폴백 (state 는 안 건드림).
+  const activeTab = townTabs.some((t) => t.key === regionTab)
+    ? regionTab
+    : (townTabs[0]?.key ?? "");
+  const inTown = talked.filter((n) => n.region === activeTab);
+  const pager = usePagination(inTown, 15);
+
   if (talked.length === 0) {
     return (
       <EmptyState
@@ -1089,12 +1128,6 @@ function NpcsTab({ log }: { log: AdventureLog }) {
       />
     );
   }
-
-  // 새 마을이 추가됐는데 이전 선택이 무효화된 경우 첫 탭으로 폴백 (state 는 안 건드림).
-  const activeTab = townTabs.some((t) => t.key === regionTab)
-    ? regionTab
-    : (townTabs[0]?.key ?? "");
-  const inTown = talked.filter((n) => n.region === activeTab);
 
   return (
     <div className="space-y-3">
@@ -1107,7 +1140,7 @@ function NpcsTab({ log }: { log: AdventureLog }) {
         scrollable
       />
       <div className="space-y-2">
-        {inTown.map((n) => {
+        {pager.pageItems.map((n) => {
           const entry = log.npcs[n.id]!;
           return (
             <Card key={n.id}>
@@ -1133,6 +1166,11 @@ function NpcsTab({ log }: { log: AdventureLog }) {
             </Card>
           );
         })}
+        <Pagination
+          page={pager.page}
+          pageCount={pager.pageCount}
+          setPage={pager.setPage}
+        />
       </div>
     </div>
   );

@@ -5,6 +5,8 @@ import { Storefront } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TabBar } from "@/components/ui/TabBar";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { formatRelativeTime } from "@/lib/format";
 import { ITEMS, rarityTextClass, type ItemId } from "@/adventure/data/items";
 import { fetchListings } from "./api";
@@ -105,6 +107,8 @@ export function ListingsView({
     };
   }, [load]);
 
+  const pager = usePagination(items, 15);
+
   const loadMore = async () => {
     if (!nextCursor || loadingMore) return;
     setLoadingMore(true);
@@ -187,7 +191,7 @@ export function ListingsView({
         />
       ) : (
         <div className="space-y-2">
-          {items.map((it) => (
+          {pager.pageItems.map((it) => (
             <ListingCard
               key={it.id}
               item={it}
@@ -200,6 +204,11 @@ export function ListingsView({
               }
             />
           ))}
+          <Pagination
+            page={pager.page}
+            pageCount={pager.pageCount}
+            setPage={pager.setPage}
+          />
         </div>
       )}
 

@@ -5,6 +5,8 @@ import { Note, PaperPlaneTilt, Trash, X } from "@phosphor-icons/react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { formatRelative } from "@/lib/notifications";
 import { BULLETIN_MAX_LENGTH } from "@/lib/bulletin-config";
 import { SendMessageModal } from "@/adventure/marketplace/SendMessageModal";
@@ -106,6 +108,8 @@ export function BulletinBoardView({
     }
   };
 
+  const pager = usePagination(posts ?? [], 15);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -148,16 +152,23 @@ export function BulletinBoardView({
           message="첫 글을 남겨 보세요."
         />
       ) : (
-        <ul className="space-y-2">
-          {posts.map((p) => (
-            <PostCard
-              key={p.id}
-              post={p}
-              onDelete={handleDelete}
-              onSendMessage={p.mine ? undefined : () => setPmTarget(p.name)}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-2">
+            {pager.pageItems.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                onDelete={handleDelete}
+                onSendMessage={p.mine ? undefined : () => setPmTarget(p.name)}
+              />
+            ))}
+          </ul>
+          <Pagination
+            page={pager.page}
+            pageCount={pager.pageCount}
+            setPage={pager.setPage}
+          />
+        </>
       )}
 
       {composerOpen && (

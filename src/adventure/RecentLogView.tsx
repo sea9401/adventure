@@ -9,6 +9,8 @@ import {
   type NotificationKind,
 } from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { renderHighlightedText } from "@/components/NotificationToast";
 
 const KIND_COLOR: Record<NotificationKind, string> = {
@@ -101,6 +103,7 @@ export function RecentLogView({
   const battle = notifications.filter((n) => isBattleNotification(n.kind));
   const system = notifications.filter((n) => !isBattleNotification(n.kind));
   const list = tab === "battle" ? battle : system;
+  const pager = usePagination(list, 15);
 
   return (
     <div className="space-y-2">
@@ -140,13 +143,20 @@ export function RecentLogView({
           </div>
         </section>
       ) : (
-        <Card as="section" padding="none" className="overflow-hidden">
-          <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {list.map((n) => (
-              <NotificationRow key={n.id} n={n} />
-            ))}
-          </ul>
-        </Card>
+        <>
+          <Card as="section" padding="none" className="overflow-hidden">
+            <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {pager.pageItems.map((n) => (
+                <NotificationRow key={n.id} n={n} />
+              ))}
+            </ul>
+          </Card>
+          <Pagination
+            page={pager.page}
+            pageCount={pager.pageCount}
+            setPage={pager.setPage}
+          />
+        </>
       )}
     </div>
   );

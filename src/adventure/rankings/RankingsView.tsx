@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import {
   useGuildRankings,
   useRankings,
@@ -74,6 +76,7 @@ function UserRankingsBody({
 }) {
   const { list, me, loading, error } = useRankings(metric);
   const meInList = !!me && !!list?.some((e) => e.mine);
+  const pager = usePagination(list ?? [], 15);
 
   return (
     <>
@@ -101,13 +104,20 @@ function UserRankingsBody({
           message="닉네임을 가진 모험가가 자동으로 명부에 오릅니다."
         />
       ) : (
-        <Card as="section" padding="none">
-          <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {list.map((e) => (
-              <RankingRow key={`${e.rank}-${e.name}`} entry={e} metric={metric} />
-            ))}
-          </ol>
-        </Card>
+        <>
+          <Card as="section" padding="none">
+            <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {pager.pageItems.map((e) => (
+                <RankingRow key={`${e.rank}-${e.name}`} entry={e} metric={metric} />
+              ))}
+            </ol>
+          </Card>
+          <Pagination
+            page={pager.page}
+            pageCount={pager.pageCount}
+            setPage={pager.setPage}
+          />
+        </>
       )}
 
       {me && !meInList && (
@@ -127,6 +137,7 @@ function UserRankingsBody({
 function GuildRankingsBody() {
   const { list, me, loading, error } = useGuildRankings(true);
   const meInList = !!me && !!list?.some((e) => e.mine);
+  const pager = usePagination(list ?? [], 15);
 
   return (
     <>
@@ -154,13 +165,20 @@ function GuildRankingsBody() {
           message="새 길드를 만들거나 기존 길드에 가입해 보세요."
         />
       ) : (
-        <Card as="section" padding="none">
-          <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {list.map((e) => (
-              <GuildRankingRow key={`${e.rank}-${e.name}`} entry={e} />
-            ))}
-          </ol>
-        </Card>
+        <>
+          <Card as="section" padding="none">
+            <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {pager.pageItems.map((e) => (
+                <GuildRankingRow key={`${e.rank}-${e.name}`} entry={e} />
+              ))}
+            </ol>
+          </Card>
+          <Pagination
+            page={pager.page}
+            pageCount={pager.pageCount}
+            setPage={pager.setPage}
+          />
+        </>
       )}
 
       {me && !meInList && (

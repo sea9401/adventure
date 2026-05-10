@@ -19,6 +19,8 @@ import { EquippedGrid } from "./character/CharacterMini";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 type InvTabKey = "equipment" | "materials" | "potions";
 
@@ -90,6 +92,13 @@ export function InventoryView({
   })).filter((e) => e.count > 0);
   const potionCap = potionMax(inventory.potionCapacityBonus ?? 0);
 
+  const filteredEquipment = ownedEquipment.filter(
+    (e) => e.item.slot === equipSlotTab,
+  );
+  const equipPager = usePagination(filteredEquipment, 15);
+  const materialsPager = usePagination(ownedMaterials, 15);
+  const potionsPager = usePagination(ownedPotions, 15);
+
   return (
     <div className="space-y-3">
       <TabBar
@@ -129,15 +138,12 @@ export function InventoryView({
               ariaLabel="장비 슬롯 탭"
               size="sm"
             />
-            {ownedEquipment.filter((e) => e.item.slot === equipSlotTab)
-              .length === 0 && (
+            {filteredEquipment.length === 0 && (
               <p className="px-1 py-3 text-xs text-zinc-500 dark:text-zinc-400">
                 해당 종류의 장비가 없습니다.
               </p>
             )}
-            {ownedEquipment
-              .filter((e) => e.item.slot === equipSlotTab)
-              .map(({ id, item, count }) => {
+            {equipPager.pageItems.map(({ id, item, count }) => {
               const current = equipped?.[item.slot] ?? null;
               const isEquipped = findItemId(current) === id;
               const diff = isEquipped ? [] : computeDiff(item, current);
@@ -199,6 +205,11 @@ export function InventoryView({
                 </Card>
               );
             })}
+            <Pagination
+              page={equipPager.page}
+              pageCount={equipPager.pageCount}
+              setPage={equipPager.setPage}
+            />
           </section>
         ))}
 
@@ -211,7 +222,7 @@ export function InventoryView({
           />
         ) : (
           <section className="space-y-2">
-            {ownedMaterials.map(({ id, material, count }) => (
+            {materialsPager.pageItems.map(({ id, material, count }) => (
               <Card key={id}>
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -226,6 +237,11 @@ export function InventoryView({
                 </p>
               </Card>
             ))}
+            <Pagination
+              page={materialsPager.page}
+              pageCount={materialsPager.pageCount}
+              setPage={materialsPager.setPage}
+            />
           </section>
         ))}
 
@@ -238,7 +254,7 @@ export function InventoryView({
           />
         ) : (
           <section className="space-y-2">
-            {ownedPotions.map(({ id, potion, count }) => (
+            {potionsPager.pageItems.map(({ id, potion, count }) => (
               <Card key={id} className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
@@ -261,6 +277,11 @@ export function InventoryView({
                 </div>
               </Card>
             ))}
+            <Pagination
+              page={potionsPager.page}
+              pageCount={potionsPager.pageCount}
+              setPage={potionsPager.setPage}
+            />
           </section>
         ))}
     </div>

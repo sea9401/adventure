@@ -8,6 +8,8 @@ import type { QuestProgressEntry } from "./quests/storage";
 import { cooldownStatus } from "./quests/cooldown";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { formatDuration } from "@/lib/format";
 
 export function GuildView({
@@ -40,6 +42,8 @@ export function GuildView({
     return () => clearInterval(id);
   }, [anyOnCooldown]);
 
+  const pager = usePagination(quests, 15);
+
   if (quests.length === 0) {
     return (
       <EmptyState
@@ -51,19 +55,26 @@ export function GuildView({
   }
 
   return (
-    <ul className="space-y-2">
-      {quests.map((q) => (
-        <QuestCard
-          key={q.id}
-          quest={q}
-          entry={getEntry(q.id)}
-          characterLevel={characterLevel}
-          now={now}
-          onAccept={() => onAccept(q.id)}
-          onClaim={() => onClaim(q.id)}
-        />
-      ))}
-    </ul>
+    <>
+      <ul className="space-y-2">
+        {pager.pageItems.map((q) => (
+          <QuestCard
+            key={q.id}
+            quest={q}
+            entry={getEntry(q.id)}
+            characterLevel={characterLevel}
+            now={now}
+            onAccept={() => onAccept(q.id)}
+            onClaim={() => onClaim(q.id)}
+          />
+        ))}
+      </ul>
+      <Pagination
+        page={pager.page}
+        pageCount={pager.pageCount}
+        setPage={pager.setPage}
+      />
+    </>
   );
 }
 

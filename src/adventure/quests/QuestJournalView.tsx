@@ -4,6 +4,8 @@ import { useState, type ReactNode } from "react";
 import { ClipboardText, Coins, Scroll, Star } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { formatRelative } from "@/lib/notifications";
 import { QUESTS, type Quest } from "@/adventure/data/quests";
 import { NPCS } from "@/adventure/data/npcs";
@@ -34,6 +36,7 @@ export function QuestJournalView({
   });
 
   const list = tab === "active" ? active : completed;
+  const pager = usePagination(list, 15);
 
   return (
     <div className="space-y-3">
@@ -65,16 +68,23 @@ export function QuestJournalView({
           }
         />
       ) : (
-        <ul className="space-y-2">
-          {list.map((q) => (
-            <JournalCard
-              key={q.id}
-              quest={q}
-              entry={getEntry(q.id)}
-              tab={tab}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-2">
+            {pager.pageItems.map((q) => (
+              <JournalCard
+                key={q.id}
+                quest={q}
+                entry={getEntry(q.id)}
+                tab={tab}
+              />
+            ))}
+          </ul>
+          <Pagination
+            page={pager.page}
+            pageCount={pager.pageCount}
+            setPage={pager.setPage}
+          />
+        </>
       )}
     </div>
   );

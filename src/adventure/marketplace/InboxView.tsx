@@ -5,6 +5,8 @@ import { Envelope, PaperPlaneTilt } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { getRecipeById } from "@/adventure/data/recipes";
@@ -168,6 +170,8 @@ export function InboxView() {
     }
   };
 
+  const pager = usePagination(items, 15);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -227,7 +231,7 @@ export function InboxView() {
         />
       ) : (
         <div className="space-y-2">
-          {items.map((it) => {
+          {pager.pageItems.map((it) => {
             const inviteId =
               it.kind === "guild_invite"
                 ? Number((it.payload as { invite_id?: unknown }).invite_id)
@@ -256,6 +260,11 @@ export function InboxView() {
               />
             );
           })}
+          <Pagination
+            page={pager.page}
+            pageCount={pager.pageCount}
+            setPage={pager.setPage}
+          />
         </div>
       )}
 

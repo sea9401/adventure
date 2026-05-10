@@ -19,6 +19,8 @@ import type { InventoryState } from "./inventory/useInventory";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 type ShopTabKey = "buy" | "sell";
 
@@ -344,11 +346,17 @@ function SellRows({
     onSell: (qty: number) => void;
   }>;
 }) {
+  const pager = usePagination(rows, 15);
   return (
     <div className="space-y-2">
-      {rows.map(({ key, ...rest }) => (
+      {pager.pageItems.map(({ key, ...rest }) => (
         <SellRow key={key} {...rest} />
       ))}
+      <Pagination
+        page={pager.page}
+        pageCount={pager.pageCount}
+        setPage={pager.setPage}
+      />
     </div>
   );
 }
