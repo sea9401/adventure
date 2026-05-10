@@ -252,16 +252,27 @@ function Home() {
 
   // region 변경 시 자동 사냥 해제 — 다른 곳으로 이동했으면 그 region에서의 자동 사냥은 끝.
   // 첫 mount(baseline 기록) 시에는 변경 감지하지 않도록 ref로 분기.
+  // huntingActive 가 ON 이었던 경우만 안내 토스트 — 사용자가 정지 사실을 명확히 인지.
+  // (effect deps 에 huntingActive 를 넣지 않기 위해 ref 로 latest 캡처.)
   const lastRegionForHuntRef = useRef<string | null>(null);
+  const huntingActiveRef = useRef(huntingActive);
+  useEffect(() => {
+    huntingActiveRef.current = huntingActive;
+  });
   useEffect(() => {
     if (lastRegionForHuntRef.current === null) {
       lastRegionForHuntRef.current = mapProgress.currentRegionId;
       return;
     }
     if (lastRegionForHuntRef.current !== mapProgress.currentRegionId) {
+      if (huntingActiveRef.current) {
+        addNotification("info", "지역 이동으로 자동 사냥이 정지됐다.");
+      }
       setHuntingActive(false);
       lastRegionForHuntRef.current = mapProgress.currentRegionId;
     }
+    // addNotification/setHuntingActive 는 setter — deps 제외.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapProgress.currentRegionId]);
 
   // setTab 은 항상 sub 를 비우므로 추가 처리 없음.
