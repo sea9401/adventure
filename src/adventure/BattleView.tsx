@@ -57,7 +57,6 @@ export function BattleView({
   onToggleHunting,
   bossAttemptsToday,
   onConsumeBossAttempt,
-  coopBossSlot,
 }: {
   region: Region;
   player: PlayerCombat;
@@ -81,8 +80,6 @@ export function BattleView({
   bossAttemptsToday?: number;
   /** 보스 도전 1회 입장 카운트. 호출자가 한도 검사 후 호출. */
   onConsumeBossAttempt?: () => void;
-  /** pre-encounter 카드 슬롯 — 협동 보스 카드 등 region 종속 컴포넌트 주입용. */
-  coopBossSlot?: React.ReactNode;
 }) {
   const { state, potionsConsumed, start, stop } = useBattle({
     player,
@@ -197,8 +194,6 @@ export function BattleView({
             {region.description}
           </p>
         </Card>
-
-        {coopBossSlot}
 
         {boss && bossMonster && (
           <Card padding="md">

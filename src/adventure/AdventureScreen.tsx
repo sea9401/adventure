@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Hammer, Sword, User } from "@phosphor-icons/react";
+import { Compass, Hammer, Skull, Sword, User } from "@phosphor-icons/react";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
@@ -121,6 +121,16 @@ export function AdventureScreen() {
               title="전투"
               description="적과 맞서 싸웁니다."
               onClick={() => setSubView("battle")}
+            />
+          )}
+          {COOP_BOSSES[currentRegion.id] && (
+            <EntryCard
+              icon={
+                <Skull size={28} weight="duotone" className="text-rose-500" />
+              }
+              title="보스"
+              description="협동 보스에 도전합니다."
+              onClick={() => setSubView("boss")}
             />
           )}
           <EntryCard
@@ -338,24 +348,28 @@ export function AdventureScreen() {
           onConsumeBossAttempt={() =>
             characterStateHook.consumeBossAttempt(currentRegion.id)
           }
-          coopBossSlot={
-            COOP_BOSSES[currentRegion.id] ? (
-              <CoopBossCard
-                regionId={currentRegion.id}
-                playerName={character.name}
-                onPlayerHpChange={characterStateHook.setHp}
-                applyReward={(reward) =>
-                  applyCoopReward(reward, {
-                    addMaterial: inventory.addMaterial,
-                    learnRecipe: crafting.learnRecipe,
-                    knowsRecipe: crafting.knows,
-                    markTitleObtained: adventureLog.markTitleObtained,
-                  })
-                }
-                notify={(text) => addNotification("info", text)}
-              />
-            ) : null
+        />
+      </div>
+    );
+  }
+
+  if (subView === "boss" && COOP_BOSSES[currentRegion.id]) {
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="보스" onBack={back} />
+        <CoopBossCard
+          regionId={currentRegion.id}
+          playerName={character.name}
+          onPlayerHpChange={characterStateHook.setHp}
+          applyReward={(reward) =>
+            applyCoopReward(reward, {
+              addMaterial: inventory.addMaterial,
+              learnRecipe: crafting.learnRecipe,
+              knowsRecipe: crafting.knows,
+              markTitleObtained: adventureLog.markTitleObtained,
+            })
           }
+          notify={(text) => addNotification("info", text)}
         />
       </div>
     );
