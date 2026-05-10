@@ -9,10 +9,7 @@ import {
   type CoopRewardTier,
 } from "./data";
 import { useCoopBoss, type CoopClaimResponse } from "./useCoopBoss";
-import type { MaterialId } from "@/adventure/data/materials";
-import { MATERIALS } from "@/adventure/data/materials";
-import { getRecipeById } from "@/adventure/data/recipes";
-import { TITLES } from "@/adventure/data/titles";
+import type { AppliedCoopReward } from "./applyReward";
 import type { RegionId } from "@/adventure/data/world";
 
 type Props = {
@@ -20,8 +17,8 @@ type Props = {
   playerName: string;
   /** 공격 직후 캐릭터 hp 갱신. 서버가 derive 한 hp 를 그대로 반영. */
   onPlayerHpChange: (hp: number) => void;
-  /** claim 보상 적용 — 재료/제작서/칭호. */
-  applyReward: (reward: CoopClaimResponse["reward"]) => void;
+  /** claim 보상 적용 — 재료/제작서/칭호. 실제 들어온 항목 요약을 반환. */
+  applyReward: (reward: CoopClaimResponse["reward"]) => AppliedCoopReward;
   /** 토스트 등 알림. */
   notify?: (text: string) => void;
 };
@@ -35,6 +32,11 @@ export function CoopBossCard({
 }: Props) {
   const { data, error, working, attack, claim } = useCoopBoss(regionId, true);
   const [now, setNow] = useState(() => Date.now());
+  // 직전 claim 결과 — 보상 로그로 카드 밑에 노출. 같은 보스에서 재수령 불가라 1번만 표시.
+  const [lastClaim, setLastClaim] = useState<{
+    tier: CoopRewardTier;
+    applied: AppliedCoopReward;
+  } | null>(null);
   const tickRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -100,7 +102,8 @@ export function CoopBossCard({
   const handleClaim = async () => {
     const r = await claim();
     if (!r) return;
-    applyReward(r.reward);
+    const applied = applyReward(r.reward);
+    setLastClaim({ tier: r.tier, applied });
     notify?.(`${COOP_TIER_LABEL[r.tier]} 보상 수령 완료`);
   };
 
@@ -201,7 +204,7 @@ export function CoopBossCard({
               : `보상 수령 (${my.tier ? COOP_TIER_LABEL[my.tier] : "—"})`}
           </button>
         )}
-        {defeated && my?.claimedAt && (
+        {defeated && my?.claimedAt && !lastClaim && (
           <p className="text-center text-xs text-emerald-600 dark:text-emerald-400">
             수령 완료 · {my.claimedTier ? COOP_TIER_LABEL[my.claimedTier] : ""}
           </p>
@@ -212,6 +215,36 @@ export function CoopBossCard({
           </p>
         )}
       </div>
+
+      {/* 보상 로그 — 직전 claim 결과 (재료/제작서/칭호) 상세 표시. */}
+      {lastClaim && (
+        <div className="mt-3 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-xs dark:border-emerald-900 dark:bg-emerald-950/40">
+          <div className="mb-1 text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+            {COOP_TIER_LABEL[lastClaim.tier]} 보상 수령
+          </div>
+          <ul className="space-y-0.5 text-emerald-800 dark:text-emerald-200">
+            {lastClaim.applied.materials.map((m) => (
+              <li key={`m-${m.id}`} className="flex justify-between tabular-nums">
+                <span>{m.name}</span>
+                <span>×{m.count}</span>
+              </li>
+            ))}
+            {lastClaim.applied.recipes.map((r) => (
+              <li key={`r-${r.id}`}>📜 {r.name}</li>
+            ))}
+            {lastClaim.applied.title && (
+              <li className="font-semibold">🏅 {lastClaim.applied.title.name}</li>
+            )}
+            {lastClaim.applied.materials.length === 0 &&
+              lastClaim.applied.recipes.length === 0 &&
+              !lastClaim.applied.title && (
+                <li className="text-emerald-600/70 dark:text-emerald-400/70">
+                  새로 들어온 항목 없음 (모두 보유 중이거나 굴림 실패).
+                </li>
+              )}
+          </ul>
+        </div>
+      )}
 
       {/* 공격 활동 피드 — 모든 참여자의 공격을 시간순. 본인 공격은 강조. */}
       {recentLogs.length > 0 && (
@@ -303,7 +336,3 @@ function formatDuration(ms: number): string {
   return `${seconds}초`;
 }
 
-// 사용되지 않지만 추후 reward 표시 확장용 — silence unused.
-void MATERIALS;
-void getRecipeById;
-void TITLES;
