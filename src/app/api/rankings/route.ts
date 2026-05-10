@@ -30,11 +30,13 @@ export async function GET(req: Request) {
         ? sql`fame DESC, updated_at ASC`
         : sql`battle_count DESC, updated_at ASC`;
 
+  // 닉네임은 users.name (권위적, 신규 유저 setup 후) 우선,
+  // 없으면 character-profile.v2 의 name 으로 fallback (레거시 유저 호환).
   const result = await db.execute(sql`
     WITH stats AS (
       SELECT
         u.id AS user_id,
-        u.name AS name,
+        COALESCE(u.name, p.value->>'name') AS name,
         COALESCE((c.value->>'level')::int, 1) AS level,
         COALESCE((c.value->>'fame')::int, 0) AS fame,
         (
@@ -49,7 +51,8 @@ export async function GET(req: Request) {
       FROM users u
       LEFT JOIN saves_kv c ON c.user_id = u.id AND c.key = 'character.v2'
       LEFT JOIN saves_kv l ON l.user_id = u.id AND l.key = 'adventure-log.v2'
-      WHERE u.name IS NOT NULL
+      LEFT JOIN saves_kv p ON p.user_id = u.id AND p.key = 'character-profile.v2'
+      WHERE COALESCE(u.name, p.value->>'name') IS NOT NULL
     ),
     ranked AS (
       SELECT
