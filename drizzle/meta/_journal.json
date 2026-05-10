@@ -15,6 +15,13 @@
       "when": 1778383336403,
       "tag": "0001_colossal_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778395189028,
+      "tag": "0002_brown_hairball",
+      "breakpoints": true
     }
   ]
 }

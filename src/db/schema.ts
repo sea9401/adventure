@@ -206,6 +206,10 @@ export const guilds = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     disbandedAt: timestamp("disbanded_at"),
+    // 누적 명성 — 영구, 등급(G~S) 결정. 길드 의뢰 보상 + 멤버 개인 명성 적립분.
+    fameTotal: integer("fame_total").notNull().default(0),
+    // 사용 가능 명성 — 누적과 동일하게 시작, 길드 버프 업그레이드(Phase C)에 소비.
+    fameAvailable: integer("fame_available").notNull().default(0),
   },
   (t) => [
     uniqueIndex("guilds_name_lower_idx").on(sql`lower(${t.name})`),
@@ -270,6 +274,35 @@ export const guildLeaveCooldown = pgTable("guild_leave_cooldown", {
   cooldownUntil: timestamp("cooldown_until").notNull(),
 });
 
+// 길드 주간 의뢰 인스턴스. 매주 월 00:00 KST cron 으로 길드별 후보 3건 생성,
+// 마스터가 1건 수락 → 활성. 일 23:59 KST 마감 cron 으로 미완료/미수락 → expired.
+// status: 'proposed' | 'active' | 'completed' | 'dismissed' | 'expired'.
+// 동시 활성 1개 enforce — partial unique on (guildId) where status='active'.
+export const guildQuestInstances = pgTable(
+  "guild_quest_instances",
+  {
+    id: serial("id").primaryKey(),
+    guildId: integer("guild_id")
+      .notNull()
+      .references(() => guilds.id, { onDelete: "cascade" }),
+    weekStart: timestamp("week_start").notNull(),
+    questDefId: text("quest_def_id").notNull(),
+    grade: text("grade").notNull(), // 발행 시점 등급 스냅샷 G/F/E/D/C/B/A/S
+    status: text("status").notNull(),
+    progress: integer("progress").notNull().default(0),
+    target: integer("target").notNull(),
+    activatedAt: timestamp("activated_at"),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("guild_quest_active_unique_idx")
+      .on(t.guildId)
+      .where(sql`${t.status} = 'active'`),
+    index("guild_quest_guild_week_idx").on(t.guildId, t.weekStart),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type SavesKvRow = typeof savesKv.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
@@ -282,3 +315,4 @@ export type GuildRow = typeof guilds.$inferSelect;
 export type GuildMemberRow = typeof guildMembers.$inferSelect;
 export type GuildInviteRow = typeof guildInvites.$inferSelect;
 export type GuildLeaveCooldownRow = typeof guildLeaveCooldown.$inferSelect;
+export type GuildQuestInstanceRow = typeof guildQuestInstances.$inferSelect;
