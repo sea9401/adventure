@@ -50,7 +50,12 @@ export function MapView({
     if (id === progress.currentRegionId) return "current";
     if (visitedSet.has(id)) return "visited";
     for (const v of progress.visitedRegionIds) {
-      if (getAdjacent(WORLD_MAP, v).includes(id)) return "reachable";
+      if (!getAdjacent(WORLD_MAP, v).includes(id)) continue;
+      // 마을 직통 이동 (kind: "visited") 은 목적지 발견 후에만 활성화 — reachability
+      // 계산에서 제외해 미발견 마을이 "도달 가능" 으로 잘못 표시되지 않게 한다.
+      const req = findEdgeRequirement(v, id) ?? findEdgeRequirement(id, v);
+      if (req?.kind === "visited") continue;
+      return "reachable";
     }
     return "locked";
   };
@@ -72,6 +77,7 @@ export function MapView({
           log,
           isTrialCleared,
           hasStoryFlag,
+          visitedRegionIds: progress.visitedRegionIds,
           from: progress.currentRegionId,
           to: selectedId,
         })
@@ -140,12 +146,20 @@ export function MapView({
             const from = WORLD_MAP.regions.find((r) => r.id === edge.from);
             const to = WORLD_MAP.regions.find((r) => r.id === edge.to);
             if (!from || !to) return null;
+            const active = isEdgeActive(edge.from, edge.to);
+            // 마을 직통 (fast-travel) 엣지는 양쪽 모두 발견했을 때만 표시 — 미발견
+            // 시 길게 가로지르는 점선이 지도에 어지럽게 깔리는 걸 막는다. 또한 양방향
+            // 엣지가 모두 등록돼 있어 활성 시엔 한 줄만 그리도록 from < to 만 그린다.
+            if (edge.requires?.kind === "visited") {
+              if (!active) return null;
+              if (edge.from > edge.to) return null;
+            }
             return (
               <MapEdge
                 key={`${edge.from}-${edge.to}`}
                 from={from}
                 to={to}
-                active={isEdgeActive(edge.from, edge.to)}
+                active={active}
               />
             );
           })}

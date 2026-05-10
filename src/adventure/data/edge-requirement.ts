@@ -27,6 +27,8 @@ export type EvaluateContext = {
   isTrialCleared?: (regionId: RegionId) => boolean;
   /** story flag 검사 — story 종류 엣지 평가에만 사용. */
   hasStoryFlag?: (flagId: string) => boolean;
+  /** 방문한 지역 — kind: "visited" 엣지 평가용 (마을 간 직통 이동). */
+  visitedRegionIds?: RegionId[];
   from?: RegionId;
   to?: RegionId;
 };
@@ -72,6 +74,18 @@ export function evaluateEdgeRequirement(
       kind: "trial",
       reason: `${label} 통과 필요`,
       progress: { current: 0, total: req.battles, label },
+    };
+  }
+
+  if (req.kind === "visited") {
+    const visited = ctx.visitedRegionIds?.includes(req.regionId) ?? false;
+    const target = WORLD_MAP.regions.find((r) => r.id === req.regionId);
+    return {
+      met: visited,
+      kind: "visited",
+      reason: visited
+        ? undefined
+        : `${target?.name ?? "그 마을"}을(를) 한 번 다녀와야 길을 안다.`,
     };
   }
 

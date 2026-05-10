@@ -126,7 +126,9 @@ export function MapTab() {
                       ? `trial:${e.requires.battles}전(${e.requires.enemiesFrom})`
                       : e.requires.kind === "story"
                         ? `story:${e.requires.flagId}`
-                        : "—";
+                        : e.requires.kind === "visited"
+                          ? `visited:${e.requires.regionId}`
+                          : "—";
                 return (
                   <tr
                     key={`${e.from}-${e.to}`}

@@ -66,6 +66,9 @@ export type EdgeRequirement =
   | { kind: "bestiary"; regionId: RegionId }
   | { kind: "trial"; battles: number; enemiesFrom: RegionId }
   | { kind: "story"; flagId: string; reason?: string }
+  // "visited" — 마을 간 직통 이동용. 목적지를 한 번이라도 정상 진입한 적이 있어야 통과.
+  // 발견 전에는 "도달 가능" 표시도 되지 않게 MapView 의 reachability 스캔에서 제외된다.
+  | { kind: "visited"; regionId: RegionId }
   // "locked" — 영원히 통과 불가 (현재 미구현 지역, 콘텐츠 가림용).
   // reason 으로 UI 에 보여줄 한 줄 이유를 지정.
   | { kind: "locked"; reason?: string };
@@ -277,6 +280,13 @@ export const WORLD_MAP: WorldMap = {
         reason: "운봉의 거인과 한 번이라도 맞붙어야 길목이 열린다.",
       },
     },
+    // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.
+    { from: "village", to: "diola", requires: { kind: "visited", regionId: "diola" } },
+    { from: "diola", to: "village", requires: { kind: "visited", regionId: "village" } },
+    { from: "village", to: "unhyang", requires: { kind: "visited", regionId: "unhyang" } },
+    { from: "unhyang", to: "village", requires: { kind: "visited", regionId: "village" } },
+    { from: "diola", to: "unhyang", requires: { kind: "visited", regionId: "unhyang" } },
+    { from: "unhyang", to: "diola", requires: { kind: "visited", regionId: "diola" } },
   ],
 };
 
