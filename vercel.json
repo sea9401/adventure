@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/guilds-cleanup",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/guilds-quests-deadline",
+      "schedule": "59 14 * * 0"
+    },
+    {
+      "path": "/api/cron/guilds-quests-cycle",
+      "schedule": "0 15 * * 0"
     }
   ]
 }
