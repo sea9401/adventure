@@ -4,14 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { AdminProvider, useAdmin } from "./AdminContext";
 import { OverviewTab } from "./tabs/OverviewTab";
-import { CharacterTab } from "./tabs/CharacterTab";
 import { InventoryTab } from "./tabs/InventoryTab";
 import { QuestsTab } from "./tabs/QuestsTab";
 import { CraftingTab } from "./tabs/CraftingTab";
 import { LogTab } from "./tabs/LogTab";
 import { MapTab } from "./tabs/MapTab";
-import { NotificationsTab } from "./tabs/NotificationsTab";
-import { AutoPotionTab } from "./tabs/AutoPotionTab";
 import { DataTab } from "./tabs/DataTab";
 import { UsersTab } from "./tabs/UsersTab";
 import { StatsTab } from "./tabs/StatsTab";
@@ -22,35 +19,51 @@ type TabKey =
   | "users"
   | "stats"
   | "marketplace"
-  | "character"
   | "inventory"
   | "quests"
   | "crafting"
   | "log"
   | "map"
-  | "notifications"
-  | "auto-potion"
   | "data";
 
-const TABS: { key: TabKey; label: string; group: "system" | "edit" | "data" }[] = [
+type TabGroup = "system" | "edit" | "data";
+
+const TABS: { key: TabKey; label: string; group: TabGroup }[] = [
   { key: "overview", label: "개요", group: "system" },
   { key: "users", label: "유저", group: "system" },
   { key: "stats", label: "통계", group: "system" },
   { key: "marketplace", label: "거래소", group: "system" },
-  { key: "character", label: "캐릭터", group: "edit" },
   { key: "inventory", label: "인벤토리", group: "edit" },
   { key: "quests", label: "퀘스트", group: "edit" },
   { key: "crafting", label: "제작", group: "edit" },
   { key: "log", label: "모험의 서", group: "edit" },
   { key: "map", label: "지도", group: "edit" },
-  { key: "notifications", label: "알림", group: "edit" },
-  { key: "auto-potion", label: "자동포션", group: "edit" },
   { key: "data", label: "데이터", group: "data" },
 ];
+
+const GROUP_LABELS: Record<TabGroup, string> = {
+  system: "시스템",
+  edit: "본인 디버그",
+  data: "참고",
+};
+
+// 인접 동일 그룹 묶기 — 사이드바 그룹 헤더용. 순서는 TABS 정의 순 그대로.
+function groupTabs<T extends { group: TabGroup }>(
+  tabs: T[],
+): { group: TabGroup; items: T[] }[] {
+  const out: { group: TabGroup; items: T[] }[] = [];
+  for (const t of tabs) {
+    const last = out[out.length - 1];
+    if (last && last.group === t.group) last.items.push(t);
+    else out.push({ group: t.group, items: [t] });
+  }
+  return out;
+}
 
 function ShellInner() {
   const [tab, setTab] = useState<TabKey>("overview");
   const { readOnly, setReadOnly, toast } = useAdmin();
+  const groups = groupTabs(TABS);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
@@ -89,8 +102,9 @@ function ShellInner() {
       </div>
 
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 pb-12 md:flex-row">
-        <nav className="md:w-44 md:shrink-0">
-          <ul className="flex flex-row flex-wrap gap-1 md:flex-col">
+        <nav className="md:w-48 md:shrink-0">
+          {/* 모바일: 그룹 헤더 숨기고 가로 스크롤 / 데스크탑: 세로 + 그룹 헤더 */}
+          <ul className="flex flex-row flex-wrap gap-1 md:hidden">
             {TABS.map((t) => (
               <li key={t.key}>
                 <button
@@ -98,8 +112,8 @@ function ShellInner() {
                   onClick={() => setTab(t.key)}
                   className={
                     tab === t.key
-                      ? "w-full rounded-md border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-left text-sm font-medium text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                      : "w-full rounded-md border border-transparent px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      ? "rounded-md border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-left text-sm font-medium text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                      : "rounded-md border border-transparent px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
                   }
                 >
                   {t.label}
@@ -107,6 +121,32 @@ function ShellInner() {
               </li>
             ))}
           </ul>
+          <div className="hidden flex-col gap-3 md:flex">
+            {groups.map(({ group, items }) => (
+              <div key={group}>
+                <div className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                  {GROUP_LABELS[group]}
+                </div>
+                <ul className="flex flex-col gap-0.5">
+                  {items.map((t) => (
+                    <li key={t.key}>
+                      <button
+                        type="button"
+                        onClick={() => setTab(t.key)}
+                        className={
+                          tab === t.key
+                            ? "w-full rounded-md border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-left text-sm font-medium text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                            : "w-full rounded-md border border-transparent px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                        }
+                      >
+                        {t.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </nav>
 
         <main className="flex-1 space-y-4">
@@ -114,14 +154,11 @@ function ShellInner() {
           {tab === "users" && <UsersTab />}
           {tab === "stats" && <StatsTab />}
           {tab === "marketplace" && <MarketplaceTab />}
-          {tab === "character" && <CharacterTab />}
           {tab === "inventory" && <InventoryTab />}
           {tab === "quests" && <QuestsTab />}
           {tab === "crafting" && <CraftingTab />}
           {tab === "log" && <LogTab />}
           {tab === "map" && <MapTab />}
-          {tab === "notifications" && <NotificationsTab />}
-          {tab === "auto-potion" && <AutoPotionTab />}
           {tab === "data" && <DataTab />}
         </main>
       </div>
