@@ -380,6 +380,7 @@ export function AdventureScreen() {
             })
           }
           notify={(text) => addNotification("info", text)}
+          onStopHunting={() => setHuntingActive(false)}
         />
       </div>
     );

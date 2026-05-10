@@ -21,6 +21,8 @@ type Props = {
   applyReward: (reward: CoopClaimResponse["reward"]) => AppliedCoopReward;
   /** 토스트 등 알림. */
   notify?: (text: string) => void;
+  /** 보스 공격 시작 시 자동 사냥을 끄기 위한 콜백. */
+  onStopHunting?: () => void;
 };
 
 export function CoopBossCard({
@@ -29,6 +31,7 @@ export function CoopBossCard({
   onPlayerHpChange,
   applyReward,
   notify,
+  onStopHunting,
 }: Props) {
   const { data, error, working, attack, claim } = useCoopBoss(regionId, true);
   const [now, setNow] = useState(() => Date.now());
@@ -91,6 +94,7 @@ export function CoopBossCard({
       : 0;
 
   const handleAttack = async () => {
+    onStopHunting?.();
     const r = await attack(playerName);
     if (!r) return;
     onPlayerHpChange(r.finalPlayerHp);
