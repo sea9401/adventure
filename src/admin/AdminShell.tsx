@@ -14,11 +14,13 @@ import { NotificationsTab } from "./tabs/NotificationsTab";
 import { AutoPotionTab } from "./tabs/AutoPotionTab";
 import { DataTab } from "./tabs/DataTab";
 import { UsersTab } from "./tabs/UsersTab";
+import { StatsTab } from "./tabs/StatsTab";
 import { MarketplaceTab } from "./tabs/MarketplaceTab";
 
 type TabKey =
   | "overview"
   | "users"
+  | "stats"
   | "marketplace"
   | "character"
   | "inventory"
@@ -33,6 +35,7 @@ type TabKey =
 const TABS: { key: TabKey; label: string; group: "system" | "edit" | "data" }[] = [
   { key: "overview", label: "개요", group: "system" },
   { key: "users", label: "유저", group: "system" },
+  { key: "stats", label: "통계", group: "system" },
   { key: "marketplace", label: "거래소", group: "system" },
   { key: "character", label: "캐릭터", group: "edit" },
   { key: "inventory", label: "인벤토리", group: "edit" },
@@ -109,6 +112,7 @@ function ShellInner() {
         <main className="flex-1 space-y-4">
           {tab === "overview" && <OverviewTab />}
           {tab === "users" && <UsersTab />}
+          {tab === "stats" && <StatsTab />}
           {tab === "marketplace" && <MarketplaceTab />}
           {tab === "character" && <CharacterTab />}
           {tab === "inventory" && <InventoryTab />}
