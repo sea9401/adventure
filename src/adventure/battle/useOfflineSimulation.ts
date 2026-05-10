@@ -247,6 +247,10 @@ export function useOfflineSimulation({
         playerHp: playerHpRef.current,
         userId: userId ?? null,
       });
+      // baseline 이 "지금"으로 박혔으면 outbox 도 더는 필요 없음 — 클리어. 안 그러면
+      // (deferred advance 가 cancel 된 케이스) saving→idle subscriber 가 pending=null
+      // 가드에 막혀 outbox 를 영원히 안 비우고 매 mount 마다 같은 사망 결과 재적용.
+      clearRewardOutbox();
     };
 
     // sim 결과를 적용한 직후 호출. 즉시 saveTick 하면 PATCH 가 409 등으로 실패
