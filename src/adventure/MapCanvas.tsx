@@ -128,9 +128,10 @@ export function MapCanvas({
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
+    // setPointerCapture 는 드래그 임계를 넘긴 뒤 (혹은 핀치 진입 시) 호출. pointerdown
+    // 단계에서 미리 캡처하면 데스크탑 마우스에서 자식 SVG <g> 의 click 이 컨테이너로
+    // 리다이렉트돼 MapNode 클릭이 통째로 안 먹는 문제가 생긴다 (터치는 click 합성 경로가
+    // 달라 영향 없음).
     if (pointersRef.current.size === 1) {
       downAtRef.current = { x: e.clientX, y: e.clientY };
       draggedRef.current = false;
@@ -143,8 +144,14 @@ export function MapCanvas({
         startDist: Math.hypot(dx, dy) || 1,
         startVb: vb,
       };
-      // 핀치 시작하면 단일 클릭 후보 무효화.
+      // 핀치 시작하면 클릭 후보 아님 — 두 포인터 모두 즉시 캡처해 컨테이너 밖으로
+      // 손가락이 흘러도 핀치가 끊기지 않도록.
       draggedRef.current = true;
+      for (const id of pointersRef.current.keys()) {
+        try {
+          e.currentTarget.setPointerCapture(id);
+        } catch {}
+      }
     }
   };
 
@@ -182,12 +189,21 @@ export function MapCanvas({
 
     if (pointersRef.current.size === 1) {
       // 팬
-      if (downAtRef.current) {
+      if (downAtRef.current && !draggedRef.current) {
         const moved =
           Math.abs(e.clientX - downAtRef.current.x) +
           Math.abs(e.clientY - downAtRef.current.y);
-        if (moved > 5) draggedRef.current = true;
+        if (moved > 5) {
+          draggedRef.current = true;
+          // 임계 통과 시점에 캡처 — 컨테이너 밖으로 포인터가 흘러도 드래그 유지.
+          // pointerdown 단계에서 미리 안 잡는 이유는 위 onPointerDown 주석 참고.
+          try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+          } catch {}
+        }
       }
+      // 드래그 확정 전엔 viewBox 갱신 X — 미세한 마우스 떨림으로 클릭이 팬으로 오인되는 걸 방지.
+      if (!draggedRef.current) return;
       const pxToVB = vb.w / cw;
       setVb((cur) =>
         clampVb({
