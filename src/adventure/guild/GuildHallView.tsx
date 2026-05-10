@@ -284,7 +284,7 @@ function NoGuildPanel({
               <span className={meetsLevel ? "text-emerald-600 dark:text-emerald-400" : ""}>
                 ({characterLevel})
               </span>{" "}
-              또는 의뢰 {GUILD_CREATE_QUEST_COUNT}건 완료
+              또는 서로 다른 의뢰 {GUILD_CREATE_QUEST_COUNT}종 완료
             </li>
             <li>
               {GUILD_CREATE_GOLD} G{" "}

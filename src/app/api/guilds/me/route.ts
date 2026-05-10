@@ -55,6 +55,7 @@ export async function GET() {
       role: guildMembers.role,
       joinedAt: guildMembers.joinedAt,
       name: users.name,
+      presenceName: presence.name,
       lastSeenAt: presence.lastSeenAt,
       title: presence.title,
     })
@@ -63,27 +64,46 @@ export async function GET() {
     .leftJoin(presence, eq(presence.userId, guildMembers.userId))
     .where(eq(guildMembers.guildId, guildId));
 
+  // savesKv 한 번에 character.v2 + character-profile.v2 둘 다 가져옴 — 레벨 + 이름 fallback.
   const memberUserIds = memberRows.map((r) => r.userId);
-  const charRows = memberUserIds.length
+  const kvRows = memberUserIds.length
     ? await db
-        .select({ userId: savesKv.userId, value: savesKv.value })
+        .select({
+          userId: savesKv.userId,
+          key: savesKv.key,
+          value: savesKv.value,
+        })
         .from(savesKv)
         .where(
           and(
-            eq(savesKv.key, SAVES_CHARACTER),
+            inArray(savesKv.key, [SAVES_CHARACTER, "character-profile.v2"]),
             inArray(savesKv.userId, memberUserIds),
           ),
         )
     : [];
   const levelByUserId = new Map<string, number>();
-  for (const r of charRows) {
-    const level = Number((r.value as { level?: unknown }).level ?? 1);
-    levelByUserId.set(r.userId, Number.isFinite(level) ? level : 1);
+  const profileNameByUserId = new Map<string, string>();
+  for (const r of kvRows) {
+    if (r.key === SAVES_CHARACTER) {
+      const level = Number((r.value as { level?: unknown }).level ?? 1);
+      levelByUserId.set(r.userId, Number.isFinite(level) ? level : 1);
+    } else if (r.key === "character-profile.v2") {
+      const n = (r.value as { name?: unknown }).name;
+      if (typeof n === "string" && n.length > 0) {
+        profileNameByUserId.set(r.userId, n);
+      }
+    }
   }
 
+  // 이름 fallback: users.name → presence.name → character-profile.v2.name → "(이름 미설정)".
+  // 레거시 유저는 users.name 이 NULL 일 수 있어 보강.
   const members = memberRows.map((r) => ({
     userId: r.userId,
-    name: r.name ?? "(이름 미설정)",
+    name:
+      r.name ??
+      r.presenceName ??
+      profileNameByUserId.get(r.userId) ??
+      "(이름 미설정)",
     role: r.role,
     level: levelByUserId.get(r.userId) ?? null,
     title: r.title,
