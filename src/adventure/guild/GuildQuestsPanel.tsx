@@ -93,46 +93,18 @@ export function GuildQuestsPanel({
   }
 
   const { guild, active, proposed } = data;
-  const nextThreshold = nextGradeThreshold(guild.fameTotal);
 
   return (
     <Card padding="md">
       <div className="space-y-3">
-        <header className="flex items-start justify-between gap-2">
-          <div>
-            <div className="flex items-center gap-2">
-              <Trophy
-                size={18}
-                weight="duotone"
-                className="text-amber-500"
-              />
-              <h3 className="text-base font-semibold">길드 의뢰</h3>
-            </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              매주 월요일 00시(KST) 새 후보 3종이 발행됩니다.
-            </p>
+        <header>
+          <div className="flex items-center gap-2">
+            <Trophy size={18} weight="duotone" className="text-amber-500" />
+            <h3 className="text-base font-semibold">길드 의뢰</h3>
           </div>
-          <div className="text-right">
-            <div className="flex items-center justify-end gap-1.5">
-              <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                등급
-              </span>
-              <span
-                className={`text-base font-bold ${GRADE_COLOR[guild.grade] ?? ""}`}
-              >
-                {guild.grade}
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              누적 명성 {guild.fameTotal.toLocaleString()}
-              {nextThreshold !== null
-                ? ` / ${nextThreshold.toLocaleString()}`
-                : ""}
-            </p>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              사용 가능 명성 {guild.fameAvailable.toLocaleString()}
-            </p>
-          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            매주 월요일 00시(KST) 새 후보 3종이 발행됩니다.
+          </p>
         </header>
 
         {error ? (
@@ -338,11 +310,3 @@ function describeTask(def: GuildQuestDef): string {
   return "";
 }
 
-function nextGradeThreshold(fameTotal: number): number | null {
-  // 다음 등급의 임계값 — 최고등급이면 null.
-  const thresholds = [200, 600, 1500, 3500, 8000, 18000, 40000];
-  for (const t of thresholds) {
-    if (fameTotal < t) return t;
-  }
-  return null;
-}

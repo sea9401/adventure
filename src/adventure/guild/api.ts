@@ -15,6 +15,11 @@ export type GuildInfo = {
   name: string;
   masterId: string;
   createdAt: string;
+  description: string | null;
+  fameTotal: number;
+  fameAvailable: number;
+  grade: string;
+  isMaster: boolean;
   members: GuildMember[];
 };
 
@@ -44,6 +49,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   target_in_guild: "대상이 이미 다른 길드에 속해 있습니다.",
   target_cooldown: "대상이 탈퇴 쿨다운 중입니다.",
   target_not_member: "이 길드의 멤버가 아닙니다.",
+  description_too_long: "소개글이 너무 깁니다.",
   already_invited: "이미 초대장을 보낸 상대입니다.",
   guild_full: "길드 정원이 가득 찼습니다.",
   invite_not_found: "초대장을 찾을 수 없습니다.",
@@ -173,6 +179,20 @@ export async function disbandGuild(
   const r = await fetch(`/api/guilds/${guildId}/disband`, { method: "POST" });
   if (!r.ok) throw await parseError(r);
   return (await r.json()) as { ok: true };
+}
+
+// 마스터 전용 — 길드 소개글 수정. 빈 문자열 → null 로 클리어.
+export async function updateGuildDescription(
+  guildId: number,
+  description: string,
+): Promise<{ ok: true; description: string | null }> {
+  const r = await fetch(`/api/guilds/${guildId}/description`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ description }),
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as { ok: true; description: string | null };
 }
 
 // ───── 길드 의뢰 (Phase A) ─────

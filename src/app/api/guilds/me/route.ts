@@ -10,6 +10,7 @@ import {
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { SAVES_CHARACTER } from "@/lib/server/guildAffiliation";
+import { gradeForFame } from "@/adventure/data/guildQuests";
 
 // 내 길드 정보 + 멤버 목록 + 탈퇴 쿨다운 상태.
 // 소속 없으면 guild=null. 마지막 접속/레벨/칭호는 best-effort (없으면 null).
@@ -117,6 +118,11 @@ export async function GET() {
       name: guild.name,
       masterId: guild.masterId,
       createdAt: guild.createdAt.toISOString(),
+      description: guild.description ?? null,
+      fameTotal: guild.fameTotal,
+      fameAvailable: guild.fameAvailable,
+      grade: gradeForFame(guild.fameTotal),
+      isMaster: guild.masterId === userId,
       members,
     },
     leaveCooldownUntil,

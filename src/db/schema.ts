@@ -213,6 +213,8 @@ export const guilds = pgTable(
     fameTotal: integer("fame_total").notNull().default(0),
     // 사용 가능 명성 — 누적과 동일하게 시작, 길드 버프 업그레이드(Phase C)에 소비.
     fameAvailable: integer("fame_available").notNull().default(0),
+    // 마스터가 자유롭게 적는 짧은 소개글. 최대 120자(앱단 검증). NULL = 미설정.
+    description: text("description"),
   },
   (t) => [
     uniqueIndex("guilds_name_lower_idx").on(sql`lower(${t.name})`),

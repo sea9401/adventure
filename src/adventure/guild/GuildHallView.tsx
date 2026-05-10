@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Crown, UserMinus, UserPlus, UsersThree } from "@phosphor-icons/react";
+import {
+  Crown,
+  PencilSimple,
+  Scroll,
+  UserMinus,
+  UserPlus,
+  UsersThree,
+} from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -10,6 +17,7 @@ import {
   GUILD_CREATE_GOLD,
   GUILD_CREATE_LEVEL,
   GUILD_CREATE_QUEST_COUNT,
+  GUILD_DESCRIPTION_MAX,
   GUILD_LEAVE_COOLDOWN_DAYS,
   GUILD_MAX_MEMBERS,
   GUILD_NAME_MAX,
@@ -23,6 +31,7 @@ import {
   kickFromGuild,
   leaveGuild,
   transferMaster,
+  updateGuildDescription,
   GuildError,
   type GuildInfo,
   type GuildMeResponse,
@@ -31,6 +40,19 @@ import { GuildInviteModal } from "./GuildInviteModal";
 import { GuildQuestsPanel } from "./GuildQuestsPanel";
 
 const NO_AFFILIATION = "무소속";
+
+const GRADE_COLOR: Record<string, string> = {
+  G: "text-zinc-500 dark:text-zinc-400",
+  F: "text-zinc-600 dark:text-zinc-300",
+  E: "text-emerald-600 dark:text-emerald-400",
+  D: "text-sky-600 dark:text-sky-400",
+  C: "text-blue-600 dark:text-blue-400",
+  B: "text-violet-600 dark:text-violet-400",
+  A: "text-amber-600 dark:text-amber-400",
+  S: "text-rose-600 dark:text-rose-400",
+};
+
+type Tab = "quests" | "members";
 
 export function GuildHallView() {
   const { character, characterStateHook, addNotification, grantTitle } = useGame();
@@ -42,6 +64,7 @@ export function GuildHallView() {
   const [busy, setBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [tab, setTab] = useState<Tab>("quests");
 
   const pushToast = (msg: string) => addNotification("info", msg);
 
@@ -167,6 +190,26 @@ export function GuildHallView() {
     }
   };
 
+  const handleSaveDescription = async (next: string) => {
+    if (!data?.guild) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await updateGuildDescription(data.guild.id, next);
+      // 낙관적 갱신 — 응답 description 으로 로컬 상태 동기화.
+      setData((prev) =>
+        prev?.guild
+          ? { ...prev, guild: { ...prev.guild, description: r.description } }
+          : prev,
+      );
+      pushToast(r.description ? "소개글을 저장했습니다." : "소개글을 비웠습니다.");
+    } catch (e) {
+      handleApiError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onInviteSuccess = (targetName: string) => {
     pushToast(`${targetName} 님에게 초대장을 보냈습니다.`);
     setShowInvite(false);
@@ -191,16 +234,40 @@ export function GuildHallView() {
 
       {data?.guild ? (
         <>
-          <GuildPanel
+          <GuildSummaryPanel
             guild={data.guild}
             busy={busy}
-            onInviteClick={() => setShowInvite(true)}
-            onLeave={handleLeave}
-            onKick={handleKick}
-            onTransfer={handleTransfer}
-            onDisband={handleDisband}
+            onSaveDescription={handleSaveDescription}
           />
-          <GuildQuestsPanel />
+
+          <div className="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900/60">
+            <TabButton
+              icon={<Scroll size={14} weight="bold" />}
+              label="의뢰"
+              active={tab === "quests"}
+              onClick={() => setTab("quests")}
+            />
+            <TabButton
+              icon={<UsersThree size={14} weight="bold" />}
+              label={`멤버 ${data.guild.members.length}/${GUILD_MAX_MEMBERS}`}
+              active={tab === "members"}
+              onClick={() => setTab("members")}
+            />
+          </div>
+
+          {tab === "quests" ? (
+            <GuildQuestsPanel />
+          ) : (
+            <MembersPanel
+              guild={data.guild}
+              busy={busy}
+              onInviteClick={() => setShowInvite(true)}
+              onLeave={handleLeave}
+              onKick={handleKick}
+              onTransfer={handleTransfer}
+              onDisband={handleDisband}
+            />
+          )}
         </>
       ) : (
         <NoGuildPanel
@@ -222,6 +289,181 @@ export function GuildHallView() {
           onSuccess={onInviteSuccess}
         />
       ) : null}
+    </div>
+  );
+}
+
+function TabButton({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        active
+          ? "flex flex-1 items-center justify-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-50"
+          : "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+      }
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function GuildSummaryPanel({
+  guild,
+  busy,
+  onSaveDescription,
+}: {
+  guild: GuildInfo;
+  busy: boolean;
+  onSaveDescription: (next: string) => void;
+}) {
+  return (
+    <Card padding="md">
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <UsersThree
+                size={20}
+                weight="duotone"
+                className="text-violet-600 dark:text-violet-400"
+              />
+              <h3 className="truncate text-base font-semibold">{guild.name}</h3>
+            </div>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              누적 명성 {guild.fameTotal.toLocaleString()} · 멤버{" "}
+              {guild.members.length}/{GUILD_MAX_MEMBERS}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">등급</p>
+            <p
+              className={`text-xl font-bold leading-tight ${GRADE_COLOR[guild.grade] ?? ""}`}
+            >
+              {guild.grade}
+            </p>
+          </div>
+        </div>
+
+        <DescriptionSection
+          description={guild.description}
+          isMaster={guild.isMaster}
+          busy={busy}
+          onSave={onSaveDescription}
+        />
+      </div>
+    </Card>
+  );
+}
+
+function DescriptionSection({
+  description,
+  isMaster,
+  busy,
+  onSave,
+}: {
+  description: string | null;
+  isMaster: boolean;
+  busy: boolean;
+  onSave: (next: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(description ?? "");
+
+  // 외부에서 description 이 갱신되면 draft 도 동기화 (저장 후 등).
+  useEffect(() => {
+    if (!editing) setDraft(description ?? "");
+  }, [description, editing]);
+
+  if (editing) {
+    const tooLong = draft.length > GUILD_DESCRIPTION_MAX;
+    return (
+      <div className="space-y-1.5 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          maxLength={GUILD_DESCRIPTION_MAX + 20}
+          rows={3}
+          placeholder="길드 소개를 자유롭게 적어주세요."
+          className="w-full resize-none rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          autoFocus
+        />
+        <div className="flex items-center justify-between gap-2">
+          <span
+            className={`text-[11px] ${
+              tooLong
+                ? "text-rose-600 dark:text-rose-400"
+                : "text-zinc-500 dark:text-zinc-400"
+            }`}
+          >
+            {draft.length}/{GUILD_DESCRIPTION_MAX}
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(false);
+                setDraft(description ?? "");
+              }}
+              disabled={busy}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              disabled={busy || tooLong}
+              onClick={() => {
+                onSave(draft);
+                setEditing(false);
+              }}
+              className="rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              저장
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-t border-zinc-200 pt-3 dark:border-zinc-800">
+      <div className="flex items-start justify-between gap-2">
+        <p
+          className={`min-w-0 flex-1 whitespace-pre-wrap text-sm ${
+            description
+              ? "text-zinc-700 dark:text-zinc-300"
+              : "italic text-zinc-400 dark:text-zinc-500"
+          }`}
+        >
+          {description ?? "(소개글이 아직 없습니다)"}
+        </p>
+        {isMaster ? (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            disabled={busy}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+            title="소개글 편집"
+          >
+            <PencilSimple size={11} weight="bold" />
+            편집
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -366,7 +608,7 @@ function CreateForm({
   );
 }
 
-function GuildPanel({
+function MembersPanel({
   guild,
   busy,
   onInviteClick,
@@ -387,23 +629,12 @@ function GuildPanel({
   // 다루지 않고도 마스터만 사용할 수 있는 액션(추방/양도)은 권한 없을 시 서버가 401 로
   // 거른다 — Phase 1 에서는 모든 액션 노출하고 서버 권위적 검증에 의존.
   const memberCount = guild.members.length;
-  const masterMember = guild.members.find((m) => m.role === "master");
   const isFull = memberCount >= GUILD_MAX_MEMBERS;
 
   return (
     <Card padding="md">
       <div className="space-y-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <UsersThree size={20} weight="duotone" className="text-violet-600 dark:text-violet-400" />
-            <h3 className="text-base font-semibold">{guild.name}</h3>
-          </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            마스터: {masterMember?.name ?? "?"} · 멤버 {memberCount}/{GUILD_MAX_MEMBERS}
-          </p>
-        </div>
-
-        <ul className="space-y-1.5 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+        <ul className="space-y-1.5">
           {guild.members.map((m) => (
             <MemberRow
               key={m.userId}
