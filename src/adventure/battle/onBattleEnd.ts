@@ -104,13 +104,21 @@ export function onBattleEnd(
             `${recipe?.name ?? drop.recipeId}을(를) 손에 넣었다!`,
           );
         } else if (drop.kind === "recipe_one_of") {
-          // 풀에서 1개 균등 추첨 후 학습 시도. 이미 알고 있으면 무시 — 중복 학습 X.
-          // (다음에 다른 것이 나올 때까지 빈손) — 풀에서 미보유 우선 추첨은 의도적으로 X,
-          // 운에 맡기는 게 도전의 일부.
+          // 풀에서 1개 학습 시도. 미보유 항목이 있으면 그중에서만 균등 추첨 — 사용자가
+          // 이미 아는 항목으로 뽑혀 빈손이 되는 사고를 방지 (보스가 "항상 1종 드랍" 약속을
+          // 지키는 모양새). 풀 전체를 이미 알고 있으면 그 사실을 명시 토스트로 안내.
           if (drop.recipeIds.length === 0) continue;
-          const pick =
-            drop.recipeIds[Math.floor(Math.random() * drop.recipeIds.length)];
-          if (deps.crafting.knows(pick)) continue;
+          const unknown = drop.recipeIds.filter(
+            (id) => !deps.crafting.knows(id),
+          );
+          if (unknown.length === 0) {
+            deps.addNotification(
+              "info",
+              "제작서 보상 — 이미 모든 종류를 알고 있다.",
+            );
+            continue;
+          }
+          const pick = unknown[Math.floor(Math.random() * unknown.length)];
           deps.crafting.learnRecipe(pick);
           const recipe = getRecipeById(pick);
           deps.addNotification(

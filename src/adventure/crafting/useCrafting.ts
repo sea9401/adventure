@@ -3,7 +3,19 @@
 import { useCallback, useState } from "react";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
+import { getRecipeById } from "@/adventure/data/recipes";
 import { emptyCraftingState, type CraftingState } from "./storage";
+
+// 학습 호출이 RECIPES 에 없는 id 로 들어오면 도감/대장간 둘 다에서 invisible.
+// 개발 중에 발견하기 쉽도록 한 번 경고.
+const warnedMissing = new Set<string>();
+function warnIfUnknownRecipe(id: string): void {
+  if (warnedMissing.has(id)) return;
+  if (!getRecipeById(id)) {
+    warnedMissing.add(id);
+    console.warn(`[crafting.learnRecipe] unknown recipe id: ${id}`);
+  }
+}
 
 function readInitial(raw: unknown): CraftingState {
   if (!raw || typeof raw !== "object") return emptyCraftingState();
@@ -27,6 +39,7 @@ export function useCrafting() {
   // 학습 — 1차 출처 (NPC/퀘스트/드랍 보상). known + shareable 둘 다 갱신.
   // 같은 id 재호출 = 다시 습득 → known 은 no-op, shareable 만 충전.
   const learnRecipe = useCallback((id: string) => {
+    warnIfUnknownRecipe(id);
     setState((prev) => {
       const knownHas = prev.known.includes(id);
       const shareableHas = prev.shareable.includes(id);
@@ -42,6 +55,7 @@ export function useCrafting() {
   // 거래/우편으로 받은 제작서 — known 만 갱신, shareable 은 건드리지 않는다.
   // (= 받은 사람이 즉시 다시 거래에 올리는 무한 laundering 방지)
   const learnRecipeFromTrade = useCallback((id: string) => {
+    warnIfUnknownRecipe(id);
     setState((prev) =>
       prev.known.includes(id)
         ? prev

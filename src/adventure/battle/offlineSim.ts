@@ -177,10 +177,13 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
               result.recipesLearned.push(drop.recipeId);
             } else if (drop.kind === "recipe_one_of") {
               if (drop.recipeIds.length === 0) continue;
-              const pick =
-                drop.recipeIds[Math.floor(rng() * drop.recipeIds.length)];
-              if (input.knowsRecipe(pick) || learnedThisSim.has(pick))
-                continue;
+              // 풀에서 미보유만 추리고 그 안에서 균등 추첨 — 이미 아는 항목으로 뽑혀
+              // 빈손이 되는 사고 방지. 같은 sim 안의 직전 학습도 미보유 풀에서 제외.
+              const unknown = drop.recipeIds.filter(
+                (id) => !input.knowsRecipe(id) && !learnedThisSim.has(id),
+              );
+              if (unknown.length === 0) continue;
+              const pick = unknown[Math.floor(rng() * unknown.length)];
               learnedThisSim.add(pick);
               result.recipesLearned.push(pick);
             }
