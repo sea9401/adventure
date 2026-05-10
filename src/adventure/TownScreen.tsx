@@ -55,6 +55,7 @@ export function TownScreen() {
     handleCraft,
     handlePurchasePotion,
     handlePurchaseMaterial,
+    handlePurchaseConsumable,
     handleSellPotion,
     handleSellMaterial,
     handleSellEquipment,
@@ -340,6 +341,7 @@ export function TownScreen() {
           isMaterialBuyable={shopUnlocks.isUnlocked}
           onPurchasePotion={handlePurchasePotion}
           onPurchaseMaterial={handlePurchaseMaterial}
+          onPurchaseConsumable={handlePurchaseConsumable}
           onSellPotion={handleSellPotion}
           onSellMaterial={handleSellMaterial}
           onSellEquipment={handleSellEquipment}

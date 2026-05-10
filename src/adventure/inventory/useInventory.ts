@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ConsumableId } from "../data/consumables";
 import type { ItemId } from "../data/items";
 import type { MaterialId } from "../data/materials";
 import { potionMax, type PotionId } from "../data/potions";
@@ -11,6 +12,7 @@ export type InventoryState = {
   potions: Partial<Record<PotionId, number>>;
   equipment: Partial<Record<ItemId, number>>;
   materials: Partial<Record<MaterialId, number>>;
+  consumables: Partial<Record<ConsumableId, number>>;
   // 종류별 포션 최대 보유 수의 추가 보너스. 보상으로 영구 누적.
   potionCapacityBonus?: number;
 };
@@ -19,6 +21,7 @@ export const emptyInventory = (): InventoryState => ({
   potions: { potion_heal_s: 10 },
   equipment: {},
   materials: { branch: 1 },
+  consumables: {},
 });
 
 function readInitial(raw: unknown): InventoryState {
@@ -28,6 +31,7 @@ function readInitial(raw: unknown): InventoryState {
     potions: parsed.potions ?? {},
     equipment: parsed.equipment ?? {},
     materials: parsed.materials ?? {},
+    consumables: parsed.consumables ?? {},
     potionCapacityBonus: Math.max(0, parsed.potionCapacityBonus ?? 0),
   };
 }
@@ -151,6 +155,41 @@ export function useInventory() {
     [state],
   );
 
+  const addConsumable = useCallback((id: ConsumableId, n = 1) => {
+    if (n <= 0) return;
+    const cur = stateRef.current;
+    const next: InventoryState = {
+      ...cur,
+      consumables: {
+        ...cur.consumables,
+        [id]: (cur.consumables[id] ?? 0) + n,
+      },
+    };
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
+  const consumeConsumable = useCallback(
+    (id: ConsumableId, n = 1): boolean => {
+      const cur = stateRef.current;
+      const have = cur.consumables[id] ?? 0;
+      if (have < n) return false;
+      const next: InventoryState = {
+        ...cur,
+        consumables: { ...cur.consumables, [id]: have - n },
+      };
+      stateRef.current = next;
+      setState(next);
+      return true;
+    },
+    [],
+  );
+
+  const consumableCount = useCallback(
+    (id: ConsumableId): number => state.consumables[id] ?? 0,
+    [state],
+  );
+
   const potionMaxValue = potionMax(state.potionCapacityBonus ?? 0);
 
   return {
@@ -165,6 +204,9 @@ export function useInventory() {
     addMaterial,
     consumeMaterial,
     materialCount,
+    addConsumable,
+    consumeConsumable,
+    consumableCount,
     addPotionCapacity,
     potionMax: potionMaxValue,
   };

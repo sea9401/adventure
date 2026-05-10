@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Diamond, Flask, Sword } from "@phosphor-icons/react";
+import { Diamond, Flask, Scroll, Sword } from "@phosphor-icons/react";
 import {
   ITEMS,
   findItemId,
@@ -13,6 +13,13 @@ import {
 } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, POTION_IDS, potionMax } from "./data/potions";
+import {
+  CONSUMABLES,
+  CONSUMABLE_IDS,
+  type Consumable,
+  type ConsumableId,
+} from "./data/consumables";
+import { WORLD_MAP, type RegionId } from "./data/world";
 import type { InventoryState } from "./inventory/useInventory";
 import type { EquippedSlots } from "./character/types";
 import { EquippedGrid } from "./character/CharacterMini";
@@ -22,12 +29,13 @@ import { TabBar } from "@/components/ui/TabBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 
-type InvTabKey = "equipment" | "materials" | "potions";
+type InvTabKey = "equipment" | "materials" | "potions" | "consumables";
 
 const TABS: { key: InvTabKey; label: string }[] = [
   { key: "equipment", label: "장비" },
   { key: "materials", label: "재료" },
   { key: "potions", label: "포션" },
+  { key: "consumables", label: "소모품" },
 ];
 
 const SLOT_TABS: { key: EquipSlot; label: string }[] = [
@@ -66,11 +74,18 @@ export function InventoryView({
   equipped,
   onEquip,
   onUnequip,
+  currentRegionId,
+  visitedRegionIds,
+  onUseTownReturn,
 }: {
   inventory: InventoryState;
   equipped?: EquippedSlots;
   onEquip?: (id: ItemId) => void;
   onUnequip?: (slot: EquipSlot) => void;
+  /** 소모품 탭의 사용 액션에 필요한 컨텍스트 — 없으면 사용 버튼 비활성. */
+  currentRegionId?: RegionId;
+  visitedRegionIds?: RegionId[];
+  onUseTownReturn?: (townId: RegionId) => boolean;
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
   const [equipSlotTab, setEquipSlotTab] = useState<EquipSlot>("weapon");
@@ -90,6 +105,11 @@ export function InventoryView({
     potion: POTIONS[id],
     count: inventory.potions[id] ?? 0,
   })).filter((e) => e.count > 0);
+  const ownedConsumables = CONSUMABLE_IDS.map((id) => ({
+    id,
+    consumable: CONSUMABLES[id],
+    count: inventory.consumables[id] ?? 0,
+  })).filter((e) => e.count > 0);
   const potionCap = potionMax(inventory.potionCapacityBonus ?? 0);
 
   const filteredEquipment = ownedEquipment.filter(
@@ -98,6 +118,9 @@ export function InventoryView({
   const equipPager = usePagination(filteredEquipment, 10);
   const materialsPager = usePagination(ownedMaterials, 10);
   const potionsPager = usePagination(ownedPotions, 10);
+  const consumablesPager = usePagination(ownedConsumables, 10);
+
+  const [pickingFor, setPickingFor] = useState<ConsumableId | null>(null);
 
   return (
     <div className="space-y-3">
@@ -284,6 +307,145 @@ export function InventoryView({
             />
           </section>
         ))}
+
+      {tab === "consumables" &&
+        (ownedConsumables.length === 0 ? (
+          <EmptyState
+            icon={<Scroll size={40} weight="duotone" />}
+            title="보유한 소모품이 없습니다"
+            message="상점에서 구매할 수 있습니다."
+          />
+        ) : (
+          <section className="space-y-2">
+            {consumablesPager.pageItems.map(({ id, consumable, count }) => (
+              <ConsumableRow
+                key={id}
+                consumable={consumable}
+                count={count}
+                onUse={() => setPickingFor(id)}
+                canUse={!!onUseTownReturn}
+              />
+            ))}
+            <Pagination
+              page={consumablesPager.page}
+              pageCount={consumablesPager.pageCount}
+              setPage={consumablesPager.setPage}
+            />
+          </section>
+        ))}
+
+      {pickingFor === "scroll_town_return" && (
+        <TownReturnModal
+          currentRegionId={currentRegionId}
+          visitedRegionIds={visitedRegionIds ?? []}
+          onClose={() => setPickingFor(null)}
+          onPick={(townId) => {
+            const ok = onUseTownReturn?.(townId) ?? false;
+            if (ok) setPickingFor(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ConsumableRow({
+  consumable,
+  count,
+  onUse,
+  canUse,
+}: {
+  consumable: Consumable;
+  count: number;
+  onUse: () => void;
+  canUse: boolean;
+}) {
+  return (
+    <Card>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          {consumable.name}
+        </span>
+        <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+          ×{count}
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+        {consumable.description}
+      </p>
+      <button
+        type="button"
+        onClick={onUse}
+        disabled={!canUse || count <= 0}
+        className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-emerald-500 bg-emerald-500/10 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-400 dark:text-emerald-300"
+      >
+        사용
+      </button>
+    </Card>
+  );
+}
+
+function TownReturnModal({
+  currentRegionId,
+  visitedRegionIds,
+  onClose,
+  onPick,
+}: {
+  currentRegionId: RegionId | undefined;
+  visitedRegionIds: RegionId[];
+  onClose: () => void;
+  onPick: (townId: RegionId) => void;
+}) {
+  // 가본 마을만 노출 — 미발견 마을은 입장 조건 미해금이라 호출 측에서도 거른다.
+  // 현재 지역은 이미 그곳이라 제외.
+  const visitedSet = new Set(visitedRegionIds);
+  const towns = WORLD_MAP.regions.filter(
+    (r) =>
+      r.tags?.includes("town") &&
+      visitedSet.has(r.id) &&
+      r.id !== currentRegionId,
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
+      <Card padding="lg" className="w-full max-w-sm">
+        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          어느 마을로?
+        </h3>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          가본 적 있는 마을 중 한 곳을 고르세요.
+        </p>
+        {towns.length === 0 ? (
+          <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+            아직 갈 수 있는 다른 마을이 없습니다.
+          </p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {towns.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => onPick(t.id)}
+                className="flex w-full items-baseline justify-between gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+              >
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  {t.name}
+                </span>
+                <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+                  {t.description}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-3 w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          취소
+        </button>
+      </Card>
     </div>
   );
 }

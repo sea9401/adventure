@@ -23,11 +23,12 @@ import type { useShopUnlocks } from "@/adventure/shop/useShopUnlocks";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import type { useTraining } from "@/adventure/training/useTraining";
 import type { TrialEdge } from "@/adventure/TrialView";
+import type { ConsumableId } from "@/adventure/data/consumables";
 import type { ItemId, EquipSlot } from "@/adventure/data/items";
 import type { MaterialId } from "@/adventure/data/materials";
 import type { PotionId } from "@/adventure/data/potions";
 import type { Recipe } from "@/adventure/data/recipes";
-import type { Region } from "@/adventure/data/world";
+import type { Region, RegionId } from "@/adventure/data/world";
 import type { MapProgress } from "@/lib/map-progress";
 import type {
   NotificationKind,
@@ -97,6 +98,9 @@ export type GameCtx = {
   grantTitle: (titleId: string) => void;
   handlePurchasePotion: (id: PotionId, quantity: number) => void;
   handlePurchaseMaterial: (id: MaterialId, quantity: number) => void;
+  handlePurchaseConsumable: (id: ConsumableId, quantity: number) => void;
+  /** 마을 귀환 주문서 사용. 성공 시 true, 조건 미달/소비 실패 시 false. */
+  handleUseTownReturn: (townId: RegionId) => boolean;
   handleSellPotion: (id: PotionId, quantity: number) => void;
   handleSellMaterial: (id: MaterialId, quantity: number) => void;
   handleSellEquipment: (id: ItemId, quantity: number) => void;

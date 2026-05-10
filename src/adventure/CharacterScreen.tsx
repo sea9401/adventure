@@ -39,6 +39,8 @@ export function CharacterScreen() {
     handleUnequip,
     quests,
     crafting,
+    mapProgress,
+    handleUseTownReturn,
   } = useGame();
 
   const activeQuestCount = QUESTS.reduce((n, q) => {
@@ -138,6 +140,9 @@ export function CharacterScreen() {
           equipped={character.equipped}
           onEquip={handleEquipFromInventory}
           onUnequip={handleUnequip}
+          currentRegionId={mapProgress.currentRegionId}
+          visitedRegionIds={mapProgress.visitedRegionIds}
+          onUseTownReturn={handleUseTownReturn}
         />
       </div>
     );

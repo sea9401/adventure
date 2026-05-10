@@ -18,12 +18,16 @@ import { CharacterScreen } from "@/adventure/CharacterScreen";
 import { AdventureScreen } from "@/adventure/AdventureScreen";
 import { GameProvider, type GameCtx } from "@/adventure/GameContext";
 import { useAdventureLog } from "@/adventure/log/useAdventureLog";
-import { WORLD_MAP } from "@/adventure/data/world";
+import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
 import {
   initialMapProgress,
   type MapProgress,
 } from "@/lib/map-progress";
 import { START_REGION_ID } from "@/adventure/data/world";
+import {
+  CONSUMABLES,
+  type ConsumableId,
+} from "@/adventure/data/consumables";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationToast } from "@/components/NotificationToast";
 import { LevelUpOverlay } from "@/components/LevelUpOverlay";
@@ -517,11 +521,44 @@ function Home() {
     inventory.addMaterial(id, quantity);
   };
 
+  const handlePurchaseConsumable = (id: ConsumableId, quantity: number) => {
+    const c = CONSUMABLES[id];
+    if (!c || quantity <= 0) return;
+    const cost = c.price * quantity;
+    if (characterState.gold < cost) return;
+    characterStateHook.addGold(-cost);
+    inventory.addConsumable(id, quantity);
+  };
+
   const addNotification = (
     kind: NotificationKind,
     text: string,
     meta?: NotificationMeta,
   ) => notifications.add(kind, text, meta);
+
+  // 마을 귀환 주문서 사용 — 가본 마을로 즉시 이동.
+  // 마을→마을은 무소비 (지도 fast-travel 과 동일), 그 외엔 1개 소비.
+  const handleUseTownReturn = (townId: RegionId): boolean => {
+    const target = WORLD_MAP.regions.find((r) => r.id === townId);
+    if (!target?.tags?.includes("town")) return false;
+    if (!mapProgress.visitedRegionIds.includes(townId)) return false;
+    if (mapProgress.currentRegionId === townId) return false;
+    const from = WORLD_MAP.regions.find(
+      (r) => r.id === mapProgress.currentRegionId,
+    );
+    const fromIsTown = !!from?.tags?.includes("town");
+    if (!fromIsTown) {
+      if (!inventory.consumeConsumable("scroll_town_return", 1)) return false;
+    }
+    setMapProgress((prev) => ({ ...prev, currentRegionId: townId }));
+    addNotification(
+      "info",
+      fromIsTown
+        ? `${target.name}(으)로 이동했다.`
+        : `귀환 주문서로 ${target.name}(으)로 이동했다.`,
+    );
+    return true;
+  };
 
   // 판매 — 인벤토리에서 차감 + 골드 지급. 0G 아이템은 단순 정리(버리기) 효과.
   const handleSellPotion = (id: PotionId, quantity: number) => {
@@ -1065,6 +1102,8 @@ function Home() {
     grantTitle,
     handlePurchasePotion,
     handlePurchaseMaterial,
+    handlePurchaseConsumable,
+    handleUseTownReturn,
     handleSellPotion,
     handleSellMaterial,
     handleSellEquipment,

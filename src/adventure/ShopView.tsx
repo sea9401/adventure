@@ -11,6 +11,11 @@ import {
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { ITEMS, type ItemId } from "./data/items";
 import {
+  CONSUMABLES,
+  CONSUMABLE_IDS,
+  type ConsumableId,
+} from "./data/consumables";
+import {
   getItemSellPrice,
   getMaterialSellPrice,
   getPotionSellPrice,
@@ -43,6 +48,7 @@ export function ShopView({
   isMaterialBuyable,
   onPurchasePotion,
   onPurchaseMaterial,
+  onPurchaseConsumable,
   onSellPotion,
   onSellMaterial,
   onSellEquipment,
@@ -52,6 +58,7 @@ export function ShopView({
   isMaterialBuyable: (id: MaterialId) => boolean;
   onPurchasePotion: (id: PotionId, quantity: number) => void;
   onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
+  onPurchaseConsumable: (id: ConsumableId, quantity: number) => void;
   onSellPotion: (id: PotionId, quantity: number) => void;
   onSellMaterial: (id: MaterialId, quantity: number) => void;
   onSellEquipment: (id: ItemId, quantity: number) => void;
@@ -73,6 +80,7 @@ export function ShopView({
           isMaterialBuyable={isMaterialBuyable}
           onPurchasePotion={onPurchasePotion}
           onPurchaseMaterial={onPurchaseMaterial}
+          onPurchaseConsumable={onPurchaseConsumable}
         />
       )}
       {tab === "sell" && (
@@ -93,12 +101,14 @@ function BuyTab({
   isMaterialBuyable,
   onPurchasePotion,
   onPurchaseMaterial,
+  onPurchaseConsumable,
 }: {
   gold: number;
   inventory: InventoryState;
   isMaterialBuyable: (id: MaterialId) => boolean;
   onPurchasePotion: (id: PotionId, quantity: number) => void;
   onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
+  onPurchaseConsumable: (id: ConsumableId, quantity: number) => void;
 }) {
   // 구매 가능 재료 = 항상 취급(`inShop`) 또는 누적 100개 이상 판매로 잠금 해제된 것.
   const materialIds = (Object.keys(MATERIALS) as MaterialId[]).filter(
@@ -155,6 +165,29 @@ function BuyTab({
           </div>
         </div>
       )}
+
+      <div>
+        <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          소모품
+        </div>
+        <div className="space-y-2">
+          {CONSUMABLE_IDS.map((id) => {
+            const c = CONSUMABLES[id];
+            const owned = inventory.consumables[id] ?? 0;
+            return (
+              <BuyRow
+                key={id}
+                name={c.name}
+                description={c.description}
+                price={c.price}
+                owned={owned}
+                gold={gold}
+                onPurchase={(qty) => onPurchaseConsumable(id, qty)}
+              />
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

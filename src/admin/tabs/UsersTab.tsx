@@ -624,6 +624,7 @@ function ItemGrantSection({
       potions: { ...inventory.potions },
       equipment: { ...inventory.equipment },
       materials: { ...inventory.materials },
+      consumables: { ...inventory.consumables },
       potionCapacityBonus: inventory.potionCapacityBonus,
     };
     if (category === "potion") {

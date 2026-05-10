@@ -17,6 +17,7 @@ const emptyInventory = (): InventoryState => ({
   potions: {},
   equipment: {},
   materials: {},
+  consumables: {},
 });
 
 export function InventoryTab() {
