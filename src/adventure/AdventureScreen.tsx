@@ -133,6 +133,16 @@ export function AdventureScreen() {
               onClick={() => setSubView("boss")}
             />
           )}
+          {!COOP_BOSSES[currentRegion.id] && currentRegion.boss && (
+            <EntryCard
+              icon={
+                <Skull size={28} weight="duotone" className="text-rose-500" />
+              }
+              title="보스"
+              description="이 지역의 보스에 도전합니다."
+              onClick={() => setSubView("boss")}
+            />
+          )}
           <EntryCard
             icon={
               <Compass
@@ -370,6 +380,44 @@ export function AdventureScreen() {
             })
           }
           notify={(text) => addNotification("info", text)}
+        />
+      </div>
+    );
+  }
+
+  // 솔로 보스 (region.boss 정의된 region) 의 보스 서브뷰 — BattleView 를 bossOnlyMode 로
+  // 띄워 보스 카드 + 도전만 노출. 일반 사냥은 별도 "전투" 서브뷰에서.
+  if (subView === "boss" && currentRegion.boss) {
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="보스" onBack={back} />
+        <BattleView
+          region={currentRegion}
+          player={playerCombat}
+          playerLevel={character.level}
+          playerName={character.name}
+          playerStatus={playerStatus}
+          onBattleStart={adventureLog.markEncountered}
+          onBattleEnd={handleBattleEnd}
+          pickAutoAction={(state) =>
+            pickAutoAction(state, {
+              rules: autoPotion.config.rules,
+              potions: inventory.state.potions,
+            })
+          }
+          inventoryState={inventory.state}
+          autoPotionConfig={autoPotion.config}
+          onUpdateAutoPotionRule={autoPotion.updateRule}
+          recentNotifications={notifications.list}
+          huntingActive={huntingActive}
+          onToggleHunting={setHuntingActive}
+          bossAttemptsToday={characterStateHook.getBossAttemptsToday(
+            currentRegion.id,
+          )}
+          onConsumeBossAttempt={() =>
+            characterStateHook.consumeBossAttempt(currentRegion.id)
+          }
+          bossOnlyMode
         />
       </div>
     );

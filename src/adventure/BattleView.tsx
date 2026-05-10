@@ -57,6 +57,7 @@ export function BattleView({
   onToggleHunting,
   bossAttemptsToday,
   onConsumeBossAttempt,
+  bossOnlyMode = false,
 }: {
   region: Region;
   player: PlayerCombat;
@@ -80,6 +81,11 @@ export function BattleView({
   bossAttemptsToday?: number;
   /** 보스 도전 1회 입장 카운트. 호출자가 한도 검사 후 호출. */
   onConsumeBossAttempt?: () => void;
+  /**
+   * true 면 일반 사냥 섹션 숨기고 보스 카드만 노출. 모험 탭의 "보스" 서브뷰용.
+   * false (기본) 면 사냥 섹션만 노출하고 보스 카드는 숨김 — 보스는 별도 서브뷰에 있음.
+   */
+  bossOnlyMode?: boolean;
 }) {
   const { state, potionsConsumed, start, stop } = useBattle({
     player,
@@ -195,38 +201,42 @@ export function BattleView({
           </p>
         </Card>
 
-        {boss && bossMonster && (
-          <Card padding="md">
-            <div className="text-xs uppercase tracking-wider text-rose-500 dark:text-rose-400">
-              보스
+        {bossOnlyMode ? (
+          boss && bossMonster ? (
+            <Card padding="md">
+              <div className="text-xs uppercase tracking-wider text-rose-500 dark:text-rose-400">
+                보스
+              </div>
+              <h4 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                {bossMonster.name}
+              </h4>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                일일 도전 — 오늘 {attemptsUsed}/{boss.dailyEntryLimit} 사용 (자정에 초기화)
+              </p>
+              <button
+                type="button"
+                disabled={!canBoss}
+                onClick={() => {
+                  if (!bossMonster || !onConsumeBossAttempt) return;
+                  onConsumeBossAttempt();
+                  bossModeRef.current = true;
+                  startWithLog(bossMonster);
+                }}
+                className="mt-3 w-full rounded-md border border-rose-700 bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {player.hp <= 0
+                  ? "회복 필요"
+                  : attemptsLeft <= 0
+                    ? "오늘 도전 횟수 소진"
+                    : `보스 도전 (남은 ${attemptsLeft}/${boss.dailyEntryLimit})`}
+              </button>
+            </Card>
+          ) : (
+            <div className="rounded-lg border border-dashed border-zinc-300 bg-white/90 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/90 dark:text-zinc-400">
+              이 지역엔 도전할 보스가 없다.
             </div>
-            <h4 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              {bossMonster.name}
-            </h4>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              일일 도전 — 오늘 {attemptsUsed}/{boss.dailyEntryLimit} 사용 (자정에 초기화)
-            </p>
-            <button
-              type="button"
-              disabled={!canBoss}
-              onClick={() => {
-                if (!bossMonster || !onConsumeBossAttempt) return;
-                onConsumeBossAttempt();
-                bossModeRef.current = true;
-                startWithLog(bossMonster);
-              }}
-              className="mt-3 w-full rounded-md border border-rose-700 bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {player.hp <= 0
-                ? "회복 필요"
-                : attemptsLeft <= 0
-                  ? "오늘 도전 횟수 소진"
-                  : `보스 도전 (남은 ${attemptsLeft}/${boss.dailyEntryLimit})`}
-            </button>
-          </Card>
-        )}
-
-        {hasEnemies ? (
+          )
+        ) : hasEnemies ? (
           <>
             <EnemyEncounterSection region={region} />
             <button
