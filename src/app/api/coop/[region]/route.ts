@@ -4,6 +4,7 @@ import {
   bulletinPosts,
   coopBossContributors,
   coopBossSessions,
+  messages,
   savesKv,
   users,
 } from "@/db/schema";
@@ -332,7 +333,7 @@ async function handleClaim(userId: string, region: string): Promise<Response> {
   return Response.json({ tier, ratio, reward });
 }
 
-// 처치 broadcast — 광장 게시판에 1줄 시스템 글.
+// 처치 broadcast — 광장 게시판 + 채팅에 1줄 시스템 글.
 async function broadcastBossKill(
   killerId: string,
   sessionId: string,
@@ -351,13 +352,19 @@ async function broadcastBossKill(
     .limit(1);
   const killerName = killer[0]?.name ?? "이름 없는 모험가";
 
-  await db.insert(bulletinPosts).values({
+  const content = `${bossName}이(가) 쓰러졌다 — 마지막 일격: ${killerName} · 기여자 ${count}명`;
+  const row = {
     userId: killerId,
     name: killerName,
     className: "협동 토벌",
     title: null,
-    content: `${bossName}이(가) 쓰러졌다 — 마지막 일격: ${killerName} · 기여자 ${count}명`,
-  });
+    content,
+  };
+
+  await Promise.all([
+    db.insert(bulletinPosts).values(row),
+    db.insert(messages).values(row),
+  ]);
 }
 
 // storyFlag 서버 set — savesKv 의 storyFlags.v1 row 갱신.
