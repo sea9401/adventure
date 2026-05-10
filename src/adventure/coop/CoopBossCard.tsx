@@ -274,54 +274,56 @@ export function CoopBossCard({
           <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             전투 로그
           </div>
-          <ul className="max-h-72 space-y-2 overflow-y-auto">
+          <ul className="max-h-72 space-y-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {recentLogs.map((row) => (
               <li
                 key={row.id}
-                className={`rounded border p-1.5 ${row.mine ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/30" : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/40"}`}
+                className={`rounded border ${row.mine ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/30" : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/40"}`}
               >
-                <div
-                  className={`flex items-baseline justify-between gap-2 tabular-nums ${row.mine ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"}`}
-                >
-                  <span className="min-w-0 truncate">
-                    <span className={row.mine ? "font-semibold" : ""}>
-                      {row.name}
+                <details>
+                  <summary
+                    className={`flex cursor-pointer list-none items-baseline justify-between gap-2 p-1.5 tabular-nums [&::-webkit-details-marker]:hidden ${row.mine ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"}`}
+                  >
+                    <span className="min-w-0 truncate">
+                      <span className={row.mine ? "font-semibold" : ""}>
+                        {row.name}
+                      </span>
+                      {row.diedEarly && (
+                        <span className="ml-1 text-rose-600 dark:text-rose-400">
+                          (쓰러짐)
+                        </span>
+                      )}
                     </span>
-                    {row.diedEarly && (
-                      <span className="ml-1 text-rose-600 dark:text-rose-400">
-                        (쓰러짐)
-                      </span>
-                    )}
-                  </span>
-                  <span className="shrink-0">
-                    +{row.damageDealt.toLocaleString()}
-                    {row.damageTaken > 0 && (
-                      <span className="ml-1 text-rose-600/80 dark:text-rose-400/80">
-                        −{row.damageTaken.toLocaleString()}
-                      </span>
-                    )}
-                  </span>
-                </div>
-                {row.log.length > 0 && (
-                  <ul className="mt-1 space-y-0.5 pl-2 text-[11px]">
-                    {row.log.map((entry, i) => (
-                      <li
-                        key={i}
-                        className={
-                          entry.kind === "phase_trigger"
-                            ? "text-amber-700 dark:text-amber-400"
-                            : entry.kind === "player_attack"
-                              ? "text-zinc-700 dark:text-zinc-300"
-                              : entry.kind === "enemy_attack"
-                                ? "text-rose-600/80 dark:text-rose-400/80"
-                                : "text-zinc-500 dark:text-zinc-400"
-                        }
-                      >
-                        {entry.text}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                    <span className="shrink-0">
+                      +{row.damageDealt.toLocaleString()}
+                      {row.damageTaken > 0 && (
+                        <span className="ml-1 text-rose-600/80 dark:text-rose-400/80">
+                          −{row.damageTaken.toLocaleString()}
+                        </span>
+                      )}
+                    </span>
+                  </summary>
+                  {row.log.length > 0 && (
+                    <ul className="space-y-0.5 border-t border-zinc-200 px-1.5 py-1 pl-3.5 text-[11px] dark:border-zinc-800">
+                      {row.log.map((entry, i) => (
+                        <li
+                          key={i}
+                          className={
+                            entry.kind === "phase_trigger"
+                              ? "text-amber-700 dark:text-amber-400"
+                              : entry.kind === "player_attack"
+                                ? "text-zinc-700 dark:text-zinc-300"
+                                : entry.kind === "enemy_attack"
+                                  ? "text-rose-600/80 dark:text-rose-400/80"
+                                  : "text-zinc-500 dark:text-zinc-400"
+                          }
+                        >
+                          {entry.text}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </details>
               </li>
             ))}
           </ul>
