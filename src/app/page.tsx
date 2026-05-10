@@ -1102,7 +1102,7 @@ function Home() {
               {character.gold.toLocaleString()}
             </span>
             <NotificationBell
-              notifications={notifications.alertable}
+              notifications={notifications.list}
               unreadCount={notifications.unreadCount}
               onOpen={notifications.markRead}
             />
@@ -1212,7 +1212,7 @@ function Home() {
           )}
         </main>
       </div>
-      <NotificationToast notifications={notifications.alertable} />
+      <NotificationToast notifications={notifications.list} />
       <LevelUpOverlay level={character.level} triggerKey={levelUpTrigger} />
       {showModal && <NameSetupModal onSubmit={profile.submit} />}
       {offlineRewards && (

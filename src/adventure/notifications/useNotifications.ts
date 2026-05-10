@@ -50,11 +50,12 @@ export function useNotifications() {
     setLastReadAt(Date.now());
   };
 
-  // 알림(종·토스트)은 의미 있는 종류만 — battle_win·info는 최근 기록에만 남김.
-  const alertable = list.filter(
-    (n) => n.kind !== "battle_win" && n.kind !== "info",
-  );
-  const unreadCount = alertable.filter((n) => n.timestamp > lastReadAt).length;
+  // 벨 unread 카운트는 잡음이 많은 battle_win·info 를 그대로 두면 끊임없이
+  // 깜빡여 의미가 옅어진다 — 두 종류는 unread 집계에서만 제외.
+  // 토스트 노출 여부는 별도로 useToastPrefs 의 사용자 설정이 단일 source-of-truth.
+  const unreadCount = list
+    .filter((n) => n.kind !== "battle_win" && n.kind !== "info")
+    .filter((n) => n.timestamp > lastReadAt).length;
 
-  return { list, alertable, unreadCount, add, markRead, clear };
+  return { list, unreadCount, add, markRead, clear };
 }

@@ -14,16 +14,18 @@ const PREF_CHANGE_EVENT = "notification-prefs-change";
 
 export type ToastPrefs = Record<NotificationKind, boolean>;
 
-// 기본값 — 기존 NotificationToast 의 하드코딩 동작과 동일:
-// battle_win/lose 는 사용자가 직접 일으킨 액션 결과라 토스트 차단,
-// 나머지는 표시.
+// 기본값 — 모든 종류가 prefs 패널에서 토글 가능. 다음 기준으로 디폴트 결정:
+// - battle_win / info: 너무 자주 발화되어 토스트로 두면 잡음 — 기본 OFF.
+// - battle_lose: 사망 자체가 눈에 띄는 모달을 띄우므로 중복 토스트는 기본 OFF.
+//   (원하면 사용자가 켤 수 있음)
+// - training_done / quest_ready / quest_complete: 드물고 의미 있는 이벤트 — 기본 ON.
 const DEFAULTS: ToastPrefs = {
   battle_win: false,
   battle_lose: false,
   training_done: true,
   quest_ready: true,
   quest_complete: true,
-  info: true,
+  info: false,
 };
 
 export function readToastPrefs(): ToastPrefs {
