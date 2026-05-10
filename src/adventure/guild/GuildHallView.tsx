@@ -28,6 +28,7 @@ import {
   type GuildMeResponse,
 } from "./api";
 import { GuildInviteModal } from "./GuildInviteModal";
+import { GuildQuestsPanel } from "./GuildQuestsPanel";
 
 const NO_AFFILIATION = "무소속";
 
@@ -188,15 +189,18 @@ export function GuildHallView() {
       ) : null}
 
       {data?.guild ? (
-        <GuildPanel
-          guild={data.guild}
-          busy={busy}
-          onInviteClick={() => setShowInvite(true)}
-          onLeave={handleLeave}
-          onKick={handleKick}
-          onTransfer={handleTransfer}
-          onDisband={handleDisband}
-        />
+        <>
+          <GuildPanel
+            guild={data.guild}
+            busy={busy}
+            onInviteClick={() => setShowInvite(true)}
+            onLeave={handleLeave}
+            onKick={handleKick}
+            onTransfer={handleTransfer}
+            onDisband={handleDisband}
+          />
+          <GuildQuestsPanel />
+        </>
       ) : (
         <NoGuildPanel
           showCreate={showCreate}
