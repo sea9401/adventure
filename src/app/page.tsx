@@ -261,8 +261,12 @@ function Home() {
   // 첫 mount(baseline 기록) 시에는 변경 감지하지 않도록 ref로 분기.
   // huntingActive 가 ON 이었던 경우만 안내 토스트 — 사용자가 정지 사실을 명확히 인지.
   // (effect deps 에 huntingActive 를 넣지 않기 위해 ref 로 latest 캡처.)
+  // huntingActive 가 ON 이면 setHuntingActive(false) 직전에 offline sim flush —
+  // 사용자가 사냥 ON 상태로 지도/마을로 이동한 경우 그 사이에 누적된 보상이 손실되지
+  // 않도록. flushOfflineSim 은 useOfflineSimulation 이 나중에 정의돼 ref bridging 사용.
   const lastRegionForHuntRef = useRef<string | null>(null);
   const huntingActiveRef = useRef(huntingActive);
+  const flushOfflineSimRef = useRef<() => void>(() => {});
   useEffect(() => {
     huntingActiveRef.current = huntingActive;
   });
@@ -273,6 +277,7 @@ function Home() {
     }
     if (lastRegionForHuntRef.current !== mapProgress.currentRegionId) {
       if (huntingActiveRef.current) {
+        flushOfflineSimRef.current();
         addNotification("info", "지역 이동으로 자동 사냥이 정지됐다.");
       }
       setHuntingActive(false);
@@ -785,18 +790,23 @@ function Home() {
   // 30분 cap + 사망 시 break + 시작 마을 이동.
   // "away" 판정은 (브라우저 탭 hidden) || (배틀뷰 아님) — in-app 으로 캐릭터/광장 보는
   // 동안에도 자동 사냥이 끊기지 않게.
-  useOfflineSimulation({
+  const { flushNow: flushOfflineSim } = useOfflineSimulation({
     enabled: currentRegion.enemies.length > 0,
     regionId: currentRegion.id,
     active: huntingActive,
     isInBattleView: tab === "adventure" && subView === "battle",
     playerHp: character.hp,
-    runSim: (awayMs, baselineHp) =>
-      simulateOfflineHunt({
+    runSim: (awayMs, baselineHp, baselineRegionId) => {
+      // baseline 시점의 region 으로 lookup — 명시 중지 후 region 이 이미 바뀐 상태에서
+      // flushNow 가 호출돼도 그 시점에 사냥하던 region 의 적/드롭으로 정상 보상.
+      const baselineRegion =
+        WORLD_MAP.regions.find((r) => r.id === baselineRegionId) ??
+        currentRegion;
+      return simulateOfflineHunt({
         // baseline 시점의 HP 로 sim — 마을 회복 후 부풀린 HP 가 sim 에 반영되는 익스플로잇 차단.
         player: { ...playerCombat, hp: baselineHp },
         playerName: profile.name,
-        region: currentRegion,
+        region: baselineRegion,
         playerLevel: character.level,
         playerExp: character.exp,
         potions: inventory.state.potions,
@@ -809,7 +819,8 @@ function Home() {
             rules: autoPotion.config.rules,
             potions: inventory.state.potions,
           }),
-      }),
+      });
+    },
     onApply: (result) => {
       // 처치 — 도감/퀘스트 진행 누적. 퀘스트 ready 알림은 한 번에 하나만 의미 있어 첫 트리거만 띄움.
       const readyQuestIds = new Set<string>();
@@ -883,6 +894,9 @@ function Home() {
       setOfflineRewards(result);
     },
   });
+  // ref bridging — 위쪽 region 변경 useEffect 가 setHuntingActive(false) 직전에
+  // 호출. flushOfflineSim 자체는 stable 하므로 매 render 갱신해도 비용 없음.
+  flushOfflineSimRef.current = flushOfflineSim;
 
   const rewardServices: RewardServices = {
     addPotion: (id, n) => inventory.add(id, n),
