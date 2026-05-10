@@ -4,7 +4,7 @@ import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 
-export const TRAINING_DURATION_MS = 6 * 60 * 60 * 1000;
+export const TRAINING_DURATION_MS = 8 * 60 * 60 * 1000;
 
 type TrainingPersisted = {
   endsAt: number | null;
