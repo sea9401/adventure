@@ -2,6 +2,8 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Kakao from "next-auth/providers/kakao";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { and, eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { rawDb } from "@/db";
 import {
   users,
@@ -57,6 +59,50 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => ({
     }),
   ],
   callbacks: {
+    async signIn({ account }) {
+      if (!account) return true;
+
+      const cookieStore = await cookies();
+      const linkUserId = cookieStore.get("link_user_id")?.value;
+      if (!linkUserId) return true;
+
+      // 연동 모드: 이 OAuth 계정이 이미 accounts 테이블에 있는지 확인.
+      const [existing] = await rawDb()
+        .select({ userId: accounts.userId })
+        .from(accounts)
+        .where(
+          and(
+            eq(accounts.provider, account.provider),
+            eq(accounts.providerAccountId, account.providerAccountId),
+          ),
+        )
+        .limit(1);
+
+      if (existing) {
+        // 이미 연동된 계정 → 일반 로그인으로 진행
+        return true;
+      }
+
+      // 미연동 계정 → 기존 유저에 계정 행 추가, 세션 생성 없이 리다이렉트
+      try {
+        await rawDb().insert(accounts).values({
+          userId: linkUserId,
+          type: account.type,
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
+          refresh_token: (account.refresh_token as string | undefined) ?? null,
+          access_token: (account.access_token as string | undefined) ?? null,
+          expires_at: (account.expires_at as number | undefined) ?? null,
+          token_type: (account.token_type as string | undefined) ?? null,
+          scope: (account.scope as string | undefined) ?? null,
+          id_token: (account.id_token as string | undefined) ?? null,
+          session_state: (account.session_state as string | undefined) ?? null,
+        });
+        return "/?linked=" + account.provider;
+      } catch {
+        return true;
+      }
+    },
     jwt({ token, user }) {
       if (user?.id) token.sub = user.id;
       return token;

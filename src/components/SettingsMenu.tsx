@@ -9,7 +9,7 @@ import {
   Sun,
   SignOut,
 } from "@phosphor-icons/react";
-import { signOut } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { HelpModal } from "./HelpModal";
 import { NotificationPrefsModal } from "./NotificationPrefsModal";
 
@@ -18,6 +18,7 @@ export function SettingsMenu() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [notifPrefsOpen, setNotifPrefsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [linkedProviders, setLinkedProviders] = useState<string[] | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const initial = document.documentElement.classList.contains("dark")
@@ -26,6 +27,16 @@ export function SettingsMenu() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(initial);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/auth/linked-accounts")
+      .then((r) => (r.ok ? r.json() : { providers: [] }))
+      .then((data: { providers: string[] }) =>
+        setLinkedProviders(data.providers),
+      )
+      .catch(() => setLinkedProviders([]));
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -53,6 +64,16 @@ export function SettingsMenu() {
   const handleSignOut = () => {
     setOpen(false);
     signOut({ redirectTo: "/sign-in" });
+  };
+
+  const handleLink = async (provider: string) => {
+    setOpen(false);
+    await fetch("/api/auth/link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider }),
+    });
+    signIn(provider, { callbackUrl: "/" });
   };
 
   const handleOpenHelp = () => {
@@ -118,6 +139,36 @@ export function SettingsMenu() {
                 도움말
               </button>
             </li>
+          </ul>
+          <div className="border-t border-zinc-200 px-3 py-2 text-xs uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+            계정 연동
+          </div>
+          <ul className="py-1">
+            {(["google", "kakao"] as const).map((provider) => {
+              const linked = linkedProviders?.includes(provider);
+              const label = provider === "google" ? "Google" : "카카오";
+              return (
+                <li key={provider}>
+                  {linked ? (
+                    <span className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-400 dark:text-zinc-600">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      {label} 연동됨
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleLink(provider)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    >
+                      <span className="h-2 w-2 rounded-full bg-zinc-400" />
+                      {label} 연동하기
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <ul className="border-t border-zinc-200 py-1 dark:border-zinc-800">
             <li>
               <button
                 type="button"
