@@ -95,45 +95,42 @@ export const MATERIALS = {
     id: "giant_scale",
     name: "거인 비늘",
     description: "운봉의 거인이 떨군 회청색 비늘. 단단하면서도 가볍다.",
-    // 가격 추후 재설정.
-    price: 0,
+    price: 28,
     inShop: false,
   },
   unbong_ore: {
     id: "unbong_ore",
     name: "운봉석",
     description: "협곡 깊숙한 광맥에서만 캐낼 수 있는 반짝이는 광석.",
-    // 가격 추후 재설정.
-    price: 0,
+    price: 32,
     inShop: false,
   },
   sancho_blossom: {
     id: "sancho_blossom",
     name: "산초꽃",
     description: "산기슭에서만 피는 작고 매운 꽃. 약초로 쓴다.",
-    // 가격 추후 재설정.
-    price: 0,
+    price: 14,
     inShop: false,
   },
   tough_hide: {
     id: "tough_hide",
     name: "단단한 가죽",
     description: "산기슭의 짐승에게서 얻는 두텁고 질긴 가죽.",
-    price: 0,
+    price: 15,
     inShop: false,
   },
   wind_mana_stone: {
     id: "wind_mana_stone",
     name: "바람 마석",
     description: "협곡의 정령이 흩뿌리는 푸르스름한 결정. 손에 쥐면 바람을 머금은 듯 가볍다.",
-    price: 0,
+    price: 22,
     inShop: false,
   },
   wolf_king_fang: {
     id: "wolf_king_fang",
     name: "늑대왕의 송곳니",
     description: "무리를 이끄는 늑대만이 갖는 길고 굵은 송곳니. 흔치 않다.",
-    price: 0,
+    price: 40,
     inShop: false,
   },
 } as const;
