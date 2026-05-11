@@ -22,10 +22,10 @@ import {
   getPotionSellPrice,
 } from "./data/sellPrices";
 import type { InventoryState } from "./inventory/useInventory";
-import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
+import { LIST_ROW } from "@/components/ui/listRow";
 import { usePagination } from "@/lib/usePagination";
 
 type ShopTabKey = "buy" | "sell";
@@ -122,7 +122,7 @@ function BuyTab({
         <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           물약
         </div>
-        <div className="space-y-2">
+        <ul className="space-y-1.5">
           {POTION_IDS.map((id) => {
             const potion = POTIONS[id];
             const owned = inventory.potions[id] ?? 0;
@@ -139,7 +139,7 @@ function BuyTab({
               />
             );
           })}
-        </div>
+        </ul>
       </div>
 
       {materialIds.length > 0 && (
@@ -147,7 +147,7 @@ function BuyTab({
           <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             재료
           </div>
-          <div className="space-y-2">
+          <ul className="space-y-1.5">
             {materialIds.map((id) => {
               const m = MATERIALS[id];
               const owned = inventory.materials[id] ?? 0;
@@ -163,7 +163,7 @@ function BuyTab({
                 />
               );
             })}
-          </div>
+          </ul>
         </div>
       )}
 
@@ -171,7 +171,7 @@ function BuyTab({
         <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           소모품
         </div>
-        <div className="space-y-2">
+        <ul className="space-y-1.5">
           {CONSUMABLE_IDS.map((id) => {
             const c = CONSUMABLES[id];
             const owned = inventory.consumables[id] ?? 0;
@@ -187,7 +187,7 @@ function BuyTab({
               />
             );
           })}
-        </div>
+        </ul>
       </div>
     </div>
   );
@@ -219,7 +219,7 @@ function BuyRow({
   const canPurchase = !isFull && effectiveQty > 0 && canAfford;
 
   return (
-    <Card>
+    <li className={LIST_ROW}>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           {name}
@@ -229,10 +229,10 @@ function BuyRow({
           {cap !== undefined ? ` / ${cap}` : ""}
         </span>
       </div>
-      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+      <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
         {description}
       </p>
-      <div className="mt-2 flex items-center gap-2">
+      <div className="mt-1.5 flex items-center gap-2">
         <div className="inline-flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
           <Coins size={12} weight="fill" className="text-yellow-500" />
           <span className="tabular-nums">{price.toLocaleString()}</span>
@@ -267,7 +267,7 @@ function BuyRow({
           </button>
         </div>
       </div>
-    </Card>
+    </li>
   );
 }
 
@@ -398,9 +398,11 @@ function SellRows({
   const pager = usePagination(rows, 10);
   return (
     <div className="space-y-2">
-      {pager.pageItems.map(({ key, ...rest }) => (
-        <SellRow key={key} {...rest} />
-      ))}
+      <ul className="space-y-1.5">
+        {pager.pageItems.map(({ key, ...rest }) => (
+          <SellRow key={key} {...rest} />
+        ))}
+      </ul>
       <Pagination
         page={pager.page}
         pageCount={pager.pageCount}
@@ -438,7 +440,7 @@ function SellRow({
   const canSell = effectiveQty > 0 && owned > 0;
 
   return (
-    <Card>
+    <li className={LIST_ROW}>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           {name}
@@ -448,11 +450,11 @@ function SellRow({
         </span>
       </div>
       {description && (
-        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+        <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
           {description}
         </p>
       )}
-      <div className="mt-2 flex items-center gap-2">
+      <div className="mt-1.5 flex items-center gap-2">
         <div className="inline-flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
           <Coins size={12} weight="fill" className="text-yellow-500" />
           <span className="tabular-nums">{unitPrice}</span>
@@ -478,7 +480,7 @@ function SellRow({
           </button>
         </div>
       </div>
-    </Card>
+    </li>
   );
 }
 

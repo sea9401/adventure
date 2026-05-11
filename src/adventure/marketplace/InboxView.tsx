@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Pagination } from "@/components/ui/Pagination";
+import { LIST_ROW } from "@/components/ui/listRow";
 import { usePagination } from "@/lib/usePagination";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
@@ -215,12 +216,9 @@ export function InboxView() {
       })()}
 
       {loading && items.length === 0 ? (
-        <ul className="space-y-2">
+        <ul className="space-y-1.5">
           {Array.from({ length: 3 }).map((_, i) => (
-            <li
-              key={i}
-              className="rounded-lg border border-zinc-200 bg-white/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/60"
-            >
+            <li key={i} className={LIST_ROW}>
               <Skeleton rows={2} />
             </li>
           ))}
@@ -233,35 +231,37 @@ export function InboxView() {
         />
       ) : (
         <div className="space-y-2">
-          {pager.pageItems.map((it) => {
-            const inviteId =
-              it.kind === "guild_invite"
-                ? Number((it.payload as { invite_id?: unknown }).invite_id)
-                : null;
-            return (
-              <InboxRow
-                key={it.id}
-                item={it}
-                busy={busyIds.has(it.id)}
-                onClaim={() => claim([it.id])}
-                onReply={
-                  it.kind === "user_message" && it.fromName
-                    ? () => setComposer({ recipient: it.fromName as string })
-                    : undefined
-                }
-                onAccept={
-                  inviteId !== null && Number.isInteger(inviteId)
-                    ? () => respondToGuildInvite(inviteId, it.id, true)
-                    : undefined
-                }
-                onDecline={
-                  inviteId !== null && Number.isInteger(inviteId)
-                    ? () => respondToGuildInvite(inviteId, it.id, false)
-                    : undefined
-                }
-              />
-            );
-          })}
+          <ul className="space-y-1.5">
+            {pager.pageItems.map((it) => {
+              const inviteId =
+                it.kind === "guild_invite"
+                  ? Number((it.payload as { invite_id?: unknown }).invite_id)
+                  : null;
+              return (
+                <InboxRow
+                  key={it.id}
+                  item={it}
+                  busy={busyIds.has(it.id)}
+                  onClaim={() => claim([it.id])}
+                  onReply={
+                    it.kind === "user_message" && it.fromName
+                      ? () => setComposer({ recipient: it.fromName as string })
+                      : undefined
+                  }
+                  onAccept={
+                    inviteId !== null && Number.isInteger(inviteId)
+                      ? () => respondToGuildInvite(inviteId, it.id, true)
+                      : undefined
+                  }
+                  onDecline={
+                    inviteId !== null && Number.isInteger(inviteId)
+                      ? () => respondToGuildInvite(inviteId, it.id, false)
+                      : undefined
+                  }
+                />
+              );
+            })}
+          </ul>
           <Pagination
             page={pager.page}
             pageCount={pager.pageCount}
@@ -305,7 +305,7 @@ function InboxRow({
       : null;
 
   return (
-    <Card padding="sm">
+    <li className={LIST_ROW}>
       <div className="flex items-start gap-3">
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -364,7 +364,7 @@ function InboxRow({
           )}
         </div>
       </div>
-    </Card>
+    </li>
   );
 }
 

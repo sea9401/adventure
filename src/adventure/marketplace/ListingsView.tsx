@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TabBar } from "@/components/ui/TabBar";
 import { Pagination } from "@/components/ui/Pagination";
+import { LIST_ROW } from "@/components/ui/listRow";
 import { usePagination } from "@/lib/usePagination";
 import { formatRelativeTime } from "@/lib/format";
 import { ITEMS, rarityTextClass, type ItemId } from "@/adventure/data/items";
@@ -33,7 +34,9 @@ function listingDetail(item: Listing): ListingDetail | null {
   if (item.itemKind === "equip") {
     if (!hasOwn(ITEMS, item.itemId)) return null;
     const def = ITEMS[item.itemId as ItemId];
-    return { lines: [...def.stats], description: def.description };
+    // 스탯은 행에 인라인으로 보여주므로(가방과 동일) 펼침 패널엔 설명만.
+    if (!def.description) return null;
+    return { lines: [], description: def.description };
   }
   if (item.itemKind === "recipe") {
     const r = getRecipeById(item.itemId);
@@ -241,19 +244,21 @@ export function ListingsView({
         />
       ) : (
         <div className="space-y-2">
-          {pager.pageItems.map((it) => (
-            <ListingCard
-              key={it.id}
-              item={it}
-              onCancel={onCancelListing}
-              onBuy={onBuyListing}
-              currentGold={currentGold}
-              alreadyKnown={
-                it.itemKind === "recipe" &&
-                !!knownRecipes?.includes(it.itemId)
-              }
-            />
-          ))}
+          <ul className="space-y-1.5">
+            {pager.pageItems.map((it) => (
+              <ListingCard
+                key={it.id}
+                item={it}
+                onCancel={onCancelListing}
+                onBuy={onBuyListing}
+                currentGold={currentGold}
+                alreadyKnown={
+                  it.itemKind === "recipe" &&
+                  !!knownRecipes?.includes(it.itemId)
+                }
+              />
+            ))}
+          </ul>
           <Pagination
             page={pager.page}
             pageCount={pager.pageCount}
@@ -295,7 +300,7 @@ function ListingCard({
     typeof currentGold === "number" && currentGold < item.price;
   const blocked = alreadyKnown === true;
   const isRecipe = item.itemKind === "recipe";
-  // 장비 매물이면 등급색으로 강조 — 다른 종류는 기본 zinc 톤.
+  // 장비 매물이면 등급색으로 강조 + 스탯을 행에 인라인 표시 — 다른 종류는 기본 zinc 톤.
   const equipDef =
     item.itemKind === "equip" && hasOwn(ITEMS, item.itemId)
       ? ITEMS[item.itemId as ItemId]
@@ -303,37 +308,54 @@ function ListingCard({
   const nameClass = rarityTextClass(equipDef, "text-zinc-900 dark:text-zinc-100");
   const detail = listingDetail(item);
   return (
-    <Card padding="sm">
-      <div className="flex items-center gap-3">
-        <span className="flex-1 min-w-0">
-          <span
-            className={`block truncate text-sm font-medium ${nameClass} ${
-              detail
-                ? "cursor-pointer underline decoration-dotted decoration-zinc-400 underline-offset-2"
-                : ""
-            }`}
-            role={detail ? "button" : undefined}
-            tabIndex={detail ? 0 : undefined}
-            aria-expanded={detail ? open : undefined}
-            onClick={detail ? () => setOpen((v) => !v) : undefined}
-            onKeyDown={
-              detail
-                ? (e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setOpen((v) => !v);
+    <li className={LIST_ROW}>
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <div className="flex flex-wrap items-baseline gap-x-1.5">
+            <span
+              className={`text-sm font-medium ${nameClass} ${
+                detail
+                  ? "cursor-pointer underline decoration-dotted decoration-zinc-400 underline-offset-2"
+                  : ""
+              }`}
+              role={detail ? "button" : undefined}
+              tabIndex={detail ? 0 : undefined}
+              aria-expanded={detail ? open : undefined}
+              onClick={detail ? () => setOpen((v) => !v) : undefined}
+              onKeyDown={
+                detail
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setOpen((v) => !v);
+                      }
                     }
-                  }
-                : undefined
-            }
-          >
-            {isRecipe ? "📜 " : ""}
-            {item.itemName}
+                  : undefined
+              }
+            >
+              {isRecipe ? "📜 " : ""}
+              {item.itemName}
+            </span>
             {item.itemKind === "material" && item.quantity > 1 ? (
-              <span className="ml-1 text-zinc-500">×{item.quantity}</span>
+              <span className="text-xs tabular-nums text-zinc-500">
+                ×{item.quantity}
+              </span>
             ) : null}
-          </span>
-          <span className="mt-0.5 block text-[11px] text-zinc-500">
+            {item.isMine ? (
+              <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                내 매물
+              </span>
+            ) : null}
+            {blocked ? (
+              <span className="text-[10px] text-zinc-500">이미 알고 있음</span>
+            ) : null}
+          </div>
+          {equipDef ? (
+            <div className="text-xs text-amber-600 dark:text-amber-400">
+              {equipDef.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
+            </div>
+          ) : null}
+          <div className="text-[11px] text-zinc-500">
             {formatRelativeTime(item.createdAt)}
             {(() => {
               // 등록 24시간 만료 — 4시간 이하 남았으면 임박 뱃지 노출.
@@ -351,16 +373,10 @@ function ListingCard({
               }
               return null;
             })()}
-            {item.isMine ? (
-              <span className="ml-2 text-emerald-600">내 매물</span>
-            ) : null}
-            {blocked ? (
-              <span className="ml-2 text-zinc-500">이미 알고 있음</span>
-            ) : null}
-          </span>
-        </span>
-        <span className="shrink-0 text-right">
-          <span className="block text-base font-semibold text-amber-700 dark:text-amber-400">
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className="text-sm font-semibold tabular-nums text-amber-700 dark:text-amber-400">
             {item.price.toLocaleString()} G
           </span>
           {item.isMine && onCancel ? (
@@ -375,13 +391,11 @@ function ListingCard({
                   setBusy(false);
                 }
               }}
-              className="mt-1 rounded-md border border-red-300 bg-white px-2 py-0.5 text-xs text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/30"
+              className="rounded-md border border-red-300 bg-white px-2 py-0.5 text-xs text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/30"
             >
               {busy ? "취소 중…" : "취소"}
             </button>
-          ) : item.isMine ? (
-            <span className="mt-1 block text-[10px] text-zinc-500">내 매물</span>
-          ) : onBuy ? (
+          ) : item.isMine ? null : onBuy ? (
             <button
               type="button"
               disabled={busy || insufficientGold || blocked}
@@ -402,8 +416,8 @@ function ListingCard({
               }}
               className={
                 insufficientGold || blocked
-                  ? "mt-1 cursor-not-allowed rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
-                  : "mt-1 rounded-md border border-emerald-700 bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                  ? "cursor-not-allowed rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+                  : "rounded-md border border-emerald-700 bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               }
             >
               {busy
@@ -415,7 +429,7 @@ function ListingCard({
                     : "구매"}
             </button>
           ) : null}
-        </span>
+        </div>
       </div>
       {open && detail ? (
         <div className="mt-2 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
@@ -453,6 +467,6 @@ function ListingCard({
           ) : null}
         </div>
       ) : null}
-    </Card>
+    </li>
   );
 }

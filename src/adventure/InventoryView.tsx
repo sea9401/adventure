@@ -29,6 +29,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { Pagination } from "@/components/ui/Pagination";
+import { LIST_ROW } from "@/components/ui/listRow";
 import { usePagination } from "@/lib/usePagination";
 
 type InvTabKey = "equipment" | "materials" | "potions" | "consumables";
@@ -45,10 +46,6 @@ const SLOT_TABS: { key: EquipSlot; label: string }[] = [
   { key: "armor", label: "방어구" },
   { key: "accessory", label: "장신구" },
 ];
-
-// 가방 목록 한 줄의 공통 외형 — 카드 대신 얇은 행으로 압축.
-const ROW =
-  "rounded-md border border-zinc-200 bg-white/70 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50";
 
 // 보유 장비는 1개당 한 행 — 같은 장비라도 묶지 않는다(중첩 X). 무등급(equipment[])과
 // 제작산 등급(craftedEquipment[id][tier]) 모두 개수만큼 펼쳐서 별도 entry 로.
@@ -208,7 +205,7 @@ export function InventoryView({
                 const suffix = craftTierSuffix(tier);
                 const confirming = confirmKey === key;
                 return (
-                  <li key={key} className={`flex items-start gap-2 ${ROW}`}>
+                  <li key={key} className={`flex items-start gap-2 ${LIST_ROW}`}>
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <div className="flex flex-wrap items-baseline gap-x-1.5">
                         <span className={`text-sm font-medium ${rarityTextClass(item)}`}>
@@ -320,7 +317,7 @@ export function InventoryView({
           <section className="space-y-2">
             <ul className="space-y-1.5">
               {materialsPager.pageItems.map(({ id, material, count }) => (
-                <li key={id} className={ROW}>
+                <li key={id} className={LIST_ROW}>
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                       {material.name}
@@ -354,7 +351,7 @@ export function InventoryView({
           <section className="space-y-2">
             <ul className="space-y-1.5">
               {potionsPager.pageItems.map(({ id, potion, count }) => (
-                <li key={id} className={ROW}>
+                <li key={id} className={LIST_ROW}>
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                       {potion.name}
@@ -397,7 +394,7 @@ export function InventoryView({
             </p>
             <ul className="space-y-1.5">
               {consumablesPager.pageItems.map(({ id, consumable, count }) => (
-                <li key={id} className={ROW}>
+                <li key={id} className={LIST_ROW}>
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                       {consumable.name}
