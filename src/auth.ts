@@ -78,26 +78,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => ({
         )
         .limit(1);
 
-      if (existing) {
-        // 이미 연동된 계정 → 일반 로그인으로 진행
+      if (existing?.userId === linkUserId) {
+        // 이미 이 유저에 연동된 계정 → 일반 로그인으로 진행
         return true;
       }
 
-      // 미연동 계정 → 기존 유저에 계정 행 추가, 세션 생성 없이 리다이렉트
+      const accountValues = {
+        userId: linkUserId,
+        type: account.type,
+        provider: account.provider,
+        providerAccountId: account.providerAccountId,
+        refresh_token: (account.refresh_token as string | undefined) ?? null,
+        access_token: (account.access_token as string | undefined) ?? null,
+        expires_at: (account.expires_at as number | undefined) ?? null,
+        token_type: (account.token_type as string | undefined) ?? null,
+        scope: (account.scope as string | undefined) ?? null,
+        id_token: (account.id_token as string | undefined) ?? null,
+        session_state: (account.session_state as string | undefined) ?? null,
+      };
+
       try {
-        await rawDb().insert(accounts).values({
-          userId: linkUserId,
-          type: account.type,
-          provider: account.provider,
-          providerAccountId: account.providerAccountId,
-          refresh_token: (account.refresh_token as string | undefined) ?? null,
-          access_token: (account.access_token as string | undefined) ?? null,
-          expires_at: (account.expires_at as number | undefined) ?? null,
-          token_type: (account.token_type as string | undefined) ?? null,
-          scope: (account.scope as string | undefined) ?? null,
-          id_token: (account.id_token as string | undefined) ?? null,
-          session_state: (account.session_state as string | undefined) ?? null,
-        });
+        if (existing) {
+          // 다른 유저에 연동된 계정 → 강제 재연동 (실수로 별도 계정을 만든 경우)
+          await rawDb()
+            .update(accounts)
+            .set({ userId: linkUserId })
+            .where(
+              and(
+                eq(accounts.provider, account.provider),
+                eq(accounts.providerAccountId, account.providerAccountId),
+              ),
+            );
+        } else {
+          // 미연동 계정 → 새로 연결
+          await rawDb().insert(accounts).values(accountValues);
+        }
         return "/?linked=" + account.provider;
       } catch {
         return true;
