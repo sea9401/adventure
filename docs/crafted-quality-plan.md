@@ -1,6 +1,6 @@
 # 제작 품질 등급 시스템 설계 (crafted quality tiers)
 
-> 상태: **착수 가능** — 프레임워크·§6 수치 모두 확정. §7 작업 분해대로 구현.
+> 상태: **구현 완료 (2026-05-11)** — §7 작업 분해대로 구현. `craftQuality.ts` / `recipes.ts`(variance + 재료) / `items.ts` 리밸런스 / `useInventory.craftedEquipment` / 장착 경로 craftTier / `lib/server/craft.ts` + `POST /api/craft` / `page.tsx` handleCraft 서버화 / 대장간·인벤·장비창 UI / `docs/items.md` 동기화. 단위 테스트(`craftQuality.test.ts`, `craft.test.ts`) 포함. 보류: 마켓플레이스/우편 등급 인스턴스 거래(§7-9).
 
 ## 0. 한 줄 요약
 
