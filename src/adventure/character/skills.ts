@@ -72,15 +72,15 @@ export const VANGUARD_FIRST_TURN_BONUS = 1;
 // 발동 시 데미지 ×critMult (강공격 보너스 후에 곱해짐). critMult 는 luk 비례 — 아래 critMultFor.
 export const CRIT_LUK_THRESHOLD = 10;
 export const CRIT_CHANCE_PCT = 5;
-// 크리 데미지 배수 — luk 0 일 때의 기본 + luk 1pt 당 추가.
-// luk 20 = 2.5 (이전 고정값과 동일), luk 50 = 3.25. 스킬 미장착에도 적용 (크리 자체가 luk 1pt 당 +0.5% 라 어차피 luk 빌드용).
+// 크리티컬 데미지 배수 — luk 0 일 때의 기본 + luk 1pt 당 추가.
+// luk 20 = 2.5 (이전 고정값과 동일), luk 50 = 3.25. 스킬 미장착에도 적용 (크리티컬 자체가 luk 1pt 당 +0.5% 라 어차피 luk 빌드용).
 export const CRIT_MULT_BASE = 2.0;
 export const CRIT_MULT_PER_LUK = 0.025;
 // luk 1pt 당 추가되는 기본 크리티컬 확률(%). 스킬 미장착 상태에서도 적용.
 export const CRIT_CHANCE_PER_LUK = 0.5;
 
 // 이중 행운 — 행운 20 도달 시 획득.
-// 효과: 크리티컬 발동 시 그 전투 동안 회피 +DOUBLE_LUCK_EVADE_BONUS%, 크리 +DOUBLE_LUCK_CRIT_BONUS% (누적 X).
+// 효과: 크리티컬 발동 시 그 전투 동안 회피 +DOUBLE_LUCK_EVADE_BONUS%, 크리티컬 +DOUBLE_LUCK_CRIT_BONUS% (누적 X).
 export const DOUBLE_LUCK_LUK_THRESHOLD = 20;
 export const DOUBLE_LUCK_EVADE_BONUS = 5;
 export const DOUBLE_LUCK_CRIT_BONUS = 5;
@@ -203,7 +203,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.DOUBLE_LUCK,
-      description: `크리티컬 발동 시 그 전투 동안 회피 +${DOUBLE_LUCK_EVADE_BONUS}%, 크리 +${DOUBLE_LUCK_CRIT_BONUS}% (누적 X)`,
+      description: `크리티컬 발동 시 그 전투 동안 회피 +${DOUBLE_LUCK_EVADE_BONUS}%, 크리티컬 +${DOUBLE_LUCK_CRIT_BONUS}% (누적 X)`,
       activationThreshold: DOUBLE_LUCK_LUK_THRESHOLD,
     },
     {
@@ -346,7 +346,7 @@ export function critChancePctFor(
   return base + critSkillBonus + bloomBonus;
 }
 
-// 크리 데미지 배수 — luk 비례. 만개 슬롯 시 +BLOOM_CRIT_MULT_BONUS 추가.
+// 크리티컬 데미지 배수 — luk 비례. 만개 슬롯 시 +BLOOM_CRIT_MULT_BONUS 추가.
 // 결과: luk 0=2.0 / luk 10=2.25 / luk 20=2.5 / luk 50=3.25 (만개 미장착 기준).
 export function critMultFor(
   stats: Record<StatKey, number>,

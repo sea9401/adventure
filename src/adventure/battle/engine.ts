@@ -26,7 +26,7 @@ export type BattleState = {
   evadesRemaining: number;
   // 연타가 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋.
   doubleStrikeUsedThisTurn: boolean;
-  // 이중 행운 — 첫 크리 발동 시 true 로 전환, 전투 종료까지 유지. 회피/크리 보너스 적용 게이트.
+  // 이중 행운 — 첫 크리티컬 발동 시 true 로 전환, 전투 종료까지 유지. 회피/크리티컬 보너스 적용 게이트.
   luckyBuffActive: boolean;
   // 그 턴의 첫 공격이 아직 안 나갔는지 — 강공격(첫 공격에만 보너스) 트리거에 사용.
   // 새 턴 시작 시 true, 첫 공격 후 false. 연타(같은 턴 연장)에는 영향 없음.
@@ -37,7 +37,7 @@ export type BattleState = {
   phaseTriggered: boolean;
   // 광속이 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋. 연타와 별개.
   lightspeedUsedThisTurn: boolean;
-  // 불굴 1회성 가드. 발동 후 true — 같은 전투에서 두 번째 치명타에는 정상 사망.
+  // 불굴 1회성 가드. 발동 후 true — 같은 전투에서 두 번째 치명 피해에는 정상 사망.
   enduranceTriggered: boolean;
 };
 
@@ -65,9 +65,9 @@ export type PlayerCombat = {
   vanguardFirstTurnBonus?: number;
   // 크리티컬 — 매 공격마다 발동 확률(0~100). 0/undefined = 스킬 미보유.
   critChancePct?: number;
-  // 크리 데미지 배수. undefined = CRIT_MULT_BASE 사용. luk 비례로 호출 측이 계산.
+  // 크리티컬 데미지 배수. undefined = CRIT_MULT_BASE 사용. luk 비례로 호출 측이 계산.
   critMult?: number;
-  // 이중 행운 — 첫 크리 발동 시 회피/크리 +bonus% 발동, 전투 종료까지 유지. 0 이면 미보유.
+  // 이중 행운 — 첫 크리티컬 발동 시 회피/크리티컬 +bonus% 발동, 전투 종료까지 유지. 0 이면 미보유.
   doubleLuck?: { evade: number; crit: number };
   // 가드 — 첫 N턴 동안 받는 피해 -reduction. 둘 다 0 이면 스킬 미보유.
   guard?: { turns: number; reduction: number };
@@ -127,7 +127,7 @@ function applyPhaseTriggerIfAny(state: BattleState): BattleState {
 }
 
 // 반격 — 회피 직후 카운터 1회. 적이 죽으면 ended 로 종료.
-// crit / 강공격 등은 적용하지 않음 — 별도 단순 데미지.
+// 크리티컬 / 강공격 등은 적용하지 않음 — 별도 단순 데미지.
 function applyCounterIfAny(
   state: BattleState,
   player: PlayerCombat,
@@ -337,7 +337,7 @@ export function advanceTurn(
       kind: "player_attack",
       text: `${prefix}${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
     });
-    // 이중 행운 — 첫 크리 발동 순간 활성화, 후속 공격/회피 부터 보너스 적용.
+    // 이중 행운 — 첫 크리티컬 발동 순간 활성화, 후속 공격/회피 부터 보너스 적용.
     const shouldActivateLucky =
       critRoll &&
       !state.luckyBuffActive &&
@@ -345,7 +345,7 @@ export function advanceTurn(
     if (shouldActivateLucky) {
       log = appendLog(log, {
         kind: "info",
-        text: `[이중 행운] 회피/크리 +${player.doubleLuck!.crit}% 발동!`,
+        text: `[이중 행운] 회피/크리티컬 +${player.doubleLuck!.crit}% 발동!`,
       });
     }
     const luckyBuffActive = state.luckyBuffActive || shouldActivateLucky;

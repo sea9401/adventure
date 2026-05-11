@@ -545,7 +545,7 @@ describe("불굴 (enduranceActive)", () => {
     expect(s.enduranceTriggered).toBe(true);
     expect(s.log.some((l) => l.text.includes("불굴"))).toBe(true);
   });
-  it("두 번째 치명타에서는 사망 — 전투당 1회만 발동", () => {
+  it("두 번째 치명 피해에서는 사망 — 전투당 1회만 발동", () => {
     const enemy = makeEnemy({ hp: 1000, atk: 100, def: 0 });
     const tough: PlayerCombat = {
       ...PLAYER,
@@ -560,7 +560,7 @@ describe("불굴 (enduranceActive)", () => {
     s = advanceTurn(s, tough, "P"); // enemy → 불굴 첫 발동, hp=1
     expect(s.playerHp).toBe(1);
     s = advanceTurn(s, tough, "P"); // player
-    s = advanceTurn(s, tough, "P"); // enemy → 두 번째 치명타, 정상 사망
+    s = advanceTurn(s, tough, "P"); // enemy → 두 번째 치명 피해, 정상 사망
     expect(s.phase).toBe("ended");
     expect(s.outcome).toBe("lose");
   });
@@ -601,7 +601,7 @@ describe("광속 (lightspeedExtraAttackPct)", () => {
 });
 
 describe("만개 (critMult / critChance) 누적", () => {
-  it("크리 발동 시 critMult 그대로 적용 (만개 보너스 호출 측 사전 계산)", () => {
+  it("크리티컬 발동 시 critMult 그대로 적용 (만개 보너스 호출 측 사전 계산)", () => {
     const enemy = makeEnemy({ hp: 1000, def: 0, evasionPct: 0 });
     // 만개 슬롯 시 호출 측이 critMult 에 base + bloom 보너스 합산해서 넘긴다.
     // 여기서는 엔진이 그 값을 그대로 사용함을 확인.
