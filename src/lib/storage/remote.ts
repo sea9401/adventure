@@ -7,7 +7,8 @@ export type RemoteSaveStatus =
   | { kind: "session-expired" }
   // 낙관적 동시성 충돌 — 다른 탭/기기가 server 를 갱신했음. 이 탭의 큐는 버려진다.
   // SaveProvider 가 listener 로 받아 location.reload 등으로 처리.
-  | { kind: "stale" }
+  // droppedKeys: MAX_KEY_CONFLICT_RETRIES 초과로 폐기된 키 목록 (텔레메트리·토스트용).
+  | { kind: "stale"; droppedKeys: SyncedKey[] }
   // 다른 디바이스가 새 세션을 claim 함 — 서버가 410 으로 거절. SaveProvider 가
   // listener 로 받아 Clerk signOut + 안내 모달 처리.
   | { kind: "session-invalidated" };
@@ -104,7 +105,9 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
     // 한 키가 stale 한도까지 가도 다른 키는 살림. snapshot 순회는 끝까지 가고 마지막에
     // overall status 를 stale 로 표기. SaveProvider 가 reload 직전 flushSync 로 살아남은
     // 다른 키들을 keepalive 로 발사 — cross-key 일괄 손실 차단.
-    let staleEncountered = false;
+    // droppedKeys 는 폐기된 키 목록 — 어떤 데이터가 손실됐는지 SaveProvider 가
+    // 사용자에게 안내하고 텔레메트리(console.warn) 에도 남기기 위함.
+    const droppedKeys: SyncedKey[] = [];
 
     try {
       for (const [key, value] of snapshot) {
@@ -142,7 +145,14 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
           if (count > MAX_KEY_CONFLICT_RETRIES) {
             conflictCount.delete(key);
             // 이 키만 큐/추적에서 제외. snapshot 의 나머지 키는 계속 PATCH.
-            staleEncountered = true;
+            droppedKeys.push(key);
+            // 손실된 변경분이 무엇인지 텔레메트리로 남김. value 자체는 PII 포함 가능성
+            // 있어 dump 안 하고 key 만. 서비스 워커 / 콘솔에서 확인 가능.
+            try {
+              console.warn(
+                `[remote-save] dropped after ${MAX_KEY_CONFLICT_RETRIES + 1}× 409: ${key}`,
+              );
+            } catch {}
             continue;
           }
           conflictCount.set(key, count);
@@ -177,8 +187,8 @@ export function createRemoteSave(options: Options = {}): RemoteSave {
       attempts = 0;
       // flush 중에 새로 쌓인 게 있으면 다음 사이클로 — flushing=false 이후에 schedule
       // 해야 scheduleFlush 의 (flushTimer || flushing) 가드가 통과한다.
-      if (staleEncountered) {
-        setStatus({ kind: "stale" });
+      if (droppedKeys.length > 0) {
+        setStatus({ kind: "stale", droppedKeys: [...droppedKeys] });
       } else if (pending.size === 0) {
         setStatus({ kind: "idle" });
       }

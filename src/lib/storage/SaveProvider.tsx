@@ -146,11 +146,16 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
     // 이제 항상 410. Clerk signOut + 안내 화면. flushSync 안 함 (어차피 410).
     const unsubscribe = remote.subscribe((s) => {
       if (s.kind === "stale" && typeof window !== "undefined") {
+        // droppedKeys 가 있으면 (409 한도 초과로 폐기된 변경) 어떤 데이터가
+        // 영향받았는지 사용자에게 알린다 — localStorage 백업이 있는 키는
+        // reload 후 자동 복원되지만, 사용자가 인지하도록.
+        const dropped = s.droppedKeys ?? [];
+        const message =
+          dropped.length > 0
+            ? `동기화 실패로 일부 변경이 폐기됐습니다 (${dropped.join(", ")}). 백업된 데이터로 복원 시도합니다.`
+            : "다른 기기/탭에서 갱신을 감지해 새로 불러왔습니다.";
         try {
-          localStorage.setItem(
-            "pending-reload-toast.v1",
-            "다른 기기/탭에서 갱신을 감지해 새로 불러왔습니다.",
-          );
+          localStorage.setItem("pending-reload-toast.v1", message);
         } catch {}
         try {
           remote.flushSync();

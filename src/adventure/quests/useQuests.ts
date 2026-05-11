@@ -5,6 +5,9 @@ import { QUESTS, getQuestById, type Quest } from "../data/quests";
 import type { MaterialId } from "../data/materials";
 import {
   defaultQuestEntry,
+  loadQuestProgress,
+  mergeQuestProgress,
+  saveQuestProgress,
   type QuestProgressEntry,
   type QuestProgressMap,
 } from "./storage";
@@ -20,9 +23,14 @@ export type DeliverResult =
   | { ok: true }
   | { ok: false; reason: "not-found" | "not-deliver" | "not-active" | "insufficient" };
 
+// 서버에서 받은 raw 와 localStorage 백업을 머지해 초기 progress 를 만든다.
+// 서버 PATCH 가 일시적으로 손실(409 drop / 410 race 등)되어도 localStorage 가
+// 백업하고 있던 진행이 reload 후 자연 복원되도록.
 function readInitial(raw: unknown): QuestProgressMap {
-  if (!raw || typeof raw !== "object") return {};
-  return raw as QuestProgressMap;
+  const remote: QuestProgressMap =
+    raw && typeof raw === "object" ? (raw as QuestProgressMap) : {};
+  const local = loadQuestProgress();
+  return mergeQuestProgress(remote, local);
 }
 
 export function useQuests() {
@@ -30,6 +38,11 @@ export function useQuests() {
   const [progress, setProgress] = useState<QuestProgressMap>(() =>
     readInitial(initial),
   );
+
+  // localStorage 백업 — 서버 동기화 손실 시 reload 후 복원에 사용.
+  useEffect(() => {
+    saveQuestProgress(progress);
+  }, [progress]);
   // setState 업데이터가 큐잉되어 다음 렌더에 처리되므로 동기 계산용 미러 ref 가 필요.
   const progressRef = useRef<QuestProgressMap>(progress);
 
