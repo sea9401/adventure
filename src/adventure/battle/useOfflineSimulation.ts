@@ -1,342 +1,293 @@
 "use client";
 
+// 오프라인 사냥 클라이언트 hook — 서버 권위 모델.
+//
+// 옛 흐름: 클라가 baseline 을 localStorage 에 박고, 복귀 시 simulateOfflineHunt 를
+// 클라에서 돌려 onApply 로 캐릭터/인벤토리 갱신 → PATCH 큐로 서버 동기화. PATCH
+// 실패 시 보상 손실 (audit #2). outbox/deferred advance/saving→idle subscriber 등의
+// 보완책이 누적돼 복잡도 폭증.
+//
+// 새 흐름: 서버가 baseline 을 users 컬럼에 보관하고 sim·적용·advance 를 트랜잭션
+// 안에서 처리. 클라는 trigger 시점에 API 호출만 하고, hadReward 이면 결과를
+// sessionStorage 에 박아 reload — reload 후 mount-time handler 가 모달 표시.
+//
+// API:
+//   - POST /api/offline-hunt/start  사냥 토글 ON (baseline=NOW, hp/region 서버측 자동)
+//   - POST /api/offline-hunt/claim  복귀 감지 시 (sim + 보상 + baseline advance)
+//   - POST /api/offline-hunt/end    토글 OFF / 사망 / region 이동 (sim + 보상 + active=false)
+//
+// Reload 정책: hadReward=true 일 때만 reload. 짧은 alt-tab (<10초) 은 서버가 noop
+// 반환 → 클라도 silent. 사용자가 결과 모달을 봐야 할 때만 reload UX 발생.
+
 import { useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { useRemoteSave } from "@/lib/storage/SaveProvider";
-import type { RegionId } from "../data/world";
 import type { OfflineSimResult } from "./offlineSim";
-import {
-  clearRewardOutbox,
-  readRewardOutbox,
-  writeRewardOutbox,
-} from "./offlineRewardOutbox";
+import type { AutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 
-const STORAGE_KEY = "last-active-tick.v3";
+// reload 후 모달을 띄우기 위한 sessionStorage 키. mount-time handler 가 읽고 삭제.
+export const OFFLINE_REWARD_PENDING_KEY = "offline-reward-pending.v2";
+// 일회성 마이그레이션 marker. 옛 키 (last-active-tick.v3, offline-reward-pending.v1)
+// 정리는 한 번만.
+const MIGRATED_MARKER_KEY = "offline-migrated.v2";
 
-type StoredTick = {
-  regionId: RegionId;
-  ts: number;
-  active: boolean;
-  /** baseline 시점의 player HP — 마을 회복 후 부풀린 HP 로 sim 안 되도록 (Fix #4). */
-  playerHp: number;
-  /** baseline 을 저장한 Clerk userId — 다른 계정 로그인 시 무시 (Fix #2). null = 로그인 정보 없음. */
-  userId: string | null;
+type ClaimResponse = {
+  ok: boolean;
+  hadReward?: boolean;
+  noop?: boolean;
+  reason?: string;
+  result?: OfflineSimResult;
 };
 
-function loadTick(): StoredTick | null {
-  if (typeof window === "undefined") return null;
+// 한 사이클 동안 사용할 claimId 생성. crypto.randomUUID 가 있으면 사용, 없으면 fallback.
+function newClaimId(): string {
+  const c = typeof crypto !== "undefined" ? crypto : null;
+  if (c && typeof c.randomUUID === "function") return c.randomUUID();
+  return `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+}
+
+async function postJson(
+  path: string,
+  body: Record<string, unknown>,
+): Promise<ClaimResponse | null> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<StoredTick> | null;
-    if (!parsed?.regionId || typeof parsed.ts !== "number") return null;
-    return {
-      regionId: parsed.regionId,
-      ts: parsed.ts,
-      active: parsed.active === true,
-      playerHp:
-        typeof parsed.playerHp === "number" && parsed.playerHp >= 0
-          ? parsed.playerHp
-          : 0,
-      userId: typeof parsed.userId === "string" ? parsed.userId : null,
+    const sessionId =
+      typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem("session-id")
+        : null;
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
     };
+    if (sessionId) headers["x-session-id"] = sessionId;
+    const res = await fetch(path, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      // 410 (session_invalidated) 은 SaveProvider 의 다른 경로가 이미 잡고 처리 중.
+      // 그 외 5xx 등은 silent 실패 — 다음 trigger 에서 재시도되도록.
+      return null;
+    }
+    return (await res.json()) as ClaimResponse;
   } catch {
     return null;
   }
 }
 
-function saveTick(tick: StoredTick): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tick));
-  } catch {}
-}
-
 export type OfflineSimulationOptions = {
-  // 시뮬 자체를 활성화할지. 아직 hydrate 안 됐거나 region에 적이 없으면 false.
+  // hook 활성화 여부 — 지역에 적이 없거나 hydrate 안 됐으면 false.
   enabled: boolean;
-  regionId: RegionId;
-  // 사용자가 명시적으로 자동 사냥을 시작했는지(전투 시작 버튼 누름 후).
-  // false이면 베이스라인만 갱신하고 시뮬은 돌리지 않는다.
+  // 자동 사냥 토글 (사용자 의도).
   active: boolean;
-  // 사용자가 현재 BattleView 화면에 있는지 (in-app 탭/서브뷰 기준).
-  // false면 in-app 으로 다른 탭(캐릭터/광장 등)을 보는 상태 — 시뮬 대상.
+  // 사용자가 현재 BattleView 화면에 있는지. away→back 판정에 사용.
   isInBattleView: boolean;
-  /** baseline 박을 시점의 player HP. 마을 회복 익스플로잇 차단용. */
-  playerHp: number;
-  // baseline 의 region/HP 로 시뮬을 돌리고 결과를 반환. regionId 가 baseline 에 박혀
-  // 있으므로 (현재 region 이 아니라) 그 시점에 사용자가 사냥하던 곳을 정확히 재현 —
-  // 명시 중지 후 region 이동 시점에 호출돼도 옛 region 의 적·드롭 풀로 정상 보상.
-  runSim: (
-    awayMs: number,
-    baselineHp: number,
-    baselineRegionId: RegionId,
-  ) => OfflineSimResult;
-  // 시뮬 결과를 캐릭터/인벤토리/알림에 반영.
-  onApply: (result: OfflineSimResult) => void;
+  // 현재 region — /claim 응답 후 server 의 baseline.region 을 이 값으로 advance.
+  // map 이동 후 새 region 에서 다음 사이클이 정상적으로 그 region 으로 잡히게.
+  regionId: string;
+  // 클라 측 자동 포션 룰 — 서버 sim 에 전달 (디바이스별 설정이라 서버 sync 안 됨).
+  // 함수 형태로 받아 매 호출마다 최신 값 캡처.
+  getAutoPotionRules: () => AutoPotionConfig["rules"];
+  // 사용자 이름 — 전투 로그에 사용.
+  playerName: string;
 };
 
 export type OfflineSimulationHandle = {
-  // 명시 중지 (사용자 토글 OFF / 모달 confirm 으로 region 이동 등) 직전에 호출.
-  // 저장된 baseline 부터 지금까지의 시간을 한 번에 sim → 보상 적용 → baseline 갱신.
-  // 이후 호출자가 setHuntingActive(false) / region 변경을 진행하면 그 시간만큼은
-  // 정상 보상으로 잡혀있고, 새로 흐르는 시간은 OFF 상태라 sim 대상 아님.
+  // 명시 종료 — 사용자 토글 OFF, region 이동, 사망 등에서 호출.
+  // 트랜잭션으로 sim 적용 + active=false. hadReward 시 reload.
   flushNow: () => void;
 };
 
-// 트리거: "away → back" 사이클에서 sim 실행.
-// "away" = 브라우저 탭 hidden  OR  in-app 으로 BattleView 가 아님(캐릭터/광장 등).
-// 둘 중 하나라도 true 면 away. 둘 다 false (visible + 배틀뷰) 가 되면 복귀로 간주.
-//
-// 최초 마운트(prev=null)에서 사용자가 이미 "back" 상태면 저장된 baseline 으로 즉시 sim.
-// 이로써 (a) 탭 종료 후 재진입 (b) SaveProvider 의 60초 hidden 후 location.reload —
-// 두 케이스 모두 다음 mount 에서 그 동안 흐른 시간만큼 보상 적용 (Fix #1, #2).
-//
-// baseline 의 userId/regionId 가 현재와 다르면 다른 계정/region 의 stale 데이터로 보고 무시.
-// 회복 (현재 HP > baseline HP) 도 검출해 그 사이클은 sim skip — 마을에서 회복하고 돌아온
-// 시간을 가짜 사냥으로 환산하지 않게 (Fix #4).
 export function useOfflineSimulation({
   enabled,
-  regionId,
   active,
   isInBattleView,
-  playerHp,
-  runSim,
-  onApply,
+  regionId,
+  getAutoPotionRules,
+  playerName,
 }: OfflineSimulationOptions): OfflineSimulationHandle {
-  // Clerk 세션 hydrate 전에 baseline 을 userId=null 로 잡으면 이후 valid check 실패.
-  // isLoaded 까지 기다려서 일관된 userId 로만 baseline / sim 진행.
-  const { userId, isLoaded: authLoaded } = useAuth();
-  const remote = useRemoteSave();
-  const runSimRef = useRef(runSim);
-  const onApplyRef = useRef(onApply);
-  const playerHpRef = useRef(playerHp);
+  const { isLoaded: authLoaded } = useAuth();
+
+  // 매 effect run 마다 최신값을 ref 에 담아 listener 안에서 stale closure 회피.
+  const activeRef = useRef(active);
+  const isInBattleViewRef = useRef(isInBattleView);
+  const playerNameRef = useRef(playerName);
+  const regionIdRef = useRef(regionId);
+  const getRulesRef = useRef(getAutoPotionRules);
   useEffect(() => {
-    runSimRef.current = runSim;
-    onApplyRef.current = onApply;
-    playerHpRef.current = playerHp;
+    activeRef.current = active;
+    isInBattleViewRef.current = isInBattleView;
+    playerNameRef.current = playerName;
+    regionIdRef.current = regionId;
+    getRulesRef.current = getAutoPotionRules;
   });
 
-  // 직전 사이클에서 "away" 였는지. null = 아직 baseline 안 잡힌 상태(최초 마운트).
-  const wasAwayRef = useRef<boolean | null>(null);
-  // sim 적용 직후 advance 할 baseline ts. 기록만 해두고 PATCH 큐가 saving→idle
-  // 사이클을 한 번 거치면 그때 실제로 saveTick. PATCH 가 stale/error 로 끝나면
-  // advance 하지 않아 다음 mount 에서 sim 이 같은 baseline 으로 재실행 → 보상 회복.
-  const pendingAdvanceTsRef = useRef<number | null>(null);
-  // 직전에 본 remote.status. saving→idle 전환을 검출해 advance 발화 (= flush 완료).
-  const lastStatusKindRef = useRef(remote.status().kind);
-  // flushNow 의 실제 구현 — 매 effect run 마다 최신 closure (regionId/active/userId
-  // 의 현재 값) 을 캡처해 갱신. 외부 stable wrapper 가 이 ref 를 통해 호출.
-  const flushNowImplRef = useRef<() => void>(() => {});
+  // 직전에 본 active 값 — false→true 전환 검출. null = 아직 한 번도 안 본 상태.
+  const lastSeenActiveRef = useRef<boolean | null>(null);
+  // 직전에 본 away 상태 — away→back 전환 시 /claim.
+  const lastAwayRef = useRef<boolean | null>(null);
+  // 동시에 여러 trigger 가 한 사이클에 발화하지 않도록 in-flight 가드.
+  const inFlightRef = useRef(false);
 
-  // remote 큐가 saving→idle 로 정착하는 순간, 보류 중이던 baseline advance 적용.
-  // saving 단계 없이 바로 idle 이 들어오면 (false-positive) advance 안 함 — 큐가
-  // 실제로 한 사이클 돌았다는 증거가 saving 관찰.
-  useEffect(() => {
-    return remote.subscribe((s) => {
-      const prev = lastStatusKindRef.current;
-      lastStatusKindRef.current = s.kind;
-      if (
-        s.kind === "idle" &&
-        prev === "saving" &&
-        pendingAdvanceTsRef.current !== null
-      ) {
-        const ts = pendingAdvanceTsRef.current;
-        pendingAdvanceTsRef.current = null;
-        saveTick({
-          regionId,
-          ts,
-          active,
-          playerHp: playerHpRef.current,
-          userId: userId ?? null,
-        });
-        // PATCH 사이클 1회가 server 까지 정착했음을 관찰 — outbox 도 안전하게 비움.
-        // 만약 PATCH 가 stale/error 였다면 saving→idle 정착 자체가 안 일어나 outbox 보존.
-        clearRewardOutbox();
-      }
-    });
-  }, [remote, regionId, active, userId]);
+  // hadReward 결과 처리 — sessionStorage 박고 reload.
+  // 짧은 noop 은 silent return.
+  const handleResult = useCallback((res: ClaimResponse | null) => {
+    if (!res || !res.ok) return;
+    if (!res.hadReward || !res.result) return;
+    try {
+      sessionStorage.setItem(
+        OFFLINE_REWARD_PENDING_KEY,
+        JSON.stringify(res.result),
+      );
+    } catch {}
+    // 사망 시 hunting 토글도 OFF 로 — reload 후 useHuntingState 가 sessionStorage 에서 읽음.
+    if (res.result.died) {
+      try {
+        sessionStorage.setItem("hunting-active", "false");
+      } catch {}
+    }
+    // reload — SaveProvider 가 fresh hydrate 되어 새 character/inventory/version 적용.
+    location.reload();
+  }, []);
 
-  // 탭 종료 / hidden 직전 보류 중 advance 가 있으면 옵티미스틱하게 baseline 을 advance.
-  // attachUnloadFlush 가 keepalive 로 PATCH 를 발사하긴 하지만 그 사이클은 saving→idle
-  // 으로 안 들어와 subscriber 가 못 잡음 → 다음 mount 의 trySim 이 같은 baseline 으로
-  // 다시 적용 → 보상 중복. status 가 stale/error 면 PATCH 실패 가능성 높아 advance 미룸
-  // (그 경로는 reload 후 재시도가 정답).
-  useEffect(() => {
-    const flushPendingAdvance = () => {
-      if (pendingAdvanceTsRef.current === null) return;
-      const kind: string = remote.status().kind;
-      if (kind === "stale" || kind === "session-expired" || kind === "error") {
-        return;
-      }
-      const ts = pendingAdvanceTsRef.current;
-      pendingAdvanceTsRef.current = null;
-      saveTick({
-        regionId,
-        ts,
-        active,
-        playerHp: playerHpRef.current,
-        userId: userId ?? null,
+  const callClaim = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    try {
+      const res = await postJson("/api/offline-hunt/claim", {
+        claimId: newClaimId(),
+        autoPotionRules: getRulesRef.current(),
+        playerName: playerNameRef.current,
+        currentRegion: regionIdRef.current,
       });
-    };
-    const onPageHide = () => flushPendingAdvance();
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") flushPendingAdvance();
-    };
-    window.addEventListener("pagehide", onPageHide);
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      window.removeEventListener("pagehide", onPageHide);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [remote, regionId, active, userId]);
+      handleResult(res);
+    } finally {
+      inFlightRef.current = false;
+    }
+  }, [handleResult]);
 
+  const callEnd = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    try {
+      const res = await postJson("/api/offline-hunt/end", {
+        claimId: newClaimId(),
+        autoPotionRules: getRulesRef.current(),
+        playerName: playerNameRef.current,
+      });
+      handleResult(res);
+    } finally {
+      inFlightRef.current = false;
+    }
+  }, [handleResult]);
+
+  const callStart = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    try {
+      await postJson("/api/offline-hunt/start", {});
+    } finally {
+      inFlightRef.current = false;
+    }
+  }, []);
+
+  // 일회성 마이그레이션 — 옛 키 정리. SaveProvider 부트 후 한 번만.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (localStorage.getItem(MIGRATED_MARKER_KEY)) return;
+      localStorage.removeItem("last-active-tick.v3");
+      localStorage.removeItem("offline-reward-pending.v1");
+      localStorage.setItem(MIGRATED_MARKER_KEY, "1");
+    } catch {}
+  }, []);
+
+  // 메인 effect — active 전환 + away/back 전환 처리.
   useEffect(() => {
     if (!enabled || !authLoaded) return;
 
     const computeAway = () =>
-      document.visibilityState === "hidden" || !isInBattleView;
+      document.visibilityState === "hidden" || !isInBattleViewRef.current;
 
-    const isStoredValid = (stored: StoredTick | null): stored is StoredTick =>
-      !!stored &&
-      stored.active &&
-      stored.regionId === regionId &&
-      stored.userId === userId;
+    const lastActive = lastSeenActiveRef.current;
+    lastSeenActiveRef.current = active;
 
-    // 반환값: sim 이 onApply 까지 갔으면 true. true 면 baseline advance 를 PATCH
-    // 성공 후로 미뤄야 함 (보상 손실 차단).
-    // baseline 의 regionId 를 그대로 runSim 에 전달 — 명시 중지 시 region 이 바뀌었어도
-    // 사냥하던 그 region 의 적/드롭 풀로 시뮬.
-    //
-    // outbox 우선순위:
-    // 직전 사이클에 onApply 까지 마쳤지만 PATCH 가 stale-reload 등으로 확정되지 못한
-    // 결과가 localStorage 에 남아있으면, 새 sim 을 돌리지 말고 그 결과를 그대로 재적용.
-    // 같은 결정값을 흘려보내야 RNG 변동·재시뮬로 인한 결과 변동을 막을 수 있다.
-    const trySimFromBaseline = (): boolean => {
-      const pending = readRewardOutbox(userId ?? null);
-      if (pending) {
-        onApplyRef.current(pending);
-        return true;
+    // 초기 마운트 — active=true 면 즉시 /claim. /claim 이 noop(inactive) 반환하면
+    // 첫 사이클이라는 뜻이라 /start 로 baseline 박음.
+    if (lastActive === null) {
+      lastAwayRef.current = computeAway();
+      if (active) {
+        (async () => {
+          if (inFlightRef.current) return;
+          inFlightRef.current = true;
+          try {
+            const claimRes = await postJson("/api/offline-hunt/claim", {
+              claimId: newClaimId(),
+              autoPotionRules: getRulesRef.current(),
+              playerName: playerNameRef.current,
+              currentRegion: regionIdRef.current,
+            });
+            handleResult(claimRes);
+            // claim 응답이 inactive noop 이면 서버에 baseline 없음 → /start.
+            if (
+              claimRes &&
+              claimRes.ok &&
+              claimRes.noop &&
+              claimRes.reason === "inactive"
+            ) {
+              await postJson("/api/offline-hunt/start", {});
+            }
+          } finally {
+            inFlightRef.current = false;
+          }
+        })();
       }
-      const stored = loadTick();
-      if (!isStoredValid(stored)) return false;
-      const awayMs = Date.now() - stored.ts;
-      if (awayMs <= 0) return false;
-      // sim 은 항상 stored.playerHp 로 돌기 때문에 "baseline 이후 HP 가 올라갔으면 sim skip"
-      // 이라는 옛 가드는 막으려는 침입 경로 자체가 없는 유령 가드 — 레벨업 시 HP 풀회복으로
-      // 멀쩡한 사이클이 통째로 forfeit 되는 부작용만 있어 제거. 적용 단(onApply) 에서 현재 HP
-      // 와 max 처리해 회복분이 깎이지 않도록 보호.
-      const result = runSimRef.current(awayMs, stored.playerHp, stored.regionId);
-      if (result.battles > 0 || result.died) {
-        // outbox 박은 직후 onApply — onApply 도중 reload 되어도 outbox 가 살아남아
-        // 다음 mount 에서 같은 결과를 재적용. saving→idle subscriber 가 정착하면 비움.
-        writeRewardOutbox(result, userId ?? null);
-        onApplyRef.current(result);
-        return true;
+      return;
+    }
+
+    // false → true 전환: /start.
+    if (!lastActive && active) {
+      void callStart();
+      lastAwayRef.current = computeAway();
+      return;
+    }
+
+    // true → false 전환: hunting.setFlushHandler → flushNow 가 이미 /end 처리.
+    // 여기서는 아무 것도 안 함 — 중복 호출 방지.
+    // (직접 setActiveRaw 로 false 가 된 경우엔 /end 호출이 빠지는데, 그 경로는
+    //  사망 후처리 등 server 가 이미 active=false 상태인 케이스라 안전.)
+
+    lastAwayRef.current = computeAway();
+  }, [enabled, authLoaded, active, callStart, handleResult]);
+
+  // visibility / isInBattleView 변화로 away → back 전환 검출 → /claim.
+  useEffect(() => {
+    if (!enabled || !authLoaded) return;
+
+    const onTransition = () => {
+      const prev = lastAwayRef.current;
+      const now =
+        document.visibilityState === "hidden" || !isInBattleViewRef.current;
+      lastAwayRef.current = now;
+      if (prev === null) return;
+      if (prev === now) return;
+      // away → back + active=true 일 때만 /claim.
+      if (!now && activeRef.current) {
+        void callClaim();
       }
-      return false;
     };
 
-    const writeBaselineNow = () => {
-      // 보류 중이던 deferred advance 가 있다면 취소 — 더 최근 시점으로 즉시 덮어쓰니
-      // 옛 ts 로 PATCH 성공 후 saveTick 하면 baseline 이 거꾸로 갈 수 있음.
-      pendingAdvanceTsRef.current = null;
-      saveTick({
-        regionId,
-        ts: Date.now(),
-        active,
-        playerHp: playerHpRef.current,
-        userId: userId ?? null,
-      });
-      // baseline 이 "지금"으로 박혔으면 outbox 도 더는 필요 없음 — 클리어. 안 그러면
-      // (deferred advance 가 cancel 된 케이스) saving→idle subscriber 가 pending=null
-      // 가드에 막혀 outbox 를 영원히 안 비우고 매 mount 마다 같은 사망 결과 재적용.
-      clearRewardOutbox();
-    };
+    // isInBattleView 가 props 로 변했을 수도 — 즉시 한 번 검사.
+    onTransition();
 
-    // sim 결과를 적용한 직후 호출. 즉시 saveTick 하면 PATCH 가 409 등으로 실패
-    // 했을 때 보상이 영원히 손실 — 대신 deferred 로 표시해 saving→idle 사이클
-    // 한 번이 관찰되면 그때 advance.
-    const writeBaselineDeferred = () => {
-      pendingAdvanceTsRef.current = Date.now();
-    };
-
-    // 명시 중지 (사용자 토글 OFF / 모달 confirm 등) 직전에 호출하는 imperative entry.
-    // baseline 이 유효하면 그 시점부터 지금까지 sim 적용 + advance, 무효면 그냥 새로 박음.
-    // wasAwayRef 는 건드리지 않음 — 다음 visibility/dep 변경 사이클이 정상 트리거되도록.
-    // 단, 사용자가 BattleView 에 머물던 중이면 (wasAwayRef===false) 실시간 엔진이
-    // 이미 보상을 적용했으니 sim 안 돔 — 사망 직후 setHuntingActive(false) 같은
-    // "안 떠나 있었던" 호출이 baseline 시점부터 흘러간 시간을 오프라인으로 가짜
-    // 환산하는 double-count 차단.
-    flushNowImplRef.current = () => {
-      if (wasAwayRef.current !== true) {
-        return;
-      }
-      const applied = trySimFromBaseline();
-      if (applied) writeBaselineDeferred();
-      else writeBaselineNow();
-    };
-
-    const handleTransition = () => {
-      const prev = wasAwayRef.current;
-      const now = computeAway();
-
-      if (prev === null) {
-        // 최초 마운트 — baseline 의 active=true + userId/regionId 매치 = 직전 세션이
-        // 사냥 중이었다는 뜻. 현재 사용자가 BattleView 에 있는지 (back) 와 무관하게
-        // 그 동안 흘러간 시간만큼 sim 적용. (옛 동작: back 일 때만 sim → reload 후
-        // 다른 탭에 떨어진 사용자는 sim forfeit 되던 회귀.)
-        const applied = trySimFromBaseline();
-        if (applied) writeBaselineDeferred();
-        else {
-          const stored = loadTick();
-          if (!isStoredValid(stored)) writeBaselineNow();
-        }
-        wasAwayRef.current = now;
-        return;
-      }
-
-      if (prev === now) {
-        // 전환 없음. 단, 여전히 away 인 채로 effect 가 re-run 됐다면 (regionId / active /
-        // userId 같은 deps 가 바뀐 것) 저장된 baseline 의 stale 값으로 다음 복귀 시
-        // sim 이 잘못 돌아가는 걸 막기 위해 baseline 을 현재 값으로 다시 쓴다.
-        // 예: A 에서 사냥 ON → map 으로 → 지역 A→B (regionId 변경 + 부수효과로
-        // active=false) → B→A → 배틀. 옛 baseline (A, true) 가 매치돼 의도치 않게
-        // sim 이 실행되던 사고 차단. ts 도 now 로 리셋되므로 그 사이의 시간은 forfeit
-        // (= "지역 변경 / 토글 OFF" 같은 명시 행동이 일어났으면 그 전 시간은 무효).
-        if (now) writeBaselineNow();
-        return;
-      }
-      wasAwayRef.current = now;
-
-      if (now) {
-        // 막 away 가 됨 — baseline 저장.
-        writeBaselineNow();
-        return;
-      }
-      // 복귀 — sim 시도. 적용했으면 advance 는 PATCH 성공 후로.
-      const applied = trySimFromBaseline();
-      if (applied) writeBaselineDeferred();
-      else writeBaselineNow();
-    };
-
-    // dep 변경(특히 isInBattleView 토글) 시점에 즉시 한 번 transition 검사.
-    handleTransition();
-
-    // 브라우저 탭 visibility 변화도 같은 로직으로 react.
-    document.addEventListener("visibilitychange", handleTransition);
+    document.addEventListener("visibilitychange", onTransition);
     return () => {
-      document.removeEventListener("visibilitychange", handleTransition);
-      // cleanup 시 flushNow 도 noop 으로 — 언마운트 후 외부에서 호출되면 stale closure 가
-      // 잘못된 region/active 로 saveTick 할 위험이 있음.
-      flushNowImplRef.current = () => {};
+      document.removeEventListener("visibilitychange", onTransition);
     };
-  }, [enabled, regionId, active, isInBattleView, userId, authLoaded]);
+  }, [enabled, authLoaded, isInBattleView, callClaim]);
 
-  // 외부 노출용 stable wrapper. 호출자는 매 render 마다 새 함수를 받지 않아 deps
-  // 안정성이 보장됨 — 내부 ref 가 최신 closure 를 들고 있다.
   const flushNow = useCallback(() => {
-    flushNowImplRef.current();
-  }, []);
+    void callEnd();
+  }, [callEnd]);
 
   return { flushNow };
 }
