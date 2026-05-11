@@ -7,7 +7,6 @@ import { MATERIALS, type MaterialId } from "../data/materials";
 import { ITEMS, rarityTextClass, type ItemId } from "../data/items";
 import { getRecipeById } from "../data/recipes";
 import { type OfflineSimResult } from "./offlineSim";
-import { AUTO_HUNT_EFFICIENCY } from "./autoHunt";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
 // 자동 사냥(30분 원정) 수령 결과 — 알림(noti)은 작아서 놓치기 쉬워 모달로 가시화.
@@ -20,7 +19,6 @@ export function AutoHuntResultModal({
 }) {
   useEscapeKey(onClose);
   const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
-  const effPct = Math.round(AUTO_HUNT_EFFICIENCY * 100);
 
   const kills = Object.entries(result.killsByName)
     .filter(([, n]) => n > 0)
@@ -61,7 +59,7 @@ export function AutoHuntResultModal({
             자동 사냥 보상
           </div>
           <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            {minutes}분 사냥 · 효율 {effPct}% (EXP·골드·전리품 한정)
+            {minutes}분 사냥
           </div>
         </div>
 

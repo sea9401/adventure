@@ -27,15 +27,14 @@ function dispatchFailMsg(reason: string | undefined): string {
 
 // BattleView pre-screen 의 "자동 사냥 (30분 원정)" 카드.
 // idle → "보내기" / active → 카운트다운 + "지금 받기" / complete → "받기".
+// (보상 효율은 내부에만 적용 — UI 에는 표기하지 않는다.)
 export function AutoHuntCard({
   autoHunt,
   canDispatch,
-  effPct,
 }: {
   autoHunt: AutoHuntHook;
   /** HP > 0 && 지역에 적 있음. 아니면 "보내기" disabled. */
   canDispatch: boolean;
-  effPct: number;
 }) {
   const { state, remainingMs, durationMs, busy, dispatch, collect } = autoHunt;
   const [err, setErr] = useState<string | null>(null);
@@ -51,7 +50,6 @@ export function AutoHuntCard({
         <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
           현재 지역으로 캐릭터를 30분간 사냥 보냅니다. 보고 있지 않아도 자동 포션 규칙대로
           진행되며, 30분 뒤 받기 버튼으로 그동안의 결과를 한 번에 받습니다 (조기 수령 가능).
-          받는 EXP·골드·전리품은 직접 사냥의 {effPct}% — 잡은 마릿수(퀘스트·도감)는 그대로.
           위탁 중에는 라이브 사냥·보스 도전·치유소 회복을 할 수 없습니다.
         </p>
         <button
@@ -64,7 +62,7 @@ export function AutoHuntCard({
           }}
           className="mt-3 w-full rounded-md border border-sky-700 bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? "보내는 중..." : `자동 사냥 보내기 — 30분 (효율 ${effPct}%)`}
+          {busy ? "보내는 중..." : "자동 사냥 보내기 — 30분"}
         </button>
         {err && (
           <p className="mt-1.5 text-[11px] text-rose-600 dark:text-rose-400">{err}</p>
@@ -85,7 +83,7 @@ export function AutoHuntCard({
             {done ? "원정 완료!" : "원정 진행 중"}
           </div>
           <div className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-            {done ? "수령 대기" : `완료까지 ${fmtRemain(remainingMs)}`} · 효율 {effPct}%
+            {done ? "수령 대기" : `완료까지 ${fmtRemain(remainingMs)}`}
           </div>
         </div>
         <button
@@ -103,7 +101,7 @@ export function AutoHuntCard({
       </div>
       {!done && (
         <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-          위탁 중 — 라이브 사냥·보스 도전·치유소 회복 불가. 지금 받기는 그때까지 진행된 만큼만(×{effPct}%) 챙기고 종료.
+          위탁 중 — 라이브 사냥·보스 도전·치유소 회복 불가. 지금 받기는 그때까지 진행된 만큼만 챙기고 종료.
         </p>
       )}
     </Card>

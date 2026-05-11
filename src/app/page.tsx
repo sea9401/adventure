@@ -73,10 +73,7 @@ import { getTitle } from "@/adventure/data/titles";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { useAutoHunt } from "@/adventure/hunting/useAutoHunt";
 import { AutoHuntResultModal } from "@/adventure/battle/AutoHuntResultModal";
-import {
-  AUTO_HUNT_RESULT_KEY,
-  AUTO_HUNT_EFFICIENCY,
-} from "@/adventure/battle/autoHunt";
+import { AUTO_HUNT_RESULT_KEY } from "@/adventure/battle/autoHunt";
 import {
   summarizeOfflineResult,
   type OfflineSimResult,
@@ -689,9 +686,7 @@ function Home() {
     const summary = summarizeOfflineResult(result);
     addNotification(
       result.died ? "battle_lose" : "info",
-      `자동 사냥 ${minutes}분 (효율 ${Math.round(AUTO_HUNT_EFFICIENCY * 100)}%)${
-        summary ? ` — ${summary}` : ""
-      }`,
+      `자동 사냥 ${minutes}분${summary ? ` — ${summary}` : ""}`,
     );
     for (const id of readyQuestIds) {
       const quest = getQuestById(id);

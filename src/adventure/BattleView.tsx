@@ -24,11 +24,8 @@ import { AutoPotionSection } from "./inventory/AutoPotionSection";
 import type { AppNotification } from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
 import { applyNewbieBonus } from "@/lib/leveling";
-import { AUTO_HUNT_EFFICIENCY } from "./battle/autoHunt";
 import { AutoHuntCard } from "./battle/AutoHuntCard";
 import type { AutoHuntHook } from "./hunting/useAutoHunt";
-
-const AUTO_HUNT_EFF_PCT = Math.round(AUTO_HUNT_EFFICIENCY * 100);
 
 export type BattleEndPayload = {
   outcome: BattleOutcome;
@@ -310,7 +307,6 @@ export function BattleView({
             <AutoHuntCard
               autoHunt={autoHunt}
               canDispatch={player.hp > 0 && hasEnemies}
-              effPct={AUTO_HUNT_EFF_PCT}
             />
             <AutoPotionSection
               autoConfig={autoPotionConfig}
