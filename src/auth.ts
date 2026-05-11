@@ -38,7 +38,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => ({
     // allowDangerousEmailAccountLinking: 같은 이메일로 복수 공급자 연동 허용
     // (Google 로 가입한 유저가 카카오로도 로그인 시 같은 계정으로 통합).
     Google({ allowDangerousEmailAccountLinking: true }),
-    Kakao({ allowDangerousEmailAccountLinking: true }),
+    Kakao({
+      allowDangerousEmailAccountLinking: true,
+      // 카카오 이메일 권한이 잠겨 있을 때(사업자 미등록) ID 기반 플레이스홀더 이메일 사용.
+      // kakao_<id>@kakao.oauth 형태 — 같은 카카오 계정이면 항상 동일 이메일 생성.
+      profile(profile) {
+        const kakaoAccount = profile.kakao_account as {
+          email?: string;
+          profile?: { nickname?: string; profile_image_url?: string };
+        } | undefined;
+        return {
+          id: String(profile.id),
+          name: kakaoAccount?.profile?.nickname ?? null,
+          email: kakaoAccount?.email ?? `kakao_${profile.id}@kakao.oauth`,
+          image: kakaoAccount?.profile?.profile_image_url ?? null,
+        };
+      },
+    }),
   ],
   callbacks: {
     jwt({ token, user }) {
