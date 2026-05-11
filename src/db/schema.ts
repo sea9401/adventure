@@ -24,15 +24,19 @@ export const users = pgTable(
     email: text("email"),
     name: text("name"),
     activeSessionId: text("active_session_id"),
-    // 오프라인 사냥 baseline — 사용자가 자동 사냥 ON 시 박고, 복귀 시 서버가 sim
-    // 결과를 인벤토리에 적용 후 ts 만 advance. 보상 손실 차단을 위해 클라이언트
-    // localStorage 가 아닌 서버 권위.
+    // 자동 사냥(타이머형 30분 원정) 상태 — POST /api/hunt/dispatch 가 박고,
+    // POST /api/hunt/collect 가 simMs=min(경과,30분) 만큼 sim·적용 후 NULL 로 종료.
+    //   huntActive     = 위탁 진행 중 여부
+    //   huntBaselineAt = 위탁 시작 시각 (서버 소유 — 클라 시계 skew·위변조 무관)
+    //   huntRegion     = 위탁 사냥 지역
+    //   huntBaselineHp = 위탁 시작 시점 HP (sim 시작 HP)
+    // (컬럼명은 옛 "오프라인 사냥/서버 권위" 모델 잔재 — 이름 그대로 재활용.)
     huntActive: boolean("hunt_active").notNull().default(false),
     huntRegion: text("hunt_region"),
     huntBaselineHp: integer("hunt_baseline_hp"),
     huntBaselineAt: timestamp("hunt_baseline_at"),
-    // claim 멱등성 — 같은 claimId 재호출 시 저장된 결과 그대로 반환 (HTTP 응답
-    // 손실 후 재시도 안전). 새 사이클 시작 시 NULL 로 리셋.
+    // lastClaimResult — 마지막 collect 결과 캐시. 응답 손실 후 재클릭 시 그대로 replay.
+    // 새 dispatch 시작 시 NULL 로 리셋. lastClaimId 는 "collected" 마커로만 사용 (옛 잔재).
     lastClaimId: text("last_claim_id"),
     lastClaimResult: jsonb("last_claim_result"),
     createdAt: timestamp("created_at").defaultNow().notNull(),

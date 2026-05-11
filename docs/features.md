@@ -40,8 +40,9 @@
 - **레벨업** — `lib/leveling.ts` (`MAX_LEVEL`, `requiredExpToNext`, `applyExpGain`).
 - **수동 행동** — 자동 OFF 시 공격 / 포션 사용 선택.
 - **자동 포션 규칙** — `AutoPotionSection`에서 종류별 발동 조건(HP < x%) 설정. 자동 전투 중에만 동작.
-- **오프라인 사냥** — 진입 화면의 별도 토글 버튼("오프라인 사냥 ON/OFF")로 활성화. ON 상태로 페이지/탭을 떠났다가 돌아오면 그 시간 동안의 사냥을 `offlineSim.ts`로 결정적 시뮬해 한 번에 적용. cap 30분 (`OFFLINE_SIM_MAX_MS`). 사망 시 break + 시작 마을 이동. 알림 한 줄로 요약. 트리거는 **visibility hidden→visible 한 사이클을 거친 경우에만** — 새로고침/단순 탭 재진입으로는 발동하지 않음. region 이동·사망 시 자동 OFF. (`useOfflineSimulation`, 키 `last-active-tick.v1`에 `active` 플래그 함께 저장)
-- **UI** — 적 카드(세로, 아바타 96px) + HP 바 + 전투 로그 + 결과 화면.
+- **사냥 시작/정지 (라이브)** — 진입 화면의 "사냥 시작" 버튼으로 자동 전투 루프 ON. 이 전투 화면에 머무는 동안에만 적→전투→다음 적으로 이어진다 (`huntingActive`, page.tsx 로컬 state). 다른 탭/브라우저 백그라운드로 가면 BattleView 가 unmount 되어 루프가 멈췄다가, 이 화면으로 돌아오면 다시 이어진다. **오프라인 누적·서버 동기화 없음** — "그 창에서만 전투". region 이동·사망·위탁 사냥 진행 중이면 OFF/비활성.
+- **자동 사냥 (위탁 원정, 서버 권위)** — 진입 화면의 "자동 사냥 보내기 (30분)" → `POST /api/hunt/dispatch` 가 `huntActive=true`/`huntBaselineAt=now` 박음 (region·hp 는 서버가 map.v2/character.v2 에서 읽음). 30분 카운트다운 후 "받기" → `POST /api/hunt/collect` 가 `simMs = min(경과, 30분)` 만큼 `simulateOfflineHunt` 를 트랜잭션 안에서 한 번에 돌려 적용하고 위탁 종료 → 결과를 sessionStorage 에 박고 `location.reload()` (마운트 핸들러가 모달 + 도감/퀘스트 진행도 반영). **효율 80%** (`AUTO_HUNT_EFFICIENCY`) — EXP·골드·전리품 확률만 ×0.8, 잡은 마릿수(퀘스트 처치·도감)는 100%. 사망 시 HP=0 + 시작 마을. 조기 수령 가능(경과 10초 이상). 위탁 sim 은 디바이스 자동 포션 룰을 collect body 로 받아 적용(라이브와 동일). 위탁 중에는 라이브 사냥·솔로/코업 보스 도전·치유소 회복 비활성(지역 이동은 허용 — sim 은 huntRegion 에 핀). 새로고침해도 `GET /api/hunt/status` 로 카운트다운 복원. 결정성: seed=`makeRng(userId, baselineMs)` → 응답 손실 후 재클릭해도 동일 결과 (`lastClaimResult` replay). 서버 헬퍼 `src/lib/server/autoHunt.ts`, 클라 훅 `src/adventure/hunting/useAutoHunt.ts`, UI `AutoHuntCard`/`AutoHuntResultModal`. ([컬럼명 hunt*/lastClaimResult 는 옛 "오프라인 사냥/서버 권위"(2026-05 제거) 잔재를 재활용 — 마이그레이션 없음.] 설계: `docs/auto-hunt-plan.md`)
+- **UI** — 적 카드(세로, 아바타 96px) + HP 바 + 전투 로그 + 결과 화면. 헤더에 라이브 "사냥" / 위탁 "원정 12:34" 배지.
 
 > 설계: `docs/battle-system-plan.md`, `docs/potion-system-plan.md`
 

@@ -1,16 +1,19 @@
-// 오프라인 사냥 서버 lib — claim 트랜잭션의 핵심 로직.
+// 자동 사냥(타이머형 원정) 서버 lib — collect 트랜잭션의 핵심 로직.
 //
-// 클라이언트 옵티미스틱 sim → PATCH 방식이 PATCH 실패 시 보상 손실을 일으켜
-// (audit-findings #2), 서버를 source-of-truth 로 전환. /api/offline-hunt/{start,claim,end}
-// 가 이 모듈을 사용해 baseline 부터 NOW 까지의 시뮬을 트랜잭션 안에서 한 번에 처리한다.
+// /api/hunt/{dispatch,collect,status} 가 이 모듈을 쓴다. dispatch 가 baseline(시작시각·지역·HP)
+// 을 users 컬럼에 박고, collect 가 baseline 부터 NOW(최대 30분)까지의 시뮬을 트랜잭션 안에서
+// 한 번에 처리한 뒤 사냥을 종료한다.
+//
+// (옛 "오프라인 사냥/서버 권위" 모델의 offlineHunt.ts 를 복구·간소화한 것 — away/back 상태머신·
+//  outbox·claimId 풀 멱등성·deferred baseline advance 는 제거. lastClaimResult 는 lost-response
+//  재시도 replay 용으로만 남김.)
 
 import { and, eq } from "drizzle-orm";
 import { savesKv, users } from "@/db/schema";
 import { upsertSave, type DbExecutor } from "@/lib/server/savesKv";
-import {
-  simulateOfflineHunt,
-  type OfflineSimInput,
-  type OfflineSimResult,
+import type {
+  OfflineSimInput,
+  OfflineSimResult,
 } from "@/adventure/battle/offlineSim";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { baseCharacter, maxHpForLevel } from "@/adventure/character/defaults";
@@ -23,14 +26,8 @@ import type { PotionId } from "@/adventure/data/potions";
 // type-only — useAutoPotionConfig 자체는 "use client" 지만 type 임포트는 erase 됨.
 import type { AutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 
-// pickAutoAction 의 hp_heal 룰 기본값 — 클라가 룰을 안 보내거나 비활성일 때 사용.
-const DEFAULT_AUTO_POTION_RULES: AutoPotionConfig["rules"] = [];
-
 // engine/useBattle 의 PLAYER_TURN_INTERVAL_MS 와 동일 (useBattle 은 "use client" 라 import 불가 → 인라인).
 const PLAYER_TURN_INTERVAL_MS = 250;
-
-// awayMs 이 이 값 미만이면 sim 안 돌리고 noop — 짧은 alt-tab 의 라운드트립 낭비 방지.
-export const CLAIM_MIN_AWAY_MS = 10_000;
 
 // xmur3 + mulberry32 — 결정적 PRNG. seed = hash(userId, baselineMs).
 // HTTP 응답 손실 후 같은 baseline 으로 재시도해도 같은 결과 나오도록 결정성 확보.
@@ -102,6 +99,24 @@ function rehydrateEquip(saved: EquipItem | null | undefined): EquipItem | null {
   return id ? ITEMS[id] : null;
 }
 
+function allocatedFrom(training: SavedTraining): Record<StatKey, number> {
+  return STAT_KEYS.reduce(
+    (acc, k) => {
+      acc[k] = training.allocated?.[k] ?? 0;
+      return acc;
+    },
+    { str: 0, dex: 0, vit: 0, spd: 0, luk: 0 } as Record<StatKey, number>,
+  );
+}
+
+function equippedFrom(character: SavedCharacter) {
+  return {
+    weapon: rehydrateEquip(character.equipped?.weapon),
+    armor: rehydrateEquip(character.equipped?.armor),
+    accessory: rehydrateEquip(character.equipped?.accessory),
+  };
+}
+
 async function readKv<T>(
   tx: DbExecutor,
   userId: string,
@@ -149,6 +164,7 @@ export type AssembleSimInputOpts = {
   baselineRegionId: RegionId;
   awayMs: number;
   rng: () => number;
+  /** 자동 포션 룰 — v1 은 빈 배열(공격만). */
   autoPotionRules: AutoPotionConfig["rules"];
   playerName: string;
 };
@@ -158,25 +174,11 @@ export function assembleSimInput(opts: AssembleSimInputOpts): OfflineSimInput {
     opts;
   const character = state.character;
 
-  const allocatedStats: Record<StatKey, number> = STAT_KEYS.reduce(
-    (acc, k) => {
-      acc[k] = state.training.allocated?.[k] ?? 0;
-      return acc;
-    },
-    { str: 0, dex: 0, vit: 0, spd: 0, luk: 0 } as Record<StatKey, number>,
-  );
-
-  const equipped = {
-    weapon: rehydrateEquip(character.equipped?.weapon),
-    armor: rehydrateEquip(character.equipped?.armor),
-    accessory: rehydrateEquip(character.equipped?.accessory),
-  };
-
   const derived = derivePlayerCombat({
     level: character.level ?? 1,
     baseStats: baseCharacter.stats,
-    allocatedStats,
-    equipped,
+    allocatedStats: allocatedFrom(state.training),
+    equipped: equippedFrom(character),
     equippedSkills: character.equippedSkills,
     hp: baselineHp,
   });
@@ -201,22 +203,28 @@ export function assembleSimInput(opts: AssembleSimInputOpts): OfflineSimInput {
     knowsRecipe: (id) => knownSet.has(id),
     pickAction: (battleState) =>
       pickAutoAction(battleState, {
-        rules: autoPotionRules ?? DEFAULT_AUTO_POTION_RULES,
+        rules: autoPotionRules,
         potions,
       }),
     rng,
   };
 }
 
-// sim 결과를 savesKv 의 character/inventory/crafting 에 반영.
+// sim 결과를 savesKv 의 character/inventory/crafting/map 에 반영.
 // 클라 onApply (page.tsx) 와 동일 순서로:
-//   1) 인벤토리 — 포션 차감 + 재료/장비/제작서 추가
-//   2) 캐릭터 — gold/exp/level/hp (사망 시 hp=0+respawn region)
+//   1) 인벤토리 — 포션 차감 + 재료/장비 추가
+//   2) 제작서 학습
+//   3) 캐릭터 — gold/exp/level/hp
+//   4) 사망이면 map.v2 의 currentRegionId 를 respawn 으로
+// HP 는 "설정"이 아니라 "델타"로 적용 — 위탁 중 다른 데서(퀘스트 보상 레벨업 등) HP 가 바뀌어도 안전.
+// 단 사망이면 0, 사이클 중 레벨업이면 풀회복(useCharacterState.addExp 와 동일).
 // 트랜잭션 안에서 호출되므로 부분 실패 없음.
 export type ApplyResultOpts = {
   state: LoadedState;
   result: OfflineSimResult;
   died: boolean;
+  /** sim 시작 시점 HP — newHp 델타 계산용. */
+  baselineHp: number;
 };
 
 export type ApplyResultOutcome = {
@@ -229,9 +237,9 @@ export type ApplyResultOutcome = {
 export async function applyResultToSaves(
   tx: DbExecutor,
   userId: string,
-  { state, result, died }: ApplyResultOpts,
+  { state, result, died, baselineHp }: ApplyResultOpts,
 ): Promise<ApplyResultOutcome> {
-  // 인벤토리 갱신.
+  // 1) 인벤토리.
   const inv = { ...state.inventory };
   const potions = { ...(inv.potions ?? {}) } as Record<string, number>;
   for (const [id, n] of Object.entries(result.potionsConsumed)) {
@@ -247,14 +255,9 @@ export async function applyResultToSaves(
   for (const itemId of result.equipsGained) {
     equipment[itemId] = (equipment[itemId] ?? 0) + 1;
   }
-  const newInventory: SavedInventory = {
-    ...inv,
-    potions,
-    materials,
-    equipment,
-  };
+  const newInventory: SavedInventory = { ...inv, potions, materials, equipment };
 
-  // 제작서 학습 — sim 단계에서 미보유만 골라낸 상태라 중복 가드 1번 더 (안전망).
+  // 2) 제작서 학습 — sim 단계에서 미보유만 골라낸 상태라 중복 가드 1번 더 (안전망).
   const knownArr = Array.isArray(state.crafting.known)
     ? [...(state.crafting.known as string[])]
     : [];
@@ -267,48 +270,34 @@ export async function applyResultToSaves(
   }
   const newCrafting: SavedCrafting = { ...state.crafting, known: knownArr };
 
-  // 캐릭터 — gold/exp/level/hp.
-  // useCharacterState.addExp 의 동작:
-  //   - applyExpGain 으로 누적 EXP → 새 레벨 도달 시 hp = maxHpForLevel(level) + vitHpBonus
-  // 서버 sim 은 simulateOfflineHunt 가 이미 누적 EXP/레벨 추적해 result.expGained 만 반환.
-  // 여기서 다시 applyExpGain 호출하지 않고 character.level/exp 를 직접 갱신.
-  // VIT 보너스 풀회복은 sim 중간에 일어난 레벨업이면 finalPlayerHp 가 이미 그 후 HP.
-  // 단 사망(died) 면 hp=0, 살았으면 max(currentHp, finalPlayerHp) — 마을 회복 등 외부 보존.
-  // (참고: applyExpGain 은 sim 내부에서 호출됨. 여기서 재호출하면 이중 적용 위험.)
+  // 3) 캐릭터 — gold/exp/level/hp.
   const character = state.character;
   const newLevelExp = computeFinalLevelExp(
     character.level ?? 1,
     character.exp ?? 0,
     result.expGained,
   );
-  const respawnId = state.map.respawnRegionId ?? START_REGION_ID;
-  const baseHp = character.hp ?? baseCharacter.hp;
+  const vitAtNewLevel = derivePlayerCombat({
+    level: newLevelExp.level,
+    baseStats: baseCharacter.stats,
+    allocatedStats: allocatedFrom(state.training),
+    equipped: equippedFrom(character),
+    equippedSkills: character.equippedSkills,
+    hp: result.finalPlayerHp,
+  }).totalStats.vit;
+  const maxHpNew = maxHpForLevel(newLevelExp.level) + vitAtNewLevel * 2;
+
   let newHp: number;
   if (died) {
     newHp = 0;
   } else if (newLevelExp.levelsGained > 0) {
-    // 레벨업 발생 — VIT 보너스만큼 풀회복 (useCharacterState.addExp 와 동일).
-    const vit = derivePlayerCombat({
-      level: newLevelExp.level,
-      baseStats: baseCharacter.stats,
-      allocatedStats: STAT_KEYS.reduce(
-        (acc, k) => {
-          acc[k] = state.training.allocated?.[k] ?? 0;
-          return acc;
-        },
-        { str: 0, dex: 0, vit: 0, spd: 0, luk: 0 } as Record<StatKey, number>,
-      ),
-      equipped: {
-        weapon: rehydrateEquip(character.equipped?.weapon),
-        armor: rehydrateEquip(character.equipped?.armor),
-        accessory: rehydrateEquip(character.equipped?.accessory),
-      },
-      equippedSkills: character.equippedSkills,
-      hp: result.finalPlayerHp,
-    }).totalStats.vit;
-    newHp = maxHpForLevel(newLevelExp.level) + vit * 2;
+    // 레벨업 = VIT 보너스만큼 풀회복 (useCharacterState.addExp 와 동일).
+    newHp = maxHpNew;
   } else {
-    newHp = Math.max(baseHp, result.finalPlayerHp);
+    // HP 델타 — 위탁 시작 이후 캐릭터 HP 가 외부에서 바뀌었어도(회복 등) 흡수.
+    const hpDelta = result.finalPlayerHp - baselineHp;
+    const curHp = character.hp ?? baseCharacter.hp;
+    newHp = Math.max(0, Math.min(maxHpNew, curHp + hpDelta));
   }
 
   const newCharacter: SavedCharacter = {
@@ -326,10 +315,11 @@ export async function applyResultToSaves(
     await upsertSave(tx, userId, "crafting.v2", newCrafting);
   }
 
-  // 사망 시 map.v2 의 currentRegionId 도 respawn 으로 갱신 (클라 onApply 가 하던 동작).
+  // 4) 사망 시 map.v2 의 currentRegionId 도 respawn 으로 갱신.
   let newRespawnRegionId: RegionId | null = null;
   if (died) {
     const mapValue = state.map;
+    const respawnId = mapValue.respawnRegionId ?? START_REGION_ID;
     const visited = mapValue.visitedRegionIds ?? [START_REGION_ID];
     const nextMap = {
       ...mapValue,
@@ -345,10 +335,9 @@ export async function applyResultToSaves(
   return { newCharacter, newInventory, newCrafting, newRespawnRegionId };
 }
 
-// 사이클 중 누적 EXP 로 레벨업 처리. simulateOfflineHunt 가 내부에서 같은 함수를 호출하지만
-// 여기서는 (character.exp, result.expGained) 을 다시 합쳐 최종 상태 계산.
-// 주의: simulateOfflineHunt 는 result.expGained 만 반환하고 누적 레벨업은 내부 추적만 한다.
-// 따라서 결과를 character 에 반영할 때 한 번 더 applyExpGain 을 돌려 동일 결과 도출.
+// (character.exp, result.expGained) 을 합쳐 최종 레벨/EXP 계산.
+// simulateOfflineHunt 는 result.expGained 만 반환하고 누적 레벨업은 내부 추적만 하므로,
+// 여기서 한 번 더 applyExpGain 으로 동일 결과 도출.
 function computeFinalLevelExp(
   level: number,
   exp: number,
@@ -358,7 +347,9 @@ function computeFinalLevelExp(
   return applyExpGain(level, exp, gained);
 }
 
-// users 의 baseline 컬럼 갱신 — start/claim/end 가 공유.
+// users 의 자동 사냥 baseline 컬럼 갱신 — dispatch/collect 가 공유.
+// (컬럼명은 옛 "오프라인 사냥" 잔재 — huntActive=위탁 진행중, huntBaselineAt=시작시각,
+//  huntRegion=위탁 지역, huntBaselineHp=시작 HP, lastClaimResult=수령 결과 캐시.)
 export type BaselineUpdate = {
   huntActive?: boolean;
   huntRegion?: string | null;
@@ -373,7 +364,6 @@ export async function updateBaseline(
   userId: string,
   patch: BaselineUpdate,
 ): Promise<void> {
-  // drizzle update 에 부분 컬럼만 set — undefined 키는 SQL 에 포함 안 됨.
   const set: Record<string, unknown> = {};
   if (patch.huntActive !== undefined) set.huntActive = patch.huntActive;
   if (patch.huntRegion !== undefined) set.huntRegion = patch.huntRegion;
@@ -388,12 +378,7 @@ export async function updateBaseline(
   await tx.update(users).set(set).where(eq(users.id, userId));
 }
 
-// run 결과 — claim/end 가 공통으로 반환.
-export type RunOutcome = {
-  result: OfflineSimResult | null; // null = sim 안 돈 noop
-  hadReward: boolean;
-};
-
+/** 보여줄 만한 결과인지 — 전투 1판 이상 또는 사망. */
 export function hasMeaningfulResult(result: OfflineSimResult): boolean {
   return result.battles > 0 || result.died;
 }

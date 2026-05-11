@@ -59,6 +59,7 @@ export function AdventureScreen() {
     trialUnlocks,
     huntingActive,
     setHuntingActive,
+    autoHunt,
     playerCombat,
     playerStatus,
     handleBattleEnd,
@@ -359,6 +360,7 @@ export function AdventureScreen() {
           recentNotifications={notifications.list}
           huntingActive={huntingActive}
           onToggleHunting={setHuntingActive}
+          autoHunt={autoHunt}
           bossAttemptsToday={characterStateHook.getBossAttemptsToday(
             currentRegion.id,
           )}
@@ -392,6 +394,7 @@ export function AdventureScreen() {
             addNotification(kind, text, { battleLog: log })
           }
           onStopHunting={() => setHuntingActive(false)}
+          dispatched={autoHunt.isDispatched}
         />
       </div>
     );
@@ -423,6 +426,7 @@ export function AdventureScreen() {
           recentNotifications={notifications.list}
           huntingActive={huntingActive}
           onToggleHunting={setHuntingActive}
+          autoHunt={autoHunt}
           bossAttemptsToday={characterStateHook.getBossAttemptsToday(
             currentRegion.id,
           )}

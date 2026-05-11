@@ -24,6 +24,11 @@ import { AutoPotionSection } from "./inventory/AutoPotionSection";
 import type { AppNotification } from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
 import { applyNewbieBonus } from "@/lib/leveling";
+import { AUTO_HUNT_EFFICIENCY } from "./battle/autoHunt";
+import { AutoHuntCard } from "./battle/AutoHuntCard";
+import type { AutoHuntHook } from "./hunting/useAutoHunt";
+
+const AUTO_HUNT_EFF_PCT = Math.round(AUTO_HUNT_EFFICIENCY * 100);
 
 export type BattleEndPayload = {
   outcome: BattleOutcome;
@@ -55,6 +60,7 @@ export function BattleView({
   recentNotifications,
   huntingActive,
   onToggleHunting,
+  autoHunt,
   bossAttemptsToday,
   onConsumeBossAttempt,
   onBossAttempt,
@@ -79,6 +85,8 @@ export function BattleView({
   recentNotifications?: AppNotification[];
   huntingActive: boolean;
   onToggleHunting: (next: boolean) => void;
+  /** 타이머형 자동 사냥(30분 원정) hook — page.tsx 에서 1회 생성해 주입. */
+  autoHunt: AutoHuntHook;
   /** region.boss 가 정의된 경우 — 오늘 입장한 횟수. */
   bossAttemptsToday?: number;
   /** 보스 도전 1회 입장 카운트. 호출자가 한도 검사 후 호출. */
@@ -180,6 +188,7 @@ export function BattleView({
   useEffect(() => {
     if (state !== null) return;
     if (!huntingActive) return;
+    if (autoHunt.isDispatched) return; // 위탁 사냥 중엔 라이브 자동전투 시작 안 함
     if (player.hp <= 0) return;
     if (region.enemies.length === 0) return;
     if (bossModeRef.current) return; // 보스 전투 직후 자동 다음 적 시작 차단
@@ -187,7 +196,7 @@ export function BattleView({
     if (enemy) startWithLog(enemy);
     // startWithLog 는 setter — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, huntingActive, player.hp, region]);
+  }, [state, huntingActive, autoHunt.isDispatched, player.hp, region]);
 
   // 1) 전투 외 — 진입 화면
   if (!state) {
@@ -231,9 +240,10 @@ export function BattleView({
               </p>
               <button
                 type="button"
-                disabled={!canBoss}
+                disabled={!canBoss || autoHunt.isDispatched}
                 onClick={() => {
                   if (!bossMonster || !onConsumeBossAttempt) return;
+                  if (autoHunt.isDispatched) return;
                   onConsumeBossAttempt();
                   onBossAttempt?.();
                   bossModeRef.current = true;
@@ -242,11 +252,13 @@ export function BattleView({
                 }}
                 className="mt-3 w-full rounded-md border border-rose-700 bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {player.hp <= 0
-                  ? "회복 필요"
-                  : attemptsLeft <= 0
-                    ? "오늘 도전 횟수 소진"
-                    : `보스 도전 (남은 ${attemptsLeft}/${dailyLimit})`}
+                {autoHunt.isDispatched
+                  ? "자동 사냥 중 — 보스 도전 불가"
+                  : player.hp <= 0
+                    ? "회복 필요"
+                    : attemptsLeft <= 0
+                      ? "오늘 도전 횟수 소진"
+                      : `보스 도전 (남은 ${attemptsLeft}/${dailyLimit})`}
               </button>
             </Card>
           ) : (
@@ -259,9 +271,12 @@ export function BattleView({
             <EnemyEncounterSection region={region} />
             <button
               type="button"
-              onClick={() => onToggleHunting(!huntingActive)}
+              onClick={() => {
+                if (autoHunt.isDispatched) return;
+                onToggleHunting(!huntingActive);
+              }}
               aria-pressed={huntingActive}
-              disabled={player.hp <= 0}
+              disabled={player.hp <= 0 || autoHunt.isDispatched}
               className={`w-full rounded-md border px-3 py-3 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 huntingActive
                   ? "border-rose-500 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:border-rose-400 dark:text-rose-300"
@@ -277,19 +292,26 @@ export function BattleView({
                       : "bg-white/90"
                   }`}
                 />
-                {player.hp <= 0
-                  ? "회복 필요"
-                  : huntingActive
-                    ? "사냥 정지"
-                    : "사냥 시작"}
+                {autoHunt.isDispatched
+                  ? "자동 사냥 중 — 라이브 사냥 불가"
+                  : player.hp <= 0
+                    ? "회복 필요"
+                    : huntingActive
+                      ? "사냥 정지"
+                      : "사냥 시작"}
               </span>
             </button>
             <p className="-mt-1 px-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              사냥 시작 시 자동 전투가 진행되며, 다른 탭(캐릭터/광장 등) 또는 브라우저
-              백그라운드로 가도 사냥이 이어집니다. 복귀 시 그 동안의 결과를 한 번에
-              적용 (최대 1시간). 정지 시 진행 중 전투는 끝까지 처리되고 다음 적은
+              사냥 시작 시 이 화면에서 자동 전투가 이어집니다. 다른 탭(캐릭터/광장 등)
+              또는 브라우저 백그라운드로 가면 사냥이 멈췄다가, 이 화면으로 돌아오면
+              다시 이어집니다. 정지 시 진행 중 전투는 끝까지 처리되고 다음 적은
               잡지 않습니다.
             </p>
+            <AutoHuntCard
+              autoHunt={autoHunt}
+              canDispatch={player.hp > 0 && hasEnemies}
+              effPct={AUTO_HUNT_EFF_PCT}
+            />
             <AutoPotionSection
               autoConfig={autoPotionConfig}
               inventory={inventoryState}

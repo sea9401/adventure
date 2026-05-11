@@ -70,17 +70,14 @@ import { useTitleGrants } from "@/adventure/character/useTitleGrants";
 import { useLevelUpDetection } from "@/adventure/character/useLevelUpDetection";
 import { useRespawnSafetyNet } from "@/adventure/character/useRespawnSafetyNet";
 import { getTitle } from "@/adventure/data/titles";
-import {
-  useOfflineSimulation,
-  OFFLINE_REWARD_PENDING_KEY,
-} from "@/adventure/battle/useOfflineSimulation";
+import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
+import { useAutoHunt } from "@/adventure/hunting/useAutoHunt";
+import { AutoHuntResultModal } from "@/adventure/battle/AutoHuntResultModal";
+import { AUTO_HUNT_RESULT_KEY } from "@/adventure/battle/autoHunt";
 import {
   summarizeOfflineResult,
-  OFFLINE_SIM_MAX_MS,
   type OfflineSimResult,
 } from "@/adventure/battle/offlineSim";
-import { OfflineRewardsModal } from "@/adventure/battle/OfflineRewardsModal";
-import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { useGuildFameSync } from "@/adventure/guild/useGuildFameSync";
 import { useGuildBuffsCache } from "@/adventure/guild/useGuildBuffsCache";
 import { reportGuildQuestProgress } from "@/adventure/guild/api";
@@ -90,7 +87,6 @@ import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import { useNavTabs, type TabKey } from "@/lib/useNavTabs";
 import { usePresenceHeartbeat } from "@/lib/usePresenceHeartbeat";
-import { useHuntingState } from "@/adventure/hunting/useHuntingState";
 import { useTrialState } from "@/adventure/trial/useTrialState";
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -157,16 +153,19 @@ function Home() {
     back,
   } = useNavTabs();
 
-  const hunting = useHuntingState();
+  // 자동 사냥 토글 — 이 세션·이 탭 한정 로컬 상태. 전투 화면에 머무는 동안에만 루프가
+  // 돈다 (BattleView). 다른 탭/백그라운드로 가면 BattleView 가 unmount 되어 자연히 멈추고,
+  // 돌아오면 다시 이어진다. 오프라인 누적·서버 동기화 없음 — "그 창에서만 전투".
+  const [huntingActive, setHuntingActive] = useState(false);
   const trial = useTrialState({ tab, subView });
+
+  // 자동 사냥 수령 결과 모달 — collect → reload 후 아래 마운트 핸들러가 sessionStorage 에서 읽어 세팅.
+  const [autoHuntResult, setAutoHuntResult] = useState<OfflineSimResult | null>(
+    null,
+  );
 
   // 마을 진입 직후 자동으로 열 NPC 대화 — 알림판 클릭 시 세팅, TownView 가 마운트 직후 소비.
   const [pendingTownNpcId, setPendingTownNpcId] = useState<string | null>(null);
-  // 자동 사냥 중 탭/앱이 백그라운드 → 복귀 시 누적 보상 모달.
-  // 한 번에 하나만 표시 — 새 결과가 들어오면 직전 것을 덮어쓴다.
-  const [offlineRewards, setOfflineRewards] = useState<OfflineSimResult | null>(
-    null,
-  );
 
   const initialMap = useSavedValue<Partial<MapProgress>>("map.v2");
   const [mapProgress, setMapProgress] = useState<MapProgress>(() => ({
@@ -186,6 +185,11 @@ function Home() {
   const remote = useRemoteSave();
   const inbox = useInboxCount();
   const autoPotion = useAutoPotionConfig();
+  // 타이머형 자동 사냥(30분 원정) — dispatch/collect + 카운트다운. 라이브 huntingActive 와 별개.
+  // collect 시 디바이스 자동 포션 룰을 서버 sim 에 전달 (서버에 동기화 안 됨).
+  const autoHunt = useAutoHunt({
+    getAutoPotionRules: () => autoPotion.config.rules,
+  });
   const training = useTraining();
   const characterStateHook = useCharacterState();
   const characterState = characterStateHook.state;
@@ -281,7 +285,7 @@ function Home() {
     mapProgress,
     setMapProgress,
     setHp: characterStateHook.setHp,
-    setHuntingActive: hunting.setActive,
+    setHuntingActive,
     replaceSubView,
   });
 
@@ -631,7 +635,7 @@ function Home() {
       luk: character.stats.luk,
       respawnRegionId: mapProgress.respawnRegionId ?? START_REGION_ID,
       addNotification,
-      setHuntingActive: hunting.setActive,
+      setHuntingActive,
       replaceLocation,
       setMapProgress,
       reportGuildKill: (enemyName) => {
@@ -648,29 +652,14 @@ function Home() {
     quests.accept(id);
   };
 
-  // 오프라인 자동 사냥 — 서버 권위 모델.
-  // 토글 ON / 복귀 / OFF 시점에 /api/offline-hunt/{start,claim,end} 호출.
-  // 서버가 sim + 보상 적용 + baseline 갱신을 트랜잭션 안에서 처리.
-  // 결과가 있으면 sessionStorage 박고 reload → 아래 mount-time handler 가 모달.
-  const { flushNow: flushOfflineSim } = useOfflineSimulation({
-    enabled: currentRegion.enemies.length > 0,
-    active: hunting.active,
-    isInBattleView: tab === "adventure" && subView === "battle",
-    regionId: currentRegion.id,
-    playerName: profile.name,
-    getAutoPotionRules: () => autoPotion.config.rules,
-  });
-  // ref bridging — useHuntingState 의 setActive 가 OFF 전이 시 flushOfflineSim 을 호출.
-  hunting.setFlushHandler(flushOfflineSim);
-
-  // 마운트 시 sessionStorage 에 reload 직전 박힌 결과가 있으면 모달로 표시.
-  // 사망의 경우 useHuntingState 가 sessionStorage "hunting-active"="false" 에서 OFF 복원.
-  // 부가 알림/title/quest 진행도 함께 처리.
+  // 자동 사냥 수령 → collect 가 sessionStorage 에 결과 박고 reload. 여기서 읽어 모달 표시 +
+  // 도감/퀘스트 진행도(클라 KV) 추가 반영 + 알림. (서버는 character/inventory/crafting/map 만
+  // 갱신했고 adventureLog.v2 / quest-progress.v2 는 별도 키라 여기서 누적.)
   useEffect(() => {
     let raw: string | null = null;
     try {
-      raw = sessionStorage.getItem(OFFLINE_REWARD_PENDING_KEY);
-      if (raw) sessionStorage.removeItem(OFFLINE_REWARD_PENDING_KEY);
+      raw = sessionStorage.getItem(AUTO_HUNT_RESULT_KEY);
+      if (raw) sessionStorage.removeItem(AUTO_HUNT_RESULT_KEY);
     } catch {}
     if (!raw) return;
     let result: OfflineSimResult;
@@ -679,9 +668,6 @@ function Home() {
     } catch {
       return;
     }
-    // 도감/퀘스트 진행 — 서버는 character/inventory 만 갱신했고 클라 도감 (adventureLog.v2)
-    // 과 quest-progress.v2 는 별도 키. 사망 후 reload 직후라 server-state 가 클라 hooks 로
-    // hydrate 된 상태에서 추가 누적 가능.
     const readyQuestIds = new Set<string>();
     let anyKill = false;
     for (const [name, n] of Object.entries(result.killsByName)) {
@@ -696,15 +682,11 @@ function Home() {
       adventureLog.incrementBattleLosses();
       replaceLocation("town", "healing");
     }
-    const summary = summarizeOfflineResult(result);
     const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
-    const cap =
-      result.cappedByLimit && result.simulatedMs >= OFFLINE_SIM_MAX_MS
-        ? ` (${OFFLINE_SIM_MAX_MS / 3_600_000}시간 cap)`
-        : "";
+    const summary = summarizeOfflineResult(result);
     addNotification(
       result.died ? "battle_lose" : "info",
-      `오프라인 사냥 ${minutes}분${cap}${summary ? ` — ${summary}` : ""}`,
+      `자동 사냥 ${minutes}분 (효율 80%)${summary ? ` — ${summary}` : ""}`,
     );
     for (const id of readyQuestIds) {
       const quest = getQuestById(id);
@@ -715,8 +697,10 @@ function Home() {
         );
       }
     }
-    setOfflineRewards(result);
-    // 빈 deps — 마운트 1회만. addNotification/quests/adventureLog 등은 hook 들의 stable wrapper.
+    // sessionStorage(외부) 에서 가져온 1회성 결과 → 모달 state 로 동기화.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAutoHuntResult(result);
+    // 빈 deps — 마운트 1회만. adventureLog/quests/addNotification 등은 hook 들의 stable wrapper.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -785,8 +769,9 @@ function Home() {
     startTrial: trial.start,
     endTrial: trial.end,
     recordTrialWin: trial.recordWin,
-    huntingActive: hunting.active,
-    setHuntingActive: hunting.setActive,
+    huntingActive,
+    setHuntingActive,
+    autoHunt,
     guildBuffs: guildBuffsCache.buffs,
     refreshGuildBuffs: guildBuffsCache.refresh,
     tab,
@@ -825,14 +810,28 @@ function Home() {
               <MapPin size={16} weight="fill" className="text-emerald-500" />
               {currentRegion.name}
             </button>
-            {hunting.active && currentRegion.enemies.length > 0 && (
+            {huntingActive && currentRegion.enemies.length > 0 && (
               <span
-                title="자동 사냥 ON"
-                aria-label="자동 사냥 진행 중"
+                title="라이브 자동 전투 진행 중"
+                aria-label="라이브 자동 전투 진행 중"
                 className="inline-flex items-center gap-1 rounded-full border border-emerald-500/50 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300"
               >
                 <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                 사냥
+              </span>
+            )}
+            {autoHunt.isDispatched && (
+              <span
+                title="자동 사냥(원정) 진행 중"
+                aria-label="자동 사냥 원정 진행 중"
+                className="inline-flex items-center gap-1 rounded-full border border-sky-500/50 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-sky-700 dark:text-sky-300"
+              >
+                <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-500" />
+                {autoHunt.state === "complete"
+                  ? "원정 완료"
+                  : `원정 ${Math.floor(autoHunt.remainingMs / 60_000)}:${String(
+                      Math.floor(autoHunt.remainingMs / 1000) % 60,
+                    ).padStart(2, "0")}`}
               </span>
             )}
           </div>
@@ -955,10 +954,10 @@ function Home() {
       <NotificationToast notifications={notifications.list} />
       <LevelUpOverlay level={character.level} triggerKey={levelUpTrigger} />
       {showModal && <NameSetupModal onSubmit={profile.submit} />}
-      {offlineRewards && (
-        <OfflineRewardsModal
-          result={offlineRewards}
-          onClose={() => setOfflineRewards(null)}
+      {autoHuntResult && (
+        <AutoHuntResultModal
+          result={autoHuntResult}
+          onClose={() => setAutoHuntResult(null)}
         />
       )}
     </GameProvider>

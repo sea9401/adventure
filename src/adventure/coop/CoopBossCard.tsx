@@ -31,6 +31,8 @@ type Props = {
   ) => void;
   /** 보스 공격 시작 시 자동 사냥을 끄기 위한 콜백. */
   onStopHunting?: () => void;
+  /** 타이머형 자동 사냥(원정) 진행 중 — true 면 공격 불가 (캐릭터가 자리에 없음). */
+  dispatched?: boolean;
 };
 
 export function CoopBossCard({
@@ -41,6 +43,7 @@ export function CoopBossCard({
   notify,
   notifyBattle,
   onStopHunting,
+  dispatched = false,
 }: Props) {
   const { data, error, working, attack, claim } = useCoopBoss(regionId, true);
   const [now, setNow] = useState(() => Date.now());
@@ -91,7 +94,7 @@ export function CoopBossCard({
   const onCooldown = cooldownMs > 0;
   const defeated = !!s.defeatedAt;
   const expired = !defeated && expiresMs <= 0;
-  const canAttack = !defeated && !expired && !onCooldown && !working;
+  const canAttack = !defeated && !expired && !onCooldown && !working && !dispatched;
 
   // cron(매분) 이 곧 만료 처리하고 nextSpawnAt(=+respawnMs) 을 채운다.
   // 그 직전의 짧은 window 만 fallback 표기 — 추정 = expiresAt + respawnMs.
@@ -225,11 +228,13 @@ export function CoopBossCard({
             onClick={handleAttack}
             className="rounded-md border border-rose-700 bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {working
-              ? "공격 중…"
-              : onCooldown
-                ? `다음 공격 ${formatDuration(cooldownMs)} 후`
-                : "공격하기 (5분 쿨)"}
+            {dispatched
+              ? "자동 사냥 중 — 도전 불가"
+              : working
+                ? "공격 중…"
+                : onCooldown
+                  ? `다음 공격 ${formatDuration(cooldownMs)} 후`
+                  : "공격하기 (5분 쿨)"}
           </button>
         )}
         {defeated && my?.claimable && (

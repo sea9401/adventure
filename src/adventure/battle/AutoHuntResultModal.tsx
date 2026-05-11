@@ -6,12 +6,12 @@ import { POTIONS, type PotionId } from "../data/potions";
 import { MATERIALS, type MaterialId } from "../data/materials";
 import { ITEMS, rarityTextClass, type ItemId } from "../data/items";
 import { getRecipeById } from "../data/recipes";
-import { OFFLINE_SIM_MAX_MS, type OfflineSimResult } from "./offlineSim";
+import { type OfflineSimResult } from "./offlineSim";
+import { AUTO_HUNT_EFFICIENCY } from "./autoHunt";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
-// 자동 사냥 켜둔 채 탭/앱을 떠난 동안 누적된 보상을 한 화면에 보여준다.
-// 알림(noti)은 작아서 놓치기 쉬워, 복귀 직후 모달로 가시화.
-export function OfflineRewardsModal({
+// 자동 사냥(30분 원정) 수령 결과 — 알림(noti)은 작아서 놓치기 쉬워 모달로 가시화.
+export function AutoHuntResultModal({
   result,
   onClose,
 }: {
@@ -20,9 +20,7 @@ export function OfflineRewardsModal({
 }) {
   useEscapeKey(onClose);
   const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
-  const capLabel = result.cappedByLimit
-    ? `${OFFLINE_SIM_MAX_MS / 3_600_000}시간 cap`
-    : null;
+  const effPct = Math.round(AUTO_HUNT_EFFICIENCY * 100);
 
   const kills = Object.entries(result.killsByName)
     .filter(([, n]) => n > 0)
@@ -32,7 +30,6 @@ export function OfflineRewardsModal({
     ([, n]) => (n ?? 0) > 0,
   );
 
-  // 같은 장비가 여러 개 드랍될 수 있어 카운트로 합침.
   const equipCounts = new Map<ItemId, number>();
   for (const id of result.equipsGained) {
     equipCounts.set(id, (equipCounts.get(id) ?? 0) + 1);
@@ -52,19 +49,19 @@ export function OfflineRewardsModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-labelledby="offline-rewards-title"
+      aria-labelledby="auto-hunt-result-title"
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
     >
       <Card padding="lg" className="w-full max-w-sm">
         <div className="text-center">
           <div
-            id="offline-rewards-title"
+            id="auto-hunt-result-title"
             className="text-xl font-semibold text-emerald-600 dark:text-emerald-400"
           >
-            오프라인 사냥 보상
+            자동 사냥 보상
           </div>
           <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            {minutes}분 동안 자동 사냥{capLabel ? ` · ${capLabel}` : ""}
+            {minutes}분 사냥 · 효율 {effPct}% (EXP·골드·전리품 한정)
           </div>
         </div>
 
@@ -171,8 +168,10 @@ export function OfflineRewardsModal({
                   })}
                   {Array.from(equipCounts.entries()).map(([id, n]) => {
                     const item = ITEMS[id];
-                    // 등급 있는 장비는 등급색, 일반 장비는 보상 모달 톤(amber) 유지.
-                    const nameClass = rarityTextClass(item, "text-amber-700 dark:text-amber-300");
+                    const nameClass = rarityTextClass(
+                      item,
+                      "text-amber-700 dark:text-amber-300",
+                    );
                     return (
                       <li
                         key={`eq-${id}`}
@@ -235,7 +234,7 @@ export function OfflineRewardsModal({
 
           {result.died && (
             <div className="rounded-md border border-rose-300 bg-rose-50 p-2.5 text-center text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
-              사망 — 복귀 마을로 옮겨졌다. 치유소에서 회복이 필요하다.
+              사냥 중 사망 — 시작 마을로 옮겨졌다. 치유소에서 회복이 필요하다.
             </div>
           )}
 
