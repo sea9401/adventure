@@ -38,7 +38,7 @@
   1. users 행 락. `huntActive` 아니면 `{ ok, noop:true }`.
   2. `elapsedMs = now - huntBaselineAt`. **`simMs = min(elapsedMs, 30*60_000)`.** ← "30분만" 캡이 자연스럽게 처리 (3일 방치하고 수령해도 30분치만). `simMs < 10초` 면 거부(`{ ok:false, reason:"too_soon" }`) — 실수로 슬롯 날림 방지. (§7 Q3)
   3. KV save (character / inventory / crafting / map) 락 로드. character save 에서 `derivePlayerCombat` (서버 진실), `hp = huntBaselineHp` 로 시작.
-  4. `simulateOfflineHunt({ playerCombat, region: WORLD_MAP[huntRegion], awayMs: simMs, autoPotionRules(collect body), playerLevel, ... })` 실행 — 라이브와 동일하게 자동 포션 룰 적용 (보유 0 은 sim 이 공격으로 폴백). seed = `makeRng(userId, huntBaselineAt)` 라 (룰+seed) 결정적.
+  4. `simulateOfflineHunt({ playerCombat, region: WORLD_MAP[huntRegion], awayMs: simMs, autoPotionRules(collect body), playerLevel, ... })` 실행 — 라이브와 동일하게 자동 포션 룰 적용 (보유 0 은 sim 이 공격으로 폴백). **페이싱도 라이브와 동일**: 전투 자체는 즉시, 전투 1판마다 `battleCooldownMs(min(로그줄수, 8))` ≈ 600~2000ms 경과 (옛 "턴당 250ms" 모델 폐기 — 강한 캐릭이 한 방에 죽이면 전투당 250ms 라 라이브보다 훨씬 빨랐던 버그 수정, 2026-05-11). seed = `makeRng(userId, huntBaselineAt)` 라 (룰+seed) 결정적.
   5. **효율 80% 후처리** (`DISPATCH_EFFICIENCY = 0.8`):
      - `expGained = floor(raw.expGained * 0.8)`, `goldGained = floor(raw.goldGained * 0.8)`.
      - 전리품(재료 unit / 장비 / 제작서): 각 항목을 `rng() < 0.8` 일 때만 keep. (기대값 ×0.8, sim 내부 드롭 로직 안 건드림.)

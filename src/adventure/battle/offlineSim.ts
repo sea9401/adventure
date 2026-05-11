@@ -23,6 +23,21 @@ import { applyExpGain, applyNewbieBonus } from "@/lib/leveling";
 
 export const OFFLINE_SIM_MAX_MS = 60 * 60 * 1000;
 
+// 라이브 자동 전투의 전투 사이 쿨다운 — useBattle.ts 의 computeBattleCooldown 과 동일해야 함.
+// 위탁/오프라인 sim 도 이 페이싱을 그대로 따른다: 전투 자체는 "즉시" 끝나고, 한 전투가 끝날
+// 때마다 battleCooldownMs(min(로그줄수, 8)) ≈ 600~2000ms 만큼 흐른 것으로 친다. (옛 모델은
+// 턴당 250ms 라, 강한 캐릭이 한 방에 죽이면 전투당 250ms → 라이브보다 훨씬 빨랐다.)
+const BATTLE_COOLDOWN_PER_LOG_LINE_MS = 250;
+const BATTLE_COOLDOWN_MIN_MS = 600;
+const BATTLE_COOLDOWN_MAX_MS = 4000;
+const BATTLE_LOG_CLAMP = 8;
+function battleCooldownMs(logLines: number): number {
+  const raw = logLines * BATTLE_COOLDOWN_PER_LOG_LINE_MS;
+  return Math.max(BATTLE_COOLDOWN_MIN_MS, Math.min(BATTLE_COOLDOWN_MAX_MS, raw));
+}
+// 안전망 — advanceTurn 이 (양쪽 회피 등으로) 무한히 안 끝나는 비정상 전투 차단.
+const MAX_TURNS_PER_BATTLE = 2000;
+
 export type OfflineSimInput = {
   player: PlayerCombat;
   playerName: string;
@@ -32,7 +47,8 @@ export type OfflineSimInput = {
   /** 시뮬 시작 시점의 누적 EXP — 사이클 중 레벨업 판정에 사용. 미지정 시 0. */
   playerExp?: number;
   potions: Partial<Record<PotionId, number>>;
-  // 한 턴(player or enemy)당 흘러간 것으로 칠 시간. 보통 PLAYER_TURN_INTERVAL_MS.
+  // [DEPRECATED] 옛 모델의 턴당 시간 — 현재 무시됨. 시간은 전투당 라이브 쿨다운으로 경과한다.
+  // (입력 호환을 위해 필드만 유지.)
   turnIntervalMs: number;
   // 페이지 비운 실제 시간(ms). cap 미적용 raw 값.
   awayMs: number;
@@ -109,15 +125,10 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
     const playerForBattle: PlayerCombat = { ...input.player, hp: currentHp };
     let state = initialBattleState(playerForBattle, enemy, input.playerName);
     let battleFinished = false;
+    let turns = 0;
 
-    while (state.phase !== "ended") {
-      // 한 턴이 흘러갔다고 침. cap 초과면 진행 중인 전투는 미완으로 폐기.
-      if (elapsed + input.turnIntervalMs > cap) {
-        elapsed = cap;
-        break;
-      }
-      elapsed += input.turnIntervalMs;
-
+    while (state.phase !== "ended" && turns < MAX_TURNS_PER_BATTLE) {
+      turns += 1;
       let action: PlayerAction = { kind: "attack" };
       if (state.phase === "player") {
         const picked = input.pickAction(state);
@@ -190,6 +201,8 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
           }
         }
         currentHp = state.playerHp;
+        // 시간은 라이브 자동 전투와 동일하게 — 전투 자체는 즉시, 전투당 쿨다운만 경과.
+        elapsed += battleCooldownMs(Math.min(state.log.length, BATTLE_LOG_CLAMP));
       } else {
         currentHp = 0;
         result.died = true;
@@ -199,7 +212,7 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
     if (!battleFinished) break;
   }
 
-  result.simulatedMs = elapsed;
+  result.simulatedMs = Math.min(elapsed, cap);
   result.finalPlayerHp = currentHp;
   return result;
 }
