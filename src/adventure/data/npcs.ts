@@ -142,7 +142,6 @@ export const NPCS: Npc[] = [
     portrait: "/images/npc/hoodguy.webp",
   },
   // ── 운향 ────────────────────────────────────────────────────────────────
-  // 초상화는 추후 추가 (portrait 필드 생략).
   {
     id: "unhyang_elder",
     region: "unhyang",
@@ -152,6 +151,7 @@ export const NPCS: Npc[] = [
       "구름 위 도시를 지켜온 노인. 거인의 위협을 가장 먼저 감지했다.",
     greeting:
       "…먼 길을 올라왔구먼.\n이 산정에는 옛부터 잠들지 않는 것이 살고 있다네. 그 이야기는 차차 들려주지.",
+    portrait: "/images/npc/bakwoon.webp",
   },
   {
     id: "unhyang_smith",
@@ -162,6 +162,7 @@ export const NPCS: Npc[] = [
       "운봉석을 다루는 솜씨가 일품인 늙은 장인. 운봉 무기 제작 안내.",
     greeting:
       "어이, 모험가.\n운봉석은 제대로 다룰 줄 아는 손이 드물어. 거인의 뼛조각을 가져오면 무엇이든 만들어 주지 — 아직은 좀 더 두고 봐야겠지만.",
+    portrait: "/images/npc/manwar.webp",
   },
   {
     id: "unhyang_guide",
@@ -172,6 +173,7 @@ export const NPCS: Npc[] = [
       "협곡과 그 너머를 누벼본 젊은 안내인. 무리장 사냥 의뢰.",
     greeting:
       "산을 잘 안다니까 자주 묻는데, 협곡은 아직도 위험해.\n특히 무리장 늑대들 — 떼를 이끌고 다니지. 솜씨가 있다면 도와줄 일이 있어.",
+    portrait: "/images/npc/doyeon.webp",
   },
   {
     id: "unhyang_herbalist",
@@ -182,6 +184,7 @@ export const NPCS: Npc[] = [
       "산에서만 나는 약초를 찾아다닌다. 회복약·재료 거래.",
     greeting:
       "오, 새 얼굴이네요.\n산기슭 산초꽃이나 거인 비늘 같은 거, 모아오시면 제가 잘 써먹을 수 있어요.",
+    portrait: "/images/npc/sanha.webp",
   },
   {
     id: "unhyang_pilgrim",
@@ -192,6 +195,7 @@ export const NPCS: Npc[] = [
       "북쪽 더 깊은 곳에서 왔다고 한다. 말을 아낀다.",
     greeting:
       "…북쪽에서 왔다.\n그 너머는 아직 네가 알 시간이 아니야.",
+    portrait: "/images/npc/pilgrim.webp",
   },
 ];
 
