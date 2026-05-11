@@ -14,6 +14,7 @@ import { UsersTab } from "./tabs/UsersTab";
 import { StatsTab } from "./tabs/StatsTab";
 import { MarketplaceTab } from "./tabs/MarketplaceTab";
 import { CoopTab } from "./tabs/CoopTab";
+import { GuildsTab } from "./tabs/GuildsTab";
 
 type TabKey =
   | "overview"
@@ -21,6 +22,7 @@ type TabKey =
   | "stats"
   | "marketplace"
   | "coop"
+  | "guilds"
   | "inventory"
   | "quests"
   | "crafting"
@@ -36,6 +38,7 @@ const TABS: { key: TabKey; label: string; group: TabGroup }[] = [
   { key: "stats", label: "통계", group: "system" },
   { key: "marketplace", label: "거래소", group: "system" },
   { key: "coop", label: "협동 보스", group: "system" },
+  { key: "guilds", label: "길드 의뢰", group: "system" },
   { key: "inventory", label: "인벤토리", group: "edit" },
   { key: "quests", label: "퀘스트", group: "edit" },
   { key: "crafting", label: "제작", group: "edit" },
@@ -158,6 +161,7 @@ function ShellInner() {
           {tab === "stats" && <StatsTab />}
           {tab === "marketplace" && <MarketplaceTab />}
           {tab === "coop" && <CoopTab />}
+          {tab === "guilds" && <GuildsTab />}
           {tab === "inventory" && <InventoryTab />}
           {tab === "quests" && <QuestsTab />}
           {tab === "crafting" && <CraftingTab />}
