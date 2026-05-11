@@ -79,6 +79,12 @@ export function useCrafting() {
     );
   }, []);
 
+  // 서버 권위 제작(/api/craft)의 응답으로 받은 crafting.v2 값으로 통째 교체.
+  // 이후 useRemotePatch 가 동일 값을 다시 PATCH 하지만 서버 version 과 409 재시도로 자가 수렴.
+  const replaceFromSaved = useCallback((raw: unknown) => {
+    setState(readInitial(raw));
+  }, []);
+
   const setBoldQuestComplete = useCallback(() => {
     setState((prev) =>
       prev.boldQuestComplete ? prev : { ...prev, boldQuestComplete: true },
@@ -103,6 +109,7 @@ export function useCrafting() {
     learnRecipeFromTrade,
     consumeShare,
     markCrafted,
+    replaceFromSaved,
     setBoldQuestComplete,
     setBoldSlimeQuestComplete,
   };

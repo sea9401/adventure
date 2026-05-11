@@ -16,6 +16,7 @@ import type { InventoryState } from "@/adventure/inventory/useInventory";
 const emptyInventory = (): InventoryState => ({
   potions: {},
   equipment: {},
+  craftedEquipment: {},
   materials: {},
   consumables: {},
 });
