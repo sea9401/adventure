@@ -62,10 +62,10 @@ export function useMultiTabGuard() {
         }
       } else if (data.type === "bye") {
         if (blocked) {
-          // 누군가 떠남 — 재협상. 다른 활성 탭이 또 있으면 다시 blocked 됨.
-          blocked = false;
-          setIsDuplicate(false);
-          broadcast({ type: "claim", id: sessionId });
+          // 누군가 떠남 — 이 탭의 메모리 state 가 차단된 동안 다른 탭에 의해 stale 해졌을 수
+          // 있다. 재협상 대신 reload 해 서버 최신 데이터로 새로 시작. reload 후 마운트에서
+          // 새 claim 을 브로드캐스트하므로 다른 활성 탭이 있으면 자동으로 다시 blocked 됨.
+          window.location.reload();
         }
       }
     };
