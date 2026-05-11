@@ -190,6 +190,14 @@ export function useInventory() {
     [state],
   );
 
+  // 서버 권위 액션(상점 등)의 응답으로 받은 inventory.v2 값으로 통째 교체.
+  // 이후 useRemotePatch 가 동일 값을 다시 PATCH 하지만 서버 version 과 409 재시도로 자가 수렴.
+  const replaceFromSaved = useCallback((raw: unknown) => {
+    const next = readInitial(raw);
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
   const potionMaxValue = potionMax(state.potionCapacityBonus ?? 0);
 
   return {
@@ -208,6 +216,7 @@ export function useInventory() {
     consumeConsumable,
     consumableCount,
     addPotionCapacity,
+    replaceFromSaved,
     potionMax: potionMaxValue,
   };
 }

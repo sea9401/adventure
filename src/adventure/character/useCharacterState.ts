@@ -154,6 +154,11 @@ export function useCharacterState() {
   const setAffiliation = (affiliation: string) =>
     setState((prev) => ({ ...prev, affiliation }));
 
+  // 서버 권위 액션(상점 등)의 응답으로 받은 character.v2 값으로 통째 교체.
+  // readInitial 로 정규화 (level 클램프 / equipped rehydrate). 이후 useRemotePatch 가
+  // 동일 값을 다시 PATCH 하지만 서버 version 과 409 재시도로 자가 수렴.
+  const replaceFromSaved = (raw: unknown) => setState(readInitial(raw));
+
   // 오늘 기준 region 의 보스 입장 카운터. 다른 날짜 데이터는 0 으로 처리.
   const getBossAttemptsToday = (regionId: string): number => {
     const entry = state.bossAttempts?.[regionId];
@@ -192,6 +197,7 @@ export function useCharacterState() {
     setEquippedTitle,
     setEquippedSkills,
     setAffiliation,
+    replaceFromSaved,
     getBossAttemptsToday,
     consumeBossAttempt,
   };

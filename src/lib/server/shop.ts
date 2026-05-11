@@ -1,0 +1,247 @@
+// 상점 서버 lib — buy / sell 트랜잭션의 핵심 로직.
+//
+// 이전엔 page.tsx 의 handlePurchase*/handleSell* 가 클라에서 골드 차감 + 인벤토리
+// 갱신을 직접 했다 — devtools 로 골드/아이템 위조 가능 (audit-findings #1). 서버 권위로
+// 전환: 클라는 의도(action)만 보내고, 서버가 character.v2 + inventory.v2 를 잠그고 검증한
+// 뒤 한 트랜잭션 안에서 적용. shop.unlocks.v1 (재료 해금 진행 마커) 은 read-only 로 검증만.
+//
+// 순수 계산(computeShopOutcome)과 DB I/O(applyShopAction)를 분리 — 전자는 단위 테스트 대상.
+
+import { and, eq } from "drizzle-orm";
+import { savesKv } from "@/db/schema";
+import { upsertSave, type DbExecutor } from "@/lib/server/savesKv";
+import { POTIONS, potionMax, type PotionId } from "@/adventure/data/potions";
+import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
+import { CONSUMABLES, type ConsumableId } from "@/adventure/data/consumables";
+import { ITEMS, type ItemId } from "@/adventure/data/items";
+import {
+  getItemSellPrice,
+  getMaterialSellPrice,
+  getPotionSellPrice,
+} from "@/adventure/data/sellPrices";
+import {
+  SHOP_UNLOCK_STORAGE_KEY,
+  SHOP_UNLOCK_THRESHOLD,
+} from "@/adventure/shop/constants";
+import type {
+  ShopAction,
+  ShopActionKind,
+  ShopApplied,
+  ShopOutcome,
+} from "@/adventure/shop/types";
+
+export type { ShopAction, ShopActionKind, ShopApplied, ShopOutcome };
+
+const ACTION_KINDS: readonly ShopActionKind[] = [
+  "buy_potion",
+  "buy_material",
+  "buy_consumable",
+  "sell_potion",
+  "sell_material",
+  "sell_equipment",
+];
+
+export function isShopActionKind(v: unknown): v is ShopActionKind {
+  return typeof v === "string" && (ACTION_KINDS as readonly string[]).includes(v);
+}
+
+// 호출부(route)가 HTTP 400 으로 매핑 — 모두 "요청이 게임 규칙 위반" 케이스.
+export class ShopError extends Error {
+  constructor(public code: string) {
+    super(code);
+    this.name = "ShopError";
+  }
+}
+
+type CountMap = Record<string, number>;
+
+export type ShopComputeInput = {
+  gold: number;
+  potions: CountMap;
+  materials: CountMap;
+  equipment: CountMap;
+  consumables: CountMap;
+  potionCapacityBonus: number;
+  // material-buy 잠금 검증용 (inShop=false 인 재료). 미동봉이면 빈 맵 취급.
+  soldCounts?: CountMap;
+};
+
+export type ShopComputeResult = {
+  newGold: number;
+  potions: CountMap;
+  materials: CountMap;
+  equipment: CountMap;
+  consumables: CountMap;
+  applied: ShopApplied;
+};
+
+// 순수 함수 — savesKv 읽은 값으로 새 상태 + applied 를 계산. 위반 시 ShopError.
+export function computeShopOutcome(
+  input: ShopComputeInput,
+  action: ShopAction,
+): ShopComputeResult {
+  const qty = action.quantity;
+  if (!Number.isInteger(qty) || qty < 1) throw new ShopError("invalid_quantity");
+  if (!Number.isFinite(input.gold)) throw new ShopError("corrupt_gold");
+
+  const potions = { ...input.potions };
+  const materials = { ...input.materials };
+  const equipment = { ...input.equipment };
+  const consumables = { ...input.consumables };
+  const gold = input.gold;
+
+  let appliedQty = qty;
+  let goldDelta = 0;
+
+  switch (action.kind) {
+    case "buy_potion": {
+      const p = POTIONS[action.id as PotionId];
+      if (!p) throw new ShopError("unknown_item");
+      if (!Number.isFinite(p.price) || p.price < 0) throw new ShopError("not_for_sale");
+      const have = potions[action.id] ?? 0;
+      const room = Math.max(0, potionMax(input.potionCapacityBonus) - have);
+      appliedQty = Math.min(qty, room);
+      if (appliedQty <= 0) throw new ShopError("full");
+      const cost = p.price * appliedQty;
+      if (gold < cost) throw new ShopError("insufficient_gold");
+      potions[action.id] = have + appliedQty;
+      goldDelta = -cost;
+      break;
+    }
+    case "buy_material": {
+      const m = MATERIALS[action.id as MaterialId];
+      if (!m) throw new ShopError("unknown_item");
+      if (!Number.isFinite(m.price) || m.price <= 0) throw new ShopError("not_for_sale");
+      // 구매 가능 = 항상 취급(inShop) 또는 누적 판매 임계치 도달 — 클라 ShopView 와 동일.
+      if (!m.inShop) {
+        const sold = input.soldCounts?.[action.id] ?? 0;
+        if (sold < SHOP_UNLOCK_THRESHOLD) throw new ShopError("locked");
+      }
+      const cost = m.price * qty;
+      if (gold < cost) throw new ShopError("insufficient_gold");
+      materials[action.id] = (materials[action.id] ?? 0) + qty;
+      goldDelta = -cost;
+      break;
+    }
+    case "buy_consumable": {
+      const c = CONSUMABLES[action.id as ConsumableId];
+      if (!c) throw new ShopError("unknown_item");
+      if (!Number.isFinite(c.price) || c.price < 0) throw new ShopError("not_for_sale");
+      const cost = c.price * qty;
+      if (gold < cost) throw new ShopError("insufficient_gold");
+      consumables[action.id] = (consumables[action.id] ?? 0) + qty;
+      goldDelta = -cost;
+      break;
+    }
+    case "sell_potion": {
+      if (!POTIONS[action.id as PotionId]) throw new ShopError("unknown_item");
+      const have = potions[action.id] ?? 0;
+      if (have < qty) throw new ShopError("insufficient_items");
+      potions[action.id] = have - qty;
+      goldDelta = getPotionSellPrice(action.id as PotionId) * qty;
+      break;
+    }
+    case "sell_material": {
+      if (!MATERIALS[action.id as MaterialId]) throw new ShopError("unknown_item");
+      const have = materials[action.id] ?? 0;
+      if (have < qty) throw new ShopError("insufficient_items");
+      materials[action.id] = have - qty;
+      goldDelta = getMaterialSellPrice(action.id as MaterialId) * qty;
+      break;
+    }
+    case "sell_equipment": {
+      if (!ITEMS[action.id as ItemId]) throw new ShopError("unknown_item");
+      const have = equipment[action.id] ?? 0;
+      if (have < qty) throw new ShopError("insufficient_items");
+      equipment[action.id] = have - qty;
+      goldDelta = getItemSellPrice(action.id as ItemId) * qty;
+      break;
+    }
+  }
+
+  return {
+    newGold: Math.max(0, gold + goldDelta),
+    potions,
+    materials,
+    equipment,
+    consumables,
+    applied: { kind: action.kind, id: action.id, quantity: appliedQty, goldDelta },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────
+
+type SavedCharacter = { gold?: number; [k: string]: unknown };
+type SavedInventory = {
+  potions?: CountMap;
+  materials?: CountMap;
+  equipment?: CountMap;
+  consumables?: CountMap;
+  potionCapacityBonus?: number;
+  [k: string]: unknown;
+};
+type SavedShopUnlocks = { sold?: CountMap };
+
+async function readKv<T>(
+  tx: DbExecutor,
+  userId: string,
+  key: string,
+  lock: boolean,
+): Promise<T | null> {
+  const q = tx
+    .select()
+    .from(savesKv)
+    .where(and(eq(savesKv.userId, userId), eq(savesKv.key, key)));
+  const rows = lock ? await q.for("update") : await q.limit(1);
+  return (rows[0]?.value as T | undefined) ?? null;
+}
+
+// 트랜잭션 안에서 호출. character.v2 / inventory.v2 를 for-update 로 잠그고 갱신.
+export async function applyShopAction(
+  tx: DbExecutor,
+  userId: string,
+  action: ShopAction,
+): Promise<ShopOutcome> {
+  const character =
+    (await readKv<SavedCharacter>(tx, userId, "character.v2", true)) ?? {};
+  const inv = (await readKv<SavedInventory>(tx, userId, "inventory.v2", true)) ?? {};
+
+  // material buy 의 잠금 검증에만 shop.unlocks.v1 필요.
+  let soldCounts: CountMap | undefined;
+  if (action.kind === "buy_material") {
+    const m = MATERIALS[action.id as MaterialId];
+    if (m && !m.inShop) {
+      const u =
+        (await readKv<SavedShopUnlocks>(tx, userId, SHOP_UNLOCK_STORAGE_KEY, false)) ??
+        {};
+      soldCounts = u.sold ?? {};
+    }
+  }
+
+  const out = computeShopOutcome(
+    {
+      gold: character.gold ?? 0,
+      potions: { ...(inv.potions ?? {}) },
+      materials: { ...(inv.materials ?? {}) },
+      equipment: { ...(inv.equipment ?? {}) },
+      consumables: { ...(inv.consumables ?? {}) },
+      potionCapacityBonus: inv.potionCapacityBonus ?? 0,
+      soldCounts,
+    },
+    action,
+  );
+
+  const newCharacter: SavedCharacter = { ...character, gold: out.newGold };
+  const newInventory: SavedInventory = {
+    ...inv,
+    potions: out.potions,
+    materials: out.materials,
+    equipment: out.equipment,
+    consumables: out.consumables,
+  };
+
+  await upsertSave(tx, userId, "character.v2", newCharacter);
+  await upsertSave(tx, userId, "inventory.v2", newInventory);
+
+  return { character: newCharacter, inventory: newInventory, applied: out.applied };
+}

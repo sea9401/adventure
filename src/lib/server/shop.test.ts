@@ -1,0 +1,159 @@
+// shop 서버 lib 의 순수 계산(computeShopOutcome) 검증. DB I/O(applyShopAction)는
+// 통합 테스트 인프라가 없어 제외 — 수동 시나리오(npm run dev + Network 탭)로 검증.
+
+import { describe, expect, it } from "vitest";
+import { ShopError, computeShopOutcome, type ShopComputeInput } from "./shop";
+
+const base = (): ShopComputeInput => ({
+  gold: 100,
+  potions: {},
+  materials: {},
+  equipment: {},
+  consumables: {},
+  potionCapacityBonus: 0,
+});
+
+describe("computeShopOutcome", () => {
+  it("buy_potion — 골드 차감 + 인벤 증가", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 10 },
+      { kind: "buy_potion", id: "potion_heal_s", quantity: 3 },
+    );
+    expect(r.newGold).toBe(7); // price 1 × 3
+    expect(r.potions.potion_heal_s).toBe(3);
+    expect(r.applied).toEqual({
+      kind: "buy_potion",
+      id: "potion_heal_s",
+      quantity: 3,
+      goldDelta: -3,
+    });
+  });
+
+  it("buy_potion — 캡 초과분은 잘리고 잘린 만큼만 과금", () => {
+    const r = computeShopOutcome(
+      { ...base(), potions: { potion_heal_s: 8 } }, // base cap 10 → room 2
+      { kind: "buy_potion", id: "potion_heal_s", quantity: 5 },
+    );
+    expect(r.potions.potion_heal_s).toBe(10);
+    expect(r.applied.quantity).toBe(2);
+    expect(r.newGold).toBe(98);
+  });
+
+  it("buy_potion — 캡 보너스만큼 더 살 수 있음", () => {
+    const r = computeShopOutcome(
+      { ...base(), potions: { potion_heal_s: 10 }, potionCapacityBonus: 3 },
+      { kind: "buy_potion", id: "potion_heal_s", quantity: 10 },
+    );
+    expect(r.potions.potion_heal_s).toBe(13);
+    expect(r.applied.quantity).toBe(3);
+  });
+
+  it("buy_potion — 캡 가득이면 full", () => {
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), potions: { potion_heal_s: 10 } },
+        { kind: "buy_potion", id: "potion_heal_s", quantity: 1 },
+      ),
+    ).toThrow(ShopError);
+  });
+
+  it("buy_potion — 골드 부족이면 insufficient_gold (상태 변경 없이 throw)", () => {
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), gold: 0 },
+        { kind: "buy_potion", id: "potion_heal_s", quantity: 1 },
+      ),
+    ).toThrow(/insufficient_gold/);
+  });
+
+  it("buy_material — inShop=false 재료는 누적 판매 임계 미달이면 locked", () => {
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), soldCounts: { slime_chunk: 50 } },
+        { kind: "buy_material", id: "slime_chunk", quantity: 1 },
+      ),
+    ).toThrow(/locked/);
+  });
+
+  it("buy_material — soldCounts 미동봉이면 locked", () => {
+    expect(() =>
+      computeShopOutcome(base(), { kind: "buy_material", id: "slime_chunk", quantity: 1 }),
+    ).toThrow(/locked/);
+  });
+
+  it("buy_material — 임계 도달이면 구매 가능", () => {
+    const r = computeShopOutcome(
+      { ...base(), soldCounts: { slime_chunk: 100 } },
+      { kind: "buy_material", id: "slime_chunk", quantity: 2 },
+    );
+    expect(r.materials.slime_chunk).toBe(2);
+    expect(r.newGold).toBe(100 - 3 * 2); // slime_chunk price 3
+  });
+
+  it("buy_material — inShop=true(branch)는 잠금 없이 구매", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 10 },
+      { kind: "buy_material", id: "branch", quantity: 4 },
+    );
+    expect(r.materials.branch).toBe(4);
+    expect(r.newGold).toBe(6); // price 1 × 4
+  });
+
+  it("buy_consumable — 골드 차감 + 소모품 증가", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 10 },
+      { kind: "buy_consumable", id: "scroll_town_return", quantity: 2 },
+    );
+    expect(r.consumables.scroll_town_return).toBe(2);
+    expect(r.newGold).toBe(4); // price 3 × 2
+  });
+
+  it("sell_material — 보유분 차감 + 골드 지급", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 0, materials: { slime_core: 5 } },
+      { kind: "sell_material", id: "slime_core", quantity: 3 },
+    );
+    expect(r.materials.slime_core).toBe(2);
+    expect(r.newGold).toBe(3); // slime_core sell 1 × 3
+    expect(r.applied.goldDelta).toBe(3);
+  });
+
+  it("sell_material — 보유 부족이면 insufficient_items", () => {
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), materials: { slime_core: 1 } },
+        { kind: "sell_material", id: "slime_core", quantity: 3 },
+      ),
+    ).toThrow(/insufficient_items/);
+  });
+
+  it("sell_potion — 보유분 차감 + 골드 지급", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 0, potions: { potion_heal_s: 2 } },
+      { kind: "sell_potion", id: "potion_heal_s", quantity: 2 },
+    );
+    expect(r.potions.potion_heal_s).toBe(0);
+    expect(r.newGold).toBe(2); // sell 1 × 2
+  });
+
+  it("unknown item → unknown_item", () => {
+    expect(() =>
+      computeShopOutcome(base(), { kind: "buy_potion", id: "nope", quantity: 1 }),
+    ).toThrow(/unknown_item/);
+  });
+
+  it("quantity < 1 → invalid_quantity", () => {
+    expect(() =>
+      computeShopOutcome(base(), { kind: "buy_potion", id: "potion_heal_s", quantity: 0 }),
+    ).toThrow(/invalid_quantity/);
+  });
+
+  it("골드가 NaN(손상)이면 corrupt_gold", () => {
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), gold: NaN },
+        { kind: "buy_potion", id: "potion_heal_s", quantity: 1 },
+      ),
+    ).toThrow(/corrupt_gold/);
+  });
+});

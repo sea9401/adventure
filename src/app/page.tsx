@@ -24,10 +24,8 @@ import {
   type MapProgress,
 } from "@/lib/map-progress";
 import { START_REGION_ID } from "@/adventure/data/world";
-import {
-  CONSUMABLES,
-  type ConsumableId,
-} from "@/adventure/data/consumables";
+import { type ConsumableId } from "@/adventure/data/consumables";
+import type { ShopActionKind, ShopOutcome } from "@/adventure/shop/types";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationToast } from "@/components/NotificationToast";
 import { LevelUpOverlay } from "@/components/LevelUpOverlay";
@@ -38,11 +36,6 @@ import {
   type RewardServices,
 } from "@/adventure/quests/applyReward";
 import { ITEMS, findItemId, rarityTextClass, type EquipSlot, type ItemId } from "@/adventure/data/items";
-import {
-  getItemSellPrice,
-  getMaterialSellPrice,
-  getPotionSellPrice,
-} from "@/adventure/data/sellPrices";
 import {
   POTIONS,
   type PotionId,
@@ -134,6 +127,22 @@ export default function Page() {
       </Suspense>
     </SaveProvider>
   );
+}
+
+// /api/shop 의 ShopError code → 사용자 안내 문구.
+function shopErrorMessage(code: string): string {
+  switch (code) {
+    case "insufficient_gold":
+      return "골드가 부족하다.";
+    case "full":
+      return "더 들 수 없다.";
+    case "insufficient_items":
+      return "보유량이 부족하다.";
+    case "locked":
+      return "아직 상점에서 취급하지 않는 재료다.";
+    default:
+      return "상점 처리에 실패했다.";
+  }
 }
 
 function Home() {
@@ -284,42 +293,68 @@ function Home() {
     maxExp: character.maxExp,
   };
 
-  const handlePurchasePotion = (id: PotionId, quantity: number) => {
-    const potion = POTIONS[id];
-    if (!potion) return;
-    const have = inventory.state.potions[id] ?? 0;
-    const room = Math.max(0, inventory.potionMax - have);
-    const buyQty = Math.min(quantity, room);
-    if (buyQty <= 0) return;
-    const cost = potion.price * buyQty;
-    if (characterState.gold < cost) return;
-    characterStateHook.addGold(-cost);
-    inventory.add(id, buyQty);
-  };
-
-  const handlePurchaseMaterial = (id: MaterialId, quantity: number) => {
-    const m = MATERIALS[id];
-    if (!m) return;
-    const cost = m.price * quantity;
-    if (characterState.gold < cost) return;
-    characterStateHook.addGold(-cost);
-    inventory.addMaterial(id, quantity);
-  };
-
-  const handlePurchaseConsumable = (id: ConsumableId, quantity: number) => {
-    const c = CONSUMABLES[id];
-    if (!c || quantity <= 0) return;
-    const cost = c.price * quantity;
-    if (characterState.gold < cost) return;
-    characterStateHook.addGold(-cost);
-    inventory.addConsumable(id, quantity);
-  };
-
   const addNotification = (
     kind: NotificationKind,
     text: string,
     meta?: NotificationMeta,
   ) => notifications.add(kind, text, meta);
+
+  // 상점 buy/sell — 서버 권위 (audit-findings #1). 클라는 의도(kind/id/quantity)만 보내고,
+  // 서버가 character.v2 / inventory.v2 를 잠그고 검증·적용한 새 값을 받아 in-memory state 를
+  // replace. 이어지는 useRemotePatch 자동 PATCH 는 409→currentVersion 재시도로 자가 수렴.
+  // 실패 시 사유를 토스트로 안내하고 null 반환.
+  const runShopAction = async (body: {
+    kind: ShopActionKind;
+    id: string;
+    quantity: number;
+  }): Promise<{ applied: ShopOutcome["applied"] } | null> => {
+    if (!Number.isInteger(body.quantity) || body.quantity < 1) return null;
+    let res: Response;
+    try {
+      res = await fetch("/api/shop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      addNotification("info", "통신 오류 — 잠시 후 다시 시도해 주세요.");
+      return null;
+    }
+    if (res.status === 401 || res.status === 410) {
+      // 세션 만료/무효 — 다음 저장 시도에서 SaveProvider 가 안내. 여기선 조용히 실패.
+      return null;
+    }
+    const data = (await res.json().catch(() => null)) as
+      | { ok: true; character: unknown; inventory: unknown; applied: ShopOutcome["applied"] }
+      | { ok: false; error: string }
+      | null;
+    if (!data) {
+      addNotification("info", "상점 처리에 실패했다.");
+      return null;
+    }
+    if (data.ok === false) {
+      addNotification("info", shopErrorMessage(data.error));
+      return null;
+    }
+    characterStateHook.replaceFromSaved(data.character);
+    inventory.replaceFromSaved(data.inventory);
+    return { applied: data.applied };
+  };
+
+  const handlePurchasePotion = async (id: PotionId, quantity: number) => {
+    await runShopAction({ kind: "buy_potion", id, quantity });
+  };
+
+  const handlePurchaseMaterial = async (id: MaterialId, quantity: number) => {
+    await runShopAction({ kind: "buy_material", id, quantity });
+  };
+
+  const handlePurchaseConsumable = async (
+    id: ConsumableId,
+    quantity: number,
+  ) => {
+    await runShopAction({ kind: "buy_consumable", id, quantity });
+  };
 
   // 마을 귀환 주문서 사용 — 가본 마을로 즉시 이동.
   // 마을→마을은 무소비 (지도 fast-travel 과 동일), 그 외엔 1개 소비.
@@ -345,34 +380,35 @@ function Home() {
     return true;
   };
 
-  // 판매 — 인벤토리에서 차감 + 골드 지급. 0G 아이템은 단순 정리(버리기) 효과.
-  const handleSellPotion = (id: PotionId, quantity: number) => {
-    if (quantity <= 0) return;
-    if (!inventory.consume(id, quantity)) return;
-    const total = getPotionSellPrice(id) * quantity;
-    if (total > 0) characterStateHook.addGold(total);
+  // 판매 — 서버가 인벤토리에서 차감 + 골드 지급. 0G 아이템은 단순 정리(버리기) 효과.
+  // 토스트/칭호/해금 알림은 서버가 알려준 applied(실제 적용 수량·골드)로 구성.
+  const handleSellPotion = async (id: PotionId, quantity: number) => {
+    const r = await runShopAction({ kind: "sell_potion", id, quantity });
+    if (!r) return;
+    const { quantity: qty, goldDelta: total } = r.applied;
     addNotification(
       "info",
       total > 0
-        ? `${POTIONS[id].name} ×${quantity}을(를) ${total}G에 팔았다.`
-        : `${POTIONS[id].name} ×${quantity}을(를) 버렸다.`,
+        ? `${POTIONS[id].name} ×${qty}을(를) ${total}G에 팔았다.`
+        : `${POTIONS[id].name} ×${qty}을(를) 버렸다.`,
     );
   };
 
-  const handleSellMaterial = (id: MaterialId, quantity: number) => {
-    if (quantity <= 0) return;
-    if (!inventory.consumeMaterial(id, quantity)) return;
-    const total = getMaterialSellPrice(id) * quantity;
-    if (total > 0) characterStateHook.addGold(total);
+  const handleSellMaterial = async (id: MaterialId, quantity: number) => {
+    const r = await runShopAction({ kind: "sell_material", id, quantity });
+    if (!r) return;
+    const { quantity: qty, goldDelta: total } = r.applied;
     addNotification(
       "info",
       total > 0
-        ? `${MATERIALS[id].name} ×${quantity}을(를) ${total}G에 팔았다.`
-        : `${MATERIALS[id].name} ×${quantity}을(를) 버렸다.`,
+        ? `${MATERIALS[id].name} ×${qty}을(를) ${total}G에 팔았다.`
+        : `${MATERIALS[id].name} ×${qty}을(를) 버렸다.`,
     );
     // 누적 판매량 100 도달 시 상점에서 구매 가능. 처음 도달한 순간만 알림.
     // 임계치를 처음 넘긴 시점에 '상인' 칭호도 함께 부여 (이미 보유면 idempotent).
-    const crossed = shopUnlocks.recordSale(id, quantity);
+    // shop.unlocks.v1 은 진행 마커라 클라 권위 유지 (server-authority-plan v1 비대상) —
+    // 서버 material-buy 검증은 이 PATCH 가 동기화된 값을 read-only 로 본다.
+    const crossed = shopUnlocks.recordSale(id, qty);
     if (crossed) {
       addNotification(
         "info",
@@ -382,17 +418,16 @@ function Home() {
     }
   };
 
-  const handleSellEquipment = (id: ItemId, quantity: number) => {
-    if (quantity <= 0) return;
-    if (!inventory.consumeEquipment(id, quantity)) return;
-    const total = getItemSellPrice(id) * quantity;
-    if (total > 0) characterStateHook.addGold(total);
+  const handleSellEquipment = async (id: ItemId, quantity: number) => {
+    const r = await runShopAction({ kind: "sell_equipment", id, quantity });
+    if (!r) return;
+    const { quantity: qty, goldDelta: total } = r.applied;
     const name = ITEMS[id].name;
     addNotification(
       "info",
       total > 0
-        ? `${name}${quantity > 1 ? ` ×${quantity}` : ""}을(를) ${total}G에 팔았다.`
-        : `${name}${quantity > 1 ? ` ×${quantity}` : ""}을(를) 버렸다.`,
+        ? `${name}${qty > 1 ? ` ×${qty}` : ""}을(를) ${total}G에 팔았다.`
+        : `${name}${qty > 1 ? ` ×${qty}` : ""}을(를) 버렸다.`,
     );
     if (id === "mom_amulet") grantTitle("unfilial");
   };

@@ -4,11 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import type { MaterialId } from "@/adventure/data/materials";
+import {
+  SHOP_UNLOCK_STORAGE_KEY,
+  SHOP_UNLOCK_THRESHOLD,
+} from "./constants";
 
 // 상점에 누적 판매한 재료 수량을 추적. 임계치 이상이면 같은 재료를 상점에서 다시
 // 구매할 수 있게 풀린다 (MaterialId 화이트리스트는 ShopView 가 inShop 와 함께 평가).
-export const SHOP_UNLOCK_THRESHOLD = 100;
-export const SHOP_UNLOCK_STORAGE_KEY = "shop.unlocks.v1";
+// 상수는 서버(lib/server/shop)도 import 하므로 "use client" 아닌 ./constants 에 둠.
+export { SHOP_UNLOCK_STORAGE_KEY, SHOP_UNLOCK_THRESHOLD };
 
 export type ShopUnlocksState = {
   // 누적 판매량. 임계치 도달 후에도 계속 누적됨.
