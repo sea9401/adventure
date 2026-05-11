@@ -6,6 +6,7 @@ import { ITEMS, type ItemId } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, type PotionId } from "./data/potions";
 import { RECIPES, type Recipe, type RecipeIngredient } from "./data/recipes";
+import { craftVarianceSummary } from "./data/craftQuality";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
@@ -50,12 +51,15 @@ function ingredientKey(ing: RecipeIngredient): string {
 function summarizeResult(r: Recipe): {
   title: string;
   meta: string;
+  // 제작 품질 변동 안내 — "공격력 +1~+5" 식. 없으면 null.
+  variance: string | null;
 } {
   if (r.result.kind === "equipment") {
     const item = ITEMS[r.result.itemId];
     return {
       title: r.name,
       meta: item.stats.map((s) => `${s.label} ${s.value}`).join(" · "),
+      variance: craftVarianceSummary(item, r),
     };
   }
   const potion = POTIONS[r.result.potionId];
@@ -63,6 +67,7 @@ function summarizeResult(r: Recipe): {
   return {
     title: r.name,
     meta: qty > 1 ? `${potion.name} ×${qty}` : potion.name,
+    variance: null,
   };
 }
 
@@ -115,7 +120,7 @@ export function CraftingView({
         <Card as="section" padding="md">
           <div className="space-y-2">
             {pager.pageItems.map((r) => {
-              const { title, meta } = summarizeResult(r);
+              const { title, meta, variance } = summarizeResult(r);
               const hasMaterials = r.ingredients.every(
                 (ing) =>
                   ingredientCount(ing, materialCounts, equipmentCounts).have >=
@@ -143,6 +148,11 @@ export function CraftingView({
                   <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
                     {r.description}
                   </p>
+                  {variance && (
+                    <p className="mt-1 text-xs text-sky-600 dark:text-sky-400">
+                      품질에 따라 변동 — {variance}
+                    </p>
+                  )}
                   {r.ingredients.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                       <span className="text-zinc-500 dark:text-zinc-400">

@@ -47,7 +47,10 @@ import { useInboxCount } from "@/adventure/marketplace/useInboxCount";
 import { RankingsView } from "@/adventure/rankings/RankingsView";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
-import { type Recipe } from "@/adventure/data/recipes";
+import { resolveCraftedItem, type Recipe } from "@/adventure/data/recipes";
+import { craftTierSuffix, type CraftTier } from "@/adventure/data/craftQuality";
+import { craftErrorMessage, type CraftResult } from "@/adventure/crafting/types";
+import type { EquippedItem } from "@/adventure/character/types";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
 import { NEWBIE_BONUS_LEVEL_THRESHOLD, isNewbieBonusActive } from "@/lib/leveling";
@@ -497,83 +500,120 @@ function Home() {
     addNotification: (kind, text) => addNotification(kind, text),
   });
 
+  // 슬롯에 장착돼 있던 장비를 인벤토리로 회수 — 제작산이면 등급별 칸으로, 아니면 무등급으로.
+  const returnEquippedToInventory = (item: EquippedItem | null) => {
+    if (!item) return;
+    const id = findItemId(item);
+    if (!id) return;
+    const tier = item.craftTier;
+    if (tier != null && tier !== 0) inventory.addCraftedEquipment(id, tier, 1);
+    else inventory.addEquipment(id, 1);
+  };
+
   // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
-  const handleEquipFromInventory = (id: ItemId) => {
-    if (!inventory.consumeEquipment(id, 1)) return;
+  // tier 미지정/0 = 무등급(또는 일반 등급) 스택, ±1·±2 = 제작산 등급 스택.
+  const handleEquipFromInventory = (id: ItemId, tier?: CraftTier) => {
+    const isCrafted = tier != null && tier !== 0;
+    if (isCrafted) {
+      if (!inventory.consumeCraftedEquipment(id, tier, 1)) return;
+    } else {
+      if (!inventory.consumeEquipment(id, 1)) return;
+    }
     const item = ITEMS[id];
-    const oldId = findItemId(characterStateHook.equippedSlots[item.slot]);
-    if (oldId) inventory.addEquipment(oldId, 1);
-    characterStateHook.setSlot(item.slot, item);
-    addNotification("info", `${item.name}을(를) 장착했다.`, {
-      highlight: { name: item.name, className: rarityTextClass(item) },
+    const equipItem: EquippedItem = isCrafted ? resolveCraftedItem(id, tier) : item;
+    returnEquippedToInventory(characterStateHook.equippedSlots[item.slot]);
+    characterStateHook.setSlot(item.slot, equipItem);
+    const suffix = craftTierSuffix(equipItem.craftTier);
+    addNotification("info", `${item.name}${suffix}을(를) 장착했다.`, {
+      highlight: { name: item.name + suffix, className: rarityTextClass(item) },
     });
   };
 
   const handleUnequip = (slot: EquipSlot) => {
     const current = characterStateHook.equippedSlots[slot];
     if (!current) return;
-    const id = findItemId(current);
-    if (id) inventory.addEquipment(id, 1);
+    returnEquippedToInventory(current);
     characterStateHook.setSlot(slot, null);
-    addNotification("info", `${current.name}을(를) 해제했다.`, {
-      highlight: { name: current.name, className: rarityTextClass(current) },
+    const suffix = craftTierSuffix(current.craftTier);
+    addNotification("info", `${current.name}${suffix}을(를) 해제했다.`, {
+      highlight: { name: current.name + suffix, className: rarityTextClass(current) },
     });
   };
 
-  const handleCraft = (recipe: Recipe) => {
-    // 재료 검사 — 부족하면 알림만 띄우고 중단.
+  // 제작 — 서버 권위 (audit-findings #1 후속). 클라는 recipeId 만 보내고, 서버가 inventory.v2 /
+  // crafting.v2 를 잠그고 검증·적용(품질 등급 추첨 포함)한 새 값을 받아 in-memory state 를
+  // replace. 이어지는 useRemotePatch 자동 PATCH 는 409→재시도로 자가 수렴 (상점과 동일).
+  // 사전 검사(재료/포션 한도)는 UX 용 — 라운드트립 전에 부족분을 안내. 권한은 서버가 갖는다.
+  const handleCraft = async (recipe: Recipe) => {
     for (const ing of recipe.ingredients) {
       if (ing.kind === "material") {
         if (inventory.materialCount(ing.materialId) < ing.count) {
-          const name = MATERIALS[ing.materialId].name;
           addNotification(
             "info",
-            `재료가 부족하다 — ${name} ${ing.count}개 필요.`,
+            `재료가 부족하다 — ${MATERIALS[ing.materialId].name} ${ing.count}개 필요.`,
           );
           return;
         }
       } else {
-        const have = inventory.state.equipment[ing.itemId] ?? 0;
+        const have =
+          (inventory.state.equipment[ing.itemId] ?? 0) +
+          inventory.craftedTotalCount(ing.itemId);
         if (have < ing.count) {
-          const name = ITEMS[ing.itemId].name;
           addNotification(
             "info",
-            `재료가 부족하다 — ${name} ${ing.count}개 필요.`,
+            `재료가 부족하다 — ${ITEMS[ing.itemId].name} ${ing.count}개 필요.`,
           );
           return;
         }
       }
     }
-    // 포션 결과는 종류별 한도(potionMax) 검사 — 가득 차 있으면 재료만
-    // 소비되고 결과물이 안 늘어나는 버그를 막기 위해 사전 차단.
     if (recipe.result.kind === "potion") {
       const have = inventory.state.potions[recipe.result.potionId] ?? 0;
-      if (have >= inventory.potionMax) {
-        const potion = POTIONS[recipe.result.potionId];
-        addNotification("info", `${potion.name}을(를) 더 들 수 없다.`);
+      if (have + recipe.result.quantity > inventory.potionMax) {
+        addNotification(
+          "info",
+          `${POTIONS[recipe.result.potionId].name}을(를) 더 들 수 없다.`,
+        );
         return;
       }
     }
-    // 차감.
-    for (const ing of recipe.ingredients) {
-      if (ing.kind === "material") {
-        inventory.consumeMaterial(ing.materialId, ing.count);
-      } else {
-        inventory.consumeEquipment(ing.itemId, ing.count);
-      }
-    }
-    crafting.markCrafted(recipe.id);
 
-    if (recipe.result.kind === "equipment") {
-      const item = ITEMS[recipe.result.itemId];
-      inventory.addEquipment(recipe.result.itemId);
-      addNotification("info", `${item.name}을(를) 만들었다.`, {
-        highlight: { name: item.name, className: rarityTextClass(item) },
+    let res: Response;
+    try {
+      res = await fetch("/api/craft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipeId: recipe.id }),
+      });
+    } catch {
+      addNotification("info", "통신 오류 — 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    if (res.status === 401 || res.status === 410) return;
+    const data = (await res.json().catch(() => null)) as
+      | { ok: true; inventory: unknown; crafting: unknown; result: CraftResult }
+      | { ok: false; error: string }
+      | null;
+    if (!data) {
+      addNotification("info", "제작에 실패했다.");
+      return;
+    }
+    if (data.ok === false) {
+      addNotification("info", craftErrorMessage(data.error));
+      return;
+    }
+    inventory.replaceFromSaved(data.inventory);
+    crafting.replaceFromSaved(data.crafting);
+
+    if (data.result.kind === "equipment") {
+      const item = ITEMS[data.result.itemId];
+      const suffix = craftTierSuffix(data.result.tier);
+      addNotification("info", `${item.name}${suffix}을(를) 만들었다.`, {
+        highlight: { name: item.name + suffix, className: rarityTextClass(item) },
       });
     } else {
-      const potion = POTIONS[recipe.result.potionId];
-      inventory.add(recipe.result.potionId, recipe.result.quantity);
-      const qty = recipe.result.quantity;
+      const potion = POTIONS[data.result.potionId];
+      const qty = data.result.quantity;
       addNotification(
         "info",
         qty > 1

@@ -3,8 +3,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { StatBar } from "@/components/ui/StatBar";
 import type { Gender } from "@/adventure/profile/avatars";
-import { rarityTextClass, type EquipItem, type EquipSlot } from "@/adventure/data/items";
-import type { Character, EquippedSlots } from "./types";
+import { rarityTextClass, type EquipSlot } from "@/adventure/data/items";
+import { craftTierSuffix, craftTierTextClass } from "@/adventure/data/craftQuality";
+import type { Character, EquippedItem, EquippedSlots } from "./types";
 
 export const EQUIP_SLOT_META: {
   slot: EquipSlot;
@@ -67,7 +68,7 @@ export function MiniEquipCard({
 }: {
   icon: ReactNode;
   label: string;
-  item: EquipItem | null;
+  item: EquippedItem | null;
   tooltipAlign?: TooltipAlign;
 }) {
   const [open, setOpen] = useState(false);
@@ -114,7 +115,14 @@ export function MiniEquipCard({
         </div>
         <div className="truncate text-xs">
           {item ? (
-            <span className={rarityTextClass(item)}>{item.name}</span>
+            <span className={rarityTextClass(item)}>
+              {item.name}
+              {craftTierSuffix(item.craftTier) && (
+                <span className={craftTierTextClass(item.craftTier)}>
+                  {craftTierSuffix(item.craftTier)}
+                </span>
+              )}
+            </span>
           ) : (
             <span className="italic text-zinc-400 dark:text-zinc-600">없음</span>
           )}
@@ -128,6 +136,9 @@ export function MiniEquipCard({
         >
           <div className={`font-medium ${rarityTextClass(item)}`}>
             {item.name}
+            <span className={craftTierTextClass(item.craftTier)}>
+              {craftTierSuffix(item.craftTier)}
+            </span>
           </div>
           <div className="mt-1.5 space-y-0.5">
             {item.stats.map((s) => (

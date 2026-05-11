@@ -25,6 +25,7 @@ import type { useTraining } from "@/adventure/training/useTraining";
 import type { TrialEdge } from "@/adventure/TrialView";
 import type { ConsumableId } from "@/adventure/data/consumables";
 import type { ItemId, EquipSlot } from "@/adventure/data/items";
+import type { CraftTier } from "@/adventure/data/craftQuality";
 import type { MaterialId } from "@/adventure/data/materials";
 import type { PotionId } from "@/adventure/data/potions";
 import type { Recipe } from "@/adventure/data/recipes";
@@ -112,7 +113,7 @@ export type GameCtx = {
   handleSellPotion: (id: PotionId, quantity: number) => void;
   handleSellMaterial: (id: MaterialId, quantity: number) => void;
   handleSellEquipment: (id: ItemId, quantity: number) => void;
-  handleEquipFromInventory: (id: ItemId) => void;
+  handleEquipFromInventory: (id: ItemId, tier?: CraftTier) => void;
   handleUnequip: (slot: EquipSlot) => void;
   handleCraft: (recipe: Recipe) => void;
   handleBattleEnd: (payload: BattleEndPayload) => void;
