@@ -64,6 +64,13 @@
       "when": 1778425000000,
       "tag": "0008_storyflags_v1_to_v2_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778452892049,
+      "tag": "0009_guild_buffs",
+      "breakpoints": true
     }
   ]
 }

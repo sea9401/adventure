@@ -1,5 +1,11 @@
 // 길드 시스템 클라이언트 API. fetch wrapper — 에러 메시지를 한국어로 변환.
 
+import type {
+  GuildBuffDef,
+  GuildBuffId,
+  GuildBuffSlot,
+} from "@/adventure/data/guildBuffs";
+
 export type GuildMember = {
   userId: string;
   name: string;
@@ -21,6 +27,8 @@ export type GuildInfo = {
   grade: string;
   isMaster: boolean;
   members: GuildMember[];
+  buffs: GuildBuffSlot[];
+  maxBuffSlots: number;
 };
 
 export type GuildMeResponse = {
@@ -30,6 +38,13 @@ export type GuildMeResponse = {
 
 const ERROR_MESSAGES: Record<string, string> = {
   unauthorized: "로그인이 필요합니다.",
+  invalid_buff_id: "알 수 없는 버프입니다.",
+  already_installed: "이미 설치된 버프입니다.",
+  no_slot: "빈 버프 슬롯이 없습니다.",
+  insufficient_fame: "사용 가능 명성이 부족합니다.",
+  not_installed: "설치되지 않은 버프입니다.",
+  max_tier: "이미 최고 티어입니다.",
+  guild_disbanded_buffs: "해체된 길드입니다.",
   already_in_guild: "이미 다른 길드에 소속돼 있습니다.",
   cooldown: "탈퇴/추방 쿨다운 중입니다.",
   name_taken: "이미 사용 중인 길드명입니다.",
@@ -276,6 +291,72 @@ export type FameContributeResponse = {
   fameAdded?: number;
   guildFameTotal?: number;
 };
+
+// ───── 길드 버프 ─────
+
+export type GuildBuffsResponse = {
+  guild: {
+    id: number;
+    isMaster: boolean;
+    fameAvailable: number;
+    fameTotal: number;
+    grade: string;
+    maxSlots: number;
+    buffs: GuildBuffSlot[];
+  } | null;
+  catalog?: Record<GuildBuffId, GuildBuffDef>;
+};
+
+export async function fetchGuildBuffs(): Promise<GuildBuffsResponse> {
+  const r = await fetch("/api/guilds/buffs");
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as GuildBuffsResponse;
+}
+
+type BuffMutationResponse = {
+  ok: true;
+  buffs: GuildBuffSlot[];
+  fameAvailable: number;
+  spent?: number;
+  refunded?: number;
+  newTier?: number;
+};
+
+export async function installGuildBuff(
+  buffId: GuildBuffId,
+): Promise<BuffMutationResponse> {
+  const r = await fetch("/api/guilds/buffs/install", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ buffId }),
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as BuffMutationResponse;
+}
+
+export async function upgradeGuildBuff(
+  buffId: GuildBuffId,
+): Promise<BuffMutationResponse> {
+  const r = await fetch("/api/guilds/buffs/upgrade", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ buffId }),
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as BuffMutationResponse;
+}
+
+export async function uninstallGuildBuff(
+  buffId: GuildBuffId,
+): Promise<BuffMutationResponse> {
+  const r = await fetch("/api/guilds/buffs/uninstall", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ buffId }),
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as BuffMutationResponse;
+}
 
 export async function reportFameContribution(
   delta: number,

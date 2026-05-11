@@ -1,0 +1,159 @@
+import type { GuildGrade } from "./guildQuests";
+
+// 길드 버프 — 길드 fameAvailable 을 소비해 켜는 영구 효과.
+// 슬롯 수는 길드 등급에서 결정 (F·E=1, D·C=2, B·A=3, S=4).
+// 같은 종류는 한 슬롯만, 슬롯 간 효과는 곱셈으로 누적.
+
+export type GuildBuffId =
+  | "exp_boost"
+  | "gold_boost"
+  | "drop_boost"
+  | "fame_boost"
+  | "boss_attempt";
+
+export type GuildBuffTier = 1 | 2 | 3 | 4 | 5;
+
+// 효과 타입 — 곱셈 4종 + 가산 1종. 곱셈 value 는 multiplier (1.01~1.05),
+// 가산 value 는 정수 (보스 일일 시도 +1~+3).
+export type GuildBuffEffect =
+  | { kind: "exp_mult"; value: number }
+  | { kind: "gold_mult"; value: number }
+  | { kind: "drop_mult"; value: number }
+  | { kind: "fame_mult"; value: number }
+  | { kind: "boss_attempt_bonus"; value: number };
+
+export type GuildBuffTierDef = {
+  tier: GuildBuffTier;
+  // 현재 티어로 가는 신규/업글 비용 (fameAvailable 소비).
+  installCost: number;
+  // 누적 합 — 다운그레이드/해제 시 50% 환급 계산용.
+  cumulativeCost: number;
+  effect: GuildBuffEffect;
+};
+
+export type GuildBuffDef = {
+  id: GuildBuffId;
+  name: string;
+  description: string;
+  tiers: GuildBuffTierDef[];
+};
+
+// 슬롯 한 칸에 저장되는 형 — DB JSONB 와 동일 구조.
+export type GuildBuffSlot = {
+  buffId: GuildBuffId;
+  tier: GuildBuffTier;
+  installedAt: string;
+};
+
+// 비용 곡선: T1=1000, +2000, +3000, +3000, +4000 → 누적 1000/3000/6000/9000/13000.
+// 한 버프 만렙은 13k 명성 — S급 임계(40k)에서도 4개 모두 만렙은 불가능 → 장기 운영 보상.
+const TIER_COSTS = [1000, 2000, 3000, 3000, 4000] as const;
+function buildTiers(values: [number, number, number, number, number],
+  kind: GuildBuffEffect["kind"]): GuildBuffTierDef[] {
+  let cum = 0;
+  return values.map((v, i) => {
+    cum += TIER_COSTS[i];
+    return {
+      tier: (i + 1) as GuildBuffTier,
+      installCost: TIER_COSTS[i],
+      cumulativeCost: cum,
+      effect: { kind, value: v } as GuildBuffEffect,
+    };
+  });
+}
+
+export const GUILD_BUFFS: Record<GuildBuffId, GuildBuffDef> = {
+  exp_boost: {
+    id: "exp_boost",
+    name: "사냥경험 결사",
+    description: "길드원의 전투 EXP 획득량을 증가시킨다.",
+    tiers: buildTiers([1.01, 1.02, 1.03, 1.04, 1.05], "exp_mult"),
+  },
+  gold_boost: {
+    id: "gold_boost",
+    name: "황금손 결사",
+    description: "몬스터가 떨어뜨리는 골드 양을 증가시킨다.",
+    tiers: buildTiers([1.01, 1.02, 1.03, 1.04, 1.05], "gold_mult"),
+  },
+  drop_boost: {
+    id: "drop_boost",
+    name: "행운의 별 결사",
+    description: "아이템 드랍 확률을 추가로 끌어올린다 (LUK 위에 곱셈).",
+    tiers: buildTiers([1.005, 1.01, 1.015, 1.02, 1.025], "drop_mult"),
+  },
+  fame_boost: {
+    id: "fame_boost",
+    name: "명성 결사",
+    description: "캐릭터가 얻는 개인 명성을 증가시킨다.",
+    tiers: buildTiers([1.01, 1.02, 1.03, 1.04, 1.05], "fame_mult"),
+  },
+  boss_attempt: {
+    id: "boss_attempt",
+    name: "결의의 깃발",
+    description: "보스 일일 도전 횟수가 늘어난다.",
+    tiers: buildTiers([1, 1, 2, 2, 3], "boss_attempt_bonus"),
+  },
+};
+
+export const GUILD_BUFF_IDS: GuildBuffId[] = [
+  "exp_boost",
+  "gold_boost",
+  "drop_boost",
+  "fame_boost",
+  "boss_attempt",
+];
+
+export function isGuildBuffId(v: unknown): v is GuildBuffId {
+  return typeof v === "string" && (GUILD_BUFF_IDS as string[]).includes(v);
+}
+
+export function getBuffTier(slot: GuildBuffSlot): GuildBuffTierDef | null {
+  const def = GUILD_BUFFS[slot.buffId];
+  if (!def) return null;
+  return def.tiers[slot.tier - 1] ?? null;
+}
+
+// 등급 → 슬롯 한도. G 등급은 슬롯 없음 (Phase A 만 도달 가능).
+export function buffSlotsForGrade(grade: GuildGrade): number {
+  switch (grade) {
+    case "G":
+      return 0;
+    case "F":
+    case "E":
+      return 1;
+    case "D":
+    case "C":
+      return 2;
+    case "B":
+    case "A":
+      return 3;
+    case "S":
+      return 4;
+  }
+}
+
+// 슬롯들에서 특정 효과 종류의 multiplier/bonus 를 추출.
+// 곱셈 효과(exp/gold/drop/fame_mult): 활성 슬롯 effect.value, 없으면 1.0.
+// 가산 효과(boss_attempt_bonus): value, 없으면 0.
+// 같은 종류 슬롯은 1개만 유효 (install 검증으로 enforce).
+export function resolveBuffMultiplier(
+  buffs: GuildBuffSlot[],
+  kind: GuildBuffEffect["kind"],
+): number {
+  for (const slot of buffs) {
+    const tier = getBuffTier(slot);
+    if (!tier) continue;
+    if (tier.effect.kind === kind) return tier.effect.value;
+  }
+  return kind === "boss_attempt_bonus" ? 0 : 1;
+}
+
+// 슬롯 배열의 누적 투자 비용(특정 buffId) — 다운그레이드 환급 계산용.
+export function slotInvestedFor(
+  buffs: GuildBuffSlot[],
+  buffId: GuildBuffId,
+): number {
+  const slot = buffs.find((s) => s.buffId === buffId);
+  if (!slot) return 0;
+  return getBuffTier(slot)?.cumulativeCost ?? 0;
+}

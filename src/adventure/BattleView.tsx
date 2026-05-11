@@ -58,6 +58,7 @@ export function BattleView({
   bossAttemptsToday,
   onConsumeBossAttempt,
   onBossAttempt,
+  bossAttemptBonus = 0,
   bossOnlyMode = false,
 }: {
   region: Region;
@@ -84,6 +85,8 @@ export function BattleView({
   onConsumeBossAttempt?: () => void;
   /** 보스 도전 클릭 시점에 호출 — 부모에서 장비 미착용 등 조건성 칭호 판정. */
   onBossAttempt?: () => void;
+  /** 길드 buff "결의의 깃발" 가산 — 보스 일일 도전 횟수 +N. */
+  bossAttemptBonus?: number;
   /**
    * true 면 일반 사냥 섹션 숨기고 보스 카드만 노출. 모험 탭의 "보스" 서브뷰용.
    * false (기본) 면 사냥 섹션만 노출하고 보스 카드는 숨김 — 보스는 별도 서브뷰에 있음.
@@ -192,9 +195,10 @@ export function BattleView({
     const boss = region.boss;
     const bossMonster = boss ? (MONSTERS[boss.monsterName] ?? null) : null;
     const attemptsUsed = bossAttemptsToday ?? 0;
-    const attemptsLeft = boss
-      ? Math.max(0, boss.dailyEntryLimit - attemptsUsed)
+    const dailyLimit = boss
+      ? boss.dailyEntryLimit + bossAttemptBonus
       : 0;
+    const attemptsLeft = boss ? Math.max(0, dailyLimit - attemptsUsed) : 0;
     const canBoss = !!bossMonster && attemptsLeft > 0 && player.hp > 0;
     return (
       <div className="space-y-3">
@@ -220,7 +224,10 @@ export function BattleView({
                 {bossMonster.name}
               </h4>
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                일일 도전 — 오늘 {attemptsUsed}/{boss.dailyEntryLimit} 사용 (자정에 초기화)
+                일일 도전 — 오늘 {attemptsUsed}/{dailyLimit} 사용 (자정에 초기화)
+                {bossAttemptBonus > 0
+                  ? ` · 길드 +${bossAttemptBonus}`
+                  : ""}
               </p>
               <button
                 type="button"
@@ -239,7 +246,7 @@ export function BattleView({
                   ? "회복 필요"
                   : attemptsLeft <= 0
                     ? "오늘 도전 횟수 소진"
-                    : `보스 도전 (남은 ${attemptsLeft}/${boss.dailyEntryLimit})`}
+                    : `보스 도전 (남은 ${attemptsLeft}/${dailyLimit})`}
               </button>
             </Card>
           ) : (

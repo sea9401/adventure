@@ -36,6 +36,7 @@ import type {
 } from "@/lib/notifications";
 import type { RemoteSave } from "@/lib/storage/remote";
 import type { TabKey } from "@/lib/useNavTabs";
+import type { GuildBuffSlot } from "@/adventure/data/guildBuffs";
 
 type PlayerCombat = React.ComponentProps<typeof BattleView>["player"];
 type PlayerStatus = React.ComponentProps<typeof BattleView>["playerStatus"];
@@ -81,6 +82,10 @@ export type GameCtx = {
   recordTrialWin: (winCount: number) => void;
   huntingActive: boolean;
   setHuntingActive: (next: boolean) => void;
+
+  // — 길드 버프 — 전투/퀘스트 보상 곱셈 + 보스 시도 가산에 사용. 비가입/미설치는 [].
+  guildBuffs: GuildBuffSlot[];
+  refreshGuildBuffs: () => Promise<void>;
 
   // — 네비게이션 —
   tab: TabKey;

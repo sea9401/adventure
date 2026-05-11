@@ -113,6 +113,7 @@ import { OfflineRewardsModal } from "@/adventure/battle/OfflineRewardsModal";
 import { PLAYER_TURN_INTERVAL_MS } from "@/adventure/battle/useBattle";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { useGuildFameSync } from "@/adventure/guild/useGuildFameSync";
+import { useGuildBuffsCache } from "@/adventure/guild/useGuildBuffsCache";
 import { reportGuildQuestProgress } from "@/adventure/guild/api";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useShopUnlocks } from "@/adventure/shop/useShopUnlocks";
@@ -369,6 +370,7 @@ function Home() {
     title: character.titleName ?? null,
   });
   useGuildFameSync(character.fame);
+  const guildBuffsCache = useGuildBuffsCache();
 
   const showModal = profile.needsSetup;
   const currentRegion =
@@ -899,6 +901,7 @@ function Home() {
           count: 1,
         }).catch(() => {});
       },
+      guildBuffs: guildBuffsCache.buffs,
     });
 
   const handleAcceptQuest = (id: string) => {
@@ -1044,6 +1047,7 @@ function Home() {
     if (!result.ok) return false;
     const tokens = applyQuestReward(result.quest.reward, rewardServices, {
       playerLevel: character.level,
+      guildBuffs: guildBuffsCache.buffs,
     });
     addNotification(
       "quest_complete",
@@ -1094,6 +1098,8 @@ function Home() {
     recordTrialWin,
     huntingActive,
     setHuntingActive,
+    guildBuffs: guildBuffsCache.buffs,
+    refreshGuildBuffs: guildBuffsCache.refresh,
     tab,
     subView,
     setSubView,

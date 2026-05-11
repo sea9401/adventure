@@ -6,6 +6,7 @@ import {
   Gear,
   PencilSimple,
   Scroll,
+  Sparkle,
   UserMinus,
   UserPlus,
   UsersThree,
@@ -39,6 +40,7 @@ import {
 } from "./api";
 import { GuildInviteModal } from "./GuildInviteModal";
 import { GuildQuestsPanel } from "./GuildQuestsPanel";
+import { GuildBuffsPanel } from "./GuildBuffsPanel";
 
 const NO_AFFILIATION = "무소속";
 
@@ -53,10 +55,10 @@ const GRADE_COLOR: Record<string, string> = {
   S: "text-rose-600 dark:text-rose-400",
 };
 
-type Tab = "members" | "quests" | "manage";
+type Tab = "members" | "quests" | "buffs" | "manage";
 
 export function GuildHallView() {
-  const { character, characterStateHook, addNotification, grantTitle } = useGame();
+  const { character, characterStateHook, addNotification, grantTitle, refreshGuildBuffs } = useGame();
   const setAffiliation = characterStateHook.setAffiliation;
 
   const [data, setData] = useState<GuildMeResponse | null>(null);
@@ -256,6 +258,12 @@ export function GuildHallView() {
               active={tab === "quests"}
               onClick={() => setTab("quests")}
             />
+            <TabButton
+              icon={<Sparkle size={14} weight="bold" />}
+              label="버프"
+              active={tab === "buffs"}
+              onClick={() => setTab("buffs")}
+            />
             {data.guild.isMaster ? (
               <TabButton
                 icon={<Gear size={14} weight="bold" />}
@@ -275,6 +283,8 @@ export function GuildHallView() {
             />
           ) : tab === "quests" ? (
             <GuildQuestsPanel />
+          ) : tab === "buffs" ? (
+            <GuildBuffsPanel onChanged={() => void refreshGuildBuffs()} />
           ) : (
             <MembersPanel
               guild={data.guild}

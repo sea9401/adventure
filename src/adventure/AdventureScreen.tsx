@@ -30,6 +30,7 @@ import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
 import { WORLD_MAP } from "@/adventure/data/world";
 import { useGame } from "@/adventure/GameContext";
+import { resolveBuffMultiplier } from "@/adventure/data/guildBuffs";
 
 export function AdventureScreen() {
   const {
@@ -64,7 +65,12 @@ export function AdventureScreen() {
     completeQuest,
     addNotification,
     grantTitle,
+    guildBuffs,
   } = useGame();
+  const bossAttemptBonus = resolveBuffMultiplier(
+    guildBuffs,
+    "boss_attempt_bonus",
+  );
 
   if (subView === null) {
     return (
@@ -359,6 +365,7 @@ export function AdventureScreen() {
           onConsumeBossAttempt={() =>
             characterStateHook.consumeBossAttempt(currentRegion.id)
           }
+          bossAttemptBonus={bossAttemptBonus}
         />
       </div>
     );
@@ -428,6 +435,7 @@ export function AdventureScreen() {
               grantTitle("stagnant");
             }
           }}
+          bossAttemptBonus={bossAttemptBonus}
           bossOnlyMode
         />
       </div>

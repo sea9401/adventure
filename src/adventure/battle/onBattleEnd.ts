@@ -8,6 +8,10 @@ import { ITEMS, rarityTextClass } from "@/adventure/data/items";
 import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
 import { getQuestById } from "@/adventure/data/quests";
 import { getRecipeById } from "@/adventure/data/recipes";
+import {
+  resolveBuffMultiplier,
+  type GuildBuffSlot,
+} from "@/adventure/data/guildBuffs";
 import type { MapProgress } from "@/lib/map-progress";
 import type {
   NotificationKind,
@@ -50,6 +54,8 @@ export type BattleEndDeps = {
   setMapProgress: (updater: (prev: MapProgress) => MapProgress) => void;
   /** 길드 의뢰 진행도 보고 — 길드 미가입/미매칭이면 서버가 silent ignore. */
   reportGuildKill?: (enemyName: string) => void;
+  /** 길드 버프 슬롯 — EXP/골드/명성/드랍 배율 곱셈에 사용. 비어있으면 모두 ×1. */
+  guildBuffs?: GuildBuffSlot[];
 };
 
 // BattleView 의 onBattleEnd 콜백 본체. 의존성을 명시적으로 주입받는 형태로
@@ -69,7 +75,13 @@ export function onBattleEnd(
     const readyQuestIds = deps.quests.recordKill(payload.enemyName);
     deps.reportGuildKill?.(payload.enemyName);
     deps.characterState.setHp(payload.finalPlayerHp);
-    deps.characterState.addExp(payload.rewards.exp, deps.vit);
+    // 길드 버프 — 비어 있으면 모든 곱셈 ×1.0 (no-op).
+    const buffs = deps.guildBuffs ?? [];
+    const expMult = resolveBuffMultiplier(buffs, "exp_mult");
+    const goldMult = resolveBuffMultiplier(buffs, "gold_mult");
+    const dropMult = resolveBuffMultiplier(buffs, "drop_mult");
+    const boostedExp = Math.floor(payload.rewards.exp * expMult);
+    deps.characterState.addExp(boostedExp, deps.vit);
     // 보스 처치 시 storyFlag 발급 (data-driven, monster.onDefeatFlag).
     // useStoryFlags.set 은 idempotent 라 두 번째 처치는 무시 — 안전하게 매 처치마다 호출.
     const monster = MONSTERS[payload.enemyName];
@@ -80,9 +92,13 @@ export function onBattleEnd(
     // kind 별로 인벤/골드/장비에 분배.
     if (monster?.drops) {
       // luk 1pt 당 드랍률 ×1.01 (multiplicative). 1.0 으로 capping 해 100% 초과 방지.
+      // 길드 drop_boost 가 LUK 위에 또 곱해진다 (활성화 시 +0.5%~+2.5%).
       const luckMultiplier = 1 + deps.luk * 0.01;
       for (const drop of monster.drops) {
-        const adjustedChance = Math.min(1, drop.chance * luckMultiplier);
+        const adjustedChance = Math.min(
+          1,
+          drop.chance * luckMultiplier * dropMult,
+        );
         if (Math.random() >= adjustedChance) continue;
         if (drop.kind === "material") {
           const amount = drop.amount ?? 1;
@@ -94,8 +110,9 @@ export function onBattleEnd(
             }을(를) 손에 넣었다.`,
           );
         } else if (drop.kind === "gold") {
-          deps.characterState.addGoldFame(drop.amount, 0);
-          deps.addNotification("info", `골드 +${drop.amount}`);
+          const boosted = Math.floor(drop.amount * goldMult);
+          deps.characterState.addGoldFame(boosted, 0);
+          deps.addNotification("info", `골드 +${boosted}`);
         } else if (drop.kind === "equip") {
           deps.inventory.addEquipment(drop.itemId);
           const equipDef = ITEMS[drop.itemId];
@@ -139,9 +156,9 @@ export function onBattleEnd(
     }
     const reward =
       payload.rewards.exp > 0
-        ? `EXP +${payload.rewards.exp}${
+        ? `EXP +${boostedExp}${
             payload.rewards.expBonusApplied ? " (신참 ×2)" : ""
-          }`
+          }${expMult > 1 ? " (길드 ×" + expMult.toFixed(2) + ")" : ""}`
         : "보상 없음";
     deps.addNotification(
       "battle_win",

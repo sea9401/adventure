@@ -3,6 +3,10 @@ import { MATERIALS, type MaterialId } from "../data/materials";
 import { POTIONS, type PotionId } from "../data/potions";
 import { RECIPES } from "../data/recipes";
 import type { QuestReward } from "../data/quests";
+import {
+  resolveBuffMultiplier,
+  type GuildBuffSlot,
+} from "../data/guildBuffs";
 import { MAX_LEVEL, applyNewbieBonus } from "@/lib/leveling";
 
 export type RewardServices = {
@@ -21,6 +25,8 @@ export type RewardServices = {
 export type RewardContext = {
   /** 신참 EXP ×2 보너스 판정용. 미지정 시 보너스 미적용. */
   playerLevel?: number;
+  /** 길드 버프 슬롯 — EXP/골드/명성 곱셈. 비어 있으면 모두 ×1. */
+  guildBuffs?: GuildBuffSlot[];
 };
 
 function recipeName(id: string): string {
@@ -40,8 +46,15 @@ export function applyQuestReward(
 ): string[] {
   const summary: string[] = [];
 
-  const gold = reward.gold ?? 0;
-  const fame = reward.fame ?? 0;
+  const buffs = ctx.guildBuffs ?? [];
+  const goldMult = resolveBuffMultiplier(buffs, "gold_mult");
+  const fameMult = resolveBuffMultiplier(buffs, "fame_mult");
+  const expMult = resolveBuffMultiplier(buffs, "exp_mult");
+
+  const goldBase = reward.gold ?? 0;
+  const fameBase = reward.fame ?? 0;
+  const gold = Math.floor(goldBase * goldMult);
+  const fame = Math.floor(fameBase * fameMult);
   if (gold > 0 || fame > 0) {
     services.addGoldFame(gold, fame);
     if (gold > 0) summary.push(`골드 +${gold}`);
@@ -57,12 +70,13 @@ export function applyQuestReward(
       ctx.playerLevel != null
         ? applyNewbieBonus(baseExp, ctx.playerLevel)
         : { gained: baseExp, bonusApplied: false };
-    services.addExp(expBonus.gained);
+    const boosted = Math.floor(expBonus.gained * expMult);
+    services.addExp(boosted);
     if (atMaxLevel) {
-      summary.push(`EXP +${expBonus.gained} (만렙)`);
+      summary.push(`EXP +${boosted} (만렙)`);
     } else {
       summary.push(
-        `EXP +${expBonus.gained}${expBonus.bonusApplied ? " (신참 ×2)" : ""}`,
+        `EXP +${boosted}${expBonus.bonusApplied ? " (신참 ×2)" : ""}`,
       );
     }
   }

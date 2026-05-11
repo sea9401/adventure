@@ -24,6 +24,17 @@ export const users = pgTable(
     email: text("email"),
     name: text("name"),
     activeSessionId: text("active_session_id"),
+    // 오프라인 사냥 baseline — 사용자가 자동 사냥 ON 시 박고, 복귀 시 서버가 sim
+    // 결과를 인벤토리에 적용 후 ts 만 advance. 보상 손실 차단을 위해 클라이언트
+    // localStorage 가 아닌 서버 권위.
+    huntActive: boolean("hunt_active").notNull().default(false),
+    huntRegion: text("hunt_region"),
+    huntBaselineHp: integer("hunt_baseline_hp"),
+    huntBaselineAt: timestamp("hunt_baseline_at"),
+    // claim 멱등성 — 같은 claimId 재호출 시 저장된 결과 그대로 반환 (HTTP 응답
+    // 손실 후 재시도 안전). 새 사이클 시작 시 NULL 로 리셋.
+    lastClaimId: text("last_claim_id"),
+    lastClaimResult: jsonb("last_claim_result"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -197,6 +208,13 @@ export const rankings = pgTable(
   ],
 );
 
+// 길드 버프 슬롯 — JSONB 저장용 row 형 (id/tier 검증은 서버 핸들러에서 수행).
+export type GuildBuffSlotRow = {
+  buffId: string;
+  tier: number;
+  installedAt: string;
+};
+
 // 유저 자치 길드 — 정원 3명, 마스터 초대제, 자동 해체 정책.
 // disbandedAt != NULL 이면 tombstone — 30일 후 cron 이 hard delete (이름 재사용 차단 기간).
 // 활성 + tombstone 모두 unique 이므로 자연스레 30일 cooldown 이 됨.
@@ -212,10 +230,15 @@ export const guilds = pgTable(
     disbandedAt: timestamp("disbanded_at"),
     // 누적 명성 — 영구, 등급(G~S) 결정. 길드 의뢰 보상 + 멤버 개인 명성 적립분.
     fameTotal: integer("fame_total").notNull().default(0),
-    // 사용 가능 명성 — 누적과 동일하게 시작, 길드 버프 업그레이드(Phase C)에 소비.
+    // 사용 가능 명성 — 누적과 동일하게 시작, 길드 버프 업그레이드에 소비.
     fameAvailable: integer("fame_available").notNull().default(0),
     // 마스터가 자유롭게 적는 짧은 소개글. 최대 120자(앱단 검증). NULL = 미설정.
     description: text("description"),
+    // 길드 버프 슬롯 — { buffId, tier, installedAt }[]. 슬롯 수 한도는 등급 산식.
+    buffs: jsonb("buffs")
+      .$type<GuildBuffSlotRow[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
   },
   (t) => [
     uniqueIndex("guilds_name_lower_idx").on(sql`lower(${t.name})`),

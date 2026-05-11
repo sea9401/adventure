@@ -11,6 +11,10 @@ import {
 import { ensureUser } from "@/lib/server/ensureUser";
 import { SAVES_CHARACTER } from "@/lib/server/guildAffiliation";
 import { gradeForFame } from "@/adventure/data/guildQuests";
+import {
+  buffSlotsForGrade,
+  type GuildBuffSlot,
+} from "@/adventure/data/guildBuffs";
 
 // 내 길드 정보 + 멤버 목록 + 탈퇴 쿨다운 상태.
 // 소속 없으면 guild=null. 마지막 접속/레벨/칭호는 best-effort (없으면 null).
@@ -112,6 +116,7 @@ export async function GET() {
     joinedAt: r.joinedAt.toISOString(),
   }));
 
+  const grade = gradeForFame(guild.fameTotal);
   return Response.json({
     guild: {
       id: guild.id,
@@ -121,9 +126,11 @@ export async function GET() {
       description: guild.description ?? null,
       fameTotal: guild.fameTotal,
       fameAvailable: guild.fameAvailable,
-      grade: gradeForFame(guild.fameTotal),
+      grade,
       isMaster: guild.masterId === userId,
       members,
+      buffs: (guild.buffs as GuildBuffSlot[]) ?? [],
+      maxBuffSlots: buffSlotsForGrade(grade),
     },
     leaveCooldownUntil,
   });
