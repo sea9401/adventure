@@ -108,23 +108,23 @@ describe("simulateOfflineHunt", () => {
     expect(r.expBonusApplied).toBe(false); // baseInput 은 playerLevel 99
   });
 
-  it("신참 보너스 — playerLevel < 5 면 expGained ×2 + 플래그 true", () => {
+  it("신참 보너스 — playerLevel < 8 면 expGained ×2 + 플래그 true", () => {
     const baseR = simulateOfflineHunt(baseInput({ awayMs: 10_000, playerLevel: 99 }));
     const newbieR = simulateOfflineHunt(baseInput({ awayMs: 10_000, playerLevel: 1 }));
     expect(newbieR.expGained).toBe(baseR.expGained * 2);
     expect(newbieR.expBonusApplied).toBe(true);
   });
 
-  it("신참 보너스 — sim 중 5 레벨 도달하면 그 시점부터 보너스 OFF", () => {
-    // L4, 다음 레벨까지 거의 다 찬 exp. 슬라임 1마리만 잡아도 L5 도달.
-    // requiredExpToNext(4) = floor(120 * 4^1.5) = 960. 939 + 22(슬라임 ×2 신참) = 961 → L5.
+  it("신참 보너스 — sim 중 8 레벨 도달하면 그 시점부터 보너스 OFF", () => {
+    // L7, 다음 레벨까지 거의 다 찬 exp. 슬라임 몇 마리만 잡아도 L8 도달.
+    // requiredExpToNext(7) = floor(120 * 7^1.5) = 2222.
     // 다음 슬라임 처치는 base exp(2) 만 적립.
     // 단, 이 테스트는 "총 expGained 가 풀-신참 케이스보다 작다" 만 검증해도 충분.
     const aboutToLevel = simulateOfflineHunt(
       baseInput({
         awayMs: 60_000,
-        playerLevel: 4,
-        playerExp: 950, // L4→5 직전
+        playerLevel: 7,
+        playerExp: 2210, // L7→8 직전
       }),
     );
     const stayedNewbie = simulateOfflineHunt(
@@ -134,7 +134,7 @@ describe("simulateOfflineHunt", () => {
         playerExp: 0,
       }),
     );
-    // L4→5 케이스는 처음 몇 마리만 ×2 받고 나머진 base. stayedNewbie 는 전부 ×2.
+    // L7→8 케이스는 처음 몇 마리만 ×2 받고 나머진 base. stayedNewbie 는 전부 ×2.
     expect(aboutToLevel.expGained).toBeLessThan(stayedNewbie.expGained);
     expect(aboutToLevel.expBonusApplied).toBe(true); // 처음에는 발동했음
   });

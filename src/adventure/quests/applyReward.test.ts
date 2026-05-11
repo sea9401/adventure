@@ -77,16 +77,16 @@ describe("applyQuestReward", () => {
     expect(s.addExp).not.toHaveBeenCalled();
   });
 
-  it("신참 보너스 — playerLevel < 5 면 EXP ×2 + 표기에 (신참 ×2)", () => {
+  it("신참 보너스 — playerLevel < 8 면 EXP ×2 + 표기에 (신참 ×2)", () => {
     const s = makeServices();
     const tokens = applyQuestReward({ exp: 50 }, s, { playerLevel: 3 });
     expect(s.addExp).toHaveBeenCalledWith(100);
     expect(tokens).toEqual(["EXP +100 (신참 ×2)"]);
   });
 
-  it("신참 보너스 — playerLevel >= 5 면 미적용", () => {
+  it("신참 보너스 — playerLevel >= 8 면 미적용", () => {
     const s = makeServices();
-    const tokens = applyQuestReward({ exp: 50 }, s, { playerLevel: 5 });
+    const tokens = applyQuestReward({ exp: 50 }, s, { playerLevel: 8 });
     expect(s.addExp).toHaveBeenCalledWith(50);
     expect(tokens).toEqual(["EXP +50"]);
   });
