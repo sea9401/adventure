@@ -1,6 +1,6 @@
 # 제작 품질 등급 시스템 설계 (crafted quality tiers)
 
-> 상태: **구현 완료 (2026-05-11)** — §7 작업 분해대로 구현. `craftQuality.ts` / `recipes.ts`(variance + 재료) / `items.ts` 리밸런스 / `useInventory.craftedEquipment` / 장착 경로 craftTier / `lib/server/craft.ts` + `POST /api/craft` / `page.tsx` handleCraft 서버화 / 대장간·인벤·장비창 UI / `docs/items.md` 동기화. 단위 테스트(`craftQuality.test.ts`, `craft.test.ts`) 포함. 보류: 마켓플레이스/우편 등급 인스턴스 거래(§7-9).
+> 상태: **구현 완료 (2026-05-11)** — §7 작업 분해대로 구현. `craftQuality.ts` / `recipes.ts`(variance + 재료) / `items.ts` 리밸런스 / `useInventory.craftedEquipment` / 장착 경로 craftTier / `lib/server/craft.ts` + `POST /api/craft` / `page.tsx` handleCraft 서버화 / 대장간·인벤·장비창 UI / `docs/items.md` 동기화. 추가로 **상점 판매**도 등급 인스턴스 지원(`sell_equipment` 에 `craftTier` 옵션 — 안 그러면 인벤에 쌓임). 단위 테스트(`craftQuality.test.ts`, `craft.test.ts`, `shop.test.ts` sell_equipment) 포함. **마켓플레이스·우편 등급 인스턴스 거래는 계속 불가**(제작서가 거래 가능하므로 의도된 제약 — §1 마지막 행).
 
 ## 0. 한 줄 요약
 
@@ -18,7 +18,8 @@
 | 기존 제작 아이템 | **너프한다.** 지금 고정 수치를 그대로 `일반` 으로 두면 `걸작`에서 너무 강해짐. → 레시피별로 `일반` 기준값을 variance 폭만큼 아래로 조정해, `걸작` 결과가 대략 "오늘의 수치 ± 약간" 선이 되게. (수치표는 §6) |
 | 저수치 아이템 처리 | `baseball_bat`(atk+2) 처럼 `−2u` 가 0 이하로 떨어지는 아이템은 클램프 대신 **레시피에 등급별 5칸 표를 직접 박는다**(`varianceTable`). 비선형 조정 가능. |
 | 무한 재제작(리롤) 억제 | **재료 소모량을 지금보다 늘린다.** 매 재제작에 실질 비용을 부과하는 게 1차 게이트. 별도의 "잠금/쿨다운"은 두지 않는다. (조정표는 §6) |
-| 마켓플레이스 / 우편 | **v1: 제작산 등급 인스턴스는 거래·선물 불가** (지금처럼 제작서만 거래 가능). 거래소 매물은 `item_id + 수량` 기준이라 등급을 못 실음 → 스키마 변경 필요해서 v1에서 제외. 추후 `craft_tier` 컬럼 추가로 확장. |
+| 마켓플레이스 / 우편 | **제작산 등급 인스턴스는 거래·선물 불가** (제작서가 거래 가능하므로 의도된 제약). 거래소 매물은 `item_id + 수량` 기준이라 등급을 못 실음. |
+| 상점 판매 | **가능** — `sell_equipment` 에 `craftTier` 옵션. 안 그러면 등급 인스턴스가 인벤에 쌓이기만 함. 가격은 등급 무관(`getItemSellPrice(id)` 그대로). |
 
 ## 2. 등급 모델
 
