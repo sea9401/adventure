@@ -10,6 +10,7 @@ import {
 } from "./data/potions";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { ITEMS, type ItemId } from "./data/items";
+import { craftTierSuffix, type CraftTier } from "./data/craftQuality";
 import {
   CONSUMABLES,
   CONSUMABLE_IDS,
@@ -61,7 +62,7 @@ export function ShopView({
   onPurchaseConsumable: (id: ConsumableId, quantity: number) => void;
   onSellPotion: (id: PotionId, quantity: number) => void;
   onSellMaterial: (id: MaterialId, quantity: number) => void;
-  onSellEquipment: (id: ItemId, quantity: number) => void;
+  onSellEquipment: (id: ItemId, quantity: number, craftTier?: CraftTier) => void;
 }) {
   const [tab, setTab] = useState<ShopTabKey>("buy");
   return (
@@ -270,6 +271,23 @@ function BuyRow({
   );
 }
 
+// 판매 가능한 장비 한 줄 — 무등급 스택(tier 없음)과 제작산 등급 스택(±1·±2).
+type SellEquipEntry = { id: ItemId; tier?: CraftTier; count: number };
+
+function buildSellEquipEntries(inventory: InventoryState): SellEquipEntry[] {
+  const entries: SellEquipEntry[] = [];
+  for (const id of Object.keys(ITEMS) as ItemId[]) {
+    const n = inventory.equipment[id] ?? 0;
+    if (n > 0) entries.push({ id, count: n });
+  }
+  for (const [id, tiers] of Object.entries(inventory.craftedEquipment)) {
+    for (const [t, n] of Object.entries(tiers ?? {})) {
+      if (n && n > 0) entries.push({ id: id as ItemId, tier: Number(t) as CraftTier, count: n });
+    }
+  }
+  return entries;
+}
+
 function SellTab({
   inventory,
   onSellPotion,
@@ -279,7 +297,7 @@ function SellTab({
   inventory: InventoryState;
   onSellPotion: (id: PotionId, quantity: number) => void;
   onSellMaterial: (id: MaterialId, quantity: number) => void;
-  onSellEquipment: (id: ItemId, quantity: number) => void;
+  onSellEquipment: (id: ItemId, quantity: number, craftTier?: CraftTier) => void;
 }) {
   const [category, setCategory] = useState<SellCategoryKey>("equipment");
 
@@ -289,14 +307,12 @@ function SellTab({
   const ownedMaterials = (Object.keys(MATERIALS) as MaterialId[]).filter(
     (id) => (inventory.materials[id] ?? 0) > 0,
   );
-  const ownedEquipment = (Object.keys(ITEMS) as ItemId[]).filter(
-    (id) => (inventory.equipment[id] ?? 0) > 0,
-  );
+  const equipEntries = buildSellEquipEntries(inventory);
 
   if (
     ownedPotions.length === 0 &&
     ownedMaterials.length === 0 &&
-    ownedEquipment.length === 0
+    equipEntries.length === 0
   ) {
     return (
       <EmptyState
@@ -317,15 +333,15 @@ function SellTab({
       />
 
       {category === "equipment" &&
-        (ownedEquipment.length > 0 ? (
+        (equipEntries.length > 0 ? (
           <SellRows
-            rows={ownedEquipment.map((id) => ({
-              key: id,
-              name: ITEMS[id].name,
+            rows={equipEntries.map(({ id, tier, count }) => ({
+              key: tier ? `${id}@${tier}` : id,
+              name: ITEMS[id].name + craftTierSuffix(tier),
               description: ITEMS[id].description ?? "",
-              owned: inventory.equipment[id] ?? 0,
+              owned: count,
               unitPrice: getItemSellPrice(id),
-              onSell: (qty) => onSellEquipment(id, qty),
+              onSell: (qty) => onSellEquipment(id, qty, tier),
             }))}
           />
         ) : (

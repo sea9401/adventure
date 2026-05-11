@@ -314,6 +314,7 @@ function Home() {
     kind: ShopActionKind;
     id: string;
     quantity: number;
+    craftTier?: number;
   }): Promise<{ applied: ShopOutcome["applied"] } | null> => {
     if (!Number.isInteger(body.quantity) || body.quantity < 1) return null;
     let res: Response;
@@ -425,11 +426,15 @@ function Home() {
     }
   };
 
-  const handleSellEquipment = async (id: ItemId, quantity: number) => {
-    const r = await runShopAction({ kind: "sell_equipment", id, quantity });
+  const handleSellEquipment = async (
+    id: ItemId,
+    quantity: number,
+    craftTier?: CraftTier,
+  ) => {
+    const r = await runShopAction({ kind: "sell_equipment", id, quantity, craftTier });
     if (!r) return;
     const { quantity: qty, goldDelta: total } = r.applied;
-    const name = ITEMS[id].name;
+    const name = ITEMS[id].name + craftTierSuffix(craftTier);
     addNotification(
       "info",
       total > 0

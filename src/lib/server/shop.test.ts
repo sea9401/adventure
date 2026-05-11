@@ -136,6 +136,51 @@ describe("computeShopOutcome", () => {
     expect(r.newGold).toBe(2); // sell 1 × 2
   });
 
+  it("sell_equipment — 무등급(craftTier 미지정)은 equipment[] 에서 차감", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 0, equipment: { baseball_bat: 2 } },
+      { kind: "sell_equipment", id: "baseball_bat", quantity: 1 },
+    );
+    expect(r.equipment.baseball_bat).toBe(1);
+    expect(r.applied.craftTier).toBeUndefined();
+    expect(r.newGold).toBeGreaterThanOrEqual(0);
+  });
+
+  it("sell_equipment — craftTier 지정 시 craftedEquipment[id][tier] 에서 차감", () => {
+    const r = computeShopOutcome(
+      {
+        ...base(),
+        gold: 0,
+        equipment: {},
+        craftedEquipment: { baseball_bat: { "2": 2, "-1": 1 } },
+      },
+      { kind: "sell_equipment", id: "baseball_bat", quantity: 2, craftTier: 2 },
+    );
+    // "2" 등급 2개 모두 팔림 → 키 제거, "-1" 은 그대로
+    expect(r.craftedEquipment.baseball_bat).toEqual({ "-1": 1 });
+    expect(r.applied.craftTier).toBe(2);
+    expect(r.equipment.baseball_bat).toBeUndefined();
+  });
+
+  it("sell_equipment — 잘못된 craftTier(0/범위 밖)는 무등급으로 취급", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 0, equipment: { baseball_bat: 1 }, craftedEquipment: { baseball_bat: { "2": 1 } } },
+      { kind: "sell_equipment", id: "baseball_bat", quantity: 1, craftTier: 0 },
+    );
+    expect(r.equipment.baseball_bat).toBe(0);
+    expect(r.craftedEquipment.baseball_bat).toEqual({ "2": 1 });
+    expect(r.applied.craftTier).toBeUndefined();
+  });
+
+  it("sell_equipment — 보유보다 많이 팔면 insufficient_items", () => {
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), craftedEquipment: { baseball_bat: { "1": 1 } } },
+        { kind: "sell_equipment", id: "baseball_bat", quantity: 2, craftTier: 1 },
+      ),
+    ).toThrow(/insufficient_items/);
+  });
+
   it("unknown item → unknown_item", () => {
     expect(() =>
       computeShopOutcome(base(), { kind: "buy_potion", id: "nope", quantity: 1 }),
