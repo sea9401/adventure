@@ -33,4 +33,12 @@ export const db = new Proxy({} as ReturnType<typeof drizzle>, {
   },
 });
 
+// `@auth/drizzle-adapter` 는 `is(db, PgDatabase)` 로 dialect 를 판별하는데,
+// 이 검사는 `Object.getPrototypeOf(value).constructor` 체인을 따라간다 — 위 Proxy 는
+// 타깃이 `{}` 라 체인이 끊겨 "Unsupported database type" 으로 throw 된다.
+// 어댑터에는 실제 drizzle 인스턴스를 넘긴다 (요청 시점에만 호출 → 빌드 타임 DATABASE_URL 불필요).
+export function rawDb(): ReturnType<typeof drizzle> {
+  return drizzle(getPool(), { schema });
+}
+
 export { schema };
