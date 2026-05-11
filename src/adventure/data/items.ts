@@ -1,3 +1,5 @@
+import type { CraftVariance } from "./craftQuality";
+
 export type EquipSlot = "weapon" | "armor" | "accessory";
 
 // 5단계 등급. 미지정은 common 으로 취급.
@@ -44,6 +46,10 @@ export type EquipItem = {
   // 시작 장비·서사 아이템 등에는 false 로 막는다.
   tradable?: boolean;
   rarity?: ItemRarity;
+  // 드랍 품질 등급(정교한/빼어난) variance override. 미지정이면 "주력 양수 스탯 +q×1" 기본 규칙.
+  // 드랍 경로(dropQuality.ts)에서만 참조 — 적용 대상이 아닌 장비(퀘 보상 등)에 둬도 무해.
+  // varianceTable 을 쓰면 5칸 중 [2,3,4](일반/고급/걸작 칸)이 드랍 등급 0/1/2 로 재사용된다.
+  dropVariance?: CraftVariance;
 };
 
 // 등급별 텍스트 색상. 인벤토리·장비창·드랍 모달 등 아이템 이름이 노출되는 곳에서 공용으로 쓴다.

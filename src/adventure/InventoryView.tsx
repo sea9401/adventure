@@ -18,6 +18,12 @@ import {
   craftTierTextClass,
   type CraftTier,
 } from "./data/craftQuality";
+import {
+  dropQualityPrefix,
+  dropQualityTextClass,
+  resolveDroppedItem,
+  type DropQuality,
+} from "./data/dropQuality";
 import { resolveCraftedItem } from "./data/recipes";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, POTION_IDS, potionMax } from "./data/potions";
@@ -50,12 +56,13 @@ const SLOT_TABS: { key: EquipSlot; label: string }[] = [
 const ROW =
   "rounded-md border border-zinc-200 bg-white/70 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50";
 
-// 보유 장비는 1개당 한 행 — 같은 장비라도 묶지 않는다(중첩 X). 무등급(equipment[])과
-// 제작산 등급(craftedEquipment[id][tier]) 모두 개수만큼 펼쳐서 별도 entry 로.
+// 보유 장비는 1개당 한 행 — 같은 장비라도 묶지 않는다(중첩 X). 기본(equipment[]) ·
+// 제작산 등급(craftedEquipment[id][tier]) · 드랍 고품질(droppedEquipment[id][q]) 모두 개수만큼 펼침.
 type EquipEntry = {
   key: string;
   id: ItemId;
   tier?: CraftTier;
+  quality?: DropQuality;
   item: EquipItem;
 };
 
@@ -73,20 +80,32 @@ function buildEquipEntries(inventory: InventoryState): EquipEntry[] {
       const tier = Number(t) as CraftTier;
       const item = resolveCraftedItem(id as ItemId, tier);
       for (let i = 0; i < n; i++) {
-        entries.push({ key: `${id}@${t}#${i}`, id: id as ItemId, tier, item });
+        entries.push({ key: `${id}@t${t}#${i}`, id: id as ItemId, tier, item });
+      }
+    }
+  }
+  for (const [id, quals] of Object.entries(inventory.droppedEquipment)) {
+    for (const [q, n] of Object.entries(quals ?? {})) {
+      if (!n || n <= 0) continue;
+      const quality = Number(q) as DropQuality;
+      if (quality !== 1 && quality !== 2) continue;
+      const item = resolveDroppedItem(id as ItemId, quality);
+      for (let i = 0; i < n; i++) {
+        entries.push({ key: `${id}@q${q}#${i}`, id: id as ItemId, quality, item });
       }
     }
   }
   return entries;
 }
 
-// 같은 슬롯에 장착 중인 게 이 entry 와 동종(id + 등급 일치)인지 — 동종 여분이면 표시상 "장착중"으로 처리.
+// 같은 슬롯에 장착 중인 게 이 entry 와 동종(id + 제작 등급 + 드랍 등급 일치)인지 — 동종 여분이면 표시상 "장착중".
 function isEntryEquipped(
   entry: EquipEntry,
   current: EquippedItem | null | undefined,
 ): boolean {
   if (findItemId(current ?? null) !== entry.id) return false;
-  return (current?.craftTier ?? 0) === (entry.tier ?? 0);
+  if ((current?.craftTier ?? 0) !== (entry.tier ?? 0)) return false;
+  return (current?.dropQuality ?? 0) === (entry.quality ?? 0);
 }
 
 function computeDiff(
@@ -111,10 +130,10 @@ export function InventoryView({
 }: {
   inventory: InventoryState;
   equipped?: EquippedSlots;
-  onEquip?: (id: ItemId, tier?: CraftTier) => void;
+  onEquip?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
   onUnequip?: (slot: EquipSlot) => void;
   /** 장비 1개 폐기 — 보상 없음(2단계 확인). 미지정이면 폐기 버튼 숨김. */
-  onDiscard?: (id: ItemId, tier?: CraftTier) => void;
+  onDiscard?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
   const [equipSlotTab, setEquipSlotTab] = useState<EquipSlot>("weapon");
@@ -201,17 +220,27 @@ export function InventoryView({
             )}
             <ul className="space-y-1.5">
               {equipPager.pageItems.map((entry) => {
-                const { key, id, tier, item } = entry;
+                const { key, id, tier, quality, item } = entry;
                 const current = equipped?.[item.slot] ?? null;
                 const isEquipped = isEntryEquipped(entry, current);
                 const diff = isEquipped ? [] : computeDiff(item, current);
                 const suffix = craftTierSuffix(tier);
+                const prefix = dropQualityPrefix(quality).trim();
                 const confirming = confirmKey === key;
                 return (
                   <li key={key} className={`flex items-start gap-2 ${ROW}`}>
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <div className="flex flex-wrap items-baseline gap-x-1.5">
-                        <span className={`text-sm font-medium ${rarityTextClass(item)}`}>
+                        {prefix && (
+                          <span className={`text-xs ${dropQualityTextClass(quality)}`}>
+                            {prefix}
+                          </span>
+                        )}
+                        <span
+                          className={`text-sm font-medium ${
+                            quality ? dropQualityTextClass(quality) : rarityTextClass(item)
+                          }`}
+                        >
                           {item.name}
                         </span>
                         {suffix && (
@@ -256,7 +285,7 @@ export function InventoryView({
                           <button
                             type="button"
                             onClick={() => {
-                              onDiscard?.(id, tier);
+                              onDiscard?.(id, tier, quality);
                               setConfirmKey(null);
                             }}
                             className="rounded-md bg-rose-600 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-rose-700"
@@ -276,7 +305,7 @@ export function InventoryView({
                           {onEquip && (
                             <button
                               type="button"
-                              onClick={() => onEquip(id, tier)}
+                              onClick={() => onEquip(id, tier, quality)}
                               disabled={isEquipped}
                               className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                             >

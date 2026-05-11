@@ -5,6 +5,12 @@ import type { ItemId } from "@/adventure/data/items";
 import { MONSTERS } from "@/adventure/data/monsters";
 import { MATERIALS } from "@/adventure/data/materials";
 import { ITEMS, rarityTextClass } from "@/adventure/data/items";
+import {
+  dropQualityPrefix,
+  dropQualityTextClass,
+  rollDropQuality,
+  type DropQuality,
+} from "@/adventure/data/dropQuality";
 import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
 import { getQuestById } from "@/adventure/data/quests";
 import { getRecipeById } from "@/adventure/data/recipes";
@@ -24,6 +30,8 @@ export type BattleEndDeps = {
     consume: (id: PotionId, n: number) => void;
     addMaterial: (id: MaterialId, n: number) => void;
     addEquipment: (id: ItemId) => void;
+    /** 드랍 고품질(정교한/빼어난) 장비 1개 추가 — q 0(기본)은 addEquipment 로 간다. */
+    addDroppedEquipment: (id: ItemId, q: DropQuality) => void;
   };
   adventureLog: {
     addKill: (name: string) => void;
@@ -114,13 +122,19 @@ export function onBattleEnd(
           deps.characterState.addGoldFame(boosted, 0);
           deps.addNotification("info", `골드 +${boosted}`);
         } else if (drop.kind === "equip") {
-          deps.inventory.addEquipment(drop.itemId);
+          // 드랍 품질 등급 롤 — 대부분 기본(접두어 없음), 가끔 정교한(+1u)/빼어난(+2u).
+          // 보스·고티어는 monster.dropQualityBias 로 좋은 품질 가중치가 올라간다.
+          const q = rollDropQuality(Math.random, monster.dropQualityBias ?? 1);
+          if (q === 0) deps.inventory.addEquipment(drop.itemId);
+          else deps.inventory.addDroppedEquipment(drop.itemId, q);
           const equipDef = ITEMS[drop.itemId];
-          deps.addNotification(
-            "info",
-            `${equipDef.name}을(를) 손에 넣었다!`,
-            { highlight: { name: equipDef.name, className: rarityTextClass(equipDef) } },
-          );
+          const name = dropQualityPrefix(q) + equipDef.name;
+          deps.addNotification("info", `${name}을(를) 손에 넣었다!`, {
+            highlight: {
+              name,
+              className: q ? dropQualityTextClass(q) : rarityTextClass(equipDef),
+            },
+          });
         } else if (drop.kind === "recipe") {
           if (deps.crafting.knows(drop.recipeId)) continue;
           deps.crafting.learnRecipe(drop.recipeId);

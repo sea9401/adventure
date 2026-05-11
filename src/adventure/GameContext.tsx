@@ -26,6 +26,7 @@ import type { TrialEdge } from "@/adventure/TrialView";
 import type { ConsumableId } from "@/adventure/data/consumables";
 import type { ItemId, EquipSlot } from "@/adventure/data/items";
 import type { CraftTier } from "@/adventure/data/craftQuality";
+import type { DropQuality } from "@/adventure/data/dropQuality";
 import type { MaterialId } from "@/adventure/data/materials";
 import type { PotionId } from "@/adventure/data/potions";
 import type { Recipe } from "@/adventure/data/recipes";
@@ -112,11 +113,24 @@ export type GameCtx = {
   handleUseTownReturn: (townId: RegionId) => boolean;
   handleSellPotion: (id: PotionId, quantity: number) => void;
   handleSellMaterial: (id: MaterialId, quantity: number) => void;
-  handleSellEquipment: (id: ItemId, quantity: number, craftTier?: CraftTier) => void;
-  handleEquipFromInventory: (id: ItemId, tier?: CraftTier) => void;
+  handleSellEquipment: (
+    id: ItemId,
+    quantity: number,
+    craftTier?: CraftTier,
+    dropQuality?: DropQuality,
+  ) => void;
+  handleEquipFromInventory: (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ) => void;
   handleUnequip: (slot: EquipSlot) => void;
   /** 인벤토리에서 장비 1개 폐기 — 보상 없음(가방 여분 정리용). */
-  handleDiscardFromInventory: (id: ItemId, tier?: CraftTier) => void;
+  handleDiscardFromInventory: (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ) => void;
   handleCraft: (recipe: Recipe) => void;
   handleBattleEnd: (payload: BattleEndPayload) => void;
   handleAcceptQuest: (id: string) => void;

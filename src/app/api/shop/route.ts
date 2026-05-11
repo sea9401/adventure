@@ -31,6 +31,7 @@ export async function POST(req: Request) {
     id?: unknown;
     quantity?: unknown;
     craftTier?: unknown;
+    dropQuality?: unknown;
   };
   try {
     body = (await req.json()) as typeof body;
@@ -53,8 +54,14 @@ export async function POST(req: Request) {
     const t = Number(body.craftTier);
     if ([-2, -1, 1, 2].includes(t)) craftTier = t;
   }
+  // sell_equipment 한정 옵션 — 드랍 품질 등급(1·2). craftTier 와 동시 지정 시 서버가 craftTier 우선.
+  let dropQuality: number | undefined;
+  if (body.dropQuality != null) {
+    const q = Number(body.dropQuality);
+    if ([1, 2].includes(q)) dropQuality = q;
+  }
 
-  const action = { kind: body.kind, id: body.id, quantity, craftTier };
+  const action = { kind: body.kind, id: body.id, quantity, craftTier, dropQuality };
 
   try {
     const outcome: ShopOutcome = await db.transaction((tx) =>

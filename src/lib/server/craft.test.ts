@@ -119,6 +119,33 @@ describe("computeCraftOutcome — 장비 (등급 변동 있음)", () => {
     expect(out.result.kind).toBe("equipment");
     expect(out.materials.rusty_nail).toBeUndefined(); // 28 - 28 = 0
   });
+
+  it("equip 재료 — 제작산이 다 떨어지면 드랍 고품질에서 소비", () => {
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      equipment: {},
+      craftedEquipment: {},
+      droppedEquipment: { baseball_bat: { "1": 1, "2": 1 } },
+    };
+    const out = computeCraftOutcome(input, "nailed_baseball_bat", rngMid);
+    // baseball_bat ×1 소비 — 낮은 품질("1")부터 → "2" 만 남음
+    expect(out.droppedEquipment.baseball_bat).toEqual({ "2": 1 });
+    expect(out.result.kind).toBe("equipment");
+  });
+
+  it("equip 재료 — equipment + droppedEquipment 합산이 모자라면 missing_ingredient", () => {
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      droppedEquipment: { baseball_bat: {} },
+    };
+    expect(() => computeCraftOutcome(input, "nailed_baseball_bat", rngMid)).toThrow(
+      /missing_ingredient/,
+    );
+  });
 });
 
 describe("computeCraftOutcome — 포션 (변동 없음)", () => {

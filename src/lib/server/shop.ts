@@ -55,11 +55,13 @@ export class ShopError extends Error {
 
 type CountMap = Record<string, number>;
 // 제작산 등급 인스턴스 — itemId → (등급 문자열 "-2"|"-1"|"1"|"2" → 개수). 등급 0 은 equipment[] 에 합산.
-type CraftedMap = Record<string, Record<string, number>>;
+// 드랍산 등급 인스턴스도 같은 모양 — 키는 "1"|"2"(정교한/빼어난).
+type GradedMap = Record<string, Record<string, number>>;
 const NON_ZERO_TIERS = new Set(["-2", "-1", "1", "2"]);
+const NON_ZERO_DROP_QUALITIES = new Set(["1", "2"]);
 
-function cloneCrafted(src: CraftedMap | undefined): CraftedMap {
-  const out: CraftedMap = {};
+function cloneGraded(src: GradedMap | undefined): GradedMap {
+  const out: GradedMap = {};
   for (const [k, v] of Object.entries(src ?? {})) out[k] = { ...v };
   return out;
 }
@@ -70,7 +72,9 @@ export type ShopComputeInput = {
   materials: CountMap;
   equipment: CountMap;
   // 제작산 등급 인스턴스 (sell_equipment 에서 craftTier 지정 시 차감). 미동봉이면 빈 맵.
-  craftedEquipment?: CraftedMap;
+  craftedEquipment?: GradedMap;
+  // 드랍산 등급 인스턴스 (sell_equipment 에서 dropQuality 지정 시 차감). 미동봉이면 빈 맵.
+  droppedEquipment?: GradedMap;
   consumables: CountMap;
   potionCapacityBonus: number;
   // material-buy 잠금 검증용 (inShop=false 인 재료). 미동봉이면 빈 맵 취급.
@@ -82,7 +86,8 @@ export type ShopComputeResult = {
   potions: CountMap;
   materials: CountMap;
   equipment: CountMap;
-  craftedEquipment: CraftedMap;
+  craftedEquipment: GradedMap;
+  droppedEquipment: GradedMap;
   consumables: CountMap;
   applied: ShopApplied;
 };
@@ -99,14 +104,16 @@ export function computeShopOutcome(
   const potions = { ...input.potions };
   const materials = { ...input.materials };
   const equipment = { ...input.equipment };
-  const craftedEquipment = cloneCrafted(input.craftedEquipment);
+  const craftedEquipment = cloneGraded(input.craftedEquipment);
+  const droppedEquipment = cloneGraded(input.droppedEquipment);
   const consumables = { ...input.consumables };
   const gold = input.gold;
 
   let appliedQty = qty;
   let goldDelta = 0;
-  // sell_equipment 가 제작 등급 인스턴스를 팔았을 때만 채워짐.
+  // sell_equipment 가 제작/드랍 등급 인스턴스를 팔았을 때만 채워짐 (둘 다 차면 안 됨 — 상호 배타).
   let appliedCraftTier: number | undefined;
+  let appliedDropQuality: number | undefined;
 
   switch (action.kind) {
     case "buy_potion": {
@@ -170,6 +177,13 @@ export function computeShopOutcome(
         action.craftTier != null && NON_ZERO_TIERS.has(String(action.craftTier))
           ? String(action.craftTier)
           : null;
+      // craftTier 와 dropQuality 는 상호 배타 — craftTier 가 유효하면 그쪽 우선.
+      const qualKey =
+        !tierKey &&
+        action.dropQuality != null &&
+        NON_ZERO_DROP_QUALITIES.has(String(action.dropQuality))
+          ? String(action.dropQuality)
+          : null;
       if (tierKey) {
         const tierMap = craftedEquipment[action.id] ?? {};
         const have = tierMap[tierKey] ?? 0;
@@ -180,6 +194,16 @@ export function computeShopOutcome(
         if (Object.keys(tierMap).length) craftedEquipment[action.id] = tierMap;
         else delete craftedEquipment[action.id];
         appliedCraftTier = action.craftTier;
+      } else if (qualKey) {
+        const qualMap = droppedEquipment[action.id] ?? {};
+        const have = qualMap[qualKey] ?? 0;
+        if (have < qty) throw new ShopError("insufficient_items");
+        const left = have - qty;
+        if (left > 0) qualMap[qualKey] = left;
+        else delete qualMap[qualKey];
+        if (Object.keys(qualMap).length) droppedEquipment[action.id] = qualMap;
+        else delete droppedEquipment[action.id];
+        appliedDropQuality = action.dropQuality;
       } else {
         const have = equipment[action.id] ?? 0;
         if (have < qty) throw new ShopError("insufficient_items");
@@ -196,6 +220,7 @@ export function computeShopOutcome(
     materials,
     equipment,
     craftedEquipment,
+    droppedEquipment,
     consumables,
     applied: {
       kind: action.kind,
@@ -203,6 +228,7 @@ export function computeShopOutcome(
       quantity: appliedQty,
       goldDelta,
       ...(appliedCraftTier != null ? { craftTier: appliedCraftTier } : {}),
+      ...(appliedDropQuality != null ? { dropQuality: appliedDropQuality } : {}),
     },
   };
 }
@@ -214,7 +240,8 @@ type SavedInventory = {
   potions?: CountMap;
   materials?: CountMap;
   equipment?: CountMap;
-  craftedEquipment?: CraftedMap;
+  craftedEquipment?: GradedMap;
+  droppedEquipment?: GradedMap;
   consumables?: CountMap;
   potionCapacityBonus?: number;
   [k: string]: unknown;
@@ -264,6 +291,7 @@ export async function applyShopAction(
       materials: { ...(inv.materials ?? {}) },
       equipment: { ...(inv.equipment ?? {}) },
       craftedEquipment: inv.craftedEquipment ?? {},
+      droppedEquipment: inv.droppedEquipment ?? {},
       consumables: { ...(inv.consumables ?? {}) },
       potionCapacityBonus: inv.potionCapacityBonus ?? 0,
       soldCounts,
@@ -278,6 +306,7 @@ export async function applyShopAction(
     materials: out.materials,
     equipment: out.equipment,
     craftedEquipment: out.craftedEquipment,
+    droppedEquipment: out.droppedEquipment,
     consumables: out.consumables,
   };
 

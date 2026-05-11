@@ -26,16 +26,21 @@ export class CraftError extends Error {
 }
 
 type CountMap = Record<string, number>;
-type CraftedMap = Record<string, Record<string, number>>;
+// 등급별 인스턴스 맵 — itemId → (등급키 → 개수). 제작산(craftedEquipment, 키 "-2".."2")과
+// 드랍산(droppedEquipment, 키 "1"|"2")이 같은 모양.
+type GradedMap = Record<string, Record<string, number>>;
 
 // 낮은 등급부터 소비할 때의 순서.
 const NON_ZERO_TIERS = ["-2", "-1", "1", "2"] as const;
+const NON_ZERO_DROP_QUALITIES = ["1", "2"] as const;
 
 export type CraftComputeInput = {
   potions: CountMap;
   materials: CountMap;
   equipment: CountMap;
-  craftedEquipment: CraftedMap;
+  craftedEquipment: GradedMap;
+  /** 드랍 고품질 인스턴스. equip 재료 소비 시 equipment[] → craftedEquipment 다음 순서로 빠진다. 미동봉이면 빈 맵. */
+  droppedEquipment?: GradedMap;
   potionCapacityBonus: number;
   known: string[];
 };
@@ -44,22 +49,52 @@ export type CraftComputeResult = {
   potions: CountMap;
   materials: CountMap;
   equipment: CountMap;
-  craftedEquipment: CraftedMap;
+  craftedEquipment: GradedMap;
+  droppedEquipment: GradedMap;
   result: CraftResult;
 };
 
-function cloneCrafted(src: CraftedMap): CraftedMap {
-  const out: CraftedMap = {};
+function cloneGraded(src: GradedMap): GradedMap {
+  const out: GradedMap = {};
   for (const [k, v] of Object.entries(src)) out[k] = { ...v };
   return out;
 }
 
-function craftedTotal(map: CraftedMap, itemId: string): number {
-  const tiers = map[itemId];
-  if (!tiers) return 0;
+function gradedTotal(map: GradedMap, itemId: string): number {
+  const grades = map[itemId];
+  if (!grades) return 0;
   let total = 0;
-  for (const v of Object.values(tiers)) total += v ?? 0;
+  for (const v of Object.values(grades)) total += v ?? 0;
   return total;
+}
+
+// equip 재료 한 종을 count 개 소비 — equipment[] → graded 맵의 keyOrder 순서로. 부족하면 남은 수 반환.
+function drainGraded(
+  map: GradedMap,
+  itemId: string,
+  keyOrder: readonly string[],
+  remaining: number,
+): number {
+  if (remaining <= 0) return 0;
+  const grades = map[itemId] ?? {};
+  for (const k of keyOrder) {
+    if (remaining <= 0) break;
+    const take = Math.min(remaining, grades[k] ?? 0);
+    if (take > 0) {
+      grades[k] = (grades[k] ?? 0) - take;
+      remaining -= take;
+    }
+  }
+  map[itemId] = grades;
+  return remaining;
+}
+
+function cleanupGraded(map: GradedMap): void {
+  for (const k of Object.keys(map)) {
+    const grades = map[k];
+    for (const g of Object.keys(grades)) if (!grades[g]) delete grades[g];
+    if (Object.keys(grades).length === 0) delete map[k];
+  }
 }
 
 // 순수 함수 — savesKv 읽은 값으로 새 상태 + result 를 계산. 위반 시 CraftError.
@@ -75,7 +110,8 @@ export function computeCraftOutcome(
   const potions = { ...input.potions };
   const materials = { ...input.materials };
   const equipment = { ...input.equipment };
-  const crafted = cloneCrafted(input.craftedEquipment);
+  const crafted = cloneGraded(input.craftedEquipment);
+  const dropped = cloneGraded(input.droppedEquipment ?? {});
 
   // 1) 재료 충족 검사
   for (const ing of recipe.ingredients) {
@@ -84,7 +120,9 @@ export function computeCraftOutcome(
         throw new CraftError("missing_material");
     } else {
       const have =
-        (equipment[ing.itemId] ?? 0) + craftedTotal(crafted, ing.itemId);
+        (equipment[ing.itemId] ?? 0) +
+        gradedTotal(crafted, ing.itemId) +
+        gradedTotal(dropped, ing.itemId);
       if (have < ing.count) throw new CraftError("missing_ingredient");
     }
   }
@@ -101,23 +139,18 @@ export function computeCraftOutcome(
     if (ing.kind === "material") {
       materials[ing.materialId] = (materials[ing.materialId] ?? 0) - ing.count;
     } else {
-      // 무등급(equipment[]) 카운트 먼저, 모자라면 craftedEquipment 낮은 등급부터.
+      // 기본(equipment[]) 카운트 먼저, 모자라면 제작산 낮은 등급부터, 그래도 모자라면 드랍 고품질.
       let remaining = ing.count;
       const fromEquip = Math.min(remaining, equipment[ing.itemId] ?? 0);
       equipment[ing.itemId] = (equipment[ing.itemId] ?? 0) - fromEquip;
       remaining -= fromEquip;
-      if (remaining > 0) {
-        const tierMap = crafted[ing.itemId] ?? {};
-        for (const t of NON_ZERO_TIERS) {
-          if (remaining <= 0) break;
-          const take = Math.min(remaining, tierMap[t] ?? 0);
-          if (take > 0) {
-            tierMap[t] = (tierMap[t] ?? 0) - take;
-            remaining -= take;
-          }
-        }
-        crafted[ing.itemId] = tierMap;
-      }
+      remaining = drainGraded(crafted, ing.itemId, NON_ZERO_TIERS, remaining);
+      remaining = drainGraded(
+        dropped,
+        ing.itemId,
+        NON_ZERO_DROP_QUALITIES,
+        remaining,
+      );
     }
   }
 
@@ -144,13 +177,17 @@ export function computeCraftOutcome(
   // 0/빈 항목 정리
   for (const k of Object.keys(materials)) if (!materials[k]) delete materials[k];
   for (const k of Object.keys(equipment)) if (!equipment[k]) delete equipment[k];
-  for (const k of Object.keys(crafted)) {
-    const tierMap = crafted[k];
-    for (const t of Object.keys(tierMap)) if (!tierMap[t]) delete tierMap[t];
-    if (Object.keys(tierMap).length === 0) delete crafted[k];
-  }
+  cleanupGraded(crafted);
+  cleanupGraded(dropped);
 
-  return { potions, materials, equipment, craftedEquipment: crafted, result };
+  return {
+    potions,
+    materials,
+    equipment,
+    craftedEquipment: crafted,
+    droppedEquipment: dropped,
+    result,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -159,7 +196,8 @@ type SavedInventory = {
   potions?: CountMap;
   materials?: CountMap;
   equipment?: CountMap;
-  craftedEquipment?: CraftedMap;
+  craftedEquipment?: GradedMap;
+  droppedEquipment?: GradedMap;
   consumables?: CountMap;
   potionCapacityBonus?: number;
   [k: string]: unknown;
@@ -199,6 +237,7 @@ export async function applyCraftAction(
       materials: { ...(inv.materials ?? {}) },
       equipment: { ...(inv.equipment ?? {}) },
       craftedEquipment: inv.craftedEquipment ?? {},
+      droppedEquipment: inv.droppedEquipment ?? {},
       potionCapacityBonus: inv.potionCapacityBonus ?? 0,
       known: Array.isArray(craftingState.known) ? craftingState.known : [],
     },
@@ -211,6 +250,7 @@ export async function applyCraftAction(
     materials: out.materials,
     equipment: out.equipment,
     craftedEquipment: out.craftedEquipment,
+    droppedEquipment: out.droppedEquipment,
   };
 
   const craftedList = Array.isArray(craftingState.crafted)

@@ -5,6 +5,11 @@ import { MONSTERS } from "../data/monsters";
 import { POTIONS, type PotionId } from "../data/potions";
 import { MATERIALS, type MaterialId } from "../data/materials";
 import { ITEMS, rarityTextClass, type ItemId } from "../data/items";
+import {
+  dropQualityPrefix,
+  dropQualityTextClass,
+  type DropQuality,
+} from "../data/dropQuality";
 import { getRecipeById } from "../data/recipes";
 import { type OfflineSimResult } from "./offlineSim";
 import { useEscapeKey } from "@/lib/useEscapeKey";
@@ -37,9 +42,16 @@ export function AutoHuntResultModal({
     ([, n]) => (n ?? 0) > 0,
   );
 
-  const equipCounts = new Map<ItemId, number>();
-  for (const id of result.equipsGained) {
-    equipCounts.set(id, (equipCounts.get(id) ?? 0) + 1);
+  // 같은 (아이템, 품질 등급) 끼리 묶어 ×N 표기. 키 = `${itemId}@${quality}`.
+  const equipCounts = new Map<
+    string,
+    { itemId: ItemId; quality: DropQuality; count: number }
+  >();
+  for (const { itemId, quality } of result.equipsGained) {
+    const key = `${itemId}@${quality}`;
+    const prev = equipCounts.get(key);
+    if (prev) prev.count += 1;
+    else equipCounts.set(key, { itemId, quality, count: 1 });
   }
 
   const potions = Object.entries(result.potionsConsumed).filter(
@@ -173,26 +185,28 @@ export function AutoHuntResultModal({
                       </li>
                     );
                   })}
-                  {Array.from(equipCounts.entries()).map(([id, n]) => {
-                    const item = ITEMS[id];
-                    const nameClass = rarityTextClass(
-                      item,
-                      "text-amber-700 dark:text-amber-300",
-                    );
-                    return (
-                      <li
-                        key={`eq-${id}`}
-                        className="flex items-center justify-between gap-2"
-                      >
-                        <span className={`truncate ${nameClass}`}>
-                          {item?.name ?? id}
-                        </span>
-                        <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-300">
-                          ×{n}
-                        </span>
-                      </li>
-                    );
-                  })}
+                  {Array.from(equipCounts.entries()).map(
+                    ([key, { itemId, quality, count }]) => {
+                      const item = ITEMS[itemId];
+                      const nameClass = quality
+                        ? dropQualityTextClass(quality)
+                        : rarityTextClass(item, "text-amber-700 dark:text-amber-300");
+                      return (
+                        <li
+                          key={`eq-${key}`}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className={`truncate ${nameClass}`}>
+                            {dropQualityPrefix(quality)}
+                            {item?.name ?? itemId}
+                          </span>
+                          <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-300">
+                            ×{count}
+                          </span>
+                        </li>
+                      );
+                    },
+                  )}
                   {result.recipesLearned.map((id) => {
                     const recipe = getRecipeById(id);
                     return (

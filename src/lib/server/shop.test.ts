@@ -181,6 +181,57 @@ describe("computeShopOutcome", () => {
     ).toThrow(/insufficient_items/);
   });
 
+  it("sell_equipment — dropQuality 지정 시 droppedEquipment[id][q] 에서 차감", () => {
+    const r = computeShopOutcome(
+      {
+        ...base(),
+        gold: 0,
+        droppedEquipment: { baseball_bat: { "2": 2, "1": 1 } },
+      },
+      { kind: "sell_equipment", id: "baseball_bat", quantity: 2, dropQuality: 2 },
+    );
+    expect(r.droppedEquipment.baseball_bat).toEqual({ "1": 1 });
+    expect(r.applied.dropQuality).toBe(2);
+    expect(r.applied.craftTier).toBeUndefined();
+  });
+
+  it("sell_equipment — craftTier 와 dropQuality 동시 지정 시 craftTier 우선", () => {
+    const r = computeShopOutcome(
+      {
+        ...base(),
+        gold: 0,
+        craftedEquipment: { baseball_bat: { "2": 1 } },
+        droppedEquipment: { baseball_bat: { "1": 1 } },
+      },
+      {
+        kind: "sell_equipment",
+        id: "baseball_bat",
+        quantity: 1,
+        craftTier: 2,
+        dropQuality: 1,
+      },
+    );
+    expect(r.craftedEquipment.baseball_bat).toBeUndefined();
+    expect(r.droppedEquipment.baseball_bat).toEqual({ "1": 1 });
+    expect(r.applied.craftTier).toBe(2);
+    expect(r.applied.dropQuality).toBeUndefined();
+  });
+
+  it("sell_equipment — 잘못된 dropQuality(0/범위 밖)는 기본 등급(equipment[])으로 취급", () => {
+    const r = computeShopOutcome(
+      {
+        ...base(),
+        gold: 0,
+        equipment: { baseball_bat: 1 },
+        droppedEquipment: { baseball_bat: { "1": 1 } },
+      },
+      { kind: "sell_equipment", id: "baseball_bat", quantity: 1, dropQuality: 3 },
+    );
+    expect(r.equipment.baseball_bat).toBe(0);
+    expect(r.droppedEquipment.baseball_bat).toEqual({ "1": 1 });
+    expect(r.applied.dropQuality).toBeUndefined();
+  });
+
   it("unknown item → unknown_item", () => {
     expect(() =>
       computeShopOutcome(base(), { kind: "buy_potion", id: "nope", quantity: 1 }),

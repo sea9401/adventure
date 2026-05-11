@@ -15,6 +15,9 @@ export type ShopAction = {
   quantity: number;
   // sell_equipment 한정 — 제작 품질 등급 인스턴스를 팔 때의 등급(±1·±2). 미지정/0 = 무등급(equipment[]).
   craftTier?: number;
+  // sell_equipment 한정 — 드랍 고품질 인스턴스를 팔 때의 등급(1·2). 미지정/0 = 기본 등급(equipment[]).
+  // craftTier 와 동시 지정 시 craftTier 우선.
+  dropQuality?: number;
 };
 
 // 서버가 실제로 적용한 결과 — 클라 토스트/칭호/해금 알림 구성용.
@@ -24,6 +27,7 @@ export type ShopApplied = {
   quantity: number; // 실제 적용 수량 (포션 캡으로 줄어들 수 있음)
   goldDelta: number; // 캐릭터 골드 변화 (구매 음수, 판매 양수, 0G 정리면 0)
   craftTier?: number; // sell_equipment 한정 — 판매한 제작 등급(0/무등급이면 미동봉)
+  dropQuality?: number; // sell_equipment 한정 — 판매한 드랍 품질 등급(0/기본이면 미동봉)
 };
 
 // POST /api/shop 의 성공 응답 본체(ok 제외).

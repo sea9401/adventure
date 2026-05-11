@@ -714,6 +714,7 @@ function ItemGrantSection({
       potions: { ...inventory.potions },
       equipment: { ...inventory.equipment },
       craftedEquipment: { ...inventory.craftedEquipment },
+      droppedEquipment: { ...inventory.droppedEquipment },
       materials: { ...inventory.materials },
       consumables: { ...inventory.consumables },
       potionCapacityBonus: inventory.potionCapacityBonus,

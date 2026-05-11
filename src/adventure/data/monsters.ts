@@ -41,6 +41,11 @@ export type Monster = {
   exp: number;
   drops?: MonsterDrop[];
   phaseTrigger?: MonsterPhaseTrigger;
+  /**
+   * 드랍 장비 품질 등급(정교한/빼어난) 가중치 배수. 기본 1. 미니보스 ≈2 / 지역 보스 ≈3 /
+   * 레이드급 ≈4 권장 — 비-기본 등급 가중치(raw 4/1)에 곱해진 뒤 정규화된다(dropQuality.ts).
+   */
+  dropQualityBias?: number;
   /** 처치 시 set 할 storyFlag id — 보스용. 두 번째 처치부터는 useStoryFlags.set 이 idempotent 라 무시. */
   onDefeatFlag?: string;
 };
@@ -236,6 +241,7 @@ export const MONSTERS: Record<string, Monster> = {
       },
       { kind: "recipe", recipeId: "mana_bracelet", chance: 0.15 },
     ],
+    dropQualityBias: 3,
     phaseTrigger: {
       hpFraction: 0.3,
       defBonus: 4,
@@ -348,6 +354,7 @@ export const MONSTERS: Record<string, Monster> = {
       },
       { kind: "recipe", recipeId: "peak_mantle", chance: 0.15 },
     ],
+    dropQualityBias: 4,
     phaseTrigger: {
       hpFraction: 0.4,
       defBonus: 3,

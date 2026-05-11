@@ -13,6 +13,7 @@ import { MONSTERS } from "../data/monsters";
 import { POTIONS, type PotionId } from "../data/potions";
 import { type MaterialId } from "../data/materials";
 import { type ItemId } from "../data/items";
+import { rollDropQuality, type DropQuality } from "../data/dropQuality";
 import {
   advanceTurn,
   initialBattleState,
@@ -77,7 +78,8 @@ export type OfflineSimResult = {
   expBonusApplied: boolean;
   goldGained: number;
   materialsGained: Partial<Record<MaterialId, number>>;
-  equipsGained: ItemId[]; // 같은 아이템 여러 개면 중복 push.
+  // 드랍된 장비 + 그 품질 등급(0=기본/1=정교한/2=빼어난). 같은 아이템/등급이라도 1개씩 push.
+  equipsGained: { itemId: ItemId; quality: DropQuality }[];
   recipesLearned: string[]; // 미보유였던 것만 — onApply 가 그대로 learn 호출.
   potionsConsumed: Partial<Record<PotionId, number>>;
   finalPlayerHp: number;
@@ -182,7 +184,11 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
             } else if (drop.kind === "gold") {
               result.goldGained += drop.amount;
             } else if (drop.kind === "equip") {
-              result.equipsGained.push(drop.itemId);
+              // 드랍 품질 등급 롤 — onBattleEnd 와 동일(보스 bias 반영). seeded rng 스트림에 추가.
+              result.equipsGained.push({
+                itemId: drop.itemId,
+                quality: rollDropQuality(rng, enemy.dropQualityBias ?? 1),
+              });
             } else if (drop.kind === "recipe") {
               if (
                 input.knowsRecipe(drop.recipeId) ||

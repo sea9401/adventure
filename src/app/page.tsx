@@ -49,6 +49,12 @@ import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { resolveCraftedItem, type Recipe } from "@/adventure/data/recipes";
 import { craftTierSuffix, type CraftTier } from "@/adventure/data/craftQuality";
+import {
+  dropQualityPrefix,
+  dropQualityTextClass,
+  resolveDroppedItem,
+  type DropQuality,
+} from "@/adventure/data/dropQuality";
 import { craftErrorMessage, type CraftResult } from "@/adventure/crafting/types";
 import type { EquippedItem } from "@/adventure/character/types";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
@@ -318,6 +324,7 @@ function Home() {
     id: string;
     quantity: number;
     craftTier?: number;
+    dropQuality?: number;
   }): Promise<{ applied: ShopOutcome["applied"] } | null> => {
     if (!Number.isInteger(body.quantity) || body.quantity < 1) return null;
     let res: Response;
@@ -433,11 +440,19 @@ function Home() {
     id: ItemId,
     quantity: number,
     craftTier?: CraftTier,
+    dropQuality?: DropQuality,
   ) => {
-    const r = await runShopAction({ kind: "sell_equipment", id, quantity, craftTier });
+    const r = await runShopAction({
+      kind: "sell_equipment",
+      id,
+      quantity,
+      craftTier,
+      dropQuality,
+    });
     if (!r) return;
     const { quantity: qty, goldDelta: total } = r.applied;
-    const name = ITEMS[id].name + craftTierSuffix(craftTier);
+    const name =
+      dropQualityPrefix(dropQuality) + ITEMS[id].name + craftTierSuffix(craftTier);
     addNotification(
       "info",
       total > 0
@@ -508,32 +523,63 @@ function Home() {
     addNotification: (kind, text) => addNotification(kind, text),
   });
 
-  // 슬롯에 장착돼 있던 장비를 인벤토리로 회수 — 제작산이면 등급별 칸으로, 아니면 무등급으로.
+  // 한 장비 인스턴스의 표시 이름 — 드랍 품질은 prefix("정교한 ○○"), 제작 등급은 suffix("○○ ⟨걸작⟩").
+  const equipDisplayName = (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ): string =>
+    dropQualityPrefix(quality) + ITEMS[id].name + craftTierSuffix(tier);
+
+  // 표시 이름 강조 색 — 드랍 고품질이면 그 등급 톤, 아니면 아이템 rarity 톤.
+  const equipNameClass = (id: ItemId, quality?: DropQuality): string =>
+    quality ? dropQualityTextClass(quality) : rarityTextClass(ITEMS[id]);
+
+  // 슬롯에 장착돼 있던 장비를 인벤토리로 회수 — 제작산/드랍 고품질이면 등급별 칸으로, 아니면 기본 칸으로.
   const returnEquippedToInventory = (item: EquippedItem | null) => {
     if (!item) return;
     const id = findItemId(item);
     if (!id) return;
     const tier = item.craftTier;
-    if (tier != null && tier !== 0) inventory.addCraftedEquipment(id, tier, 1);
-    else inventory.addEquipment(id, 1);
+    if (tier != null && tier !== 0) {
+      inventory.addCraftedEquipment(id, tier, 1);
+      return;
+    }
+    const q = item.dropQuality;
+    if (q === 1 || q === 2) {
+      inventory.addDroppedEquipment(id, q, 1);
+      return;
+    }
+    inventory.addEquipment(id, 1);
   };
 
   // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
-  // tier 미지정/0 = 무등급(또는 일반 등급) 스택, ±1·±2 = 제작산 등급 스택.
-  const handleEquipFromInventory = (id: ItemId, tier?: CraftTier) => {
+  // tier ±1·±2 = 제작산 등급 스택, quality 1·2 = 드랍 고품질 스택, 둘 다 미지정/0 = 기본 스택.
+  const handleEquipFromInventory = (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ) => {
     const isCrafted = tier != null && tier !== 0;
+    const isDropped = !isCrafted && (quality === 1 || quality === 2);
     if (isCrafted) {
       if (!inventory.consumeCraftedEquipment(id, tier, 1)) return;
+    } else if (isDropped) {
+      if (!inventory.consumeDroppedEquipment(id, quality, 1)) return;
     } else {
       if (!inventory.consumeEquipment(id, 1)) return;
     }
     const item = ITEMS[id];
-    const equipItem: EquippedItem = isCrafted ? resolveCraftedItem(id, tier) : item;
+    const equipItem: EquippedItem = isCrafted
+      ? resolveCraftedItem(id, tier)
+      : isDropped
+        ? resolveDroppedItem(id, quality)
+        : item;
     returnEquippedToInventory(characterStateHook.equippedSlots[item.slot]);
     characterStateHook.setSlot(item.slot, equipItem);
-    const suffix = craftTierSuffix(equipItem.craftTier);
-    addNotification("info", `${item.name}${suffix}을(를) 장착했다.`, {
-      highlight: { name: item.name + suffix, className: rarityTextClass(item) },
+    const name = equipDisplayName(id, tier, isDropped ? quality : undefined);
+    addNotification("info", `${name}을(를) 장착했다.`, {
+      highlight: { name, className: equipNameClass(id, isDropped ? quality : undefined) },
     });
   };
 
@@ -542,23 +588,40 @@ function Home() {
     if (!current) return;
     returnEquippedToInventory(current);
     characterStateHook.setSlot(slot, null);
-    const suffix = craftTierSuffix(current.craftTier);
-    addNotification("info", `${current.name}${suffix}을(를) 해제했다.`, {
-      highlight: { name: current.name + suffix, className: rarityTextClass(current) },
+    const id = findItemId(current);
+    const name = id
+      ? equipDisplayName(id, current.craftTier, current.dropQuality)
+      : current.name;
+    addNotification("info", `${name}을(를) 해제했다.`, {
+      highlight: {
+        name,
+        className: id
+          ? equipNameClass(id, current.dropQuality)
+          : rarityTextClass(current),
+      },
     });
   };
 
   // 인벤토리에서 장비 1개 폐기 — 보상 없음. (장착 중인 장비는 인벤토리 카운트 밖이라
   // 애초에 폐기 대상이 안 됨 — 가방엔 여분만 보인다.) 순수 제거라 서버 권위 불필요 — consume 후
   // useRemotePatch 가 동기화.
-  const handleDiscardFromInventory = (id: ItemId, tier?: CraftTier) => {
+  const handleDiscardFromInventory = (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ) => {
     const isCrafted = tier != null && tier !== 0;
+    const isDropped = !isCrafted && (quality === 1 || quality === 2);
     const ok = isCrafted
       ? inventory.consumeCraftedEquipment(id, tier, 1)
-      : inventory.consumeEquipment(id, 1);
+      : isDropped
+        ? inventory.consumeDroppedEquipment(id, quality, 1)
+        : inventory.consumeEquipment(id, 1);
     if (!ok) return;
-    const suffix = craftTierSuffix(tier);
-    addNotification("info", `${ITEMS[id].name}${suffix}을(를) 폐기했다.`);
+    addNotification(
+      "info",
+      `${equipDisplayName(id, tier, isDropped ? quality : undefined)}을(를) 폐기했다.`,
+    );
   };
 
   // 제작 — 서버 권위 (audit-findings #1 후속). 클라는 recipeId 만 보내고, 서버가 inventory.v2 /
@@ -578,7 +641,8 @@ function Home() {
       } else {
         const have =
           (inventory.state.equipment[ing.itemId] ?? 0) +
-          inventory.craftedTotalCount(ing.itemId);
+          inventory.craftedTotalCount(ing.itemId) +
+          inventory.droppedTotalCount(ing.itemId);
         if (have < ing.count) {
           addNotification(
             "info",
@@ -675,6 +739,7 @@ function Home() {
         consume: inventory.consume,
         addMaterial: inventory.addMaterial,
         addEquipment: inventory.addEquipment,
+        addDroppedEquipment: (id, q) => inventory.addDroppedEquipment(id, q, 1),
       },
       adventureLog: {
         addKill: adventureLog.addKill,

@@ -5,6 +5,10 @@ import { StatBar } from "@/components/ui/StatBar";
 import type { Gender } from "@/adventure/profile/avatars";
 import { rarityTextClass, type EquipSlot } from "@/adventure/data/items";
 import { craftTierSuffix, craftTierTextClass } from "@/adventure/data/craftQuality";
+import {
+  dropQualityPrefix,
+  dropQualityTextClass,
+} from "@/adventure/data/dropQuality";
 import type { Character, EquippedItem, EquippedSlots } from "./types";
 
 export const EQUIP_SLOT_META: {
@@ -115,7 +119,14 @@ export function MiniEquipCard({
         </div>
         <div className="truncate text-xs">
           {item ? (
-            <span className={rarityTextClass(item)}>
+            <span
+              className={
+                item.dropQuality
+                  ? dropQualityTextClass(item.dropQuality)
+                  : rarityTextClass(item)
+              }
+            >
+              {dropQualityPrefix(item.dropQuality)}
               {item.name}
               {craftTierSuffix(item.craftTier) && (
                 <span className={craftTierTextClass(item.craftTier)}>
@@ -134,7 +145,14 @@ export function MiniEquipCard({
           role="tooltip"
           className={`pointer-events-none absolute top-full z-20 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-md border border-zinc-200 bg-white p-3 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900 ${TOOLTIP_ALIGN[tooltipAlign]}`}
         >
-          <div className={`font-medium ${rarityTextClass(item)}`}>
+          <div
+            className={`font-medium ${
+              item.dropQuality
+                ? dropQualityTextClass(item.dropQuality)
+                : rarityTextClass(item)
+            }`}
+          >
+            {dropQualityPrefix(item.dropQuality)}
             {item.name}
             <span className={craftTierTextClass(item.craftTier)}>
               {craftTierSuffix(item.craftTier)}

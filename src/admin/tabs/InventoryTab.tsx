@@ -17,6 +17,7 @@ const emptyInventory = (): InventoryState => ({
   potions: {},
   equipment: {},
   craftedEquipment: {},
+  droppedEquipment: {},
   materials: {},
   consumables: {},
 });

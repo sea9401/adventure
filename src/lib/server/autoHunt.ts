@@ -84,6 +84,8 @@ type SavedInventory = {
   potions?: Partial<Record<PotionId, number>>;
   materials?: Record<string, number>;
   equipment?: Record<string, number>;
+  /** 드랍 고품질 인스턴스 — itemId → ("1"|"2" → 개수). 기본 등급은 equipment[] 에 합산. */
+  droppedEquipment?: Record<string, Record<string, number>>;
   [k: string]: unknown;
 };
 
@@ -262,10 +264,27 @@ export async function applyResultToSaves(
     materials[id] = (materials[id] ?? 0) + n;
   }
   const equipment = { ...(inv.equipment ?? {}) } as Record<string, number>;
-  for (const itemId of result.equipsGained) {
-    equipment[itemId] = (equipment[itemId] ?? 0) + 1;
+  const droppedEquipment: Record<string, Record<string, number>> = {};
+  for (const [k, v] of Object.entries(inv.droppedEquipment ?? {})) {
+    droppedEquipment[k] = { ...v };
   }
-  const newInventory: SavedInventory = { ...inv, potions, materials, equipment };
+  for (const { itemId, quality } of result.equipsGained) {
+    if (quality === 0) {
+      equipment[itemId] = (equipment[itemId] ?? 0) + 1;
+    } else {
+      const key = String(quality);
+      const map = { ...(droppedEquipment[itemId] ?? {}) };
+      map[key] = (map[key] ?? 0) + 1;
+      droppedEquipment[itemId] = map;
+    }
+  }
+  const newInventory: SavedInventory = {
+    ...inv,
+    potions,
+    materials,
+    equipment,
+    droppedEquipment,
+  };
 
   // 2) 제작서 학습 — sim 단계에서 미보유만 골라낸 상태라 중복 가드 1번 더 (안전망).
   const knownArr = Array.isArray(state.crafting.known)

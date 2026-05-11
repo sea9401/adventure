@@ -2,6 +2,7 @@ import { useState } from "react";
 import { applyExpGain, MAX_LEVEL } from "@/lib/leveling";
 import { ITEMS, findItemId } from "@/adventure/data/items";
 import { resolveCraftedItem } from "@/adventure/data/recipes";
+import { resolveDroppedItem } from "@/adventure/data/dropQuality";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import { baseCharacter, maxHpForLevel, maxMpForLevel } from "./defaults";
@@ -45,8 +46,8 @@ export const initialCharacterState: CharacterDynamicState = {
 
 // 저장된 EquipItem(이름·stats·bonus 통째로 직렬화)을 ITEMS 정의의 "지금" 인스턴스로 교체.
 // 이렇게 하지 않으면 밸런스 패치(예: 부적 행운 +3 → +2) 후에도 옛 인스턴스가 그대로 보인다.
-// 제작산(craftTier 가 박힌 것)은 (itemId, craftTier) 로 다시 계산 — variance 패치도 반영된다.
-// 이름 매칭이 안 되면 null — 슬롯에서 사라짐.
+// 제작산(craftTier)은 (itemId, craftTier), 드랍산 고품질(dropQuality)은 (itemId, dropQuality)
+// 로 다시 계산 — variance 패치도 반영된다. 이름 매칭이 안 되면 null — 슬롯에서 사라짐.
 function rehydrateSlot(
   saved: EquippedItem | null | undefined,
 ): EquippedItem | null {
@@ -54,7 +55,10 @@ function rehydrateSlot(
   const id = findItemId(saved);
   if (!id) return null;
   const tier = saved.craftTier;
-  return tier != null && tier !== 0 ? resolveCraftedItem(id, tier) : ITEMS[id];
+  if (tier != null && tier !== 0) return resolveCraftedItem(id, tier);
+  const q = saved.dropQuality;
+  if (q === 1 || q === 2) return resolveDroppedItem(id, q);
+  return ITEMS[id];
 }
 
 function rehydrateEquipped(

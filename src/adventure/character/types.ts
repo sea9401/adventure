@@ -1,5 +1,6 @@
 import type { EquipItem } from "@/adventure/data/items";
 import type { CraftTier } from "@/adventure/data/craftQuality";
+import type { DropQuality } from "@/adventure/data/dropQuality";
 import type { StatKey } from "@/adventure/data/stats";
 import type { Gender } from "@/adventure/profile/avatars";
 
@@ -8,9 +9,13 @@ export type Skill = {
   description?: string;
 };
 
-// 슬롯에 들어가는 장비 — 제작산이면 등급(craftTier)이 박혀 있고 bonus·stats 는 그 등급 반영본.
-// craftTier 미지정/0 = 평범한 장비(드랍/상점/퀘스트/시작 장비, 또는 일반 등급 제작산).
-export type EquippedItem = EquipItem & { craftTier?: CraftTier };
+// 슬롯에 들어가는 장비 — 제작산이면 등급(craftTier), 드랍산 고품질이면 dropQuality 가 박혀
+// 있고 bonus·stats 는 그 등급 반영본. 둘 다 미지정/0 = 평범한 장비(기본 드랍/상점/퀘스트/시작).
+// craftTier 와 dropQuality 는 상호 배타 — 한 인스턴스에 둘 다 박히지 않는다.
+export type EquippedItem = EquipItem & {
+  craftTier?: CraftTier;
+  dropQuality?: DropQuality;
+};
 
 export type EquippedSlots = {
   weapon: EquippedItem | null;

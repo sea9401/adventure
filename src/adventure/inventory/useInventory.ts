@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ConsumableId } from "../data/consumables";
 import { ITEMS, type ItemId } from "../data/items";
 import type { CraftTier } from "../data/craftQuality";
+import {
+  NON_ZERO_DROP_QUALITY_KEYS,
+  type DropQuality,
+} from "../data/dropQuality";
 import type { MaterialId } from "../data/materials";
 import { potionMax, type PotionId } from "../data/potions";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
@@ -15,6 +19,11 @@ export type CraftedEquipmentState = Partial<
   Record<ItemId, Partial<Record<string, number>>>
 >;
 
+// 드랍산 품질 등급 인스턴스 — itemId → (등급 문자열 "1"|"2" → 개수). 등급 0(기본)은 equipment[] 에 합산.
+export type DroppedEquipmentState = Partial<
+  Record<ItemId, Partial<Record<string, number>>>
+>;
+
 // 비-기본(0 제외) 등급. craftedEquipment 가 담는 키.
 const NON_ZERO_TIERS: readonly string[] = ["-2", "-1", "1", "2"];
 
@@ -23,6 +32,8 @@ export type InventoryState = {
   equipment: Partial<Record<ItemId, number>>;
   /** 제작 품질 등급이 0(일반)이 아닌 장비. 항상 존재 — readInitial 에서 {} 로 채움. */
   craftedEquipment: CraftedEquipmentState;
+  /** 드랍 품질 등급이 0(기본)이 아닌 장비(정교한/빼어난). 항상 존재 — readInitial 에서 {} 로 채움. */
+  droppedEquipment: DroppedEquipmentState;
   materials: Partial<Record<MaterialId, number>>;
   consumables: Partial<Record<ConsumableId, number>>;
   // 종류별 포션 최대 보유 수의 추가 보너스. 보상으로 영구 누적.
@@ -33,27 +44,32 @@ export const emptyInventory = (): InventoryState => ({
   potions: { potion_heal_s: 10 },
   equipment: {},
   craftedEquipment: {},
+  droppedEquipment: {},
   materials: { branch: 1 },
   consumables: {},
 });
 
-function readCraftedEquipment(raw: unknown): CraftedEquipmentState {
+// craftedEquipment / droppedEquipment 는 같은 모양(itemId → 등급키 → 개수) — 허용 등급키만 다르다.
+function readGradedEquipment(
+  raw: unknown,
+  validKeys: readonly string[],
+): Partial<Record<ItemId, Partial<Record<string, number>>>> {
   if (!raw || typeof raw !== "object") return {};
-  const out: CraftedEquipmentState = {};
-  for (const [itemId, tiers] of Object.entries(raw as Record<string, unknown>)) {
-    if (!(itemId in ITEMS) || !tiers || typeof tiers !== "object") continue;
-    const tierMap: Partial<Record<string, number>> = {};
-    for (const [t, n] of Object.entries(tiers as Record<string, unknown>)) {
+  const out: Partial<Record<ItemId, Partial<Record<string, number>>>> = {};
+  for (const [itemId, grades] of Object.entries(raw as Record<string, unknown>)) {
+    if (!(itemId in ITEMS) || !grades || typeof grades !== "object") continue;
+    const map: Partial<Record<string, number>> = {};
+    for (const [g, n] of Object.entries(grades as Record<string, unknown>)) {
       if (
-        NON_ZERO_TIERS.includes(t) &&
+        validKeys.includes(g) &&
         typeof n === "number" &&
         Number.isInteger(n) &&
         n > 0
       ) {
-        tierMap[t] = n;
+        map[g] = n;
       }
     }
-    if (Object.keys(tierMap).length) out[itemId as ItemId] = tierMap;
+    if (Object.keys(map).length) out[itemId as ItemId] = map;
   }
   return out;
 }
@@ -64,7 +80,11 @@ function readInitial(raw: unknown): InventoryState {
   return {
     potions: parsed.potions ?? {},
     equipment: parsed.equipment ?? {},
-    craftedEquipment: readCraftedEquipment(parsed.craftedEquipment),
+    craftedEquipment: readGradedEquipment(parsed.craftedEquipment, NON_ZERO_TIERS),
+    droppedEquipment: readGradedEquipment(
+      parsed.droppedEquipment,
+      NON_ZERO_DROP_QUALITY_KEYS,
+    ),
     materials: parsed.materials ?? {},
     consumables: parsed.consumables ?? {},
     potionCapacityBonus: Math.max(0, parsed.potionCapacityBonus ?? 0),
@@ -208,6 +228,55 @@ export function useInventory() {
     [consumeEquipment],
   );
 
+  // 드랍산 등급 인스턴스(정교한/빼어난). q 0(기본)은 equipment[] 와 동일하므로 그쪽으로 합산.
+  const addDroppedEquipment = useCallback(
+    (id: ItemId, q: DropQuality, n = 1) => {
+      if (n <= 0) return;
+      const cur = stateRef.current;
+      if (q === 0) {
+        const next: InventoryState = {
+          ...cur,
+          equipment: { ...cur.equipment, [id]: (cur.equipment[id] ?? 0) + n },
+        };
+        stateRef.current = next;
+        setState(next);
+        return;
+      }
+      const key = String(q);
+      const map = { ...(cur.droppedEquipment[id] ?? {}) };
+      map[key] = (map[key] ?? 0) + n;
+      const next: InventoryState = {
+        ...cur,
+        droppedEquipment: { ...cur.droppedEquipment, [id]: map },
+      };
+      stateRef.current = next;
+      setState(next);
+    },
+    [],
+  );
+
+  const consumeDroppedEquipment = useCallback(
+    (id: ItemId, q: DropQuality, n = 1): boolean => {
+      if (q === 0) return consumeEquipment(id, n);
+      const cur = stateRef.current;
+      const key = String(q);
+      const have = cur.droppedEquipment[id]?.[key] ?? 0;
+      if (have < n) return false;
+      const map = { ...(cur.droppedEquipment[id] ?? {}) };
+      const left = have - n;
+      if (left > 0) map[key] = left;
+      else delete map[key];
+      const dropped = { ...cur.droppedEquipment };
+      if (Object.keys(map).length) dropped[id] = map;
+      else delete dropped[id];
+      const next: InventoryState = { ...cur, droppedEquipment: dropped };
+      stateRef.current = next;
+      setState(next);
+      return true;
+    },
+    [consumeEquipment],
+  );
+
   const addMaterial = useCallback((id: MaterialId, n = 1) => {
     const cur = stateRef.current;
     const next: InventoryState = {
@@ -246,6 +315,18 @@ export function useInventory() {
       if (!tierMap) return 0;
       let total = 0;
       for (const v of Object.values(tierMap)) total += v ?? 0;
+      return total;
+    },
+    [state],
+  );
+
+  // 드랍산 등급 인스턴스 보유 수 — 등급 합산(equipment[] 의 기본 등급은 제외).
+  const droppedTotalCount = useCallback(
+    (id: ItemId): number => {
+      const map = state.droppedEquipment[id];
+      if (!map) return 0;
+      let total = 0;
+      for (const v of Object.values(map)) total += v ?? 0;
       return total;
     },
     [state],
@@ -308,6 +389,9 @@ export function useInventory() {
     addCraftedEquipment,
     consumeCraftedEquipment,
     craftedTotalCount,
+    addDroppedEquipment,
+    consumeDroppedEquipment,
+    droppedTotalCount,
     addMaterial,
     consumeMaterial,
     materialCount,
