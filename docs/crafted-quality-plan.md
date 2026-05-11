@@ -1,6 +1,6 @@
 # 제작 품질 등급 시스템 설계 (crafted quality tiers)
 
-> 상태: **수치 채우기 대기** — 프레임워크(등급 5단계·이름·레이아웃·모델·서버 권위화)는 확정됨. 남은 건 §6 레시피별 수치표(variance 폭 / 새 기준값 / 재료 소모량) 한 표뿐. 그것만 정하면 착수.
+> 상태: **착수 가능** — 프레임워크·§6 수치 모두 확정. §7 작업 분해대로 구현.
 
 ## 0. 한 줄 요약
 
@@ -158,33 +158,35 @@ type EquippedItem = EquipItem & { craftTier?: CraftTier };
 - **도감(`docs/items.md` + 게임 내 도감)**: 제작산 항목은 "기준 옵션 = 일반 등급, 품질에 따라 ±폭" 주석. (메모리 규칙: 아이템 표 변경 시 `docs/items.md` 동기화.)
 - 등급 색/이름은 `rarityTextClass` 와 별개의 작은 헬퍼(`craftTierTextClass` 등)로.
 
-## 6. 리밸런스 작업표 (TODO — 수치 채우기)
+## 6. 리밸런스 작업표 — 확정
 
-각 제작 장비에 대해: ① variance 폭 `u`(또는 `varianceTable` 5칸), ② 새 `일반(기준)` bonus, ③ 새 재료 소모량. 원칙:
-- `걸작` 결과(= `일반 + 2u`)가 대략 "오늘의 고정 수치 ± 약간" 선이 되게 → 새 `일반` 기준 ≈ `오늘값 − u ~ 오늘값 − 2u`. (작은 폭이면 작은 너프, 큰 폭이면 큰 너프.)
-- 엔드게임 라인(마정석 5종, 운봉 6종)도 같은 식으로 폭을 준다 — 예외 없음. 다만 `u` 자체를 작게(예: 1) 잡으면 곡선이 크게 안 흔들림.
-- 액세서리도 주력 스탯에 폭을 준다.
-- 재료 소모량은 현재 대비 상향(체감되는 정도, 과하지 않게).
-- `−2u` 가 0 이하로 떨어지는 스탯은 `varianceTable` 로 직접 박음(예: `baseball_bat` atk `[−1, 0, 0, +1, +2]`).
-- ⚠️ `ITEMS[*].bonus` 를 내리면 같은 아이템의 드랍분도 같이 내려간다(소스별 분기 없음). 드랍으로도 풀리는 아이템인지 확인.
+설계 원칙:
+- **전부 `u=1`** — 변동 스탯이 `−2 / −1 / 0 / +1 / +2` 5칸으로 깔끔하게 갈리고, 변동 폭(±2)은 작은 아이템엔 큰 체감(atk 3→5 = +67%), 큰 아이템엔 적당한 체감(atk 8→10 = +25%)이 됨. 더 출렁이게 하려면 개별 항목 `u` 만 키우면 됨.
+- **너프**: 중반 이후 아이템은 새 `일반` 기준 = `오늘값 − 1` → `걸작`(= 일반+2) = `오늘값 + 1`(운 좋을 때만 오늘 이상), 평균 = `오늘값 − 1`.
+- **초저수치(atk2/spd2/def 등) 예외**: 5칸 span(`−2u` ≥ 1) 확보를 위해 기준값을 `+1`. 미세 버프지만 튜토리얼급이라 무방 — "너무 강해지는" 게 문제인 건 중반 이후 아이템뿐.
+- 변동은 **주력 한 스탯에만**. 보조 스탯·페널티 스탯은 고정. (예: `golem_armor` 는 def 만, 페널티 그대로. `bat_hood`·`sticky_cloak` 처럼 def 가 곁다리인 건 그 아이템의 정체성 스탯(spd / luk)에 변동.)
+- 이 제안에선 `varianceTable` 쓰는 항목 없음(`u=1` + 소폭 기준값 조정으로 다 커버). `varianceTable` 메커니즘은 향후 비선형 아이템용으로 남겨둠.
+- 재료: 보스 확정 드랍 재료(`mana_crystal` ×2/킬, `giant_scale` ×3·`unbong_ore` ×2/킬)는 **개수 안 늘림** — 첫 제작은 보스 킬이 이미 게이트. 재제작(리롤) 비용은 **파밍 가능한 재료**(`hard_crystal` 등) 증량으로 부과.
+- ⚠️ `ITEMS[*].bonus` 를 내리면 같은 아이템 드랍분도 같이 내려감(소스별 분기 없음). 이 표의 아이템들은 전부 제작 전용(드랍 안 됨)이라 무관.
 
-`u`(또는 표)는 미정 — 아래 "제안" 칸은 출발점일 뿐:
+| recipe (아이템) | 오늘값 | 변동 스탯 | 새 기준(일반) | `recipe.variance` | 5등급 결과 (불량/하급/일반/고급/걸작) | 재료 소모 (현재 → 제안) |
+|---|---|---|---|---|---|---|
+| baseball_bat | atk +2 | atk | **+3** | `{ atk: 1 }` | atk 1 / 2 / **3** / 4 / 5 | branch ×1 → ×2 |
+| nailed_baseball_bat | atk +3, vit +1 | atk | atk **+3** (vit +1 고정) | `{ atk: 1 }` | atk 1 / 2 / **3** / 4 / 5 | baseball_bat ×1 + rusty_nail ×20 → +rusty_nail ×28 |
+| squishy_armor | def +3 | def | **+3** | `{ def: 1 }` | def 1 / 2 / **3** / 4 / 5 | slime_core ×1 + slime_chunk ×10 → slime_chunk ×16 |
+| sticky_cloak | def +2, luk +4 | luk | luk **+4** (def +2 고정) | `{ luk: 1 }` | luk 2 / 3 / **4** / 5 / 6 | spider_silk ×5 + slime_chunk ×3 → ×7 + ×5 |
+| bat_hood | def +1, spd +2 | spd | spd **+3** (def +1 고정) | `{ spd: 1 }` | spd 1 / 2 / **3** / 4 / 5 | bat_eye ×2 + wilddog_hide ×2 → ×3 + ×3 |
+| golem_armor | def +7 (atk−1/spd−3/luk−1) | def | **+6** (페널티 고정) | `{ def: 1 }` | def 4 / 5 / **6** / 7 / 8 | ruin_fragment ×5 + spider_silk ×5 + slime_chunk ×3 → ×7 + ×7 + ×5 |
+| crystal_dagger | atk +5, dex +1 | atk | **+4** (dex +1 고정) | `{ atk: 1 }` | atk 2 / 3 / **4** / 5 / 6 | hard_crystal ×2 + wilddog_fang ×3 → ×3 + ×4 |
+| fairy_blessing | vit +3, luk +2 | vit | vit **+3** (luk +2 고정) | `{ vit: 1 }` | vit 1 / 2 / **3** / 4 / 5 | vitality_ring ×1 + fairy_dust ×3 → fairy_dust ×5 |
+| mana_sword / mana_shield / mana_spear / mana_knuckle | atk +7, 보조 +3~5 | atk | **+6** (보조 고정) | `{ atk: 1 }` | atk 4 / 5 / **6** / 7 / 8 | mana_crystal ×2 + hard_crystal ×5 → hard_crystal ×8 |
+| mana_bracelet | vit +3, spd +2 | vit | vit **+3** (spd +2 고정) | `{ vit: 1 }` | vit 1 / 2 / **3** / 4 / 5 | mana_crystal ×2 → mana_crystal ×2 + **hard_crystal ×3** (신규) |
+| peak_sword / peak_shield / peak_spear / peak_claw | atk +9, 보조 +5~6 | atk | **+8** (보조 고정) | `{ atk: 1 }` | atk 6 / 7 / **8** / 9 / 10 | giant_scale ×2 + unbong_ore ×3 + hard_crystal ×5 → hard_crystal ×8 |
+| peak_mantle | dex +5, spd +4 | dex | **+4** (spd +4 고정) | `{ dex: 1 }` | dex 2 / 3 / **4** / 5 / 6 | giant_scale ×3 + unbong_ore ×2 → + **hard_crystal ×3** (신규) |
+| peak_heart | str +5, vit +3 | str | **+4** (vit +3 고정) | `{ str: 1 }` | str 2 / 3 / **4** / 5 / 6 | giant_scale ×2 + unbong_ore ×2 → + **hard_crystal ×3** (신규) |
+| potion_heal_s | — | — | (포션, 변동 없음) | — | — | slime_chunk ×3 → 유지 (리롤 동기 없음) |
 
-| recipe | 오늘 주력옵션 | 제안 `u` / 표 | 새 `일반` 기준 | 재료 소모 (현재 → 제안) | 비고 |
-|---|---|---|---|---|---|
-| baseball_bat | atk +2 | table atk `[?,?,?,?,?]` | ? | branch ×1 → ? | atk 0 방지 위해 표 직접 박기 |
-| nailed_baseball_bat | atk +3, vit +1 | ? | ? | baseball_bat ×1 + rusty_nail ×20 → ? | atk 만 변동 |
-| squishy_armor | def +3 | ? | ? | slime_core ×1 + slime_chunk ×10 → ? | |
-| sticky_cloak | def +2, luk +4 | ? | ? | spider_silk ×5 + slime_chunk ×3 → ? | 어느 스탯 변동? (def or luk) |
-| bat_hood | def +1, spd +2 | ? | ? | bat_eye ×2 + wilddog_hide ×2 → ? | 저수치 — 표 직접 박기 |
-| golem_armor | def +7 (atk−1/spd−3/luk−1) | ? | ? | ruin_fragment ×5 + spider_silk ×5 + slime_chunk ×3 → ? | def 만 변동, 페널티 고정 |
-| crystal_dagger | atk +5, dex +1 | ? | ? | hard_crystal ×2 + wilddog_fang ×3 → ? | |
-| fairy_blessing | vit +3, luk +2 | ? | ? | vitality_ring ×1 + fairy_dust ×3 → ? | 액세서리 — vit 변동 |
-| mana_sword/shield/spear/knuckle | atk +7, 보조 +3/+5 | ? (작게 권장, 예 1) | ? | mana_crystal ×2 + hard_crystal ×5 → ? | 엔드게임 — 폭 작게 |
-| mana_bracelet | vit +3, spd +2 | ? | ? | mana_crystal ×2 → ? | 액세서리 |
-| peak_sword/shield/spear/claw | atk +9, 보조 +5/+6 | ? (작게 권장, 예 1) | ? | giant_scale ×2 + unbong_ore ×3 + hard_crystal ×5 → ? | 엔드게임 — 폭 작게 |
-| peak_mantle / peak_heart | dex+5/spd+4, str+5/vit+3 | ? | ? | giant_scale ×2~3 + unbong_ore ×2 → ? | 액세서리, 협동 보스 보상 — 신중히 |
-| potion_heal_s | — | — (포션, 변동 없음) | — | slime_chunk ×3 → ? | |
+검토 결과 (확정): ① `u=1` 유지 ② 너프 폭 `−1` 유지 ③ `mana_bracelet`/`peak_mantle`/`peak_heart` 에 `hard_crystal ×3` 추가 ④ `bat_hood`·`baseball_bat` 기준값 `+1` OK ⑤ 재료 증량폭 그대로.
 
 ## 7. 작업 분해 (대략)
 
@@ -198,8 +200,6 @@ type EquippedItem = EquipItem & { craftTier?: CraftTier };
 8. UI — 대장간 카드(폭 표기), 인벤(스택 분리·라벨), 장비창(등급 표기), 도감.
 9. (보류) 마켓플레이스/우편 등급 인스턴스 거래 — 별도 작업.
 
-## 8. 남은 결정 (착수 전 확정)
+## 8. 결정 요약 (전부 확정)
 
-§6 표의 모든 `?` — 레시피별 variance 폭(`u`) 또는 `varianceTable`, 새 `일반` 기준값, 재료 소모량. 이것만 정하면 §7 착수.
-
-(확정됨: 5단계 `불량/하급/일반/고급/걸작` · 가중치 6/22/44/22/6 · 모든 제작 장비에 적용(액세서리·엔드게임 포함) · 하향 롤 허용 · 표시값 = `일반` = 평균 · 저수치 아이템은 `varianceTable` 직접 박기 · 기존 제작 아이템 너프 · 거래/우편 v1 제외 · `/api/craft` 서버 권위화 동시 진행.)
+5단계 `불량/하급/일반/고급/걸작` · 오프셋 `−2u/−1u/0/+1u/+2u` · 가중치 `6/22/44/22/6` · 모든 제작 장비에 적용(액세서리·엔드게임 포함, 포션만 제외) · 전부 `u=1` · 하향 롤 허용, 표시값 = `일반` = 평균 · 기존 제작 아이템 너프(중반 이후 `−1`, 초저수치는 `+1`) · §6 수치표대로 · 재료 소모량 §6대로 증량 · `varianceTable` 메커니즘은 향후용으로만(이번엔 미사용) · 거래/우편 v1 제외 · `/api/craft` 서버 권위화 동시 진행 · 인벤은 `craftedEquipment` 등급별 카운트, 장착 슬롯엔 등급 반영 사본 + `craftTier`.
