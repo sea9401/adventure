@@ -74,6 +74,12 @@ export function rarityTextClass(
   }
 }
 
+// "유실된 명품" — 일부 잡몹이 아주 드물게 떨구는 unique 등급 장비(ITEMS 끝 "유실된 명품" 블록 참고).
+// 드랍/원정 결과에 「✨ 굉장한 발견!」 강조 배너를 띄우는 트리거 — 현재 unique == 이 부류라 rarity 만으로 판별한다.
+export function isLuckyFind(item: EquipItem | null | undefined): boolean {
+  return item?.rarity === "unique";
+}
+
 export const ITEMS = {
   // 시작 장비
   branch_stick: {
@@ -153,6 +159,7 @@ export const ITEMS = {
     bonus: { atk: 4, dex: 2 },
     description: "산적이 품에 숨기고 다니던 단검. 짧지만 손에 착 감긴다.",
   } satisfies EquipItem,
+  // "유실된 명품" 1번. 같은 부류 5종은 ITEMS 끝 "유실된 명품" 블록에 모여 있다.
   mole_king_drill: {
     name: "두더지왕의 드릴",
     slot: "weapon",
@@ -162,6 +169,7 @@ export const ITEMS = {
     ],
     bonus: { atk: 5, spd: 2 },
     description: "어느 두더지가 품에 꼭 쥐고 있던 작은 드릴. 회전시키면 묘하게 손맛이 좋다. 정말로 두더지왕이 있었는지는 아무도 모른다.",
+    rarity: "unique",
   } satisfies EquipItem,
   spare_hatchet: {
     name: "예비 손도끼",
@@ -495,6 +503,67 @@ export const ITEMS = {
     bonus: { dex: 5, spd: 5 },
     description: "화산의 심장에서 뽑아낸 가장 순수한 결정을 봉황 깃털로 감싼 구슬. 지니면 몸이 불꽃처럼 날렵해진다.",
     rarity: "uncommon",
+  } satisfies EquipItem,
+
+  // ── 유실된 명품 ───────────────────────────────────────────────────────────
+  // 일부 잡몹이 아주 드물게(≈0.01~0.02%) 떨구는 unique 등급 장비. 그 구간에서 제작·일반 드랍으로는
+  // 못 얻는 한두 티어 위의 "한 자루" — 운빨로 점프하는 손맛 전용이라 곡선 위로 살짝만 비집고 들어간다
+  // (보조 스탯 합으로 보면 같은 구간 정식 장비가 대개 더 낫다). 드랍/원정 결과에 강조 배너가 뜨고,
+  // 드랍 품질 롤도 그대로 적용된다 — 정교한/빼어난까지 겹치면 더블 잭팟. 1번(두더지왕의 드릴)은 위 참고.
+  bat_swarm_charm: {
+    name: "박쥐떼의 길잡이",
+    slot: "accessory",
+    stats: [
+      { label: "속도", value: "+4" },
+      { label: "민첩", value: "+2" },
+    ],
+    bonus: { spd: 4, dex: 2 },
+    description: "박쥐 한 마리가 발에 꼭 끼우고 다니던 작은 뼈 장신구. 지니면 발밑이 환해지고 발걸음이 가벼워진다. 박쥐떼가 길을 안다는 옛말이 진짜였을지도.",
+    rarity: "unique",
+  } satisfies EquipItem,
+  spider_queen_silk_robe: {
+    name: "거미여왕의 비단갑",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+3" },
+      { label: "행운", value: "+7" },
+    ],
+    bonus: { def: 3, luk: 7 },
+    description: "거미가 제 몸보다 큰 비단 뭉치를 끌어안고 있었다. 풀어 두르면 결이 비단보다 곱고, 묘하게 운이 따라붙는다. 진짜 여왕이 짠 건지는 아무도 모른다.",
+    rarity: "unique",
+  } satisfies EquipItem,
+  hero_broken_sword: {
+    name: "부러진 영웅검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+8" },
+      { label: "방어력", value: "-2" },
+    ],
+    bonus: { atk: 8, def: -2 },
+    description: "폐허 한구석에 반쯤 묻혀 있던 검의 윗동강. 폐허 늑대가 자루를 물어뜯고 있었다. 날밑이 떨어져 나가 손이 자꾸 베이지만, 한 번 휘두르면 옛 영웅의 무게가 실린다.",
+    rarity: "unique",
+  } satisfies EquipItem,
+  sky_render_talon: {
+    name: "하늘가르개",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+9" },
+      { label: "민첩", value: "+5" },
+    ],
+    bonus: { atk: 9, dex: 5 },
+    description: "초원 매가 한쪽 발에 끼우고 다니던 굽은 발톱 모양 쇳조각. 휘두르면 허공이 가늘게 갈라진다. 어느 대장장이가 매에게 빼앗긴 물건이라는 소문이 있다.",
+    rarity: "unique",
+  } satisfies EquipItem,
+  lava_core_maul: {
+    name: "굳은 용암핵 망치",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+11" },
+      { label: "속도", value: "-2" },
+    ],
+    bonus: { atk: 11, spd: -2 },
+    description: "용암 슬라임이 미처 녹이지 못한 채 품고 있던 거대한 용암 핵에 자루를 단 것. 둔하기 짝이 없지만, 한 번 내리치면 땅이 운다.",
+    rarity: "unique",
   } satisfies EquipItem,
 } as const;
 

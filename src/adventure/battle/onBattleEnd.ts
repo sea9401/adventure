@@ -4,7 +4,7 @@ import type { MaterialId } from "@/adventure/data/materials";
 import type { ItemId } from "@/adventure/data/items";
 import { MONSTERS } from "@/adventure/data/monsters";
 import { MATERIALS } from "@/adventure/data/materials";
-import { ITEMS, rarityTextClass } from "@/adventure/data/items";
+import { ITEMS, isLuckyFind, rarityTextClass } from "@/adventure/data/items";
 import {
   dropQualityPrefix,
   dropQualityTextClass,
@@ -129,12 +129,19 @@ export function onBattleEnd(
           else deps.inventory.addDroppedEquipment(drop.itemId, q);
           const equipDef = ITEMS[drop.itemId];
           const name = dropQualityPrefix(q) + equipDef.name;
-          deps.addNotification("loot", `${name}을(를) 손에 넣었다!`, {
-            highlight: {
-              name,
-              className: q ? dropQualityTextClass(q) : rarityTextClass(equipDef),
+          // "유실된 명품"(unique)은 자주 보는 loot 토스트에 묻히지 않게 milestone 으로 띄우고
+          // 메시지 앞에 강조 배너를 붙인다 — 잡몹한테서 떡상 장비가 나온 순간을 못 놓치게.
+          const lucky = isLuckyFind(equipDef);
+          deps.addNotification(
+            lucky ? "milestone" : "loot",
+            `${lucky ? "✨ 굉장한 발견! " : ""}${name}을(를) 손에 넣었다!`,
+            {
+              highlight: {
+                name,
+                className: q ? dropQualityTextClass(q) : rarityTextClass(equipDef),
+              },
             },
-          });
+          );
         } else if (drop.kind === "recipe") {
           if (deps.crafting.knows(drop.recipeId)) continue;
           deps.crafting.learnRecipe(drop.recipeId);
