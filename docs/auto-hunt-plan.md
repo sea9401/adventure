@@ -5,13 +5,15 @@
 > 2026-05 의 오프라인 사냥 / "서버 권위" 모델(`docs/server-authority-plan.md` §2)은 away/back 상태머신·outbox·reload·claimId 멱등성이 꼬여서 통째로 제거됨. 이 문서는 그 자리를 메우는 **타이머형 자동 사냥**. 핵심: "버튼 = 30분 사냥 한 묶음", 요청은 dispatch/collect 딱 2번, 서버가 시간을 소유.
 >
 > **2026-05-11 구현 완료** — 서버 헬퍼 `src/lib/server/autoHunt.ts`, `/api/hunt/{dispatch,collect,status}`, 클라 `useAutoHunt`·`AutoHuntCard`·`AutoHuntResultModal`, BattleView/GameContext/AdventureScreen/TownScreen/CoopBossCard/page.tsx 배선. §4 "위탁 중 잠금" — **라이브 사냥·솔로 보스·치유소 회복·코업 보스** 적용. **지역 이동은 v1 미적용** (sim 이 huntRegion 에 핀돼 있어 다른 지역으로 이동해도 결과는 위탁 지역 기준 — 정합성은 유지, 서사적 어색함만 남음). 자동 포션은 collect body 로 디바이스 룰을 받아 sim 에 적용 (라이브와 동일). 수령 UX 는 `location.reload()` (v2 인플레이스 미구현).
+>
+> **2026-05-11 이후 조정** — ① 지속시간 **30분 → 1시간**(`AUTO_HUNT_DURATION_MS`). ② **전투 수 cap 추가** `AUTO_HUNT_MAX_BATTLES`(= `DURATION_MS / 1200` ≈ 3000) — 원샷 캐릭터가 전투당 최소 쿨다운(600ms)으로 1시간이면 ~6000전투를 돌 수 있어, "전투당 ~1.2초" 기준으로 다시 cap. `simulateOfflineHunt` 의 `input.maxBattles` 로 전달(미지정 시 무제한 — 밸런스 테스트 sim 에는 영향 없음). 보통 캐릭터(전투당 ≳1.5초)는 시간 cap 에 먼저 걸려 무영향. 아래 본문의 "30분" 표기는 이 조정 이전 기준 — 코드 기준은 1시간.
 
 ## 0. 검토 상태 (2026-05-11 1차 확정)
 
 - ✅ 효율 70% — **EXP·골드·전리품 확률만** ×0.7. 잡은 마릿수(퀘스트 처치·도감)는 100%. **UI 에는 표기하지 않음** (의도적 — 사용자가 효율 깎인 걸 모르게).
 - ✅ 위탁 중 잠금 — **라이브 자동전투 / 치유소 / 지역 이동 / 보스 도전** 불가. (퀘스트 보상 수령은 잠그지 않음 — HP 충돌은 §2-2 의 "HP 델타 적용"으로 흡수.)
 - ✅ 수령 UX — **v1: `location.reload()`**. DB 컬럼 이름은 유지(마이그레이션 없음, 주석으로 새 의미 명기).
-- ✅ 지속시간 — **30분 고정, 슬롯 1개**. (가변/다중 슬롯은 추후.)
+- ✅ 지속시간 — **1시간 고정, 슬롯 1개** (초기 30분 → 2026-05-11 이후 1시간으로 상향 + 전투 수 cap 추가, 상단 노트 참고). (가변/다중 슬롯은 추후.)
 - 🔲 남은 소소한 2건 → §7. 이견 없으면 그대로 확정.
 
 ## 1. 컨셉

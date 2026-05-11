@@ -75,7 +75,10 @@ import { useRespawnSafetyNet } from "@/adventure/character/useRespawnSafetyNet";
 import { getTitle } from "@/adventure/data/titles";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { useAutoHunt } from "@/adventure/hunting/useAutoHunt";
-import { AutoHuntResultModal } from "@/adventure/battle/AutoHuntResultModal";
+import {
+  AutoHuntResultModal,
+  fmtHuntDuration,
+} from "@/adventure/battle/AutoHuntResultModal";
 import { AUTO_HUNT_RESULT_KEY } from "@/adventure/battle/autoHunt";
 import {
   summarizeOfflineResult,
@@ -188,7 +191,7 @@ function Home() {
   const remote = useRemoteSave();
   const inbox = useInboxCount();
   const autoPotion = useAutoPotionConfig();
-  // 타이머형 자동 사냥(30분 원정) — dispatch/collect + 카운트다운. 라이브 huntingActive 와 별개.
+  // 타이머형 자동 사냥(1시간 원정) — dispatch/collect + 카운트다운. 라이브 huntingActive 와 별개.
   // collect 시 디바이스 자동 포션 룰을 서버 sim 에 전달 (서버에 동기화 안 됨).
   const autoHunt = useAutoHunt({
     getAutoPotionRules: () => autoPotion.config.rules,
@@ -740,11 +743,10 @@ function Home() {
       adventureLog.incrementBattleLosses();
       replaceLocation("town", "healing");
     }
-    const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
     const summary = summarizeOfflineResult(result);
     addNotification(
       result.died ? "battle_lose" : "info",
-      `자동 사냥 ${minutes}분${summary ? ` — ${summary}` : ""}`,
+      `자동 사냥 ${fmtHuntDuration(result.simulatedMs)}${summary ? ` — ${summary}` : ""}`,
     );
     for (const id of readyQuestIds) {
       const quest = getQuestById(id);

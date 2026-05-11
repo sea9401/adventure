@@ -9,7 +9,16 @@ import { getRecipeById } from "../data/recipes";
 import { type OfflineSimResult } from "./offlineSim";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
-// 자동 사냥(30분 원정) 수령 결과 — 알림(noti)은 작아서 놓치기 쉬워 모달로 가시화.
+// "73분" → "1시간 13분", "60분" → "1시간", "<60분" → "N분".
+export function fmtHuntDuration(ms: number): string {
+  const totalMin = Math.max(1, Math.round(ms / 60_000));
+  if (totalMin < 60) return `${totalMin}분`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
+}
+
+// 자동 사냥(1시간 원정) 수령 결과 — 알림(noti)은 작아서 놓치기 쉬워 모달로 가시화.
 export function AutoHuntResultModal({
   result,
   onClose,
@@ -18,7 +27,7 @@ export function AutoHuntResultModal({
   onClose: () => void;
 }) {
   useEscapeKey(onClose);
-  const minutes = Math.max(1, Math.round(result.simulatedMs / 60_000));
+  const durationLabel = fmtHuntDuration(result.simulatedMs);
 
   const kills = Object.entries(result.killsByName)
     .filter(([, n]) => n > 0)
@@ -59,7 +68,7 @@ export function AutoHuntResultModal({
             자동 사냥 보상
           </div>
           <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            {minutes}분 사냥
+            {durationLabel} 사냥
           </div>
         </div>
 

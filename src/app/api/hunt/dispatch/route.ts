@@ -1,4 +1,4 @@
-// POST /api/hunt/dispatch — 자동 사냥(30분 원정) 시작.
+// POST /api/hunt/dispatch — 자동 사냥(1시간 원정) 시작.
 //
 // body: 없음. region/hp 는 신뢰하지 않고 서버가 map.v2 / character.v2 에서 직접 읽음.
 //

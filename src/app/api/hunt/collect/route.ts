@@ -1,4 +1,4 @@
-// POST /api/hunt/collect — 자동 사냥(30분 원정) 수령 (조기 수령 겸용).
+// POST /api/hunt/collect — 자동 사냥(1시간 원정) 수령 (조기 수령 겸용).
 //
 // body: { playerName?: string, autoPotionRules?: AutoPotionRule[] }
 //   - playerName: 전투 로그용 (안 보내면 "모험가")
@@ -8,9 +8,9 @@
 //   1) auth
 //   2) 트랜잭션 안에서 users row + 모든 save 키 잠금
 //   3) huntActive 아님 → lastClaimResult 있으면 replay, 없으면 noop("inactive")
-//   4) simMs = min(NOW - huntBaselineAt, 30분). simMs < 10초 → noop("too_soon")
-//   5) loadStateForSim + assembleSimInput(autoPotion 룰 적용) + simulateOfflineHunt(awayMs=simMs)
-//   6) 효율 80% 후처리 (같은 rng 스트림 이어받아 결정적)
+//   4) simMs = min(NOW - huntBaselineAt, 1시간). simMs < 10초 → noop("too_soon")
+//   5) loadStateForSim + assembleSimInput(autoPotion 룰 + maxBattles 적용) + simulateOfflineHunt(awayMs=simMs)
+//   6) 효율 후처리 (AUTO_HUNT_EFFICIENCY, 같은 rng 스트림 이어받아 결정적)
 //   7) applyResultToSaves (HP 델타 / 사망 시 0+respawn)
 //   8) huntActive=false, baseline NULL, lastClaimResult=결과 캐시 (lost-response 재시도 replay 용)
 // 반환: { ok:true, result, hadReward, died, simMs } | { ok:true, noop:true, reason } | { ok:true, replayed:true, ... }

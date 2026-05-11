@@ -1,16 +1,23 @@
 // 자동 사냥(타이머형 원정) 공통 상수 + 효율 후처리.
 //
 // 라이브 "사냥 시작"(BattleView 화면 안 자동 전투, huntingActive)과는 별개다.
-// 이쪽은 "30분 동안 사냥 보냄 → 30분 뒤 수령" 패턴 — 서버가 시작 시각을 소유하고,
-// 수령 시 simMs = min(경과, 30분) 만큼 simulateOfflineHunt 를 한 번에 돌려 결과를 적용한다.
+// 이쪽은 "1시간 동안 사냥 보냄 → 1시간 뒤 수령" 패턴 — 서버가 시작 시각을 소유하고,
+// 수령 시 simMs = min(경과, 1시간) 만큼 simulateOfflineHunt 를 한 번에 돌려 결과를 적용한다.
 //
 // 효율 70%: 직접 안 싸운 데 대한 세금. 받는 EXP·골드·전리품만 줄이고, 잡은 마릿수
 // (killsByName / wins / battles) 는 그대로 — 퀘스트 처치 진행·도감은 100% 반영된다.
+// 단, 전투 수는 AUTO_HUNT_MAX_BATTLES 로 cap — 원샷 캐릭터가 한 수령에 수천 킬 쏟는 것 방지.
 
 import type { OfflineSimResult } from "./offlineSim";
 
 /** 한 번 보내면 시뮬되는 사냥 시간. */
-export const AUTO_HUNT_DURATION_MS = 30 * 60 * 1000;
+export const AUTO_HUNT_DURATION_MS = 60 * 60 * 1000;
+/**
+ * 한 번의 위탁에서 진행할 전투 수 상한. 시간 cap 만으로는 원샷 캐릭터가 전투당 최소
+ * 쿨다운(600ms)으로 1시간이면 ~6000전투를 돌 수 있어 "전투당 ~1.2초" 기준으로 다시 cap
+ * (1시간 → 3000). 보통 캐릭터(전투당 ≳1.5초)는 시간 cap 에 먼저 걸려 영향 없음.
+ */
+export const AUTO_HUNT_MAX_BATTLES = Math.floor(AUTO_HUNT_DURATION_MS / 1200);
 /** 위탁 사냥 효율 — EXP·골드·전리품에 곱해진다. */
 export const AUTO_HUNT_EFFICIENCY = 0.7;
 /** 보낸 지 이 시간 미만이면 "지금 수령"을 거부 — 실수로 슬롯 날리는 것 방지. */

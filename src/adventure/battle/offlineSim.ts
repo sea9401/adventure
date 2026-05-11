@@ -4,8 +4,9 @@
 //
 // 정확성보다 일관성/단순성을 우선:
 // - engine.ts의 advanceTurn 그대로 재사용 — 실시간 자동 전투와 결과 분포 동일
-// - 한 턴당 시간 비용은 useBattle의 TURN_INTERVAL_MS(0.5s)를 그대로 사용
-// - 시뮬 가능 시간은 OFFLINE_SIM_MAX_MS(1시간)로 cap — 오래 자리비워도 그 이상은 보상 없음
+// - 시간은 전투당 라이브 쿨다운(battleCooldownMs ≈ 600~2000ms)만 경과 — 전투 자체는 즉시
+// - 시뮬 가능 시간은 OFFLINE_SIM_MAX_MS(1시간)로 cap, 그리고 input.maxBattles 로 전투 수도 cap
+//   (원샷 캐릭터가 한 묶음에 수천 킬 쏟는 것 방지 — 자동 사냥 collect 가 AUTO_HUNT_MAX_BATTLES 주입)
 
 import { pickEnemyName, type Region } from "../data/world";
 import { MONSTERS } from "../data/monsters";
@@ -52,6 +53,9 @@ export type OfflineSimInput = {
   turnIntervalMs: number;
   // 페이지 비운 실제 시간(ms). cap 미적용 raw 값.
   awayMs: number;
+  // 진행할 전투 수 상한 — 강한 캐릭터가 시간 cap 안에서 과도하게 많은 전투를 도는 것 방지.
+  // 미지정 시 무제한(시간 cap 만 적용). 자동 사냥은 AUTO_HUNT_MAX_BATTLES 를 넣는다.
+  maxBattles?: number;
   // 자동 행동 결정 — pickAutoAction을 그대로 주입.
   pickAction: (state: BattleState) => PlayerAction;
   // 드롭률 보정 — onBattleEnd 와 동일 공식 (1 + luk*0.01, cap 1.0).
@@ -83,6 +87,7 @@ export type OfflineSimResult = {
 export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
   const cap = Math.min(input.awayMs, OFFLINE_SIM_MAX_MS);
   const cappedByLimit = input.awayMs > OFFLINE_SIM_MAX_MS;
+  const maxBattles = input.maxBattles ?? Infinity;
   const rng = input.rng ?? Math.random;
 
   const result: OfflineSimResult = {
@@ -116,7 +121,7 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
   let runningLevel = input.playerLevel;
   let runningExp = input.playerExp ?? 0;
 
-  while (elapsed < cap && currentHp > 0) {
+  while (elapsed < cap && currentHp > 0 && result.battles < maxBattles) {
     const enemyName = pickEnemyName(input.region, rng);
     if (!enemyName) break;
     const enemy = MONSTERS[enemyName];
