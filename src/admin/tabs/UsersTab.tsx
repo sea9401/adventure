@@ -44,7 +44,7 @@ const emptyTraining = (): TrainingPersisted => ({
 type AdminUserRow = {
   id: string;
   email: string | null;
-  name: string | null;
+  gameName: string | null;
   className: string | null;
   lastSeenAt: string | null;
   createdAt: string;
@@ -228,7 +228,7 @@ export function UsersTab() {
                     }
                   >
                     <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {u.name ?? "(이름 없음)"}
+                      {u.gameName ?? "(이름 없음)"}
                     </div>
                     <div className="font-mono text-[10px] text-zinc-500">
                       {u.email ?? u.id}
@@ -293,7 +293,7 @@ function SelectedUserPanel({
 }) {
   const character = saves?.["character.v2"] ?? initialCharacterState;
   const profile = saves?.["character-profile.v2"] ?? {
-    name: user.name ?? "모험가",
+    name: user.gameName ?? "모험가",
     gender: "male1" as const,
   };
   const training = saves?.["training.v2"] ?? emptyTraining();

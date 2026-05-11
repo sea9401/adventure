@@ -109,7 +109,7 @@ export async function POST(
       }
 
       const masterRows = await tx
-        .select({ name: users.name })
+        .select({ name: users.gameName })
         .from(users)
         .where(eq(users.id, userId))
         .limit(1);

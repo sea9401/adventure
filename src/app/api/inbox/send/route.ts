@@ -25,13 +25,13 @@ type SenderProbe = {
   profileShape: string[] | null;
 };
 
-// 닉네임은 dual-source — `users.name` (신규 유저, authoritative) 와
+// 닉네임은 dual-source — `users.gameName` (신규 유저, authoritative) 와
 // `savesKv[character-profile.v2].name` (레거시 유저). 한쪽이라도 있으면 사용.
 async function resolveSenderName(
   userId: string,
 ): Promise<{ name: string | null; probe: SenderProbe }> {
   const [u] = await db
-    .select({ name: users.name })
+    .select({ name: users.gameName })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
@@ -66,9 +66,9 @@ async function findRecipientByName(
   name: string,
 ): Promise<{ id: string; name: string } | null> {
   const [u] = await db
-    .select({ id: users.id, name: users.name })
+    .select({ id: users.id, name: users.gameName })
     .from(users)
-    .where(sql`lower(${users.name}) = lower(${name})`)
+    .where(sql`lower(${users.gameName}) = lower(${name})`)
     .limit(1);
   if (u?.name) return { id: u.id, name: u.name };
   const [legacy] = await db

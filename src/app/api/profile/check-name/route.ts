@@ -9,7 +9,7 @@ const NAME_MAX = 16;
 
 // GET /api/profile/check-name?name=Hero
 // 닉네임이 다른 유저에 의해 이미 등록되어 있는지 검사 (case-insensitive).
-// users.name + savesKv 의 character-profile.v2 양쪽 모두 검사.
+// users.gameName + savesKv 의 character-profile.v2 양쪽 모두 검사.
 // 본인 소유 닉네임은 available=true 로 반환.
 export async function GET(req: Request) {
   const userId = await ensureUser();
@@ -22,12 +22,12 @@ export async function GET(req: Request) {
     return Response.json({ available: false, reason: "length" });
   }
 
-  // 1) users.name (authoritative) 에서 본인 제외 case-insensitive 검색
+  // 1) users.gameName (authoritative) 에서 본인 제외 case-insensitive 검색
   const usersHit = await db
     .select({ id: users.id })
     .from(users)
     .where(
-      sql`lower(${users.name}) = lower(${name}) and ${users.id} <> ${userId}`,
+      sql`lower(${users.gameName}) = lower(${name}) and ${users.id} <> ${userId}`,
     )
     .limit(1);
   if (usersHit.length > 0) {

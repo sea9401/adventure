@@ -33,6 +33,8 @@ type Props = {
   onStopHunting?: () => void;
   /** 타이머형 자동 사냥(원정) 진행 중 — true 면 공격 불가 (캐릭터가 자리에 없음). */
   dispatched?: boolean;
+  /** 서버가 공격/처치 시 set 한 storyFlag 를 클라 상태에도 즉시 반영 (운향 진입로 등이 reload 없이 열리도록). */
+  onStoryFlag?: (flagId: string) => void;
 };
 
 export function CoopBossCard({
@@ -44,6 +46,7 @@ export function CoopBossCard({
   notifyBattle,
   onStopHunting,
   dispatched = false,
+  onStoryFlag,
 }: Props) {
   const { data, error, working, attack, claim } = useCoopBoss(regionId, true);
   const [now, setNow] = useState(() => Date.now());
@@ -111,6 +114,9 @@ export function CoopBossCard({
     const r = await attack(playerName);
     if (!r) return;
     onPlayerHpChange(r.finalPlayerHp);
+    // 서버가 박은 storyFlag (참여=peak_giant_engaged 등) 를 클라 상태에 즉시 반영 —
+    // reload 없이 운향 진입로가 열리도록.
+    r.storyFlagsSet?.forEach((f) => onStoryFlag?.(f));
     // 라운드 1회의 결과를 최근 기록 → 전투 로그에 남긴다. 일반 사냥과 동일한 펼치기 UX.
     if (r.diedEarly) {
       notifyBattle?.(

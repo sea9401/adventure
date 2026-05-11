@@ -60,6 +60,8 @@ export type CoopAttackResponse = {
   diedEarly: boolean;
   log: BattleLogEntry[];
   session: { hp: number; defeated: boolean };
+  /** 이 공격으로 서버가 set 한 storyFlag (참여/처치). 클라 메모리 상태에도 즉시 반영용. */
+  storyFlagsSet?: string[];
 };
 
 export type CoopClaimResponse = {

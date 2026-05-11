@@ -9,7 +9,7 @@ import {
   Sun,
   SignOut,
 } from "@phosphor-icons/react";
-import { useClerk } from "@clerk/nextjs";
+import { signOut } from "next-auth/react";
 import { HelpModal } from "./HelpModal";
 import { NotificationPrefsModal } from "./NotificationPrefsModal";
 
@@ -19,8 +19,6 @@ export function SettingsMenu() {
   const [notifPrefsOpen, setNotifPrefsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const containerRef = useRef<HTMLDivElement>(null);
-  const { signOut } = useClerk();
-
   useEffect(() => {
     const initial = document.documentElement.classList.contains("dark")
       ? "dark"
@@ -54,7 +52,7 @@ export function SettingsMenu() {
 
   const handleSignOut = () => {
     setOpen(false);
-    signOut({ redirectUrl: "/sign-in" });
+    signOut({ redirectTo: "/sign-in" });
   };
 
   const handleOpenHelp = () => {

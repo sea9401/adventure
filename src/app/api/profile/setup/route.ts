@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     try {
       await db
         .update(users)
-        .set({ name, updatedAt: new Date() })
+        .set({ gameName: name, updatedAt: new Date() })
         .where(sql`${users.id} = ${userId}`);
     } catch (e) {
       // Postgres unique violation: code 23505

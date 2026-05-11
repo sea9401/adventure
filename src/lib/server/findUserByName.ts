@@ -10,9 +10,9 @@ export async function findUserByName(
   name: string,
 ): Promise<{ id: string; name: string } | null> {
   const [u] = await db
-    .select({ id: users.id, name: users.name })
+    .select({ id: users.id, name: users.gameName })
     .from(users)
-    .where(sql`lower(${users.name}) = lower(${name})`)
+    .where(sql`lower(${users.gameName}) = lower(${name})`)
     .limit(1);
   if (u?.name) return { id: u.id, name: u.name };
   const [legacy] = await db

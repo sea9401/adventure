@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useClerk } from "@clerk/nextjs";
+import { signOut } from "next-auth/react";
 import {
   attachUnloadFlush,
   createRemoteSave,
@@ -61,7 +61,6 @@ function getOrCreateSessionId(): string {
 export function SaveProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<ProviderState>({ status: "loading" });
   const remoteRef = useRef<RemoteSave | null>(null);
-  const { signOut } = useClerk();
 
   useEffect(() => {
     const sessionId = getOrCreateSessionId();
@@ -225,9 +224,9 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={async () => {
             try {
-              await signOut();
+              await signOut({ redirectTo: "/sign-in" });
             } catch {}
-            window.location.href = "/";
+            window.location.href = "/sign-in";
           }}
           className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >

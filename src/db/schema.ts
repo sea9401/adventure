@@ -12,17 +12,22 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 
-// Clerk userId 와 게임 사용자 1:1 매핑.
-// name: 닉네임. 중복 방지용 권위적(authoritative) 컬럼 — 최초 설정 시 등록.
-// 기존 유저는 NULL 인 상태로 시작하고, 새로 시작하는 유저만 unique 제약 적용.
+// Auth.js(NextAuth) 와 게임 사용자 1:1 매핑.
+// Auth.js DrizzleAdapter 가 name/email/emailVerified/image 를 관리.
+// gameName: 인게임 닉네임. 중복 방지용 권위적(authoritative) 컬럼 — 최초 설정 시 등록.
 // activeSessionId: 현재 활성 디바이스의 임의 토큰. 새 디바이스 로그인 시 새 토큰을
 //   claim → 기존 디바이스의 다음 PATCH/GET 가 410 으로 거절돼 강제 로그아웃.
 export const users = pgTable(
   "users",
   {
     id: text("id").primaryKey(),
-    email: text("email"),
+    // Auth.js 표준 필드 — OAuth 공급자 프로필에서 자동 설정.
     name: text("name"),
+    email: text("email").notNull().unique(),
+    emailVerified: timestamp("email_verified", { mode: "date" }),
+    image: text("image"),
+    // 인게임 닉네임 — profile/setup API 로 사용자가 직접 설정.
+    gameName: text("game_name"),
     activeSessionId: text("active_session_id"),
     // 자동 사냥(타이머형 30분 원정) 상태 — POST /api/hunt/dispatch 가 박고,
     // POST /api/hunt/collect 가 simMs=min(경과,30분) 만큼 sim·적용 후 NULL 로 종료.
@@ -44,8 +49,50 @@ export const users = pgTable(
   },
   (t) => [
     // 대소문자 무시 unique. NULL 은 자유롭게 허용 (기존 유저 호환).
-    uniqueIndex("users_name_lower_idx").on(sql`lower(${t.name})`),
+    uniqueIndex("users_game_name_lower_idx").on(sql`lower(${t.gameName})`),
   ],
+);
+
+// Auth.js 연동 계정 — OAuth 공급자(Google/Kakao)와 users.id 매핑.
+// allowDangerousEmailAccountLinking 으로 같은 이메일의 복수 공급자를 한 계정에 연동.
+export const accounts = pgTable(
+  "accounts",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    provider: text("provider").notNull(),
+    providerAccountId: text("provider_account_id").notNull(),
+    refresh_token: text("refresh_token"),
+    access_token: text("access_token"),
+    expires_at: integer("expires_at"),
+    token_type: text("token_type"),
+    scope: text("scope"),
+    id_token: text("id_token"),
+    session_state: text("session_state"),
+  },
+  (t) => [primaryKey({ columns: [t.provider, t.providerAccountId] })],
+);
+
+// Auth.js DB 세션 — JWT 전략 사용 시 미사용. 스키마만 유지 (adapter 요구).
+export const sessions = pgTable("sessions", {
+  sessionToken: text("session_token").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+});
+
+// 이메일 인증 토큰 — 매직 링크 사용 시. OAuth 전용 구성에선 미사용이나 adapter 요구.
+export const verificationTokens = pgTable(
+  "verification_tokens",
+  {
+    identifier: text("identifier").notNull(),
+    token: text("token").notNull(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.identifier, t.token] })],
 );
 
 // 게임 진행 상태는 키별로 분리 저장. localStorage 패턴과 동일.
@@ -384,6 +431,8 @@ export const coopBossContributors = pgTable(
 );
 
 export type User = typeof users.$inferSelect;
+export type AccountRow = typeof accounts.$inferSelect;
+export type SessionRow = typeof sessions.$inferSelect;
 export type SavesKvRow = typeof savesKv.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
 export type BulletinPostRow = typeof bulletinPosts.$inferSelect;

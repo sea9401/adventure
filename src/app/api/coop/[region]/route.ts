@@ -99,7 +99,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       damage: coopBossContributors.damage,
       attackCount: coopBossContributors.attackCount,
       userId: coopBossContributors.userId,
-      name: users.name,
+      name: users.gameName,
     })
     .from(coopBossContributors)
     .leftJoin(users, eq(users.id, coopBossContributors.userId))
@@ -107,7 +107,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     .orderBy(sql`${coopBossContributors.damage} DESC`)
     .limit(5);
 
-  // users.name 이 NULL 인 레거시 유저 — character-profile.v2.name 으로 fallback.
+  // users.gameName 이 NULL 인 레거시 유저 — character-profile.v2.name 으로 fallback.
   // (marketplace / guilds / inbox 와 동일 dual-source 패턴)
   const missingNameUserIds = topRows
     .filter((r) => !r.name)
@@ -360,12 +360,17 @@ async function handleAttack(
 
   // 처치 시 storyFlag set — savesKv 의 storyFlags.v2 갱신. CAS 로 처치를 점유한 1명만.
   // (서버에서 직접 patch — 클라이언트 상태와 다음 fetch 에 반영)
+  // 추가로 set 한 flag 를 응답에 실어 보내 클라가 메모리 상태에도 즉시 반영하게 한다 —
+  // 안 그러면 reload 전까지 운향 진입로 등이 안 열린다 (useStoryFlags 는 마운트 스냅샷).
+  const storyFlagsSet: string[] = [];
   if (iClaimedKill && def.onDefeatFlag) {
     await setStoryFlagServer(userId, def.onDefeatFlag);
+    storyFlagsSet.push(def.onDefeatFlag);
   }
   // 1회 이상 attack 한 유저에게 set 되는 참여 flag — idempotent (이미 있으면 skip).
   if (def.onAttackFlag) {
     await setStoryFlagServer(userId, def.onAttackFlag);
+    storyFlagsSet.push(def.onAttackFlag);
   }
 
   // 처치 broadcast — 광장 게시판에 1줄 시스템 글. CAS 로 처치를 점유한 1명만.
@@ -383,6 +388,7 @@ async function handleAttack(
     diedEarly: result.diedEarly,
     log: result.log,
     session: { hp: realHp, defeated: realHp === 0 },
+    storyFlagsSet,
   });
 }
 
@@ -450,7 +456,7 @@ async function broadcastBossKill(
   const count = Number(contribs[0]?.count ?? 0);
 
   const killer = await db
-    .select({ name: users.name })
+    .select({ name: users.gameName })
     .from(users)
     .where(eq(users.id, killerId))
     .limit(1);

@@ -10,7 +10,7 @@
 // 라이브 "사냥 시작"(BattleView 화면 안 자동 전투)과 별개 — 그쪽은 page.tsx 의 useState.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import {
   AUTO_HUNT_DURATION_MS,
   AUTO_HUNT_RESULT_KEY,
@@ -64,7 +64,9 @@ export function useAutoHunt(opts?: {
   /** 디바이스별 자동 포션 룰 — collect 시 서버 sim 에 전달 (서버에 동기화 안 됨). */
   getAutoPotionRules?: () => AutoPotionConfig["rules"];
 }): AutoHuntHook {
-  const { isLoaded: authLoaded, userId } = useAuth();
+  const { data: session, status } = useSession();
+  const authLoaded = status !== "loading";
+  const userId = session?.user?.id;
   const getRulesRef = useRef(opts?.getAutoPotionRules);
   useEffect(() => {
     getRulesRef.current = opts?.getAutoPotionRules;

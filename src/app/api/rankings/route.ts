@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     WITH stats AS (
       SELECT
         u.id AS user_id,
-        COALESCE(u.name, p.value->>'name') AS name,
+        COALESCE(u.game_name, p.value->>'name') AS name,
         COALESCE((c.value->>'level')::int, 1) AS level,
         COALESCE((c.value->>'fame')::int, 0) AS fame,
         (
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
       LEFT JOIN saves_kv c ON c.user_id = u.id AND c.key = 'character.v2'
       LEFT JOIN saves_kv l ON l.user_id = u.id AND l.key = 'adventure-log.v2'
       LEFT JOIN saves_kv p ON p.user_id = u.id AND p.key = 'character-profile.v2'
-      WHERE COALESCE(u.name, p.value->>'name') IS NOT NULL
+      WHERE COALESCE(u.game_name, p.value->>'name') IS NOT NULL
     ),
     ranked AS (
       SELECT

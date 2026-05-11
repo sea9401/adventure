@@ -395,6 +395,7 @@ export function AdventureScreen() {
           }
           onStopHunting={() => setHuntingActive(false)}
           dispatched={autoHunt.isDispatched}
+          onStoryFlag={storyFlags.set}
         />
       </div>
     );

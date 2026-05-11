@@ -327,11 +327,11 @@ export async function POST(req: Request) {
         await upsertSave(tx, userId, SAVES_INVENTORY, nextInv);
       }
 
-      // seller name 스냅샷 — users.name 우선, 없으면 character-profile.v2.name, 그것도
+      // seller name 스냅샷 — users.gameName 우선, 없으면 character-profile.v2.name, 그것도
       // 없으면 default.
       let sellerName: string | null = null;
       const [u] = await tx
-        .select({ name: users.name })
+        .select({ name: users.gameName })
         .from(users)
         .where(eq(users.id, userId))
         .limit(1);

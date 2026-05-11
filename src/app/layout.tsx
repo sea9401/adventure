@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
+import { SessionProvider } from "next-auth/react";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { VersionCheck } from "@/components/VersionCheck";
 import "./globals.css";
@@ -42,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <SessionProvider>
       <html
         lang="ko"
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
@@ -57,6 +57,6 @@ export default function RootLayout({
           {children}
         </body>
       </html>
-    </ClerkProvider>
+    </SessionProvider>
   );
 }

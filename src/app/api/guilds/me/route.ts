@@ -59,7 +59,7 @@ export async function GET() {
       userId: guildMembers.userId,
       role: guildMembers.role,
       joinedAt: guildMembers.joinedAt,
-      name: users.name,
+      name: users.gameName,
       presenceName: presence.name,
       lastSeenAt: presence.lastSeenAt,
       title: presence.title,
@@ -100,8 +100,8 @@ export async function GET() {
     }
   }
 
-  // 이름 fallback: users.name → presence.name → character-profile.v2.name → "(이름 미설정)".
-  // 레거시 유저는 users.name 이 NULL 일 수 있어 보강.
+  // 이름 fallback: users.gameName → presence.name → character-profile.v2.name → "(이름 미설정)".
+  // 레거시 유저는 users.gameName 이 NULL 일 수 있어 보강.
   const members = memberRows.map((r) => ({
     userId: r.userId,
     name:

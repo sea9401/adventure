@@ -12,7 +12,7 @@ const SYSTEM_USER_ID = "system";
 async function ensureSystemUser(): Promise<void> {
   await db
     .insert(users)
-    .values({ id: SYSTEM_USER_ID, email: null, name: null })
+    .values({ id: SYSTEM_USER_ID, email: "system@internal" })
     .onConflictDoNothing({ target: users.id });
 }
 
