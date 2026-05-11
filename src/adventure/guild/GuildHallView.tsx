@@ -513,8 +513,15 @@ function NoGuildPanel({
   characterGold: number;
   leaveCooldownUntil: string | null;
 }) {
-  const cooldownActive =
-    leaveCooldownUntil && new Date(leaveCooldownUntil) > new Date();
+  const [now, setNow] = useState(() => Date.now());
+  const cooldownUntilDate = leaveCooldownUntil ? new Date(leaveCooldownUntil) : null;
+  const cooldownActive = cooldownUntilDate !== null && cooldownUntilDate.getTime() > now;
+  // 쿨다운 중일 때만 분 단위로 갱신 — "N시간 후" 표기가 멈춰 보이지 않게.
+  useEffect(() => {
+    if (!cooldownActive) return;
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, [cooldownActive]);
   const meetsLevel = characterLevel >= GUILD_CREATE_LEVEL;
   const meetsGold = characterGold >= GUILD_CREATE_GOLD;
 
@@ -528,9 +535,11 @@ function NoGuildPanel({
         />
 
         {cooldownActive ? (
-          <p className="text-center text-xs text-amber-700 dark:text-amber-400">
-            탈퇴/추방 쿨다운 중 — {formatRelative(new Date(leaveCooldownUntil!))} 까지 새 길드 가입 불가.
-          </p>
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-center text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
+            길드 탈퇴/추방 쿨다운 중 —{" "}
+            <span className="font-semibold">{formatRelative(cooldownUntilDate!)}</span>
+            {" "}새 길드 가입·생성 가능 ({formatClock(cooldownUntilDate!)})
+          </div>
         ) : null}
 
         {!showCreate ? (
@@ -807,13 +816,26 @@ function MemberRow({
 
 function formatRelative(d: Date): string {
   const diff = Date.now() - d.getTime();
+  if (diff < 0) {
+    const ahead = -diff;
+    if (ahead < 60_000) return "곧";
+    if (ahead < 3_600_000) return `${Math.floor(ahead / 60_000)}분 후`;
+    if (ahead < 86_400_000) return `${Math.floor(ahead / 3_600_000)}시간 후`;
+    const days = Math.floor(ahead / 86_400_000);
+    const hours = Math.floor((ahead % 86_400_000) / 3_600_000);
+    return hours > 0 ? `${days}일 ${hours}시간 후` : `${days}일 후`;
+  }
   if (diff < 60_000) return "방금 전";
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}분 전`;
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}시간 전`;
-  if (diff < 0) {
-    const ahead = -diff;
-    if (ahead < 86_400_000) return `${Math.floor(ahead / 3_600_000)}시간 후`;
-    return `${Math.floor(ahead / 86_400_000)}일 후`;
-  }
   return `${Math.floor(diff / 86_400_000)}일 전`;
+}
+
+function formatClock(d: Date): string {
+  return d.toLocaleString("ko-KR", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
