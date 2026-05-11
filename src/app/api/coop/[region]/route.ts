@@ -287,22 +287,44 @@ async function handleAttack(
   });
 
   // 세션 hp 차감 + contributor UPSERT — 단일 트랜잭션.
-  const newHp = Math.max(0, session.hp - result.damageDealt);
-  const defeated = newHp === 0;
+  // 처치(defeated) 판정은 SELECT 시점의 stale session.hp 가 아니라 UPDATE 의 실제 결과로 한다.
+  // (이전 버그: 동시 공격 두 건이 각자 stale hp 로 defeated 를 계산 →
+  //  ① 둘 다 true 면 broadcast/storyFlag 가 중복 실행,
+  //  ② 둘 다 false 인데 합산으로 hp 가 0 이 되면 defeatedAt 이 NULL 인 채 "죽었지만 못 받는" 보스가 됨.)
   const now = new Date();
+  let realHp = Math.max(0, session.hp - result.damageDealt);
+  let iClaimedKill = false;
 
   await db.transaction(async (tx) => {
-    // 세션 hp / defeatedAt 업데이트 (CAS — 다른 공격이 끼어들었으면 적용된 차감이 맞도록 raw UPDATE).
-    await tx
+    // 1. 원자적 hp 차감 — RETURNING 으로 실제 적용된 결과를 받는다.
+    //    READ COMMITTED 에서 같은 row 의 동시 UPDATE 는 직렬화되므로 GREATEST 는 직전 커밋 반영값을 본다.
+    const [updated] = await tx
       .update(coopBossSessions)
       .set({
         hp: sql`GREATEST(0, ${coopBossSessions.hp} - ${result.damageDealt})`,
-        defeatedAt: defeated ? now : null,
-        nextSpawnAt: defeated
-          ? new Date(now.getTime() + def.respawnMs)
-          : null,
       })
-      .where(eq(coopBossSessions.id, session.id));
+      .where(eq(coopBossSessions.id, session.id))
+      .returning({ hp: coopBossSessions.hp });
+    realHp = updated?.hp ?? realHp;
+
+    // 2. 처치 CAS — hp 가 0 이고 아직 아무도 처치하지 않았을 때만 한 명이 점유.
+    //    여기서 row 를 받은 1건만 iClaimedKill=true → broadcast/storyFlag 1회.
+    if (realHp === 0) {
+      const [claimed] = await tx
+        .update(coopBossSessions)
+        .set({
+          defeatedAt: now,
+          nextSpawnAt: new Date(now.getTime() + def.respawnMs),
+        })
+        .where(
+          and(
+            eq(coopBossSessions.id, session.id),
+            isNull(coopBossSessions.defeatedAt),
+          ),
+        )
+        .returning({ id: coopBossSessions.id });
+      iClaimedKill = !!claimed;
+    }
 
     // contributor UPSERT — 누적 데미지 / 공격 횟수 / lastAttackAt.
     await tx
@@ -336,9 +358,9 @@ async function handleAttack(
     });
   });
 
-  // 처치 시 storyFlag set — savesKv 의 storyFlags.v1 갱신.
+  // 처치 시 storyFlag set — savesKv 의 storyFlags.v2 갱신. CAS 로 처치를 점유한 1명만.
   // (서버에서 직접 patch — 클라이언트 상태와 다음 fetch 에 반영)
-  if (defeated && def.onDefeatFlag) {
+  if (iClaimedKill && def.onDefeatFlag) {
     await setStoryFlagServer(userId, def.onDefeatFlag);
   }
   // 1회 이상 attack 한 유저에게 set 되는 참여 flag — idempotent (이미 있으면 skip).
@@ -346,8 +368,8 @@ async function handleAttack(
     await setStoryFlagServer(userId, def.onAttackFlag);
   }
 
-  // 처치 broadcast — 광장 게시판에 1줄 시스템 글.
-  if (defeated) {
+  // 처치 broadcast — 광장 게시판에 1줄 시스템 글. CAS 로 처치를 점유한 1명만.
+  if (iClaimedKill) {
     await broadcastBossKill(userId, session.id, session.bossName).catch((err) => {
       // 부수 효과 — 실패해도 attack 응답은 정상 처리.
       console.warn("[coop] broadcast failed", err);
@@ -360,7 +382,7 @@ async function handleAttack(
     finalPlayerHp: result.finalPlayerHp,
     diedEarly: result.diedEarly,
     log: result.log,
-    session: { hp: newHp, defeated },
+    session: { hp: realHp, defeated: realHp === 0 },
   });
 }
 
