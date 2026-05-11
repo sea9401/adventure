@@ -76,6 +76,7 @@ export type GuildQuestDef = {
 };
 
 // Phase A — G 등급 의뢰 3종. F 이상 풀은 Phase B 에서 발란스 후 추가.
+// 3개 동시 진행 체제 — 재료 보상 없음, 골드 ×0.5, 명성 ×1.5.
 export const GUILD_QUESTS: GuildQuestDef[] = [
   {
     id: "g_slime_hunt",
@@ -83,11 +84,7 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
     description: "마을 주변 슬라임 무리를 정리한다.",
     grade: "G",
     task: { kind: "kill_monster", monsterName: "슬라임", count: 300 },
-    reward: {
-      fame: 60,
-      goldPerMember: 600,
-      materialsPerMember: [{ materialId: "slime_chunk", count: 15 }],
-    },
+    reward: { fame: 90, goldPerMember: 300 },
   },
   {
     id: "g_drunkard_cleanup",
@@ -95,11 +92,7 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
     description: "광장 주정뱅이 소동을 마무리한다.",
     grade: "G",
     task: { kind: "kill_monster", monsterName: "주정뱅이", count: 180 },
-    reward: {
-      fame: 60,
-      goldPerMember: 600,
-      materialsPerMember: [{ materialId: "rusty_nail", count: 15 }],
-    },
+    reward: { fame: 90, goldPerMember: 300 },
   },
   {
     id: "g_wilddog_patrol",
@@ -107,11 +100,7 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
     description: "마을 외곽 들개 무리를 토벌한다.",
     grade: "G",
     task: { kind: "kill_monster", monsterName: "들개", count: 240 },
-    reward: {
-      fame: 75,
-      goldPerMember: 750,
-      materialsPerMember: [{ materialId: "wilddog_hide", count: 9 }],
-    },
+    reward: { fame: 110, goldPerMember: 375 },
   },
 ];
 

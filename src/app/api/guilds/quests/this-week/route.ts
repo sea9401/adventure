@@ -53,7 +53,7 @@ export async function GET() {
       ),
     );
 
-  const active = instances.find((r) => r.status === "active") ?? null;
+  const active = instances.filter((r) => r.status === "active");
   const proposed = instances.filter((r) => r.status === "proposed");
 
   const shape = (r: typeof instances[number]) => ({
@@ -78,7 +78,7 @@ export async function GET() {
       isMaster: guild.masterId === userId,
     },
     weekStart: weekStart.toISOString(),
-    active: active ? shape(active) : null,
+    active: active.map(shape),
     proposed: proposed.map(shape),
   });
 }

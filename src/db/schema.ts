@@ -357,7 +357,7 @@ export const guildLeaveCooldown = pgTable("guild_leave_cooldown", {
 // 길드 주간 의뢰 인스턴스. 매주 월 00:00 KST cron 으로 길드별 후보 3건 생성,
 // 마스터가 1건 수락 → 활성. 일 23:59 KST 마감 cron 으로 미완료/미수락 → expired.
 // status: 'proposed' | 'active' | 'completed' | 'dismissed' | 'expired'.
-// 동시 활성 1개 enforce — partial unique on (guildId) where status='active'.
+// 3개 동시 활성 체제 — 주간 발행 시 즉시 active, partial unique 없음.
 export const guildQuestInstances = pgTable(
   "guild_quest_instances",
   {
@@ -376,9 +376,6 @@ export const guildQuestInstances = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [
-    uniqueIndex("guild_quest_active_unique_idx")
-      .on(t.guildId)
-      .where(sql`${t.status} = 'active'`),
     index("guild_quest_guild_week_idx").on(t.guildId, t.weekStart),
   ],
 );

@@ -85,6 +85,13 @@
       "when": 1778505606693,
       "tag": "0011_little_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1747000000000,
+      "tag": "0012_guild_quests_all_active",
+      "breakpoints": true
     }
   ]
 }

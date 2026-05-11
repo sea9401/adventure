@@ -234,7 +234,7 @@ export type GuildQuestsThisWeekResponse = {
     isMaster: boolean;
   } | null;
   weekStart: string | null;
-  active: GuildQuestInstanceShape | null;
+  active: GuildQuestInstanceShape[];
   proposed: GuildQuestInstanceShape[];
 };
 

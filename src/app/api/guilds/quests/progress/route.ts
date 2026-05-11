@@ -14,7 +14,7 @@ import {
 
 // POST /api/guilds/quests/progress — 멤버의 활동을 활성 의뢰 카운터에 반영.
 // body: { kind: 'kill_monster'|'kill_boss'|'collect_material', name?, materialId?, count }
-// 활성 의뢰가 없거나 task 와 안 맞으면 silent ignore (성공 응답 + matched=false).
+// 활성 의뢰 3개 모두에 task 가 맞으면 동시 카운트. silent ignore 는 matched=false.
 // progress += min(count, target-progress, CAP). target 도달 시 자동 완료 + 보상 우편.
 export async function POST(req: Request) {
   const userId = await ensureUser();
@@ -44,7 +44,6 @@ export async function POST(req: Request) {
 
   try {
     const result = await db.transaction(async (tx) => {
-      // 본인 길드 멤버십.
       const myRows = await tx
         .select({ guildId: guildMembers.guildId })
         .from(guildMembers)
@@ -55,7 +54,6 @@ export async function POST(req: Request) {
       }
       const guildId = myRows[0].guildId;
 
-      // 길드 + 활성 의뢰 잠금.
       const guildRows = await tx
         .select()
         .from(guilds)
@@ -66,6 +64,7 @@ export async function POST(req: Request) {
       }
       const guild = guildRows[0];
 
+      // 활성 의뢰 전체를 잠금 + 로드.
       const activeRows = await tx
         .select()
         .from(guildQuestInstances)
@@ -76,87 +75,89 @@ export async function POST(req: Request) {
           ),
         )
         .for("update");
-      const inst = activeRows[0];
-      if (!inst) {
+
+      if (activeRows.length === 0) {
         return { ok: true as const, matched: false, reason: "no_active" };
       }
 
-      // task 매칭 검사 — questDef 의 task 와 정확히 일치할 때만 카운트.
-      const def = getGuildQuestById(inst.questDefId);
-      if (!def) {
-        return { ok: true as const, matched: false, reason: "def_missing" };
-      }
-      const t = def.task;
-      let matched = false;
-      if (t.kind === "kill_monster" && reqKind === "kill_monster") {
-        matched = body.name === t.monsterName;
-      } else if (t.kind === "kill_boss" && reqKind === "kill_boss") {
-        matched = body.name === t.monsterName;
-      } else if (
-        t.kind === "collect_material" &&
-        reqKind === "collect_material"
-      ) {
-        matched = body.materialId === t.materialId;
-      }
-      if (!matched) {
-        return { ok: true as const, matched: false, reason: "no_match" };
-      }
+      let anyMatched = false;
+      let totalFameAdded = 0;
 
-      const before = inst.progress;
-      const target = inst.target;
-      const next = Math.min(before + delta, target);
-      const reachedTarget = next >= target;
-      const now = new Date();
+      for (const inst of activeRows) {
+        const def = getGuildQuestById(inst.questDefId);
+        if (!def) continue;
 
-      await tx
-        .update(guildQuestInstances)
-        .set({
-          progress: next,
-          status: reachedTarget ? "completed" : "active",
-          completedAt: reachedTarget ? now : null,
-        })
-        .where(eq(guildQuestInstances.id, inst.id));
-
-      let fameAdded = 0;
-      if (reachedTarget) {
-        // 보상 — 길드 명성 양쪽 컬럼 + 멤버 각자 우편.
-        fameAdded = def.reward.fame;
-        await tx
-          .update(guilds)
-          .set({
-            fameTotal: sql`${guilds.fameTotal} + ${fameAdded}`,
-            fameAvailable: sql`${guilds.fameAvailable} + ${fameAdded}`,
-          })
-          .where(eq(guilds.id, guildId));
-
-        const memberRows = await tx
-          .select({ userId: guildMembers.userId })
-          .from(guildMembers)
-          .where(eq(guildMembers.guildId, guildId));
-
-        for (const m of memberRows) {
-          await tx.insert(marketplaceInbox).values({
-            userId: m.userId,
-            kind: "guild_quest_reward",
-            payload: {
-              quest_id: def.id,
-              quest_name: def.name,
-              gold: def.reward.goldPerMember,
-              materials: def.reward.materialsPerMember ?? [],
-              items: def.reward.itemsPerMember ?? [],
-            },
-            message: `${def.name} 완료 보상`,
-          });
+        const t = def.task;
+        let matched = false;
+        if (t.kind === "kill_monster" && reqKind === "kill_monster") {
+          matched = body.name === t.monsterName;
+        } else if (t.kind === "kill_boss" && reqKind === "kill_boss") {
+          matched = body.name === t.monsterName;
+        } else if (
+          t.kind === "collect_material" &&
+          reqKind === "collect_material"
+        ) {
+          matched = body.materialId === t.materialId;
         }
+        if (!matched) continue;
+
+        anyMatched = true;
+        const before = inst.progress;
+        const target = inst.target;
+        const next = Math.min(before + delta, target);
+        const reachedTarget = next >= target;
+        const now = new Date();
+
+        await tx
+          .update(guildQuestInstances)
+          .set({
+            progress: next,
+            status: reachedTarget ? "completed" : "active",
+            completedAt: reachedTarget ? now : null,
+          })
+          .where(eq(guildQuestInstances.id, inst.id));
+
+        if (reachedTarget) {
+          const fameAdded = def.reward.fame;
+          totalFameAdded += fameAdded;
+          await tx
+            .update(guilds)
+            .set({
+              fameTotal: sql`${guilds.fameTotal} + ${fameAdded}`,
+              fameAvailable: sql`${guilds.fameAvailable} + ${fameAdded}`,
+            })
+            .where(eq(guilds.id, guildId));
+
+          const memberRows = await tx
+            .select({ userId: guildMembers.userId })
+            .from(guildMembers)
+            .where(eq(guildMembers.guildId, guildId));
+
+          for (const m of memberRows) {
+            await tx.insert(marketplaceInbox).values({
+              userId: m.userId,
+              kind: "guild_quest_reward",
+              payload: {
+                quest_id: def.id,
+                quest_name: def.name,
+                gold: def.reward.goldPerMember,
+                materials: def.reward.materialsPerMember ?? [],
+                items: def.reward.itemsPerMember ?? [],
+              },
+              message: `${def.name} 완료 보상`,
+            });
+          }
+        }
+      }
+
+      if (!anyMatched) {
+        return { ok: true as const, matched: false, reason: "no_match" };
       }
 
       return {
         ok: true as const,
         matched: true,
-        progress: next,
-        target,
-        completed: reachedTarget,
-        fameAdded,
+        fameAdded: totalFameAdded,
       };
     });
 

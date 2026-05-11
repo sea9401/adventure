@@ -56,7 +56,8 @@ export async function issueWeeklyProposals(
         weekStart,
         questDefId: def.id,
         grade: def.grade,
-        status: "proposed",
+        status: "active",
+        activatedAt: weekStart,
         target: def.task.count,
       });
       totalIssued++;

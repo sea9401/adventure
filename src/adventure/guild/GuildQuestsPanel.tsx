@@ -16,7 +16,6 @@ import {
   getGuildQuestById,
   type GuildQuestDef,
 } from "@/adventure/data/guildQuests";
-import { MATERIALS } from "@/adventure/data/materials";
 import { ITEMS } from "@/adventure/data/items";
 
 const GRADE_COLOR: Record<string, string> = {
@@ -33,7 +32,6 @@ const GRADE_COLOR: Record<string, string> = {
 export function GuildQuestsPanel({
   onUpdated,
 }: {
-  // 의뢰 수락 후 상위 길드 정보(명성 변경 가능성 있음)도 갱신할 수 있게 옵션 콜백.
   onUpdated?: () => void;
 }) {
   const [data, setData] = useState<GuildQuestsThisWeekResponse | null>(null);
@@ -59,11 +57,12 @@ export function GuildQuestsPanel({
     void load();
   }, [load]);
 
-  const handleAccept = async (instanceId: number) => {
+  // 기존 proposed 행 일괄 수락 (하위호환 — 신규 발행분은 즉시 active).
+  const handleAcceptAll = async (firstProposedId: number) => {
     setBusy(true);
     setError(null);
     try {
-      await acceptGuildQuest(instanceId);
+      await acceptGuildQuest(firstProposedId);
       await load();
       onUpdated?.();
     } catch (e) {
@@ -88,11 +87,12 @@ export function GuildQuestsPanel({
   }
 
   if (!data?.guild) {
-    // 길드 없음 — 패널 자체를 숨긴다 (호출 측에서 길드 존재 시에만 mount 권장).
     return null;
   }
 
   const { guild, active, proposed } = data;
+  const hasActive = active.length > 0;
+  const hasProposed = proposed.length > 0;
 
   return (
     <Card padding="md">
@@ -103,7 +103,7 @@ export function GuildQuestsPanel({
             <h3 className="text-base font-semibold">길드 의뢰</h3>
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            매주 월요일 00시(KST) 새 후보 3종이 발행됩니다.
+            매주 월요일 00시(KST) 3종이 동시 발행됩니다.
           </p>
         </header>
 
@@ -111,14 +111,30 @@ export function GuildQuestsPanel({
           <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
         ) : null}
 
-        {active ? (
-          <ActiveQuestCard instance={active} />
-        ) : (
+        {/* 진행 중인 의뢰 목록 */}
+        {hasActive && (
+          <ul className="space-y-2">
+            {active.map((inst) => (
+              <ActiveQuestCard key={inst.id} instance={inst} />
+            ))}
+          </ul>
+        )}
+
+        {/* proposed 행 (구버전 DB 잔존분 — 마스터가 일괄 시작) */}
+        {hasProposed && (
           <ProposedSection
             proposed={proposed}
             isMaster={guild.isMaster}
             busy={busy}
-            onAccept={handleAccept}
+            onAcceptAll={handleAcceptAll}
+          />
+        )}
+
+        {!hasActive && !hasProposed && (
+          <EmptyState
+            icon={<Scroll size={32} weight="duotone" />}
+            title="이번 주 의뢰가 없습니다"
+            message="다음 월요일 00시(KST) 에 새 의뢰가 발행됩니다."
           />
         )}
       </div>
@@ -130,20 +146,31 @@ function ActiveQuestCard({ instance }: { instance: GuildQuestInstanceShape }) {
   const def = getGuildQuestById(instance.questDefId);
   if (!def) {
     return (
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+      <li className="rounded-md border border-zinc-200 p-2 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
         알 수 없는 의뢰 ({instance.questDefId})
-      </p>
+      </li>
     );
   }
   const pct = Math.min(100, (instance.progress / instance.target) * 100);
+  const completed = instance.status === "completed";
   return (
-    <div className="space-y-2 rounded-md border border-emerald-300 bg-emerald-50/60 p-3 dark:border-emerald-900 dark:bg-emerald-950/40">
+    <li
+      className={`space-y-2 rounded-md border p-3 ${
+        completed
+          ? "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/40"
+          : "border-emerald-300 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/40"
+      }`}
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <Sparkle
             size={14}
             weight="fill"
-            className="text-emerald-600 dark:text-emerald-400"
+            className={
+              completed
+                ? "text-zinc-400 dark:text-zinc-500"
+                : "text-emerald-600 dark:text-emerald-400"
+            }
           />
           <span className="text-sm font-semibold">{def.name}</span>
           <span
@@ -154,6 +181,11 @@ function ActiveQuestCard({ instance }: { instance: GuildQuestInstanceShape }) {
         </div>
         <span className="text-xs text-zinc-600 dark:text-zinc-400">
           {instance.progress} / {instance.target}
+          {completed && (
+            <span className="ml-1 font-medium text-emerald-600 dark:text-emerald-400">
+              완료
+            </span>
+          )}
         </span>
       </div>
       <p className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -162,14 +194,16 @@ function ActiveQuestCard({ instance }: { instance: GuildQuestInstanceShape }) {
       <p className="text-xs text-zinc-500 dark:text-zinc-500">
         {describeTask(def)}
       </p>
-      <div className="h-1.5 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-900/60">
-        <div
-          className="h-full bg-emerald-500 transition-[width] duration-300"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      {!completed && (
+        <div className="h-1.5 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-900/60">
+          <div
+            className="h-full bg-emerald-500 transition-[width] duration-300"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
       <RewardLine def={def} />
-    </div>
+    </li>
   );
 }
 
@@ -177,97 +211,59 @@ function ProposedSection({
   proposed,
   isMaster,
   busy,
-  onAccept,
+  onAcceptAll,
 }: {
   proposed: GuildQuestInstanceShape[];
   isMaster: boolean;
   busy: boolean;
-  onAccept: (id: number) => void;
+  onAcceptAll: (firstId: number) => void;
 }) {
-  if (proposed.length === 0) {
-    return (
-      <EmptyState
-        icon={<Scroll size={32} weight="duotone" />}
-        title="이번 주 후보 의뢰가 없습니다"
-        message="다음 월요일 00시(KST) 에 새 후보가 발행됩니다."
-      />
-    );
-  }
   return (
     <div className="space-y-2">
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        후보 {proposed.length}종 — 마스터가 1개를 수락하면 나머지는 자동
-        해제됩니다.
+        이번 주 의뢰 {proposed.length}종이 대기 중입니다.
+        {isMaster ? " 아래 버튼으로 전체 시작하세요." : ""}
       </p>
-      <ul className="space-y-2">
-        {proposed.map((inst) => (
-          <ProposedQuestRow
-            key={inst.id}
-            instance={inst}
-            canAccept={isMaster}
-            busy={busy}
-            onAccept={() => onAccept(inst.id)}
-          />
-        ))}
+      <ul className="space-y-1.5">
+        {proposed.map((inst) => {
+          const def = getGuildQuestById(inst.questDefId);
+          return (
+            <li
+              key={inst.id}
+              className="rounded-md border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium">{def?.name ?? inst.questDefId}</span>
+                {def && (
+                  <span className={`text-[11px] font-bold ${GRADE_COLOR[def.grade] ?? ""}`}>
+                    [{def.grade}]
+                  </span>
+                )}
+              </div>
+              {def && (
+                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  {describeTask(def)}
+                </p>
+              )}
+            </li>
+          );
+        })}
       </ul>
-      {!isMaster ? (
+      {isMaster ? (
+        <button
+          type="button"
+          onClick={() => onAcceptAll(proposed[0].id)}
+          disabled={busy}
+          className="w-full rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+        >
+          이번 주 의뢰 전체 시작
+        </button>
+      ) : (
         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-          수락은 마스터만 가능합니다.
+          마스터가 시작하면 의뢰가 활성화됩니다.
         </p>
-      ) : null}
+      )}
     </div>
-  );
-}
-
-function ProposedQuestRow({
-  instance,
-  canAccept,
-  busy,
-  onAccept,
-}: {
-  instance: GuildQuestInstanceShape;
-  canAccept: boolean;
-  busy: boolean;
-  onAccept: () => void;
-}) {
-  const def = getGuildQuestById(instance.questDefId);
-  if (!def) {
-    return (
-      <li className="rounded-md border border-zinc-200 p-2 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-        알 수 없는 의뢰 ({instance.questDefId})
-      </li>
-    );
-  }
-  return (
-    <li className="space-y-1.5 rounded-md border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium">{def.name}</span>
-          <span
-            className={`text-[11px] font-bold ${GRADE_COLOR[def.grade] ?? ""}`}
-          >
-            [{def.grade}]
-          </span>
-        </div>
-        {canAccept ? (
-          <button
-            type="button"
-            onClick={onAccept}
-            disabled={busy}
-            className="rounded-md border border-emerald-700 bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            수락
-          </button>
-        ) : null}
-      </div>
-      <p className="text-xs text-zinc-600 dark:text-zinc-400">
-        {def.description}
-      </p>
-      <p className="text-[11px] text-zinc-500 dark:text-zinc-500">
-        {describeTask(def)}
-      </p>
-      <RewardLine def={def} />
-    </li>
   );
 }
 
@@ -278,8 +274,7 @@ function RewardLine({ def }: { def: GuildQuestDef }) {
   parts.push(`멤버당 ${r.goldPerMember.toLocaleString()} G`);
   if (r.materialsPerMember && r.materialsPerMember.length > 0) {
     for (const m of r.materialsPerMember) {
-      const name = MATERIALS[m.materialId]?.name ?? m.materialId;
-      parts.push(`${name} ×${m.count}`);
+      parts.push(`${m.materialId} ×${m.count}`);
     }
   }
   if (r.itemsPerMember && r.itemsPerMember.length > 0) {
@@ -304,9 +299,7 @@ function describeTask(def: GuildQuestDef): string {
     return `보스 ${t.monsterName} ${t.count}회 처치`;
   }
   if (t.kind === "collect_material") {
-    const name = MATERIALS[t.materialId]?.name ?? t.materialId;
-    return `${name} ${t.count}개 납품`;
+    return `${t.materialId} ${t.count}개 납품`;
   }
   return "";
 }
-

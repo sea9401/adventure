@@ -1,11 +1,11 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { guildQuestInstances, guilds } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 
-// POST /api/guilds/quests/[instanceId]/accept — 마스터의 의뢰 수락.
-// proposed → active. 같은 weekStart 의 다른 proposed 들은 dismissed.
-// 동시 활성 1개는 partial unique index 가 enforce.
+// POST /api/guilds/quests/[instanceId]/accept — 마스터의 의뢰 수락 (하위호환).
+// 신규 발행분은 즉시 active 로 발행되므로 이 API 는 기존 proposed 행이 남아있을 때만 사용.
+// 클릭된 의뢰와 같은 weekStart 의 proposed 행을 모두 active 로 전환 (택1 아님).
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ instanceId: string }> },
@@ -47,37 +47,16 @@ export async function POST(
         return { error: "not_master", status: 403 as const };
       }
 
-      // 같은 길드에 이미 활성 의뢰가 있으면 거부.
-      const activeRows = await tx
-        .select({ id: guildQuestInstances.id })
-        .from(guildQuestInstances)
-        .where(
-          and(
-            eq(guildQuestInstances.guildId, inst.guildId),
-            eq(guildQuestInstances.status, "active"),
-          ),
-        )
-        .limit(1);
-      if (activeRows.length > 0) {
-        return { error: "already_active", status: 409 as const };
-      }
-
+      // 같은 weekStart 의 proposed 행을 모두 active 로 전환 (3개 동시 진행).
       const now = new Date();
       await tx
         .update(guildQuestInstances)
         .set({ status: "active", activatedAt: now })
-        .where(eq(guildQuestInstances.id, instanceId));
-
-      // 같은 weekStart 의 다른 proposed → dismissed.
-      await tx
-        .update(guildQuestInstances)
-        .set({ status: "dismissed" })
         .where(
           and(
             eq(guildQuestInstances.guildId, inst.guildId),
             eq(guildQuestInstances.weekStart, inst.weekStart),
             eq(guildQuestInstances.status, "proposed"),
-            ne(guildQuestInstances.id, instanceId),
           ),
         );
 
