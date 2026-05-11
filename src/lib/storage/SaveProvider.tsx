@@ -140,25 +140,27 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
 
     // 낙관적 동시성 충돌 — 다른 탭/기기가 server 를 갱신해 이 탭의 expectedVersion 이
     // 어긋남. 메모리 state 를 신뢰할 수 없으니 reload 로 fresh server 데이터 다시 로드.
-    // reload 직전 flushSync 호출 — 충돌 안 난 다른 키들 (전투 보상 / EXP / 드롭 등) 이
-    // 큐에 남아있으면 keepalive 로 발사해서 일괄 손실 차단.
+    //
+    // 일관성 우선 — reload 전에 살아남은 키를 flushSync 하지 *않는다*. 예전엔 충돌 안 난
+    // 키들을 keepalive 로 발사했지만, 그러면 "살아남은 키 = 이 디바이스 값 / 폐기된 키 =
+    // 서버 값" 으로 한 캐릭터 상태가 두 디바이스 값으로 찢어진다 (예: 인벤토리엔 새 드롭이
+    // 있는데 그걸 산 골드는 옛날값으로 롤백). 그냥 reload → loadAll() 로 모든 키를 서버
+    // 기준 + 각 hook 의 localStorage-merge 경로로 일괄 채택하는 게 coherent. 손실은 "마지막
+    // 성공 sync 이후 이 디바이스가 한 것" 으로 한정 — 이게 멀티 디바이스 충돌의 정확한 의미론.
+    //
     // session-invalidated — 다른 디바이스가 새 세션 claim 함. 이 디바이스의 PATCH 는
     // 이제 항상 410. Clerk signOut + 안내 화면. flushSync 안 함 (어차피 410).
     const unsubscribe = remote.subscribe((s) => {
       if (s.kind === "stale" && typeof window !== "undefined") {
         // droppedKeys 가 있으면 (409 한도 초과로 폐기된 변경) 어떤 데이터가
-        // 영향받았는지 사용자에게 알린다 — localStorage 백업이 있는 키는
-        // reload 후 자동 복원되지만, 사용자가 인지하도록.
+        // 영향받았는지 사용자에게 알린다.
         const dropped = s.droppedKeys ?? [];
         const message =
           dropped.length > 0
-            ? `동기화 실패로 일부 변경이 폐기됐습니다 (${dropped.join(", ")}). 백업된 데이터로 복원 시도합니다.`
+            ? `다른 기기/탭의 진행과 충돌해 서버 기준으로 다시 불러왔습니다. 이 기기의 최근 변경 일부(${dropped.join(", ")})는 반영되지 않았을 수 있습니다.`
             : "다른 기기/탭에서 갱신을 감지해 새로 불러왔습니다.";
         try {
           localStorage.setItem("pending-reload-toast.v1", message);
-        } catch {}
-        try {
-          remote.flushSync();
         } catch {}
         window.location.reload();
       }

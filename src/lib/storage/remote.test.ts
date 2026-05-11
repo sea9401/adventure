@@ -211,8 +211,8 @@ describe("createRemoteSave", () => {
 
     expect(fakeFetch).toHaveBeenCalledTimes(4);
     expect(remote.status().kind).toBe("stale");
-    // stale 상태에서도 새 patch 는 큐에 쌓이지만 자동 flush 는 안 함 (SaveProvider 가
-    // reload 직전 flushSync 로 발사).
+    // stale 상태에서도 새 patch 는 큐에 쌓이지만 자동 flush 는 안 함 — SaveProvider 가
+    // 곧 location.reload 로 서버 상태를 통째로 다시 불러오므로 보낼 의미가 없음.
     remote.patch("character.v2", { hp: 60 });
     await vi.advanceTimersByTimeAsync(1_000);
     expect(fakeFetch).toHaveBeenCalledTimes(4);
