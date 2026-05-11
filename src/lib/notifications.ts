@@ -10,6 +10,8 @@ export type NotificationKind =
   | "expedition"
   // 전투 드롭 — 재료 / 골드 / 장비 / 제작서. 잦아서 토스트·벨 카운트 기본 제외.
   | "loot"
+  // 장비 액션 — 제작 / 장착 / 해제 / 폐기. 누른 직후 "느낌"을 주는 즉시 피드백 — 토스트 기본 ON.
+  | "item"
   | "info";
 
 // 알림 종류별로 부착될 수 있는 부가 데이터. UI에서 expand 시 사용.

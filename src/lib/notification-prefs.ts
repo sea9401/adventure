@@ -18,8 +18,8 @@ export type ToastPrefs = Record<NotificationKind, boolean>;
 // - battle_win / loot / info: 너무 자주 발화되어 토스트로 두면 잡음 — 기본 OFF.
 // - battle_lose / expedition: 사망·원정 결과는 눈에 띄는 모달을 따로 띄우므로
 //   중복 토스트는 기본 OFF. (원하면 사용자가 켤 수 있음)
-// - training_done / quest_ready / quest_complete / milestone:
-//   드물고 의미 있는 이벤트 — 기본 ON.
+// - training_done / quest_ready / quest_complete / milestone / item:
+//   드물거나 직접 누른 액션의 즉시 피드백 — 기본 ON.
 const DEFAULTS: ToastPrefs = {
   battle_win: false,
   battle_lose: false,
@@ -29,6 +29,7 @@ const DEFAULTS: ToastPrefs = {
   milestone: true,
   expedition: false,
   loot: false,
+  item: true,
   info: false,
 };
 
@@ -113,9 +114,13 @@ export const TOAST_KIND_LABELS: Record<
     name: "전리품",
     description: "전투에서 재료·골드·장비·제작서를 얻었을 때.",
   },
+  item: {
+    name: "장비 액션",
+    description: "제작·장착·해제·폐기 등 장비를 다뤘을 때 우하단에 잠깐 표시.",
+  },
   info: {
     name: "일반 알림",
-    description: "이동·판매·장착/해제·제작·상점 해금 등 그 외 일반적인 정보.",
+    description: "이동·판매·상점 해금 등 그 외 일반적인 정보.",
   },
 };
 
@@ -124,6 +129,7 @@ export const TOAST_KIND_ORDER: NotificationKind[] = [
   "quest_ready",
   "quest_complete",
   "expedition",
+  "item",
   "training_done",
   "loot",
   "battle_win",

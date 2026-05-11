@@ -22,6 +22,7 @@ const KIND_COLOR: Record<NotificationKind, string> = {
   milestone: "text-fuchsia-700 dark:text-fuchsia-400",
   expedition: "text-teal-700 dark:text-teal-400",
   loot: "text-lime-700 dark:text-lime-400",
+  item: "text-blue-700 dark:text-blue-400",
   info: "text-zinc-600 dark:text-zinc-400",
 };
 

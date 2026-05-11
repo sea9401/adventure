@@ -5,6 +5,7 @@ import {
   Barbell,
   CheckCircle,
   Coins,
+  Hammer,
   Info,
   Scroll,
   Skull,
@@ -59,6 +60,7 @@ const TOAST_ACCENT: Record<NotificationKind, string> = {
   milestone: "bg-fuchsia-500",
   expedition: "bg-teal-500",
   loot: "bg-lime-500",
+  item: "bg-blue-500",
   info: "bg-sky-500",
 };
 
@@ -71,6 +73,7 @@ const TOAST_ICON: Record<NotificationKind, React.ComponentType<{ size?: number; 
   milestone: Sparkle,
   expedition: Tent,
   loot: Coins,
+  item: Hammer,
   info: Info,
 };
 
@@ -83,6 +86,7 @@ const TOAST_ICON_COLOR: Record<NotificationKind, string> = {
   milestone: "text-fuchsia-600 dark:text-fuchsia-400",
   expedition: "text-teal-600 dark:text-teal-400",
   loot: "text-lime-600 dark:text-lime-400",
+  item: "text-blue-600 dark:text-blue-400",
   info: "text-sky-600 dark:text-sky-400",
 };
 
@@ -146,13 +150,13 @@ export function NotificationToast({
   if (toasts.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed right-4 top-16 z-50 flex flex-col gap-2 sm:right-6">
+    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 sm:bottom-6 sm:right-6">
       {toasts.map((t) => {
         const Icon = TOAST_ICON[t.kind];
         return (
         <div
           key={t.id}
-          className="pointer-events-auto relative flex max-w-[calc(100vw-2rem)] items-start gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-right sm:max-w-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+          className="pointer-events-auto relative flex max-w-[calc(100vw-2rem)] items-start gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-bottom-2 sm:max-w-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
         >
           <span
             aria-hidden

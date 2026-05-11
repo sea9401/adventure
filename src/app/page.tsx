@@ -578,7 +578,7 @@ function Home() {
     returnEquippedToInventory(characterStateHook.equippedSlots[item.slot]);
     characterStateHook.setSlot(item.slot, equipItem);
     const name = equipDisplayName(id, tier, isDropped ? quality : undefined);
-    addNotification("info", `${name}을(를) 장착했다.`, {
+    addNotification("item", `${name}을(를) 장착했다.`, {
       highlight: { name, className: equipNameClass(id, isDropped ? quality : undefined) },
     });
   };
@@ -592,7 +592,7 @@ function Home() {
     const name = id
       ? equipDisplayName(id, current.craftTier, current.dropQuality)
       : current.name;
-    addNotification("info", `${name}을(를) 해제했다.`, {
+    addNotification("item", `${name}을(를) 해제했다.`, {
       highlight: {
         name,
         className: id
@@ -619,7 +619,7 @@ function Home() {
         : inventory.consumeEquipment(id, 1);
     if (!ok) return;
     addNotification(
-      "info",
+      "item",
       `${equipDisplayName(id, tier, isDropped ? quality : undefined)}을(를) 폐기했다.`,
     );
   };
@@ -693,14 +693,14 @@ function Home() {
     if (data.result.kind === "equipment") {
       const item = ITEMS[data.result.itemId];
       const suffix = craftTierSuffix(data.result.tier);
-      addNotification("info", `${item.name}${suffix}을(를) 만들었다.`, {
+      addNotification("item", `${item.name}${suffix}을(를) 만들었다.`, {
         highlight: { name: item.name + suffix, className: rarityTextClass(item) },
       });
     } else {
       const potion = POTIONS[data.result.potionId];
       const qty = data.result.quantity;
       addNotification(
-        "info",
+        "item",
         qty > 1
           ? `${potion.name} ×${qty}을(를) 만들었다.`
           : `${potion.name}을(를) 만들었다.`,
