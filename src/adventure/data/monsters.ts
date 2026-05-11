@@ -263,7 +263,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 22,
     def: 7,
     spd: 5,
-    exp: 24,
+    exp: 18,
     image: "/images/monster/mountaingoat.webp",
     drops: [
       { kind: "material", materialId: "sancho_blossom", chance: 0.02 },
@@ -277,7 +277,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 19,
     def: 12,
     spd: 3,
-    exp: 28,
+    exp: 22,
     image: "/images/monster/stonefrog.webp",
     drops: [
       { kind: "material", materialId: "unbong_ore", chance: 0.02 },
@@ -290,7 +290,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 22,
     def: 9,
     spd: 7,
-    exp: 32,
+    exp: 22,
     image: "/images/monster/mountainwolf.webp",
     drops: [
       { kind: "material", materialId: "wilddog_fang", chance: 0.05 },
@@ -305,7 +305,7 @@ export const MONSTERS: Record<string, Monster> = {
     def: 9,
     spd: 8,
     evasionPct: 20,
-    exp: 35,
+    exp: 24,
     image: "/images/monster/icespirit.webp",
     drops: [
       { kind: "material", materialId: "fairy_dust", chance: 0.04 },
@@ -319,7 +319,7 @@ export const MONSTERS: Record<string, Monster> = {
     atk: 22,
     def: 12,
     spd: 8,
-    exp: 50,
+    exp: 32,
     image: "/images/monster/wolfchieftain.webp",
     drops: [
       { kind: "material", materialId: "wolf_king_fang", chance: 0.005 },
