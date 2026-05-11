@@ -72,7 +72,12 @@ type SavedCharacter = {
   [k: string]: unknown;
 };
 
-type SavedTraining = { allocated?: Partial<Record<StatKey, number>> };
+type SavedTraining = {
+  allocated?: Partial<Record<StatKey, number>>;
+  /** 미사용 단련 포인트 — 레벨업 1당 +1 (라이브 사냥은 클라에서, 위탁 사냥은 서버에서). */
+  points?: number;
+  [k: string]: unknown;
+};
 
 type SavedInventory = {
   potions?: Partial<Record<PotionId, number>>;
@@ -140,7 +145,8 @@ export type LoadedState = {
 };
 
 // 트랜잭션 안에서 sim 에 필요한 모든 savesKv 키를 잠금 + 읽음.
-// character/inventory/crafting 은 결과 반영 대상이라 for update, map/training 은 read-only.
+// 전부 결과 반영 대상이라 for update — character/inventory/crafting 은 항상, map 은 사망 시
+// (respawn), training 은 레벨업 시(단련 포인트) 쓰여진다. 동시 클라 PATCH 와의 lost-update 방지.
 export async function loadStateForSim(
   tx: DbExecutor,
   userId: string,
@@ -151,9 +157,9 @@ export async function loadStateForSim(
     (await readKv<SavedInventory>(tx, userId, "inventory.v2", true)) ?? {};
   const crafting =
     (await readKv<SavedCrafting>(tx, userId, "crafting.v2", true)) ?? {};
-  const map = (await readKv<SavedMap>(tx, userId, "map.v2", false)) ?? {};
+  const map = (await readKv<SavedMap>(tx, userId, "map.v2", true)) ?? {};
   const training =
-    (await readKv<SavedTraining>(tx, userId, "training.v2", false)) ?? {};
+    (await readKv<SavedTraining>(tx, userId, "training.v2", true)) ?? {};
   return { character, inventory, crafting, map, training };
 }
 
@@ -210,11 +216,12 @@ export function assembleSimInput(opts: AssembleSimInputOpts): OfflineSimInput {
   };
 }
 
-// sim 결과를 savesKv 의 character/inventory/crafting/map 에 반영.
+// sim 결과를 savesKv 의 character/inventory/crafting/training/map 에 반영.
 // 클라 onApply (page.tsx) 와 동일 순서로:
 //   1) 인벤토리 — 포션 차감 + 재료/장비 추가
 //   2) 제작서 학습
 //   3) 캐릭터 — gold/exp/level/hp
+//   3-b) 레벨업이면 training.v2 의 단련 포인트 += levelsGained
 //   4) 사망이면 map.v2 의 currentRegionId 를 respawn 으로
 // HP 는 "설정"이 아니라 "델타"로 적용 — 위탁 중 다른 데서(퀘스트 보상 레벨업 등) HP 가 바뀌어도 안전.
 // 단 사망이면 0, 사이클 중 레벨업이면 풀회복(useCharacterState.addExp 와 동일).
@@ -231,6 +238,7 @@ export type ApplyResultOutcome = {
   newCharacter: SavedCharacter;
   newInventory: SavedInventory;
   newCrafting: SavedCrafting;
+  newTraining: SavedTraining;
   newRespawnRegionId: RegionId | null;
 };
 
@@ -308,11 +316,25 @@ export async function applyResultToSaves(
     hp: newHp,
   };
 
+  // 3-b) 레벨업 시 단련 포인트 지급 (레벨업 1당 +1).
+  // 라이브 사냥은 useLevelUpDetection 이 클라에서 레벨 델타를 보고 주지만, 위탁 사냥은
+  // collect 직후 page reload 라 클라가 델타를 못 봐서 포인트가 유실된다 → 서버가 직접 적립.
+  let newTraining: SavedTraining = state.training;
+  if (newLevelExp.levelsGained > 0) {
+    newTraining = {
+      ...state.training,
+      points: (state.training.points ?? 0) + newLevelExp.levelsGained,
+    };
+  }
+
   // savesKv 쓰기 — version++.
   await upsertSave(tx, userId, "character.v2", newCharacter);
   await upsertSave(tx, userId, "inventory.v2", newInventory);
   if (result.recipesLearned.length > 0) {
     await upsertSave(tx, userId, "crafting.v2", newCrafting);
+  }
+  if (newLevelExp.levelsGained > 0) {
+    await upsertSave(tx, userId, "training.v2", newTraining);
   }
 
   // 4) 사망 시 map.v2 의 currentRegionId 도 respawn 으로 갱신.
@@ -332,7 +354,7 @@ export async function applyResultToSaves(
     newRespawnRegionId = respawnId;
   }
 
-  return { newCharacter, newInventory, newCrafting, newRespawnRegionId };
+  return { newCharacter, newInventory, newCrafting, newTraining, newRespawnRegionId };
 }
 
 // (character.exp, result.expGained) 을 합쳐 최종 레벨/EXP 계산.
