@@ -4,6 +4,7 @@ import Kakao from "next-auth/providers/kakao";
 
 const PUBLIC_PATHS = [
   "/sign-in",
+  "/api/auth",     // Auth.js OAuth 콜백 — 미들웨어 통과 필수
   "/api/health",
   "/api/version",
   "/api/chat/cleanup",
