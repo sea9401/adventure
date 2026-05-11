@@ -714,7 +714,7 @@ function Home() {
     if (adventureLog.log.titles[titleId]) return;
     adventureLog.markTitleObtained(titleId);
     const title = getTitle(titleId);
-    if (title) addNotification("info", `칭호 획득 — ${title.name}`);
+    if (title) addNotification("milestone", `칭호 획득 — ${title.name}`);
   };
 
   // 카운터/상태/시간 기반 자동 칭호 부여.
@@ -809,9 +809,11 @@ function Home() {
       replaceLocation("town", "healing");
     }
     const summary = summarizeOfflineResult(result);
+    // 사망 여부와 무관하게 expedition — 사망 시엔 별도로 결과 모달(setAutoHuntResult)이
+    // 눈에 띄게 뜨고, replaceLocation 으로 치유소로 보낸다.
     addNotification(
-      result.died ? "battle_lose" : "info",
-      `자동 사냥 ${fmtHuntDuration(result.simulatedMs)}${summary ? ` — ${summary}` : ""}`,
+      "expedition",
+      `자동 사냥 ${fmtHuntDuration(result.simulatedMs)}${summary ? ` — ${summary}` : ""}${result.died ? " (사망)" : ""}`,
     );
     for (const id of readyQuestIds) {
       const quest = getQuestById(id);
@@ -967,7 +969,7 @@ function Home() {
               {character.gold.toLocaleString()}
             </span>
             <NotificationBell
-              notifications={notifications.list}
+              notifications={notifications.bellList}
               unreadCount={notifications.unreadCount}
               onOpen={notifications.markRead}
             />

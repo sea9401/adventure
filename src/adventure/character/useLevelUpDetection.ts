@@ -13,7 +13,7 @@ export function useLevelUpDetection(opts: {
   level: number;
   characterSkills: Skill[];
   addPoints: (n: number) => void;
-  addNotification: (kind: "info", text: string) => void;
+  addNotification: (kind: "milestone", text: string) => void;
 }) {
   const lastSeenLevelRef = useRef<number | null>(null);
   const lastSeenSkillsRef = useRef<string[] | null>(null);
@@ -31,7 +31,7 @@ export function useLevelUpDetection(opts: {
       const gained = next - prev;
       opts.addPoints(gained);
       opts.addNotification(
-        "info",
+        "milestone",
         `레벨업! Lv.${next} (스탯 포인트 +${gained})`,
       );
       setLevelUpTrigger((v) => v + 1);
@@ -52,7 +52,7 @@ export function useLevelUpDetection(opts: {
     const prev = new Set(lastSeenSkillsRef.current);
     for (const name of currentNames) {
       if (!prev.has(name)) {
-        opts.addNotification("info", `스킬 획득! ${name}`);
+        opts.addNotification("milestone", `스킬 획득! ${name}`);
       }
     }
     lastSeenSkillsRef.current = currentNames;

@@ -112,7 +112,7 @@ export function onBattleEnd(
           const amount = drop.amount ?? 1;
           deps.inventory.addMaterial(drop.materialId, amount);
           deps.addNotification(
-            "info",
+            "loot",
             `${MATERIALS[drop.materialId].name}${
               amount > 1 ? ` ×${amount}` : ""
             }을(를) 손에 넣었다.`,
@@ -120,7 +120,7 @@ export function onBattleEnd(
         } else if (drop.kind === "gold") {
           const boosted = Math.floor(drop.amount * goldMult);
           deps.characterState.addGoldFame(boosted, 0);
-          deps.addNotification("info", `골드 +${boosted}`);
+          deps.addNotification("loot", `골드 +${boosted}`);
         } else if (drop.kind === "equip") {
           // 드랍 품질 등급 롤 — 대부분 기본(접두어 없음), 가끔 정교한(+1u)/빼어난(+2u).
           // 보스·고티어는 monster.dropQualityBias 로 좋은 품질 가중치가 올라간다.
@@ -129,7 +129,7 @@ export function onBattleEnd(
           else deps.inventory.addDroppedEquipment(drop.itemId, q);
           const equipDef = ITEMS[drop.itemId];
           const name = dropQualityPrefix(q) + equipDef.name;
-          deps.addNotification("info", `${name}을(를) 손에 넣었다!`, {
+          deps.addNotification("loot", `${name}을(를) 손에 넣었다!`, {
             highlight: {
               name,
               className: q ? dropQualityTextClass(q) : rarityTextClass(equipDef),
@@ -140,7 +140,7 @@ export function onBattleEnd(
           deps.crafting.learnRecipe(drop.recipeId);
           const recipe = getRecipeById(drop.recipeId);
           deps.addNotification(
-            "info",
+            "loot",
             `${recipe?.name ?? drop.recipeId}을(를) 손에 넣었다!`,
           );
         } else if (drop.kind === "recipe_one_of") {
@@ -153,7 +153,7 @@ export function onBattleEnd(
           );
           if (unknown.length === 0) {
             deps.addNotification(
-              "info",
+              "loot",
               "제작서 보상 — 이미 모든 종류를 알고 있다.",
             );
             continue;
@@ -162,7 +162,7 @@ export function onBattleEnd(
           deps.crafting.learnRecipe(pick);
           const recipe = getRecipeById(pick);
           deps.addNotification(
-            "info",
+            "loot",
             `${recipe?.name ?? pick}을(를) 손에 넣었다!`,
           );
         }

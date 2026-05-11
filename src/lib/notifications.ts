@@ -4,6 +4,12 @@ export type NotificationKind =
   | "training_done"
   | "quest_ready"
   | "quest_complete"
+  // 성취 — 레벨업 / 스킬 습득 / 칭호 획득.
+  | "milestone"
+  // 위탁 원정(자동 사냥) 결과 요약.
+  | "expedition"
+  // 전투 드롭 — 재료 / 골드 / 장비 / 제작서. 잦아서 토스트·벨 카운트 기본 제외.
+  | "loot"
   | "info";
 
 // 알림 종류별로 부착될 수 있는 부가 데이터. UI에서 expand 시 사용.
@@ -35,17 +41,24 @@ export function isBattleNotification(kind: NotificationKind): boolean {
   return BATTLE_KINDS.has(kind);
 }
 
-// 전투 / 시스템 두 그룹으로 나눠 각 그룹을 MAX_NOTIFICATIONS_PER_GROUP 개로 제한.
-// 입력 list 는 newest-first 가정 — 그룹 카운터를 채우면서 순서는 그대로 유지.
+// 전투 / 전리품 / 시스템 세 그룹으로 나눠 각 그룹을 MAX_NOTIFICATIONS_PER_GROUP 개로 제한.
+// loot 를 따로 빼는 이유 — 잦은 드롭 알림이 레벨업·의뢰 같은 의미 있는 시스템 알림을
+// 기록에서 밀어내지 않도록. 입력 list 는 newest-first 가정 — 카운터를 채우며 순서 유지.
 export function pruneNotifications(
   list: AppNotification[],
 ): AppNotification[] {
   let battle = 0;
+  let loot = 0;
   let system = 0;
   return list.filter((n) => {
     if (isBattleNotification(n.kind)) {
       if (battle >= MAX_NOTIFICATIONS_PER_GROUP) return false;
       battle++;
+      return true;
+    }
+    if (n.kind === "loot") {
+      if (loot >= MAX_NOTIFICATIONS_PER_GROUP) return false;
+      loot++;
       return true;
     }
     if (system >= MAX_NOTIFICATIONS_PER_GROUP) return false;

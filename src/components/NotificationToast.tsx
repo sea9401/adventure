@@ -4,10 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   Barbell,
   CheckCircle,
+  Coins,
   Info,
   Scroll,
   Skull,
+  Sparkle,
   Sword,
+  Tent,
   X,
 } from "@phosphor-icons/react";
 import type {
@@ -53,6 +56,9 @@ const TOAST_ACCENT: Record<NotificationKind, string> = {
   training_done: "bg-amber-500",
   quest_ready: "bg-yellow-500",
   quest_complete: "bg-violet-500",
+  milestone: "bg-fuchsia-500",
+  expedition: "bg-teal-500",
+  loot: "bg-lime-500",
   info: "bg-sky-500",
 };
 
@@ -62,6 +68,9 @@ const TOAST_ICON: Record<NotificationKind, React.ComponentType<{ size?: number; 
   training_done: Barbell,
   quest_ready: Scroll,
   quest_complete: CheckCircle,
+  milestone: Sparkle,
+  expedition: Tent,
+  loot: Coins,
   info: Info,
 };
 
@@ -71,6 +80,9 @@ const TOAST_ICON_COLOR: Record<NotificationKind, string> = {
   training_done: "text-amber-600 dark:text-amber-400",
   quest_ready: "text-yellow-600 dark:text-yellow-400",
   quest_complete: "text-violet-600 dark:text-violet-400",
+  milestone: "text-fuchsia-600 dark:text-fuchsia-400",
+  expedition: "text-teal-600 dark:text-teal-400",
+  loot: "text-lime-600 dark:text-lime-400",
   info: "text-sky-600 dark:text-sky-400",
 };
 
