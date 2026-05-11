@@ -49,11 +49,14 @@ export function RegionDetail({
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         {region.description}
       </p>
-      {requirementStatus?.progress && !requirementStatus.met && (
+      {requirementStatus && !requirementStatus.met &&
+        (requirementStatus.progress || requirementStatus.reason) && (
         <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-          {requirementStatus.kind === "trial"
-            ? requirementStatus.reason ?? requirementStatus.progress.label
-            : `진행 조건: ${requirementStatus.progress.label} 완성 (${requirementStatus.progress.current} / ${requirementStatus.progress.total})`}
+          {requirementStatus.progress
+            ? requirementStatus.kind === "trial"
+              ? requirementStatus.reason ?? requirementStatus.progress.label
+              : `진행 조건: ${requirementStatus.progress.label} 완성 (${requirementStatus.progress.current} / ${requirementStatus.progress.total})`
+            : requirementStatus.reason}
         </div>
       )}
       <button

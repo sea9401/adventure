@@ -72,17 +72,35 @@ export function MapView({
   const selectedReq = selectedId
     ? findEdgeRequirement(progress.currentRegionId, selectedId)
     : undefined;
-  const requirementStatus: EdgeRequirementStatus | null =
-    selectedId && isAdjacent
-      ? evaluateEdgeRequirement(selectedReq, {
+  const requirementStatus: EdgeRequirementStatus | null = (() => {
+    if (!selectedId) return null;
+    if (isAdjacent) {
+      return evaluateEdgeRequirement(selectedReq, {
+        log,
+        isTrialCleared,
+        hasStoryFlag,
+        visitedRegionIds: progress.visitedRegionIds,
+        from: progress.currentRegionId,
+        to: selectedId,
+      });
+    }
+    // locked 지역 — 진입 경로의 첫 번째 미충족 조건을 힌트로 노출.
+    if (selectedState === "locked") {
+      const inbound = WORLD_MAP.edges.filter(
+        (e) => e.to === selectedId && e.requires?.kind !== "visited",
+      );
+      for (const edge of inbound) {
+        const s = evaluateEdgeRequirement(edge.requires, {
           log,
           isTrialCleared,
           hasStoryFlag,
           visitedRegionIds: progress.visitedRegionIds,
-          from: progress.currentRegionId,
-          to: selectedId,
-        })
-      : null;
+        });
+        if (!s.met) return s;
+      }
+    }
+    return null;
+  })();
   const isTrialEdge =
     !!selectedId &&
     isAdjacent &&
