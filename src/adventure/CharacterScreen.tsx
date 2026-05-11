@@ -16,7 +16,7 @@ import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { SkillsView } from "@/adventure/character/SkillsView";
 import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { SKILL_SLOT_COUNT } from "@/adventure/character/skills";
-import { AdventureLogView } from "@/adventure/AdventureLogView";
+import { AdventureLogView } from "@/adventure/log/AdventureLogView";
 import { InventoryView } from "@/adventure/InventoryView";
 import { RecentLogView } from "@/adventure/RecentLogView";
 import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
