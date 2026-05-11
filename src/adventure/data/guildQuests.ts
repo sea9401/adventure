@@ -16,15 +16,17 @@ export const GUILD_GRADE_ORDER: GuildGrade[] = [
 ];
 
 // 누적 명성 임계 — 이 값 이상이면 해당 등급. 검색은 위→아래 순회.
+// 길드 의뢰 명성 보상을 ×3 한 데 맞춰 임계도 올렸으나, 같은 ×3 이 아니라 ×2 로만 —
+// 등급 진행이 원래 페이스보다 1.5배쯤 빨라지도록 의도적으로 적게 보정한다.
 export const GUILD_GRADE_THRESHOLDS: Record<GuildGrade, number> = {
   G: 0,
-  F: 200,
-  E: 600,
-  D: 1500,
-  C: 3500,
-  B: 8000,
-  A: 18000,
-  S: 40000,
+  F: 400,
+  E: 1200,
+  D: 3000,
+  C: 7000,
+  B: 16000,
+  A: 36000,
+  S: 80000,
 };
 
 // 슬라이딩 윈도우 ±N — 길드 등급 D 면 F~B 풀에서 추첨 (B 가 +2 위).
@@ -80,11 +82,11 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
     name: "슬라임 사냥",
     description: "마을 주변 슬라임 무리를 정리한다.",
     grade: "G",
-    task: { kind: "kill_monster", monsterName: "슬라임", count: 100 },
+    task: { kind: "kill_monster", monsterName: "슬라임", count: 300 },
     reward: {
-      fame: 20,
-      goldPerMember: 200,
-      materialsPerMember: [{ materialId: "slime_chunk", count: 5 }],
+      fame: 60,
+      goldPerMember: 600,
+      materialsPerMember: [{ materialId: "slime_chunk", count: 15 }],
     },
   },
   {
@@ -92,11 +94,11 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
     name: "주정뱅이 정리",
     description: "광장 주정뱅이 소동을 마무리한다.",
     grade: "G",
-    task: { kind: "kill_monster", monsterName: "주정뱅이", count: 60 },
+    task: { kind: "kill_monster", monsterName: "주정뱅이", count: 180 },
     reward: {
-      fame: 20,
-      goldPerMember: 200,
-      materialsPerMember: [{ materialId: "rusty_nail", count: 5 }],
+      fame: 60,
+      goldPerMember: 600,
+      materialsPerMember: [{ materialId: "rusty_nail", count: 15 }],
     },
   },
   {
@@ -104,11 +106,11 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
     name: "들개 토벌",
     description: "마을 외곽 들개 무리를 토벌한다.",
     grade: "G",
-    task: { kind: "kill_monster", monsterName: "들개", count: 80 },
+    task: { kind: "kill_monster", monsterName: "들개", count: 240 },
     reward: {
-      fame: 25,
-      goldPerMember: 250,
-      materialsPerMember: [{ materialId: "wilddog_hide", count: 3 }],
+      fame: 75,
+      goldPerMember: 750,
+      materialsPerMember: [{ materialId: "wilddog_hide", count: 9 }],
     },
   },
 ];
