@@ -22,6 +22,9 @@ export type BattleState = {
   playerAttacksLeft: number;
   // 완료된 플레이어 턴 수 — 강공격(N턴마다 발동) 트리거에 사용. 진행 중인 턴은 미포함.
   completedPlayerTurns: number;
+  // 종료된 적 페이즈 수 — 가드("첫 N턴" 의미) 가 선공자에 무관하게 N번 발동하도록
+  // 적 페이즈 시작 직전에 비교하고 페이즈 종료 시 +1.
+  enemyPhasesCompleted: number;
   // 회피 강화로 적립된 보장 회피 잔량 — enemy phase 에서 % 회피 판정 전에 우선 소모.
   evadesRemaining: number;
   // 연타가 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋.
@@ -224,6 +227,7 @@ export function initialBattleState(
     outcome: null,
     playerAttacksLeft: rollPlayerAttackCount(player) + vanguardBonus,
     completedPlayerTurns: 0,
+    enemyPhasesCompleted: 0,
     evadesRemaining: player.guaranteedEvades ?? 0,
     doubleStrikeUsedThisTurn: false,
     luckyBuffActive: false,
@@ -428,10 +432,12 @@ export function advanceTurn(
   }
 
   // enemy phase — 보장 회피 → % 회피 → 데미지 (가드 적용) 순.
+  // enemy phase 종료 시 enemyPhasesCompleted +1 (가드 카운터 진행).
   if (state.evadesRemaining > 0) {
     let next: BattleState = {
       ...state,
       evadesRemaining: state.evadesRemaining - 1,
+      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
       log: appendLog(state.log, {
         kind: "info",
         text: `[회피 강화] ${state.enemy.name}의 공격을 회피했다!`,
@@ -450,6 +456,7 @@ export function advanceTurn(
   if (Math.random() * 100 < effectiveEvadePct) {
     let next: BattleState = {
       ...state,
+      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
       log: appendLog(state.log, {
         kind: "info",
         text: `${playerName}이(가) ${state.enemy.name}의 공격을 회피했다!`,
@@ -462,11 +469,11 @@ export function advanceTurn(
   }
 
   const rawDmg = damageBetween(state.enemy.atk, player.def);
-  // 가드 — 첫 N턴 동안 받는 피해 -reduction. completedPlayerTurns 기준
-  // (현재 턴은 아직 미완 → 첫 턴 enemy phase 도 0 < N 이라 적용됨).
+  // 가드 — 첫 N번의 적 페이즈 동안 받는 피해 -reduction. 선공자에 무관하게
+  // enemyPhasesCompleted 가 N 미만이면 이번 페이즈가 그 N 중 하나.
   const guard = player.guard;
   const guarded =
-    guard && guard.turns > 0 && state.completedPlayerTurns < guard.turns
+    guard && guard.turns > 0 && state.enemyPhasesCompleted < guard.turns
       ? Math.max(0, rawDmg - guard.reduction)
       : rawDmg;
   const dmg = guarded;
@@ -498,6 +505,7 @@ export function advanceTurn(
       ...state,
       playerHp,
       enduranceTriggered,
+      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
       log: appendLog(log, {
         kind: "info",
         text: `${playerName}이(가) 쓰러졌다...`,
@@ -506,7 +514,14 @@ export function advanceTurn(
       outcome: "lose",
     };
   }
-  return { ...state, playerHp, enduranceTriggered, log, phase: "player" };
+  return {
+    ...state,
+    playerHp,
+    enduranceTriggered,
+    enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+    log,
+    phase: "player",
+  };
 }
 
 // 한 전투를 시작부터 끝까지 한 번에 시뮬한다. 결과(최종 상태 + 로그 + 턴 수 + 소비된 포션)만

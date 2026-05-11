@@ -441,7 +441,7 @@ describe("크리티컬 (critChancePct)", () => {
 });
 
 describe("가드 (guard)", () => {
-  it("첫 N턴 동안 받는 데미지 -reduction, 이후엔 정상", () => {
+  it("적 선공일 때 첫 N번의 적 페이즈 동안 받는 데미지 -reduction, 이후엔 정상", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.99); // 회피 미발동
     const tough: PlayerCombat = {
       ...PLAYER,
@@ -461,6 +461,28 @@ describe("가드 (guard)", () => {
     s = advanceTurn(s, tough, "P"); // turn 3 enemy phase — 가드 만료
     dealt = PLAYER.hp - s.playerHp;
     expect(dealt).toBe((expectedDmg - 1) * 2 + expectedDmg);
+  });
+
+  it("플레이어 선공일 때도 가드는 정확히 N번의 적 페이즈 동안 발동", () => {
+    // 회귀 — 과거엔 completedPlayerTurns 기준이라 플레이어 선공이면 N-1번만 발동.
+    vi.spyOn(Math, "random").mockReturnValue(0.99); // 회피 미발동
+    const tough: PlayerCombat = {
+      ...PLAYER,
+      guard: { turns: 3, reduction: 1 },
+    };
+    const enemy = makeEnemy({ atk: 10, spd: 1 }); // player 선공
+    const expectedDmg = damageBetween(enemy.atk, PLAYER.def);
+    let s = initialBattleState(tough, enemy, "P");
+    // 3번의 적 페이즈 모두 가드 적용
+    for (let i = 0; i < 3; i += 1) {
+      s = advanceTurn(s, tough, "P"); // player attack
+      s = advanceTurn(s, tough, "P"); // enemy phase
+    }
+    expect(PLAYER.hp - s.playerHp).toBe((expectedDmg - 1) * 3);
+    // 4번째 적 페이즈는 가드 만료
+    s = advanceTurn(s, tough, "P"); // player attack
+    s = advanceTurn(s, tough, "P"); // enemy phase
+    expect(PLAYER.hp - s.playerHp).toBe((expectedDmg - 1) * 3 + expectedDmg);
   });
 });
 
