@@ -384,6 +384,116 @@ export const ITEMS = {
     description: "운봉의 거인의 가슴에서 떼어낸 작은 심장. 손에 쥐면 어깨가 묵직해진다.",
     rarity: "rare",
   } satisfies EquipItem,
+
+  // 다리 구간 장비 — 운저 평원 / 잿빛 협로. 운봉 라인과 화염 라인 사이의 빈 구간을 메운다.
+  bison_hide_armor: {
+    name: "들소 가죽 갑옷",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+7" },
+      { label: "힘", value: "+2" },
+      { label: "속도", value: "-1" },
+    ],
+    bonus: { def: 7, str: 2, spd: -1 },
+    description: "들소 가죽을 여러 겹 다져 만든 묵직한 갑옷. 두르면 어깨가 든든해지는 만큼 발이 조금 무겁다.",
+    rarity: "rare",
+  } satisfies EquipItem,
+  ashforged_blade: {
+    name: "재무쇠 검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+8" },
+      { label: "힘", value: "+4" },
+    ],
+    bonus: { atk: 8, str: 4 },
+    description: "잿돌을 녹여 단단한 수정과 함께 벼려 낸 검. 베어 낼 때마다 잿가루가 흩날린다.",
+    rarity: "rare",
+  } satisfies EquipItem,
+
+  // 봉황 망토 — 불꽃 독수리 희귀 드랍. 봉황령 파밍 동기.
+  flame_eagle_cape: {
+    name: "봉황 망토",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+4" },
+      { label: "민첩", value: "+2" },
+      { label: "속도", value: "+5" },
+    ],
+    bonus: { def: 4, dex: 2, spd: 5 },
+    description: "불꽃 독수리의 날개깃을 이어 만든 망토. 두르면 발이 불꽃처럼 가벼워진다.",
+    rarity: "rare",
+  } satisfies EquipItem,
+
+  // 봉황 무구 6종 — 화산의 심장 보스 보상으로 풀리는 최상위 강화 라인.
+  // 봉황령에서 모은 봉황 깃털 + 보스가 떨군 용암 핵·화염 비늘로 벼린 고대 유물급 무구.
+  // 무기 atk +10 공통(제작 `일반` 등급 기준 — 품질에 따라 ±2) + 보조 스탯이 다름.
+  volcano_sword: {
+    name: "봉황도",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+10" },
+      { label: "힘", value: "+6" },
+    ],
+    bonus: { atk: 10, str: 6 },
+    description: "봉황 깃털을 자루에 감고 용암 핵을 칼날에 녹여 벼린 한손 대검. 휘두를 때마다 붉은 열기가 일렁인다.",
+    rarity: "legendary",
+  } satisfies EquipItem,
+  volcano_shield: {
+    name: "봉황패",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+10" },
+      { label: "활력", value: "+7" },
+    ],
+    bonus: { atk: 10, vit: 7 },
+    description: "화염 비늘을 겹겹이 두른 방패형 무구. 막아내는 순간 봉황의 열기가 역류한다.",
+    rarity: "legendary",
+  } satisfies EquipItem,
+  volcano_spear: {
+    name: "봉황극",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+10" },
+      { label: "민첩", value: "+7" },
+    ],
+    bonus: { atk: 10, dex: 7 },
+    description: "봉황 깃털로 균형을 잡고 끝에 용암 핵을 박은 긴 창. 가볍고 정확하며, 창끝에서 불길이 떨린다.",
+    rarity: "legendary",
+  } satisfies EquipItem,
+  volcano_claw: {
+    name: "봉황조",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+10" },
+      { label: "행운", value: "+7" },
+    ],
+    bonus: { atk: 10, luk: 7 },
+    description: "화산의 심장 파편을 발톱 형태로 깎아 손등에 채운 너클. 한 방 한 방이 불처럼 타오른다.",
+    rarity: "legendary",
+  } satisfies EquipItem,
+  volcano_armor: {
+    name: "봉황갑",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+8" },
+      { label: "힘", value: "+4" },
+      { label: "활력", value: "+4" },
+    ],
+    bonus: { def: 8, str: 4, vit: 4 },
+    description: "화염 비늘과 용암 핵을 단련해 만든 갑주. 봉황의 불길을 두른 듯 몸 전체가 달아오른다.",
+    rarity: "legendary",
+  } satisfies EquipItem,
+  volcano_core: {
+    name: "봉황주",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+5" },
+      { label: "속도", value: "+5" },
+    ],
+    bonus: { dex: 5, spd: 5 },
+    description: "화산의 심장에서 뽑아낸 가장 순수한 결정을 봉황 깃털로 감싼 구슬. 지니면 몸이 불꽃처럼 날렵해진다.",
+    rarity: "legendary",
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;

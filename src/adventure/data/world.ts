@@ -9,7 +9,13 @@ export type RegionId =
   | "ruins"
   | "highland"
   | "canyon"
-  | "unhyang";
+  | "unhyang"
+  | "cloud_plain"
+  | "windvale"
+  | "ashen_pass"
+  | "phoenix_ridge"
+  | "volcanic_badlands"
+  | "skyreach";
 
 export type Biome =
   | "village"
@@ -89,8 +95,10 @@ export type WorldMap = {
 
 export const WORLD_MAP: WorldMap = {
   // 폐허(680, 400) 동쪽으로 산기슭(880)→협곡(1080)→운향(1280) 추가로 width 800→1400 확장.
-  // 기존 region 좌표는 그대로 유지.
-  viewBox: { width: 1400, height: 500 },
+  // 운향(1280) 동쪽으로 운저 평원(1460)→바람골 역참(1640)→잿빛 협로(1820) 다리 구간 +
+  // 봉황령(2000)→화산 지대(2180)→천공 성지(2360) 추가로 width 1400→2440 확장.
+  // 운향까지의 기존 region 좌표는 그대로 유지 (봉황령 라인은 다리 삽입으로 동쪽으로 밀림).
+  viewBox: { width: 2440, height: 500 },
   regions: [
     {
       id: "village",
@@ -216,6 +224,92 @@ export const WORLD_MAP: WorldMap = {
       tags: ["town"],
       recommendedLevel: 22,
     },
+    // ── 다리 구간 (cloud_plain → windvale → ashen_pass) ─────────────────────
+    // 운향(Lv22)과 봉황령(Lv40) 사이를 잇는다.
+    {
+      id: "cloud_plain",
+      name: "운저 평원",
+      description:
+        "운향의 구름층 아래로 펼쳐진 너른 들녘. 들소 떼가 풀을 뜯고, 초원 매가 하늘을 가른다.",
+      position: { x: 1460, y: 340 },
+      biome: "plains",
+      enemies: ["들소", "초원 매", "떠돌이 약탈자"],
+      encounterWeights: {
+        들소: 50,
+        "초원 매": 30,
+        "떠돌이 약탈자": 20,
+      },
+      recommendedLevel: 28,
+    },
+    {
+      id: "windvale",
+      name: "바람골 역참",
+      description:
+        "평원 한가운데 자리한 대상(隊商) 역참. 산정과 화염 능선 사이를 오가는 이들이 짐을 풀고 쉬어 간다.",
+      position: { x: 1640, y: 410 },
+      biome: "village",
+      enemies: [],
+      tags: ["town"],
+      recommendedLevel: 30,
+    },
+    {
+      id: "ashen_pass",
+      name: "잿빛 협로",
+      description:
+        "봉황령으로 이어지는 메마른 협로. 발밑에 잿가루가 쌓이고, 바람에 불씨 냄새가 섞여 든다.",
+      position: { x: 1820, y: 300 },
+      biome: "mountain",
+      enemies: ["재먼지 골렘", "잿빛 들개", "불씨 도롱뇽"],
+      encounterWeights: {
+        "재먼지 골렘": 40,
+        "잿빛 들개": 35,
+        "불씨 도롱뇽": 25,
+      },
+      recommendedLevel: 34,
+    },
+    // ── 봉황령 라인 (phoenix_ridge → volcanic_badlands → skyreach) ──────────
+    {
+      id: "phoenix_ridge",
+      name: "봉황령",
+      description:
+        "불길이 서린 협곡 너머의 험준한 능선. 거센 열기 속에 불꽃 독수리와 화염 도마뱀이 둥지를 튼다.",
+      position: { x: 2000, y: 140 },
+      biome: "mountain",
+      enemies: ["불꽃 독수리", "화염 도마뱀", "산악 기사"],
+      encounterWeights: {
+        "불꽃 독수리": 40,
+        "화염 도마뱀": 40,
+        "산악 기사": 20,
+      },
+      recommendedLevel: 40,
+    },
+    {
+      id: "volcanic_badlands",
+      name: "화산 지대",
+      description:
+        "지각이 갈라진 황무지. 용암이 발밑에서 흐르고, 불꽃 골렘과 용암 슬라임이 들끓는다.",
+      position: { x: 2180, y: 260 },
+      biome: "mountain",
+      enemies: ["용암 슬라임", "화산 두꺼비", "불꽃 골렘"],
+      encounterWeights: {
+        "용암 슬라임": 40,
+        "화산 두꺼비": 35,
+        "불꽃 골렘": 25,
+      },
+      boss: { monsterName: "화산의 심장", dailyEntryLimit: 3 },
+      recommendedLevel: 55,
+    },
+    {
+      id: "skyreach",
+      name: "천공 성지",
+      description:
+        "화산 지대 너머 높은 절벽 위에 자리한 고대 성지. 하늘을 향해 솟은 첨탑이 구름을 뚫고 선다.",
+      position: { x: 2360, y: 150 },
+      biome: "village",
+      enemies: [],
+      tags: ["town"],
+      recommendedLevel: 60,
+    },
   ],
   edges: [
     { from: "village", to: "plains" },
@@ -280,6 +374,37 @@ export const WORLD_MAP: WorldMap = {
         reason: "운봉의 거인과 한 번이라도 맞붙어야 길목이 열린다.",
       },
     },
+    // 다리 구간 (unhyang → cloud_plain → windvale → ashen_pass) → 봉황령 라인.
+    {
+      from: "unhyang",
+      to: "cloud_plain",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "cloud_plain" },
+    },
+    { from: "cloud_plain", to: "windvale" },
+    {
+      from: "windvale",
+      to: "ashen_pass",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "ashen_pass" },
+    },
+    {
+      from: "ashen_pass",
+      to: "phoenix_ridge",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "phoenix_ridge" },
+    },
+    {
+      from: "phoenix_ridge",
+      to: "volcanic_badlands",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "volcanic_badlands" },
+    },
+    {
+      from: "volcanic_badlands",
+      to: "skyreach",
+      requires: {
+        kind: "story",
+        flagId: "volcano_heart_defeated",
+        reason: "화산의 심장을 쓰러뜨려야 성지로 가는 길이 열린다.",
+      },
+    },
     // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.
     { from: "village", to: "diola", requires: { kind: "visited", regionId: "diola" } },
     { from: "diola", to: "village", requires: { kind: "visited", regionId: "village" } },
@@ -287,6 +412,20 @@ export const WORLD_MAP: WorldMap = {
     { from: "unhyang", to: "village", requires: { kind: "visited", regionId: "village" } },
     { from: "diola", to: "unhyang", requires: { kind: "visited", regionId: "unhyang" } },
     { from: "unhyang", to: "diola", requires: { kind: "visited", regionId: "diola" } },
+    { from: "village", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
+    { from: "windvale", to: "village", requires: { kind: "visited", regionId: "village" } },
+    { from: "diola", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
+    { from: "windvale", to: "diola", requires: { kind: "visited", regionId: "diola" } },
+    { from: "unhyang", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
+    { from: "windvale", to: "unhyang", requires: { kind: "visited", regionId: "unhyang" } },
+    { from: "village", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
+    { from: "skyreach", to: "village", requires: { kind: "visited", regionId: "village" } },
+    { from: "diola", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
+    { from: "skyreach", to: "diola", requires: { kind: "visited", regionId: "diola" } },
+    { from: "unhyang", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
+    { from: "skyreach", to: "unhyang", requires: { kind: "visited", regionId: "unhyang" } },
+    { from: "windvale", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
+    { from: "skyreach", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
   ],
 };
 

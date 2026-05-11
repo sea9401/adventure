@@ -54,10 +54,14 @@ export function useTitleGrants(
   const goldZero = opts.gold === 0;
   const goldRich = opts.gold >= 10000;
   const levelVeteran = opts.level >= 30;
+  const levelLegend = opts.level >= 50;
+  const levelMythic = opts.level >= 70;
   useEffect(() => {
     if (goldZero) grantTitle("beggar");
     if (goldRich) grantTitle("wealthy");
     if (levelVeteran) grantTitle("level_30");
+    if (levelLegend) grantTitle("level_50");
+    if (levelMythic) grantTitle("level_70");
     if (opts.maxNpcTalkCount >= 100) grantTitle("phisher");
     const high = STAT_KEYS.filter((k) => opts.totalStats[k] >= 30).length;
     const low = STAT_KEYS.filter((k) => opts.totalStats[k] <= 10).length;
@@ -67,6 +71,8 @@ export function useTitleGrants(
     goldZero,
     goldRich,
     levelVeteran,
+    levelLegend,
+    levelMythic,
     opts.maxNpcTalkCount,
     opts.totalStats.str,
     opts.totalStats.dex,

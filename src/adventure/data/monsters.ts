@@ -28,6 +28,18 @@ export type MonsterPhaseTrigger = {
   message: string;
 };
 
+// 잡몹 스킬 — 몬스터당 최대 1개(옵셔널). 전투 엔진의 적 페이즈에서 처리.
+//  - heavy_blow: everyPhases 번째 적 페이즈마다 그 공격 데미지 ×multiplier (강타).
+//  - enrage:     적 HP 가 maxHp×hpFraction 미만으로 떨어지는 순간 1회 발동, ATK +atkBonus (전투 종료까지 유지).
+//  - brace:      플레이어가 이 적을 공격할 때 데미지 -damageReduction (최소 1로 클램프).
+//  - pierce:     이 적의 공격이 플레이어 DEF 를 armorPierce 만큼 무시.
+// name 은 전투 로그에 [name] 으로 찍힌다.
+export type MonsterSkill =
+  | { kind: "heavy_blow"; name: string; everyPhases: number; multiplier: number }
+  | { kind: "enrage"; name: string; hpFraction: number; atkBonus: number }
+  | { kind: "brace"; name: string; damageReduction: number }
+  | { kind: "pierce"; name: string; armorPierce: number };
+
 export type Monster = {
   name: string;
   tags: MonsterTag[];
@@ -41,6 +53,8 @@ export type Monster = {
   exp: number;
   drops?: MonsterDrop[];
   phaseTrigger?: MonsterPhaseTrigger;
+  /** 잡몹 스킬 — 적 페이즈에서 처리되는 단순 능력 1개. */
+  skill?: MonsterSkill;
   /**
    * 드랍 장비 품질 등급(정교한/빼어난) 가중치 배수. 기본 1. 미니보스 ≈2 / 지역 보스 ≈3 /
    * 레이드급 ≈4 권장 — 비-기본 등급 가중치(raw 4/1)에 곱해진 뒤 정규화된다(dropQuality.ts).
@@ -361,6 +375,206 @@ export const MONSTERS: Record<string, Monster> = {
       message: "거인이 두 발을 단단히 박아 넣는다.",
     },
     onDefeatFlag: "peak_giant_defeated",
+  },
+  // ── 다리 구간 — 운저 평원 (cloud_plain) ─────────────────────────────────
+  들소: {
+    name: "들소",
+    tags: ["beast"],
+    hp: 320,
+    atk: 28,
+    def: 14,
+    spd: 4,
+    exp: 30,
+    drops: [
+      { kind: "material", materialId: "bison_hide", chance: 0.015 },
+      { kind: "equip", itemId: "bison_hide_armor", chance: 0.003 },
+    ],
+    skill: { kind: "heavy_blow", name: "들이받기", everyPhases: 3, multiplier: 1.5 },
+  },
+  "초원 매": {
+    name: "초원 매",
+    tags: ["beast"],
+    hp: 230,
+    atk: 30,
+    def: 8,
+    spd: 11,
+    evasionPct: 25,
+    exp: 26,
+    drops: [
+      { kind: "material", materialId: "hawk_feather", chance: 0.02 },
+    ],
+    skill: { kind: "pierce", name: "급강하", armorPierce: 2 },
+  },
+  "떠돌이 약탈자": {
+    name: "떠돌이 약탈자",
+    tags: ["humanoid"],
+    hp: 280,
+    atk: 27,
+    def: 11,
+    spd: 6,
+    exp: 28,
+    drops: [
+      { kind: "gold", amount: 1, chance: 0.08 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.01 },
+    ],
+    skill: { kind: "pierce", name: "급소 노리기", armorPierce: 3 },
+  },
+  // ── 다리 구간 — 잿빛 협로 (ashen_pass) ──────────────────────────────────
+  "재먼지 골렘": {
+    name: "재먼지 골렘",
+    tags: ["golem"],
+    hp: 420,
+    atk: 33,
+    def: 20,
+    spd: 3,
+    exp: 38,
+    drops: [
+      { kind: "material", materialId: "ash_stone", chance: 0.02 },
+      { kind: "material", materialId: "ruin_fragment", chance: 0.015 },
+      { kind: "recipe", recipeId: "ashforged_blade", chance: 0.015 },
+    ],
+    skill: { kind: "brace", name: "잿가루 장막", damageReduction: 2 },
+  },
+  "잿빛 들개": {
+    name: "잿빛 들개",
+    tags: ["beast"],
+    hp: 330,
+    atk: 36,
+    def: 12,
+    spd: 8,
+    exp: 34,
+    drops: [
+      { kind: "material", materialId: "ash_stone", chance: 0.01 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.015 },
+    ],
+    skill: { kind: "heavy_blow", name: "물어뜯기", everyPhases: 3, multiplier: 1.5 },
+  },
+  "불씨 도롱뇽": {
+    name: "불씨 도롱뇽",
+    tags: ["beast"],
+    hp: 300,
+    atk: 34,
+    def: 14,
+    spd: 9,
+    exp: 33,
+    drops: [
+      { kind: "material", materialId: "ash_stone", chance: 0.01 },
+      { kind: "material", materialId: "flame_scale", chance: 0.005 },
+    ],
+    skill: { kind: "enrage", name: "발화", hpFraction: 0.5, atkBonus: 4 },
+  },
+  // ── 봉황령 (phoenix_ridge) ───────────────────────────────────────────────
+  "불꽃 독수리": {
+    name: "불꽃 독수리",
+    tags: ["beast"],
+    hp: 350,
+    atk: 38,
+    def: 12,
+    spd: 12,
+    evasionPct: 25,
+    exp: 40,
+    drops: [
+      { kind: "material", materialId: "phoenix_feather", chance: 0.01 },
+      { kind: "equip", itemId: "flame_eagle_cape", chance: 0.003 },
+    ],
+    skill: { kind: "pierce", name: "강하 일격", armorPierce: 4 },
+  },
+  "화염 도마뱀": {
+    name: "화염 도마뱀",
+    tags: ["beast"],
+    hp: 420,
+    atk: 36,
+    def: 18,
+    spd: 8,
+    exp: 38,
+    drops: [
+      { kind: "material", materialId: "flame_scale", chance: 0.015 },
+    ],
+    skill: { kind: "enrage", name: "화염 비늘 폭발", hpFraction: 0.4, atkBonus: 6 },
+  },
+  "산악 기사": {
+    name: "산악 기사",
+    tags: ["humanoid"],
+    hp: 500,
+    atk: 44,
+    def: 22,
+    spd: 6,
+    exp: 48,
+    drops: [
+      { kind: "material", materialId: "flame_scale", chance: 0.005 },
+      { kind: "material", materialId: "giant_scale", chance: 0.004 },
+    ],
+    skill: { kind: "brace", name: "방패 막기", damageReduction: 3 },
+  },
+  // ── 화산 지대 (volcanic_badlands) ───────────────────────────────────────
+  "용암 슬라임": {
+    name: "용암 슬라임",
+    tags: ["slime"],
+    hp: 540,
+    atk: 50,
+    def: 24,
+    spd: 4,
+    exp: 55,
+    drops: [
+      { kind: "material", materialId: "lava_core", chance: 0.003 },
+    ],
+    skill: { kind: "heavy_blow", name: "용암 비산", everyPhases: 4, multiplier: 1.5 },
+  },
+  "화산 두꺼비": {
+    name: "화산 두꺼비",
+    tags: ["beast"],
+    hp: 620,
+    atk: 55,
+    def: 30,
+    spd: 3,
+    exp: 62,
+    drops: [
+      { kind: "material", materialId: "lava_core", chance: 0.005 },
+    ],
+    skill: { kind: "enrage", name: "용암 분출", hpFraction: 0.4, atkBonus: 8 },
+  },
+  "불꽃 골렘": {
+    name: "불꽃 골렘",
+    tags: ["golem"],
+    hp: 680,
+    atk: 60,
+    def: 26,
+    spd: 5,
+    exp: 70,
+    drops: [
+      { kind: "material", materialId: "lava_core", chance: 0.009 },
+      { kind: "material", materialId: "ruin_fragment", chance: 0.025 },
+    ],
+    skill: { kind: "heavy_blow", name: "과열 가동", everyPhases: 3, multiplier: 1.5 },
+  },
+  // 화산 지대 보스 — 처치 시 volcano_heart_defeated flag → 천공 성지 개방.
+  "화산의 심장": {
+    name: "화산의 심장",
+    tags: ["golem"],
+    hp: 1200,
+    atk: 72,
+    def: 32,
+    spd: 6,
+    exp: 400,
+    drops: [
+      { kind: "material", materialId: "lava_core", chance: 1, amount: 4 },
+      { kind: "material", materialId: "phoenix_feather", chance: 1, amount: 3 },
+      { kind: "material", materialId: "flame_scale", chance: 1, amount: 5 },
+      {
+        kind: "recipe_one_of",
+        recipeIds: ["volcano_sword", "volcano_shield", "volcano_spear", "volcano_claw"],
+        chance: 1,
+      },
+      { kind: "recipe", recipeId: "volcano_armor", chance: 0.15 },
+      { kind: "recipe", recipeId: "volcano_core", chance: 0.15 },
+    ],
+    dropQualityBias: 4,
+    phaseTrigger: {
+      hpFraction: 0.4,
+      defBonus: 6,
+      message: "화산의 심장이 붉게 달아오른다.",
+    },
+    onDefeatFlag: "volcano_heart_defeated",
   },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).

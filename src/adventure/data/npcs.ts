@@ -15,7 +15,13 @@ export type NpcId =
   | "unhyang_smith"
   | "unhyang_guide"
   | "unhyang_herbalist"
-  | "unhyang_pilgrim";
+  | "unhyang_pilgrim"
+  | "windvale_keeper"
+  | "windvale_merchant"
+  | "windvale_pathfinder"
+  | "skyreach_elder"
+  | "skyreach_guide"
+  | "skyreach_alchemist";
 
 export type NpcRole =
   | "elder"
@@ -196,6 +202,68 @@ export const NPCS: Npc[] = [
     greeting:
       "…북쪽에서 왔다.\n그 너머는 아직 네가 알 시간이 아니야.",
     portrait: "/images/npc/pilgrim.webp",
+  },
+  // ── 바람골 역참 ──────────────────────────────────────────────────────────
+  {
+    id: "windvale_keeper",
+    region: "windvale",
+    name: "역참지기 마로",
+    role: "elder",
+    description:
+      "바람골 역참을 도맡아 꾸리는 노인. 오가는 대상들의 사정을 훤히 꿴다.",
+    greeting:
+      "어서 오시오, 모험가.\n역참 울타리를 들이받는 들소 떼만 아니면 여긴 조용한 곳이오. …그 들소가 문제지만.",
+  },
+  {
+    id: "windvale_merchant",
+    region: "windvale",
+    name: "대상 상인 노을",
+    role: "vendor",
+    description:
+      "산정과 화염 능선을 오가며 장사하는 대상의 우두머리. 길 위 소문이라면 모르는 게 없다.",
+    greeting:
+      "오, 마침 사람 손이 필요했는데.\n초원 매가 짐을 자꾸 노려서 깃털이 모이질 않아. 도와주면 길에서 주운 좋은 걸 나눠 드리지.",
+  },
+  {
+    id: "windvale_pathfinder",
+    region: "windvale",
+    name: "길잡이 한솔",
+    role: "quest",
+    description:
+      "잿빛 협로 너머 봉황령까지 길을 내본 안내인. 늘 잿가루가 묻은 외투를 걸친다.",
+    greeting:
+      "봉황령으로 가려고? 길은 잿빛 협로를 지나야 해.\n근데 재먼지 골렘이 길목을 막고 있어서… 그것부터 좀 치워 줘야 길을 알려줄 수 있겠는데.",
+  },
+  // ── 천공 성지 ────────────────────────────────────────────────────────────
+  {
+    id: "skyreach_elder",
+    region: "skyreach",
+    name: "원로 해무",
+    role: "elder",
+    description:
+      "천공 성지를 수백 년 지켜온 노인. 화산의 위협을 누구보다 잘 알았다.",
+    greeting:
+      "…드디어 왔구려. 화산의 심장이 잠든 걸 느꼈소.\n그것이 깨어 있는 한 이 성지는 닫혀 있었지. 잘 와줬소.",
+  },
+  {
+    id: "skyreach_guide",
+    region: "skyreach",
+    name: "정찰대원 검",
+    role: "quest",
+    description:
+      "화산 지대를 정기적으로 순찰하는 성지의 정찰대원. 대담하고 말이 빠르다.",
+    greeting:
+      "왔구나! 봉황령 쪽은 어떻던가?\n산악 기사들이 지난주보다 더 늘었어. 솜씨가 있다면 도움을 청할 수 있겠는데.",
+  },
+  {
+    id: "skyreach_alchemist",
+    region: "skyreach",
+    name: "연금술사 시온",
+    role: "quest",
+    description:
+      "화산 지대의 재료를 연구하는 성지 연금술사. 실험 가운이 그을려 있다.",
+    greeting:
+      "오, 마침 잘 왔어.\n용암 핵이 필요한데, 화산 두꺼비나 불꽃 골렘을 잡으면 가끔 나오거든. 여분이 있으면 거래할 수 있어.",
   },
 ];
 

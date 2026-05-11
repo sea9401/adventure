@@ -319,6 +319,190 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "unhyang_herbalist",
   },
+  // ── 다리 구간 — 운저 평원 (운향에서 받는 첫 의뢰) ───────────────────────
+  {
+    id: "unhyang-guide-cloud-raiders",
+    regionId: "unhyang",
+    title: "평원의 약탈자",
+    description:
+      "운향 아래로 내려가면 너른 들판이 펼쳐져 있어. 요즘 거기 떠돌이 약탈자 무리가 자리를 잡았다더군. 15명만 손봐 주겠나?",
+    requiredLevel: 28,
+    target: { kind: "kill", monsterName: "떠돌이 약탈자", count: 15 },
+    reward: { gold: 450, fame: 20, exp: 700 },
+    repeatable: false,
+    giverNpcId: "unhyang_guide",
+  },
+  // ── 다리 구간 — 바람골 역참 ─────────────────────────────────────────────
+  {
+    id: "windvale-keeper-bison",
+    regionId: "windvale",
+    title: "들소 떼 솎아내기",
+    description:
+      "들소 떼가 역참 울타리를 자꾸 들이받아서 못 살겠소. 20마리만 솎아 주시면 사례하리다.",
+    requiredLevel: 28,
+    target: { kind: "kill", monsterName: "들소", count: 20 },
+    reward: { gold: 550, fame: 22, exp: 850 },
+    repeatable: false,
+    giverNpcId: "windvale_keeper",
+  },
+  {
+    id: "windvale-merchant-hawk-feathers",
+    regionId: "windvale",
+    title: "초원 매 깃털 열 장",
+    description:
+      "초원 매 깃털이 세공에 그만이거든. 10장만 모아다 주면 길에서 주운 좋은 걸 나눠 드리지.",
+    requiredLevel: 28,
+    target: { kind: "deliver", materialId: "hawk_feather", count: 10 },
+    reward: { gold: 500, exp: 600, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "windvale_merchant",
+  },
+  {
+    id: "windvale-pathfinder-golems",
+    regionId: "windvale",
+    title: "잿빛 협로의 길막이",
+    description:
+      "봉황령으로 길을 내려는데 재먼지 골렘이 길목을 막고 있어요. 15체만 부숴 주시면 그 너머로 가는 길을 알려드릴게요.",
+    requiredLevel: 34,
+    target: { kind: "kill", monsterName: "재먼지 골렘", count: 15 },
+    reward: { gold: 650, fame: 24, exp: 950 },
+    repeatable: false,
+    giverNpcId: "windvale_pathfinder",
+  },
+  // 바람골 역참 길드 게시판 — 다리 구간 반복 의뢰.
+  {
+    id: "windvale-bison-cull",
+    regionId: "windvale",
+    title: "운저 평원 — 들소 정리",
+    description:
+      "운저 평원 들소가 다시 떼를 이뤘습니다. 40마리를 정리해 주세요.",
+    requiredLevel: 28,
+    target: { kind: "kill", monsterName: "들소", count: 40 },
+    reward: { gold: 400, fame: 16, exp: 700 },
+    repeatable: true,
+  },
+  {
+    id: "windvale-ash-hounds",
+    regionId: "windvale",
+    title: "잿빛 협로 — 들개 사냥",
+    description:
+      "잿빛 협로에 잿빛 들개가 들끓고 있습니다. 35마리를 사냥해 주세요.",
+    requiredLevel: 34,
+    target: { kind: "kill", monsterName: "잿빛 들개", count: 35 },
+    reward: { gold: 500, fame: 18, exp: 850 },
+    repeatable: true,
+  },
+  // 바람골 역참 — 봉황령 너머(화산 지대) 의뢰. 길잡이 한솔이 잿빛 협로 의뢰 후 풀어주는 후속.
+  // 보스 의뢰는 화산 지대 진입 시점에 미리 받을 수 있어, 천공 성지가 열리기 전부터 보스 도전 동기를 준다.
+  {
+    id: "windvale-volcano-boss",
+    regionId: "windvale",
+    title: "능선 너머의 불덩이",
+    description:
+      "잿빛 협로를 지나 봉황령을 넘으면 화산 지대가 나와요. 거기 깊은 곳에 — 사람들이 화산의 심장이라 부르는 게 깨어났습니다. 그놈을 잠재워야 그 너머 천공 성지로 가는 길이 열려요. 부탁 좀 드릴게요.",
+    requiredLevel: 55,
+    target: { kind: "kill", monsterName: "화산의 심장", count: 1 },
+    reward: { gold: 2500, fame: 60, exp: 4500 },
+    repeatable: false,
+    giverNpcId: "windvale_pathfinder",
+    requiresQuestCompleted: "windvale-pathfinder-golems",
+  },
+  {
+    id: "windvale-lava-slimes",
+    regionId: "windvale",
+    title: "화산 지대 — 용암 슬라임 정화",
+    description:
+      "봉황령 너머 화산 지대에 용암 슬라임이 들끓는다는 소식이 들어왔습니다. 45마리를 정화해 주세요.",
+    requiredLevel: 52,
+    target: { kind: "kill", monsterName: "용암 슬라임", count: 45 },
+    reward: { gold: 900, fame: 24, exp: 1800 },
+    repeatable: true,
+    requiresQuestCompleted: "windvale-pathfinder-golems",
+  },
+  // ── 운향 — 봉황령 입구 의뢰 ─────────────────────────────────────────────
+  // 도연이 봉황령 너머를 경계해 파견 의뢰를 내는 NPC 라인 첫 번째.
+  {
+    id: "unhyang-guide-phoenix-hunt",
+    regionId: "unhyang",
+    title: "봉황령의 불꽃 독수리",
+    description:
+      "봉황령에 불꽃 독수리가 너무 많아. 15마리만 정리해 주면 능선이 좀 안전해질 거야.",
+    requiredLevel: 35,
+    target: { kind: "kill", monsterName: "불꽃 독수리", count: 15 },
+    reward: { gold: 800, fame: 26, exp: 1200 },
+    repeatable: false,
+    giverNpcId: "unhyang_guide",
+  },
+  {
+    id: "unhyang-herbalist-flame-scale",
+    regionId: "unhyang",
+    title: "화염 비늘 여덟",
+    description:
+      "봉황령 화염 도마뱀의 비늘이 약 달이는 데 쓸 만해요. 8개만 모아다 주시면, 포션 한 보따리 드릴게요.",
+    requiredLevel: 35,
+    target: { kind: "deliver", materialId: "flame_scale", count: 8 },
+    reward: {
+      gold: 700,
+      exp: 1000,
+      potionCapacityBonus: 1,
+    },
+    repeatable: false,
+    giverNpcId: "unhyang_herbalist",
+  },
+  // 운향 길드 게시판 — 봉황령 반복 의뢰.
+  {
+    id: "unhyang-phoenix-ridge-patrol",
+    regionId: "unhyang",
+    title: "봉황령 순찰 — 산악 기사",
+    description:
+      "봉황령을 거점으로 삼은 산악 기사들이 골치야. 30명을 정리하면 길목이 안전해질 거요.",
+    requiredLevel: 40,
+    target: { kind: "kill", monsterName: "산악 기사", count: 30 },
+    reward: { gold: 650, fame: 22, exp: 1300 },
+    repeatable: true,
+  },
+  // ── 천공 성지 ────────────────────────────────────────────────────────────
+  {
+    id: "skyreach-guide-knights",
+    regionId: "skyreach",
+    title: "봉황령 기사 소탕",
+    description:
+      "봉황령에 모여든 산악 기사들이 성지 순례자들의 발목을 잡고 있어. 20명만 정리해 줘.",
+    requiredLevel: 40,
+    target: { kind: "kill", monsterName: "산악 기사", count: 20 },
+    reward: { gold: 900, fame: 28, exp: 1500 },
+    repeatable: false,
+    giverNpcId: "skyreach_guide",
+  },
+  {
+    id: "skyreach-alchemist-lava-core",
+    regionId: "skyreach",
+    title: "용암 핵 다섯",
+    description:
+      "화산 두꺼비나 불꽃 골렘을 잡으면 가끔 용암 핵이 나와. 5개만 모아다 주면 포션 보유량을 늘려줄게.",
+    requiredLevel: 55,
+    target: { kind: "deliver", materialId: "lava_core", count: 5 },
+    reward: {
+      gold: 1200,
+      exp: 2200,
+      potionCapacityBonus: 1,
+    },
+    repeatable: false,
+    giverNpcId: "skyreach_alchemist",
+  },
+  // 천공 성지 길드 게시판 — 화산 지대 정기 의뢰 (화산의 심장 처치 후 노출).
+  {
+    id: "skyreach-flame-golems",
+    regionId: "skyreach",
+    title: "불꽃 골렘 감시",
+    description:
+      "화산의 심장이 잠들어도 불꽃 골렘들은 여전해요. 30체를 부숴 주세요.",
+    requiredLevel: 55,
+    target: { kind: "kill", monsterName: "불꽃 골렘", count: 30 },
+    reward: { gold: 1000, fame: 26, exp: 2000 },
+    repeatable: true,
+    requiresQuestCompleted: "windvale-volcano-boss",
+  },
 ];
 
 // 길드 게시판 노출용 — NPC 전속 퀘스트는 제외, kill 형만 노출.

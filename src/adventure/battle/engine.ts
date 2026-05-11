@@ -38,6 +38,10 @@ export type BattleState = {
   enemyDefBonus: number;
   // 페이즈 트리거 1회성 가드. 트리거 발동 후 true 로 전환되어 같은 전투에서 중복 발동 방지.
   phaseTriggered: boolean;
+  // 잡몹 스킬 "격노"로 누적된 적 ATK 보너스. 기본 0, 발동 시 enemy.skill.atkBonus 만큼 증가.
+  enemyAtkBonus: number;
+  // "격노" 1회성 가드 — 발동 후 true 로 전환되어 같은 전투에서 중복 발동 방지.
+  enrageTriggered: boolean;
   // 광속이 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋. 연타와 별개.
   lightspeedUsedThisTurn: boolean;
   // 불굴 1회성 가드. 발동 후 true — 같은 전투에서 두 번째 치명 피해에는 정상 사망.
@@ -217,6 +221,12 @@ export function initialBattleState(
       text: `[기습] 첫 턴 추가 공격 ${vanguardBonus}회!`,
     });
   }
+  if (enemy.skill) {
+    log.push({
+      kind: "info",
+      text: `${enemy.name} — 능력 [${enemy.skill.name}]`,
+    });
+  }
   return {
     enemy,
     enemyHp: enemy.hp,
@@ -234,6 +244,8 @@ export function initialBattleState(
     firstAttackPending: true,
     enemyDefBonus: 0,
     phaseTriggered: false,
+    enemyAtkBonus: 0,
+    enrageTriggered: false,
     lightspeedUsedThisTurn: false,
     enduranceTriggered: false,
   };
@@ -330,7 +342,12 @@ export function advanceTurn(
       ? Math.max(1, Math.floor(baseDmg * exMult))
       : baseDmg;
     const critMult = player.critMult ?? CRIT_MULT_BASE;
-    const dmg = critRoll ? Math.floor(dmgAfterExecution * critMult) : dmgAfterExecution;
+    const dmgBeforeBrace = critRoll ? Math.floor(dmgAfterExecution * critMult) : dmgAfterExecution;
+    // 잡몹 스킬 "방어 태세" — 이 적을 공격할 때 데미지 -damageReduction (최소 1로 클램프).
+    const braceReduction =
+      state.enemy.skill?.kind === "brace" ? state.enemy.skill.damageReduction : 0;
+    const dmg =
+      braceReduction > 0 ? Math.max(1, dmgBeforeBrace - braceReduction) : dmgBeforeBrace;
     const labels: string[] = [];
     if (bonus > 0) labels.push("강공격");
     if (bonus > 0 && crushReduction > 0) labels.push("분쇄");
@@ -468,7 +485,35 @@ export function advanceTurn(
     return { ...next, phase: "player" };
   }
 
-  const rawDmg = damageBetween(state.enemy.atk, player.def);
+  // ── 잡몹 스킬 (적 공격에 영향) ──────────────────────────────────────────
+  const skill = state.enemy.skill;
+  // 격노 — 적 HP 가 maxHp×hpFraction 미만으로 떨어지는 순간 1회 발동, ATK +atkBonus (전투 종료까지 유지).
+  const enrageReady =
+    skill?.kind === "enrage" &&
+    !state.enrageTriggered &&
+    state.enemyHp > 0 &&
+    state.enemyHp < state.enemy.hp * skill.hpFraction;
+  const enemyAtkBonus =
+    enrageReady && skill?.kind === "enrage"
+      ? state.enemyAtkBonus + skill.atkBonus
+      : state.enemyAtkBonus;
+  const enrageTriggered = state.enrageTriggered || enrageReady;
+  // 관통 — 이 적의 공격이 플레이어 DEF 를 armorPierce 만큼 무시.
+  const effectivePlayerDef =
+    skill?.kind === "pierce" ? Math.max(0, player.def - skill.armorPierce) : player.def;
+  // 강타 — everyPhases 번째 적 페이즈마다 데미지 ×multiplier. 이번 페이즈 종료 후
+  // enemyPhasesCompleted 가 N 의 배수가 되는지로 판단.
+  const heavyBlowMult =
+    skill?.kind === "heavy_blow" &&
+    skill.everyPhases > 0 &&
+    (state.enemyPhasesCompleted + 1) % skill.everyPhases === 0
+      ? skill.multiplier
+      : 1;
+  const heavyBlowFired = heavyBlowMult > 1;
+  const baseEnemyDmg = damageBetween(state.enemy.atk + enemyAtkBonus, effectivePlayerDef);
+  const rawDmg = heavyBlowFired
+    ? Math.max(1, Math.floor(baseEnemyDmg * heavyBlowMult))
+    : baseEnemyDmg;
   // 가드 — 첫 N번의 적 페이즈 동안 받는 피해 -reduction. 선공자에 무관하게
   // enemyPhasesCompleted 가 N 미만이면 이번 페이즈가 그 N 중 하나.
   const guard = player.guard;
@@ -484,27 +529,39 @@ export function advanceTurn(
     wouldKill && !!player.enduranceActive && !state.enduranceTriggered;
   const playerHp = enduranceFires ? 1 : Math.max(0, state.playerHp - dmg);
   const enduranceTriggered = state.enduranceTriggered || enduranceFires;
-  const baseLogStart = guardApplied
-    ? appendLog(state.log, {
-        kind: "info",
-        text: `[가드] 피해 -${rawDmg - guarded}`,
-      })
-    : state.log;
-  const afterAttackLog = appendLog(baseLogStart, {
+  // 로그 — 격노 발동 → 가드 → (강타 라벨 포함) 공격 → 불굴 순.
+  let log = state.log;
+  if (enrageReady && skill?.kind === "enrage") {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${skill.name}] ${state.enemy.name}이(가) 격앙되어 공격력이 +${skill.atkBonus}!`,
+    });
+  }
+  if (guardApplied) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[가드] 피해 -${rawDmg - guarded}`,
+    });
+  }
+  const atkPrefix =
+    heavyBlowFired && skill?.kind === "heavy_blow" ? `[${skill.name}] ` : "";
+  log = appendLog(log, {
     kind: "enemy_attack",
-    text: `${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
+    text: `${atkPrefix}${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
   });
-  const log = enduranceFires
-    ? appendLog(afterAttackLog, {
-        kind: "info",
-        text: `[불굴] 마지막 한 숨 — HP 1 로 버텼다!`,
-      })
-    : afterAttackLog;
+  if (enduranceFires) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[불굴] 마지막 한 숨 — HP 1 로 버텼다!`,
+    });
+  }
   if (playerHp <= 0) {
     return {
       ...state,
       playerHp,
       enduranceTriggered,
+      enemyAtkBonus,
+      enrageTriggered,
       enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
       log: appendLog(log, {
         kind: "info",
@@ -518,6 +575,8 @@ export function advanceTurn(
     ...state,
     playerHp,
     enduranceTriggered,
+    enemyAtkBonus,
+    enrageTriggered,
     enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
     log,
     phase: "player",

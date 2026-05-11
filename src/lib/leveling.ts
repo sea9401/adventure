@@ -1,9 +1,10 @@
 // 캐릭터 레벨링 시스템.
-// - 만렙 50.
-// - 다음 레벨까지 필요한 EXP = floor(120 * level^1.5). Lv1→2 = 120.
+// - 만렙 70.
+// - Lv 1~34: floor(120 * level^1.5).  Lv1→2 = 120.
+// - Lv 35~69: floor(120 * level^2.5 / 35).  35레벨 경계에서 연속, 이후 가팔라짐.
 // - 레벨업당 스탯 포인트 1점 획득(호출측에서 분배).
 
-export const MAX_LEVEL = 50;
+export const MAX_LEVEL = 70;
 
 // 신참 보너스 — 8레벨 미만이면 사냥/퀘스트 EXP 가 ×2.
 // 레벨업으로 조건이 깨지는 순간 자동으로 꺼진다 (기존 캐릭터 포함).
@@ -24,10 +25,18 @@ export function applyNewbieBonus(
   return { gained: exp * NEWBIE_EXP_MULTIPLIER, bonusApplied: true };
 }
 
+// 35레벨 기준으로 지수를 1.5 → 2.5로 전환. 경계값이 동일하도록 계수를 맞춤:
+// 120 * 35^1.5 = (120/35) * 35^2.5  →  계수 = 120 / 35.
+const STEEP_LEVEL = 35;
+const STEEP_COEFF = 120 / STEEP_LEVEL;
+
 export function requiredExpToNext(level: number): number | null {
   if (level >= MAX_LEVEL) return null;
   if (level < 1) return null;
-  return Math.floor(120 * Math.pow(level, 1.5));
+  if (level < STEEP_LEVEL) {
+    return Math.floor(120 * Math.pow(level, 1.5));
+  }
+  return Math.floor(STEEP_COEFF * Math.pow(level, 2.5));
 }
 
 // EXP 누적 적용 + 자동 레벨업 처리.

@@ -640,3 +640,81 @@ describe("만개 (critMult / critChance) 누적", () => {
     expect(1000 - s.enemyHp).toBe(30);
   });
 });
+
+describe("잡몹 스킬", () => {
+  it("관통 — 적 공격이 플레이어 DEF 를 무시", () => {
+    // PLAYER def 5, 적 atk 8 → 평소 3 피해. 관통 3 이면 def 2 취급 → 6 피해.
+    const enemy = makeEnemy({
+      atk: 8,
+      spd: 99, // 적 선공
+      skill: { kind: "pierce", name: "관통", armorPierce: 3 },
+    });
+    let s = initialBattleState(PLAYER, enemy, "P");
+    s = advanceTurn(s, PLAYER, "P");
+    expect(PLAYER.hp - s.playerHp).toBe(6);
+  });
+
+  it("방어 태세 — 플레이어 공격 데미지 감소 (최소 1 클램프)", () => {
+    // PLAYER atk 10, 적 def 3 → 평소 7 피해. 방어 태세 2 이면 5.
+    const enemy = makeEnemy({
+      hp: 1000,
+      def: 3,
+      spd: 1, // 플레이어 선공
+      skill: { kind: "brace", name: "방어", damageReduction: 2 },
+    });
+    let s = initialBattleState(PLAYER, enemy, "P");
+    s = advanceTurn(s, PLAYER, "P");
+    expect(1000 - s.enemyHp).toBe(5);
+    // 클램프 — 기본 피해 2 라도 -5 면 1.
+    const tanky = makeEnemy({
+      hp: 1000,
+      def: 8,
+      spd: 1,
+      skill: { kind: "brace", name: "방어", damageReduction: 5 },
+    });
+    let t = initialBattleState(PLAYER, tanky, "P");
+    t = advanceTurn(t, PLAYER, "P");
+    expect(1000 - t.enemyHp).toBe(1);
+  });
+
+  it("강타 — everyPhases 번째 적 페이즈마다 데미지 ×배율", () => {
+    // 적 atk 8, PLAYER def 5 → 평소 3. everyPhases 2 / multiplier 2 → 2번째 적 페이즈에 6.
+    const enemy = makeEnemy({
+      hp: 1000,
+      atk: 8,
+      def: 0,
+      spd: 99, // 적 선공
+      skill: { kind: "heavy_blow", name: "강타", everyPhases: 2, multiplier: 2 },
+    });
+    let s = initialBattleState(PLAYER, enemy, "P");
+    s = advanceTurn(s, PLAYER, "P"); // 적 페이즈 1 — 평타 3
+    expect(PLAYER.hp - s.playerHp).toBe(3);
+    s = advanceTurn(s, PLAYER, "P"); // 플레이어 페이즈
+    s = advanceTurn(s, PLAYER, "P"); // 적 페이즈 2 — 강타 ×2 → +6
+    expect(PLAYER.hp - s.playerHp).toBe(9);
+    expect(s.log.some((e) => e.text.startsWith("[강타]"))).toBe(true);
+  });
+
+  it("격노 — HP 임계 도달 시 1회, 적 ATK 영구 증가", () => {
+    // 적 hp 30, hpFraction 0.5 (임계 15), atkBonus 10. PLAYER atk 12 로 두 번 때리면 6 → 임계 미만.
+    const strong: PlayerCombat = { ...PLAYER, atk: 12 };
+    const enemy = makeEnemy({
+      hp: 30,
+      atk: 8,
+      def: 0,
+      spd: 1, // 플레이어 선공
+      skill: { kind: "enrage", name: "격노", hpFraction: 0.5, atkBonus: 10 },
+    });
+    let s = initialBattleState(strong, enemy, "P");
+    s = advanceTurn(s, strong, "P"); // 플레이어 — 적 30→18 (≥ 15, 격노 X)
+    s = advanceTurn(s, strong, "P"); // 적 페이즈 — 평타 8-5 = 3
+    expect(strong.hp - s.playerHp).toBe(3);
+    expect(s.enemyAtkBonus).toBe(0);
+    s = advanceTurn(s, strong, "P"); // 플레이어 — 적 18→6 (< 15)
+    s = advanceTurn(s, strong, "P"); // 적 페이즈 — 격노 발동, atk 18 → 18-5 = 13 피해
+    expect(s.enemyAtkBonus).toBe(10);
+    expect(s.enrageTriggered).toBe(true);
+    expect(strong.hp - s.playerHp).toBe(3 + 13);
+    expect(s.log.filter((e) => e.text.startsWith("[격노]")).length).toBe(1);
+  });
+});

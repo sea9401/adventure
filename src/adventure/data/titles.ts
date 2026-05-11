@@ -129,6 +129,18 @@ export const TITLES: Record<TitleId, Title> = {
     description: "수많은 전장에서 살아남은 자. 한 발 한 발이 가볍지 않다.",
     condition: "레벨 30 도달",
   },
+  level_50: {
+    id: "level_50",
+    name: "전설",
+    description: "묘비에도 이름이 새겨질 자. 전장마다 흔적이 남는다.",
+    condition: "레벨 50 도달",
+  },
+  level_70: {
+    id: "level_70",
+    name: "신화",
+    description: "이야기가 전설이 되고, 전설이 신화가 된 자.",
+    condition: "레벨 70 도달 (만렙)",
+  },
   wealthy: {
     id: "wealthy",
     name: "부자",

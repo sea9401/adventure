@@ -133,6 +133,50 @@ export const MATERIALS = {
     price: 40,
     inShop: false,
   },
+  // ── 다리 구간 재료 (운저 평원 / 잿빛 협로) ──────────────────────────────
+  bison_hide: {
+    id: "bison_hide",
+    name: "들소 가죽",
+    description: "운저 평원 들소의 두툼한 가죽. 무겁지만 손질하면 든든한 갑옷이 된다.",
+    price: 16,
+    inShop: false,
+  },
+  hawk_feather: {
+    id: "hawk_feather",
+    name: "초원 매 깃털",
+    description: "초원 매의 길고 가벼운 깃털. 바람을 잘 타 장신구 세공에 쓰인다.",
+    price: 12,
+    inShop: false,
+  },
+  ash_stone: {
+    id: "ash_stone",
+    name: "잿돌",
+    description: "잿빛 협로에 굴러다니는 거뭇한 돌. 두드리면 잿가루가 풀풀 인다.",
+    price: 18,
+    inShop: false,
+  },
+  // ── 봉황령·화산 지대 재료 ────────────────────────────────────────────────
+  phoenix_feather: {
+    id: "phoenix_feather",
+    name: "봉황 깃털",
+    description: "불꽃 독수리의 날개에서 뽑아낸 진홍빛 깃털. 손에 쥐면 은은한 온기가 느껴진다.",
+    price: 35,
+    inShop: false,
+  },
+  flame_scale: {
+    id: "flame_scale",
+    name: "화염 비늘",
+    description: "화염 도마뱀의 등에서 벗겨낸 주홍빛 비늘. 열을 머금고 있어 쉬이 식지 않는다.",
+    price: 28,
+    inShop: false,
+  },
+  lava_core: {
+    id: "lava_core",
+    name: "용암 핵",
+    description: "용암 속에서 굳어진 짙은 붉은 결정. 뜨거운 기운이 오래도록 빠져나가지 않는다.",
+    price: 60,
+    inShop: false,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;
