@@ -4,8 +4,9 @@ import { users, presence } from "@/db/schema";
 import { requireAdmin } from "@/lib/server/isAdmin";
 
 // GET /api/admin/users?q=<search>
-// q 비어있으면 최근 활동 순 50명. q 있으면 email/이름 부분 일치.
+// q 비어있으면 최근 활동 순 50명. q 있으면 email / 인게임 닉네임 부분 일치.
 // presence 는 LEFT JOIN — 한 번도 접속 안 한 유저도 검색됨.
+// gameName: users.game_name(권위적 닉네임) 우선, 미설정이면 presence 스냅샷으로 폴백.
 export async function GET(req: Request) {
   const gate = await requireAdmin();
   if (gate) return gate;
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
     .select({
       id: users.id,
       email: users.email,
-      name: presence.name,
+      gameName: sql<string | null>`coalesce(${users.gameName}, ${presence.name})`,
       className: presence.className,
       lastSeenAt: presence.lastSeenAt,
       createdAt: users.createdAt,
@@ -27,7 +28,11 @@ export async function GET(req: Request) {
 
   const rows = await (q
     ? base.where(
-        or(ilike(users.email, `%${q}%`), ilike(presence.name, `%${q}%`)),
+        or(
+          ilike(users.email, `%${q}%`),
+          ilike(users.gameName, `%${q}%`),
+          ilike(presence.name, `%${q}%`),
+        ),
       )
     : base
   )
