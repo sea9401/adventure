@@ -8,15 +8,18 @@ import {
   Question,
   Sun,
   SignOut,
+  UserMinus,
 } from "@phosphor-icons/react";
 import { signIn, signOut } from "next-auth/react";
 import { HelpModal } from "./HelpModal";
 import { NotificationPrefsModal } from "./NotificationPrefsModal";
+import { DeleteAccountModal } from "./DeleteAccountModal";
 
-export function SettingsMenu() {
+export function SettingsMenu({ gameName }: { gameName: string | null }) {
   const [open, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [notifPrefsOpen, setNotifPrefsOpen] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [linkedProviders, setLinkedProviders] = useState<string[] | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,6 +87,11 @@ export function SettingsMenu() {
   const handleOpenNotifPrefs = () => {
     setOpen(false);
     setNotifPrefsOpen(true);
+  };
+
+  const handleOpenDeleteAccount = () => {
+    setOpen(false);
+    setDeleteAccountOpen(true);
   };
 
   const isDark = theme === "dark";
@@ -179,12 +187,28 @@ export function SettingsMenu() {
                 로그아웃
               </button>
             </li>
+            <li>
+              <button
+                type="button"
+                onClick={handleOpenDeleteAccount}
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:text-zinc-600 dark:hover:bg-zinc-900 dark:hover:text-zinc-400"
+              >
+                <UserMinus size={14} weight="duotone" />
+                회원 탈퇴
+              </button>
+            </li>
           </ul>
         </div>
       )}
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
       {notifPrefsOpen && (
         <NotificationPrefsModal onClose={() => setNotifPrefsOpen(false)} />
+      )}
+      {deleteAccountOpen && (
+        <DeleteAccountModal
+          gameName={gameName}
+          onClose={() => setDeleteAccountOpen(false)}
+        />
       )}
     </div>
   );

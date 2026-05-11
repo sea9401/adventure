@@ -912,7 +912,7 @@ function Home() {
               title={character.titleName ?? null}
               onSent={adventureLog.incrementChatCount}
             />
-            <SettingsMenu />
+            <SettingsMenu gameName={character.name} />
           </div>
         </header>
 
