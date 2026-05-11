@@ -37,7 +37,7 @@ export type AdventureLog = {
 export const ADVENTURE_LOG_KEY = "adventure-log.v2";
 
 // 몬스터 이름이 바뀌었을 때 기존 도감 데이터를 새 이름으로 옮기기 위한 매핑.
-const MONSTER_RENAMES: Record<string, string> = {
+export const MONSTER_RENAMES: Record<string, string> = {
   "호수 정령": "호수 님프",
   두더쥐: "두더지",
 };
@@ -60,7 +60,7 @@ function mergeMonsterEntries(
   };
 }
 
-function migrateMonsters(
+export function migrateMonsters(
   monsters: Record<string, MonsterLogEntry>,
 ): Record<string, MonsterLogEntry> {
   const next: Record<string, MonsterLogEntry> = { ...monsters };

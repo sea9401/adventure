@@ -5,48 +5,9 @@ import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import {
   emptyAdventureLog,
+  migrateMonsters,
   type AdventureLog,
-  type MonsterLogEntry,
 } from "./storage";
-
-// 몬스터 이름이 바뀌었을 때 기존 도감 데이터를 새 이름으로 옮기기 위한 매핑.
-const MONSTER_RENAMES: Record<string, string> = {
-  "호수 정령": "호수 님프",
-};
-
-function mergeMonsterEntries(
-  a: MonsterLogEntry,
-  b: MonsterLogEntry,
-): MonsterLogEntry {
-  return {
-    encountered: a.encountered || b.encountered,
-    kills: a.kills + b.kills,
-    firstSeenAt:
-      a.firstSeenAt !== undefined && b.firstSeenAt !== undefined
-        ? Math.min(a.firstSeenAt, b.firstSeenAt)
-        : (a.firstSeenAt ?? b.firstSeenAt),
-    lastKilledAt:
-      a.lastKilledAt !== undefined && b.lastKilledAt !== undefined
-        ? Math.max(a.lastKilledAt, b.lastKilledAt)
-        : (a.lastKilledAt ?? b.lastKilledAt),
-  };
-}
-
-function migrateMonsters(
-  monsters: Record<string, MonsterLogEntry>,
-): Record<string, MonsterLogEntry> {
-  const next: Record<string, MonsterLogEntry> = { ...monsters };
-  for (const [oldName, newName] of Object.entries(MONSTER_RENAMES)) {
-    const oldEntry = next[oldName];
-    if (!oldEntry) continue;
-    const existing = next[newName];
-    next[newName] = existing
-      ? mergeMonsterEntries(existing, oldEntry)
-      : oldEntry;
-    delete next[oldName];
-  }
-  return next;
-}
 
 function readInitial(raw: unknown): AdventureLog {
   if (!raw || typeof raw !== "object") return emptyAdventureLog();
