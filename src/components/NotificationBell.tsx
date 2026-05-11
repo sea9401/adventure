@@ -12,6 +12,7 @@ export function NotificationBell({
   unreadCount,
   onOpen,
 }: {
+  // 벨 드롭다운 표시용 목록 — 호출부에서 전투 승/패를 뺀 `bellList` 를 넘긴다.
   notifications: AppNotification[];
   unreadCount: number;
   onOpen: () => void;

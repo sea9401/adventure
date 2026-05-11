@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { MONSTERS } from "../data/monsters";
 import { POTIONS, type PotionId } from "../data/potions";
 import { MATERIALS, type MaterialId } from "../data/materials";
-import { ITEMS, rarityTextClass, type ItemId } from "../data/items";
+import { ITEMS, isLuckyFind, rarityTextClass, type ItemId } from "../data/items";
 import {
   dropQualityPrefix,
   dropQualityTextClass,
@@ -54,6 +54,15 @@ export function AutoHuntResultModal({
     else equipCounts.set(key, { itemId, quality, count: 1 });
   }
 
+  // "유실된 명품"(unique)이 떴으면 결과 상단에 강조 배너 — 긴 획득 목록에 묻히지 않게.
+  const luckyFinds = [
+    ...new Set(
+      Array.from(equipCounts.values())
+        .filter(({ itemId }) => isLuckyFind(ITEMS[itemId]))
+        .map(({ itemId }) => ITEMS[itemId].name),
+    ),
+  ];
+
   const potions = Object.entries(result.potionsConsumed).filter(
     ([, n]) => (n ?? 0) > 0,
   );
@@ -85,6 +94,12 @@ export function AutoHuntResultModal({
         </div>
 
         <div className="mt-4 space-y-3 text-sm">
+          {luckyFinds.length > 0 && (
+            <div className="rounded-md border border-violet-300 bg-violet-50 p-2.5 text-center font-semibold text-violet-700 dark:border-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+              ✨ 굉장한 발견! — {luckyFinds.join(", ")}
+            </div>
+          )}
+
           {kills.length > 0 && (
             <div>
               <div className="mb-1.5 flex items-baseline justify-between">

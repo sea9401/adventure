@@ -132,6 +132,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "bat_eye", chance: 0.02 },
       { kind: "recipe", recipeId: "bat_hood", chance: 0.004 },
+      // 유실된 명품 — 두더지왕의 드릴과 같은 부류(unique). 잡몹이 떡상 장신구를 떨군다.
+      { kind: "equip", itemId: "bat_swarm_charm", chance: 0.0002 },
     ],
   },
   동굴뱀: {
@@ -160,6 +162,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "spider_silk", chance: 0.03 },
       { kind: "recipe", recipeId: "sticky_cloak", chance: 0.003 },
+      // 유실된 명품(unique) — 행운 +7 갑옷. "운으로 성장하는" 손맛 전용.
+      { kind: "equip", itemId: "spider_queen_silk_robe", chance: 0.0002 },
     ],
   },
   산적: {
@@ -273,6 +277,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 11,
     drops: [
       { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
+      // 유실된 명품(unique) — 폐허에 박혀 있던 옛 영웅검의 윗동강. atk +8 / def -2.
+      { kind: "equip", itemId: "hero_broken_sword", chance: 0.00015 },
     ],
   },
   // ── 운향 라인 (highland / canyon) ───────────────────────────────────────
@@ -402,6 +408,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 26,
     drops: [
       { kind: "material", materialId: "hawk_feather", chance: 0.02 },
+      // 유실된 명품(unique) — 매의 발에 끼워져 있던 발톱 모양 쇳조각. atk +9 / dex +5.
+      { kind: "equip", itemId: "sky_render_talon", chance: 0.00015 },
     ],
     skill: { kind: "pierce", name: "급강하", armorPierce: 2 },
   },
@@ -517,6 +525,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 55,
     drops: [
       { kind: "material", materialId: "lava_core", chance: 0.003 },
+      // 유실된 명품(unique) — 미처 못 녹인 거대 용암 핵. atk +11 / spd -2. 가장 희귀한 한 자루.
+      { kind: "equip", itemId: "lava_core_maul", chance: 0.0001 },
     ],
     skill: { kind: "heavy_blow", name: "용암 비산", everyPhases: 4, multiplier: 1.5 },
   },

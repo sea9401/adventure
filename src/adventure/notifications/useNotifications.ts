@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   genNotificationId,
+  isBattleNotification,
   loadNotifications,
   pruneNotifications,
   saveNotifications,
@@ -8,6 +9,13 @@ import {
   type NotificationKind,
   type NotificationMeta,
 } from "@/lib/notifications";
+
+// 우하단 토스트로 즉시 보여주는, 잦은 알림 — 벨 unread 배지 집계에서 제외.
+const NOISY_KINDS: ReadonlySet<NotificationKind> = new Set([
+  "loot",
+  "item",
+  "info",
+]);
 
 export function useNotifications() {
   const [list, setList] = useState<AppNotification[]>([]);
@@ -50,12 +58,16 @@ export function useNotifications() {
     setLastReadAt(Date.now());
   };
 
-  // 벨 unread 카운트는 잡음이 많은 battle_win·info 를 그대로 두면 끊임없이
-  // 깜빡여 의미가 옅어진다 — 두 종류는 unread 집계에서만 제외.
+  // 벨 드롭다운에 노출되는 목록 — 전투 승/패는 '최근 기록 → 전투 로그' 탭 전용이라
+  // 벨에선 제외 (시스템 알림만). 최근 기록·토스트에는 영향 없음.
+  const bellList = list.filter((n) => !isBattleNotification(n.kind));
+
+  // 벨 unread 카운트 — bellList 는 이미 전투 승/패를 뺀 상태. 거기서 또 NOISY_KINDS
+  // (loot·item·info) 를 빼야 배지가 의미 있는 이벤트(성취·의뢰·원정 등)에만 반응한다.
   // 토스트 노출 여부는 별도로 useToastPrefs 의 사용자 설정이 단일 source-of-truth.
-  const unreadCount = list
-    .filter((n) => n.kind !== "battle_win" && n.kind !== "info")
+  const unreadCount = bellList
+    .filter((n) => !NOISY_KINDS.has(n.kind))
     .filter((n) => n.timestamp > lastReadAt).length;
 
-  return { list, unreadCount, add, markRead, clear };
+  return { list, bellList, unreadCount, add, markRead, clear };
 }

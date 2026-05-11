@@ -578,7 +578,7 @@ function Home() {
     returnEquippedToInventory(characterStateHook.equippedSlots[item.slot]);
     characterStateHook.setSlot(item.slot, equipItem);
     const name = equipDisplayName(id, tier, isDropped ? quality : undefined);
-    addNotification("info", `${name}을(를) 장착했다.`, {
+    addNotification("item", `${name}을(를) 장착했다.`, {
       highlight: { name, className: equipNameClass(id, isDropped ? quality : undefined) },
     });
   };
@@ -592,7 +592,7 @@ function Home() {
     const name = id
       ? equipDisplayName(id, current.craftTier, current.dropQuality)
       : current.name;
-    addNotification("info", `${name}을(를) 해제했다.`, {
+    addNotification("item", `${name}을(를) 해제했다.`, {
       highlight: {
         name,
         className: id
@@ -619,7 +619,7 @@ function Home() {
         : inventory.consumeEquipment(id, 1);
     if (!ok) return;
     addNotification(
-      "info",
+      "item",
       `${equipDisplayName(id, tier, isDropped ? quality : undefined)}을(를) 폐기했다.`,
     );
   };
@@ -693,14 +693,14 @@ function Home() {
     if (data.result.kind === "equipment") {
       const item = ITEMS[data.result.itemId];
       const suffix = craftTierSuffix(data.result.tier);
-      addNotification("info", `${item.name}${suffix}을(를) 만들었다.`, {
+      addNotification("item", `${item.name}${suffix}을(를) 만들었다.`, {
         highlight: { name: item.name + suffix, className: rarityTextClass(item) },
       });
     } else {
       const potion = POTIONS[data.result.potionId];
       const qty = data.result.quantity;
       addNotification(
-        "info",
+        "item",
         qty > 1
           ? `${potion.name} ×${qty}을(를) 만들었다.`
           : `${potion.name}을(를) 만들었다.`,
@@ -714,7 +714,7 @@ function Home() {
     if (adventureLog.log.titles[titleId]) return;
     adventureLog.markTitleObtained(titleId);
     const title = getTitle(titleId);
-    if (title) addNotification("info", `칭호 획득 — ${title.name}`);
+    if (title) addNotification("milestone", `칭호 획득 — ${title.name}`);
   };
 
   // 카운터/상태/시간 기반 자동 칭호 부여.
@@ -809,9 +809,11 @@ function Home() {
       replaceLocation("town", "healing");
     }
     const summary = summarizeOfflineResult(result);
+    // 사망 여부와 무관하게 expedition — 사망 시엔 별도로 결과 모달(setAutoHuntResult)이
+    // 눈에 띄게 뜨고, replaceLocation 으로 치유소로 보낸다.
     addNotification(
-      result.died ? "battle_lose" : "info",
-      `자동 사냥 ${fmtHuntDuration(result.simulatedMs)}${summary ? ` — ${summary}` : ""}`,
+      "expedition",
+      `자동 사냥 ${fmtHuntDuration(result.simulatedMs)}${summary ? ` — ${summary}` : ""}${result.died ? " (사망)" : ""}`,
     );
     for (const id of readyQuestIds) {
       const quest = getQuestById(id);
@@ -967,7 +969,7 @@ function Home() {
               {character.gold.toLocaleString()}
             </span>
             <NotificationBell
-              notifications={notifications.list}
+              notifications={notifications.bellList}
               unreadCount={notifications.unreadCount}
               onOpen={notifications.markRead}
             />

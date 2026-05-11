@@ -4,10 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import {
   Barbell,
   CheckCircle,
+  Coins,
+  Hammer,
   Info,
   Scroll,
   Skull,
+  Sparkle,
   Sword,
+  Tent,
   X,
 } from "@phosphor-icons/react";
 import type {
@@ -53,6 +57,10 @@ const TOAST_ACCENT: Record<NotificationKind, string> = {
   training_done: "bg-amber-500",
   quest_ready: "bg-yellow-500",
   quest_complete: "bg-violet-500",
+  milestone: "bg-fuchsia-500",
+  expedition: "bg-teal-500",
+  loot: "bg-lime-500",
+  item: "bg-blue-500",
   info: "bg-sky-500",
 };
 
@@ -62,6 +70,10 @@ const TOAST_ICON: Record<NotificationKind, React.ComponentType<{ size?: number; 
   training_done: Barbell,
   quest_ready: Scroll,
   quest_complete: CheckCircle,
+  milestone: Sparkle,
+  expedition: Tent,
+  loot: Coins,
+  item: Hammer,
   info: Info,
 };
 
@@ -71,6 +83,10 @@ const TOAST_ICON_COLOR: Record<NotificationKind, string> = {
   training_done: "text-amber-600 dark:text-amber-400",
   quest_ready: "text-yellow-600 dark:text-yellow-400",
   quest_complete: "text-violet-600 dark:text-violet-400",
+  milestone: "text-fuchsia-600 dark:text-fuchsia-400",
+  expedition: "text-teal-600 dark:text-teal-400",
+  loot: "text-lime-600 dark:text-lime-400",
+  item: "text-blue-600 dark:text-blue-400",
   info: "text-sky-600 dark:text-sky-400",
 };
 
@@ -134,13 +150,13 @@ export function NotificationToast({
   if (toasts.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed right-4 top-16 z-50 flex flex-col gap-2 sm:right-6">
+    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 sm:bottom-6 sm:right-6">
       {toasts.map((t) => {
         const Icon = TOAST_ICON[t.kind];
         return (
         <div
           key={t.id}
-          className="pointer-events-auto relative flex max-w-[calc(100vw-2rem)] items-start gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-right sm:max-w-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+          className="pointer-events-auto relative flex max-w-[calc(100vw-2rem)] items-start gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-bottom-2 sm:max-w-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
         >
           <span
             aria-hidden

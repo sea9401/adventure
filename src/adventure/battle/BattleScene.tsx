@@ -25,6 +25,10 @@ const RECENT_KIND_COLOR: Record<NotificationKind, string> = {
   training_done: "text-amber-700 dark:text-amber-400",
   quest_ready: "text-yellow-700 dark:text-yellow-400",
   quest_complete: "text-violet-700 dark:text-violet-400",
+  milestone: "text-fuchsia-700 dark:text-fuchsia-400",
+  expedition: "text-teal-700 dark:text-teal-400",
+  loot: "text-lime-700 dark:text-lime-400",
+  item: "text-blue-700 dark:text-blue-400",
   info: "text-zinc-600 dark:text-zinc-400",
 };
 
