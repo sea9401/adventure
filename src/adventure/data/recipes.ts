@@ -1,4 +1,11 @@
-import { ITEMS, type EquipSlot, type ItemId } from "./items";
+import { ITEMS, type EquipItem, type EquipSlot, type ItemId } from "./items";
+import {
+  applyCraftTier,
+  craftHasVariance,
+  type CraftedEquipItem,
+  type CraftTier,
+  type CraftVariance,
+} from "./craftQuality";
 import type { MaterialId } from "./materials";
 import type { PotionId } from "./potions";
 
@@ -12,7 +19,8 @@ export type RecipeResult =
   | { kind: "equipment"; itemId: ItemId; slot: EquipSlot }
   | { kind: "potion"; potionId: PotionId; quantity: number };
 
-export type Recipe = {
+// CraftVariance(variance / varianceTable) 를 합쳐 — 둘 다 옵셔널, equipment 결과에만 의미.
+export type Recipe = CraftVariance & {
   id: string;
   name: string;
   description: string;
@@ -27,8 +35,9 @@ export const RECIPES: Recipe[] = [
     id: "baseball_bat",
     name: "야구 방망이 제작서",
     description: `${ITEMS.baseball_bat.name}을(를) 만든다. 손맛이 묵직하다.`,
-    ingredients: [{ kind: "material", materialId: "branch", count: 1 }],
+    ingredients: [{ kind: "material", materialId: "branch", count: 2 }],
     result: { kind: "equipment", itemId: "baseball_bat", slot: "weapon" },
+    variance: { atk: 1 },
   },
   {
     id: "potion_heal_s",
@@ -43,9 +52,10 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.squishy_armor.name}을(를) 만든다. 슬라임 핵을 심으로 두르고 조각을 겹겹이 다진다.`,
     ingredients: [
       { kind: "material", materialId: "slime_core", count: 1 },
-      { kind: "material", materialId: "slime_chunk", count: 10 },
+      { kind: "material", materialId: "slime_chunk", count: 16 },
     ],
     result: { kind: "equipment", itemId: "squishy_armor", slot: "armor" },
+    variance: { def: 1 },
   },
   {
     id: "nailed_baseball_bat",
@@ -53,70 +63,75 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.nailed_baseball_bat.name}을(를) 만든다. ${ITEMS.baseball_bat.name}에 낡은 못을 잔뜩 박아 넣는다.`,
     ingredients: [
       { kind: "equip", itemId: "baseball_bat", count: 1 },
-      { kind: "material", materialId: "rusty_nail", count: 20 },
+      { kind: "material", materialId: "rusty_nail", count: 28 },
     ],
     result: {
       kind: "equipment",
       itemId: "nailed_baseball_bat",
       slot: "weapon",
     },
+    variance: { atk: 1 },
   },
   {
     id: "sticky_cloak",
     name: "비단 로브 제작서",
     description: `${ITEMS.sticky_cloak.name}을(를) 만든다. 거미줄을 비단처럼 곱게 짜낸다.`,
     ingredients: [
-      { kind: "material", materialId: "spider_silk", count: 5 },
-      { kind: "material", materialId: "slime_chunk", count: 3 },
+      { kind: "material", materialId: "spider_silk", count: 7 },
+      { kind: "material", materialId: "slime_chunk", count: 5 },
     ],
     result: {
       kind: "equipment",
       itemId: "sticky_cloak",
       slot: "armor",
     },
+    variance: { luk: 1 },
   },
   {
     id: "bat_hood",
     name: "박쥐가죽 후드 제작서",
     description: `${ITEMS.bat_hood.name}을(를) 만든다. 박쥐 가죽을 이어 후드의 형태를 잡는다.`,
     ingredients: [
-      { kind: "material", materialId: "bat_eye", count: 2 },
-      { kind: "material", materialId: "wilddog_hide", count: 2 },
+      { kind: "material", materialId: "bat_eye", count: 3 },
+      { kind: "material", materialId: "wilddog_hide", count: 3 },
     ],
     result: {
       kind: "equipment",
       itemId: "bat_hood",
       slot: "armor",
     },
+    variance: { spd: 1 },
   },
   {
     id: "golem_armor",
     name: "골렘갑주 제작서",
     description: `${ITEMS.golem_armor.name}을(를) 만든다. 폐허 잔해를 다듬어 거미줄로 안을 덧대고 슬라임 점액으로 이음새를 메운다.`,
     ingredients: [
-      { kind: "material", materialId: "ruin_fragment", count: 5 },
-      { kind: "material", materialId: "spider_silk", count: 5 },
-      { kind: "material", materialId: "slime_chunk", count: 3 },
+      { kind: "material", materialId: "ruin_fragment", count: 7 },
+      { kind: "material", materialId: "spider_silk", count: 7 },
+      { kind: "material", materialId: "slime_chunk", count: 5 },
     ],
     result: {
       kind: "equipment",
       itemId: "golem_armor",
       slot: "armor",
     },
+    variance: { def: 1 },
   },
   {
     id: "crystal_dagger",
     name: "수정 단검 제작서",
     description: `${ITEMS.crystal_dagger.name}을(를) 만든다. 단단한 수정을 깎아 들개 송곳니로 손잡이를 감싼다.`,
     ingredients: [
-      { kind: "material", materialId: "hard_crystal", count: 2 },
-      { kind: "material", materialId: "wilddog_fang", count: 3 },
+      { kind: "material", materialId: "hard_crystal", count: 3 },
+      { kind: "material", materialId: "wilddog_fang", count: 4 },
     ],
     result: {
       kind: "equipment",
       itemId: "crystal_dagger",
       slot: "weapon",
     },
+    variance: { atk: 1 },
   },
   {
     id: "fairy_blessing",
@@ -124,24 +139,27 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.fairy_blessing.name}을(를) 만든다. ${ITEMS.vitality_ring.name}에 요정가루를 입혀 가호를 깊게 한다.`,
     ingredients: [
       { kind: "equip", itemId: "vitality_ring", count: 1 },
-      { kind: "material", materialId: "fairy_dust", count: 3 },
+      { kind: "material", materialId: "fairy_dust", count: 5 },
     ],
     result: {
       kind: "equipment",
       itemId: "fairy_blessing",
       slot: "accessory",
     },
+    variance: { vit: 1 },
   },
-  // 마정석 무기 4종 — 광맥의 수호자 보스 보상 라인. 마정석 ×2 + 단단한 수정 ×5 로 제작.
+  // 마정석 무기 4종 — 광맥의 수호자 보스 보상 라인. 마정석 ×2 + 단단한 수정 ×8 로 제작.
+  // 제작 품질 등급 — 공격력 일반 +6 기준으로 ±2 변동(불량 +4 .. 걸작 +8).
   {
     id: "mana_sword",
     name: "마정석 검 제작서",
     description: `${ITEMS.mana_sword.name}을(를) 만든다. 마정석을 칼날 형태로 깎아 자루에 끼운다.`,
     ingredients: [
       { kind: "material", materialId: "mana_crystal", count: 2 },
-      { kind: "material", materialId: "hard_crystal", count: 5 },
+      { kind: "material", materialId: "hard_crystal", count: 8 },
     ],
     result: { kind: "equipment", itemId: "mana_sword", slot: "weapon" },
+    variance: { atk: 1 },
   },
   {
     id: "mana_shield",
@@ -149,9 +167,10 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.mana_shield.name}을(를) 만든다. 마정석을 두텁게 다져 방패의 중심에 박아 넣는다.`,
     ingredients: [
       { kind: "material", materialId: "mana_crystal", count: 2 },
-      { kind: "material", materialId: "hard_crystal", count: 5 },
+      { kind: "material", materialId: "hard_crystal", count: 8 },
     ],
     result: { kind: "equipment", itemId: "mana_shield", slot: "weapon" },
+    variance: { atk: 1 },
   },
   {
     id: "mana_spear",
@@ -159,9 +178,10 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.mana_spear.name}을(를) 만든다. 마정석을 길고 가늘게 깎아 창대 끝에 박는다.`,
     ingredients: [
       { kind: "material", materialId: "mana_crystal", count: 2 },
-      { kind: "material", materialId: "hard_crystal", count: 5 },
+      { kind: "material", materialId: "hard_crystal", count: 8 },
     ],
     result: { kind: "equipment", itemId: "mana_spear", slot: "weapon" },
+    variance: { atk: 1 },
   },
   {
     id: "mana_knuckle",
@@ -169,9 +189,10 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.mana_knuckle.name}을(를) 만든다. 마정석 조각을 손등 너클의 면에 박아 고정한다.`,
     ingredients: [
       { kind: "material", materialId: "mana_crystal", count: 2 },
-      { kind: "material", materialId: "hard_crystal", count: 5 },
+      { kind: "material", materialId: "hard_crystal", count: 8 },
     ],
     result: { kind: "equipment", itemId: "mana_knuckle", slot: "weapon" },
+    variance: { atk: 1 },
   },
   {
     id: "mana_bracelet",
@@ -179,11 +200,14 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.mana_bracelet.name}을(를) 만든다. 마정석 조각을 엮어 손목에 두를 팔찌로 매만진다.`,
     ingredients: [
       { kind: "material", materialId: "mana_crystal", count: 2 },
+      { kind: "material", materialId: "hard_crystal", count: 3 },
     ],
     result: { kind: "equipment", itemId: "mana_bracelet", slot: "accessory" },
+    variance: { vit: 1 },
   },
-  // 운봉 무기 4종 + 견갑 — 운봉의 거인 보스 보상 라인.
-  // 무기 4종 공통 재료: 거인 비늘 ×2 + 운봉석 ×3 + 단단한 수정 ×5 (호환재로 동굴 재방문 동기).
+  // 운봉 무기 4종 + 견갑 + 심장 — 운봉의 거인 보스 보상 라인.
+  // 무기 4종 공통 재료: 거인 비늘 ×2 + 운봉석 ×3 + 단단한 수정 ×8 (호환재로 동굴 재방문 동기).
+  // 제작 품질 등급 — 무기는 공격력 일반 +8 기준으로 ±2 변동(불량 +6 .. 걸작 +10).
   {
     id: "peak_sword",
     name: "운봉 대검 제작서",
@@ -191,9 +215,10 @@ export const RECIPES: Recipe[] = [
     ingredients: [
       { kind: "material", materialId: "giant_scale", count: 2 },
       { kind: "material", materialId: "unbong_ore", count: 3 },
-      { kind: "material", materialId: "hard_crystal", count: 5 },
+      { kind: "material", materialId: "hard_crystal", count: 8 },
     ],
     result: { kind: "equipment", itemId: "peak_sword", slot: "weapon" },
+    variance: { atk: 1 },
   },
   {
     id: "peak_shield",
@@ -202,9 +227,10 @@ export const RECIPES: Recipe[] = [
     ingredients: [
       { kind: "material", materialId: "giant_scale", count: 2 },
       { kind: "material", materialId: "unbong_ore", count: 3 },
-      { kind: "material", materialId: "hard_crystal", count: 5 },
+      { kind: "material", materialId: "hard_crystal", count: 8 },
     ],
     result: { kind: "equipment", itemId: "peak_shield", slot: "weapon" },
+    variance: { atk: 1 },
   },
   {
     id: "peak_spear",
@@ -213,9 +239,10 @@ export const RECIPES: Recipe[] = [
     ingredients: [
       { kind: "material", materialId: "giant_scale", count: 2 },
       { kind: "material", materialId: "unbong_ore", count: 3 },
-      { kind: "material", materialId: "hard_crystal", count: 5 },
+      { kind: "material", materialId: "hard_crystal", count: 8 },
     ],
     result: { kind: "equipment", itemId: "peak_spear", slot: "weapon" },
+    variance: { atk: 1 },
   },
   {
     id: "peak_claw",
@@ -224,9 +251,10 @@ export const RECIPES: Recipe[] = [
     ingredients: [
       { kind: "material", materialId: "giant_scale", count: 2 },
       { kind: "material", materialId: "unbong_ore", count: 3 },
-      { kind: "material", materialId: "hard_crystal", count: 5 },
+      { kind: "material", materialId: "hard_crystal", count: 8 },
     ],
     result: { kind: "equipment", itemId: "peak_claw", slot: "weapon" },
+    variance: { atk: 1 },
   },
   {
     id: "peak_mantle",
@@ -235,8 +263,10 @@ export const RECIPES: Recipe[] = [
     ingredients: [
       { kind: "material", materialId: "giant_scale", count: 3 },
       { kind: "material", materialId: "unbong_ore", count: 2 },
+      { kind: "material", materialId: "hard_crystal", count: 3 },
     ],
     result: { kind: "equipment", itemId: "peak_mantle", slot: "accessory" },
+    variance: { dex: 1 },
   },
   {
     id: "peak_heart",
@@ -245,11 +275,38 @@ export const RECIPES: Recipe[] = [
     ingredients: [
       { kind: "material", materialId: "giant_scale", count: 2 },
       { kind: "material", materialId: "unbong_ore", count: 2 },
+      { kind: "material", materialId: "hard_crystal", count: 3 },
     ],
     result: { kind: "equipment", itemId: "peak_heart", slot: "accessory" },
+    variance: { str: 1 },
   },
 ];
 
 export function getRecipeById(id: string): Recipe | undefined {
   return RECIPES.find((r) => r.id === id);
+}
+
+// 결과가 그 장비인 레시피 — 제작산 등급 인스턴스를 EquipItem 으로 재구성할 때 variance 조회.
+const RECIPE_BY_RESULT_ITEM: Map<ItemId, Recipe> = new Map();
+for (const r of RECIPES) {
+  if (r.result.kind === "equipment") RECIPE_BY_RESULT_ITEM.set(r.result.itemId, r);
+}
+
+export function getEquipmentRecipeByItemId(itemId: ItemId): Recipe | undefined {
+  return RECIPE_BY_RESULT_ITEM.get(itemId);
+}
+
+// 레시피에 품질 변동 정의(variance / varianceTable)가 있는지 — 서버가 등급 추첨 여부를 결정.
+export function recipeHasVariance(recipe: Recipe): boolean {
+  return craftHasVariance(recipe);
+}
+
+// 제작산 등급 인스턴스(itemId + 등급) → 등급 반영된 EquipItem(+ craftTier 마커).
+// 레시피가 없거나 변동 정의가 없으면 베이스 그대로(+ 마커).
+export function resolveCraftedItem(
+  itemId: ItemId,
+  tier: CraftTier,
+): CraftedEquipItem {
+  const base: EquipItem = ITEMS[itemId];
+  return applyCraftTier(base, RECIPE_BY_RESULT_ITEM.get(itemId) ?? {}, tier);
 }

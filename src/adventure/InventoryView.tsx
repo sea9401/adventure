@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Diamond, Flask, Scroll, Sword } from "@phosphor-icons/react";
 import {
+  BONUS_KEYS,
+  BONUS_LABELS,
   ITEMS,
   findItemId,
   rarityTextClass,
@@ -11,11 +13,17 @@ import {
   type EquipSlot,
   type ItemId,
 } from "./data/items";
+import {
+  craftTierSuffix,
+  craftTierTextClass,
+  type CraftTier,
+} from "./data/craftQuality";
+import { resolveCraftedItem } from "./data/recipes";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, POTION_IDS, potionMax } from "./data/potions";
 import { CONSUMABLES, CONSUMABLE_IDS } from "./data/consumables";
 import type { InventoryState } from "./inventory/useInventory";
-import type { EquippedSlots } from "./character/types";
+import type { EquippedItem, EquippedSlots } from "./character/types";
 import { EquippedGrid } from "./character/CharacterMini";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
@@ -38,17 +46,45 @@ const SLOT_TABS: { key: EquipSlot; label: string }[] = [
   { key: "accessory", label: "장신구" },
 ];
 
-const BONUS_LABELS: Record<keyof EquipBonus, string> = {
-  atk: "공격력",
-  def: "방어력",
-  str: "힘",
-  dex: "민첩",
-  vit: "활력",
-  spd: "속도",
-  luk: "행운",
+// 보유 장비 한 줄 — 무등급 스택(tier 없음)과 제작산 등급 스택(tier ±1·±2)을 함께 표현.
+type EquipEntry = {
+  key: string;
+  id: ItemId;
+  tier?: CraftTier;
+  item: EquipItem;
+  count: number;
 };
 
-const BONUS_KEYS = Object.keys(BONUS_LABELS) as (keyof EquipBonus)[];
+function buildEquipEntries(inventory: InventoryState): EquipEntry[] {
+  const entries: EquipEntry[] = [];
+  for (const id of Object.keys(ITEMS) as ItemId[]) {
+    const n = inventory.equipment[id] ?? 0;
+    if (n > 0) entries.push({ key: id, id, item: ITEMS[id], count: n });
+  }
+  for (const [id, tiers] of Object.entries(inventory.craftedEquipment)) {
+    for (const [t, n] of Object.entries(tiers ?? {})) {
+      if (!n || n <= 0) continue;
+      const tier = Number(t) as CraftTier;
+      entries.push({
+        key: `${id}@${t}`,
+        id: id as ItemId,
+        tier,
+        item: resolveCraftedItem(id as ItemId, tier),
+        count: n,
+      });
+    }
+  }
+  return entries;
+}
+
+// 같은 슬롯에 장착 중인 게 바로 이 entry 인지 — 무등급은 id 만, 제작산은 id + 등급까지 일치.
+function isEntryEquipped(
+  entry: EquipEntry,
+  current: EquippedItem | null | undefined,
+): boolean {
+  if (findItemId(current ?? null) !== entry.id) return false;
+  return (current?.craftTier ?? 0) === (entry.tier ?? 0);
+}
 
 function computeDiff(
   next: EquipItem,
@@ -71,15 +107,13 @@ export function InventoryView({
 }: {
   inventory: InventoryState;
   equipped?: EquippedSlots;
-  onEquip?: (id: ItemId) => void;
+  onEquip?: (id: ItemId, tier?: CraftTier) => void;
   onUnequip?: (slot: EquipSlot) => void;
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
   const [equipSlotTab, setEquipSlotTab] = useState<EquipSlot>("weapon");
 
-  const ownedEquipment = (Object.keys(ITEMS) as ItemId[])
-    .map((id) => ({ id, item: ITEMS[id], count: inventory.equipment[id] ?? 0 }))
-    .filter((e) => e.count > 0);
+  const ownedEquipment = buildEquipEntries(inventory);
   const ownedMaterials = (Object.keys(MATERIALS) as MaterialId[])
     .map((id) => ({
       id,
@@ -151,15 +185,22 @@ export function InventoryView({
                 해당 종류의 장비가 없습니다.
               </p>
             )}
-            {equipPager.pageItems.map(({ id, item, count }) => {
+            {equipPager.pageItems.map((entry) => {
+              const { key, id, tier, item, count } = entry;
               const current = equipped?.[item.slot] ?? null;
-              const isEquipped = findItemId(current) === id;
+              const isEquipped = isEntryEquipped(entry, current);
               const diff = isEquipped ? [] : computeDiff(item, current);
+              const suffix = craftTierSuffix(entry.tier);
               return (
-                <Card key={id}>
+                <Card key={key}>
                   <div className="flex items-baseline justify-between gap-2">
                     <span className={`text-sm font-semibold ${rarityTextClass(item)}`}>
                       {item.name}
+                      {suffix && (
+                        <span className={`ml-1 text-xs font-normal ${craftTierTextClass(tier)}`}>
+                          {suffix.trim()}
+                        </span>
+                      )}
                       {count > 1 && (
                         <span className="ml-1 text-xs font-normal tabular-nums text-zinc-500 dark:text-zinc-400">
                           ×{count}
@@ -203,7 +244,7 @@ export function InventoryView({
                   {onEquip && (
                     <button
                       type="button"
-                      onClick={() => onEquip(id)}
+                      onClick={() => onEquip(id, tier)}
                       disabled={isEquipped}
                       className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                     >

@@ -26,7 +26,12 @@ export async function POST(req: Request) {
   const sessionFail = await checkSession(userId, req);
   if (sessionFail) return sessionFail;
 
-  let body: { kind?: unknown; id?: unknown; quantity?: unknown };
+  let body: {
+    kind?: unknown;
+    id?: unknown;
+    quantity?: unknown;
+    craftTier?: unknown;
+  };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -42,8 +47,14 @@ export async function POST(req: Request) {
   if (!Number.isInteger(quantity) || quantity < 1) {
     return new Response("invalid quantity", { status: 400 });
   }
+  // sell_equipment 한정 옵션 — 제작 등급(±1·±2). 그 외 값/타입은 무시(= 무등급 취급).
+  let craftTier: number | undefined;
+  if (body.craftTier != null) {
+    const t = Number(body.craftTier);
+    if ([-2, -1, 1, 2].includes(t)) craftTier = t;
+  }
 
-  const action = { kind: body.kind, id: body.id, quantity };
+  const action = { kind: body.kind, id: body.id, quantity, craftTier };
 
   try {
     const outcome: ShopOutcome = await db.transaction((tx) =>

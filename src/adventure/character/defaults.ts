@@ -1,6 +1,6 @@
-import { ITEMS, type EquipItem } from "@/adventure/data/items";
+import { ITEMS } from "@/adventure/data/items";
 import type { StatKey } from "@/adventure/data/stats";
-import type { Skill } from "./types";
+import type { EquippedItem, Skill } from "./types";
 
 // 레벨 1 기준 베이스 — 레벨 N의 max는 baseCharacter.max{Hp,Mp} + (N-1) * {HP,MP}_PER_LEVEL.
 export const HP_PER_LEVEL = 5;
@@ -26,9 +26,9 @@ export const baseCharacter = {
   skills: [] as Skill[],
   stats: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 } as Record<StatKey, number>,
   equipped: {
-    weapon: ITEMS.branch_stick as EquipItem | null,
-    armor: ITEMS.cloth_clothes as EquipItem | null,
-    accessory: ITEMS.mom_amulet as EquipItem | null,
+    weapon: ITEMS.branch_stick as EquippedItem | null,
+    armor: ITEMS.cloth_clothes as EquippedItem | null,
+    accessory: ITEMS.mom_amulet as EquippedItem | null,
   },
 };
 

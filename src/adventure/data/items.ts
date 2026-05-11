@@ -15,6 +15,25 @@ export type EquipBonus = {
   luk?: number;
 };
 
+// 보너스 키 ↔ 한글 라벨. EquipItem.stats 의 label 과 일치 — 제작 등급 stats 재생성·
+// 인벤 비교 diff 등에서 공용으로 쓴다.
+export const BONUS_LABELS: Record<keyof EquipBonus, string> = {
+  atk: "공격력",
+  def: "방어력",
+  str: "힘",
+  dex: "민첩",
+  vit: "활력",
+  spd: "속도",
+  luk: "행운",
+};
+
+export const BONUS_KEYS = Object.keys(BONUS_LABELS) as (keyof EquipBonus)[];
+
+// stats 표시용 — "+3" / "-2" / "+0".
+export function signedBonus(n: number): string {
+  return (n >= 0 ? "+" : "") + n;
+}
+
 export type EquipItem = {
   name: string;
   slot: EquipSlot;
@@ -80,8 +99,8 @@ export const ITEMS = {
   baseball_bat: {
     name: "야구 방망이",
     slot: "weapon",
-    stats: [{ label: "공격력", value: "+2" }],
-    bonus: { atk: 2 },
+    stats: [{ label: "공격력", value: "+3" }],
+    bonus: { atk: 3 },
     description: "단단한 나무를 깎아 만든 묵직한 방망이.",
   } satisfies EquipItem,
   nailed_baseball_bat: {
@@ -169,12 +188,12 @@ export const ITEMS = {
     name: "골렘갑주",
     slot: "armor",
     stats: [
-      { label: "방어력", value: "+7" },
+      { label: "방어력", value: "+6" },
       { label: "공격력", value: "-1" },
       { label: "속도", value: "-3" },
       { label: "행운", value: "-1" },
     ],
-    bonus: { def: 7, atk: -1, spd: -3, luk: -1 },
+    bonus: { def: 6, atk: -1, spd: -3, luk: -1 },
     description: "골렘의 잔해를 덧대어 만든 두꺼운 갑주. 묵직한 만큼 휘두름과 발걸음, 운이 따라 무거워진다.",
     rarity: "uncommon",
   } satisfies EquipItem,
@@ -205,19 +224,19 @@ export const ITEMS = {
     slot: "armor",
     stats: [
       { label: "방어력", value: "+1" },
-      { label: "속도", value: "+2" },
+      { label: "속도", value: "+3" },
     ],
-    bonus: { def: 1, spd: 2 },
+    bonus: { def: 1, spd: 3 },
     description: "박쥐 가죽을 이어 만든 후드. 어둠 속에서도 발이 가볍다.",
   } satisfies EquipItem,
   crystal_dagger: {
     name: "수정 단검",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+5" },
+      { label: "공격력", value: "+4" },
       { label: "민첩", value: "+1" },
     ],
-    bonus: { atk: 5, dex: 1 },
+    bonus: { atk: 4, dex: 1 },
     description: "단단한 수정을 깎아 만든 날카로운 단검.",
     rarity: "uncommon",
   } satisfies EquipItem,
@@ -234,15 +253,15 @@ export const ITEMS = {
   } satisfies EquipItem,
 
   // 마정석 무기 4종 — 광맥의 수호자 처치 보상으로 풀리는 동굴 강화 라인.
-  // 모두 weapon 슬롯, atk +7 공통 + 보조 스탯이 다름.
+  // 모두 weapon 슬롯, atk +6 공통(제작 `일반` 등급 기준 — 품질에 따라 ±2) + 보조 스탯이 다름.
   mana_sword: {
     name: "마정석 검",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+7" },
+      { label: "공격력", value: "+6" },
       { label: "힘", value: "+3" },
     ],
-    bonus: { atk: 7, str: 3 },
+    bonus: { atk: 6, str: 3 },
     description: "마정석을 칼날에 박아 넣은 한손검. 휘두르면 묵직한 무게가 손에 실린다.",
     rarity: "uncommon",
   } satisfies EquipItem,
@@ -250,10 +269,10 @@ export const ITEMS = {
     name: "마정석 방패",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+7" },
+      { label: "공격력", value: "+6" },
       { label: "활력", value: "+3" },
     ],
-    bonus: { atk: 7, vit: 3 },
+    bonus: { atk: 6, vit: 3 },
     description: "마정석을 박은 묵직한 방패. 막아내며 받아치는 데에도 쓴다.",
     rarity: "uncommon",
   } satisfies EquipItem,
@@ -261,10 +280,10 @@ export const ITEMS = {
     name: "마정석 창",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+7" },
+      { label: "공격력", value: "+6" },
       { label: "민첩", value: "+3" },
     ],
-    bonus: { atk: 7, dex: 3 },
+    bonus: { atk: 6, dex: 3 },
     description: "끝에 마정석을 깎아 박은 긴 창. 가벼우면서도 묘하게 정확하다.",
     rarity: "uncommon",
   } satisfies EquipItem,
@@ -272,10 +291,10 @@ export const ITEMS = {
     name: "마정석 너클",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+7" },
+      { label: "공격력", value: "+6" },
       { label: "행운", value: "+5" },
     ],
-    bonus: { atk: 7, luk: 5 },
+    bonus: { atk: 6, luk: 5 },
     description: "마정석 조각을 손등에 박은 너클. 한 방 한 방이 묘하게 운에 맡겨지는 느낌이 든다.",
     rarity: "uncommon",
   } satisfies EquipItem,
@@ -291,16 +310,15 @@ export const ITEMS = {
   } satisfies EquipItem,
 
   // 운봉 무기 4종 + 액세서리 2 — 운봉의 거인 협동 처치 보상으로 풀리는 산정 강화 라인.
-  // 마정석 라인의 한 단계 위. 무기 atk +9 공통 + 보조 stat 검 +5 / 다른 +6.
-  // 검은 str 1:1 환산으로 +5 atk, 다른 무기는 보조 임계 도달로 부수 효과 강화 (D 안).
+  // 마정석 라인의 한 단계 위. 무기 atk +8 공통(제작 `일반` 등급 기준 — 품질에 따라 ±2) + 보조 stat.
   peak_sword: {
     name: "운봉 대검",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+9" },
+      { label: "공격력", value: "+8" },
       { label: "힘", value: "+5" },
     ],
-    bonus: { atk: 9, str: 5 },
+    bonus: { atk: 8, str: 5 },
     description: "운봉의 거인 뼛조각으로 단련한 한손 대검. 무게가 손에 그대로 실린다.",
     rarity: "rare",
   } satisfies EquipItem,
@@ -308,10 +326,10 @@ export const ITEMS = {
     name: "운봉 방벽",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+9" },
+      { label: "공격력", value: "+8" },
       { label: "활력", value: "+6" },
     ],
-    bonus: { atk: 9, vit: 6 },
+    bonus: { atk: 8, vit: 6 },
     description: "거인의 비늘을 그대로 두른 방패형 무기. 막으며 쳐낸다.",
     rarity: "rare",
   } satisfies EquipItem,
@@ -319,10 +337,10 @@ export const ITEMS = {
     name: "운봉 장창",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+9" },
+      { label: "공격력", value: "+8" },
       { label: "민첩", value: "+6" },
     ],
-    bonus: { atk: 9, dex: 6 },
+    bonus: { atk: 8, dex: 6 },
     description: "운봉석 끝을 깎아 박은 긴 창. 멀리서도 정확하다.",
     rarity: "rare",
   } satisfies EquipItem,
@@ -330,10 +348,10 @@ export const ITEMS = {
     name: "운봉 발톱",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+9" },
+      { label: "공격력", value: "+8" },
       { label: "행운", value: "+6" },
     ],
-    bonus: { atk: 9, luk: 6 },
+    bonus: { atk: 8, luk: 6 },
     description: "거인의 손가락뼈를 갈아 만든 발톱형 너클. 한 방 한 방이 운에 맡겨진다.",
     rarity: "rare",
   } satisfies EquipItem,
@@ -341,22 +359,22 @@ export const ITEMS = {
     name: "운봉 견갑",
     slot: "accessory",
     stats: [
-      { label: "민첩", value: "+5" },
+      { label: "민첩", value: "+4" },
       { label: "속도", value: "+4" },
     ],
-    bonus: { dex: 5, spd: 4 },
+    bonus: { dex: 4, spd: 4 },
     description: "운봉의 거인 어깨 비늘을 가볍게 깎아 만든 견갑. 두르면 손이 빨라지고 발이 가벼워진다.",
     rarity: "rare",
   } satisfies EquipItem,
-  // 운봉의 심장 — 협동 보스 epic 확정 보상. str 중심 공격형 액세서리.
+  // 운봉의 심장 — 협동 보스 처치 보상. str 중심 공격형 액세서리.
   peak_heart: {
     name: "운봉의 심장",
     slot: "accessory",
     stats: [
-      { label: "힘", value: "+5" },
+      { label: "힘", value: "+4" },
       { label: "활력", value: "+3" },
     ],
-    bonus: { str: 5, vit: 3 },
+    bonus: { str: 4, vit: 3 },
     description: "운봉의 거인의 가슴에서 떼어낸 작은 심장. 손에 쥐면 어깨가 묵직해진다.",
     rarity: "rare",
   } satisfies EquipItem,

@@ -9,8 +9,58 @@ import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { formatRelativeTime } from "@/lib/format";
 import { ITEMS, rarityTextClass, type ItemId } from "@/adventure/data/items";
+import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
+import { POTIONS } from "@/adventure/data/potions";
+import { getRecipeById } from "@/adventure/data/recipes";
+import { craftVarianceSummary } from "@/adventure/data/craftQuality";
 import { fetchListings } from "./api";
 import type { ItemKind, Listing, SortMode } from "./types";
+
+// 매물 카드를 클릭하면 펼쳐 보여줄 상세 — 장비 옵션 / 제작서 결과 / 재료 설명.
+type ListingDetail = {
+  title?: string;
+  lines: { label: string; value: string }[];
+  /** 제작 품질 변동 안내 ("공격력 +6~+10" 식). */
+  variance?: string;
+  description?: string;
+};
+
+function hasOwn(obj: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+function listingDetail(item: Listing): ListingDetail | null {
+  if (item.itemKind === "equip") {
+    if (!hasOwn(ITEMS, item.itemId)) return null;
+    const def = ITEMS[item.itemId as ItemId];
+    return { lines: [...def.stats], description: def.description };
+  }
+  if (item.itemKind === "recipe") {
+    const r = getRecipeById(item.itemId);
+    if (!r) return null;
+    if (r.result.kind === "equipment") {
+      const def = ITEMS[r.result.itemId];
+      return {
+        title: `제작 결과: ${def.name}`,
+        lines: [...def.stats],
+        variance: craftVarianceSummary(def, r) ?? undefined,
+        description: def.description,
+      };
+    }
+    const p = POTIONS[r.result.potionId];
+    const qty = r.result.quantity;
+    return {
+      title: `제작 결과: ${p.name}${qty > 1 ? ` ×${qty}` : ""}`,
+      lines: [],
+      description: p.description,
+    };
+  }
+  if (item.itemKind === "material") {
+    if (!hasOwn(MATERIALS, item.itemId)) return null;
+    return { lines: [], description: MATERIALS[item.itemId as MaterialId].description };
+  }
+  return null;
+}
 
 type KindFilter = "all" | ItemKind;
 
@@ -240,18 +290,43 @@ function ListingCard({
   alreadyKnown?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
   const insufficientGold =
     typeof currentGold === "number" && currentGold < item.price;
   const blocked = alreadyKnown === true;
   const isRecipe = item.itemKind === "recipe";
   // 장비 매물이면 등급색으로 강조 — 다른 종류는 기본 zinc 톤.
-  const equipDef = item.itemKind === "equip" ? ITEMS[item.itemId as ItemId] : null;
+  const equipDef =
+    item.itemKind === "equip" && hasOwn(ITEMS, item.itemId)
+      ? ITEMS[item.itemId as ItemId]
+      : null;
   const nameClass = rarityTextClass(equipDef, "text-zinc-900 dark:text-zinc-100");
+  const detail = listingDetail(item);
   return (
     <Card padding="sm">
       <div className="flex items-center gap-3">
         <span className="flex-1 min-w-0">
-          <span className={`block truncate text-sm font-medium ${nameClass}`}>
+          <span
+            className={`block truncate text-sm font-medium ${nameClass} ${
+              detail
+                ? "cursor-pointer underline decoration-dotted decoration-zinc-400 underline-offset-2"
+                : ""
+            }`}
+            role={detail ? "button" : undefined}
+            tabIndex={detail ? 0 : undefined}
+            aria-expanded={detail ? open : undefined}
+            onClick={detail ? () => setOpen((v) => !v) : undefined}
+            onKeyDown={
+              detail
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setOpen((v) => !v);
+                    }
+                  }
+                : undefined
+            }
+          >
             {isRecipe ? "📜 " : ""}
             {item.itemName}
             {item.itemKind === "material" && item.quantity > 1 ? (
@@ -342,6 +417,42 @@ function ListingCard({
           ) : null}
         </span>
       </div>
+      {open && detail ? (
+        <div className="mt-2 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
+          {detail.title ? (
+            <div className="mb-1 font-medium text-zinc-700 dark:text-zinc-300">
+              {detail.title}
+            </div>
+          ) : null}
+          {detail.lines.length > 0 ? (
+            <div className="space-y-0.5">
+              {detail.lines.map((s) => (
+                <div
+                  key={s.label}
+                  className="flex items-baseline justify-between gap-2"
+                >
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    {s.label}
+                  </span>
+                  <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {s.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {detail.variance ? (
+            <div className="mt-1 text-sky-600 dark:text-sky-400">
+              품질에 따라 변동 — {detail.variance}
+            </div>
+          ) : null}
+          {detail.description ? (
+            <div className="mt-1.5 border-t border-zinc-200 pt-1.5 italic text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              {detail.description}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </Card>
   );
 }

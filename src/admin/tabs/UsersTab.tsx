@@ -623,6 +623,7 @@ function ItemGrantSection({
     const next: InventoryState = {
       potions: { ...inventory.potions },
       equipment: { ...inventory.equipment },
+      craftedEquipment: { ...inventory.craftedEquipment },
       materials: { ...inventory.materials },
       consumables: { ...inventory.consumables },
       potionCapacityBonus: inventory.potionCapacityBonus,

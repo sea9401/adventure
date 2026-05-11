@@ -54,12 +54,23 @@ export class ShopError extends Error {
 }
 
 type CountMap = Record<string, number>;
+// 제작산 등급 인스턴스 — itemId → (등급 문자열 "-2"|"-1"|"1"|"2" → 개수). 등급 0 은 equipment[] 에 합산.
+type CraftedMap = Record<string, Record<string, number>>;
+const NON_ZERO_TIERS = new Set(["-2", "-1", "1", "2"]);
+
+function cloneCrafted(src: CraftedMap | undefined): CraftedMap {
+  const out: CraftedMap = {};
+  for (const [k, v] of Object.entries(src ?? {})) out[k] = { ...v };
+  return out;
+}
 
 export type ShopComputeInput = {
   gold: number;
   potions: CountMap;
   materials: CountMap;
   equipment: CountMap;
+  // 제작산 등급 인스턴스 (sell_equipment 에서 craftTier 지정 시 차감). 미동봉이면 빈 맵.
+  craftedEquipment?: CraftedMap;
   consumables: CountMap;
   potionCapacityBonus: number;
   // material-buy 잠금 검증용 (inShop=false 인 재료). 미동봉이면 빈 맵 취급.
@@ -71,6 +82,7 @@ export type ShopComputeResult = {
   potions: CountMap;
   materials: CountMap;
   equipment: CountMap;
+  craftedEquipment: CraftedMap;
   consumables: CountMap;
   applied: ShopApplied;
 };
@@ -87,11 +99,14 @@ export function computeShopOutcome(
   const potions = { ...input.potions };
   const materials = { ...input.materials };
   const equipment = { ...input.equipment };
+  const craftedEquipment = cloneCrafted(input.craftedEquipment);
   const consumables = { ...input.consumables };
   const gold = input.gold;
 
   let appliedQty = qty;
   let goldDelta = 0;
+  // sell_equipment 가 제작 등급 인스턴스를 팔았을 때만 채워짐.
+  let appliedCraftTier: number | undefined;
 
   switch (action.kind) {
     case "buy_potion": {
@@ -151,9 +166,25 @@ export function computeShopOutcome(
     }
     case "sell_equipment": {
       if (!ITEMS[action.id as ItemId]) throw new ShopError("unknown_item");
-      const have = equipment[action.id] ?? 0;
-      if (have < qty) throw new ShopError("insufficient_items");
-      equipment[action.id] = have - qty;
+      const tierKey =
+        action.craftTier != null && NON_ZERO_TIERS.has(String(action.craftTier))
+          ? String(action.craftTier)
+          : null;
+      if (tierKey) {
+        const tierMap = craftedEquipment[action.id] ?? {};
+        const have = tierMap[tierKey] ?? 0;
+        if (have < qty) throw new ShopError("insufficient_items");
+        const left = have - qty;
+        if (left > 0) tierMap[tierKey] = left;
+        else delete tierMap[tierKey];
+        if (Object.keys(tierMap).length) craftedEquipment[action.id] = tierMap;
+        else delete craftedEquipment[action.id];
+        appliedCraftTier = action.craftTier;
+      } else {
+        const have = equipment[action.id] ?? 0;
+        if (have < qty) throw new ShopError("insufficient_items");
+        equipment[action.id] = have - qty;
+      }
       goldDelta = getItemSellPrice(action.id as ItemId) * qty;
       break;
     }
@@ -164,8 +195,15 @@ export function computeShopOutcome(
     potions,
     materials,
     equipment,
+    craftedEquipment,
     consumables,
-    applied: { kind: action.kind, id: action.id, quantity: appliedQty, goldDelta },
+    applied: {
+      kind: action.kind,
+      id: action.id,
+      quantity: appliedQty,
+      goldDelta,
+      ...(appliedCraftTier != null ? { craftTier: appliedCraftTier } : {}),
+    },
   };
 }
 
@@ -176,6 +214,7 @@ type SavedInventory = {
   potions?: CountMap;
   materials?: CountMap;
   equipment?: CountMap;
+  craftedEquipment?: CraftedMap;
   consumables?: CountMap;
   potionCapacityBonus?: number;
   [k: string]: unknown;
@@ -224,6 +263,7 @@ export async function applyShopAction(
       potions: { ...(inv.potions ?? {}) },
       materials: { ...(inv.materials ?? {}) },
       equipment: { ...(inv.equipment ?? {}) },
+      craftedEquipment: inv.craftedEquipment ?? {},
       consumables: { ...(inv.consumables ?? {}) },
       potionCapacityBonus: inv.potionCapacityBonus ?? 0,
       soldCounts,
@@ -237,6 +277,7 @@ export async function applyShopAction(
     potions: out.potions,
     materials: out.materials,
     equipment: out.equipment,
+    craftedEquipment: out.craftedEquipment,
     consumables: out.consumables,
   };
 
