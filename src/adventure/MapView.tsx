@@ -37,7 +37,7 @@ export function MapView({
   hasStoryFlag: (flagId: string) => boolean;
   onTrialStart: (from: RegionId, to: RegionId) => void;
 }) {
-  const { addNotification, inventory, handleUseTownReturn } = useGame();
+  const { addNotification, inventory, handleUseTownReturn, autoHunt } = useGame();
   const scrollCount = inventory.consumableCount("scroll_town_return");
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
   const [lowHpBlocked, setLowHpBlocked] = useState(false);
@@ -106,13 +106,15 @@ export function MapView({
     isAdjacent &&
     selectedReq?.kind === "trial" &&
     !isTrialCleared(selectedReq.enemiesFrom);
+  const huntDispatched = autoHunt.isDispatched;
   // 시련 엣지는 met=false 라도 "도전" 액션으로 진입 가능 — canMove 와 별도로 처리.
+  // 단, 위탁 원정 중에는 시련(자동 전투) 도전 불가 — 라이브 사냥·보스 도전과 동일 정책.
   const canMove =
     !!selectedId &&
     selectedId !== progress.currentRegionId &&
     isAdjacent &&
     (requirementStatus?.met ?? true);
-  const canChallenge = isTrialEdge;
+  const canChallenge = isTrialEdge && !huntDispatched;
 
   // 마을 귀환 주문서로 이동 가능 여부 — 가본 마을이고, 정상 경로(canMove/canChallenge)
   // 가 안 풀리는 상황에서만 노출. 출발지가 마을이면 fast-travel 엣지로 무료 이동 가능
@@ -213,6 +215,12 @@ export function MapView({
           ))}
         </MapCanvas>
       </Card>
+      {isTrialEdge && huntDispatched && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          자동 사냥(원정) 중에는 시련에 도전할 수 없습니다 — 원정을 먼저
+          수령하세요.
+        </div>
+      )}
       <RegionDetail
         region={selectedRegion}
         state={selectedState}

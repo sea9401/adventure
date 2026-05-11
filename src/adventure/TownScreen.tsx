@@ -162,6 +162,10 @@ export function TownScreen() {
     const healCost = character.gold < 50 ? 0 : 1;
     const isFull =
       character.hp >= character.maxHp && character.mp >= character.maxMp;
+    // 위탁 원정 중에는 치유소 회복을 막지만, HP가 0이면 예외 — 시련 등에서 쓰러져
+    // 마을로 복귀한 직후 회복도 이동도 못 해 갇히는 상황을 푼다. 원정은 그대로
+    // 진행되고, 수령 시 서버가 baseline HP 기준으로 결과를 적용하므로 desync 없음.
+    const blockedByHunt = autoHunt.isDispatched && character.hp > 0;
     const respawnId = mapProgress.respawnRegionId ?? START_REGION_ID;
     const isRespawnHere = respawnId === currentRegion.id;
     return (
@@ -196,7 +200,7 @@ export function TownScreen() {
           <button
             type="button"
             onClick={() => {
-              if (autoHunt.isDispatched) return;
+              if (blockedByHunt) return;
               characterStateHook.heal(
                 healCost,
                 character.maxHp,
@@ -204,10 +208,10 @@ export function TownScreen() {
               );
               adventureLog.incrementHealingCount();
             }}
-            disabled={isFull || autoHunt.isDispatched}
+            disabled={isFull || blockedByHunt}
             className="mt-4 w-full rounded-md border border-rose-500 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-400 dark:text-rose-300"
           >
-            {autoHunt.isDispatched
+            {blockedByHunt
               ? "자동 사냥 중 — 회복 불가"
               : isFull
                 ? "이미 가득 차 있다"
@@ -215,6 +219,12 @@ export function TownScreen() {
                   ? `전부 회복 (${healCost} G)`
                   : "전부 회복 (무료)"}
           </button>
+          {autoHunt.isDispatched && character.hp <= 0 && (
+            <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+              자동 사냥 중이지만, 쓰러진 상태라 회복은 가능합니다. 원정은 그대로
+              진행됩니다.
+            </p>
+          )}
         </Card>
         <Card as="section" padding="md">
           <div className="flex items-center gap-3">
