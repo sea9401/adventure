@@ -545,6 +545,19 @@ function Home() {
     });
   };
 
+  // 인벤토리에서 장비 1개 폐기 — 보상 없음. (장착 중인 장비는 인벤토리 카운트 밖이라
+  // 애초에 폐기 대상이 안 됨 — 가방엔 여분만 보인다.) 순수 제거라 서버 권위 불필요 — consume 후
+  // useRemotePatch 가 동기화.
+  const handleDiscardFromInventory = (id: ItemId, tier?: CraftTier) => {
+    const isCrafted = tier != null && tier !== 0;
+    const ok = isCrafted
+      ? inventory.consumeCraftedEquipment(id, tier, 1)
+      : inventory.consumeEquipment(id, 1);
+    if (!ok) return;
+    const suffix = craftTierSuffix(tier);
+    addNotification("info", `${ITEMS[id].name}${suffix}을(를) 폐기했다.`);
+  };
+
   // 제작 — 서버 권위 (audit-findings #1 후속). 클라는 recipeId 만 보내고, 서버가 inventory.v2 /
   // crafting.v2 를 잠그고 검증·적용(품질 등급 추첨 포함)한 새 값을 받아 in-memory state 를
   // replace. 이어지는 useRemotePatch 자동 PATCH 는 409→재시도로 자가 수렴 (상점과 동일).
@@ -834,6 +847,7 @@ function Home() {
     handleSellEquipment,
     handleEquipFromInventory,
     handleUnequip,
+    handleDiscardFromInventory,
     handleCraft,
     handleBattleEnd,
     handleAcceptQuest,

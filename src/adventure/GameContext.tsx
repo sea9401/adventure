@@ -115,6 +115,8 @@ export type GameCtx = {
   handleSellEquipment: (id: ItemId, quantity: number, craftTier?: CraftTier) => void;
   handleEquipFromInventory: (id: ItemId, tier?: CraftTier) => void;
   handleUnequip: (slot: EquipSlot) => void;
+  /** 인벤토리에서 장비 1개 폐기 — 보상 없음(가방 여분 정리용). */
+  handleDiscardFromInventory: (id: ItemId, tier?: CraftTier) => void;
   handleCraft: (recipe: Recipe) => void;
   handleBattleEnd: (payload: BattleEndPayload) => void;
   handleAcceptQuest: (id: string) => void;

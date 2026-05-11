@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Diamond, Flask, Scroll, Sword } from "@phosphor-icons/react";
+import { Diamond, Flask, Scroll, Sword, Trash } from "@phosphor-icons/react";
 import {
   BONUS_KEYS,
   BONUS_LABELS,
@@ -46,38 +46,41 @@ const SLOT_TABS: { key: EquipSlot; label: string }[] = [
   { key: "accessory", label: "장신구" },
 ];
 
-// 보유 장비 한 줄 — 무등급 스택(tier 없음)과 제작산 등급 스택(tier ±1·±2)을 함께 표현.
+// 가방 목록 한 줄의 공통 외형 — 카드 대신 얇은 행으로 압축.
+const ROW =
+  "rounded-md border border-zinc-200 bg-white/70 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50";
+
+// 보유 장비는 1개당 한 행 — 같은 장비라도 묶지 않는다(중첩 X). 무등급(equipment[])과
+// 제작산 등급(craftedEquipment[id][tier]) 모두 개수만큼 펼쳐서 별도 entry 로.
 type EquipEntry = {
   key: string;
   id: ItemId;
   tier?: CraftTier;
   item: EquipItem;
-  count: number;
 };
 
 function buildEquipEntries(inventory: InventoryState): EquipEntry[] {
   const entries: EquipEntry[] = [];
   for (const id of Object.keys(ITEMS) as ItemId[]) {
     const n = inventory.equipment[id] ?? 0;
-    if (n > 0) entries.push({ key: id, id, item: ITEMS[id], count: n });
+    for (let i = 0; i < n; i++) {
+      entries.push({ key: `${id}#${i}`, id, item: ITEMS[id] });
+    }
   }
   for (const [id, tiers] of Object.entries(inventory.craftedEquipment)) {
     for (const [t, n] of Object.entries(tiers ?? {})) {
       if (!n || n <= 0) continue;
       const tier = Number(t) as CraftTier;
-      entries.push({
-        key: `${id}@${t}`,
-        id: id as ItemId,
-        tier,
-        item: resolveCraftedItem(id as ItemId, tier),
-        count: n,
-      });
+      const item = resolveCraftedItem(id as ItemId, tier);
+      for (let i = 0; i < n; i++) {
+        entries.push({ key: `${id}@${t}#${i}`, id: id as ItemId, tier, item });
+      }
     }
   }
   return entries;
 }
 
-// 같은 슬롯에 장착 중인 게 바로 이 entry 인지 — 무등급은 id 만, 제작산은 id + 등급까지 일치.
+// 같은 슬롯에 장착 중인 게 이 entry 와 동종(id + 등급 일치)인지 — 동종 여분이면 표시상 "장착중"으로 처리.
 function isEntryEquipped(
   entry: EquipEntry,
   current: EquippedItem | null | undefined,
@@ -104,14 +107,19 @@ export function InventoryView({
   equipped,
   onEquip,
   onUnequip,
+  onDiscard,
 }: {
   inventory: InventoryState;
   equipped?: EquippedSlots;
   onEquip?: (id: ItemId, tier?: CraftTier) => void;
   onUnequip?: (slot: EquipSlot) => void;
+  /** 장비 1개 폐기 — 보상 없음(2단계 확인). 미지정이면 폐기 버튼 숨김. */
+  onDiscard?: (id: ItemId, tier?: CraftTier) => void;
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
   const [equipSlotTab, setEquipSlotTab] = useState<EquipSlot>("weapon");
+  // 폐기 2단계 확인 — 현재 "정말 폐기?" 단계인 행의 key.
+  const [confirmKey, setConfirmKey] = useState<string | null>(null);
 
   const ownedEquipment = buildEquipEntries(inventory);
   const ownedMaterials = (Object.keys(MATERIALS) as MaterialId[])
@@ -136,17 +144,20 @@ export function InventoryView({
   const filteredEquipment = ownedEquipment.filter(
     (e) => e.item.slot === equipSlotTab,
   );
-  const equipPager = usePagination(filteredEquipment, 10);
-  const materialsPager = usePagination(ownedMaterials, 10);
-  const potionsPager = usePagination(ownedPotions, 10);
-  const consumablesPager = usePagination(ownedConsumables, 10);
+  const equipPager = usePagination(filteredEquipment, 12);
+  const materialsPager = usePagination(ownedMaterials, 12);
+  const potionsPager = usePagination(ownedPotions, 12);
+  const consumablesPager = usePagination(ownedConsumables, 12);
 
   return (
     <div className="space-y-3">
       <TabBar
         tabs={TABS}
         active={tab}
-        onChange={setTab}
+        onChange={(k) => {
+          setTab(k);
+          setConfirmKey(null);
+        }}
         ariaLabel="가방 탭"
       />
 
@@ -176,7 +187,10 @@ export function InventoryView({
             <TabBar
               tabs={SLOT_TABS}
               active={equipSlotTab}
-              onChange={setEquipSlotTab}
+              onChange={(k) => {
+                setEquipSlotTab(k);
+                setConfirmKey(null);
+              }}
               ariaLabel="장비 슬롯 탭"
               size="sm"
             />
@@ -185,75 +199,108 @@ export function InventoryView({
                 해당 종류의 장비가 없습니다.
               </p>
             )}
-            {equipPager.pageItems.map((entry) => {
-              const { key, id, tier, item, count } = entry;
-              const current = equipped?.[item.slot] ?? null;
-              const isEquipped = isEntryEquipped(entry, current);
-              const diff = isEquipped ? [] : computeDiff(item, current);
-              const suffix = craftTierSuffix(entry.tier);
-              return (
-                <Card key={key}>
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className={`text-sm font-semibold ${rarityTextClass(item)}`}>
-                      {item.name}
-                      {suffix && (
-                        <span className={`ml-1 text-xs font-normal ${craftTierTextClass(tier)}`}>
-                          {suffix.trim()}
+            <ul className="space-y-1.5">
+              {equipPager.pageItems.map((entry) => {
+                const { key, id, tier, item } = entry;
+                const current = equipped?.[item.slot] ?? null;
+                const isEquipped = isEntryEquipped(entry, current);
+                const diff = isEquipped ? [] : computeDiff(item, current);
+                const suffix = craftTierSuffix(tier);
+                const confirming = confirmKey === key;
+                return (
+                  <li key={key} className={`flex items-start gap-2 ${ROW}`}>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="flex flex-wrap items-baseline gap-x-1.5">
+                        <span className={`text-sm font-medium ${rarityTextClass(item)}`}>
+                          {item.name}
                         </span>
-                      )}
-                      {count > 1 && (
-                        <span className="ml-1 text-xs font-normal tabular-nums text-zinc-500 dark:text-zinc-400">
-                          ×{count}
+                        {suffix && (
+                          <span className={`text-xs ${craftTierTextClass(tier)}`}>
+                            {suffix.trim()}
+                          </span>
+                        )}
+                        {isEquipped && (
+                          <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                            장착중
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="text-xs text-amber-600 dark:text-amber-400">
+                          {item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
                         </span>
-                      )}
-                      {isEquipped && (
-                        <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-normal text-emerald-700 dark:text-emerald-400">
-                          장착중
-                        </span>
-                      )}
-                    </span>
-                    <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
-                      {item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
-                    </span>
-                  </div>
-                  {item.description && (
-                    <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                      {item.description}
-                    </p>
-                  )}
-                  {!isEquipped && diff.length > 0 && (
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-                      <span className="text-zinc-500 dark:text-zinc-400">
-                        장착 시
-                      </span>
-                      {diff.map((d) => (
-                        <span
-                          key={d.key}
-                          className={
-                            d.delta > 0
-                              ? "tabular-nums text-emerald-600 dark:text-emerald-400"
-                              : "tabular-nums text-rose-600 dark:text-rose-400"
-                          }
-                        >
-                          {d.label} {d.delta > 0 ? "+" : ""}
-                          {d.delta}
-                        </span>
-                      ))}
+                        {!isEquipped && diff.length > 0 && (
+                          <span className="inline-flex flex-wrap items-baseline gap-x-1.5 text-[11px]">
+                            <span className="text-zinc-400 dark:text-zinc-500">장착 시</span>
+                            {diff.map((d) => (
+                              <span
+                                key={d.key}
+                                className={
+                                  d.delta > 0
+                                    ? "tabular-nums text-emerald-600 dark:text-emerald-400"
+                                    : "tabular-nums text-rose-600 dark:text-rose-400"
+                                }
+                              >
+                                {d.label}
+                                {d.delta > 0 ? "+" : ""}
+                                {d.delta}
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {onEquip && (
-                    <button
-                      type="button"
-                      onClick={() => onEquip(id, tier)}
-                      disabled={isEquipped}
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                    >
-                      {isEquipped ? "장착중" : "장착"}
-                    </button>
-                  )}
-                </Card>
-              );
-            })}
+                    <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                      {confirming ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onDiscard?.(id, tier);
+                              setConfirmKey(null);
+                            }}
+                            className="rounded-md bg-rose-600 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-rose-700"
+                          >
+                            폐기
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmKey(null)}
+                            className="rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                          >
+                            취소
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {onEquip && (
+                            <button
+                              type="button"
+                              onClick={() => onEquip(id, tier)}
+                              disabled={isEquipped}
+                              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            >
+                              {isEquipped ? "장착중" : "장착"}
+                            </button>
+                          )}
+                          {onDiscard && (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmKey(key)}
+                              aria-label="폐기"
+                              title="폐기"
+                              className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:text-zinc-500 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                            >
+                              <Trash size={15} weight="bold" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
             <Pagination
               page={equipPager.page}
               pageCount={equipPager.pageCount}
@@ -271,21 +318,23 @@ export function InventoryView({
           />
         ) : (
           <section className="space-y-2">
-            {materialsPager.pageItems.map(({ id, material, count }) => (
-              <Card key={id}>
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    {material.name}
-                  </span>
-                  <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-                    ×{count}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                  {material.description}
-                </p>
-              </Card>
-            ))}
+            <ul className="space-y-1.5">
+              {materialsPager.pageItems.map(({ id, material, count }) => (
+                <li key={id} className={ROW}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                      {material.name}
+                    </span>
+                    <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+                      ×{count}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    {material.description}
+                  </p>
+                </li>
+              ))}
+            </ul>
             <Pagination
               page={materialsPager.page}
               pageCount={materialsPager.pageCount}
@@ -303,11 +352,11 @@ export function InventoryView({
           />
         ) : (
           <section className="space-y-2">
-            {potionsPager.pageItems.map(({ id, potion, count }) => (
-              <Card key={id} className="flex items-start gap-3">
-                <div className="min-w-0 flex-1">
+            <ul className="space-y-1.5">
+              {potionsPager.pageItems.map(({ id, potion, count }) => (
+                <li key={id} className={ROW}>
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                       {potion.name}
                     </span>
                     <span
@@ -320,12 +369,12 @@ export function InventoryView({
                       {count} / {potionCap}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                     {potion.description}
                   </p>
-                </div>
-              </Card>
-            ))}
+                </li>
+              ))}
+            </ul>
             <Pagination
               page={potionsPager.page}
               pageCount={potionsPager.pageCount}
@@ -346,21 +395,23 @@ export function InventoryView({
             <p className="px-1 text-xs text-zinc-500 dark:text-zinc-400">
               지도에서 가본 마을을 선택하면 자동으로 사용됩니다.
             </p>
-            {consumablesPager.pageItems.map(({ id, consumable, count }) => (
-              <Card key={id}>
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    {consumable.name}
-                  </span>
-                  <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-                    ×{count}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                  {consumable.description}
-                </p>
-              </Card>
-            ))}
+            <ul className="space-y-1.5">
+              {consumablesPager.pageItems.map(({ id, consumable, count }) => (
+                <li key={id} className={ROW}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                      {consumable.name}
+                    </span>
+                    <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+                      ×{count}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    {consumable.description}
+                  </p>
+                </li>
+              ))}
+            </ul>
             <Pagination
               page={consumablesPager.page}
               pageCount={consumablesPager.pageCount}
@@ -371,4 +422,3 @@ export function InventoryView({
     </div>
   );
 }
-

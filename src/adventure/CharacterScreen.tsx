@@ -37,6 +37,7 @@ export function CharacterScreen() {
     training,
     handleEquipFromInventory,
     handleUnequip,
+    handleDiscardFromInventory,
     quests,
     crafting,
   } = useGame();
@@ -138,6 +139,7 @@ export function CharacterScreen() {
           equipped={character.equipped}
           onEquip={handleEquipFromInventory}
           onUnequip={handleUnequip}
+          onDiscard={handleDiscardFromInventory}
         />
       </div>
     );
