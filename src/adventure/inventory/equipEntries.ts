@@ -1,0 +1,47 @@
+import { ITEMS, type EquipItem, type ItemId } from "../data/items";
+import { resolveDroppedItem, type DropQuality } from "../data/dropQuality";
+import type { CraftTier } from "../data/craftQuality";
+import { resolveCraftedItem } from "../data/recipes";
+import type { InventoryState } from "./useInventory";
+
+// 보유 장비를 1개당 한 entry 로 펼친다 — 같은 장비라도 묶지 않는다(중첩 X).
+// 기본(equipment[]) · 제작산 등급(craftedEquipment[id][tier]) · 드랍 고품질(droppedEquipment[id][q]) 모두 개수만큼.
+export type EquipEntry = {
+  key: string;
+  id: ItemId;
+  tier?: CraftTier;
+  quality?: DropQuality;
+  item: EquipItem;
+};
+
+export function buildEquipEntries(inventory: InventoryState): EquipEntry[] {
+  const entries: EquipEntry[] = [];
+  for (const id of Object.keys(ITEMS) as ItemId[]) {
+    const n = inventory.equipment[id] ?? 0;
+    for (let i = 0; i < n; i++) {
+      entries.push({ key: `${id}#${i}`, id, item: ITEMS[id] });
+    }
+  }
+  for (const [id, tiers] of Object.entries(inventory.craftedEquipment)) {
+    for (const [t, n] of Object.entries(tiers ?? {})) {
+      if (!n || n <= 0) continue;
+      const tier = Number(t) as CraftTier;
+      const item = resolveCraftedItem(id as ItemId, tier);
+      for (let i = 0; i < n; i++) {
+        entries.push({ key: `${id}@t${t}#${i}`, id: id as ItemId, tier, item });
+      }
+    }
+  }
+  for (const [id, quals] of Object.entries(inventory.droppedEquipment)) {
+    for (const [q, n] of Object.entries(quals ?? {})) {
+      if (!n || n <= 0) continue;
+      const quality = Number(q) as DropQuality;
+      if (quality !== 1 && quality !== 2) continue;
+      const item = resolveDroppedItem(id as ItemId, quality);
+      for (let i = 0; i < n; i++) {
+        entries.push({ key: `${id}@q${q}#${i}`, id: id as ItemId, quality, item });
+      }
+    }
+  }
+  return entries;
+}

@@ -1,10 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CaretDown, ChatCircle, PaperPlaneTilt, Users, X } from "@phosphor-icons/react";
+import {
+  Backpack,
+  CaretDown,
+  ChatCircle,
+  PaperPlaneTilt,
+  Users,
+  X,
+} from "@phosphor-icons/react";
 import { formatRelative } from "@/lib/notifications";
 import { CHAT_MAX_LENGTH } from "@/lib/chat-config";
+import {
+  encodeItemLink,
+  parseChatContent,
+  type ChatItemRef,
+} from "@/lib/chat-item-link";
+import { useGame } from "@/adventure/GameContext";
 import { SendMessageModal } from "@/adventure/marketplace/SendMessageModal";
+import { ChatItemChip } from "./ChatItemChip";
+import { ChatItemPicker } from "./ChatItemPicker";
 
 export type ChatMessage = {
   id: number;
@@ -59,6 +74,23 @@ async function postMessage(payload: {
   return res.json();
 }
 
+// 메시지 본문 — [[item:...]] 토큰을 인라인 아이템 칩으로 치환. 토큰이 없으면 평문 그대로.
+function MessageBody({ content }: { content: string }) {
+  const segments = useMemo(() => parseChatContent(content), [content]);
+  if (segments.length === 1 && segments[0].type === "text") return <>{content}</>;
+  return (
+    <>
+      {segments.map((seg, i) =>
+        seg.type === "text" ? (
+          <span key={i}>{seg.text}</span>
+        ) : (
+          <ChatItemChip key={i} link={seg} />
+        ),
+      )}
+    </>
+  );
+}
+
 export function ChatPanel({
   open,
   onClose,
@@ -76,11 +108,13 @@ export function ChatPanel({
   messages: ChatMessage[];
   onMessageSent: (m: ChatMessage) => void;
 }) {
+  const game = useGame();
   const [presence, setPresence] = useState<PresenceUser[]>([]);
   const [presenceOpen, setPresenceOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pmTarget, setPmTarget] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   // 낙관적 전송 — 서버 응답 전 임시 메시지 큐. 응답 도착 시 큐에서 제거.
   const [pending, setPending] = useState<ChatMessage[]>([]);
   const tempIdRef = useRef(0);
@@ -183,6 +217,19 @@ export function ChatPanel({
       const msg = err instanceof Error ? err.message : "";
       setError(translateChatError(msg));
     }
+  };
+
+  // 아이템 피커에서 고른 장비를 토큰으로 입력창에 삽입. 200자 초과면 막는다.
+  const insertItemLink = (ref: ChatItemRef) => {
+    const token = encodeItemLink(ref);
+    const sep = draft && !/\s$/.test(draft) ? " " : "";
+    const next = `${draft}${sep}${token} `;
+    if (next.length > CHAT_MAX_LENGTH) {
+      setError("메시지가 너무 깁니다.");
+      return;
+    }
+    setError(null);
+    setDraft(next);
   };
 
   if (!open) return null;
@@ -314,7 +361,7 @@ export function ChatPanel({
                       : "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
                   }`}
                 >
-                  {m.content}
+                  <MessageBody content={m.content} />
                 </div>
               </div>
             ))
@@ -331,6 +378,15 @@ export function ChatPanel({
           onSubmit={submit}
           className="flex items-center gap-2 border-t border-zinc-200 px-3 py-2 dark:border-zinc-800"
         >
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            aria-label="보유 아이템 자랑하기"
+            title="보유 아이템 링크"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            <Backpack size={18} weight="duotone" />
+          </button>
           <input
             type="text"
             value={draft}
@@ -354,6 +410,14 @@ export function ChatPanel({
         <SendMessageModal
           initialRecipient={pmTarget}
           onClose={() => setPmTarget(null)}
+        />
+      )}
+
+      {pickerOpen && (
+        <ChatItemPicker
+          inventory={game.inventory.state}
+          onPick={insertItemLink}
+          onClose={() => setPickerOpen(false)}
         />
       )}
     </div>
