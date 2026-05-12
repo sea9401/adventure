@@ -7,6 +7,8 @@ import type { PotionId } from "./potions";
 
 const POTION_SELL: Partial<Record<PotionId, number>> = {
   potion_heal_s: 1,
+  potion_heal_m: 2,
+  potion_heal_l: 5,
 };
 
 const MATERIAL_SELL: Partial<Record<MaterialId, number>> = {
