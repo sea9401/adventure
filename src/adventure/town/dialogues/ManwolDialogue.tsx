@@ -15,9 +15,11 @@ type Props = {
 
 const ORE_QUEST = "unhyang-manwol-ore-demo";
 const ORE_NEED = 6;
+const WEAPONS_QUEST = "unhyang-manwol-weapons";
+const WEAPONS_NEED = 8;
 
-// 만월 — 운봉 무기 안내 + "운봉석을 벼리는 법"(견갑 제작서 확정 루트).
-// 거인 처치 전엔 도전 종용 → 처치 후 운봉석 ×6 deliver 의뢰 → 완료 후 제작 안내.
+// 만월 — "운봉석을 벼리는 법"(견갑 확정) → "운봉 네 자루"(무기 4종 제작서 확정) → 볼드 재회(§7.1).
+// 거인 처치 전엔 도전 종용 → 처치 후 운봉석 ×6 deliver → ×8 더 deliver → 제작 안내 + 손잡이 심부름.
 export function ManwolDialogue({
   npc,
   onClose,
@@ -97,9 +99,65 @@ export function ManwolDialogue({
     );
   }
 
-  // ore.state === "completed" — 운봉 무기/견갑 제작 안내 + 볼드 재회 라인(§7.1).
+  // ── "운봉 네 자루" — 무기 4종 제작서 확정 루트 (견갑 시연 완료 후) ──
+  const weapons = quests.getEntry(WEAPONS_QUEST);
+  if (weapons.state === "available") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "견갑은 봤으니 이제 무기 차례야. 운봉석 여덟 덩이만 더 가져와 봐 — 대검, 방벽, 장창, 발톱. 네 자루 전부 벼리는 법을 자네 손에 새겨 줌세."
+        }
+        primaryAction={{
+          label: "받아들인다",
+          onClick: () => {
+            quests.accept(WEAPONS_QUEST);
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+  if (weapons.state === "active") {
+    const have = inventory.materialCount("unbong_ore");
+    if (have >= WEAPONS_NEED) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "운봉석 여덟 덩이… 좋아. 대검, 방벽, 장창, 발톱 — 네 자루의 결을 차례로 잡아 보겠네. 잘 봐 두게.\n됐어. 네 자루 전부, 자네 손에 새겨졌어. 손에 맞는 걸 골라 벼리게."
+          }
+          primaryAction={{
+            label: "건네준다",
+            onClick: () => {
+              const r = quests.tryDeliver(
+                WEAPONS_QUEST,
+                inventory.materialCount,
+                inventory.consumeMaterial,
+              );
+              if (r.ok) {
+                completeQuest(WEAPONS_QUEST);
+                onClose();
+              }
+            },
+          }}
+        />
+      );
+    }
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={`무기 네 자루를 벼리려면 운봉석이 좀 들어가. 여덟 덩이 채워 오게. — 진행 ${have}/${WEAPONS_NEED}`}
+      />
+    );
+  }
+
+  // weapons.state === "completed" — 제작 안내 + 볼드 재회 라인(§7.1).
   const craftHint =
-    "자네가 가진 비늘과 운봉석으로 — 무기 네 자루 중 하나, 그리고 견갑까지. 무기 제작서는 거인이 떨군 자리에서, 견갑 제작서는 내가 새겨준 그대로다. 대장간 모루 위에 비늘과 광석을 올려놓고 두드려보게.";
+    "운봉 무기 네 자루든 견갑이든 — 제작서는 자네 손에 다 새겨졌어. 거인이 떨군 비늘·운봉석·단단한 수정으로, 대장간 모루 위에 올려놓고 두드려보게.";
   const errandGiven = storyFlags.has("manwol_bold_errand_given");
   const letterDelivered = storyFlags.has("manwol_bold_letter_delivered");
   const reunionDone = storyFlags.has("manwol_bold_reunion_done");

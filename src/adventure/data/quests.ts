@@ -383,8 +383,8 @@ export const QUESTS: Quest[] = [
     repeatable: true,
     requiresQuestCompleted: "unhyang-baekun-peak-giant",
   },
-  // 만월 — "운봉석을 벼리는 법". 견갑(peak_mantle) 제작서 확정 입수 루트.
-  // 운봉 무기 4종은 그대로 운봉의 거인 보스 드롭(recipe_one_of)으로 둔다.
+  // 만월 — "운봉석을 벼리는 법"(견갑 확정) → 후속 "운봉 네 자루"(무기 4종 제작서 확정).
+  // 운봉 무기 4종은 운봉의 거인 보스 드롭(recipe_one_of)으로도 풀리지만, 이 의뢰가 확정 루트.
   {
     id: "unhyang-manwol-ore-demo",
     regionId: "unhyang",
@@ -396,6 +396,19 @@ export const QUESTS: Quest[] = [
     reward: { gold: 500, exp: 800, recipes: ["peak_mantle"], potionCapacityBonus: 1 },
     repeatable: false,
     giverNpcId: "unhyang_smith",
+  },
+  {
+    id: "unhyang-manwol-weapons",
+    regionId: "unhyang",
+    title: "운봉 네 자루",
+    description:
+      "견갑은 봤으니 이제 무기 차례야. 운봉석 여덟 덩이면 — 대검, 방벽, 장창, 발톱. 네 자루 전부 벼리는 법을 새겨 줌세. 손에 맞는 걸 골라 쓰게.",
+    requiredLevel: 22,
+    target: { kind: "deliver", materialId: "unbong_ore", count: 8 },
+    reward: { gold: 800, exp: 1200, recipes: ["peak_sword", "peak_shield", "peak_spear", "peak_claw"] },
+    repeatable: false,
+    giverNpcId: "unhyang_smith",
+    requiresQuestCompleted: "unhyang-manwol-ore-demo",
   },
   // ── 운향 — 사이드 의뢰 (도연 / 산하) ────────────────────────────────────
   {
@@ -831,6 +844,19 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "skyreach_elder",
     requiresQuestCompleted: "skyreach-haemu-phoenix-feather",
+  },
+  {
+    id: "skyreach-haemu-weapons",
+    regionId: "skyreach",
+    title: "봉황 네 자루",
+    description:
+      "봉인이 채워졌으니 — 이제 네 손에 무기를 쥐어 줄 차례요. 봉황 깃털 여덟 장이면, 봉황도·봉황패·봉황극·봉황조, 네 자루 전부 벼리는 법을 자네 손에 새겨 주리다. 손에 맞는 걸 골라 쓰시오.",
+    requiredLevel: 55,
+    target: { kind: "deliver", materialId: "phoenix_feather", count: 8 },
+    reward: { gold: 2500, exp: 3500, recipes: ["volcano_sword", "volcano_shield", "volcano_spear", "volcano_claw"] },
+    repeatable: false,
+    giverNpcId: "skyreach_elder",
+    requiresQuestCompleted: "skyreach-haemu-flame-scale",
   },
   {
     id: "skyreach-volcano-heart-recurring",
@@ -1281,10 +1307,10 @@ export const QUESTS: Quest[] = [
     regionId: "village",
     title: "마저 두드린 것",
     description:
-      "옛날에 만월이랑 무기 하나를 절반씩 만들다 싸우고 헤어졌지. 둘 다 다시 만났으니… 마저 완성해 볼까 싶어. 단단한 결정 여덟 덩이만 가져와 봐.",
+      "옛날에 만월이랑 무기 하나를 절반씩 만들다 싸우고 헤어졌지. 둘 다 다시 만났으니… 마저 완성해 볼까 싶어. 단단한 결정 여덟 덩이만 가져와 봐. 완성되면 — 그 검은 자네 거야.",
     requiredLevel: 22,
     target: { kind: "deliver", materialId: "hard_crystal", count: 8 },
-    reward: { gold: 1500, exp: 2500, potionCapacityBonus: 1 },
+    reward: { gold: 1500, exp: 2500, items: [{ id: "moonlight_blade", count: 1 }] },
     repeatable: false,
     giverNpcId: "village_blacksmith_bold",
   },
@@ -1306,10 +1332,10 @@ export const QUESTS: Quest[] = [
     regionId: "skyreach",
     title: "심장이 잠든 자리",
     description:
-      "심장이 잠든 자리에 정수가 고였더군 — 화산 두꺼비를 충분히 잡으면 그 정수가 흘러나올 거야. 마흔 마리쯤이면 돼. 그걸로 뭔가 만들어 볼 수 있겠어.",
+      "심장이 잠든 자리에 정수가 고였더군 — 화산 두꺼비를 충분히 잡으면 그 정수가 흘러나올 거야. 마흔 마리쯤이면 돼. 그걸로 — 용암 정수를 다듬어 줄게. 자네 몫이야.",
     requiredLevel: 55,
     target: { kind: "kill", monsterName: "화산 두꺼비", count: 40 },
-    reward: { gold: 1500, exp: 2500, potionCapacityBonus: 1 },
+    reward: { gold: 1500, exp: 2500, items: [{ id: "lava_essence", count: 1 }] },
     repeatable: false,
     giverNpcId: "skyreach_alchemist",
     requiresQuestCompleted: "windvale-volcano-boss",

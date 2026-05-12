@@ -641,7 +641,7 @@ town 이 아니므로 의뢰는 **바람골 역참(한솔)** 과 **천공 성지
 ## 12. 우선순위 / 마일스톤
 
 1. **M1 — 운향 메인 라인** ✅ *구현됨* (§1.1 백운: 협곡 정찰 → 거인 → 교역로 2종 / §1.2 만월 운봉석 시연 → 견갑 제작서 / `unhyang-peak-giant-recurring` 정기는 길드 게시판 / `mountain_friend` 칭호 + `unhyang_main_cleared`·`mountain_trade_open` flag / `BaekunDialogue`·`ManwolDialogue` 단계 분기). 미포함: `manwol_bold_reunion`(§7.1, M5 로 이관), 보상 수치 시뮬 미조정(§13).
-2. **M2 — 천공 성지 메인 라인** ✅ *구현됨* (§6.1 해무 봉인 라인: 용암 핵 ×6 → 봉황 깃털 ×5 → 화염 비늘 ×8, 전부 deliver / `volcano_armor`·`volcano_core` 제작서 확정 / `ridge_crosser` 칭호 + `skyreach_main_cleared` flag / `skyreach-volcano-heart-recurring` 정기는 길드 게시판 / 신규 `HaemuDialogue`(questLineDialogue 헬퍼 사용)). 미포함: `skyreach-haemu-pilgrim-meet` 릴레이·신규 NPC 사미승/문지기(M6) — 단 PilgrimDialogue 가 `skyreach_main_cleared` 로 직접 2차 해금되므로 라인은 이어짐.
+2. **M2 — 천공 성지 메인 라인** ✅ *구현됨* (§6.1 해무 봉인 라인: 용암 핵 ×6 → 봉황 깃털 ×5 → 화염 비늘 ×8 → 봉황 깃털 ×8, 전부 deliver / `volcano_armor`·`volcano_core` 제작서 + `skyreach-haemu-weapons` 로 봉황 무기 4종 제작서까지 확정 / `ridge_crosser` 칭호 + `skyreach_main_cleared` flag(화염 비늘 단계에서) / `skyreach-volcano-heart-recurring` 정기는 길드 게시판 / 신규 `HaemuDialogue`(questLineDialogue 헬퍼 사용)). 미포함: `skyreach-haemu-pilgrim-meet` 릴레이 — 단 PilgrimDialogue 가 `skyreach_main_cleared` 로 직접 2차 해금되므로 라인은 이어짐.
 3. **M3 — 사이드 의뢰 일괄** ✅ *구현됨* (§2 운향 / §3 다리 구간 / §4 봉황령 / §5 화산 지대).
    - 운향(§2.1·§2.2·§3.2): 도연 8의뢰 / 산하 8의뢰(전부 deliver) / 백운 `unhyang-baekun-pilgrim-escort` / 운향 게시판 9개. 봉황 망토 확정 루트 `unhyang-herbalist-flame-eagle-cape`(§4) 포함.
    - 다리 구간(§3.1·§3.3): 신규 다이얼로그 `MaroDialogue`·`NoeulDialogue`·`HansolDialogue` — 마로 2 / 노을 4 / 한솔 4의뢰 + 바람골 게시판 8개. 기존 미노출이던 `windvale-keeper-bison`·`windvale-merchant-hawk-feathers`·`windvale-pathfinder-golems`·`windvale-volcano-boss` 가 비로소 대화로 연결됨.
@@ -651,9 +651,9 @@ town 이 아니므로 의뢰는 **바람골 역참(한솔)** 과 **천공 성지
 6. **M6 — 미스터리 + 히든 + 신규 NPC + 칭호** (§1.3 순례자, §6.2 사미승·문지기, §3.1 음유시인, §8 칭호, §11 히든 퀘스트). ✅ *대부분 구현됨*.
    - §1.3 순례자 `PilgrimDialogue` 3단계(`volcano_heart_defeated` → `skyreach_main_cleared` → `pilgrim_revealed`) + `STORY_QUESTS.pilgrim_beyond_north`.
    - 신규 NPC 3명 — `windvale_bard`(음유시인) / `skyreach_acolyte`(사미승 운하) / `skyreach_gatekeeper`(문지기 청람). **초상화 미지정(placeholder)**, lore/quest NPC.
-   - 히든 퀘스트 **7/8 구현** — `hidden-mole-king`(두더지왕의 드릴 보유 → 두더지 ×100, WoodcutterJimmyDialogue) / `hidden-deepest-vein`(deep-cave-hunter 완료 → 마정석 ×20, BlacksmithDialogue) / `hidden-blacksmith-duel`(manwol_bold_reunion_done → 단단한 결정 ×8, BlacksmithDialogue) / `hidden-giants-origin`(unhyang_main_cleared + 운봉의 거인 5회 → 돌풍 정령 ×60, PilgrimDialogue) / `hidden-volcano-relic`(화산의 심장 5회 → 화산 두꺼비 ×40, SionDialogue) / `hidden-lucky-collector`(unique 2종 보유 + 음유시인 대화, BardDialogue 신규, `STORY_QUESTS`) / `hidden-hooded-cipher`(후드 손님↔순례자 표식 릴레이 — `cipher_started` → `cipher_shown_pilgrim` → `cipher_done`, StrangerDialogue·PilgrimDialogue, `STORY_QUESTS`). 신규 헬퍼 `src/adventure/inventory/ownership.ts`(장비 보유·unique 카운트). §13 미결정으로 신규 아이템은 도입하지 않고 골드·potionCapacityBonus·lore 텍스트로 갈음(`hidden-volcano-relic`·`hidden-blacksmith-duel`).
+   - 히든 퀘스트 **7/8 구현** — `hidden-mole-king`(두더지왕의 드릴 보유 → 두더지 ×100, WoodcutterJimmyDialogue) / `hidden-deepest-vein`(deep-cave-hunter 완료 → 마정석 ×20, BlacksmithDialogue) / `hidden-blacksmith-duel`(manwol_bold_reunion_done → 단단한 결정 ×8, BlacksmithDialogue) / `hidden-giants-origin`(unhyang_main_cleared + 운봉의 거인 5회 → 돌풍 정령 ×60, PilgrimDialogue) / `hidden-volcano-relic`(화산의 심장 5회 → 화산 두꺼비 ×40, SionDialogue) / `hidden-lucky-collector`(unique 2종 보유 + 음유시인 대화, BardDialogue 신규, `STORY_QUESTS`) / `hidden-hooded-cipher`(후드 손님↔순례자 표식 릴레이 — `cipher_started` → `cipher_shown_pilgrim` → `cipher_done`, StrangerDialogue·PilgrimDialogue, `STORY_QUESTS`). 신규 헬퍼 `src/adventure/inventory/ownership.ts`(장비 보유·unique 카운트). 신규 아이템 도입(§13 결정): `hidden-blacksmith-duel` → `moonlight_blade`("월광검", atk+9/str+4/spd+3, rare), `hidden-volcano-relic` → `lava_essence`("용암 정수", str+6/vit+5, rare) — 둘 다 tradable=false·의뢰로만 입수.
    - 칭호 — `caravan_warden`(노을 호위 2종, page.tsx) / `lucky_finder`(`bard_lucky_collected` flag, useTitleGrants) / `cipher_bearer`(`cipher_done` flag, useTitleGrants). §8 칭호 전부 완료.
-   - **미포함**: `hidden-pilgrim-trail`(§11.1 — 4개 지역을 가로지르는 빵부스러기. "지역 첫 visited 시 표식 surfacing" 메커니즘이나 표식별 단역 NPC 가 선행 필요 — 별도 작업). `hidden-deepest-vein`/`hidden-volcano-relic`/`hidden-blacksmith-duel` 의 ⚠ 신규 아이템(§13 확정 시 보강 가능).
+   - **미포함**: `hidden-pilgrim-trail`(§11.1 — 4개 지역을 가로지르는 빵부스러기. "지역 첫 visited 시 표식 surfacing" 메커니즘이나 표식별 단역 NPC 가 선행 필요 — 별도 작업).
 
 각 마일스톤은 독립 PR — 한 PR = 한 라인/한 지역 단위로 쪼개 커밋. 사용자 검토 후 착수.
 
@@ -661,10 +661,10 @@ town 이 아니므로 의뢰는 **바람골 역참(한솔)** 과 **천공 성지
 
 ## 13. 미결정 사항
 
-- **`giant_slayer` vs `mountain_friend`** — 운향 메인 완료에 기존 거인살해자(데미지 50%↑ 조건)를 줄지, 새 칭호를 줄지. (본 문서 제안: 새 칭호.)
-- **운봉 무구 / 봉황 무구 확정 루트** — 만월·해무 의뢰가 갑옷·액세서리만 풀지(제안), 무기까지 풀지. 보스 가치와의 균형.
-- **미니보스 도입 여부** — 들소 무리장·산악 기사단장 같은 의뢰 전용 미니보스를 만들지(콘텐츠 풍부 ↑, 구현 ↑) vs 기존 잡몹 ×N 으로 갈음(가벼움). 1차 범위 제외 권장.
-- **히든 퀘스트 신규 아이템**(§11) — `hidden-volcano-relic`(용암 정수 액세서리)·`hidden-blacksmith-duel`(합작 무기) 두 곳만 신규 아이템 필요. 도입할지 / lore·칭호로만 갈음할지.
+- ~~**`giant_slayer` vs `mountain_friend`**~~ → **결정: 새 칭호 `mountain_friend`** (기존 `giant_slayer`는 데미지 50%↑ 조건 그대로 유지). 구현됨.
+- ~~**운봉 무구 / 봉황 무구 확정 루트**~~ → **결정: 무기까지 확정 루트로 푼다.** 보스 `recipe_one_of`(럭키 조기 입수)는 그대로 두고, 추가로 `unhyang-manwol-weapons`(운봉석 ×8 → 운봉 무기 4종 제작서, 만월) / `skyreach-haemu-weapons`(봉황 깃털 ×8 → 봉황 무기 4종 제작서, 해무)를 후속 의뢰로. 견갑/액세서리는 기존대로 `unhyang-manwol-ore-demo`(peak_mantle) / `skyreach-haemu-lava-core`·`-phoenix-feather`(volcano_armor·volcano_core). 구현됨.
+- **미니보스 도입 여부** — 들소 무리장·산악 기사단장 같은 의뢰 전용 미니보스를 만들지(콘텐츠 풍부 ↑, 구현 ↑) vs 기존 잡몹 ×N 으로 갈음(가벼움). 1차 범위 제외 권장 — 미구현(그대로 잡몹 ×N).
+- ~~**히든 퀘스트 신규 아이템**(§11)~~ → **결정: 도입한다.** `lava_essence`("용암 정수", str+6/vit+5 액세서리, rare, `hidden-volcano-relic` 보상) / `moonlight_blade`("월광검", atk+9/str+4/spd+3 무기, rare, `hidden-blacksmith-duel` 보상). 둘 다 정식 곡선 한 칸 위·tradable=false·의뢰로만 입수. 구현됨.
 - **보스 누적 의뢰 카운트** — `deep-cave-hunter`/`volcano-heart-hunter`/`peak-giant-hunter` ×10 이 일일 3회 제한 보스라 4~5일 걸림 — 적절한지, ×5 로 낮출지.
 - **수지 라인 산정 확장**(§7.1) / **카이 호수 떡밥**(§7.2) — 채택 여부. 전자는 좋고, 후자는 운향 지형상 어색.
 - **다음 콘텐츠 떡밥의 방향** — "북쪽 너머" = 천공 성지 첨탑 위? 구름층 너머? 새 대륙? 순례자·해무·후드 손님 대사를 어디로 수렴시킬지. (`hidden-pilgrim-trail`·`hidden-hooded-cipher` 가 여기로 수렴.)
