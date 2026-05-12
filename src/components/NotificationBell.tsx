@@ -66,7 +66,7 @@ export function NotificationBell({
               알림이 없습니다.
             </div>
           ) : (
-            <ul className="max-h-72 overflow-y-auto py-1">
+            <ul className="no-scrollbar max-h-72 overflow-y-auto py-1">
               {notifications.slice(0, 10).map((n) => (
                 <li
                   key={n.id}

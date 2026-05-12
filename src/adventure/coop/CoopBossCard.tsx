@@ -325,7 +325,7 @@ export function CoopBossCard({
           <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             전투 로그
           </div>
-          <ul className="max-h-72 space-y-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="no-scrollbar max-h-72 space-y-2 overflow-y-auto">
             {recentLogs.map((row) => (
               <li
                 key={row.id}

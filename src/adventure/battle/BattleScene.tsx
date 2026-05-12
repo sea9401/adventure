@@ -212,7 +212,7 @@ export function BattleScene({
 
       <div
         ref={logRef}
-        className="max-h-72 space-y-0.5 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-4 text-[15px] leading-6 dark:border-zinc-800 dark:bg-zinc-950/90"
+        className="no-scrollbar max-h-72 space-y-0.5 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-4 text-[15px] leading-6 dark:border-zinc-800 dark:bg-zinc-950/90"
       >
         {state.log.map((entry, i) => {
           if (entry.kind === "phase_trigger") {

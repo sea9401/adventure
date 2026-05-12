@@ -229,7 +229,7 @@ export function ChatPanel({
         </header>
 
         {presenceOpen && (
-          <div className="max-h-40 overflow-y-auto border-b border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/60">
+          <div className="no-scrollbar max-h-40 overflow-y-auto border-b border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/60">
             {presence.length === 0 ? (
               <div className="text-xs text-zinc-500 dark:text-zinc-400">
                 접속 중인 유저가 없습니다.
@@ -273,7 +273,7 @@ export function ChatPanel({
 
         <div
           ref={listRef}
-          className="flex-1 space-y-2 overflow-y-auto px-3 py-2"
+          className="no-scrollbar flex-1 space-y-2 overflow-y-auto px-3 py-2"
         >
           {visibleMessages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">

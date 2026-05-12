@@ -113,7 +113,7 @@ export function NameSetupModal({
       aria-labelledby="name-setup-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
     >
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="no-scrollbar max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
         <h2 id="name-setup-title" className="text-xl font-semibold">
           모험가를 만들어보세요
         </h2>
