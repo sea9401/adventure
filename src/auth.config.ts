@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/api/version",
   "/api/chat/cleanup",
   "/api/bulletin/cleanup",
+  "/api/cron", // 스케줄러(EC2 crontab / Vercel crons) 호출 — 라우트 자체가 CRON_SECRET 을 검사
 ];
 
 // 미들웨어 전용 설정 — adapter 없이 edge-compatible.
