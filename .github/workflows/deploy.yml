@@ -1,6 +1,6 @@
 name: Deploy to EC2
 
-# main 에 push 되면 EC2 로 SSH 접속해 deploy/deploy.sh 실행.
+# main 에 push 되면 EC2 로 SSH 접속해 코드 갱신 + 재빌드 + 재시작.
 # 필요한 GitHub Secrets (Settings → Secrets and variables → Actions):
 #   EC2_HOST    — EC2 의 고정 IP 또는 도메인 (예: 54.180.28.29)
 #   EC2_SSH_KEY — EC2 접속용 private key 전체 (msmsge-key.pem 의 내용)
@@ -26,5 +26,22 @@ jobs:
           script_stop: true
           command_timeout: 15m
           script: |
+            set -e
             cd ~/adventure-rpg
-            bash deploy/deploy.sh
+            echo "▶ git update"
+            git fetch --prune origin
+            git checkout main
+            git reset --hard origin/main
+            echo "▶ npm ci"
+            npm ci
+            echo "▶ db migrate"
+            node --env-file=.env.production.local src/db/migrate.mjs
+            echo "▶ build"
+            npm run build
+            echo "▶ restart"
+            sudo systemctl restart adventure-rpg
+            sleep 2
+            sudo systemctl --no-pager status adventure-rpg | head -n 4
+            echo "▶ health"
+            curl -fsS -o /dev/null -w 'health=%{http_code}\n' http://127.0.0.1:3000/api/health || true
+            echo "▶ done"
