@@ -225,6 +225,30 @@ export const TITLES: Record<TitleId, Title> = {
     description: "치료소가 명예의 전당 헌액을 진지하게 검토 중이다.",
     condition: "치료소 500회 이용",
   },
+  close_call: {
+    id: "close_call",
+    name: "구사일생",
+    description: "체력 한 칸을 부여잡고 살아남은 자. 이건 어디 가서 자랑해도 된다.",
+    condition: "체력 1 남긴 채로 전투 승리",
+  },
+  potion_overload: {
+    id: "potion_overload",
+    name: "포션 폭격기",
+    description: "한 전투에서 포션을 다섯 병이나 들이부은 자. 회복 효율보단 손맛이다.",
+    condition: "한 전투에서 포션 5병 이상 사용",
+  },
+  night_owl: {
+    id: "night_owl",
+    name: "야행성",
+    description: "남들 다 잘 때 칼을 휘두르는 자. 해는 적이다.",
+    condition: "자정~새벽 3시 사이 접속",
+  },
+  globetrotter: {
+    id: "globetrotter",
+    name: "방방곡곡",
+    description: "세상 끝에서 끝까지 발자국을 남긴 자. 발바닥에 굳은살이 박였다.",
+    condition: "모든 지역 방문",
+  },
 };
 
 // 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.

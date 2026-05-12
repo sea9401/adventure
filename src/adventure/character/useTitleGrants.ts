@@ -20,6 +20,8 @@ export function useTitleGrants(
     maxNpcTalkCount: number;
     /** equip + training 합산된 최종 스탯. */
     totalStats: Record<StatKey, number>;
+    /** 모든 지역(WORLD_MAP.regions) 방문 완료 여부 — '방방곡곡' 칭호. */
+    allRegionsVisited: boolean;
   },
 ) {
   // 카운터형 칭호 — COUNTER_TITLES 표를 한 번에 돌며 임계값 도달분 등록.
@@ -42,10 +44,11 @@ export function useTitleGrants(
     opts.healingCount,
   ]);
 
-  // 새벽 3~5시 접속 → '새벽반' 칭호 자동 등록. 마운트 시 1회 평가.
+  // 시간대 칭호 — 마운트 시 1회 평가. 새벽반(3~5시) / 야행성(자정~3시).
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour >= 3 && hour < 5) grantTitle("early_bird");
+    if (hour >= 0 && hour < 3) grantTitle("night_owl");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -68,6 +71,7 @@ export function useTitleGrants(
     if (levelMythic) grantTitle("level_70");
     if (opts.maxNpcTalkCount >= 100) grantTitle("phisher");
     if (opts.maxNpcTalkCount >= 500) grantTitle("devoted_listener");
+    if (opts.allRegionsVisited) grantTitle("globetrotter");
     const high = STAT_KEYS.filter((k) => opts.totalStats[k] >= 30).length;
     const low = STAT_KEYS.filter((k) => opts.totalStats[k] <= 10).length;
     if (high === 1 && low === STAT_KEYS.length - 1) grantTitle("one_track");
@@ -85,6 +89,7 @@ export function useTitleGrants(
     levelVeteran,
     levelLegend,
     levelMythic,
+    opts.allRegionsVisited,
     opts.maxNpcTalkCount,
     opts.totalStats.str,
     opts.totalStats.dex,

@@ -74,13 +74,23 @@ export function onBattleEnd(
   deps: BattleEndDeps,
 ): void {
   // 전투 중 사용된 포션을 인벤토리에서 차감 (resolveBattle 은 가짜 잔량으로 시뮬했음).
+  let potionTotal = 0;
   for (const [id, n] of Object.entries(payload.potionsConsumed)) {
-    if (n) deps.inventory.consume(id as PotionId, n);
+    if (n) {
+      deps.inventory.consume(id as PotionId, n);
+      potionTotal += n;
+    }
   }
+  // '포션 폭격기' — 승패 무관, 한 전투에서 5병 이상.
+  if (potionTotal >= 5) deps.adventureLog.markTitleObtained("potion_overload");
 
   if (payload.outcome === "win") {
     deps.adventureLog.addKill(payload.enemyName);
     deps.adventureLog.markTitleObtained("first_blood");
+    // '구사일생' — 체력 1 남긴 채 승리.
+    if (payload.finalPlayerHp === 1) {
+      deps.adventureLog.markTitleObtained("close_call");
+    }
     const readyQuestIds = deps.quests.recordKill(payload.enemyName);
     deps.reportGuildKill?.(payload.enemyName);
     deps.characterState.setHp(payload.finalPlayerHp);
