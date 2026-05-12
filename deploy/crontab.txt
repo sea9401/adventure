@@ -1,0 +1,27 @@
+# vercel.json 의 "crons" 를 대체하는 EC2 crontab (ec2-user).
+# 등록 방법 — 서버에서 CRON_SECRET 을 .env.production.local 에서 읽어 자동 주입:
+#
+#   S=$(grep '^CRON_SECRET=' ~/adventure-rpg/.env.production.local | cut -d= -f2- | tr -d '"')
+#   H='-H "Authorization: Bearer $SECRET"'
+#   U=http://127.0.0.1:3000/api
+#   { echo "SHELL=/bin/bash"; echo "CRON_TZ=UTC"; echo "SECRET=$S";
+#     echo "0 4 * * * curl -fsS $H $U/chat/cleanup";
+#     echo "0 4 * * * curl -fsS $H $U/bulletin/cleanup";
+#     echo "0 4 * * * curl -fsS $H $U/cron/guilds-cleanup";
+#     echo "59 14 * * 0 curl -fsS $H $U/cron/guilds-quests-deadline";
+#     echo "0 15 * * 0 curl -fsS $H $U/cron/guilds-quests-cycle";
+#     echo "* * * * * curl -fsS $H $U/cron/coop-respawn"; } | crontab -
+#
+# (cron 의 SHELL 이 $SECRET 을 런타임에 치환. 시간대는 UTC — Vercel 과 동일.)
+# crond 가 동작하려면: sudo dnf install -y cronie && sudo systemctl enable --now crond
+#
+# 등록 결과(`crontab -l`):
+SHELL=/bin/bash
+CRON_TZ=UTC
+SECRET=<.env.production.local 의 CRON_SECRET>
+0 4 * * * curl -fsS -H "Authorization: Bearer $SECRET" http://127.0.0.1:3000/api/chat/cleanup
+0 4 * * * curl -fsS -H "Authorization: Bearer $SECRET" http://127.0.0.1:3000/api/bulletin/cleanup
+0 4 * * * curl -fsS -H "Authorization: Bearer $SECRET" http://127.0.0.1:3000/api/cron/guilds-cleanup
+59 14 * * 0 curl -fsS -H "Authorization: Bearer $SECRET" http://127.0.0.1:3000/api/cron/guilds-quests-deadline
+0 15 * * 0 curl -fsS -H "Authorization: Bearer $SECRET" http://127.0.0.1:3000/api/cron/guilds-quests-cycle
+* * * * * curl -fsS -H "Authorization: Bearer $SECRET" http://127.0.0.1:3000/api/cron/coop-respawn
