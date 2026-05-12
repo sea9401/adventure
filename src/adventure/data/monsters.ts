@@ -387,6 +387,7 @@ export const MONSTERS: Record<string, Monster> = {
   들소: {
     name: "들소",
     tags: ["beast"],
+    image: "/images/monster/bison.webp",
     hp: 320,
     atk: 28,
     def: 14,
@@ -401,6 +402,7 @@ export const MONSTERS: Record<string, Monster> = {
   "초원 매": {
     name: "초원 매",
     tags: ["beast"],
+    image: "/images/monster/plainfalcon.webp",
     hp: 230,
     atk: 30,
     def: 8,
@@ -417,6 +419,7 @@ export const MONSTERS: Record<string, Monster> = {
   "떠돌이 약탈자": {
     name: "떠돌이 약탈자",
     tags: ["humanoid"],
+    image: "/images/monster/rogue.webp",
     hp: 280,
     atk: 27,
     def: 11,
@@ -432,6 +435,7 @@ export const MONSTERS: Record<string, Monster> = {
   "재먼지 골렘": {
     name: "재먼지 골렘",
     tags: ["golem"],
+    image: "/images/monster/ashegolem.webp",
     hp: 420,
     atk: 33,
     def: 20,
@@ -447,6 +451,7 @@ export const MONSTERS: Record<string, Monster> = {
   "잿빛 들개": {
     name: "잿빛 들개",
     tags: ["beast"],
+    image: "/images/monster/ashewolf.webp",
     hp: 330,
     atk: 36,
     def: 12,
@@ -461,6 +466,7 @@ export const MONSTERS: Record<string, Monster> = {
   "불씨 도롱뇽": {
     name: "불씨 도롱뇽",
     tags: ["beast"],
+    image: "/images/monster/embersalamander.webp",
     hp: 300,
     atk: 34,
     def: 14,
@@ -476,6 +482,7 @@ export const MONSTERS: Record<string, Monster> = {
   "불꽃 독수리": {
     name: "불꽃 독수리",
     tags: ["beast"],
+    image: "/images/monster/flamehawk.webp",
     hp: 350,
     atk: 38,
     def: 12,
@@ -491,6 +498,7 @@ export const MONSTERS: Record<string, Monster> = {
   "화염 도마뱀": {
     name: "화염 도마뱀",
     tags: ["beast"],
+    image: "/images/monster/firelizard.webp",
     hp: 420,
     atk: 36,
     def: 18,
@@ -504,6 +512,7 @@ export const MONSTERS: Record<string, Monster> = {
   "산악 기사": {
     name: "산악 기사",
     tags: ["humanoid"],
+    image: "/images/monster/mountainknight.webp",
     hp: 500,
     atk: 44,
     def: 22,
@@ -519,6 +528,7 @@ export const MONSTERS: Record<string, Monster> = {
   "용암 슬라임": {
     name: "용암 슬라임",
     tags: ["slime"],
+    image: "/images/monster/lavaslime.webp",
     hp: 540,
     atk: 50,
     def: 24,
@@ -534,6 +544,7 @@ export const MONSTERS: Record<string, Monster> = {
   "화산 두꺼비": {
     name: "화산 두꺼비",
     tags: ["beast"],
+    image: "/images/monster/flamefrog.webp",
     hp: 620,
     atk: 55,
     def: 30,
@@ -547,6 +558,7 @@ export const MONSTERS: Record<string, Monster> = {
   "불꽃 골렘": {
     name: "불꽃 골렘",
     tags: ["golem"],
+    image: "/images/monster/moltengolem.webp",
     hp: 680,
     atk: 60,
     def: 26,
@@ -562,6 +574,7 @@ export const MONSTERS: Record<string, Monster> = {
   "화산의 심장": {
     name: "화산의 심장",
     tags: ["golem"],
+    image: "/images/monster/volcanicheart.webp",
     hp: 1200,
     atk: 72,
     def: 32,
