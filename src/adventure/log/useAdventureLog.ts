@@ -8,6 +8,9 @@ import {
   migrateMonsters,
   type AdventureLog,
 } from "./storage";
+import { currentlyHeldVariants } from "./discoveredEquipment";
+import type { InventoryState } from "@/adventure/inventory/useInventory";
+import type { EquippedSlots } from "@/adventure/character/types";
 
 function readInitial(raw: unknown): AdventureLog {
   if (!raw || typeof raw !== "object") return emptyAdventureLog();
@@ -17,6 +20,7 @@ function readInitial(raw: unknown): AdventureLog {
     towns: parsed.towns ?? {},
     npcs: parsed.npcs ?? {},
     titles: parsed.titles ?? {},
+    discoveredEquipment: parsed.discoveredEquipment ?? {},
     battleLosses: parsed.battleLosses ?? 0,
     chatCount: parsed.chatCount ?? 0,
     healingCount: parsed.healingCount ?? 0,
@@ -151,6 +155,42 @@ export function useAdventureLog() {
     }));
   }, []);
 
+  // 장비 도감 동기화 — 현재 인벤토리/장착 중인 모든 (장비, 변형)을 도감에 등록(있으면 그대로).
+  // 폐기/판매로 빠진 항목은 절대 제거하지 않는다. 인벤토리 변경/장착 변경 때마다 호출(idempotent).
+  const syncDiscoveredEquipment = useCallback(
+    (inv: InventoryState, equipped: EquippedSlots | null | undefined) => {
+      const held = currentlyHeldVariants(inv, equipped);
+      if (held.size === 0) return;
+      setLog((prev) => {
+        const cur = prev.discoveredEquipment ?? {};
+        let changed = false;
+        const next: NonNullable<AdventureLog["discoveredEquipment"]> = { ...cur };
+        const now = Date.now();
+        for (const [id, keys] of held) {
+          const existing = cur[id];
+          const known = new Set(existing?.variants ?? []);
+          let added = false;
+          for (const k of keys) {
+            if (!known.has(k)) {
+              known.add(k);
+              added = true;
+            }
+          }
+          if (!existing) {
+            next[id] = { firstSeenAt: now, variants: [...known] };
+            changed = true;
+          } else if (added) {
+            next[id] = { ...existing, variants: [...known] };
+            changed = true;
+          }
+        }
+        if (!changed) return prev;
+        return { ...prev, discoveredEquipment: next };
+      });
+    },
+    [],
+  );
+
   // 칭호 획득 — 도감 등록은 "획득 시"가 트리거. 이미 등록된 경우 중복 무시.
   const markTitleObtained = useCallback((titleId: string) => {
     setLog((prev) => {
@@ -174,6 +214,7 @@ export function useAdventureLog() {
     addTownNpcTalked,
     incrementNpcTalk,
     markTitleObtained,
+    syncDiscoveredEquipment,
     incrementBattleLosses,
     incrementChatCount,
     incrementHealingCount,

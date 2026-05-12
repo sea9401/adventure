@@ -21,11 +21,21 @@ export type TitleLogEntry = {
   obtainedAt: number;
 };
 
+// 도감에 등록된 장비 — itemId 별로, "한 번이라도 보유/장착한 적 있는" 변형 키 목록.
+// 변형 키: "base" | "d1"|"d2"(정교한/빼어난) | "c-2"|"c-1"|"c1"|"c2"(제작 등급).
+// 인벤토리에서 폐기·판매해도 여기서는 사라지지 않는다(컬렉션 로그).
+export type DiscoveredEquipmentEntry = {
+  firstSeenAt: number;
+  variants: string[];
+};
+
 export type AdventureLog = {
   monsters: Record<string, MonsterLogEntry>;
   towns: Record<string, TownLogEntry>;
   npcs: Record<string, NpcLogEntry>;
   titles: Record<string, TitleLogEntry>;
+  /** 도감에 등록된 장비 — key 는 ItemId. 보유 여부와 무관하게 누적된다. */
+  discoveredEquipment?: Record<string, DiscoveredEquipmentEntry>;
   /** 누적 전투 패배 횟수 — 칭호/통계용. */
   battleLosses?: number;
   /** 누적 글로벌 채팅 발화 횟수 — '수다쟁이' 칭호용. */
@@ -81,6 +91,7 @@ export const emptyAdventureLog = (): AdventureLog => ({
   towns: {},
   npcs: {},
   titles: {},
+  discoveredEquipment: {},
   battleLosses: 0,
   chatCount: 0,
   healingCount: 0,
@@ -97,6 +108,7 @@ export function loadAdventureLog(): AdventureLog {
       towns: parsed?.towns ?? {},
       npcs: parsed?.npcs ?? {},
       titles: parsed?.titles ?? {},
+      discoveredEquipment: parsed?.discoveredEquipment ?? {},
       battleLosses: parsed?.battleLosses ?? 0,
       chatCount: parsed?.chatCount ?? 0,
       healingCount: parsed?.healingCount ?? 0,
