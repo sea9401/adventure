@@ -105,7 +105,10 @@
 ### Phase 3 — 나머지 특기 6종 ✅ (feat/skill-feats-2)
 - 광전사(STR&VIT, 잃은 HP%만큼 ATK 가산) · 암살(STR&DEX, 전투 첫 공격 DEF무시+×2) · 질풍검(STR&SPD, 턴 첫 공격에 그 턴 공격횟수만큼 ATK) · 연참(STR&LUK, 그 턴 크리 시 추가 공격 1회 — BattleState `critThisTurn`/`riposteUsedThisTurn`) · 유격(DEX&SPD, 회피 시 다음 턴 공격 횟수 +1) · 반사 갑주(VIT&SPD, 받은 HP 피해의 floor((VIT+SPD)/10)% 적에게 반사).
 - `FEAT_SKILL` 총 10종 완성. 테스트: `engine.feats.test.ts` (6종 결정적), `skills.test.ts` 에 스탯쌍별 `deriveFeats` 검증.
-- 미완(공통): 슬롯 해금 토스트, 도감 4티어/특기 advance preview.
+
+### Phase 4 — 후속(토스트 + 도감 미리보기) ✅ (feat/skill-followups)
+- `useLevelUpDetection` 확장: 특기 획득 알림("특기 획득! ○○") + 슬롯 해금 알림("스킬 슬롯 해금! …" / "특기 슬롯 해금! …"). ref 베이스라인 패턴이라 새로고침 재발화 없음.
+- `STAT_TIER4_REVEAL_THRESHOLD = 45` + `EtcTab` 에 4차 스킬 블록(45 공개 / 50 발동) + "특기" 섹션(10종 — req 스탯 25 & 25, 보유 시 별 아이콘).
 
 ### v2 이후
 - 6번째 슬롯 / "스킬 룬" 아이템 경로 / 해금 연출.

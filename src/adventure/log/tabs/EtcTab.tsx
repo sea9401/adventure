@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock, Sparkle } from "@phosphor-icons/react";
+import { Lock, Sparkle, Star } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import {
   STAT_CONVERSIONS,
@@ -9,9 +9,14 @@ import {
   STAT_REVEAL_THRESHOLD,
   STAT_SKILL_INFO_THRESHOLD,
   STAT_TIER3_REVEAL_THRESHOLD,
+  STAT_TIER4_REVEAL_THRESHOLD,
   type StatKey,
 } from "@/adventure/data/stats";
-import { STAT_SKILL } from "@/adventure/character/skills";
+import {
+  FEAT_SKILL,
+  FEAT_STAT_THRESHOLD,
+  STAT_SKILL,
+} from "@/adventure/character/skills";
 
 export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
   return (
@@ -23,9 +28,11 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
           const tier1 = tiers[0];
           const tier2 = tiers[1];
           const tier3 = tiers[2];
+          const tier4 = tiers[3];
           const tier1Revealed = value >= STAT_SKILL_INFO_THRESHOLD;
           const conversionRevealed = value >= STAT_REVEAL_THRESHOLD;
           const tier3Revealed = value >= STAT_TIER3_REVEAL_THRESHOLD;
+          const tier4Revealed = value >= STAT_TIER4_REVEAL_THRESHOLD;
           // 1차 티어 발동 임계가 정보 공개 임계보다 높을 때 발동 안내.
           const showTier1ActivationNote =
             !!tier1 &&
@@ -33,24 +40,28 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
             tier1.activationThreshold > STAT_SKILL_INFO_THRESHOLD;
           // 2차 티어는 환산 공개와 동시 (15) 에 노출.
           const tier2Revealed = !!tier2 && conversionRevealed;
-          // 2차 티어 발동 안내 — 정보 공개 (15) 와 발동 임계 (20/30) 차이가 있어 항상 표시.
           const showTier2ActivationNote =
             !!tier2 &&
             tier2Revealed &&
             tier2.activationThreshold > STAT_REVEAL_THRESHOLD;
-          // 3차 티어 발동 안내 — 정보 공개 (30) 와 발동 임계 (35) 차이.
           const showTier3ActivationNote =
             !!tier3 &&
             tier3Revealed &&
             tier3.activationThreshold > STAT_TIER3_REVEAL_THRESHOLD;
-          // 다음 공개 — tier1 → 환산+tier2 → tier3.
-          const nextRevealAt = tier1Revealed
-            ? conversionRevealed
-              ? tier3Revealed
-                ? "—"
-                : STAT_TIER3_REVEAL_THRESHOLD
-              : STAT_REVEAL_THRESHOLD
-            : STAT_SKILL_INFO_THRESHOLD;
+          const showTier4ActivationNote =
+            !!tier4 &&
+            tier4Revealed &&
+            tier4.activationThreshold > STAT_TIER4_REVEAL_THRESHOLD;
+          // 다음 공개 — tier1 → 환산+tier2 → tier3 → tier4.
+          const nextRevealAt = !tier1Revealed
+            ? STAT_SKILL_INFO_THRESHOLD
+            : !conversionRevealed
+              ? STAT_REVEAL_THRESHOLD
+              : !tier3Revealed
+                ? STAT_TIER3_REVEAL_THRESHOLD
+                : !tier4Revealed
+                  ? STAT_TIER4_REVEAL_THRESHOLD
+                  : "—";
           return (
             <Card as="li" key={k}>
               <div className="flex items-baseline justify-between gap-2">
@@ -181,10 +192,95 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                   )}
                 </div>
               )}
+
+              {/* 4차 스킬 — STAT_TIER4_REVEAL_THRESHOLD(45) 도달 시 공개. */}
+              {tier4 && (
+                <div className="mt-1.5 flex items-start gap-2 text-xs">
+                  {tier4Revealed ? (
+                    <>
+                      <Sparkle
+                        size={14}
+                        weight="duotone"
+                        className="shrink-0 text-amber-500 mt-0.5"
+                      />
+                      <span className="text-zinc-700 dark:text-zinc-200">
+                        <span className="font-medium">{tier4.name}</span> —{" "}
+                        {tier4.description}
+                        {showTier4ActivationNote && (
+                          <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                            ({STAT_LABELS[k]} {tier4.activationThreshold}에서 발동)
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  ) : (
+                    tier3Revealed && (
+                      <>
+                        <Lock
+                          size={14}
+                          weight="duotone"
+                          className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
+                        />
+                        <span className="italic text-zinc-500 dark:text-zinc-400">
+                          {STAT_TIER4_REVEAL_THRESHOLD} 달성 시 4차 스킬 공개
+                        </span>
+                      </>
+                    )
+                  )}
+                </div>
+              )}
             </Card>
           );
         })}
       </ul>
+
+      {/* 특기 — 두 스탯이 모두 FEAT_STAT_THRESHOLD 도달 시 보유. 특기 전용 슬롯에 1개만. */}
+      <Card as="section">
+        <div className="mb-1.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          특기{" "}
+          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+            (두 스탯 {FEAT_STAT_THRESHOLD} 도달 시 보유 · 특기 슬롯에 1개)
+          </span>
+        </div>
+        <ul className="space-y-1.5">
+          {FEAT_SKILL.map((f) => {
+            const owned = f.req.every((s) => stats[s] >= FEAT_STAT_THRESHOLD);
+            const reqLabel = f.req
+              .map((s) => `${STAT_LABELS[s]} ${FEAT_STAT_THRESHOLD}`)
+              .join(" & ");
+            return (
+              <li key={f.name} className="flex items-start gap-2 text-xs">
+                {owned ? (
+                  <Star
+                    size={14}
+                    weight="fill"
+                    className="shrink-0 text-violet-500 mt-0.5"
+                  />
+                ) : (
+                  <Lock
+                    size={14}
+                    weight="duotone"
+                    className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
+                  />
+                )}
+                <span
+                  className={
+                    owned
+                      ? "text-zinc-700 dark:text-zinc-200"
+                      : "text-zinc-500 dark:text-zinc-400"
+                  }
+                >
+                  <span className="font-medium">{f.name}</span> — {f.description}
+                  <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                    ({reqLabel}
+                    {owned ? " · 보유 중" : ""})
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
     </div>
   );
 }

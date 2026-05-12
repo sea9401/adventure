@@ -520,10 +520,13 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 레벨업/스킬 획득 감지 → 알림 + 오버레이 트리거.
+  // 레벨업/스킬·특기 획득/슬롯 해금 감지 → 알림 + 오버레이 트리거.
   const { levelUpTrigger } = useLevelUpDetection({
     level: characterState.level,
     characterSkills,
+    characterFeats,
+    normalSlots: skillSlotLayout.normalSlots,
+    hasFeatSlot: skillSlotLayout.hasFeatSlot,
     addPoints: training.addPoints,
     addNotification: (kind, text) => addNotification(kind, text),
   });
