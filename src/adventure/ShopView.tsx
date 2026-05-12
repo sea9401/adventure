@@ -129,7 +129,7 @@ function BuyTab({
           물약
         </div>
         <div className="space-y-2">
-          {POTION_IDS.map((id) => {
+          {POTION_IDS.filter((id) => POTIONS[id].inShop !== false).map((id) => {
             const potion = POTIONS[id];
             const owned = inventory.potions[id] ?? 0;
             return (

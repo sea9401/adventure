@@ -47,6 +47,22 @@ export const RECIPES: Recipe[] = [
     result: { kind: "potion", potionId: "potion_heal_s", quantity: 1 },
   },
   {
+    id: "potion_heal_m",
+    name: "중간 회복약 조합법",
+    description:
+      "산초꽃을 약불에 졸여 중간 회복약을 만든다. 운향 일대에서 산초꽃을 모아야 한다.",
+    ingredients: [{ kind: "material", materialId: "sancho_blossom", count: 3 }],
+    result: { kind: "potion", potionId: "potion_heal_m", quantity: 1 },
+  },
+  {
+    id: "potion_heal_l",
+    name: "큰 회복약 조합법",
+    description:
+      "봉황 깃털을 우려내 큰 회복약을 만든다. 봉황령에서 깃털을 모아야 한다.",
+    ingredients: [{ kind: "material", materialId: "phoenix_feather", count: 2 }],
+    result: { kind: "potion", potionId: "potion_heal_l", quantity: 1 },
+  },
+  {
     id: "squishy_armor",
     name: "물컹물컹한 갑옷 제작법",
     description: `${ITEMS.squishy_armor.name}을(를) 만든다. 슬라임 핵을 심으로 두르고 조각을 겹겹이 다진다.`,

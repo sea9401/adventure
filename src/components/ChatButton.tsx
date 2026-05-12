@@ -2,13 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ChatCircle } from "@phosphor-icons/react";
+import { isNoticeMessage } from "@/lib/chat-config";
 import { ChatPanel, type ChatMessage } from "./ChatPanel";
 
 // 패널이 닫혀 있을 땐 unread 배지 갱신용으로 느리게,
 // 열려 있을 땐 상대 메시지 수신감을 살리려 짧게 폴링.
 const POLL_INTERVAL_BG_MS = 3000;
 const POLL_INTERVAL_OPEN_MS = 1500;
+// 채팅 / 알림(협동 보스 등) 의 "마지막으로 본 메시지 id" 를 따로 저장 — 둘이 섞이지 않게.
 const LAST_SEEN_KEY = "chat:lastSeenId";
+const LAST_SEEN_NOTICE_KEY = "chat:lastSeenNoticeId";
 
 async function fetchMessages(): Promise<ChatMessage[]> {
   const res = await fetch("/api/chat", { cache: "no-store" });
@@ -16,15 +19,15 @@ async function fetchMessages(): Promise<ChatMessage[]> {
   return res.json();
 }
 
-function readLastSeen(): number {
+function readId(key: string): number {
   if (typeof window === "undefined") return 0;
-  const v = window.localStorage.getItem(LAST_SEEN_KEY);
+  const v = window.localStorage.getItem(key);
   const n = v ? Number(v) : 0;
   return Number.isFinite(n) ? n : 0;
 }
 
-function writeLastSeen(id: number) {
-  window.localStorage.setItem(LAST_SEEN_KEY, String(id));
+function writeId(key: string, id: number) {
+  window.localStorage.setItem(key, String(id));
 }
 
 export function ChatButton({
@@ -41,7 +44,10 @@ export function ChatButton({
 }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [lastSeenId, setLastSeenId] = useState<number>(readLastSeen);
+  const [lastSeenChatId, setLastSeenChatId] = useState<number>(() => readId(LAST_SEEN_KEY));
+  const [lastSeenNoticeId, setLastSeenNoticeId] = useState<number>(() =>
+    readId(LAST_SEEN_NOTICE_KEY),
+  );
 
   // 패널이 닫혀 있어도 항상 폴링 — 새 메시지 도착 감지용.
   // open 이 바뀌면 effect 가 다시 실행돼 즉시 한 번 fetch + 새 주기로 재시작.
@@ -55,13 +61,25 @@ export function ChatButton({
         setMessages(next);
         if (!initialized) {
           initialized = true;
-          // 한 번도 채팅을 본 적 없는 유저(lastSeenId === 0) 라면, 첫 폴링 결과의
+          // 한 번도 채팅을 본 적 없는 유저라면 (lastSeen === 0), 첫 폴링 결과의
           // 최신 id 로 점프시켜서 옛 메시지를 모두 unread 로 표시하지 않게 한다.
-          setLastSeenId((prev) => {
-            if (prev !== 0 || next.length === 0) return prev;
-            const latest = next[next.length - 1].id;
-            writeLastSeen(latest);
-            return latest;
+          const lastChat = next.reduce(
+            (mx, m) => (!isNoticeMessage(m) && m.id > mx ? m.id : mx),
+            0,
+          );
+          const lastNotice = next.reduce(
+            (mx, m) => (isNoticeMessage(m) && m.id > mx ? m.id : mx),
+            0,
+          );
+          setLastSeenChatId((prev) => {
+            if (prev !== 0 || lastChat === 0) return prev;
+            writeId(LAST_SEEN_KEY, lastChat);
+            return lastChat;
+          });
+          setLastSeenNoticeId((prev) => {
+            if (prev !== 0 || lastNotice === 0) return prev;
+            writeId(LAST_SEEN_NOTICE_KEY, lastNotice);
+            return lastNotice;
           });
         }
       } catch {
@@ -79,18 +97,22 @@ export function ChatButton({
     };
   }, [open]);
 
-  // 패널이 열려 있는 동안 도착하는 메시지는 즉시 읽은 것으로 처리.
-  // 외부 변화(messages) 구독 → 로컬 lastSeen 동기화 패턴.
-  useEffect(() => {
-    if (!open || messages.length === 0) return;
-    const latest = messages[messages.length - 1].id;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLastSeenId((prev) => {
-      if (latest <= prev) return prev;
-      writeLastSeen(latest);
-      return latest;
-    });
-  }, [open, messages]);
+  // ChatPanel 이 보고 있는 탭의 최신 메시지를 본 것으로 처리.
+  const handleSeen = useCallback((kind: "chat" | "notice", lastId: number) => {
+    if (kind === "chat") {
+      setLastSeenChatId((prev) => {
+        if (lastId <= prev) return prev;
+        writeId(LAST_SEEN_KEY, lastId);
+        return lastId;
+      });
+    } else {
+      setLastSeenNoticeId((prev) => {
+        if (lastId <= prev) return prev;
+        writeId(LAST_SEEN_NOTICE_KEY, lastId);
+        return lastId;
+      });
+    }
+  }, []);
 
   const handleMessageSent = useCallback(
     (m: ChatMessage) => {
@@ -102,23 +124,36 @@ export function ChatButton({
     [onSent],
   );
 
-  const hasUnread = messages.some((m) => m.id > lastSeenId && !m.mine);
+  const hasUnreadChat = messages.some(
+    (m) => !isNoticeMessage(m) && m.id > lastSeenChatId && !m.mine,
+  );
+  const hasUnreadNotice = messages.some(
+    (m) => isNoticeMessage(m) && m.id > lastSeenNoticeId && !m.mine,
+  );
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={hasUnread ? "전체 채팅 열기 (새 메시지 있음)" : "전체 채팅 열기"}
+        aria-label={hasUnreadChat ? "전체 채팅 열기 (새 메시지 있음)" : "전체 채팅 열기"}
         title="전체 채팅"
         className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         <ChatCircle size={20} weight="duotone" />
-        {hasUnread && (
+        {hasUnreadChat ? (
           <span
             aria-hidden
             className="absolute right-1 top-1 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-zinc-950"
           />
+        ) : (
+          hasUnreadNotice && (
+            // 보스 알림만 새로 있을 땐 덜 시끄러운 호박색 점으로.
+            <span
+              aria-hidden
+              className="absolute right-1 top-1 h-2 w-2 rounded-full bg-amber-400 ring-2 ring-white dark:ring-zinc-950"
+            />
+          )
         )}
       </button>
       <ChatPanel
@@ -129,6 +164,9 @@ export function ChatButton({
         title={title}
         messages={messages}
         onMessageSent={handleMessageSent}
+        unreadChat={hasUnreadChat}
+        unreadNotice={hasUnreadNotice}
+        onSeen={handleSeen}
       />
     </>
   );
