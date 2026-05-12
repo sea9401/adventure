@@ -38,6 +38,8 @@ import { simulateOfflineHunt } from "@/adventure/battle/offlineSim";
 import type { OfflineSimResult } from "@/adventure/battle/offlineSim";
 import type { AutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import type { RegionId } from "@/adventure/data/world";
+import { ITEMS, isLuckyFind } from "@/adventure/data/items";
+import { insertFeedEntry } from "@/lib/server/serverFeed";
 
 type CollectBody = { playerName?: unknown; autoPotionRules?: unknown };
 
@@ -166,6 +168,15 @@ export async function POST(req: Request) {
         simMs,
       };
     });
+    // 위탁 사냥에서 "유실된 명품"(unique)이 나왔으면 전체 소식에 보고.
+    // 조기수령 replay / noop 경로는 제외 — 새로 정산된 결과에서만.
+    if (!("noop" in response) && !("replayed" in response)) {
+      for (const e of response.result.equipsGained) {
+        if (isLuckyFind(ITEMS[e.itemId])) {
+          await insertFeedEntry(userId, "unique_drop", { itemId: e.itemId });
+        }
+      }
+    }
     return Response.json(response);
   } catch (e) {
     console.error("[hunt.collect]", e);

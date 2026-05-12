@@ -14,6 +14,7 @@ import {
 import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
 import { getQuestById } from "@/adventure/data/quests";
 import { getRecipeById } from "@/adventure/data/recipes";
+import { reportUniqueDrop } from "@/lib/clientFeed";
 import {
   resolveBuffMultiplier,
   type GuildBuffSlot,
@@ -132,6 +133,8 @@ export function onBattleEnd(
           // "유실된 명품"(unique)은 자주 보는 loot 토스트에 묻히지 않게 milestone 으로 띄우고
           // 메시지 앞에 강조 배너를 붙인다 — 잡몹한테서 떡상 장비가 나온 순간을 못 놓치게.
           const lucky = isLuckyFind(equipDef);
+          // 유실된 명품 — 전체 소식(서버 피드)에도 한 줄 보고 (fire-and-forget).
+          if (lucky) reportUniqueDrop(drop.itemId);
           deps.addNotification(
             lucky ? "milestone" : "loot",
             `${lucky ? "✨ 굉장한 발견! " : ""}${name}을(를) 손에 넣었다!`,

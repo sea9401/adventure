@@ -44,6 +44,9 @@ export const users = pgTable(
     // 새 dispatch 시작 시 NULL 로 리셋. lastClaimId 는 "collected" 마커로만 사용 (옛 잔재).
     lastClaimId: text("last_claim_id"),
     lastClaimResult: jsonb("last_claim_result"),
+    // 전체 소식(서버 피드)에 내 자랑거리(유실된 명품·걸작 제작)를 흘릴지 여부.
+    // 송신자 opt-out — false 면 insertFeedEntry 가 이 유저 이벤트를 건너뛴다. 기본 ON.
+    shareFeed: boolean("share_feed").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -148,6 +151,29 @@ export const messages = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [index("messages_created_at_idx").on(t.createdAt)],
+);
+
+// 전체 소식 (서버 피드) — 서버 전체에 흘러가는 "자랑거리" 한 줄 (유실된 명품 획득, 걸작 제작 성공 등).
+// 글로벌 채팅과 분리 — 대화용 vs 전광판용. 모험탭 하단 패널에서 최근 N개만 노출.
+// append-only — insert 시 FEED_MAX_ROWS 초과분을 잘라낸다 (cron 없음).
+// actorName 은 발생 시점 닉네임 스냅샷 (이후 닉네임이 바뀌어도 과거 항목은 그대로).
+// type: 'unique_drop' | 'masterpiece' (v2 에서 'milestone' 등 추가). payload 는 type 별 형태.
+export const serverFeed = pgTable(
+  "server_feed",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    actorName: text("actor_name").notNull(),
+    type: text("type").notNull(),
+    payload: jsonb("payload").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    // 디바운스 조회용 — 같은 유저+type 의 최근 항목이 있는지.
+    index("server_feed_user_type_idx").on(t.userId, t.type, t.createdAt),
+  ],
 );
 
 // 현재 접속 중인 유저 — 클라이언트가 주기적으로 하트비트(POST /api/presence)
@@ -432,6 +458,7 @@ export type AccountRow = typeof accounts.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
 export type SavesKvRow = typeof savesKv.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
+export type ServerFeedRow = typeof serverFeed.$inferSelect;
 export type BulletinPostRow = typeof bulletinPosts.$inferSelect;
 export type PresenceRow = typeof presence.$inferSelect;
 export type MarketplaceListingRow = typeof marketplaceListings.$inferSelect;
