@@ -20,8 +20,10 @@ export type CharacterDynamicState = {
   equipped?: EquippedSlots;
   /** 장착 중인 칭호 ID. null/미지정 = 미장착. */
   equippedTitleId?: string | null;
-  /** 장착 중인 스킬 이름 목록 (최대 SKILL_SLOT_COUNT). undefined = 자동 (보유 첫 N개). */
+  /** 장착 중인 일반 스킬 이름 목록 (최대 skillLayout().normalSlots). undefined = 자동 (보유 첫 N개). */
   equippedSkills?: string[];
+  /** 장착 중인 특기 이름 (특기 전용 슬롯). undefined = 미장착. */
+  equippedFeat?: string;
   /**
    * region 단위 일일 보스 입장 카운터.
    * date 는 클라이언트 로컬 'YYYY-MM-DD'. 다른 날짜로 보면 0 부터 새로 카운트.
@@ -89,6 +91,7 @@ function readInitial(raw: unknown): CharacterDynamicState {
     equipped: rehydrateEquipped(parsed.equipped),
     equippedTitleId: parsed.equippedTitleId ?? null,
     equippedSkills: parsed.equippedSkills,
+    equippedFeat: parsed.equippedFeat,
     bossAttempts: parsed.bossAttempts,
   };
 }
@@ -158,6 +161,9 @@ export function useCharacterState() {
   const setEquippedSkills = (names: string[]) =>
     setState((prev) => ({ ...prev, equippedSkills: names }));
 
+  const setEquippedFeat = (name: string | null) =>
+    setState((prev) => ({ ...prev, equippedFeat: name ?? undefined }));
+
   // 길드 가입/탈퇴/해체/위임 시 호출. 서버는 이미 character.v2 에 affiliation 을
   // 반영했지만 클라이언트의 in-memory state 도 같이 끌어줘야 AdventurerCard 등이
   // 즉시 새 값을 표시.
@@ -206,6 +212,7 @@ export function useCharacterState() {
     setSlot,
     setEquippedTitle,
     setEquippedSkills,
+    setEquippedFeat,
     setAffiliation,
     replaceFromSaved,
     getBossAttemptsToday,

@@ -8,7 +8,8 @@ import {
   type SetStateAction,
 } from "react";
 import type { BattleEndPayload, BattleView } from "@/adventure/BattleView";
-import type { Character } from "@/adventure/character/types";
+import type { Character, Skill } from "@/adventure/character/types";
+import type { SkillLayout } from "@/adventure/character/skills";
 import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import type { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import type { useCharacterState } from "@/adventure/character/useCharacterState";
@@ -68,6 +69,12 @@ export type GameCtx = {
   currentRegion: Region;
   isTown: boolean;
   effectiveSkillNameList: string[];
+  /** 보유 특기 (도감/스킬 화면 표시용). */
+  characterFeats: Skill[];
+  /** 장착 중인 특기 이름 — 특기 슬롯 미해금/미장착이면 null. */
+  effectiveFeatName: string | null;
+  /** 현재 스킬 슬롯 레이아웃 (일반 칸 수 / 특기 칸 유무). */
+  skillLayout: SkillLayout;
   trainingDescription: string;
   playerCombat: PlayerCombat;
   playerStatus: PlayerStatus;

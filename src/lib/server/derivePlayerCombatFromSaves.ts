@@ -23,10 +23,15 @@ type SavedCharacterV2 = {
   level?: number;
   equipped?: SavedEquipped | null;
   equippedSkills?: string[];
+  equippedFeat?: string;
 };
 
 type SavedTrainingV2 = {
   allocated?: Partial<Record<StatKey, number>>;
+};
+
+type SavedStoryFlagsV2 = {
+  flags?: string[];
 };
 
 // 저장된 EquipItem 직렬화를 ITEMS 정의의 현재 인스턴스로 교체.
@@ -54,6 +59,11 @@ export async function derivePlayerCombatFromSaves(
 
   const training =
     (await readSave<SavedTrainingV2>(userId, "training.v2")) ?? {};
+  const storyFlags =
+    (await readSave<SavedStoryFlagsV2>(userId, "storyFlags.v2")) ?? {};
+  const storyFlagIds = new Set(
+    Array.isArray(storyFlags.flags) ? storyFlags.flags : [],
+  );
 
   const allocatedStats: Record<StatKey, number> = STAT_KEYS.reduce(
     (acc, k) => {
@@ -76,6 +86,8 @@ export async function derivePlayerCombatFromSaves(
     allocatedStats,
     equipped,
     equippedSkills: character.equippedSkills,
+    equippedFeat: character.equippedFeat,
+    storyFlagIds,
     hp: character.hp ?? baseCharacter.hp,
   });
 }

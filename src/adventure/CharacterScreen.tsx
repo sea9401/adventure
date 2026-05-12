@@ -15,7 +15,6 @@ import { AdventurerCard } from "@/adventure/character/AdventurerCard";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { SkillsView } from "@/adventure/character/SkillsView";
 import { StatsPanel } from "@/adventure/character/StatsPanel";
-import { SKILL_SLOT_COUNT } from "@/adventure/character/skills";
 import { AdventureLogView } from "@/adventure/log/AdventureLogView";
 import { InventoryView } from "@/adventure/InventoryView";
 import { RecentLogView } from "@/adventure/RecentLogView";
@@ -34,6 +33,9 @@ export function CharacterScreen() {
     adventureLog,
     notifications,
     effectiveSkillNameList,
+    effectiveFeatName,
+    characterFeats,
+    skillLayout,
     training,
     handleEquipFromInventory,
     handleUnequip,
@@ -152,9 +154,13 @@ export function CharacterScreen() {
         <SkillsView
           skills={character.skills}
           equippedNames={effectiveSkillNameList}
+          normalSlots={skillLayout.normalSlots}
+          feats={characterFeats}
+          equippedFeat={effectiveFeatName}
+          featSlotOpen={skillLayout.hasFeatSlot}
           onEquip={(name) => {
             if (effectiveSkillNameList.includes(name)) return;
-            if (effectiveSkillNameList.length >= SKILL_SLOT_COUNT) return;
+            if (effectiveSkillNameList.length >= skillLayout.normalSlots) return;
             characterStateHook.setEquippedSkills([
               ...effectiveSkillNameList,
               name,
@@ -165,6 +171,11 @@ export function CharacterScreen() {
               effectiveSkillNameList.filter((n) => n !== name),
             );
           }}
+          onEquipFeat={(name) => {
+            if (!skillLayout.hasFeatSlot) return;
+            characterStateHook.setEquippedFeat(name);
+          }}
+          onUnequipFeat={() => characterStateHook.setEquippedFeat(null)}
         />
       </div>
     );

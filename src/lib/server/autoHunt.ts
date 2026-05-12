@@ -70,6 +70,12 @@ type SavedCharacter = {
     accessory?: EquipItem | null;
   } | null;
   equippedSkills?: string[];
+  equippedFeat?: string;
+  [k: string]: unknown;
+};
+
+type SavedStoryFlags = {
+  flags?: string[];
   [k: string]: unknown;
 };
 
@@ -145,6 +151,7 @@ export type LoadedState = {
   crafting: SavedCrafting;
   map: SavedMap;
   training: SavedTraining;
+  storyFlags: SavedStoryFlags;
 };
 
 // 트랜잭션 안에서 sim 에 필요한 모든 savesKv 키를 잠금 + 읽음.
@@ -163,7 +170,9 @@ export async function loadStateForSim(
   const map = (await readKv<SavedMap>(tx, userId, "map.v2", true)) ?? {};
   const training =
     (await readKv<SavedTraining>(tx, userId, "training.v2", true)) ?? {};
-  return { character, inventory, crafting, map, training };
+  const storyFlags =
+    (await readKv<SavedStoryFlags>(tx, userId, "storyFlags.v2", true)) ?? {};
+  return { character, inventory, crafting, map, training, storyFlags };
 }
 
 // sim 입력 조립 — derivePlayerCombat 으로 PlayerCombat 만들고 region/potions/luk 등 패키징.
@@ -189,6 +198,8 @@ export function assembleSimInput(opts: AssembleSimInputOpts): OfflineSimInput {
     allocatedStats: allocatedFrom(state.training),
     equipped: equippedFrom(character),
     equippedSkills: character.equippedSkills,
+    equippedFeat: character.equippedFeat,
+    storyFlagIds: new Set(state.storyFlags.flags ?? []),
     hp: baselineHp,
   });
 

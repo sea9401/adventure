@@ -89,6 +89,15 @@ export type PlayerCombat = {
   enduranceActive?: boolean;
   // 광속 — 매 턴 마지막 공격 후 추가 1회 공격 확률(%). 0/undefined = 미보유.
   lightspeedExtraAttackPct?: number;
+  // ── 특기 (특기 전용 슬롯, 1개만) ──────────────────────────────────────
+  // 흡혈 — 크리티컬로 준 피해의 N% 만큼 HP 회복. 0/undefined = 미장착.
+  lifestealCritHealPct?: number;
+  // 곡예 — 회피(보장/%/행운의 방패) 성공 시 HP +amount. 0/undefined = 미장착.
+  evadeHealAmount?: number;
+  // 천칭 — (내SPD − 적SPD) 1당 추가 크리티컬 확률(%). 0/undefined = 미장착.
+  balanceCritPctPerSpdDiff?: number;
+  // 행운의 방패 — 피격을 무효화할 확률(%). 0/undefined = 미장착.
+  luckyShieldBlockPct?: number;
 };
 
 export type PlayerAction =
@@ -327,7 +336,15 @@ export function advanceTurn(
     const luckCritBonus = state.luckyBuffActive
       ? player.doubleLuck?.crit ?? 0
       : 0;
-    const effectiveCritPct = baseCritPct + luckCritBonus;
+    // 천칭 — 내 SPD 가 적보다 빠른 만큼 크리티컬 확률 가산.
+    const balanceCritBonus =
+      (player.balanceCritPctPerSpdDiff ?? 0) > 0
+        ? Math.floor(
+            Math.max(0, player.spd - state.enemy.spd) *
+              player.balanceCritPctPerSpdDiff!,
+          )
+        : 0;
+    const effectiveCritPct = baseCritPct + luckCritBonus + balanceCritBonus;
     const critRoll =
       effectiveCritPct > 0 ? Math.random() * 100 < effectiveCritPct : false;
     const baseDmg = damageBetween(player.atk + bonus, targetDef);
@@ -370,12 +387,29 @@ export function advanceTurn(
       });
     }
     const luckyBuffActive = state.luckyBuffActive || shouldActivateLucky;
+    // 흡혈 (특기) — 크리티컬로 준 피해의 % 만큼 HP 회복.
+    const lifestealHeal =
+      critRoll && (player.lifestealCritHealPct ?? 0) > 0
+        ? Math.floor((dmg * player.lifestealCritHealPct!) / 100)
+        : 0;
+    const newPlayerHp =
+      lifestealHeal > 0
+        ? Math.min(state.playerMaxHp, state.playerHp + lifestealHeal)
+        : state.playerHp;
+    const actualLifesteal = newPlayerHp - state.playerHp;
+    if (actualLifesteal > 0) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[흡혈] ${playerName}의 HP +${actualLifesteal}`,
+      });
+    }
     const enemyHp = Math.max(0, state.enemyHp - dmg);
     // 페이즈 트리거 검사 — 데미지 적용 직후, 사망 분기 전에 처리해야 트리거된 def 가
     // 같은 턴 후속 공격(다중공격/연타)에 즉시 반영된다.
     const afterDamage = applyPhaseTriggerIfAny({
       ...state,
       enemyHp,
+      playerHp: newPlayerHp,
       log,
       luckyBuffActive,
     });
@@ -448,17 +482,30 @@ export function advanceTurn(
     return applyRegenIfAny(ended, player, playerName);
   }
 
-  // enemy phase — 보장 회피 → % 회피 → 데미지 (가드 적용) 순.
+  // enemy phase — 보장 회피 → % 회피 → 행운의 방패 → 데미지 (가드 적용) 순.
   // enemy phase 종료 시 enemyPhasesCompleted +1 (가드 카운터 진행).
+  // 회피/방패 성공 시 곡예(특기) 장착이면 HP +evadeHealAmount.
+  const evadeHeal = player.evadeHealAmount ?? 0;
+  const healOnDodge = (hp: number): number =>
+    evadeHeal > 0 ? Math.min(state.playerMaxHp, hp + evadeHeal) : hp;
   if (state.evadesRemaining > 0) {
+    const healedHp = healOnDodge(state.playerHp);
+    let log = appendLog(state.log, {
+      kind: "info",
+      text: `[회피 강화] ${state.enemy.name}의 공격을 회피했다!`,
+    });
+    if (healedHp > state.playerHp) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[곡예] ${playerName}의 HP +${healedHp - state.playerHp}`,
+      });
+    }
     let next: BattleState = {
       ...state,
+      playerHp: healedHp,
       evadesRemaining: state.evadesRemaining - 1,
       enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
-      log: appendLog(state.log, {
-        kind: "info",
-        text: `[회피 강화] ${state.enemy.name}의 공격을 회피했다!`,
-      }),
+      log,
     };
     const counter = applyCounterIfAny(next, player);
     if (counter.ended) return counter.state;
@@ -471,13 +518,47 @@ export function advanceTurn(
     : 0;
   const effectiveEvadePct = player.evasionPct + luckEvadeBonus;
   if (Math.random() * 100 < effectiveEvadePct) {
+    const healedHp = healOnDodge(state.playerHp);
+    let log = appendLog(state.log, {
+      kind: "info",
+      text: `${playerName}이(가) ${state.enemy.name}의 공격을 회피했다!`,
+    });
+    if (healedHp > state.playerHp) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[곡예] ${playerName}의 HP +${healedHp - state.playerHp}`,
+      });
+    }
     let next: BattleState = {
       ...state,
+      playerHp: healedHp,
       enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
-      log: appendLog(state.log, {
+      log,
+    };
+    const counter = applyCounterIfAny(next, player);
+    if (counter.ended) return counter.state;
+    next = counter.state;
+    return { ...next, phase: "player" };
+  }
+  // 행운의 방패 (특기) — 위 회피가 모두 실패해도 일정 확률로 피해 무효 (행운 회피).
+  const luckyBlockPct = player.luckyShieldBlockPct ?? 0;
+  if (luckyBlockPct > 0 && Math.random() * 100 < luckyBlockPct) {
+    const healedHp = healOnDodge(state.playerHp);
+    let log = appendLog(state.log, {
+      kind: "info",
+      text: `[행운의 방패] ${playerName}이(가) ${state.enemy.name}의 공격을 흘려보냈다!`,
+    });
+    if (healedHp > state.playerHp) {
+      log = appendLog(log, {
         kind: "info",
-        text: `${playerName}이(가) ${state.enemy.name}의 공격을 회피했다!`,
-      }),
+        text: `[곡예] ${playerName}의 HP +${healedHp - state.playerHp}`,
+      });
+    }
+    let next: BattleState = {
+      ...state,
+      playerHp: healedHp,
+      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      log,
     };
     const counter = applyCounterIfAny(next, player);
     if (counter.ended) return counter.state;
