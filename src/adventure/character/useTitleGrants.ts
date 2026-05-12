@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { COUNTER_TITLES } from "../data/titles";
 import { STAT_KEYS, type StatKey } from "../data/stats";
+import { SHOP_UNLOCK_THRESHOLD } from "../shop/constants";
 
 // 외부 상태 관찰만 하는 passive 칭호 등록 effect 묶음.
 // grantTitle 은 호출자가 보유 — handleSell/onBattleEnd/completeQuest 등 능동 경로와
@@ -26,6 +27,8 @@ export function useTitleGrants(
     luckyCollected: boolean;
     /** §11 hidden-hooded-cipher 완료 flag — 'cipher_bearer' 칭호. */
     cipherDone: boolean;
+    /** 상점에 가장 많이 판 재료 한 종류의 누적 판매량 — 임계치 이상이면 '상인'. */
+    maxMaterialSold: number;
   },
 ) {
   // 카운터형 칭호 — COUNTER_TITLES 표를 한 번에 돌며 임계값 도달분 등록.
@@ -47,6 +50,14 @@ export function useTitleGrants(
     opts.chatCount,
     opts.healingCount,
   ]);
+
+  // '상인' — 한 종류의 재료를 상점에 누적 임계치 이상 판매. 본래는 판매 핸들러가
+  // 임계치를 넘기는 순간 직접 부여하지만, 그 순간 부여가 누락된 세이브(과거 판매분·
+  // 토스트 직전 종료 등)도 다음 로드 때 확실히 받게 하는 안전망.
+  useEffect(() => {
+    if (opts.maxMaterialSold >= SHOP_UNLOCK_THRESHOLD) grantTitle("merchant");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts.maxMaterialSold]);
 
   // 시간대 칭호 — 마운트 시 1회 평가. 새벽반(3~5시) / 야행성(자정~3시).
   useEffect(() => {

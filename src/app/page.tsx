@@ -733,6 +733,10 @@ function Home() {
     (max, e) => Math.max(max, e?.talkCount ?? 0),
     0,
   );
+  const maxMaterialSold = Object.values(shopUnlocks.state.sold).reduce(
+    (max, n) => Math.max(max, n ?? 0),
+    0,
+  );
   useTitleGrants(grantTitle, {
     battleLosses: adventureLog.log.battleLosses ?? 0,
     trainingCount: training.completedCount,
@@ -746,6 +750,7 @@ function Home() {
       new Set(mapProgress.visitedRegionIds).size >= WORLD_MAP.regions.length,
     luckyCollected: storyFlags.has("bard_lucky_collected"),
     cipherDone: storyFlags.has("cipher_done"),
+    maxMaterialSold,
   });
 
   const handleBattleEnd = (payload: BattleEndPayload) =>
