@@ -10,7 +10,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { formatRelative } from "@/lib/notifications";
-import { CHAT_MAX_LENGTH } from "@/lib/chat-config";
+import { CHAT_MAX_LENGTH, isNoticeMessage } from "@/lib/chat-config";
 import {
   encodeItemLink,
   parseChatContent,
@@ -99,6 +99,9 @@ export function ChatPanel({
   title,
   messages,
   onMessageSent,
+  unreadChat = false,
+  unreadNotice = false,
+  onSeen,
 }: {
   open: boolean;
   onClose: () => void;
@@ -107,6 +110,11 @@ export function ChatPanel({
   title: string | null;
   messages: ChatMessage[];
   onMessageSent: (m: ChatMessage) => void;
+  /** 채팅/알림 탭별 안 읽은 메시지 유무 — 탭에 점 표시. */
+  unreadChat?: boolean;
+  unreadNotice?: boolean;
+  /** 해당 탭의 최신 메시지를 본 것으로 처리. */
+  onSeen?: (kind: "chat" | "notice", lastId: number) => void;
 }) {
   const game = useGame();
   const [presence, setPresence] = useState<PresenceUser[]>([]);
@@ -115,6 +123,8 @@ export function ChatPanel({
   const [error, setError] = useState<string | null>(null);
   const [pmTarget, setPmTarget] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // 채팅 / 알림(협동 보스 등 시스템 메시지) 탭 분리.
+  const [tab, setTab] = useState<"chat" | "notice">("chat");
   // 낙관적 전송 — 서버 응답 전 임시 메시지 큐. 응답 도착 시 큐에서 제거.
   const [pending, setPending] = useState<ChatMessage[]>([]);
   const tempIdRef = useRef(0);
@@ -133,6 +143,34 @@ export function ChatPanel({
     }
     return [...messages, ...remainingPending];
   }, [messages, pending]);
+
+  // 일반 채팅 / 시스템 알림(협동 보스 스폰·토벌 등) 을 className 으로 갈라낸다.
+  const chatMessages = useMemo(
+    () => visibleMessages.filter((m) => !isNoticeMessage(m)),
+    [visibleMessages],
+  );
+  const noticeMessages = useMemo(
+    () => visibleMessages.filter((m) => isNoticeMessage(m)),
+    [visibleMessages],
+  );
+  const shownMessages = tab === "chat" ? chatMessages : noticeMessages;
+
+  // 권위적 messages 만 보고 (낙관적 pending 의 음수 임시 id 제외) 각 카테고리 최신 id 계산.
+  const lastChatId = useMemo(
+    () => messages.reduce((mx, m) => (!isNoticeMessage(m) && m.id > mx ? m.id : mx), 0),
+    [messages],
+  );
+  const lastNoticeId = useMemo(
+    () => messages.reduce((mx, m) => (isNoticeMessage(m) && m.id > mx ? m.id : mx), 0),
+    [messages],
+  );
+
+  // 패널이 열려 있는 동안 보고 있는 탭의 최신 메시지는 읽은 것으로 보고.
+  useEffect(() => {
+    if (!open || !onSeen) return;
+    if (tab === "chat" && lastChatId > 0) onSeen("chat", lastChatId);
+    if (tab === "notice" && lastNoticeId > 0) onSeen("notice", lastNoticeId);
+  }, [open, tab, lastChatId, lastNoticeId, onSeen]);
 
   useEffect(() => {
     if (!open) return;
@@ -168,7 +206,7 @@ export function ChatPanel({
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
-    if (open && !initialScrolledRef.current && visibleMessages.length > 0) {
+    if (open && !initialScrolledRef.current && shownMessages.length > 0) {
       el.scrollTop = el.scrollHeight;
       initialScrolledRef.current = true;
       return;
@@ -178,7 +216,13 @@ export function ChatPanel({
     if (nearBottom) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [visibleMessages, open]);
+  }, [shownMessages, open]);
+
+  // 탭을 바꾸면 그 탭의 맨 아래(최신)로 한 번 정렬.
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [tab]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -318,16 +362,49 @@ export function ChatPanel({
           </div>
         )}
 
+        <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+          {(
+            [
+              ["chat", "채팅", chatMessages.length, unreadChat],
+              ["notice", "알림", noticeMessages.length, unreadNotice],
+            ] as const
+          ).map(([key, label, count, unread]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              aria-current={tab === key}
+              className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors ${
+                tab === key
+                  ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-b-2 border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              }`}
+            >
+              {label}
+              {unread && tab !== key && (
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+              )}
+              {count > 0 && (
+                <span className="rounded-full bg-zinc-200 px-1.5 text-[10px] tabular-nums text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         <div
           ref={listRef}
           className="no-scrollbar flex-1 space-y-2 overflow-y-auto px-3 py-2"
         >
-          {visibleMessages.length === 0 ? (
+          {shownMessages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
-              아직 메시지가 없습니다.
+              {tab === "chat"
+                ? "아직 메시지가 없습니다."
+                : "협동 보스 알림이 없습니다."}
             </div>
           ) : (
-            visibleMessages.map((m) => (
+            shownMessages.map((m) => (
               <div
                 key={m.id}
                 className={`flex flex-col gap-0.5 ${m.mine ? "items-end" : "items-start"}`}
@@ -374,6 +451,11 @@ export function ChatPanel({
           </div>
         )}
 
+        {tab === "notice" ? (
+          <div className="border-t border-zinc-200 px-3 py-2.5 text-center text-xs text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
+            협동 보스 알림 — 채팅하려면 채팅 탭으로
+          </div>
+        ) : (
         <form
           onSubmit={submit}
           className="flex items-center gap-2 border-t border-zinc-200 px-3 py-2 dark:border-zinc-800"
@@ -404,6 +486,7 @@ export function ChatPanel({
             <PaperPlaneTilt size={18} weight="fill" />
           </button>
         </form>
+        )}
       </div>
 
       {pmTarget && (
