@@ -18,14 +18,12 @@ import { CharacterScreen } from "@/adventure/CharacterScreen";
 import { AdventureScreen } from "@/adventure/AdventureScreen";
 import { GameProvider, type GameCtx } from "@/adventure/GameContext";
 import { useAdventureLog } from "@/adventure/log/useAdventureLog";
-import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
+import { WORLD_MAP } from "@/adventure/data/world";
 import {
   initialMapProgress,
   type MapProgress,
 } from "@/lib/map-progress";
 import { START_REGION_ID } from "@/adventure/data/world";
-import { type ConsumableId } from "@/adventure/data/consumables";
-import type { ShopActionKind, ShopOutcome } from "@/adventure/shop/types";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationToast } from "@/components/NotificationToast";
 import { LevelUpOverlay } from "@/components/LevelUpOverlay";
@@ -35,11 +33,6 @@ import {
   applyQuestReward,
   type RewardServices,
 } from "@/adventure/quests/applyReward";
-import { ITEMS, findItemId, rarityTextClass, type EquipSlot, type ItemId } from "@/adventure/data/items";
-import {
-  POTIONS,
-  type PotionId,
-} from "@/adventure/data/potions";
 import { useInventory } from "@/adventure/inventory/useInventory";
 import { MarketplaceTab } from "@/adventure/marketplace/MarketplaceTab";
 import { InboxView } from "@/adventure/marketplace/InboxView";
@@ -47,17 +40,6 @@ import { useInboxCount } from "@/adventure/marketplace/useInboxCount";
 import { RankingsView } from "@/adventure/rankings/RankingsView";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
-import { resolveCraftedItem, type Recipe } from "@/adventure/data/recipes";
-import { craftTierSuffix, type CraftTier } from "@/adventure/data/craftQuality";
-import {
-  dropQualityPrefix,
-  dropQualityTextClass,
-  resolveDroppedItem,
-  type DropQuality,
-} from "@/adventure/data/dropQuality";
-import { craftErrorMessage, type CraftResult } from "@/adventure/crafting/types";
-import type { EquippedItem } from "@/adventure/character/types";
-import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
 import { NEWBIE_BONUS_LEVEL_THRESHOLD, isNewbieBonusActive } from "@/lib/leveling";
 import { BulletinBoardView } from "@/adventure/BulletinBoardView";
@@ -94,6 +76,10 @@ import { useGuildFameSync } from "@/adventure/guild/useGuildFameSync";
 import { useGuildBuffsCache } from "@/adventure/guild/useGuildBuffsCache";
 import { reportGuildQuestProgress } from "@/adventure/guild/api";
 import { useShopUnlocks } from "@/adventure/shop/useShopUnlocks";
+import { useShopActions } from "@/adventure/shop/useShopActions";
+import { useEquipmentActions } from "@/adventure/inventory/useEquipmentActions";
+import { useCraftAction } from "@/adventure/crafting/useCraftAction";
+import { applyQuestCompletionSideEffects } from "@/adventure/quests/questCompletionSideEffects";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
@@ -135,22 +121,6 @@ export default function Page() {
       </Suspense>
     </SaveProvider>
   );
-}
-
-// /api/shop 의 ShopError code → 사용자 안내 문구.
-function shopErrorMessage(code: string): string {
-  switch (code) {
-    case "insufficient_gold":
-      return "골드가 부족하다.";
-    case "full":
-      return "더 들 수 없다.";
-    case "insufficient_items":
-      return "보유량이 부족하다.";
-    case "locked":
-      return "아직 상점에서 취급하지 않는 재료다.";
-    default:
-      return "상점 처리에 실패했다.";
-  }
 }
 
 function Home() {
@@ -327,153 +297,6 @@ function Home() {
     meta?: NotificationMeta,
   ) => notifications.add(kind, text, meta);
 
-  // 상점 buy/sell — 서버 권위 (audit-findings #1). 클라는 의도(kind/id/quantity)만 보내고,
-  // 서버가 character.v2 / inventory.v2 를 잠그고 검증·적용한 새 값을 받아 in-memory state 를
-  // replace. 이어지는 useRemotePatch 자동 PATCH 는 409→currentVersion 재시도로 자가 수렴.
-  // 실패 시 사유를 토스트로 안내하고 null 반환.
-  const runShopAction = async (body: {
-    kind: ShopActionKind;
-    id: string;
-    quantity: number;
-    craftTier?: number;
-    dropQuality?: number;
-  }): Promise<{ applied: ShopOutcome["applied"] } | null> => {
-    if (!Number.isInteger(body.quantity) || body.quantity < 1) return null;
-    let res: Response;
-    try {
-      res = await fetch("/api/shop", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    } catch {
-      addNotification("info", "통신 오류 — 잠시 후 다시 시도해 주세요.");
-      return null;
-    }
-    if (res.status === 401 || res.status === 410) {
-      // 세션 만료/무효 — 다음 저장 시도에서 SaveProvider 가 안내. 여기선 조용히 실패.
-      return null;
-    }
-    const data = (await res.json().catch(() => null)) as
-      | { ok: true; character: unknown; inventory: unknown; applied: ShopOutcome["applied"] }
-      | { ok: false; error: string }
-      | null;
-    if (!data) {
-      addNotification("info", "상점 처리에 실패했다.");
-      return null;
-    }
-    if (data.ok === false) {
-      addNotification("info", shopErrorMessage(data.error));
-      return null;
-    }
-    characterStateHook.replaceFromSaved(data.character);
-    inventory.replaceFromSaved(data.inventory);
-    return { applied: data.applied };
-  };
-
-  const handlePurchasePotion = async (id: PotionId, quantity: number) => {
-    await runShopAction({ kind: "buy_potion", id, quantity });
-  };
-
-  const handlePurchaseMaterial = async (id: MaterialId, quantity: number) => {
-    await runShopAction({ kind: "buy_material", id, quantity });
-  };
-
-  const handlePurchaseConsumable = async (
-    id: ConsumableId,
-    quantity: number,
-  ) => {
-    await runShopAction({ kind: "buy_consumable", id, quantity });
-  };
-
-  // 마을 귀환 주문서 사용 — 가본 마을로 즉시 이동.
-  // 마을→마을은 무소비 (지도 fast-travel 과 동일), 그 외엔 1개 소비.
-  const handleUseTownReturn = (townId: RegionId): boolean => {
-    const target = WORLD_MAP.regions.find((r) => r.id === townId);
-    if (!target?.tags?.includes("town")) return false;
-    if (!mapProgress.visitedRegionIds.includes(townId)) return false;
-    if (mapProgress.currentRegionId === townId) return false;
-    const from = WORLD_MAP.regions.find(
-      (r) => r.id === mapProgress.currentRegionId,
-    );
-    const fromIsTown = !!from?.tags?.includes("town");
-    if (!fromIsTown) {
-      if (!inventory.consumeConsumable("scroll_town_return", 1)) return false;
-    }
-    setMapProgress((prev) => ({ ...prev, currentRegionId: townId }));
-    addNotification(
-      "info",
-      fromIsTown
-        ? `${target.name}(으)로 이동했다.`
-        : `귀환 주문서로 ${target.name}(으)로 이동했다.`,
-    );
-    return true;
-  };
-
-  // 판매 — 서버가 인벤토리에서 차감 + 골드 지급. 0G 아이템은 단순 정리(버리기) 효과.
-  // 토스트/칭호/해금 알림은 서버가 알려준 applied(실제 적용 수량·골드)로 구성.
-  const handleSellPotion = async (id: PotionId, quantity: number) => {
-    const r = await runShopAction({ kind: "sell_potion", id, quantity });
-    if (!r) return;
-    const { quantity: qty, goldDelta: total } = r.applied;
-    addNotification(
-      "info",
-      total > 0
-        ? `${POTIONS[id].name} ×${qty}을(를) ${total}G에 팔았다.`
-        : `${POTIONS[id].name} ×${qty}을(를) 버렸다.`,
-    );
-  };
-
-  const handleSellMaterial = async (id: MaterialId, quantity: number) => {
-    const r = await runShopAction({ kind: "sell_material", id, quantity });
-    if (!r) return;
-    const { quantity: qty, goldDelta: total } = r.applied;
-    addNotification(
-      "info",
-      total > 0
-        ? `${MATERIALS[id].name} ×${qty}을(를) ${total}G에 팔았다.`
-        : `${MATERIALS[id].name} ×${qty}을(를) 버렸다.`,
-    );
-    // 누적 판매량 100 도달 시 상점에서 구매 가능. 처음 도달한 순간만 알림.
-    // 임계치를 처음 넘긴 시점에 '상인' 칭호도 함께 부여 (이미 보유면 idempotent).
-    // shop.unlocks.v1 은 진행 마커라 클라 권위 유지 (server-authority-plan v1 비대상) —
-    // 서버 material-buy 검증은 이 PATCH 가 동기화된 값을 read-only 로 본다.
-    const crossed = shopUnlocks.recordSale(id, qty);
-    if (crossed) {
-      addNotification(
-        "info",
-        `상점에서 ${MATERIALS[id].name}을(를) 취급하기 시작했다.`,
-      );
-      grantTitle("merchant");
-    }
-  };
-
-  const handleSellEquipment = async (
-    id: ItemId,
-    quantity: number,
-    craftTier?: CraftTier,
-    dropQuality?: DropQuality,
-  ) => {
-    const r = await runShopAction({
-      kind: "sell_equipment",
-      id,
-      quantity,
-      craftTier,
-      dropQuality,
-    });
-    if (!r) return;
-    const { quantity: qty, goldDelta: total } = r.applied;
-    const name =
-      dropQualityPrefix(dropQuality) + ITEMS[id].name + craftTierSuffix(craftTier);
-    addNotification(
-      "info",
-      total > 0
-        ? `${name}${qty > 1 ? ` ×${qty}` : ""}을(를) ${total}G에 팔았다.`
-        : `${name}${qty > 1 ? ` ×${qty}` : ""}을(를) 버렸다.`,
-    );
-    if (id === "mom_amulet") grantTitle("unfilial");
-  };
-
   // 마운트 1회 — 신참 보너스 활성 안내, 시련 이어서 진행 안내, reload 사유 안내.
   // 모두 한 번만 보여줘야 하므로 ref 가드 + 보여준 뒤 localStorage 플래그 정리.
   const oneTimeNoticesShownRef = useRef(false);
@@ -538,194 +361,6 @@ function Home() {
     addNotification: (kind, text) => addNotification(kind, text),
   });
 
-  // 한 장비 인스턴스의 표시 이름 — 드랍 품질은 prefix("정교한 ○○"), 제작 등급은 suffix("○○ ⟨걸작⟩").
-  const equipDisplayName = (
-    id: ItemId,
-    tier?: CraftTier,
-    quality?: DropQuality,
-  ): string =>
-    dropQualityPrefix(quality) + ITEMS[id].name + craftTierSuffix(tier);
-
-  // 표시 이름 강조 색 — 드랍 고품질이면 그 등급 톤, 아니면 아이템 rarity 톤.
-  const equipNameClass = (id: ItemId, quality?: DropQuality): string =>
-    quality ? dropQualityTextClass(quality) : rarityTextClass(ITEMS[id]);
-
-  // 슬롯에 장착돼 있던 장비를 인벤토리로 회수 — 제작산/드랍 고품질이면 등급별 칸으로, 아니면 기본 칸으로.
-  const returnEquippedToInventory = (item: EquippedItem | null) => {
-    if (!item) return;
-    const id = findItemId(item);
-    if (!id) return;
-    const tier = item.craftTier;
-    if (tier != null && tier !== 0) {
-      inventory.addCraftedEquipment(id, tier, 1);
-      return;
-    }
-    const q = item.dropQuality;
-    if (q === 1 || q === 2) {
-      inventory.addDroppedEquipment(id, q, 1);
-      return;
-    }
-    inventory.addEquipment(id, 1);
-  };
-
-  // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
-  // tier ±1·±2 = 제작산 등급 스택, quality 1·2 = 드랍 고품질 스택, 둘 다 미지정/0 = 기본 스택.
-  const handleEquipFromInventory = (
-    id: ItemId,
-    tier?: CraftTier,
-    quality?: DropQuality,
-  ) => {
-    const isCrafted = tier != null && tier !== 0;
-    const isDropped = !isCrafted && (quality === 1 || quality === 2);
-    if (isCrafted) {
-      if (!inventory.consumeCraftedEquipment(id, tier, 1)) return;
-    } else if (isDropped) {
-      if (!inventory.consumeDroppedEquipment(id, quality, 1)) return;
-    } else {
-      if (!inventory.consumeEquipment(id, 1)) return;
-    }
-    const item = ITEMS[id];
-    const equipItem: EquippedItem = isCrafted
-      ? resolveCraftedItem(id, tier)
-      : isDropped
-        ? resolveDroppedItem(id, quality)
-        : item;
-    returnEquippedToInventory(characterStateHook.equippedSlots[item.slot]);
-    characterStateHook.setSlot(item.slot, equipItem);
-    const name = equipDisplayName(id, tier, isDropped ? quality : undefined);
-    addNotification("item", `${name}을(를) 장착했다.`, {
-      highlight: { name, className: equipNameClass(id, isDropped ? quality : undefined) },
-    });
-  };
-
-  const handleUnequip = (slot: EquipSlot) => {
-    const current = characterStateHook.equippedSlots[slot];
-    if (!current) return;
-    returnEquippedToInventory(current);
-    characterStateHook.setSlot(slot, null);
-    const id = findItemId(current);
-    const name = id
-      ? equipDisplayName(id, current.craftTier, current.dropQuality)
-      : current.name;
-    addNotification("item", `${name}을(를) 해제했다.`, {
-      highlight: {
-        name,
-        className: id
-          ? equipNameClass(id, current.dropQuality)
-          : rarityTextClass(current),
-      },
-    });
-  };
-
-  // 인벤토리에서 장비 1개 폐기 — 보상 없음. (장착 중인 장비는 인벤토리 카운트 밖이라
-  // 애초에 폐기 대상이 안 됨 — 가방엔 여분만 보인다.) 순수 제거라 서버 권위 불필요 — consume 후
-  // useRemotePatch 가 동기화.
-  const handleDiscardFromInventory = (
-    id: ItemId,
-    tier?: CraftTier,
-    quality?: DropQuality,
-  ) => {
-    const isCrafted = tier != null && tier !== 0;
-    const isDropped = !isCrafted && (quality === 1 || quality === 2);
-    const ok = isCrafted
-      ? inventory.consumeCraftedEquipment(id, tier, 1)
-      : isDropped
-        ? inventory.consumeDroppedEquipment(id, quality, 1)
-        : inventory.consumeEquipment(id, 1);
-    if (!ok) return;
-    addNotification(
-      "item",
-      `${equipDisplayName(id, tier, isDropped ? quality : undefined)}을(를) 폐기했다.`,
-    );
-  };
-
-  // 제작 — 서버 권위 (audit-findings #1 후속). 클라는 recipeId 만 보내고, 서버가 inventory.v2 /
-  // crafting.v2 를 잠그고 검증·적용(품질 등급 추첨 포함)한 새 값을 받아 in-memory state 를
-  // replace. 이어지는 useRemotePatch 자동 PATCH 는 409→재시도로 자가 수렴 (상점과 동일).
-  // 사전 검사(재료/포션 한도)는 UX 용 — 라운드트립 전에 부족분을 안내. 권한은 서버가 갖는다.
-  const handleCraft = async (recipe: Recipe) => {
-    for (const ing of recipe.ingredients) {
-      if (ing.kind === "material") {
-        if (inventory.materialCount(ing.materialId) < ing.count) {
-          addNotification(
-            "info",
-            `재료가 부족하다 — ${MATERIALS[ing.materialId].name} ${ing.count}개 필요.`,
-          );
-          return;
-        }
-      } else {
-        const have =
-          (inventory.state.equipment[ing.itemId] ?? 0) +
-          inventory.craftedTotalCount(ing.itemId) +
-          inventory.droppedTotalCount(ing.itemId);
-        if (have < ing.count) {
-          addNotification(
-            "info",
-            `재료가 부족하다 — ${ITEMS[ing.itemId].name} ${ing.count}개 필요.`,
-          );
-          return;
-        }
-      }
-    }
-    if (recipe.result.kind === "potion") {
-      const have = inventory.state.potions[recipe.result.potionId] ?? 0;
-      if (have + recipe.result.quantity > inventory.potionMax) {
-        addNotification(
-          "info",
-          `${POTIONS[recipe.result.potionId].name}을(를) 더 들 수 없다.`,
-        );
-        return;
-      }
-    }
-
-    let res: Response;
-    try {
-      res = await fetch("/api/craft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipeId: recipe.id }),
-      });
-    } catch {
-      addNotification("info", "통신 오류 — 잠시 후 다시 시도해 주세요.");
-      return;
-    }
-    if (res.status === 401 || res.status === 410) return;
-    const data = (await res.json().catch(() => null)) as
-      | { ok: true; inventory: unknown; crafting: unknown; result: CraftResult }
-      | { ok: false; error: string }
-      | null;
-    if (!data) {
-      addNotification("info", "제작에 실패했다.");
-      return;
-    }
-    if (data.ok === false) {
-      addNotification("info", craftErrorMessage(data.error));
-      return;
-    }
-    inventory.replaceFromSaved(data.inventory);
-    crafting.replaceFromSaved(data.crafting);
-
-    if (data.result.kind === "equipment") {
-      const item = ITEMS[data.result.itemId];
-      const suffix = craftTierSuffix(data.result.tier);
-      addNotification("item", `${item.name}${suffix}을(를) 만들었다.`, {
-        highlight: { name: item.name + suffix, className: rarityTextClass(item) },
-      });
-      // 제작 등급 칭호 — 걸작(2): 명장 / 불량(-2): 불량품 제작자.
-      if (data.result.tier === 2) grantTitle("masterwork");
-      if (data.result.tier === -2) grantTitle("botched");
-    } else {
-      const potion = POTIONS[data.result.potionId];
-      const qty = data.result.quantity;
-      addNotification(
-        "item",
-        qty > 1
-          ? `${potion.name} ×${qty}을(를) 만들었다.`
-          : `${potion.name}을(를) 만들었다.`,
-      );
-    }
-  };
-
   // 칭호 등록은 "획득 시"가 트리거 — 신규로 등록되는 시점에만 토스트.
   // 이미 획득한 칭호엔 무반응 (markTitleObtained 자체가 idempotent).
   const grantTitle = (titleId: string) => {
@@ -734,6 +369,34 @@ function Home() {
     const title = getTitle(titleId);
     if (title) addNotification("milestone", `칭호 획득 — ${title.name}`);
   };
+
+  const {
+    handlePurchasePotion,
+    handlePurchaseMaterial,
+    handlePurchaseConsumable,
+    handleUseTownReturn,
+    handleSellPotion,
+    handleSellMaterial,
+    handleSellEquipment,
+  } = useShopActions({
+    characterStateHook,
+    inventory,
+    shopUnlocks,
+    mapProgress,
+    setMapProgress,
+    addNotification,
+    grantTitle,
+  });
+
+  const { handleEquipFromInventory, handleUnequip, handleDiscardFromInventory } =
+    useEquipmentActions({ inventory, characterStateHook, addNotification });
+
+  const { handleCraft } = useCraftAction({
+    inventory,
+    crafting,
+    addNotification,
+    grantTitle,
+  });
 
   // 카운터/상태/시간 기반 자동 칭호 부여.
   const maxNpcTalkCount = Object.values(adventureLog.log.npcs).reduce(
@@ -883,49 +546,8 @@ function Home() {
         ? `${result.quest.title} 완료 — ${tokens.join(", ")}`
         : `${result.quest.title} 완료`,
     );
-    // 마린의 영혼 결정 의뢰 = "안개 너머의 길" 라인의 클로저 → 칭호 부여.
-    if (id === "diola-marin-soul-crystals") grantTitle("diola_friend");
-    // 운향 메인 라인 "잠들지 않는 산" — 백운의 운봉의 거인 의뢰 완수 → 칭호 + flag.
-    if (id === "unhyang-baekun-peak-giant") {
-      grantTitle("mountain_friend");
-      storyFlags.set("unhyang_main_cleared");
-    }
-    // 교역로 정리 2종(협곡 절벽 늑대 + 산기슭 산양) 둘 다 완료 → 디올라 연계 입구 개방.
-    // claim 직후엔 방금 완료한 쪽 상태가 비동기라, 나머지 한쪽이 이미 completed 인지로 판정.
-    if (id === "unhyang-baekun-cliff-wolves" && quests.getEntry("unhyang-baekun-highland-goats").state === "completed")
-      storyFlags.set("mountain_trade_open");
-    if (id === "unhyang-baekun-highland-goats" && quests.getEntry("unhyang-baekun-cliff-wolves").state === "completed")
-      storyFlags.set("mountain_trade_open");
-    // 천공 성지 메인 라인 "능선 너머의 봉인" — 해무의 마지막 자물쇠 완수 → 칭호 + flag.
-    if (id === "skyreach-haemu-flame-scale") {
-      grantTitle("ridge_crosser");
-      storyFlags.set("skyreach_main_cleared");
-    }
-    // 마을 간 연계 — 완료 시 양쪽 NPC 다이얼로그 갱신용 flag (+ 칭호).
-    if (id === "diola-marin-mountain-trade") storyFlags.set("diola_unhyang_trade_done");
-    if (id === "unhyang-sanha-nora-herbs") {
-      storyFlags.set("sanha_nora_herbs_sent");
-      grantTitle("herbalists_courier");
-    }
-    if (id === "village-jimmy-doyeon-timber") storyFlags.set("jimmy_doyeon_timber_done");
-    // 보스 누적 사냥 의뢰 3종(광맥의 수호자 / 운봉의 거인 / 화산의 심장) 모두 완수 → 칭호.
-    // claim 직후 방금 완료한 쪽 상태가 비동기라, 나머지가 이미 completed 인지로 판정.
-    {
-      const HUNTERS = ["deep-cave-hunter", "peak-giant-hunter", "volcano-heart-hunter"] as const;
-      if ((HUNTERS as readonly string[]).includes(id)) {
-        const others = HUNTERS.filter((h) => h !== id);
-        if (others.every((h) => quests.getEntry(h).state === "completed"))
-          grantTitle("boss_hunter");
-      }
-    }
-    // 바람골 노을의 호위 의뢰 2종 모두 완수 → '대상의 수호자' 칭호.
-    {
-      const ESCORTS = ["windvale-merchant-escort-raiders", "windvale-merchant-escort-hawks"] as const;
-      if ((ESCORTS as readonly string[]).includes(id)) {
-        const other = ESCORTS.find((e) => e !== id)!;
-        if (quests.getEntry(other).state === "completed") grantTitle("caravan_warden");
-      }
-    }
+    // 라인 클로저 후처리 — 의뢰별 칭호 부여 + 스토리 flag.
+    applyQuestCompletionSideEffects(id, { grantTitle, storyFlags, quests });
     return true;
   };
 
