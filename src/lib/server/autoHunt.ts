@@ -24,6 +24,7 @@ import { ITEMS, findItemId, type EquipItem } from "@/adventure/data/items";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { WORLD_MAP, START_REGION_ID, type RegionId } from "@/adventure/data/world";
 import type { PotionId } from "@/adventure/data/potions";
+import { STORY_FLAGS_STORAGE_KEY } from "@/adventure/storyFlags/storage";
 // type-only — useAutoPotionConfig 자체는 "use client" 지만 type 임포트는 erase 됨.
 import type { AutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 
@@ -171,7 +172,8 @@ export async function loadStateForSim(
   const training =
     (await readKv<SavedTraining>(tx, userId, "training.v2", true)) ?? {};
   const storyFlags =
-    (await readKv<SavedStoryFlags>(tx, userId, "storyFlags.v2", true)) ?? {};
+    (await readKv<SavedStoryFlags>(tx, userId, STORY_FLAGS_STORAGE_KEY, true)) ??
+    {};
   return { character, inventory, crafting, map, training, storyFlags };
 }
 

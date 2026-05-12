@@ -11,6 +11,7 @@ import {
 import { ensureUser } from "@/lib/server/ensureUser";
 import { upsertSave } from "@/lib/server/savesKv";
 import { derivePlayerCombatFromSaves } from "@/lib/server/derivePlayerCombatFromSaves";
+import { STORY_FLAGS_STORAGE_KEY } from "@/adventure/storyFlags/storage";
 import {
   COOP_ATTACK_COOLDOWN_MS,
   COOP_BOSSES,
@@ -59,7 +60,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     .limit(1);
 
   let session = active[0];
-  let isActive = !!session;
+  const isActive = !!session;
 
   if (!session) {
     // 가장 최근 정리된 세션 — nextSpawnAt 표시.
@@ -489,9 +490,9 @@ async function broadcastBossKill(
 // storyFlag 서버 set — savesKv 의 storyFlags.v2 row 갱신.
 // 클라이언트가 다음 reload 에서 useSavedValue 로 가져가 반영.
 async function setStoryFlagServer(userId: string, flagId: string): Promise<void> {
-  // 클라 STORY_FLAGS_STORAGE_KEY 와 반드시 일치 — 안 그러면 서버가 박은 플래그가
-  // 클라에 영원히 안 보임 (예: 운봉의 거인 처치/공격 후 운향 진입로가 안 열리던 버그).
-  const STORAGE_KEY = "storyFlags.v2";
+  // 클라/서버 공용 상수 — 리터럴 재기재 금지 (불일치 시 서버가 박은 플래그가
+  // 클라에 영원히 안 보임 — 운봉의 거인 후 운향 진입로 안 열리던 버그 이력).
+  const STORAGE_KEY = STORY_FLAGS_STORAGE_KEY;
   // 기존 값 조회 → 합치기 → upsertSave.
   const existing = await db
     .select({ value: savesKv.value })
