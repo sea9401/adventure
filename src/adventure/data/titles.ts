@@ -249,6 +249,30 @@ export const TITLES: Record<TitleId, Title> = {
     description: "세상 끝에서 끝까지 발자국을 남긴 자. 발바닥에 굳은살이 박였다.",
     condition: "모든 지역 방문",
   },
+  masterwork: {
+    id: "masterwork",
+    name: "명장",
+    description: "망치질에 신이 깃든 자. 손끝에서 걸작이 나왔다.",
+    condition: "제작으로 '걸작' 등급 장비 획득",
+  },
+  botched: {
+    id: "botched",
+    name: "불량품 제작자",
+    description: "최선을 다했는데 불량품이 나왔다. 누구에게나 그런 날이 있다.",
+    condition: "제작으로 '불량' 등급 장비 획득",
+  },
+  one_coin: {
+    id: "one_coin",
+    name: "동전 한 닢",
+    description: "마지막 동전 한 닢을 쥔 자. 거지보단 조금 낫다고 우긴다.",
+    condition: "보유 골드 정확히 1",
+  },
+  young_rich: {
+    id: "young_rich",
+    name: "어린 부자",
+    description: "레벨은 낮은데 지갑만 두툼하다. 운이 좋았거나, 안 자고 했거나.",
+    condition: "레벨 10 미만 + 보유 골드 100,000 도달",
+  },
 };
 
 // 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.
