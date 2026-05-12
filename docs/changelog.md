@@ -12,6 +12,7 @@
 - 🏗️ 신규 헬퍼: `questLineDialogue`(다단계 의뢰 NPC 공용)·`inventory/ownership`(장비 보유·unique 카운트)·`PilgrimMarkDialogue`(통과 지역 표식 surfacing). 신규 다이얼로그 컴포넌트 ~7개. 기존에 데이터만 있고 노출 안 되던 NPC 의뢰(운향·바람골·천공) 전부 대화에 연결(버그 수정).
 - 🏗️ `integrity.test.ts` 보강 — quest target(monsterName/materialId)·requiresQuestCompleted·id 유일성 정합성 검사.
 - ⚔️ 보상 보정 — 화산 지대(reqLv 52~55) 사이드·게시판·연금 의뢰 EXP 상향 (1500~2200 → 2300~2900). `L^2.5` 곡선에서 후반 의뢰 EXP가 레벨업 필요량의 2.2~3.3%로 가라앉던 걸 봉황령 tier(~3.7%)에 맞춤. 메인 라인·hunter·히든 보상은 설계대로 유지.
+- 🗺️ 봉황령→화산 레벨 공백(reqLv ~42 → 52) 보강 — reqLv 44~50 의뢰 8종 추가: 바람골 게시판 4종(`windvale-board-ridge-knights`·`-flame-lizards-large`·`-ridge-eagles-large`·`-lava-foothills`)·운향 게시판 1종(`unhyang-board-phoenix-ridge-grand`)·한솔 라인 2종(`windvale-pathfinder-deep-ridge`→`-foothills`)·도연 1종(`unhyang-guide-ridge-storm`). 각 ~4%/레벨로 봉황령 tier와 연속.
 
 ## 2026-05-06
 

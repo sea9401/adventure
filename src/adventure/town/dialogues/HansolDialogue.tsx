@@ -41,6 +41,20 @@ const STEPS: QuestLineStep[] = [
     activeText: (have, need) => `독수리는 능선을 돌아. 내리꽂힐 때를 노려. — 진행 ${have}/${need}`,
     doneText: "능선에 첫 발 디딜 데가 생겼어. 봉황령 길은 거기서부터다 — 받아.",
   },
+  {
+    id: "windvale-pathfinder-deep-ridge",
+    offerText:
+      "능선에 첫 발은 디뎠지. 근데 더 깊이 들어가니 산악 기사단이 진을 제대로 쳤더라. 스무 명만 치워 주면 그 너머로 가는 길이 보여 — 약 주머니 더 키워 줄게.",
+    activeText: (have, need) => `기사단은 능선 안쪽에 진을 쳤어. 한 명씩 끌어내. — 진행 ${have}/${need}`,
+    doneText: "능선 안쪽이 트였어. 그 너머가 화산 지대다 — 자, 약속한 거. 약 주머니도 손봐 줬고.",
+  },
+  {
+    id: "windvale-pathfinder-foothills",
+    offerText:
+      "봉황령 능선을 넘으면 화산 지대 어귀야. 거기 불꽃 골렘이 어슬렁대 — 광물째 녹아내리는 놈들이라 까다롭지. 열둘만 부숴 주면 화산 지대로 들어서는 길이 트인다.",
+    activeText: (have, need) => `골렘은 용암 웅덩이 가에 모여. 열기에 데지 마. — 진행 ${have}/${need}`,
+    doneText: "화산 지대로 들어서는 길이 트였어. 거기서부턴… 단단히 준비해 가라 — 받아.",
+  },
 ];
 
 export function HansolDialogue({ npc, onClose, quests, completeQuest, inventory }: Props) {
