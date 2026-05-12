@@ -11,6 +11,7 @@ import {
 } from "@/adventure/character/derivePlayerCombat";
 import { ITEMS, findItemId, type EquipItem } from "@/adventure/data/items";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
+import { STORY_FLAGS_STORAGE_KEY } from "@/adventure/storyFlags/storage";
 
 type SavedEquipped = {
   weapon?: EquipItem | null;
@@ -60,7 +61,7 @@ export async function derivePlayerCombatFromSaves(
   const training =
     (await readSave<SavedTrainingV2>(userId, "training.v2")) ?? {};
   const storyFlags =
-    (await readSave<SavedStoryFlagsV2>(userId, "storyFlags.v2")) ?? {};
+    (await readSave<SavedStoryFlagsV2>(userId, STORY_FLAGS_STORAGE_KEY)) ?? {};
   const storyFlagIds = new Set(
     Array.isArray(storyFlags.flags) ? storyFlags.flags : [],
   );
