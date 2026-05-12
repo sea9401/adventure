@@ -736,6 +736,8 @@ function Home() {
     level: characterState.level,
     maxNpcTalkCount,
     totalStats,
+    allRegionsVisited:
+      new Set(mapProgress.visitedRegionIds).size >= WORLD_MAP.regions.length,
   });
 
   const handleBattleEnd = (payload: BattleEndPayload) =>
