@@ -90,6 +90,26 @@ describe("deriveFeats — 두 요구 스탯 25 이상", () => {
       deriveFeats({ ...ZERO, dex: 25, luk: 25 }).map((f) => f.name),
     ).toContain(FEAT_NAMES.LIFESTEAL);
   });
+
+  it("스탯쌍별로 알맞은 특기만 보유 (10종 1:1)", () => {
+    expect(deriveFeats({ ...ZERO, str: 25, vit: 25 }).map((f) => f.name)).toEqual(
+      [FEAT_NAMES.BERSERKER],
+    );
+    expect(deriveFeats({ ...ZERO, str: 25, dex: 25 }).map((f) => f.name)).toEqual(
+      [FEAT_NAMES.ASSASSINATE],
+    );
+    expect(deriveFeats({ ...ZERO, vit: 25, spd: 25 }).map((f) => f.name)).toEqual(
+      [FEAT_NAMES.THORN_ARMOR],
+    );
+    // 세 스탯 25 → 가능한 모든 쌍의 특기 보유.
+    expect(
+      deriveFeats({ ...ZERO, dex: 25, spd: 25, luk: 25 })
+        .map((f) => f.name)
+        .sort(),
+    ).toEqual(
+      [FEAT_NAMES.LIFESTEAL, FEAT_NAMES.BALANCE, FEAT_NAMES.SKIRMISH].sort(),
+    );
+  });
 });
 
 describe("effectiveSkillNames / effectiveFeatName — 슬롯 한도", () => {

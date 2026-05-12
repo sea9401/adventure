@@ -56,6 +56,12 @@ export type BattleState = {
   playerShield: number;
   // 무피해 난무 (4티어) — 이 전투에서 플레이어가 실제로 받은 누적 HP 피해 (보호막 흡수분 제외). 0 = 무피해.
   damageTakenThisCombat: number;
+  // 암살 (특기) — 전투 첫 공격에 1회 발동 후 true. 같은 전투에서 재발동 안 함.
+  assassinateUsed: boolean;
+  // 연참 (특기) — 이번 턴에 크리티컬이 한 번이라도 났는지. 턴 종료 시 false 로 리셋.
+  critThisTurn: boolean;
+  // 연참 (특기) — 이번 턴에 연참 추가타가 이미 발동했는지 (턴당 1회). 턴 종료 시 false 로 리셋.
+  riposteUsedThisTurn: boolean;
 };
 
 export type PlayerCombat = {
@@ -119,6 +125,19 @@ export type PlayerCombat = {
   flurryAttacks?: number;
   // 천명 — 매 공격마다 적 현재 HP 의 HEAVEN_DECREE_HP_PCT% 를 추가 고정 피해로 줄 확률(%). 0/undefined = 미보유.
   heavenDecreeChancePct?: number;
+  // ── 특기 (Phase 3) ─────────────────────────────────────────────────────
+  // 광전사 — 잃은 HP 1%당 ATK +N%. 0/undefined = 미장착.
+  berserkAtkPctPerLostHpPct?: number;
+  // 암살 — 전투 첫 공격의 데미지 배수 (DEF 무시 동반). >1 일 때만 발동. 0/undefined = 미장착.
+  assassinateDmgMult?: number;
+  // 질풍검 — 턴 첫 공격에 (공격 횟수 × N) ATK 보너스. 0/undefined = 미장착.
+  gustAtkPerAttack?: number;
+  // 연참 — 그 턴 크리 발동 시 추가 공격 N회 (턴당 1회). 0/undefined = 미장착.
+  riposteExtra?: number;
+  // 유격 — 회피 성공 시 다음 플레이어 턴 공격 횟수 +N. 0/undefined = 미장착.
+  skirmishNextTurnBonus?: number;
+  // 반사 갑주 — 피격 시 받은 HP 피해의 N% 를 적에게 반사. 0/undefined = 미장착.
+  thornsPct?: number;
 };
 
 export type PlayerAction =
@@ -344,6 +363,9 @@ export function initialBattleState(
     bleedStacks: 0,
     playerShield: startShield,
     damageTakenThisCombat: 0,
+    assassinateUsed: false,
+    critThisTurn: false,
+    riposteUsedThisTurn: false,
   };
 }
 
@@ -406,18 +428,42 @@ export function advanceTurn(
         playerAttacksLeft: rollPlayerAttackCount(player),
         completedPlayerTurns: state.completedPlayerTurns + 1,
         doubleStrikeUsedThisTurn: false,
+        lightspeedUsedThisTurn: false,
+        critThisTurn: false,
+        riposteUsedThisTurn: false,
         firstAttackPending: true,
       };
       return finishPlayerTurn(ended, player, playerName);
     }
 
-    // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF -crushDefReduction.
+    // 암살 (특기) — 전투 첫 공격이면 발동: 적 DEF 무시 + 데미지 배수 (배수는 아래에서 적용).
+    const assassinFires =
+      (player.assassinateDmgMult ?? 0) > 1 &&
+      !state.assassinateUsed &&
+      state.completedPlayerTurns === 0 &&
+      isFirstAttackOfTurn;
+    // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF -crushDefReduction. 암살이면 DEF 0.
     const crushReduction = player.crushDefReduction ?? 0;
     const baseDef = state.enemy.def + state.enemyDefBonus;
-    const targetDef =
-      bonus > 0 && crushReduction > 0
+    const targetDef = assassinFires
+      ? 0
+      : bonus > 0 && crushReduction > 0
         ? Math.max(0, baseDef - crushReduction)
         : baseDef;
+    // 광전사 (특기) — 잃은 HP 비율만큼 ATK 가산.
+    // berserkAtkPctPerLostHpPct=0.5 → 잃은 HP 1%당 ATK +0.5% → 보너스ATK = atk × lostFraction × 0.5.
+    const lostHpFraction = Math.max(0, 1 - state.playerHp / state.playerMaxHp);
+    const berserkBonus =
+      (player.berserkAtkPctPerLostHpPct ?? 0) > 0
+        ? Math.floor(
+            player.atk * lostHpFraction * player.berserkAtkPctPerLostHpPct!,
+          )
+        : 0;
+    // 질풍검 (특기) — 턴 첫 공격에 (그 턴 공격 횟수 × N) ATK 보너스.
+    const gustBonus =
+      (player.gustAtkPerAttack ?? 0) > 0 && isFirstAttackOfTurn
+        ? state.playerAttacksLeft * player.gustAtkPerAttack!
+        : 0;
     // 크리티컬 — 매 공격마다 critChancePct 확률로 발동. 이중 행운 발동 후엔 +crit 보너스.
     const baseCritPct = player.critChancePct ?? 0;
     const luckCritBonus = state.luckyBuffActive
@@ -434,7 +480,10 @@ export function advanceTurn(
     const effectiveCritPct = baseCritPct + luckCritBonus + balanceCritBonus;
     const critRoll =
       effectiveCritPct > 0 ? Math.random() * 100 < effectiveCritPct : false;
-    const baseDmg = damageBetween(player.atk + bonus, targetDef);
+    const baseDmg = damageBetween(
+      player.atk + bonus + berserkBonus + gustBonus,
+      targetDef,
+    );
     // 처형 — 적 HP 비율 < executionHpFraction 일 때 데미지 ×executionDamageMult.
     // 강공격/분쇄 후 데미지에 곱하고, 크리티컬은 그 위에 다시 곱한다 (다단 누적).
     const exMult = player.executionDamageMult ?? 1;
@@ -446,7 +495,13 @@ export function advanceTurn(
       ? Math.max(1, Math.floor(baseDmg * exMult))
       : baseDmg;
     const critMult = player.critMult ?? CRIT_MULT_BASE;
-    const dmgBeforeBrace = critRoll ? Math.floor(dmgAfterExecution * critMult) : dmgAfterExecution;
+    const dmgAfterCrit = critRoll
+      ? Math.floor(dmgAfterExecution * critMult)
+      : dmgAfterExecution;
+    // 암살 (특기) — 위 모든 배수(처형/크리) 후에 다시 ×N.
+    const dmgBeforeBrace = assassinFires
+      ? Math.floor(dmgAfterCrit * player.assassinateDmgMult!)
+      : dmgAfterCrit;
     // 잡몹 스킬 "방어 태세" — 이 적을 공격할 때 데미지 -damageReduction (최소 1로 클램프).
     const braceReduction =
       state.enemy.skill?.kind === "brace" ? state.enemy.skill.damageReduction : 0;
@@ -465,6 +520,7 @@ export function advanceTurn(
     if (bonus > 0 && crushReduction > 0) labels.push("분쇄");
     if (executionActive) labels.push("처형");
     if (critRoll) labels.push("크리티컬");
+    if (assassinFires) labels.push("암살");
     if (decreeFires) labels.push("천명");
     const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
     let log = appendLog(state.log, {
@@ -512,6 +568,8 @@ export function advanceTurn(
       enemyHp,
       playerHp: newPlayerHp,
       bleedStacks,
+      assassinateUsed: state.assassinateUsed || assassinFires,
+      critThisTurn: state.critThisTurn || critRoll,
       log,
       luckyBuffActive,
     });
@@ -572,6 +630,24 @@ export function advanceTurn(
         firstAttackPending: false,
       };
     }
+    // 연참 (특기) — 이번 턴에 크리티컬이 났으면 추가 공격 N회 (턴당 1회).
+    const canRiposte =
+      (player.riposteExtra ?? 0) > 0 &&
+      !state.riposteUsedThisTurn &&
+      afterDamage.critThisTurn;
+    if (canRiposte) {
+      return {
+        ...afterDamage,
+        log: appendLog(afterDamage.log, {
+          kind: "info",
+          text: "[연참] 빈틈을 파고든다 — 한 번 더!",
+        }),
+        phase: "player",
+        playerAttacksLeft: player.riposteExtra!,
+        riposteUsedThisTurn: true,
+        firstAttackPending: false,
+      };
+    }
     const ended: BattleState = {
       ...afterDamage,
       phase: "enemy",
@@ -579,6 +655,8 @@ export function advanceTurn(
       completedPlayerTurns: state.completedPlayerTurns + 1,
       doubleStrikeUsedThisTurn: false,
       lightspeedUsedThisTurn: false,
+      critThisTurn: false,
+      riposteUsedThisTurn: false,
       firstAttackPending: true,
     };
     return finishPlayerTurn(ended, player, playerName);
@@ -633,6 +711,9 @@ export function advanceTurn(
       playerHp: healedHp,
       evadesRemaining: state.evadesRemaining - 1,
       enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      // 유격 (특기) — 회피 성공 시 다음 플레이어 턴 공격 횟수 +N (현재 playerAttacksLeft 는 다음 턴 선롤분).
+      playerAttacksLeft:
+        state.playerAttacksLeft + (player.skirmishNextTurnBonus ?? 0),
       log,
     };
     const counter = applyCounterIfAny(next, player);
@@ -661,6 +742,9 @@ export function advanceTurn(
       ...state,
       playerHp: healedHp,
       enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      // 유격 (특기) — 회피 성공 시 다음 플레이어 턴 공격 횟수 +N (현재 playerAttacksLeft 는 다음 턴 선롤분).
+      playerAttacksLeft:
+        state.playerAttacksLeft + (player.skirmishNextTurnBonus ?? 0),
       log,
     };
     const counter = applyCounterIfAny(next, player);
@@ -686,6 +770,9 @@ export function advanceTurn(
       ...state,
       playerHp: healedHp,
       enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      // 유격 (특기) — 회피 성공 시 다음 플레이어 턴 공격 횟수 +N (현재 playerAttacksLeft 는 다음 턴 선롤분).
+      playerAttacksLeft:
+        state.playerAttacksLeft + (player.skirmishNextTurnBonus ?? 0),
       log,
     };
     const counter = applyCounterIfAny(next, player);
@@ -774,6 +861,18 @@ export function advanceTurn(
       text: `[불굴] 마지막 한 숨 — HP 1 로 버텼다!`,
     });
   }
+  // 반사 갑주 (특기) — 받은 HP 피해의 N% 를 적에게 반사.
+  const thornsDmg =
+    (player.thornsPct ?? 0) > 0
+      ? Math.floor((dmgToHp * player.thornsPct!) / 100)
+      : 0;
+  const enemyHpAfterThorns = Math.max(0, state.enemyHp - thornsDmg);
+  if (thornsDmg > 0) {
+    log = appendLog(log, {
+      kind: "player_attack",
+      text: `[반사 갑주] ${state.enemy.name}에게 ${thornsDmg} 반사 피해.`,
+    });
+  }
   if (playerHp <= 0) {
     return {
       ...state,
@@ -783,6 +882,7 @@ export function advanceTurn(
       enduranceTriggered,
       enemyAtkBonus,
       enrageTriggered,
+      enemyHp: enemyHpAfterThorns,
       enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
       log: appendLog(log, {
         kind: "info",
@@ -790,6 +890,26 @@ export function advanceTurn(
       }),
       phase: "ended",
       outcome: "lose",
+    };
+  }
+  if (enemyHpAfterThorns <= 0) {
+    // 반사 피해로 적이 쓰러짐 — 플레이어는 생존.
+    return {
+      ...state,
+      playerHp,
+      playerShield: newShield,
+      damageTakenThisCombat: state.damageTakenThisCombat + dmgToHp,
+      enduranceTriggered,
+      enemyAtkBonus,
+      enrageTriggered,
+      enemyHp: 0,
+      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      log: appendLog(log, {
+        kind: "info",
+        text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
+      }),
+      phase: "ended",
+      outcome: "win",
     };
   }
   return {
@@ -800,6 +920,7 @@ export function advanceTurn(
     enduranceTriggered,
     enemyAtkBonus,
     enrageTriggered,
+    enemyHp: enemyHpAfterThorns,
     enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
     log,
     phase: "player",
