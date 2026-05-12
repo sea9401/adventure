@@ -14,6 +14,7 @@ import { db } from "@/db";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { checkSession } from "@/lib/server/checkSession";
 import { CraftError, applyCraftAction, type CraftOutcome } from "@/lib/server/craft";
+import { insertFeedEntry } from "@/lib/server/serverFeed";
 
 export async function POST(req: Request) {
   const userId = await ensureUser();
@@ -36,6 +37,13 @@ export async function POST(req: Request) {
     const outcome: CraftOutcome = await db.transaction((tx) =>
       applyCraftAction(tx, userId, recipeId),
     );
+    // 걸작(tier 2) 장비 제작 성공 → 전체 소식에 한 줄 (부수 효과 — 내부에서 self-catch).
+    // 등급 추첨은 variance 가 있는 "진짜 제작 장비" 레시피에서만 일어나므로 별도 게이트 불필요.
+    if (outcome.result.kind === "equipment" && outcome.result.tier === 2) {
+      await insertFeedEntry(userId, "masterpiece", {
+        itemId: outcome.result.itemId,
+      });
+    }
     return Response.json({ ok: true, ...outcome });
   } catch (e) {
     if (e instanceof CraftError) {

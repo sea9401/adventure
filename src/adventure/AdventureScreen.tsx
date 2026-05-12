@@ -4,6 +4,7 @@ import { Compass, Hammer, Skull, Sword, User } from "@phosphor-icons/react";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
+import { ServerFeedView } from "@/adventure/log/ServerFeedView";
 import { BattleView } from "@/adventure/BattleView";
 import { CoopBossCard } from "@/adventure/coop/CoopBossCard";
 import { COOP_BOSSES } from "@/adventure/coop/data";
@@ -164,6 +165,7 @@ export function AdventureScreen() {
             onClick={() => setSubView("map")}
           />
         </div>
+        <ServerFeedView />
       </>
     );
   }
