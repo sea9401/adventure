@@ -27,8 +27,71 @@ export function StrangerDialogue({ npc, onClose, storyFlags, quests }: Props) {
   const trialStarted = storyFlags.has(STRANGER_FLAG_TRIAL_STARTED);
   const guided = storyFlags.has(STRANGER_FLAG_RUINS_GUIDE);
 
-  // 안내까지 마친 뒤 재방문 — 짧은 격려/안부.
+  // 안내까지 마친 뒤 재방문 — 표식 릴레이(§11 hidden-hooded-cipher) 또는 격려/안부.
   if (guided) {
+    const cipherStarted = storyFlags.has("cipher_started");
+    const cipherShown = storyFlags.has("cipher_shown_pilgrim");
+    const cipherDone = storyFlags.has("cipher_done");
+    const mainCleared = storyFlags.has("unhyang_main_cleared");
+
+    if (cipherDone) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "순례자도 같은 표식을 안다고 했지. …그래. 이제 너도 표식을 든 자야.\n무엇이 다가오는지는 아직 말 못 해. 하지만 머지않아 — 너에게 묻는 날이 올 거야. 그때 도망치지 마."
+          }
+        />
+      );
+    }
+    if (cipherStarted && cipherShown) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "순례자가 안다더군. …그래, 알고 있었어. 북쪽에서 온 자와 나는 같은 손이 그은 표식을 따른다. 호수 너머의 일도, 산정의 거인도, 능선의 봉인도 — 한 매듭에서 풀려 나온 거야.\n이제 너도 그 매듭 안에 있어. …받아 둬. 표식을 든 자에게만 보이는 게 있을 거다."
+          }
+          primaryAction={{
+            label: "표식을 받는다",
+            onClick: () => {
+              storyFlags.set("cipher_done");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (cipherStarted) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "그 표식, 운향의 순례자에게 보여줬나? …아직이군. 산정에 있어 — 북쪽에서 왔다는 자. 못 알아볼 리 없어.\n그가 같은 표식을 안다고 하면, 돌아와."
+          }
+        />
+      );
+    }
+    if (mainCleared) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "산정의 일까지 봤다고 들었어. …그렇다면 이제 줄 게 있어. 이 표식 — 내가 그은 게 아니야. 더 오래된 손이지.\n운향에 북쪽에서 온 순례자가 있어. 이걸 보여줘. 그가 뭐라 하는지 들어보고 돌아와."
+          }
+          primaryAction={{
+            label: "표식을 받는다",
+            onClick: () => {
+              storyFlags.set("cipher_started");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
     return (
       <NpcDialogue
         npc={npc}

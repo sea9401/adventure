@@ -3,6 +3,9 @@ import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { EquippedSlots } from "@/adventure/character/types";
+import { ownsEquipment } from "@/adventure/inventory/ownership";
 
 // 동굴 → 깊은 동굴 통로 해금 플래그. 의뢰 수락 시 set.
 export const JIMMY_FLAG_DEEP_CAVE_QUEST = "jimmy_deep_cave_quest";
@@ -14,6 +17,8 @@ type Props = {
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
   storyFlags: ReturnType<typeof useStoryFlags>;
+  inventory: ReturnType<typeof useInventory>;
+  equippedSlots: EquippedSlots;
 };
 
 export function WoodcutterJimmyDialogue({
@@ -23,6 +28,8 @@ export function WoodcutterJimmyDialogue({
   quests,
   completeQuest,
   storyFlags,
+  inventory,
+  equippedSlots,
 }: Props) {
   const banditQuest = quests.getEntry("village-jimmy-bandits");
   const deepCaveQuest = quests.getEntry("village-jimmy-deep-cave");
@@ -38,6 +45,60 @@ export function WoodcutterJimmyDialogue({
         }
       />
     );
+  }
+
+  // 히든 — 두더지왕의 드릴을 든(보유/장착) 모험가에게 (§11 hidden-mole-king).
+  {
+    const mole = quests.getEntry("hidden-mole-king");
+    if (
+      mole.state !== "completed" &&
+      ownsEquipment(inventory.state, equippedSlots, "mole_king_drill")
+    ) {
+      if (mole.state === "available") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "그… 그거 두더지왕의 드릴 아니우? 진짜 있었구먼, 그놈.\n그럼 흔적도 있을 거야. 평야 두더지를 백 마리쯤 잡아보쇼 — 땅이 들썩이는 자리가 나올 거요. 거기 뭔가 있을 거란 말이지."
+            }
+            primaryAction={{
+              label: "맡겠다",
+              onClick: () => {
+                quests.accept("hidden-mole-king");
+                onClose();
+              },
+            }}
+          />
+        );
+      }
+      if (mole.state === "active") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={`두더지 백 마리, 만만치 않지. 땅 들썩이는 자리 나오면 알려줘요. — 진행 ${mole.progress}/100`}
+          />
+        );
+      }
+      if (mole.state === "ready") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "백 마리나… 그래서, 들썩이던 자리 파봤더니 — 옛 굴이 하나 있더라고. 두더지왕이 살던 데래. 자네 드릴이 거기서 나온 거지.\n별 보물은 없었지만, 이야기 하나는 건졌수. 자, 수고비요."
+            }
+            primaryAction={{
+              label: "보고를 마친다",
+              onClick: () => {
+                if (completeQuest("hidden-mole-king")) onClose();
+              },
+            }}
+          />
+        );
+      }
+    }
   }
 
   if (banditQuest.state === "available") {
@@ -141,6 +202,62 @@ export function WoodcutterJimmyDialogue({
   }
 
   if (deepCaveQuest.state === "completed") {
+    // 광맥의 수호자 누적 사냥 "사냥 기록" — 지미가 주는 개인 도전(보스 사냥꾼 칭호 일부).
+    const hunter = quests.getEntry("deep-cave-hunter");
+    if (hunter.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "그놈, 가끔 다시 깨어난다는 소문이 있더라고. 광물 때문인지 뭔지.\n…열 번이나 잠재우면 동굴 안쪽이 한동안 조용하다고들 하던데. 나야 무서워서 못 가지만 — 모험가 양반이라면 기록 한번 채워볼 만하지 않겠어요?"
+          }
+          primaryAction={{
+            label: "맡겠다",
+            onClick: () => {
+              quests.accept("deep-cave-hunter");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (hunter.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`그 광맥 골렘, 몇 번이나 잡았수? 천천히 해요, 무리하지 말고. — 진행 ${hunter.progress}/10`}
+        />
+      );
+    }
+    if (hunter.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"열 번이라니… 이젠 톱밥을 발 뻗고 마실 수 있겠수. 자, 약속한 사례요."}
+          primaryAction={{
+            label: "보고를 마친다",
+            onClick: () => {
+              if (completeQuest("deep-cave-hunter")) onClose();
+            },
+          }}
+        />
+      );
+    }
+    // 산악 가이드 도연이 산정 협곡 목재를 부쳐옴(§7.1) — 지미가 전령을 알아본다.
+    if (storyFlags.has("jimmy_doyeon_timber_done")) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "어, 자네! 도연이 산정 협곡 목재를 부쳐왔더라고 — 안 휘는 게 진짜야. 이런 거 어디서 구하나 했는데, 자네가 도연한테 말 넣어준 거지?\n고맙수. 톱밥 한 잔 받아요 — 농담이고, 좋은 손잡이 깎으면 자네한테 먼저 보여줄게."
+          }
+        />
+      );
+    }
     return (
       <NpcDialogue
         npc={npc}

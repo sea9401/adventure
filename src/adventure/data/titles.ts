@@ -81,6 +81,48 @@ export const TITLES: Record<TitleId, Title> = {
     description: "안개 호숫가의 작은 어촌이 그를 식구처럼 받아들였다.",
     condition: "촌장 마린의 의뢰까지 모두 완수",
   },
+  mountain_friend: {
+    id: "mountain_friend",
+    name: "산정의 벗",
+    description: "잠들지 않던 것을 잠재우고, 구름 위 마을의 숨을 되돌린 자.",
+    condition: "운향 — 노촌장 백운의 '운봉의 거인' 의뢰 완수",
+  },
+  ridge_crosser: {
+    id: "ridge_crosser",
+    name: "능선을 넘은 자",
+    description: "화염 능선을 넘어 천공 성지의 마지막 봉인을 다시 채운 자.",
+    condition: "천공 성지 — 원로 해무의 봉인 라인('마지막 자물쇠') 완수",
+  },
+  herbalists_courier: {
+    id: "herbalists_courier",
+    name: "약초꾼의 전령",
+    description: "산정의 약초를 안개 호숫가까지 실어 나른 자. 두 약초꾼이 그를 기억한다.",
+    condition: "운향 약초꾼 산하의 '디올라로 보내는 약초' 완수",
+  },
+  boss_hunter: {
+    id: "boss_hunter",
+    name: "보스 사냥꾼",
+    description: "광맥의 수호자, 운봉의 거인, 화산의 심장 — 세 거대한 것을 각각 열 번 잠재운 자.",
+    condition: "세 보스 누적 사냥 의뢰(지미·백운·검) 모두 완수",
+  },
+  caravan_warden: {
+    id: "caravan_warden",
+    name: "대상의 수호자",
+    description: "바람골 대상의 짐수레가 운저 평원을 무사히 건너게 한 자.",
+    condition: "바람골 상인 노을의 호위 의뢰(약탈자·초원 매) 모두 완수",
+  },
+  lucky_finder: {
+    id: "lucky_finder",
+    name: "운 좋은 손",
+    description: "유실된 명품을 둘 이상 그러모은 자. 옛 노래대로 행운이 따라붙는다.",
+    condition: "유실된 명품(unique 등급) 2종 보유 후 바람골 음유시인과 대화",
+  },
+  cipher_bearer: {
+    id: "cipher_bearer",
+    name: "표식을 든 자",
+    description: "후드 쓴 손님과 북쪽 순례자가 같은 손이 그은 표식을 따른다는 걸 알아낸 자.",
+    condition: "디올라 후드 손님과 운향 순례자 사이의 표식을 잇는다",
+  },
   beggar: {
     id: "beggar",
     name: "거지",

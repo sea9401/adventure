@@ -505,6 +505,37 @@ export const ITEMS = {
     rarity: "uncommon",
   } satisfies EquipItem,
 
+  // ── 히든 퀘스트 보상 (§11) — 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────
+  // 월광검: 볼드 ↔ 만월 옛 합작 무기를 마저 완성한 것(hidden-blacksmith-duel). 운봉 무기 한 칸 위.
+  moonlight_blade: {
+    name: "월광검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+9" },
+      { label: "힘", value: "+4" },
+      { label: "속도", value: "+3" },
+    ],
+    bonus: { atk: 9, str: 4, spd: 3 },
+    description:
+      "두 대장장이가 절반씩 벼려 마침내 한 자루로 합친 검. 달빛 같은 푸른 결이 칼날을 따라 흐른다.",
+    rarity: "rare",
+    tradable: false,
+  } satisfies EquipItem,
+  // 용암 정수: 화산의 심장이 잠든 자리에 고인 정수를 시온이 다듬은 것(hidden-volcano-relic). 봉황 액세서리 한 칸 위.
+  lava_essence: {
+    name: "용암 정수",
+    slot: "accessory",
+    stats: [
+      { label: "힘", value: "+6" },
+      { label: "활력", value: "+5" },
+    ],
+    bonus: { str: 6, vit: 5 },
+    description:
+      "화산의 심장이 잠든 자리에서 흘러나와 굳은 정수. 손에 쥐면 가슴께가 묵직하게 달아오른다.",
+    rarity: "rare",
+    tradable: false,
+  } satisfies EquipItem,
+
   // ── 유실된 명품 ───────────────────────────────────────────────────────────
   // 일부 잡몹이 아주 드물게(≈0.01~0.02%) 떨구는 unique 등급 장비. 그 구간에서 제작·일반 드랍으로는
   // 못 얻는 한두 티어 위의 "한 자루" — 운빨로 점프하는 손맛 전용이라 곡선 위로 살짝만 비집고 들어간다

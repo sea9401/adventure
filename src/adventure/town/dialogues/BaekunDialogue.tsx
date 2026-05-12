@@ -1,21 +1,314 @@
 import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
+import type { useQuests } from "@/adventure/quests/useQuests";
+import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 
 type Props = {
   npc: Npc;
   onClose: () => void;
+  quests: ReturnType<typeof useQuests>;
+  completeQuest: (id: string) => boolean;
+  storyFlags: ReturnType<typeof useStoryFlags>;
 };
 
-// 백운 — 운향의 노촌장. 메인 라인 (운봉의 거인 토벌 의뢰) 은 보스 구현 후 추가.
-// 지금은 산정의 분위기만 전하는 인사 분기.
-export function BaekunDialogue({ npc, onClose }: Props) {
+const CANYON = "unhyang-baekun-canyon-survey";
+const GIANT = "unhyang-baekun-peak-giant";
+const CLIFF = "unhyang-baekun-cliff-wolves";
+const GOATS = "unhyang-baekun-highland-goats";
+const ESCORT = "unhyang-baekun-pilgrim-escort";
+const HUNTER = "peak-giant-hunter"; // 운봉의 거인 누적 ×10 (보스 사냥꾼 칭호 일부)
+
+// 백운 — 운향 메인 라인 "잠들지 않는 산".
+// A 협곡 정찰 → B 운봉의 거인 → C 교역로 정리(절벽 늑대 ×30 + 산양 ×40) → D 교역로 개통.
+// 정기 토벌(`unhyang-peak-giant-recurring`)은 길드 게시판이 맡는다(거인 처치 후 노출).
+export function BaekunDialogue({
+  npc,
+  onClose,
+  quests,
+  completeQuest,
+  storyFlags,
+}: Props) {
+  // 운향 진입 조건 자체가 거인과 한 번 맞붙는 것(peak_giant_engaged)이라 보통은 켜져 있다.
+  if (!storyFlags.has("peak_giant_engaged")) {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "산을 오르느라 고단했겠지.\n구름 위에서는 바람도, 시간도 다르게 흐른다네. 잠시 머물다 가게."
+        }
+      />
+    );
+  }
+
+  const canyon = quests.getEntry(CANYON);
+  const giant = quests.getEntry(GIANT);
+  const cliff = quests.getEntry(CLIFF);
+  const goats = quests.getEntry(GOATS);
+
+  // ── A. 협곡 정찰 ──
+  if (canyon.state === "available") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "…먼 길을 올라왔구먼. 그 이야기, 이제 들려주지.\n이 산정에는 옛부터 잠들지 않는 것이 살고 있다네. 그놈이 깨어나는 걸 막아야 해 — 우선 협곡 사정부터 봐 주겠나? 무리장 늑대 셋이면 충분하네."
+        }
+        primaryAction={{
+          label: "받아들인다",
+          onClick: () => {
+            quests.accept(CANYON);
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+  if (canyon.state === "active") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={`무리장이 무리를 어떻게 끌고 다니는지, 그걸 잘 봐 두게. — 진행 ${canyon.progress}/3`}
+      />
+    );
+  }
+  if (canyon.state === "ready") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "협곡을 봤다면 알 게야. 그놈은 산의 숨을 먹고 자라.\n…고맙네. 자, 약속한 사례일세."
+        }
+        primaryAction={{
+          label: "보상을 받는다",
+          onClick: () => {
+            if (completeQuest(CANYON)) onClose();
+          },
+        }}
+      />
+    );
+  }
+
+  // ── B. 운봉의 거인 ──
+  if (giant.state === "available") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "이제 알겠네 — 산 깊은 곳에 잠들지 않는 것이 버티는 한, 이 산정은 평온할 수 없어.\n운봉의 거인. 혼자선 어림없는 상대지. 동료를 모아 그놈을 잠재워 주게. 산정의 명운이 거기 달렸다네."
+        }
+        primaryAction={{
+          label: "받아들인다",
+          onClick: () => {
+            quests.accept(GIANT);
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+  if (giant.state === "active") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "혼자 가지 말게. 그놈은 산의 숨을 먹고 일어선다네 — 동료들과 함께라야 잠재울 수 있어."
+        }
+      />
+    );
+  }
+  if (giant.state === "ready") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "산정이 다시 숨 쉬는구먼. …고맙네, 정말로.\n자, 받게 — 거인의 심장을 운봉석으로 봉인해 둔 것일세. 자네 손에 어울려."
+        }
+        primaryAction={{
+          label: "보상을 받는다",
+          onClick: () => {
+            if (completeQuest(GIANT)) onClose();
+          },
+        }}
+      />
+    );
+  }
+
+  // ── C. 교역로 정리 (거인 처치 후) ──
+  if (cliff.state === "available") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "거인이 잠든 지금이 기회야. 디올라와 다시 거래를 트려면 길부터 안전해야 하니 — 두 군데 손을 봐 주게.\n협곡 길의 절벽 늑대 서른, 산기슭 비탈의 산양 마흔. 둘 다 부탁함세."
+        }
+        primaryAction={{
+          label: "받아들인다",
+          onClick: () => {
+            quests.accept(CLIFF);
+            quests.accept(GOATS);
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+  if (cliff.state === "ready") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={"협곡 길이 트였구먼. 짐꾼들이 한시름 놓겠어. — 자, 사례일세."}
+        primaryAction={{
+          label: "보상을 받는다",
+          onClick: () => {
+            if (completeQuest(CLIFF)) onClose();
+          },
+        }}
+      />
+    );
+  }
+  if (goats.state === "ready") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={"비탈도 정리됐다고? 이제 짐수레가 산을 오를 수 있겠구먼. — 받게."}
+        primaryAction={{
+          label: "보상을 받는다",
+          onClick: () => {
+            if (completeQuest(GOATS)) onClose();
+          },
+        }}
+      />
+    );
+  }
+  if (cliff.state === "active" || goats.state === "active") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          `교역로 정리는 어떤가? — 협곡 절벽 늑대 ${cliff.progress}/30, 산기슭 산양 ${goats.progress}/40`
+        }
+      />
+    );
+  }
+
+  // ── D. 교역로 개통 (협곡·산기슭 둘 다 완료) ──
+  // 거인 처치 후 풀리는 사이드 의뢰 "순례자의 길"(pilgrim-escort)도 여기서 함께 내준다.
+  if (cliff.state === "completed" && goats.state === "completed") {
+    const escort = quests.getEntry(ESCORT);
+    if (escort.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "길이 열렸어. 디올라 촌장 마린에게 가 보게 — 산정과 다시 거래를 트자고, 백운이 전하더라고 말일세.\n…아, 한 가지 더. 북쪽에서 온 순례자가 운저 평원을 지나 다시 떠난다네. 거기 떠돌이 약탈자 무리가 자리를 잡았다더군 — 열다섯만 손봐 주겠나? 순례자가 무사히 지나가게."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept(ESCORT);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (escort.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`운저 평원 약탈자들은 정리됐는가? — 진행 ${escort.progress}/15`}
+        />
+      );
+    }
+    if (escort.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"순례자가 무사히 평원을 건넜다는 소식일세. 고맙네 — 받게."}
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              if (completeQuest(ESCORT)) onClose();
+            },
+          }}
+        />
+      );
+    }
+    // 거인 누적 사냥 "사냥 기록" — 백운이 주는 개인 도전.
+    const hunter = quests.getEntry(HUNTER);
+    if (hunter.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "교역로가 열렸고, 순례자도 떠났어. 산정이 한동안은 조용하겠지.\n…한 가지 더. 거인을 열 번 잠재운 무리는 산정의 노래에 이름이 남는다네. 동료들과 함께 그 기록을 채워 보겠나? 정기 토벌은 길드 게시판에도 걸어 뒀으니, 거기 진행도 함께 쌓일 게야."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept(HUNTER);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (hunter.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`거인을 몇 번이나 잠재웠는가? 산정의 노래는 천천히 쓰여도 좋아. — 진행 ${hunter.progress}/10`}
+        />
+      );
+    }
+    if (hunter.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"열 번이라… 자네 무리의 이름이 산정의 노래에 들어갔네. 자, 받게 — 마땅한 사례일세."}
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              if (completeQuest(HUNTER)) onClose();
+            },
+          }}
+        />
+      );
+    }
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "교역로가 열렸고, 순례자도 떠났어. 산정의 노래에 자네 이름도 남았고.\n…운봉의 거인은 잠재워도 산의 숨결을 먹고 다시 일어선다네. 길드 게시판에 정기 토벌을 걸어 뒀으니, 동료들과 가끔 산정을 살펴 주게."
+        }
+      />
+    );
+  }
+
+  // 그 외(이론상 도달하지 않음) — 무난한 인사.
   return (
     <NpcDialogue
       npc={npc}
       onClose={onClose}
-      text={
-        "산을 오르느라 고단했겠지.\n구름 위에서는 바람도, 시간도 다르게 흐른다네. 잠시 머물다 가게."
-      }
+      text={"구름 위에서는 바람도, 시간도 다르게 흐른다네. 잠시 머물다 가게."}
     />
   );
 }

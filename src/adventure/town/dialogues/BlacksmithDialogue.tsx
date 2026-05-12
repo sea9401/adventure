@@ -3,13 +3,21 @@ import { NpcDialogue } from "@/adventure/NpcDialogue";
 import { STORY_QUESTS } from "@/adventure/data/storyQuests";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { useQuests } from "@/adventure/quests/useQuests";
+import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import type { NotificationKind } from "@/lib/notifications";
+
+const MANA_QUEST = "village-bold-mana-crystal";
+const MANA_NEED = 5;
 
 type Props = {
   npc: Npc;
   onClose: () => void;
   crafting: ReturnType<typeof useCrafting>;
   inventory: ReturnType<typeof useInventory>;
+  quests: ReturnType<typeof useQuests>;
+  completeQuest: (id: string) => boolean;
+  storyFlags: ReturnType<typeof useStoryFlags>;
   addNotification: (kind: NotificationKind, text: string) => void;
 };
 
@@ -18,6 +26,9 @@ export function BlacksmithDialogue({
   onClose,
   crafting,
   inventory,
+  quests,
+  completeQuest,
+  storyFlags,
   addNotification,
 }: Props) {
   const knowsBat = crafting.knows("baseball_bat");
@@ -108,6 +119,179 @@ export function BlacksmithDialogue({
       />
     );
   }
+
+  // 만월의 손잡이 — 운향 만월이 맡긴 심부름(§7.1). 한 번만, 회복약 한 보따리로 답례.
+  if (
+    storyFlags.has("manwol_bold_errand_given") &&
+    !storyFlags.has("manwol_bold_letter_delivered")
+  ) {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "만월이? …그 까칠한 노인네가 아직 살아 있구먼. 이 손잡이, 만월이 솜씨가 맞아 — 결을 보면 알지.\n답례다. 약통에 좋은 거 좀 채워뒀어. 만월이한테 전해 줘 — 망치질 아직 죽지 않았다고."
+        }
+        primaryAction={{
+          label: "답례를 받는다",
+          onClick: () => {
+            inventory.add("potion_heal_s", 5);
+            storyFlags.set("manwol_bold_letter_delivered");
+            addNotification(
+              "quest_complete",
+              `${STORY_QUESTS.manwol_bold_reunion.title} — 볼드에게 전함`,
+            );
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+
+  // 마정석 시연(§10.1) — 깊은 동굴을 아는(jimmy_deep_cave_quest) 모험가에게 노출.
+  if (storyFlags.has("jimmy_deep_cave_quest")) {
+    const mana = quests.getEntry(MANA_QUEST);
+    if (mana.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "동굴 안쪽 큰 광맥, 거기 있던 놈한테서 마정석이 나온다지? 그거 제대로 다루려면 손이 익어야 해.\n다섯 덩이만 가져와 봐 — 그걸로 시연을 보여주지. 보고 나면 자네도 마정석 무기를 벼릴 수 있을 거야."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept(MANA_QUEST);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (mana.state === "active") {
+      const have = inventory.materialCount("mana_crystal");
+      if (have >= MANA_NEED) {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "마정석 다섯… 제대로 골라왔군. 잘 봐 — 결을 따라 이렇게 두드리면, 깨지지 않고 빛이 안에 머물지.\n됐어. 자네 손에도 새겨졌을 거다 — 마정석 팔찌 제작서다."
+            }
+            primaryAction={{
+              label: "건네준다",
+              onClick: () => {
+                const r = quests.tryDeliver(
+                  MANA_QUEST,
+                  inventory.materialCount,
+                  inventory.consumeMaterial,
+                );
+                if (r.ok) {
+                  completeQuest(MANA_QUEST);
+                  onClose();
+                }
+              },
+            }}
+          />
+        );
+      }
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`마정석은 동굴 안쪽 그 광맥 골렘이 떨군다네. 다섯 덩이 채워 오게. — 진행 ${have}/${MANA_NEED}`}
+        />
+      );
+    }
+  }
+
+  // 히든 deliver 의뢰 공용 노드 — 조건이 안 맞거나 이미 완료면 null.
+  const deliverNode = (opts: {
+    id: string;
+    materialId: Parameters<typeof inventory.materialCount>[0];
+    need: number;
+    gateOk: boolean;
+    offer: string;
+    done: string;
+    active: (have: number, need: number) => string;
+  }) => {
+    if (!opts.gateOk) return null;
+    const e = quests.getEntry(opts.id);
+    if (e.state === "completed") return null;
+    if (e.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={opts.offer}
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept(opts.id);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    // active
+    const have = inventory.materialCount(opts.materialId);
+    if (have >= opts.need) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={opts.done}
+          primaryAction={{
+            label: "건네준다",
+            onClick: () => {
+              const r = quests.tryDeliver(
+                opts.id,
+                inventory.materialCount,
+                inventory.consumeMaterial,
+              );
+              if (r.ok) {
+                completeQuest(opts.id);
+                onClose();
+              }
+            },
+          }}
+        />
+      );
+    }
+    return (
+      <NpcDialogue npc={npc} onClose={onClose} text={opts.active(have, opts.need)} />
+    );
+  };
+
+  // 히든 — 광맥의 끝(deep-cave-hunter 완료 후). 마정석 ×20.
+  const veinNode = deliverNode({
+    id: "hidden-deepest-vein",
+    materialId: "mana_crystal",
+    need: 20,
+    gateOk: quests.getEntry("deep-cave-hunter").state === "completed",
+    offer:
+      "광맥의 수호자를 그렇게 여러 번 잠재웠으면, 동굴 안쪽 더 깊은 데 마정석이 진하게 고였을 거다. 스무 덩이만 가져와 봐 — 광맥의 끝이 어디까지 뻗었는지 가늠해 보자.",
+    done:
+      "스무 덩이라… 이건 평범한 광맥에서 나올 양이 아니야. 동굴 안쪽에 — 우리가 못 본 게 더 있어. 언젠가 누가 그 끝까지 가겠지. 자, 사례다.",
+    active: (h, n) => `마정석은 광맥 골렘이 떨군다네. 동굴 안쪽으로 더 들어가 봐. — 진행 ${h}/${n}`,
+  });
+  if (veinNode) return veinNode;
+
+  // 히든 — 마저 두드린 것(만월↔볼드 재회 완료 후). 단단한 결정 ×8.
+  const duelNode = deliverNode({
+    id: "hidden-blacksmith-duel",
+    materialId: "hard_crystal",
+    need: 8,
+    gateOk: storyFlags.has("manwol_bold_reunion_done"),
+    offer:
+      "옛날에 만월이랑 무기 하나를 절반씩 만들다 싸우고 헤어졌지. 둘 다 다시 만났으니… 마저 완성해 볼까 싶어. 단단한 결정 여덟 덩이만 가져와 봐.",
+    done:
+      "여덟 덩이… 됐어. 만월이 절반, 내 절반 — 이제야 한 자루가 됐군. 도면은 만월이가 갖고 있으니 거기서 마저 베껴 가. 둘 다 살아 있길 잘했어. 자, 사례다.",
+    active: (h, n) => `단단한 결정은 협곡·동굴 깊은 데서 나오지. — 진행 ${h}/${n}`,
+  });
+  if (duelNode) return duelNode;
 
   // Stage E — 끝. 일상 대화.
   return (

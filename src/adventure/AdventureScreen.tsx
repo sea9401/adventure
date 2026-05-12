@@ -1,6 +1,7 @@
 "use client";
 
-import { Compass, Hammer, Skull, Sword, User } from "@phosphor-icons/react";
+import { useState } from "react";
+import { Compass, Footprints, Hammer, Skull, Sword, User } from "@phosphor-icons/react";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
@@ -27,6 +28,17 @@ import { ManwolDialogue } from "@/adventure/town/dialogues/ManwolDialogue";
 import { DoyeonDialogue } from "@/adventure/town/dialogues/DoyeonDialogue";
 import { SanhaDialogue } from "@/adventure/town/dialogues/SanhaDialogue";
 import { PilgrimDialogue } from "@/adventure/town/dialogues/PilgrimDialogue";
+import { HaemuDialogue } from "@/adventure/town/dialogues/HaemuDialogue";
+import { MaroDialogue } from "@/adventure/town/dialogues/MaroDialogue";
+import { NoeulDialogue } from "@/adventure/town/dialogues/NoeulDialogue";
+import { HansolDialogue } from "@/adventure/town/dialogues/HansolDialogue";
+import { GeomDialogue } from "@/adventure/town/dialogues/GeomDialogue";
+import { SionDialogue } from "@/adventure/town/dialogues/SionDialogue";
+import { BardDialogue } from "@/adventure/town/dialogues/BardDialogue";
+import {
+  PilgrimMarkDialogue,
+  pilgrimMarkStep,
+} from "@/adventure/town/dialogues/PilgrimMarkDialogue";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -74,6 +86,10 @@ export function AdventureScreen() {
     "boss_attempt_bonus",
   );
 
+  // 순례자의 자취(§11.1) — 통과 지역에서 표식이 surfacing 되는지 + 다이얼로그 열림 상태.
+  const [pilgrimMarkOpen, setPilgrimMarkOpen] = useState(false);
+  const pilgrimMark = pilgrimMarkStep(currentRegion.id, quests, storyFlags);
+
   if (subView === null) {
     return (
       <>
@@ -111,6 +127,38 @@ export function AdventureScreen() {
             </button>
           );
         })()}
+        {pilgrimMark &&
+          (() => {
+            const message =
+              pilgrimMark.kind === "reunion"
+                ? "천공 성지 한 켠에 누군가 서 있다. 북쪽에서 왔다던 그 순례자다."
+                : quests.getEntry(pilgrimMark.step.id).state === "ready"
+                  ? "표식 옆 일이 정리됐다. 매듭이 다음 자취를 가리키고 있다."
+                  : quests.getEntry(pilgrimMark.step.id).state === "active"
+                    ? "표식 옆 일이 아직 끝나지 않았다. 마저 정리하면 자취가 드러날 것이다."
+                    : "길가에 낯선 매듭이 묶여 있다. 순례자가 남긴 표식이다.";
+            return (
+              <button
+                type="button"
+                onClick={() => setPilgrimMarkOpen(true)}
+                className="flex w-full items-center gap-3 rounded-lg border border-violet-300/80 bg-violet-50/70 px-4 py-3 text-left transition-colors hover:bg-violet-100/70 dark:border-violet-900/60 dark:bg-violet-950/30 dark:hover:bg-violet-950/50"
+              >
+                <Footprints
+                  size={28}
+                  weight="duotone"
+                  className="shrink-0 text-violet-600 dark:text-violet-400"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] uppercase tracking-wider text-violet-700/80 dark:text-violet-400/80">
+                    순례자의 자취
+                  </div>
+                  <p className="mt-0.5 text-sm italic text-zinc-700 dark:text-zinc-300">
+                    {message}
+                  </p>
+                </div>
+              </button>
+            );
+          })()}
         <div className="space-y-2">
           {currentRegion.tags?.includes("town") && (
             <EntryCard
@@ -166,6 +214,16 @@ export function AdventureScreen() {
           />
         </div>
         <ServerFeedView />
+        {pilgrimMarkOpen && (
+          <PilgrimMarkDialogue
+            currentRegionId={currentRegion.id}
+            onClose={() => setPilgrimMarkOpen(false)}
+            quests={quests}
+            completeQuest={completeQuest}
+            inventory={inventory}
+            storyFlags={storyFlags}
+          />
+        )}
       </>
     );
   }
@@ -190,6 +248,9 @@ export function AdventureScreen() {
                   onClose={close}
                   crafting={crafting}
                   inventory={inventory}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  storyFlags={storyFlags}
                   addNotification={addNotification}
                 />
               );
@@ -213,6 +274,8 @@ export function AdventureScreen() {
                   quests={quests}
                   completeQuest={completeQuest}
                   storyFlags={storyFlags}
+                  inventory={inventory}
+                  equippedSlots={characterStateHook.equippedSlots}
                 />
               );
             }
@@ -296,7 +359,15 @@ export function AdventureScreen() {
               );
             }
             if (npc.id === "unhyang_elder") {
-              return <BaekunDialogue npc={npc} onClose={close} />;
+              return (
+                <BaekunDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  storyFlags={storyFlags}
+                />
+              );
             }
             if (npc.id === "unhyang_smith") {
               return (
@@ -304,6 +375,9 @@ export function AdventureScreen() {
                   npc={npc}
                   onClose={close}
                   storyFlags={storyFlags}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
                 />
               );
             }
@@ -314,6 +388,7 @@ export function AdventureScreen() {
                   onClose={close}
                   quests={quests}
                   completeQuest={completeQuest}
+                  inventory={inventory}
                 />
               );
             }
@@ -329,7 +404,94 @@ export function AdventureScreen() {
               );
             }
             if (npc.id === "unhyang_pilgrim") {
-              return <PilgrimDialogue npc={npc} onClose={close} />;
+              return (
+                <PilgrimDialogue
+                  npc={npc}
+                  onClose={close}
+                  storyFlags={storyFlags}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  adventureLog={adventureLog}
+                />
+              );
+            }
+            if (npc.id === "windvale_bard") {
+              return (
+                <BardDialogue
+                  npc={npc}
+                  onClose={close}
+                  storyFlags={storyFlags}
+                  inventory={inventory}
+                  equippedSlots={characterStateHook.equippedSlots}
+                />
+              );
+            }
+            if (npc.id === "skyreach_elder") {
+              return (
+                <HaemuDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "windvale_keeper") {
+              return (
+                <MaroDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "windvale_merchant") {
+              return (
+                <NoeulDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "windvale_pathfinder") {
+              return (
+                <HansolDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "skyreach_guide") {
+              return (
+                <GeomDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "skyreach_alchemist") {
+              return (
+                <SionDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                  adventureLog={adventureLog}
+                />
+              );
             }
             return null;
           }}

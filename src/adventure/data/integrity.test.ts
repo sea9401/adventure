@@ -3,6 +3,7 @@ import { MONSTERS } from "./monsters";
 import { RECIPES, getRecipeById } from "./recipes";
 import { QUESTS } from "./quests";
 import { ITEMS } from "./items";
+import { MATERIALS } from "./materials";
 
 // 데이터 정합성 — 콘텐츠가 늘어나면서 ID 참조가 깨지지 않게.
 // "제작법이 드랍됐는데 대장간에 안 뜨는" 사고를 컴파일/CI 단계에서 잡는다.
@@ -51,6 +52,40 @@ describe("recipe 가 결과 itemId 참조 정합성", () => {
       const itemId = r.result.itemId;
       it(`${r.id} → equipment ${itemId}`, () => {
         expect((ITEMS as Record<string, unknown>)[itemId]).toBeDefined();
+      });
+    }
+  }
+});
+
+describe("quest 의 target / requiresQuestCompleted 참조 정합성", () => {
+  const questIds = new Set(QUESTS.map((q) => q.id));
+  // id 중복 없음.
+  it("quest id 가 유일하다", () => {
+    expect(questIds.size).toBe(QUESTS.length);
+  });
+  for (const q of QUESTS) {
+    const target = q.target;
+    if (target.kind === "kill") {
+      const monsterName = target.monsterName;
+      it(`${q.id} → monster "${monsterName}"`, () => {
+        expect((MONSTERS as Record<string, unknown>)[monsterName]).toBeDefined();
+      });
+    } else {
+      const materialId = target.materialId;
+      it(`${q.id} → material ${materialId}`, () => {
+        expect((MATERIALS as Record<string, unknown>)[materialId]).toBeDefined();
+      });
+    }
+    for (const m of q.reward.materials ?? []) {
+      const mid = m.id;
+      it(`${q.id} → reward material ${mid}`, () => {
+        expect((MATERIALS as Record<string, unknown>)[mid]).toBeDefined();
+      });
+    }
+    if (q.requiresQuestCompleted) {
+      const req = q.requiresQuestCompleted;
+      it(`${q.id} → requires ${req}`, () => {
+        expect(questIds.has(req)).toBe(true);
       });
     }
   }
