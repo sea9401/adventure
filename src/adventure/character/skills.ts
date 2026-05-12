@@ -30,9 +30,10 @@ export const POWER_ATTACK_BONUS = 2;
 export const POWER_ATTACK_TURN_INTERVAL = 3;
 
 // 분쇄 — 힘 20 도달 시 획득.
-// 효과: 강공격 발동 턴, 그 공격이 적 방어력 -CRUSH_DEF_REDUCTION 으로 계산 (최소 0).
+// 효과: 강공격 발동 턴, 그 공격이 적 방어력 -floor(STR × CRUSH_DEF_PER_STR) 으로 계산 (최소 0).
+// STR 비례라 후반에도 유효 — STR 20=-10 / 40=-20 / 70=-35.
 export const CRUSH_STR_THRESHOLD = 20;
-export const CRUSH_DEF_REDUCTION = 3;
+export const CRUSH_DEF_PER_STR = 0.5;
 
 // 회피 강화 — 민첩 10 도달 시 획득.
 // 전투 시작 시 "보장 회피" 1회 적립 + 그 전투 동안 회피 확률 +EVADE_BONUS_PCT%.
@@ -52,10 +53,11 @@ export const GUARD_TURNS = 3;
 export const GUARD_REDUCTION = 1;
 
 // 재생 — 활력 20 도달 시 획득.
-// 효과: 매 REGEN_INTERVAL 플레이어 턴 종료 시 HP +REGEN_AMOUNT.
+// 효과: 매 REGEN_INTERVAL 플레이어 턴 종료 시 HP +floor(VIT × REGEN_HP_PER_VIT).
+// VIT 비례라 후반에도 유효 — VIT 20=+10 / 40=+20 / 70=+35.
 export const REGEN_VIT_THRESHOLD = 20;
 export const REGEN_INTERVAL = 5;
-export const REGEN_AMOUNT = 5;
+export const REGEN_HP_PER_VIT = 0.5;
 
 // 연타 — 속도 10 도달 시 획득.
 // 5턴마다 그 턴의 마지막 공격 후 추가 1회 공격.
@@ -135,7 +137,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.CRUSH,
-      description: `강공격 발동 턴, 그 공격이 적 방어력 -${CRUSH_DEF_REDUCTION} 으로 계산`,
+      description: `강공격 발동 턴, 그 공격이 적 방어력 -(STR × ${CRUSH_DEF_PER_STR}) 으로 계산 — STR 20=-10`,
       activationThreshold: CRUSH_STR_THRESHOLD,
     },
     {
@@ -169,7 +171,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.REGEN,
-      description: `${REGEN_INTERVAL}턴마다 HP +${REGEN_AMOUNT} 회복`,
+      description: `${REGEN_INTERVAL}턴마다 HP +(VIT × ${REGEN_HP_PER_VIT}) 회복 — VIT 20=+10`,
       activationThreshold: REGEN_VIT_THRESHOLD,
     },
     {
@@ -276,7 +278,7 @@ export function crushDefReductionFor(
   equipped: ReadonlySet<string>,
 ): number {
   return stats.str >= CRUSH_STR_THRESHOLD && equipped.has(SKILL_NAMES.CRUSH)
-    ? CRUSH_DEF_REDUCTION
+    ? Math.floor(stats.str * CRUSH_DEF_PER_STR)
     : 0;
 }
 
@@ -384,7 +386,7 @@ export function regenFor(
   equipped: ReadonlySet<string>,
 ): { interval: number; amount: number } {
   return stats.vit >= REGEN_VIT_THRESHOLD && equipped.has(SKILL_NAMES.REGEN)
-    ? { interval: REGEN_INTERVAL, amount: REGEN_AMOUNT }
+    ? { interval: REGEN_INTERVAL, amount: Math.floor(stats.vit * REGEN_HP_PER_VIT) }
     : { interval: 0, amount: 0 };
 }
 

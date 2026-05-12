@@ -103,7 +103,7 @@ function buildPlayer(level: number, kit: Kit = "full", dist: StatDist = "even"):
     extraAttackChancePct: Math.min(100, spd * 2.5),
     critChancePct: luk * 0.5,
     powerAttackBonus: str >= 10 ? 2 : 0,
-    crushDefReduction: str >= 20 ? 3 : 0,
+    crushDefReduction: str >= 20 ? Math.floor(str * 0.5) : 0,
     extraAttackEveryNTurns: spd >= 15 ? 5 : 0,
     vanguardFirstTurnBonus: spd >= 30 ? 1 : 0,
   };
