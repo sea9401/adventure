@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   Coins,
   Envelope,
@@ -28,7 +28,6 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationToast } from "@/components/NotificationToast";
 import { LevelUpOverlay } from "@/components/LevelUpOverlay";
 import { useQuests } from "@/adventure/quests/useQuests";
-import { getQuestById } from "@/adventure/data/quests";
 import {
   applyQuestReward,
   type RewardServices,
@@ -41,7 +40,6 @@ import { RankingsView } from "@/adventure/rankings/RankingsView";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
-import { NEWBIE_BONUS_LEVEL_THRESHOLD, isNewbieBonusActive } from "@/lib/leveling";
 import { BulletinBoardView } from "@/adventure/BulletinBoardView";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 import { useNotifications } from "@/adventure/notifications/useNotifications";
@@ -63,15 +61,9 @@ import { useRespawnSafetyNet } from "@/adventure/character/useRespawnSafetyNet";
 import { getTitle } from "@/adventure/data/titles";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { useAutoHunt } from "@/adventure/hunting/useAutoHunt";
-import {
-  AutoHuntResultModal,
-  fmtHuntDuration,
-} from "@/adventure/battle/AutoHuntResultModal";
-import { AUTO_HUNT_RESULT_KEY } from "@/adventure/battle/autoHunt";
-import {
-  summarizeOfflineResult,
-  type OfflineSimResult,
-} from "@/adventure/battle/offlineSim";
+import { AutoHuntResultModal } from "@/adventure/battle/AutoHuntResultModal";
+import { useAutoHuntResultHandler } from "@/adventure/hunting/useAutoHuntResultHandler";
+import { useOneTimeNotices } from "@/adventure/notifications/useOneTimeNotices";
 import { useGuildFameSync } from "@/adventure/guild/useGuildFameSync";
 import { useGuildBuffsCache } from "@/adventure/guild/useGuildBuffsCache";
 import { reportGuildQuestProgress } from "@/adventure/guild/api";
@@ -140,11 +132,6 @@ function Home() {
   // 돌아오면 다시 이어진다. 오프라인 누적·서버 동기화 없음 — "그 창에서만 전투".
   const [huntingActive, setHuntingActive] = useState(false);
   const trial = useTrialState({ tab, subView });
-
-  // 자동 사냥 수령 결과 모달 — collect → reload 후 아래 마운트 핸들러가 sessionStorage 에서 읽어 세팅.
-  const [autoHuntResult, setAutoHuntResult] = useState<OfflineSimResult | null>(
-    null,
-  );
 
   // 마을 진입 직후 자동으로 열 NPC 대화 — 알림판 클릭 시 세팅, TownView 가 마운트 직후 소비.
   const [pendingTownNpcId, setPendingTownNpcId] = useState<string | null>(null);
@@ -297,58 +284,13 @@ function Home() {
     meta?: NotificationMeta,
   ) => notifications.add(kind, text, meta);
 
-  // 마운트 1회 — 신참 보너스 활성 안내, 시련 이어서 진행 안내, reload 사유 안내.
-  // 모두 한 번만 보여줘야 하므로 ref 가드 + 보여준 뒤 localStorage 플래그 정리.
-  const oneTimeNoticesShownRef = useRef(false);
-  useEffect(() => {
-    if (oneTimeNoticesShownRef.current) return;
-    oneTimeNoticesShownRef.current = true;
-    if (isNewbieBonusActive(characterState.level)) {
-      addNotification(
-        "info",
-        `신참 보너스 활성 — ${NEWBIE_BONUS_LEVEL_THRESHOLD}레벨 미만 동안 사냥/퀘스트 EXP ×2.`,
-      );
-    }
-    // 시련 재개 안내 — 사용자가 실제 시련 화면(adventure/map) 으로 들어왔을 때만.
-    //   - winCount < battles : 임계 도달은 TrialView mount 가 곧 자동 완료 처리 → 안내 불필요.
-    //   - sessionStorage dedup by winCount : 60초 hidden→reload 가 반복돼도 같은
-    //     winCount 면 1회만 발화. 탭 종료/새 시련 시작 시 endTrial 에서 자동 클리어.
-    if (
-      tab === "adventure" &&
-      subView === "map" &&
-      trial.trial &&
-      trial.winCount > 0 &&
-      trial.winCount < trial.trial.edge.battles
-    ) {
-      let lastShown = -1;
-      try {
-        const v = sessionStorage.getItem("trial-resume-shown.v1");
-        if (v !== null) lastShown = Number(v);
-      } catch {}
-      if (lastShown !== trial.winCount) {
-        addNotification(
-          "info",
-          `시련 이어서 진행 — ${trial.winCount} / ${trial.trial.edge.battles}.`,
-        );
-        try {
-          sessionStorage.setItem(
-            "trial-resume-shown.v1",
-            String(trial.winCount),
-          );
-        } catch {}
-      }
-    }
-    if (typeof window !== "undefined") {
-      try {
-        const reason = localStorage.getItem("pending-reload-toast.v1");
-        if (reason) {
-          localStorage.removeItem("pending-reload-toast.v1");
-          addNotification("info", reason);
-        }
-      } catch {}
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useOneTimeNotices({
+    level: characterState.level,
+    tab,
+    subView,
+    trial,
+    addNotification,
+  });
 
   // 레벨업/스킬·특기 획득/슬롯 해금 감지 → 알림 + 오버레이 트리거.
   const { levelUpTrigger } = useLevelUpDetection({
@@ -468,58 +410,14 @@ function Home() {
     quests.accept(id);
   };
 
-  // 자동 사냥 수령 → collect 가 sessionStorage 에 결과 박고 reload. 여기서 읽어 모달 표시 +
-  // 도감/퀘스트 진행도(클라 KV) 추가 반영 + 알림. (서버는 character/inventory/crafting/map 만
-  // 갱신했고 adventureLog.v2 / quest-progress.v2 는 별도 키라 여기서 누적.)
-  useEffect(() => {
-    let raw: string | null = null;
-    try {
-      raw = sessionStorage.getItem(AUTO_HUNT_RESULT_KEY);
-      if (raw) sessionStorage.removeItem(AUTO_HUNT_RESULT_KEY);
-    } catch {}
-    if (!raw) return;
-    let result: OfflineSimResult;
-    try {
-      result = JSON.parse(raw) as OfflineSimResult;
-    } catch {
-      return;
-    }
-    const readyQuestIds = new Set<string>();
-    let anyKill = false;
-    for (const [name, n] of Object.entries(result.killsByName)) {
-      for (let i = 0; i < n; i += 1) {
-        adventureLog.addKill(name);
-        for (const id of quests.recordKill(name)) readyQuestIds.add(id);
-        anyKill = true;
-      }
-    }
-    if (anyKill) grantTitle("first_blood");
-    if (result.died) {
-      adventureLog.incrementBattleLosses();
-      replaceLocation("town", "healing");
-    }
-    const summary = summarizeOfflineResult(result);
-    // 사망 여부와 무관하게 expedition — 사망 시엔 별도로 결과 모달(setAutoHuntResult)이
-    // 눈에 띄게 뜨고, replaceLocation 으로 치유소로 보낸다.
-    addNotification(
-      "expedition",
-      `자동 사냥 ${fmtHuntDuration(result.simulatedMs)}${summary ? ` — ${summary}` : ""}${result.died ? " (사망)" : ""}`,
-    );
-    for (const id of readyQuestIds) {
-      const quest = getQuestById(id);
-      if (quest) {
-        addNotification(
-          "quest_ready",
-          `의뢰 조건 달성 — ${quest.title}: 길드에서 보상을 받을 수 있다.`,
-        );
-      }
-    }
-    // sessionStorage(외부) 에서 가져온 1회성 결과 → 모달 state 로 동기화.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAutoHuntResult(result);
-    // 빈 deps — 마운트 1회만. adventureLog/quests/addNotification 등은 hook 들의 stable wrapper.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { autoHuntResult, dismiss: dismissAutoHuntResult } =
+    useAutoHuntResultHandler({
+      adventureLog,
+      quests,
+      grantTitle,
+      replaceLocation,
+      addNotification,
+    });
 
   const rewardServices: RewardServices = {
     addPotion: (id, n) => inventory.add(id, n),
@@ -778,7 +676,7 @@ function Home() {
       {autoHuntResult && (
         <AutoHuntResultModal
           result={autoHuntResult}
-          onClose={() => setAutoHuntResult(null)}
+          onClose={dismissAutoHuntResult}
         />
       )}
     </GameProvider>
