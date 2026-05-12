@@ -62,6 +62,8 @@ export type PlayerCombat = {
   powerAttackBonus?: number;
   // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF 감산. 0/undefined = 스킬 미보유.
   crushDefReduction?: number;
+  // 정확 — 플레이어 공격 최소 데미지를 1 → 1 + minDamageBonus 로 올림. 0/undefined = 스킬 미보유.
+  minDamageBonus?: number;
   // 회피 강화 — 전투 시작 시 적립할 보장 회피 횟수. 0/undefined = 스킬 미보유.
   guaranteedEvades?: number;
   // 반격 — 회피 성공 시 즉시 카운터 1회, ATK + bonus 데미지. 0/undefined = 스킬 미보유.
@@ -141,9 +143,9 @@ function applyCounterIfAny(
 ): { state: BattleState; ended: boolean } {
   const bonus = player.counterAtkBonus ?? 0;
   if (bonus <= 0) return { state, ended: false };
-  const dmg = damageBetween(
-    player.atk + bonus,
-    state.enemy.def + state.enemyDefBonus,
+  const dmg = Math.max(
+    1 + (player.minDamageBonus ?? 0),
+    damageBetween(player.atk + bonus, state.enemy.def + state.enemyDefBonus),
   );
   const enemyHp = Math.max(0, state.enemyHp - dmg);
   let next: BattleState = {
@@ -330,7 +332,9 @@ export function advanceTurn(
     const effectiveCritPct = baseCritPct + luckCritBonus;
     const critRoll =
       effectiveCritPct > 0 ? Math.random() * 100 < effectiveCritPct : false;
-    const baseDmg = damageBetween(player.atk + bonus, targetDef);
+    // 정확 — 최소 데미지 floor 를 1 → 1 + minDamageBonus 로 올림 (ATK-DEF 가 그보다 작을 때만 체감).
+    const minFloor = 1 + (player.minDamageBonus ?? 0);
+    const baseDmg = Math.max(minFloor, damageBetween(player.atk + bonus, targetDef));
     // 처형 — 적 HP 비율 < executionHpFraction 일 때 데미지 ×executionDamageMult.
     // 강공격/분쇄 후 데미지에 곱하고, 크리티컬은 그 위에 다시 곱한다 (다단 누적).
     const exMult = player.executionDamageMult ?? 1;
