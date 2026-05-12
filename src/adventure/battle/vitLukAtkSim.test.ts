@@ -69,7 +69,7 @@ function buildSpecialized(opts: {
   const critChancePct = luk * 0.5;
   const critMult = 2.0 + luk * 0.025;
   const powerAttackBonus = str >= 10 ? 2 : 0;
-  const crushDefReduction = str >= 20 ? 3 : 0;
+  const crushDefReduction = str >= 20 ? Math.floor(str * 0.5) : 0;
   const extraAttackEveryNTurns = spd >= 10 ? 5 : undefined;
   const vanguardFirstTurnBonus = spd >= 20 ? 1 : 0;
 

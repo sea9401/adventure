@@ -565,6 +565,67 @@ export const ITEMS = {
     description: "용암 슬라임이 미처 녹이지 못한 채 품고 있던 거대한 용암 핵에 자루를 단 것. 둔하기 짝이 없지만, 한 번 내리치면 땅이 운다.",
     rarity: "unique",
   } satisfies EquipItem,
+
+  // ── 중간 단계 제작 장비 ───────────────────────────────────────────────────
+  // 그동안 퀘스트 deliver/판매 외엔 쓸 데가 없던 재료(영혼 결정·산초꽃·바람 마석·늑대왕의 송곳니·
+  // 초원 매 깃털)에 제작 destination 을 붙인 라인. 각자 그 재료가 나오는 구간에서 다음 보스 보상 전까지
+  // 한 칸 메우는 정도 — 곡선 위로 살짝 비집고 들어간다. 제작서는 해당 재료를 이미 소비하던 의뢰의
+  // 보상으로 풀린다(바람 마석만 돌풍 정령 recipe 드롭).
+  soul_blade: {
+    name: "혼백검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+5" },
+      { label: "활력", value: "+1" },
+    ],
+    bonus: { atk: 5, vit: 1 },
+    description: "떠도는 망령에게서 거둔 영혼 결정을 칼날 안에 박아 벼린 검. 결정에서 새어 나오는 한기가 칼날을 좀처럼 식지 않게 한다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  sancho_vest: {
+    name: "산초 누비 조끼",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+3" },
+      { label: "활력", value: "+2" },
+    ],
+    bonus: { def: 3, vit: 2 },
+    description: "말린 산초꽃을 천 사이에 누벼 넣은 조끼. 두르면 몸이 은근히 따뜻하고, 베인 자리가 더디 곪는다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  windmana_charm: {
+    name: "바람 마석 부적",
+    slot: "accessory",
+    stats: [
+      { label: "속도", value: "+3" },
+      { label: "민첩", value: "+1" },
+    ],
+    bonus: { spd: 3, dex: 1 },
+    description: "협곡 정령이 흩뿌린 바람 마석을 가는 끈에 꿰어 만든 부적. 손목에 두르면 발끝이 바람을 머금은 듯 가볍다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  wolfking_fang_dagger: {
+    name: "늑대왕 송곳니 단검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+7" },
+      { label: "민첩", value: "+3" },
+    ],
+    bonus: { atk: 7, dex: 3 },
+    description: "무리를 이끄는 늑대만이 갖는 길고 굵은 송곳니를 그대로 자루에 박아 만든 단검. 휘두를 때마다 짐승의 무게가 손에 실린다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  hawkfeather_cloak: {
+    name: "매깃 망토",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+2" },
+      { label: "속도", value: "+4" },
+    ],
+    bonus: { def: 2, spd: 4 },
+    description: "초원 매의 길고 가벼운 깃털을 이어 짠 망토. 바람을 잘 타 두르면 발걸음이 한결 빨라진다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;

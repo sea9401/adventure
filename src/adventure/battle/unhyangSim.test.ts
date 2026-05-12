@@ -145,7 +145,7 @@ function buildPlayer(
   const extraAttackChancePct = Math.min(100, spd * 2.5);
   const critChancePct = luk * 0.5;
   const powerAttackBonus = str >= 10 ? 2 : 0;
-  const crushDefReduction = str >= 20 ? 3 : 0;
+  const crushDefReduction = str >= 20 ? Math.floor(str * 0.5) : 0;
   const extraAttackEveryNTurns = spd >= 15 ? 5 : 0;
   const vanguardFirstTurnBonus = spd >= 30 ? 1 : 0;
 

@@ -336,6 +336,7 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "fairy_dust", chance: 0.04 },
       { kind: "material", materialId: "wind_mana_stone", chance: 0.02 },
+      { kind: "recipe", recipeId: "windmana_charm", chance: 0.004 },
     ],
   },
   "늑대 무리장": {

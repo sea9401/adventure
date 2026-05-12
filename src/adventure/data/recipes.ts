@@ -378,6 +378,68 @@ export const RECIPES: Recipe[] = [
     result: { kind: "equipment", itemId: "volcano_core", slot: "accessory" },
     variance: { dex: 1 },
   },
+
+  // ── 중간 단계 제작 라인 — 그동안 퀘스트/판매 외엔 안 쓰이던 재료에 제작 destination 부여 ──
+  {
+    id: "soul_blade",
+    name: "혼백검 제작서",
+    description: `${ITEMS.soul_blade.name}을(를) 만든다. 영혼 결정을 칼날 안에 가두고 폐허 잔해로 자루를 다진다.`,
+    ingredients: [
+      { kind: "material", materialId: "soul_crystal", count: 2 },
+      { kind: "material", materialId: "ruin_fragment", count: 3 },
+      { kind: "material", materialId: "hard_crystal", count: 3 },
+    ],
+    result: { kind: "equipment", itemId: "soul_blade", slot: "weapon" },
+    variance: { atk: 1 },
+  },
+  {
+    id: "sancho_vest",
+    name: "산초 누비 조끼 제작법",
+    description: `${ITEMS.sancho_vest.name}을(를) 만든다. 말린 산초꽃을 천 사이에 누벼 넣고 단단한 가죽으로 테를 두른다.`,
+    ingredients: [
+      { kind: "material", materialId: "sancho_blossom", count: 4 },
+      { kind: "material", materialId: "tough_hide", count: 3 },
+      { kind: "material", materialId: "slime_chunk", count: 8 },
+    ],
+    result: { kind: "equipment", itemId: "sancho_vest", slot: "armor" },
+    variance: { def: 1 },
+  },
+  {
+    id: "windmana_charm",
+    name: "바람 마석 부적 세공법",
+    description: `${ITEMS.windmana_charm.name}을(를) 만든다. 바람 마석을 가는 끈에 꿰고 요정가루로 봉한다.`,
+    ingredients: [
+      { kind: "material", materialId: "wind_mana_stone", count: 3 },
+      { kind: "material", materialId: "fairy_dust", count: 3 },
+      { kind: "material", materialId: "spider_silk", count: 4 },
+    ],
+    result: { kind: "equipment", itemId: "windmana_charm", slot: "accessory" },
+    variance: { spd: 1 },
+  },
+  {
+    id: "wolfking_fang_dagger",
+    name: "늑대왕 송곳니 단검 제작서",
+    description: `${ITEMS.wolfking_fang_dagger.name}을(를) 만든다. 무리장의 송곳니를 자루에 박고 들개 송곳니로 날을 세운다.`,
+    ingredients: [
+      { kind: "material", materialId: "wolf_king_fang", count: 1 },
+      { kind: "material", materialId: "wilddog_fang", count: 6 },
+      { kind: "material", materialId: "tough_hide", count: 4 },
+    ],
+    result: { kind: "equipment", itemId: "wolfking_fang_dagger", slot: "weapon" },
+    variance: { atk: 1 },
+  },
+  {
+    id: "hawkfeather_cloak",
+    name: "매깃 망토 직조법",
+    description: `${ITEMS.hawkfeather_cloak.name}을(를) 만든다. 초원 매 깃털을 들소 가죽 테에 한 장씩 이어 짠다.`,
+    ingredients: [
+      { kind: "material", materialId: "hawk_feather", count: 5 },
+      { kind: "material", materialId: "bison_hide", count: 3 },
+      { kind: "material", materialId: "spider_silk", count: 6 },
+    ],
+    result: { kind: "equipment", itemId: "hawkfeather_cloak", slot: "armor" },
+    variance: { spd: 1 },
+  },
 ];
 
 export function getRecipeById(id: string): Recipe | undefined {

@@ -42,6 +42,13 @@ function pickEnemy(region: Region): Monster | null {
   return name ? (MONSTERS[name] ?? null) : null;
 }
 
+// 직전 전투 종료 시각·쿨다운 — BattleView 가 unmount 돼도 유지된다 (모듈 스코프).
+// 전투 화면을 나갔다 다시 들어와도(= "전투" 버튼 ↔ "뒤로가기" 연타 포함) 다음 전투가
+// 쿨다운을 건너뛰고 즉시 시작되던 문제를 막는다 — 화면에 머물 때와 같은 페이스로 제한.
+// 페이지 새로고침 시 0 으로 리셋되지만, 그땐 즉시 시작이 맞는 동작이라 무방.
+let lastBattleEndAt = 0;
+let lastBattleCooldownMs = 0;
+
 export function BattleView({
   region,
   player,
@@ -159,6 +166,9 @@ export function BattleView({
     // 자동 사냥 페이싱을 종전 그대로 유지한다.
     const cooldown = computeBattleCooldown(Math.min(state.log.length, 8));
     const finalHp = state.playerHp;
+    // 이 전투 종료 시각·쿨다운을 모듈 스코프에 기록 — unmount 후 재진입 시 이어받는다.
+    lastBattleEndAt = Date.now();
+    lastBattleCooldownMs = cooldown;
     // 사냥 OFF 면 직전 전투의 결과만 잠깐 보여주고 stop() 으로 사전 화면 복귀 — 거기서
     // AutoPotionSection / "사냥 시작" 버튼에 다시 접근 가능. (예전엔 그냥 return 이라
     // ended 상태로 멈춰서 사용자가 물약 규칙 등을 못 바꾸는 데드락이 있었음.)
@@ -180,8 +190,10 @@ export function BattleView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, huntingActive]);
 
-  // 자동 사냥 ON 상태로 BattleView 에 진입 — state 가 비어있고 싸울 수 있으면 즉시 첫 전투 시작.
+  // 자동 사냥 ON 상태로 BattleView 에 진입 — state 가 비어있고 싸울 수 있으면 첫 전투 시작.
   // 다른 in-app 탭(캐릭터/광장 등) 갔다 돌아왔을 때 "전투 시작" 버튼 누르지 않아도 이어서 진행.
+  // 단, 직전 전투 쿨다운이 남아있으면 그만큼 기다렸다 시작 — 화면을 나갔다 다시 들어와도
+  // ("전투" 버튼 ↔ "뒤로가기" 연타 포함) 전투가 쿨다운을 건너뛰지 않게.
   useEffect(() => {
     if (state !== null) return;
     if (!huntingActive) return;
@@ -189,8 +201,15 @@ export function BattleView({
     if (player.hp <= 0) return;
     if (region.enemies.length === 0) return;
     if (bossModeRef.current) return; // 보스 전투 직후 자동 다음 적 시작 차단
-    const enemy = pickEnemy(region);
-    if (enemy) startWithLog(enemy);
+    const wait = Math.max(
+      0,
+      lastBattleCooldownMs - (Date.now() - lastBattleEndAt),
+    );
+    const id = setTimeout(() => {
+      const enemy = pickEnemy(region_ref.current);
+      if (enemy) startWithLog(enemy);
+    }, wait);
+    return () => clearTimeout(id);
     // startWithLog 는 setter — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, huntingActive, autoHunt.isDispatched, player.hp, region]);
