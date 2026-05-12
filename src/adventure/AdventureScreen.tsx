@@ -296,7 +296,15 @@ export function AdventureScreen() {
               );
             }
             if (npc.id === "unhyang_elder") {
-              return <BaekunDialogue npc={npc} onClose={close} />;
+              return (
+                <BaekunDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  storyFlags={storyFlags}
+                />
+              );
             }
             if (npc.id === "unhyang_smith") {
               return (
@@ -304,6 +312,9 @@ export function AdventureScreen() {
                   npc={npc}
                   onClose={close}
                   storyFlags={storyFlags}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
                 />
               );
             }
@@ -314,6 +325,7 @@ export function AdventureScreen() {
                   onClose={close}
                   quests={quests}
                   completeQuest={completeQuest}
+                  inventory={inventory}
                 />
               );
             }
@@ -329,7 +341,13 @@ export function AdventureScreen() {
               );
             }
             if (npc.id === "unhyang_pilgrim") {
-              return <PilgrimDialogue npc={npc} onClose={close} />;
+              return (
+                <PilgrimDialogue
+                  npc={npc}
+                  onClose={close}
+                  storyFlags={storyFlags}
+                />
+              );
             }
             return null;
           }}

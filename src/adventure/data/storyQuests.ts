@@ -30,6 +30,15 @@ export const STORY_QUESTS = {
       "디올라로 일하러 간 남편을 걱정하는 수지. 호숫가에서 일한다는 그를 보고 소식을 전해주자.",
     giverNpcId: "village_suzy",
   },
+  // 운향 순례자 미상 — "북쪽 너머" 미스터리. 의뢰 없이 대사 분기로만 진행 (PilgrimDialogue).
+  // 진행 가드는 storyFlag: volcano_heart_defeated → skyreach_main_cleared → pilgrim_revealed.
+  pilgrim_beyond_north: {
+    id: "pilgrim_beyond_north",
+    title: "북쪽 너머",
+    description:
+      "북쪽에서 왔다는 순례자. 화산의 심장을 잠재우고, 천공 성지의 봉인까지 완성하면 — 그가 자기가 온 곳을 한 겹씩 열어 보인다.",
+    giverNpcId: "unhyang_pilgrim",
+  },
 } as const satisfies Record<string, StoryQuest>;
 
 export type StoryQuestId = keyof typeof STORY_QUESTS;

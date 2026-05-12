@@ -1,15 +1,31 @@
 import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import type { useQuests } from "@/adventure/quests/useQuests";
+import type { useInventory } from "@/adventure/inventory/useInventory";
 
 type Props = {
   npc: Npc;
   onClose: () => void;
   storyFlags: ReturnType<typeof useStoryFlags>;
+  quests: ReturnType<typeof useQuests>;
+  completeQuest: (id: string) => boolean;
+  inventory: ReturnType<typeof useInventory>;
 };
 
-// 만월 — 운봉 무기 안내. 거인 처치 전엔 도전 종용, 처치 후엔 제작서·재료 안내.
-export function ManwolDialogue({ npc, onClose, storyFlags }: Props) {
+const ORE_QUEST = "unhyang-manwol-ore-demo";
+const ORE_NEED = 6;
+
+// 만월 — 운봉 무기 안내 + "운봉석을 벼리는 법"(견갑 제작서 확정 루트).
+// 거인 처치 전엔 도전 종용 → 처치 후 운봉석 ×6 deliver 의뢰 → 완료 후 제작 안내.
+export function ManwolDialogue({
+  npc,
+  onClose,
+  storyFlags,
+  quests,
+  completeQuest,
+  inventory,
+}: Props) {
   const giantDefeated = storyFlags.has("peak_giant_defeated");
 
   if (!giantDefeated) {
@@ -24,12 +40,70 @@ export function ManwolDialogue({ npc, onClose, storyFlags }: Props) {
     );
   }
 
+  const ore = quests.getEntry(ORE_QUEST);
+
+  // ── "운봉석을 벼리는 법" — 견갑 제작서 시연 ──
+  if (ore.state === "available") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "거인을 잠재웠다고? …거짓말이라도 그 비늘은 못 가져올 텐데. 좋아, 믿어 주지.\n그럼 한 가지 — 운봉석은 제대로 다룰 줄 아는 손이 드물어. 자네가 운봉석 여섯 덩이만 가져오면, 거인 어깨 비늘로 견갑을 어떻게 짜는지 시연해 줌세. 보고 나면 자네 손에도 새겨질 거야."
+        }
+        primaryAction={{
+          label: "받아들인다",
+          onClick: () => {
+            quests.accept(ORE_QUEST);
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+  if (ore.state === "active") {
+    const have = inventory.materialCount("unbong_ore");
+    if (have >= ORE_NEED) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "운봉석 여섯 덩이… 제대로 골라왔군. 자, 잘 보게 — 비늘 결을 따라 운봉석을 끼워 넣고, 이렇게.\n됐어. 이제 자네 손에도 새겨졌을 거야. 견갑 제작서일세."
+          }
+          primaryAction={{
+            label: "건네준다",
+            onClick: () => {
+              const r = quests.tryDeliver(
+                ORE_QUEST,
+                inventory.materialCount,
+                inventory.consumeMaterial,
+              );
+              if (r.ok) {
+                completeQuest(ORE_QUEST);
+                onClose();
+              }
+            },
+          }}
+        />
+      );
+    }
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={`운봉석은 거인을 잠재울 때 떨어진다네. 충분히 모아 오게. — 진행 ${have}/${ORE_NEED}`}
+      />
+    );
+  }
+
+  // ore.state === "completed" — 운봉 무기/견갑 제작 안내.
   return (
     <NpcDialogue
       npc={npc}
       onClose={onClose}
       text={
-        "거인을 잠재웠다고? …거짓말이라도 그 비늘은 못 가져올 텐데.\n좋아. 자네가 가진 비늘과 운봉석으로 — 무기 네 자루 중 하나, 그리고 견갑까지. 도움이 될 걸세.\n제작서는 거인이 떨군 자리에서 챙겨왔겠지. 대장간 모루 위에 비늘과 광석을 올려놓고 두드려보게."
+        "자네가 가진 비늘과 운봉석으로 — 무기 네 자루 중 하나, 그리고 견갑까지. 도움이 될 걸세.\n무기 제작서는 거인이 떨군 자리에서 챙겨왔겠지. 견갑 제작서는 내가 새겨준 그대로다. 대장간 모루 위에 비늘과 광석을 올려놓고 두드려보게."
       }
     />
   );

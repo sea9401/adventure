@@ -81,6 +81,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "안개 호숫가의 작은 어촌이 그를 식구처럼 받아들였다.",
     condition: "촌장 마린의 의뢰까지 모두 완수",
   },
+  mountain_friend: {
+    id: "mountain_friend",
+    name: "산정의 벗",
+    description: "잠들지 않던 것을 잠재우고, 구름 위 마을의 숨을 되돌린 자.",
+    condition: "운향 — 노촌장 백운의 '운봉의 거인' 의뢰 완수",
+  },
   beggar: {
     id: "beggar",
     name: "거지",

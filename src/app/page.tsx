@@ -868,6 +868,17 @@ function Home() {
     );
     // 마린의 영혼 결정 의뢰 = "안개 너머의 길" 라인의 클로저 → 칭호 부여.
     if (id === "diola-marin-soul-crystals") grantTitle("diola_friend");
+    // 운향 메인 라인 "잠들지 않는 산" — 백운의 운봉의 거인 의뢰 완수 → 칭호 + flag.
+    if (id === "unhyang-baekun-peak-giant") {
+      grantTitle("mountain_friend");
+      storyFlags.set("unhyang_main_cleared");
+    }
+    // 교역로 정리 2종(협곡 절벽 늑대 + 산기슭 산양) 둘 다 완료 → 디올라 연계 입구 개방.
+    // claim 직후엔 방금 완료한 쪽 상태가 비동기라, 나머지 한쪽이 이미 completed 인지로 판정.
+    if (id === "unhyang-baekun-cliff-wolves" && quests.getEntry("unhyang-baekun-highland-goats").state === "completed")
+      storyFlags.set("mountain_trade_open");
+    if (id === "unhyang-baekun-highland-goats" && quests.getEntry("unhyang-baekun-cliff-wolves").state === "completed")
+      storyFlags.set("mountain_trade_open");
     return true;
   };
 
