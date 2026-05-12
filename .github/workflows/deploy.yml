@@ -1,0 +1,30 @@
+name: Deploy to EC2
+
+# main 에 push 되면 EC2 로 SSH 접속해 deploy/deploy.sh 실행.
+# 필요한 GitHub Secrets (Settings → Secrets and variables → Actions):
+#   EC2_HOST    — EC2 의 고정 IP 또는 도메인 (예: 54.180.28.29)
+#   EC2_SSH_KEY — EC2 접속용 private key 전체 (msmsge-key.pem 의 내용)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 수동 실행 버튼
+
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH & deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            cd ~/adventure-rpg
+            bash deploy/deploy.sh
