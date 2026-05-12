@@ -641,7 +641,7 @@ town 이 아니므로 의뢰는 **바람골 역참(한솔)** 과 **천공 성지
 ## 12. 우선순위 / 마일스톤
 
 1. **M1 — 운향 메인 라인** ✅ *구현됨* (§1.1 백운: 협곡 정찰 → 거인 → 교역로 2종 / §1.2 만월 운봉석 시연 → 견갑 제작서 / `unhyang-peak-giant-recurring` 정기는 길드 게시판 / `mountain_friend` 칭호 + `unhyang_main_cleared`·`mountain_trade_open` flag / `BaekunDialogue`·`ManwolDialogue` 단계 분기). 미포함: `manwol_bold_reunion`(§7.1, M5 로 이관), 보상 수치 시뮬 미조정(§13).
-2. **M2 — 천공 성지 메인 라인** (§6.1 해무 봉인 라인: 용암 핵 → 봉황 깃털 → 화염 비늘 + 정기). 만렙 종착지에 서사 + 봉황 무구 갑옷·액세서리 확정 루트. 해무 다이얼로그 컴포넌트 신규 필요.
+2. **M2 — 천공 성지 메인 라인** ✅ *구현됨* (§6.1 해무 봉인 라인: 용암 핵 ×6 → 봉황 깃털 ×5 → 화염 비늘 ×8, 전부 deliver / `volcano_armor`·`volcano_core` 제작서 확정 / `ridge_crosser` 칭호 + `skyreach_main_cleared` flag / `skyreach-volcano-heart-recurring` 정기는 길드 게시판 / 신규 `HaemuDialogue`(questLineDialogue 헬퍼 사용)). 미포함: `skyreach-haemu-pilgrim-meet` 릴레이·신규 NPC 사미승/문지기(M6) — 단 PilgrimDialogue 가 `skyreach_main_cleared` 로 직접 2차 해금되므로 라인은 이어짐.
 3. **M3 — 사이드 의뢰 일괄** (§2 운향 / §3 다리 구간 / §4 봉황령 / §5 화산 지대). 길드판 반복 + NPC 전속 — 데이터만이라 빠름. 봉황 망토 확정 루트(§4) 포함.
    - **운향분(§2.1·§2.2·§3.2 운향 출처)** ✅ *구현됨* — 도연 6의뢰(인트로 절벽 늑대 + stone-frogs·windspirits·cloud-raiders·bison-down·phoenix-hunt) / 산하 6의뢰(herbs·bones·tough-hide·windstone·bison-hide·flame-scale, 전부 deliver) / 백운 사이드 `unhyang-baekun-pilgrim-escort` / 운향 게시판 8개(`unhyang-board-*`). 기존 미노출이던 `unhyang-guide-cloud-raiders`·`unhyang-guide-phoenix-hunt`·`unhyang-herbalist-flame-scale` 도 다이얼로그에 연결. 새 헬퍼 `questLineDialogue.tsx`(다단계 의뢰 NPC 공용). 미포함: `unhyang-board-supply-escort`(`diola-marin-mountain-trade` 선행 — M5 와 함께), 바람골/봉황령/화산 출처분.
 4. **M4 — 보스 의뢰 보강** (§10 — 볼드 마정석·시온 정수·세 보스 누적 hunter ×3 + `boss_hunter` 칭호). 데이터 위주, M1·M2 의 보스 라인 위에 얹힘.

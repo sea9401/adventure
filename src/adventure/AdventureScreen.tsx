@@ -27,6 +27,7 @@ import { ManwolDialogue } from "@/adventure/town/dialogues/ManwolDialogue";
 import { DoyeonDialogue } from "@/adventure/town/dialogues/DoyeonDialogue";
 import { SanhaDialogue } from "@/adventure/town/dialogues/SanhaDialogue";
 import { PilgrimDialogue } from "@/adventure/town/dialogues/PilgrimDialogue";
+import { HaemuDialogue } from "@/adventure/town/dialogues/HaemuDialogue";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -346,6 +347,17 @@ export function AdventureScreen() {
                   npc={npc}
                   onClose={close}
                   storyFlags={storyFlags}
+                />
+              );
+            }
+            if (npc.id === "skyreach_elder") {
+              return (
+                <HaemuDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
                 />
               );
             }

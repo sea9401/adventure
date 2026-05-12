@@ -879,6 +879,11 @@ function Home() {
       storyFlags.set("mountain_trade_open");
     if (id === "unhyang-baekun-highland-goats" && quests.getEntry("unhyang-baekun-cliff-wolves").state === "completed")
       storyFlags.set("mountain_trade_open");
+    // 천공 성지 메인 라인 "능선 너머의 봉인" — 해무의 마지막 자물쇠 완수 → 칭호 + flag.
+    if (id === "skyreach-haemu-flame-scale") {
+      grantTitle("ridge_crosser");
+      storyFlags.set("skyreach_main_cleared");
+    }
     return true;
   };
 

@@ -722,6 +722,59 @@ export const QUESTS: Quest[] = [
     reward: { gold: 650, fame: 22, exp: 1300 },
     repeatable: true,
   },
+  // ── 천공 성지 — 메인 라인 "능선 너머의 봉인" (원로 해무) ─────────────────
+  // 화산의 심장 처치(volcano_heart_defeated, 천공 성지 진입 조건) 후 만나는 라인.
+  // 봉황 무구 갑옷·액세서리 확정 제작서 + 성지 "또 다른 봉인" 서사. HaemuDialogue.
+  {
+    id: "skyreach-haemu-lava-core",
+    regionId: "skyreach",
+    title: "봉인의 자물쇠",
+    description:
+      "이 성지에는 화산의 심장 말고도 잠재워 둔 것이 있소. 그 봉인이 아래에서 올라오는 열기에 무뎌졌소 — 용암 핵 여섯 개면 자물쇠를 다시 채울 수 있소. 가져다 주면, 봉황 무구를 벼리는 법도 자네 손에 새겨 주리다.",
+    requiredLevel: 55,
+    target: { kind: "deliver", materialId: "lava_core", count: 6 },
+    reward: { gold: 1200, exp: 2500, recipes: ["volcano_armor"] },
+    repeatable: false,
+    giverNpcId: "skyreach_elder",
+  },
+  {
+    id: "skyreach-haemu-phoenix-feather",
+    regionId: "skyreach",
+    title: "봉황의 깃",
+    description:
+      "봉인을 더 단단히 하려면 봉황 깃털 다섯 장이 필요하오. 봉황령의 불꽃 독수리에게서, 혹은 화산의 심장이 떨군 것 중에 있을 게요. 가져오면 봉황주 만드는 법을 더해 주리다.",
+    requiredLevel: 55,
+    target: { kind: "deliver", materialId: "phoenix_feather", count: 5 },
+    reward: { gold: 1400, exp: 3000, recipes: ["volcano_core"] },
+    repeatable: false,
+    giverNpcId: "skyreach_elder",
+    requiresQuestCompleted: "skyreach-haemu-lava-core",
+  },
+  {
+    id: "skyreach-haemu-flame-scale",
+    regionId: "skyreach",
+    title: "마지막 자물쇠",
+    description:
+      "마지막이오. 화염 비늘 여덟 장이면 봉인이 완성되오. …이 일을 끝내면, 자네에게 들려줄 이야기가 있소. 북쪽에서 온 순례자를 봤다고 했지? 그 이야기와 무관하지 않소.",
+    requiredLevel: 55,
+    target: { kind: "deliver", materialId: "flame_scale", count: 8 },
+    reward: { gold: 1600, exp: 3500, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "skyreach_elder",
+    requiresQuestCompleted: "skyreach-haemu-phoenix-feather",
+  },
+  {
+    id: "skyreach-volcano-heart-recurring",
+    regionId: "skyreach",
+    title: "화산의 심장 토벌 ─ 정기",
+    description:
+      "화산의 심장은 다시 달아오릅니다. 세 번 잠재우면 한동안은 성지 아래가 잠잠할 거예요. 동료를 데려가세요.",
+    requiredLevel: 55,
+    target: { kind: "kill", monsterName: "화산의 심장", count: 3 },
+    reward: { gold: 1500, fame: 30, exp: 3000 },
+    repeatable: true,
+    requiresQuestCompleted: "skyreach-haemu-lava-core",
+  },
   // ── 천공 성지 ────────────────────────────────────────────────────────────
   {
     id: "skyreach-guide-knights",

@@ -87,6 +87,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "잠들지 않던 것을 잠재우고, 구름 위 마을의 숨을 되돌린 자.",
     condition: "운향 — 노촌장 백운의 '운봉의 거인' 의뢰 완수",
   },
+  ridge_crosser: {
+    id: "ridge_crosser",
+    name: "능선을 넘은 자",
+    description: "화염 능선을 넘어 천공 성지의 마지막 봉인을 다시 채운 자.",
+    condition: "천공 성지 — 원로 해무의 봉인 라인('마지막 자물쇠') 완수",
+  },
   beggar: {
     id: "beggar",
     name: "거지",
