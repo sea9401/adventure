@@ -9,7 +9,9 @@ import { maxHpForLevel } from "./defaults";
 import type { Skill } from "./types";
 import {
   acrobatEvadeHealFor,
+  assassinateDmgMultFor,
   balanceCritPctPerSpdDiffFor,
+  berserkerAtkPctPerLostHpPctFor,
   bleedDmgPerStackFor,
   bulwarkShieldFor,
   counterAtkBonusFor,
@@ -29,6 +31,7 @@ import {
   executionDamageMultFor,
   executionHpFractionFor,
   flurryAttacksFor,
+  gustAtkPerAttackFor,
   guardFor,
   heavenDecreeChancePctFor,
   lifestealCritHealPctFor,
@@ -37,8 +40,11 @@ import {
   powerAttackBonusFor,
   precisionEvasionMultFor,
   regenFor,
+  riposteExtraAttacksFor,
   shadowCloneAtkPctFor,
   skillLayout,
+  skirmishNextTurnBonusFor,
+  thornsPctFor,
   vanguardFirstTurnBonusFor,
   type SkillLayout,
 } from "./skills";
@@ -220,6 +226,18 @@ export function derivePlayerCombat(
       totalStats,
       effectiveSkillSet,
     ),
+    berserkAtkPctPerLostHpPct: berserkerAtkPctPerLostHpPctFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
+    assassinateDmgMult: assassinateDmgMultFor(totalStats, effectiveSkillSet),
+    gustAtkPerAttack: gustAtkPerAttackFor(totalStats, effectiveSkillSet),
+    riposteExtra: riposteExtraAttacksFor(totalStats, effectiveSkillSet),
+    skirmishNextTurnBonus: skirmishNextTurnBonusFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
+    thornsPct: thornsPctFor(totalStats, effectiveSkillSet),
   };
 
   return {

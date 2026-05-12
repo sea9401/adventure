@@ -102,8 +102,10 @@
 - 테스트: `engine.tier4.test.ts` (각 효과 결정적 검증), `skills.test.ts` tier4 deriveSkills.
 - 미완: 도감(EtcTab) 의 4티어 프리뷰(`STAT_TIER4_REVEAL_THRESHOLD = 45`) — deriveSkills 가 stat 50 도달 시 보유 목록에 넣으므로 기능엔 영향 없음, 도감 advance preview 만 빠짐 → 후속.
 
-### Phase 3 — 나머지 특기 6종
-- 광전사 · 암살 · 질풍검 · 연참 · 유격 · 반사 갑주 (엔진 변경 좀 더 큰 것들).
+### Phase 3 — 나머지 특기 6종 ✅ (feat/skill-feats-2)
+- 광전사(STR&VIT, 잃은 HP%만큼 ATK 가산) · 암살(STR&DEX, 전투 첫 공격 DEF무시+×2) · 질풍검(STR&SPD, 턴 첫 공격에 그 턴 공격횟수만큼 ATK) · 연참(STR&LUK, 그 턴 크리 시 추가 공격 1회 — BattleState `critThisTurn`/`riposteUsedThisTurn`) · 유격(DEX&SPD, 회피 시 다음 턴 공격 횟수 +1) · 반사 갑주(VIT&SPD, 받은 HP 피해의 floor((VIT+SPD)/10)% 적에게 반사).
+- `FEAT_SKILL` 총 10종 완성. 테스트: `engine.feats.test.ts` (6종 결정적), `skills.test.ts` 에 스탯쌍별 `deriveFeats` 검증.
+- 미완(공통): 슬롯 해금 토스트, 도감 4티어/특기 advance preview.
 
 ### v2 이후
 - 6번째 슬롯 / "스킬 룬" 아이템 경로 / 해금 연출.

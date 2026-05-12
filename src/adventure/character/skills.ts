@@ -343,6 +343,12 @@ export const FEAT_NAMES = {
   ACROBAT: "곡예",
   BALANCE: "천칭",
   LUCKY_SHIELD: "행운의 방패",
+  BERSERKER: "광전사",
+  ASSASSINATE: "암살",
+  GUST_BLADE: "질풍검",
+  RIPOSTE: "연참",
+  SKIRMISH: "유격",
+  THORN_ARMOR: "반사 갑주",
 } as const;
 
 // 흡혈 (DEX & LUK) — 크리티컬로 준 피해의 N%만큼 HP 회복.
@@ -353,6 +359,18 @@ export const ACROBAT_HEAL_PER_VIT = 0.3;
 export const BALANCE_CRIT_PCT_PER_SPD_DIFF = 0.5;
 // 행운의 방패 (VIT & LUK) — 피격당할 때마다 (LUK × N)% 확률로 그 피해를 0으로.
 export const LUCKY_SHIELD_BLOCK_PCT_PER_LUK = 0.5;
+// 광전사 (STR & VIT) — 잃은 HP 1%당 ATK +N%.
+export const BERSERKER_ATK_PCT_PER_LOST_HP_PCT = 0.5;
+// 암살 (STR & DEX) — 전투 첫 공격: 적 DEF 무시 + 데미지 ×N.
+export const ASSASSINATE_DMG_MULT = 2;
+// 질풍검 (STR & SPD) — 매 턴 첫 공격이 (그 턴 공격 횟수 × N) 만큼 ATK 보너스.
+export const GUST_BLADE_ATK_PER_ATTACK = 1;
+// 연참 (STR & LUK) — 그 턴 크리티컬 발동 시 추가 공격 N회 (턴당 1회 한정).
+export const RIPOSTE_EXTRA_ATTACKS = 1;
+// 유격 (DEX & SPD) — 회피 성공 시 다음 플레이어 턴 공격 횟수 +N.
+export const SKIRMISH_NEXT_TURN_BONUS = 1;
+// 반사 갑주 (VIT & SPD) — 피격 시 받은 HP 피해의 floor((VIT+SPD)/N)% 를 적에게 반사.
+export const THORN_ARMOR_STAT_DIVISOR = 10;
 
 export type FeatSkillInfo = {
   name: string;
@@ -383,6 +401,36 @@ export const FEAT_SKILL: FeatSkillInfo[] = [
     name: FEAT_NAMES.LUCKY_SHIELD,
     description: `피격당할 때마다 (LUK × ${LUCKY_SHIELD_BLOCK_PCT_PER_LUK})% 확률로 그 피해를 0으로`,
     req: ["vit", "luk"],
+  },
+  {
+    name: FEAT_NAMES.BERSERKER,
+    description: `잃은 HP 1%당 ATK +${BERSERKER_ATK_PCT_PER_LOST_HP_PCT}% (HP 절반=+25%)`,
+    req: ["str", "vit"],
+  },
+  {
+    name: FEAT_NAMES.ASSASSINATE,
+    description: `전투 첫 공격 — 적 방어력 무시 + 데미지 ×${ASSASSINATE_DMG_MULT}`,
+    req: ["str", "dex"],
+  },
+  {
+    name: FEAT_NAMES.GUST_BLADE,
+    description: `매 턴 첫 공격이 그 턴 공격 횟수만큼 ATK 보너스 (3회 턴=+3)`,
+    req: ["str", "spd"],
+  },
+  {
+    name: FEAT_NAMES.RIPOSTE,
+    description: `그 턴 크리티컬 발동 시 추가 공격 ${RIPOSTE_EXTRA_ATTACKS}회 (턴당 1회)`,
+    req: ["str", "luk"],
+  },
+  {
+    name: FEAT_NAMES.SKIRMISH,
+    description: `회피 성공 시 다음 턴 공격 횟수 +${SKIRMISH_NEXT_TURN_BONUS}`,
+    req: ["dex", "spd"],
+  },
+  {
+    name: FEAT_NAMES.THORN_ARMOR,
+    description: `피격 시 받은 피해의 floor((VIT+SPD)/${THORN_ARMOR_STAT_DIVISOR})% 를 적에게 반사`,
+    req: ["vit", "spd"],
   },
 ];
 
@@ -451,6 +499,66 @@ export function luckyShieldBlockPctFor(
 ): number {
   return featActive(stats, equipped, FEAT_NAMES.LUCKY_SHIELD, ["vit", "luk"])
     ? stats.luk * LUCKY_SHIELD_BLOCK_PCT_PER_LUK
+    : 0;
+}
+
+// 광전사 — 잃은 HP 1%당 추가되는 ATK 비율(%). 엔진이 현재 HP 비율로 계산. 미장착 시 0.
+export function berserkerAtkPctPerLostHpPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.BERSERKER, ["str", "vit"])
+    ? BERSERKER_ATK_PCT_PER_LOST_HP_PCT
+    : 0;
+}
+
+// 암살 — 전투 첫 공격의 데미지 배수 (DEF 무시 동반). 0/미장착 = 미발동.
+export function assassinateDmgMultFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.ASSASSINATE, ["str", "dex"])
+    ? ASSASSINATE_DMG_MULT
+    : 0;
+}
+
+// 질풍검 — 턴 첫 공격에 (공격 횟수 × N) ATK 보너스. 미장착 시 0.
+export function gustAtkPerAttackFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.GUST_BLADE, ["str", "spd"])
+    ? GUST_BLADE_ATK_PER_ATTACK
+    : 0;
+}
+
+// 연참 — 크리 발동 턴 추가 공격 횟수. 미장착 시 0.
+export function riposteExtraAttacksFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.RIPOSTE, ["str", "luk"])
+    ? RIPOSTE_EXTRA_ATTACKS
+    : 0;
+}
+
+// 유격 — 회피 성공 시 다음 턴 공격 횟수 보너스. 미장착 시 0.
+export function skirmishNextTurnBonusFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.SKIRMISH, ["dex", "spd"])
+    ? SKIRMISH_NEXT_TURN_BONUS
+    : 0;
+}
+
+// 반사 갑주 — 받은 HP 피해의 % 를 적에게 반사. 미장착 시 0.
+export function thornsPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.THORN_ARMOR, ["vit", "spd"])
+    ? Math.floor((stats.vit + stats.spd) / THORN_ARMOR_STAT_DIVISOR)
     : 0;
 }
 
