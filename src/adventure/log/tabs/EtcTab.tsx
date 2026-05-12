@@ -234,20 +234,21 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
         })}
       </ul>
 
-      {/* 특기 — 두 스탯이 모두 FEAT_STAT_THRESHOLD 도달 시 보유. 특기 전용 슬롯에 1개만. */}
+      {/* 특기 — 두 요구 스탯이 모두 FEAT_STAT_THRESHOLD 도달 시 보유. 특기 전용 슬롯에 1개만.
+          공개 단계: 둘 다 미달 → ??? / 한쪽만 달성 → 이름 + 남은 스탯 조건 / 둘 다 → 전체 + 효과. */}
       <Card as="section">
         <div className="mb-1.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
           특기{" "}
           <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
-            (두 스탯 {FEAT_STAT_THRESHOLD} 도달 시 보유 · 특기 슬롯에 1개)
+            (요구 스탯 둘 다 {FEAT_STAT_THRESHOLD} 도달 시 보유 · 한쪽만 달성하면 이름·남은 조건 공개 · 특기 슬롯에 1개)
           </span>
         </div>
         <ul className="space-y-1.5">
           {FEAT_SKILL.map((f) => {
-            const owned = f.req.every((s) => stats[s] >= FEAT_STAT_THRESHOLD);
-            const reqLabel = f.req
-              .map((s) => `${STAT_LABELS[s]} ${FEAT_STAT_THRESHOLD}`)
-              .join(" & ");
+            const met = f.req.filter((s) => stats[s] >= FEAT_STAT_THRESHOLD);
+            const owned = met.length === f.req.length;
+            const revealed = met.length >= 1; // 한쪽이라도 25 도달 → 이름/조건 공개
+            const remaining = f.req.find((s) => stats[s] < FEAT_STAT_THRESHOLD);
             return (
               <li key={f.name} className="flex items-start gap-2 text-xs">
                 {owned ? (
@@ -263,19 +264,32 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                     className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
                   />
                 )}
-                <span
-                  className={
-                    owned
-                      ? "text-zinc-700 dark:text-zinc-200"
-                      : "text-zinc-500 dark:text-zinc-400"
-                  }
-                >
-                  <span className="font-medium">{f.name}</span> — {f.description}
-                  <span className="ml-1 text-zinc-500 dark:text-zinc-400">
-                    ({reqLabel}
-                    {owned ? " · 보유 중" : ""})
+                {owned ? (
+                  <span className="text-zinc-700 dark:text-zinc-200">
+                    <span className="font-medium">{f.name}</span> — {f.description}
+                    <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                      (
+                      {f.req
+                        .map((s) => `${STAT_LABELS[s]} ${FEAT_STAT_THRESHOLD}`)
+                        .join(" & ")}{" "}
+                      · 보유 중)
+                    </span>
                   </span>
-                </span>
+                ) : revealed && remaining ? (
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    <span className="font-medium text-zinc-600 dark:text-zinc-300">
+                      {f.name}
+                    </span>
+                    <span className="ml-1">
+                      — 남은 해금 조건: {STAT_LABELS[remaining]}{" "}
+                      {FEAT_STAT_THRESHOLD} (현재 {stats[remaining]})
+                    </span>
+                  </span>
+                ) : (
+                  <span className="italic text-zinc-400 dark:text-zinc-500">
+                    ??? — 요구 스탯 중 하나가 {FEAT_STAT_THRESHOLD} 도달 시 공개
+                  </span>
+                )}
               </li>
             );
           })}
