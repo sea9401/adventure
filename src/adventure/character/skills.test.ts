@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   skillLayout,
+  deriveSkills,
   deriveFeats,
   effectiveSkillNames,
   effectiveFeatName,
   FEAT_NAMES,
+  SKILL_NAMES,
 } from "./skills";
 import type { StatKey } from "@/adventure/data/stats";
 
@@ -53,6 +55,29 @@ describe("skillLayout — 슬롯 해금", () => {
         hasFlag: (id) => id === "volcano_heart_defeated",
       }).normalSlots,
     ).toBe(4);
+  });
+});
+
+describe("deriveSkills — 4티어는 스탯 50 도달 시", () => {
+  it("STR 49 면 출혈 미보유, 50 이면 보유", () => {
+    expect(deriveSkills({ ...ZERO, str: 49 }).map((s) => s.name)).not.toContain(
+      SKILL_NAMES.BLOODLET,
+    );
+    expect(deriveSkills({ ...ZERO, str: 50 }).map((s) => s.name)).toContain(
+      SKILL_NAMES.BLOODLET,
+    );
+  });
+
+  it("스탯 50 이면 1~4티어 전부 보유 (해당 스탯)", () => {
+    const names = deriveSkills({ ...ZERO, dex: 50 }).map((s) => s.name);
+    expect(names).toEqual(
+      expect.arrayContaining([
+        SKILL_NAMES.EVADE,
+        SKILL_NAMES.COUNTER,
+        SKILL_NAMES.PRECISION,
+        SKILL_NAMES.SHADOW_CLONE,
+      ]),
+    );
   });
 });
 

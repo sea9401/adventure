@@ -87,17 +87,20 @@
 
 분량이 커서 단계로 나눠 커밋 — 단계마다 빌드+테스트 통과 유지.
 
-### Phase 1 — 슬롯 시스템 + 특기 인프라 + 쉬움 특기
+### Phase 1 — 슬롯 시스템 + 특기 인프라 + 쉬움 특기 ✅ (PR #27, main 머지됨)
 1. `skills.ts`: `skillLayout(ctx)`, `FEAT_SKILL`/`deriveFeats`, `effectiveSkillNames(slots)`, `effectiveFeatName`.
-2. `derivePlayerCombat`/`composeCharacter`/`derivePlayerCombatFromSaves`/`autoHunt` 입력에 `storyFlags` 추가, layout 계산 반영.
+2. `derivePlayerCombat`/`composeCharacter`/`derivePlayerCombatFromSaves`/`autoHunt` 입력에 `storyFlagIds`+`equippedFeat`, layout 반영.
 3. `useCharacterState`: `equippedFeat` 저장 + 세터.
-4. `SkillsView`/`CharacterScreen`: 동적 일반 슬롯 + 특기 슬롯, 해금 토스트.
-5. 쉬움 특기 wiring: **흡혈 · 곡예 · 천칭 · 행운의 방패** (전부 numeric/probability — 엔진 변경 최소). `PlayerCombat` 필드 + 엔진 분기.
-6. 테스트: `skillLayout`/`deriveFeats` 단위 + 엔진 신규 분기 1~2개.
+4. `SkillsView`/`CharacterScreen`: 동적 일반 슬롯 + 특기 슬롯.
+5. 쉬움 특기 wiring: **흡혈 · 곡예 · 천칭 · 행운의 방패**. `PlayerCombat` 필드 + 엔진 분기.
+6. 테스트: `skillLayout`/`deriveFeats` + 엔진 신규 분기.
+   - 미완: 슬롯 해금 토스트.
 
-### Phase 2 — 4티어 5종
-- `STAT_SKILL` 4번째 항목 + 상수 + `deriveSkills` tier4 + 발동 헬퍼 5개 + 엔진(출혈 DoT / 분신 추가타 / 철벽 실드 / 무피해 난무 / 천명 %피해).
-- `STAT_TIER4_REVEAL_THRESHOLD = 45`.
+### Phase 2 — 4티어 5종 ✅ (feat/skill-tier4)
+- `SKILL_NAMES`/`STAT_SKILL` 4번째 항목 + 상수 + `deriveSkills` tier4(버킷 일반화) + 발동 헬퍼 5개.
+- 엔진: **출혈**(BattleState `bleedStacks`, 적 턴 시작 DoT, DEF 무시) / **그림자 분신**(턴 종료 시 ATK 50% 추가타, `finishPlayerTurn`) / **철벽**(BattleState `playerShield`, 피해 우선 흡수) / **무피해 난무**(BattleState `damageTakenThisCombat`, 무피해 시 턴 종료 추가타 ×floor(SPD/25)) / **천명**(공격마다 LUK×0.3% 확률로 적 현재 HP의 5% 추가 고정 피해).
+- 테스트: `engine.tier4.test.ts` (각 효과 결정적 검증), `skills.test.ts` tier4 deriveSkills.
+- 미완: 도감(EtcTab) 의 4티어 프리뷰(`STAT_TIER4_REVEAL_THRESHOLD = 45`) — deriveSkills 가 stat 50 도달 시 보유 목록에 넣으므로 기능엔 영향 없음, 도감 advance preview 만 빠짐 → 후속.
 
 ### Phase 3 — 나머지 특기 6종
 - 광전사 · 암살 · 질풍검 · 연참 · 유격 · 반사 갑주 (엔진 변경 좀 더 큰 것들).

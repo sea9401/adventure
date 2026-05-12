@@ -10,6 +10,8 @@ import type { Skill } from "./types";
 import {
   acrobatEvadeHealFor,
   balanceCritPctPerSpdDiffFor,
+  bleedDmgPerStackFor,
+  bulwarkShieldFor,
   counterAtkBonusFor,
   critChancePctFor,
   critMultFor,
@@ -26,13 +28,16 @@ import {
   evadeGuaranteedFor,
   executionDamageMultFor,
   executionHpFractionFor,
+  flurryAttacksFor,
   guardFor,
+  heavenDecreeChancePctFor,
   lifestealCritHealPctFor,
   lightspeedExtraAttackPctFor,
   luckyShieldBlockPctFor,
   powerAttackBonusFor,
   precisionEvasionMultFor,
   regenFor,
+  shadowCloneAtkPctFor,
   skillLayout,
   vanguardFirstTurnBonusFor,
   type SkillLayout,
@@ -207,6 +212,14 @@ export function derivePlayerCombat(
       effectiveSkillSet,
     ),
     luckyShieldBlockPct: luckyShieldBlockPctFor(totalStats, effectiveSkillSet),
+    bleedDmgPerStack: bleedDmgPerStackFor(totalStats, effectiveSkillSet),
+    shadowCloneAtkPct: shadowCloneAtkPctFor(totalStats, effectiveSkillSet),
+    bulwarkShield: bulwarkShieldFor(totalStats, effectiveSkillSet),
+    flurryAttacks: flurryAttacksFor(totalStats, effectiveSkillSet),
+    heavenDecreeChancePct: heavenDecreeChancePctFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
   };
 
   return {
