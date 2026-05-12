@@ -101,6 +101,50 @@ export function MonsterAvatarMini({
   );
 }
 
+// 몬스터 세부 정보 블록 — 처치 수에 따라 단계적으로 스탯/드랍 공개.
+// 장소 탭의 몬스터 행 펼침 등에서 재사용.
+export function MonsterStatBlock({
+  name,
+  kills,
+}: {
+  name: string;
+  kills: number;
+}) {
+  const monster = MONSTERS[name];
+  const stage = getRevealStage(kills);
+  if (!monster) return null;
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
+        <StatRow label="HP" value={monster.hp} unlocked={stage >= 2} />
+        <StatRow label="EXP" value={monster.exp} unlocked={stage >= 4} />
+        <StatRow label="ATK" value={monster.atk} unlocked={stage >= 3} />
+        <StatRow label="DEF" value={monster.def} unlocked={stage >= 3} />
+        <StatRow label="SPD" value={monster.spd} unlocked={stage >= 3} />
+      </div>
+      {monster.drops && monster.drops.length > 0 && stage >= 3 && (
+        <div className="mt-2 border-t border-dashed border-zinc-200 pt-1 dark:border-zinc-700">
+          <div className="text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            드랍
+          </div>
+          <ul className="mt-0.5 space-y-0.5 text-[11px] text-zinc-700 dark:text-zinc-300">
+            {monster.drops.map((d, i) => (
+              <li key={i} className="flex items-baseline justify-between gap-2">
+                <span className="truncate">{describeDrop(d)}</span>
+                <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">
+                  {stage >= 4
+                    ? `${(d.chance * 100).toFixed(d.chance < 0.01 ? 2 : 1)}%`
+                    : "?"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StatRow({
   label,
   value,

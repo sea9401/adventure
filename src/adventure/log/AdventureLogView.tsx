@@ -7,9 +7,7 @@ import type { EquippedSlots } from "@/adventure/character/types";
 import type { TitleId } from "@/adventure/data/titles";
 import type { StatKey } from "@/adventure/data/stats";
 import type { AdventureLog } from "@/adventure/log/storage";
-import { MonstersTab } from "./tabs/MonstersTab";
 import { ItemsTab } from "./tabs/ItemsTab";
-import { NpcsTab } from "./tabs/NpcsTab";
 import { TownsTab } from "./tabs/TownsTab";
 import { PlacesTab } from "./tabs/PlacesTab";
 import { EtcTab } from "./tabs/EtcTab";
@@ -18,21 +16,12 @@ import type { TitleCounterValues } from "./tabs/shared";
 
 export type { TitleCounterValues };
 
-type LogTabKey =
-  | "monsters"
-  | "items"
-  | "npcs"
-  | "towns"
-  | "places"
-  | "etc"
-  | "titles";
+type LogTabKey = "places" | "towns" | "items" | "etc" | "titles";
 
 const LOG_TABS: { key: LogTabKey; label: string }[] = [
-  { key: "monsters", label: "몬스터" },
+  { key: "places", label: "장소·몬스터" },
+  { key: "towns", label: "마을·NPC" },
   { key: "items", label: "아이템" },
-  { key: "npcs", label: "NPC" },
-  { key: "towns", label: "마을" },
-  { key: "places", label: "장소" },
   { key: "etc", label: "스탯" },
   { key: "titles", label: "칭호" },
 ];
@@ -63,7 +52,7 @@ export function AdventureLogView({
   /** 현재 장착 중인 슬롯 — '장착중' 배지 표기용. */
   equippedSlots?: EquippedSlots;
 }) {
-  const [tab, setTab] = useState<LogTabKey>("monsters");
+  const [tab, setTab] = useState<LogTabKey>("places");
 
   return (
     <div className="space-y-3">
@@ -75,7 +64,7 @@ export function AdventureLogView({
         scrollable
       />
 
-      {tab === "monsters" && <MonstersTab log={log} />}
+      {tab === "places" && <PlacesTab log={log} />}
       {tab === "items" && (
         <ItemsTab
           knownRecipes={knownRecipes ?? []}
@@ -84,9 +73,7 @@ export function AdventureLogView({
           equippedSlots={equippedSlots}
         />
       )}
-      {tab === "npcs" && <NpcsTab log={log} />}
       {tab === "towns" && <TownsTab log={log} />}
-      {tab === "places" && <PlacesTab log={log} />}
       {tab === "etc" && <EtcTab stats={stats} />}
       {tab === "titles" && (
         <TitlesTab
