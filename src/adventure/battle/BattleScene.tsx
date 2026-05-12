@@ -47,11 +47,11 @@ function HpBar({
 }) {
   const pct = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="w-16 shrink-0 truncate text-zinc-700 dark:text-zinc-300">
+    <div className="flex items-center gap-3 text-[15px]">
+      <span className="w-20 shrink-0 truncate text-zinc-700 dark:text-zinc-300">
         {label}
       </span>
-      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+      <div className="h-3.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
         <div
           className={`h-full ${color} transition-all`}
           style={{ width: `${pct * 100}%` }}
@@ -91,7 +91,7 @@ function EnemyAvatar({ name, hp }: { name: string; hp: number }) {
     return (
       <div
         aria-hidden
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 transition-all dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500${ringClass}`}
+        className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-2xl text-zinc-400 transition-all dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500${ringClass}`}
       >
         ?
       </div>
@@ -99,7 +99,7 @@ function EnemyAvatar({ name, hp }: { name: string; hp: number }) {
   }
   return (
     <div
-      className={`h-12 w-12 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 transition-all dark:border-zinc-700 dark:bg-zinc-800${ringClass}`}
+      className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 transition-all dark:border-zinc-700 dark:bg-zinc-800${ringClass}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={image} alt={name} className="h-full w-full object-cover" />
@@ -123,7 +123,7 @@ function PlayerAvatar({
     return (
       <div
         aria-hidden
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 transition-all dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500${ringClass}`}
+        className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-2xl text-zinc-400 transition-all dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500${ringClass}`}
       >
         ?
       </div>
@@ -131,7 +131,7 @@ function PlayerAvatar({
   }
   return (
     <div
-      className={`h-12 w-12 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 transition-all dark:border-zinc-700 dark:bg-zinc-800${ringClass}`}
+      className={`h-16 w-16 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 transition-all dark:border-zinc-700 dark:bg-zinc-800${ringClass}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -168,9 +168,9 @@ export function BattleScene({
   );
 
   return (
-    <div className="space-y-3">
-      <Card padding="md">
-        <div className="flex items-center gap-3">
+    <div className="space-y-4">
+      <Card padding="lg">
+        <div className="flex items-center gap-4">
           <EnemyAvatar name={state.enemy.name} hp={state.enemyHp} />
           <div className="flex-1">
             <HpBar
@@ -181,13 +181,13 @@ export function BattleScene({
             />
           </div>
         </div>
-        <div className="mt-3 flex items-start gap-3">
+        <div className="mt-4 flex items-start gap-4">
           <PlayerAvatar
             gender={playerStatus.gender}
             name={playerName}
             hp={state.playerHp}
           />
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 space-y-2.5">
             <HpBar
               label={playerName}
               value={state.playerHp}
@@ -212,7 +212,7 @@ export function BattleScene({
 
       <div
         ref={logRef}
-        className="max-h-40 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-3 text-sm dark:border-zinc-800 dark:bg-zinc-950/90"
+        className="max-h-72 space-y-0.5 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-4 text-[15px] leading-6 dark:border-zinc-800 dark:bg-zinc-950/90"
       >
         {state.log.map((entry, i) => {
           if (entry.kind === "phase_trigger") {
@@ -247,19 +247,19 @@ export function BattleScene({
 
       {recents.length > 0 && (
         <Card padding="md">
-          <div className="mb-1.5 text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          <div className="mb-2 text-[12px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             최근 활동
           </div>
-          <ul className="space-y-1">
+          <ul className="space-y-1.5">
             {recents.map((n) => (
               <li
                 key={n.id}
-                className="flex items-baseline justify-between gap-2 text-xs"
+                className="flex items-baseline justify-between gap-2 text-[13px]"
               >
                 <span className={`truncate ${RECENT_KIND_COLOR[n.kind]}`}>
                   {n.text}
                 </span>
-                <span className="shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500">
+                <span className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">
                   {formatRelative(n.timestamp)}
                 </span>
               </li>
