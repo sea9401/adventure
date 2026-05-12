@@ -252,6 +252,8 @@ function Home() {
     allocatedStats: training.allocatedStats ?? ZERO_ALLOCATED,
     equipped: characterStateHook.equippedSlots,
     equippedSkills: characterState.equippedSkills,
+    equippedFeat: characterState.equippedFeat,
+    storyFlagIds: new Set(storyFlags.state.flags),
     hp: characterState.hp,
     mp: characterState.mp,
     name: profile.name,
@@ -269,7 +271,10 @@ function Home() {
     player: playerCombat,
     totalStats,
     effectiveSkillNames: effectiveSkillNameList,
+    effectiveFeatName,
     characterSkills,
+    characterFeats,
+    layout: skillSlotLayout,
   } = composed;
 
   usePresenceHeartbeat({
@@ -884,6 +889,9 @@ function Home() {
     currentRegion,
     isTown,
     effectiveSkillNameList,
+    effectiveFeatName,
+    characterFeats,
+    skillLayout: skillSlotLayout,
     trainingDescription,
     playerCombat,
     playerStatus,

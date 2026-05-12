@@ -15,8 +15,7 @@ import {
   type DerivePlayerCombatInput,
   type DerivedPlayerCombat,
 } from "./derivePlayerCombat";
-import { deriveSkills, effectiveSkillNames } from "./skills";
-import type { Character, EquippedSlots, Skill } from "./types";
+import type { Character, EquippedSlots } from "./types";
 
 export type ComposeCharacterInput = DerivePlayerCombatInput & {
   name: string;
@@ -33,15 +32,11 @@ export type ComposeCharacterInput = DerivePlayerCombatInput & {
   affiliation?: string;
 };
 
+// DerivedPlayerCombat 가 이미 characterSkills/characterFeats/effectiveSkillNames/
+// effectiveFeatName/effectiveSkillSet/layout 을 포함하므로 여기선 character + equippedSlots 만 더한다.
 export type ComposedCharacter = DerivedPlayerCombat & {
   /** UI 렌더용 캐릭터. */
   character: Character;
-  /** 도감/툴팁/표시용 모든 보유 스킬 (효과 발동 여부 무관). */
-  characterSkills: Skill[];
-  /** 현재 발동 중인 스킬 이름 — playerCombat 에 반영된 것만. */
-  effectiveSkillNames: string[];
-  /** 위와 동일을 Set 으로. */
-  effectiveSkillSet: Set<string>;
   /** UI 헤더/장비 화면 등이 그대로 쓰는 장착 슬롯 사본. */
   equippedSlots: EquippedSlots;
 };
@@ -51,10 +46,6 @@ export function composeCharacter(
 ): ComposedCharacter {
   const combat = derivePlayerCombat(input);
   const { totalStats, maxHp } = combat;
-
-  const characterSkills = deriveSkills(totalStats);
-  const effective = effectiveSkillNames(characterSkills, input.equippedSkills);
-  const effectiveSkillSet = new Set(effective);
 
   const maxMp = maxMpForLevel(input.level);
 
@@ -81,16 +72,13 @@ export function composeCharacter(
     battleCount: input.battleCount,
     equipped: equippedSlots,
     stats: totalStats,
-    skills: characterSkills,
+    skills: combat.characterSkills,
     affiliation: input.affiliation ?? baseCharacter.affiliation,
   };
 
   return {
     ...combat,
     character,
-    characterSkills,
-    effectiveSkillNames: effective,
-    effectiveSkillSet,
     equippedSlots,
   };
 }

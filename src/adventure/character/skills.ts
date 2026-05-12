@@ -1,8 +1,42 @@
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import type { Skill } from "./types";
 
-// 캐릭터가 동시에 활성화할 수 있는 스킬 수.
+// 기본 일반 스킬 슬롯 수 (해금 전). 동적 슬롯 수는 skillLayout() 참조.
 export const SKILL_SLOT_COUNT = 3;
+export const BASE_NORMAL_SLOTS = SKILL_SLOT_COUNT;
+
+// ── 스킬 슬롯 해금 ───────────────────────────────────────────────────────
+// 4번째 = 특기 전용 슬롯 (Lv40 또는 운봉의 거인 처치 — 먼저 만족 시).
+// 5번째 = 일반 슬롯 (Lv65 그리고 화산의 심장 처치 — 둘 다).
+export const SKILL_SLOT_UNLOCK = {
+  FEAT_SLOT_LEVEL: 40,
+  FEAT_SLOT_FLAG: "peak_giant_defeated",
+  FIFTH_NORMAL_LEVEL: 65,
+  FIFTH_NORMAL_FLAG: "volcano_heart_defeated",
+} as const;
+
+export type SkillSlotContext = {
+  level: number;
+  hasFlag: (id: string) => boolean;
+};
+export type SkillLayout = {
+  /** 일반 스킬 슬롯 수 (3 또는 4). */
+  normalSlots: number;
+  /** 특기 전용 슬롯이 열렸는지 (true 면 특기 1개 장착 가능). */
+  hasFeatSlot: boolean;
+};
+
+export function skillLayout(ctx: SkillSlotContext): SkillLayout {
+  const fifthNormal =
+    ctx.level >= SKILL_SLOT_UNLOCK.FIFTH_NORMAL_LEVEL &&
+    ctx.hasFlag(SKILL_SLOT_UNLOCK.FIFTH_NORMAL_FLAG);
+  return {
+    normalSlots: BASE_NORMAL_SLOTS + (fifthNormal ? 1 : 0),
+    hasFeatSlot:
+      ctx.level >= SKILL_SLOT_UNLOCK.FEAT_SLOT_LEVEL ||
+      ctx.hasFlag(SKILL_SLOT_UNLOCK.FEAT_SLOT_FLAG),
+  };
+}
 
 // 스킬 이름 상수 — UI/엔진에서 모두 같은 키 사용.
 export const SKILL_NAMES = {
@@ -247,19 +281,142 @@ export function deriveSkills(stats: Record<StatKey, number>): Skill[] {
   return [...tier1, ...tier2, ...tier3];
 }
 
-// 보유 스킬 + 사용자 명시 선택 → 실제 발동될 스킬 이름 set.
-// stored 가 undefined 면 첫 SKILL_SLOT_COUNT 개 자동 장착 (신규/마이그레이션).
+// 보유 스킬 + 사용자 명시 선택 → 실제 발동될 스킬 이름 (일반 슬롯).
+// stored 가 undefined 면 첫 slots 개 자동 장착 (신규/마이그레이션).
 // stored 가 설정돼 있으면 그 값 그대로 (보유 안 한 스킬은 필터). 빈 슬롯은 빈 채로.
+// slots 미지정 시 기본 슬롯 수 — 해금 반영하려면 skillLayout().normalSlots 전달.
 export function effectiveSkillNames(
   available: Skill[],
   stored: string[] | undefined,
+  slots: number = BASE_NORMAL_SLOTS,
 ): string[] {
   const availableNames = available.map((s) => s.name);
   if (stored === undefined) {
-    return availableNames.slice(0, SKILL_SLOT_COUNT);
+    return availableNames.slice(0, slots);
   }
   const availableSet = new Set(availableNames);
-  return stored.filter((n) => availableSet.has(n)).slice(0, SKILL_SLOT_COUNT);
+  return stored.filter((n) => availableSet.has(n)).slice(0, slots);
+}
+
+// ── 특기 (두 스탯 동시 요구) ─────────────────────────────────────────────
+// STAT_SKILL(스탯당 3~4티어)과 별개 카테고리. 두 요구 스탯이 모두 FEAT_STAT_THRESHOLD
+// 이상이면 보유 — 특기 전용 슬롯(skillLayout().hasFeatSlot)에 1개만 장착 가능.
+export const FEAT_STAT_THRESHOLD = 25;
+
+export const FEAT_NAMES = {
+  LIFESTEAL: "흡혈",
+  ACROBAT: "곡예",
+  BALANCE: "천칭",
+  LUCKY_SHIELD: "행운의 방패",
+} as const;
+
+// 흡혈 (DEX & LUK) — 크리티컬로 준 피해의 N%만큼 HP 회복.
+export const LIFESTEAL_CRIT_HEAL_PCT = 30;
+// 곡예 (DEX & VIT) — 회피 성공 시 HP +floor(VIT × N) 회복.
+export const ACROBAT_HEAL_PER_VIT = 0.3;
+// 천칭 (SPD & LUK) — 내 SPD 가 적보다 높으면 그 전투 크리티컬 확률 +floor((내SPD-적SPD) × N)%.
+export const BALANCE_CRIT_PCT_PER_SPD_DIFF = 0.5;
+// 행운의 방패 (VIT & LUK) — 피격당할 때마다 (LUK × N)% 확률로 그 피해를 0으로.
+export const LUCKY_SHIELD_BLOCK_PCT_PER_LUK = 0.5;
+
+export type FeatSkillInfo = {
+  name: string;
+  description: string;
+  /** 둘 다 FEAT_STAT_THRESHOLD 이상이어야 보유. */
+  req: readonly [StatKey, StatKey];
+};
+
+// 현재 엔진에 wiring 된 특기만 등재 (Phase 2/3 에서 나머지 6종 추가).
+// 미구현 특기를 등재하면 장착은 되는데 효과가 없는 상태가 되므로 금지.
+export const FEAT_SKILL: FeatSkillInfo[] = [
+  {
+    name: FEAT_NAMES.LIFESTEAL,
+    description: `크리티컬로 준 피해의 ${LIFESTEAL_CRIT_HEAL_PCT}%만큼 HP 회복`,
+    req: ["dex", "luk"],
+  },
+  {
+    name: FEAT_NAMES.ACROBAT,
+    description: `회피 성공 시 HP +(VIT × ${ACROBAT_HEAL_PER_VIT}) 회복 — VIT 30=+9`,
+    req: ["dex", "vit"],
+  },
+  {
+    name: FEAT_NAMES.BALANCE,
+    description: `내 속도가 적보다 빠르면 그 전투 크리티컬 확률 +((내SPD−적SPD) × ${BALANCE_CRIT_PCT_PER_SPD_DIFF})%`,
+    req: ["spd", "luk"],
+  },
+  {
+    name: FEAT_NAMES.LUCKY_SHIELD,
+    description: `피격당할 때마다 (LUK × ${LUCKY_SHIELD_BLOCK_PCT_PER_LUK})% 확률로 그 피해를 0으로`,
+    req: ["vit", "luk"],
+  },
+];
+
+// 보유 특기 — 두 요구 스탯이 모두 FEAT_STAT_THRESHOLD 이상.
+export function deriveFeats(stats: Record<StatKey, number>): Skill[] {
+  return FEAT_SKILL.filter((f) =>
+    f.req.every((k) => stats[k] >= FEAT_STAT_THRESHOLD),
+  ).map((f) => ({ name: f.name, description: f.description }));
+}
+
+// 장착 특기 이름 — 특기 슬롯이 열려 있고, 보유 특기여야 effective. 아니면 null.
+export function effectiveFeatName(
+  availableFeats: Skill[],
+  stored: string | undefined,
+  hasFeatSlot: boolean,
+): string | null {
+  if (!hasFeatSlot || !stored) return null;
+  return availableFeats.some((f) => f.name === stored) ? stored : null;
+}
+
+function featActive(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+  name: string,
+  req: readonly [StatKey, StatKey],
+): boolean {
+  return (
+    equipped.has(name) && req.every((k) => stats[k] >= FEAT_STAT_THRESHOLD)
+  );
+}
+
+// 흡혈 — 크리티컬 데미지의 % 만큼 HP 회복. 미장착 시 0.
+export function lifestealCritHealPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.LIFESTEAL, ["dex", "luk"])
+    ? LIFESTEAL_CRIT_HEAL_PCT
+    : 0;
+}
+
+// 곡예 — 회피 성공 시 회복할 HP 절대량. 미장착 시 0.
+export function acrobatEvadeHealFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.ACROBAT, ["dex", "vit"])
+    ? Math.floor(stats.vit * ACROBAT_HEAL_PER_VIT)
+    : 0;
+}
+
+// 천칭 — (내SPD - 적SPD) 1당 추가되는 크리티컬 확률(%). 엔진이 적 SPD 와 비교해 적용. 미장착 시 0.
+export function balanceCritPctPerSpdDiffFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.BALANCE, ["spd", "luk"])
+    ? BALANCE_CRIT_PCT_PER_SPD_DIFF
+    : 0;
+}
+
+// 행운의 방패 — 피격 무효화 확률(%). 미장착 시 0.
+export function luckyShieldBlockPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featActive(stats, equipped, FEAT_NAMES.LUCKY_SHIELD, ["vit", "luk"])
+    ? stats.luk * LUCKY_SHIELD_BLOCK_PCT_PER_LUK
+    : 0;
 }
 
 // 전투 엔진이 사용할 보너스/효과 헬퍼 — 보유 + 장착 둘 다 만족해야 발동.

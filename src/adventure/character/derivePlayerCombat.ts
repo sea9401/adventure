@@ -6,14 +6,19 @@ import type { PlayerCombat } from "@/adventure/battle/engine";
 import type { EquipItem } from "@/adventure/data/items";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { maxHpForLevel } from "./defaults";
+import type { Skill } from "./types";
 import {
+  acrobatEvadeHealFor,
+  balanceCritPctPerSpdDiffFor,
   counterAtkBonusFor,
   critChancePctFor,
   critMultFor,
   crushDefReductionFor,
+  deriveFeats,
   deriveSkills,
   doubleLuckBonusesFor,
   doubleStrikeIntervalFor,
+  effectiveFeatName,
   effectiveSkillNames,
   enduranceActiveFor,
   enduranceMaxHpBonusPctFor,
@@ -22,11 +27,15 @@ import {
   executionDamageMultFor,
   executionHpFractionFor,
   guardFor,
+  lifestealCritHealPctFor,
   lightspeedExtraAttackPctFor,
+  luckyShieldBlockPctFor,
   powerAttackBonusFor,
   precisionEvasionMultFor,
   regenFor,
+  skillLayout,
   vanguardFirstTurnBonusFor,
+  type SkillLayout,
 } from "./skills";
 
 export type DerivePlayerCombatInput = {
@@ -41,8 +50,12 @@ export type DerivePlayerCombatInput = {
     armor: EquipItem | null;
     accessory: EquipItem | null;
   };
-  /** 장착 스킬 이름 목록. undefined 면 자동 (보유 첫 N개). */
+  /** 장착 스킬 이름 목록 (일반 슬롯). undefined 면 자동 (보유 첫 N개). */
   equippedSkills: string[] | undefined;
+  /** 장착 특기 이름 (특기 전용 슬롯). 미장착이면 undefined. */
+  equippedFeat?: string;
+  /** 보유 스토리 플래그 id 집합 — 슬롯 해금(skillLayout) 판정용. 미지정 = 빈 집합. */
+  storyFlagIds?: ReadonlySet<string>;
   /** 현재 hp — 협동 공격 시 시작값. */
   hp: number;
 };
@@ -51,6 +64,18 @@ export type DerivedPlayerCombat = {
   player: PlayerCombat;
   totalStats: Record<StatKey, number>;
   maxHp: number;
+  /** 도감/표시용 보유 스탯 스킬. */
+  characterSkills: Skill[];
+  /** 도감/표시용 보유 특기. */
+  characterFeats: Skill[];
+  /** 현재 발동 중인 일반 스킬 이름 (슬롯 한도 반영). */
+  effectiveSkillNames: string[];
+  /** 현재 발동 중인 특기 이름 (특기 슬롯 닫혀 있거나 미장착이면 null). */
+  effectiveFeatName: string | null;
+  /** effective 일반 스킬 + 특기를 합친 Set (엔진 합성에 사용). */
+  effectiveSkillSet: Set<string>;
+  /** 현재 슬롯 레이아웃 (일반 칸 수 / 특기 칸 유무). */
+  layout: SkillLayout;
 };
 
 /**
@@ -91,10 +116,24 @@ export function derivePlayerCombat(
     { str: 0, dex: 0, vit: 0, spd: 0, luk: 0 } as Record<StatKey, number>,
   );
 
+  const layout = skillLayout({
+    level: input.level,
+    hasFlag: (id) => input.storyFlagIds?.has(id) ?? false,
+  });
   const characterSkills = deriveSkills(totalStats);
-  const effectiveSkillSet = new Set(
-    effectiveSkillNames(characterSkills, input.equippedSkills),
+  const characterFeats = deriveFeats(totalStats);
+  const effectiveNames = effectiveSkillNames(
+    characterSkills,
+    input.equippedSkills,
+    layout.normalSlots,
   );
+  const featName = effectiveFeatName(
+    characterFeats,
+    input.equippedFeat,
+    layout.hasFeatSlot,
+  );
+  const effectiveSkillSet = new Set(effectiveNames);
+  if (featName) effectiveSkillSet.add(featName);
 
   // VIT 1pt 당 maxHp +2, 불굴 장착 시 +N%.
   const enduranceHpBonusPct = enduranceMaxHpBonusPctFor(
@@ -161,7 +200,24 @@ export function derivePlayerCombat(
       totalStats,
       effectiveSkillSet,
     ),
+    lifestealCritHealPct: lifestealCritHealPctFor(totalStats, effectiveSkillSet),
+    evadeHealAmount: acrobatEvadeHealFor(totalStats, effectiveSkillSet),
+    balanceCritPctPerSpdDiff: balanceCritPctPerSpdDiffFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
+    luckyShieldBlockPct: luckyShieldBlockPctFor(totalStats, effectiveSkillSet),
   };
 
-  return { player, totalStats, maxHp };
+  return {
+    player,
+    totalStats,
+    maxHp,
+    characterSkills,
+    characterFeats,
+    effectiveSkillNames: effectiveNames,
+    effectiveFeatName: featName,
+    effectiveSkillSet,
+    layout,
+  };
 }
