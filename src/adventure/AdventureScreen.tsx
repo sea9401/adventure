@@ -13,32 +13,11 @@ import { applyCoopReward } from "@/adventure/coop/applyReward";
 import { MapView } from "@/adventure/MapView";
 import { TownView } from "@/adventure/TownView";
 import { TrialView } from "@/adventure/TrialView";
-import { BlacksmithDialogue } from "@/adventure/town/dialogues/BlacksmithDialogue";
-import { TrainerDialogue } from "@/adventure/town/dialogues/TrainerDialogue";
-import { SuzyDialogue } from "@/adventure/town/dialogues/SuzyDialogue";
-import { KaiDialogue } from "@/adventure/town/dialogues/KaiDialogue";
-import { StrangerDialogue } from "@/adventure/town/dialogues/StrangerDialogue";
-import { RioDialogue } from "@/adventure/town/dialogues/RioDialogue";
-import { NoraDialogue } from "@/adventure/town/dialogues/NoraDialogue";
-import { BoroDialogue } from "@/adventure/town/dialogues/BoroDialogue";
-import { MarinDialogue } from "@/adventure/town/dialogues/MarinDialogue";
-import { WoodcutterJimmyDialogue } from "@/adventure/town/dialogues/WoodcutterJimmyDialogue";
-import { BaekunDialogue } from "@/adventure/town/dialogues/BaekunDialogue";
-import { ManwolDialogue } from "@/adventure/town/dialogues/ManwolDialogue";
-import { DoyeonDialogue } from "@/adventure/town/dialogues/DoyeonDialogue";
-import { SanhaDialogue } from "@/adventure/town/dialogues/SanhaDialogue";
-import { PilgrimDialogue } from "@/adventure/town/dialogues/PilgrimDialogue";
-import { HaemuDialogue } from "@/adventure/town/dialogues/HaemuDialogue";
-import { MaroDialogue } from "@/adventure/town/dialogues/MaroDialogue";
-import { NoeulDialogue } from "@/adventure/town/dialogues/NoeulDialogue";
-import { HansolDialogue } from "@/adventure/town/dialogues/HansolDialogue";
-import { GeomDialogue } from "@/adventure/town/dialogues/GeomDialogue";
-import { SionDialogue } from "@/adventure/town/dialogues/SionDialogue";
-import { BardDialogue } from "@/adventure/town/dialogues/BardDialogue";
 import {
   PilgrimMarkDialogue,
   pilgrimMarkStep,
 } from "@/adventure/town/dialogues/PilgrimMarkDialogue";
+import { renderTownNpcDialogue } from "@/adventure/town/dialogues/renderTownNpcDialogue";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -240,261 +219,18 @@ export function AdventureScreen() {
             adventureLog.incrementNpcTalk(npcId);
             adventureLog.addTownNpcTalked(regionId, npcId);
           }}
-          renderNpcDialogue={(npc, close) => {
-            if (npc.id === "village_blacksmith_bold") {
-              return (
-                <BlacksmithDialogue
-                  npc={npc}
-                  onClose={close}
-                  crafting={crafting}
-                  inventory={inventory}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  storyFlags={storyFlags}
-                  addNotification={addNotification}
-                />
-              );
-            }
-            if (npc.id === "village_trainer_smith") {
-              return (
-                <TrainerDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                />
-              );
-            }
-            if (npc.id === "village_woodcutter_jimmy") {
-              return (
-                <WoodcutterJimmyDialogue
-                  npc={npc}
-                  onClose={close}
-                  crafting={crafting}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  storyFlags={storyFlags}
-                  inventory={inventory}
-                  equippedSlots={characterStateHook.equippedSlots}
-                />
-              );
-            }
-            if (npc.id === "village_suzy") {
-              return (
-                <SuzyDialogue
-                  npc={npc}
-                  onClose={close}
-                  storyFlags={storyFlags}
-                  inventory={inventory}
-                  characterStateHook={characterStateHook}
-                  addNotification={addNotification}
-                />
-              );
-            }
-            if (npc.id === "diola_fisher") {
-              return (
-                <KaiDialogue
-                  npc={npc}
-                  onClose={close}
-                  storyFlags={storyFlags}
-                />
-              );
-            }
-            if (npc.id === "diola_stranger") {
-              return (
-                <StrangerDialogue
-                  npc={npc}
-                  onClose={close}
-                  storyFlags={storyFlags}
-                  quests={quests}
-                />
-              );
-            }
-            if (npc.id === "diola_kid") {
-              return (
-                <RioDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                  storyFlags={storyFlags}
-                />
-              );
-            }
-            if (npc.id === "diola_innkeeper") {
-              return (
-                <NoraDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                  storyFlags={storyFlags}
-                />
-              );
-            }
-            if (npc.id === "diola_merchant") {
-              return (
-                <BoroDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                  storyFlags={storyFlags}
-                />
-              );
-            }
-            if (npc.id === "diola_elder") {
-              return (
-                <MarinDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                  storyFlags={storyFlags}
-                />
-              );
-            }
-            if (npc.id === "unhyang_elder") {
-              return (
-                <BaekunDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  storyFlags={storyFlags}
-                />
-              );
-            }
-            if (npc.id === "unhyang_smith") {
-              return (
-                <ManwolDialogue
-                  npc={npc}
-                  onClose={close}
-                  storyFlags={storyFlags}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                />
-              );
-            }
-            if (npc.id === "unhyang_guide") {
-              return (
-                <DoyeonDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                />
-              );
-            }
-            if (npc.id === "unhyang_herbalist") {
-              return (
-                <SanhaDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                />
-              );
-            }
-            if (npc.id === "unhyang_pilgrim") {
-              return (
-                <PilgrimDialogue
-                  npc={npc}
-                  onClose={close}
-                  storyFlags={storyFlags}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  adventureLog={adventureLog}
-                />
-              );
-            }
-            if (npc.id === "windvale_bard") {
-              return (
-                <BardDialogue
-                  npc={npc}
-                  onClose={close}
-                  storyFlags={storyFlags}
-                  inventory={inventory}
-                  equippedSlots={characterStateHook.equippedSlots}
-                />
-              );
-            }
-            if (npc.id === "skyreach_elder") {
-              return (
-                <HaemuDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                />
-              );
-            }
-            if (npc.id === "windvale_keeper") {
-              return (
-                <MaroDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                />
-              );
-            }
-            if (npc.id === "windvale_merchant") {
-              return (
-                <NoeulDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                />
-              );
-            }
-            if (npc.id === "windvale_pathfinder") {
-              return (
-                <HansolDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                />
-              );
-            }
-            if (npc.id === "skyreach_guide") {
-              return (
-                <GeomDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                />
-              );
-            }
-            if (npc.id === "skyreach_alchemist") {
-              return (
-                <SionDialogue
-                  npc={npc}
-                  onClose={close}
-                  quests={quests}
-                  completeQuest={completeQuest}
-                  inventory={inventory}
-                  adventureLog={adventureLog}
-                />
-              );
-            }
-            return null;
-          }}
+          renderNpcDialogue={(npc, close) =>
+            renderTownNpcDialogue(npc, close, {
+              crafting,
+              inventory,
+              quests,
+              completeQuest,
+              storyFlags,
+              addNotification,
+              characterStateHook,
+              adventureLog,
+            })
+          }
         />
       </div>
     );
