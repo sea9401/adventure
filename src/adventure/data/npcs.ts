@@ -19,9 +19,12 @@ export type NpcId =
   | "windvale_keeper"
   | "windvale_merchant"
   | "windvale_pathfinder"
+  | "windvale_bard"
   | "skyreach_elder"
   | "skyreach_guide"
-  | "skyreach_alchemist";
+  | "skyreach_alchemist"
+  | "skyreach_acolyte"
+  | "skyreach_gatekeeper";
 
 export type NpcRole =
   | "elder"
@@ -234,6 +237,16 @@ export const NPCS: Npc[] = [
     greeting:
       "봉황령으로 가려고? 길은 잿빛 협로를 지나야 해.\n근데 재먼지 골렘이 길목을 막고 있어서… 그것부터 좀 치워 줘야 길을 알려줄 수 있겠는데.",
   },
+  {
+    id: "windvale_bard",
+    region: "windvale",
+    name: "떠돌이 음유시인",
+    role: "lore",
+    description:
+      "대상 일행 사이를 떠도는 가수. 산정·화염 능선·천공 성지의 소문을 노래로 흘린다.",
+    greeting:
+      "여어, 길손.\n산정엔 잠들지 않는 거인이, 화염 능선엔 깃을 떨구는 새가, 구름 위엔 봉인이 셋이라네 — 다 노래로 들었지. 노래는 늘 진실보다 한 발 앞서가거든.\n…유실품을 모으는 자의 옛 노래도 있어. 두 점을 모은 자에게 행운이 따라붙는다는. 자네, 그런 거 가진 거 없나?",
+  },
   // ── 천공 성지 ────────────────────────────────────────────────────────────
   {
     id: "skyreach_elder",
@@ -264,6 +277,26 @@ export const NPCS: Npc[] = [
       "화산 지대의 재료를 연구하는 성지 연금술사. 실험 가운이 그을려 있다.",
     greeting:
       "오, 마침 잘 왔어.\n용암 핵이 필요한데, 화산 두꺼비나 불꽃 골렘을 잡으면 가끔 나오거든. 여분이 있으면 거래할 수 있어.",
+  },
+  {
+    id: "skyreach_acolyte",
+    region: "skyreach",
+    name: "사미승 운하",
+    role: "lore",
+    description:
+      "성지 첨탑을 오르내리며 종을 치는 어린 수행자. 구름층 위를 자주 올려다본다.",
+    greeting:
+      "…쉿. 종소리 끝나기 전엔 말하면 안 돼요.\n…됐다. 저기 첨탑 너머, 구름이 한 겹 더 있는 거 보여요? 해무 어른은 거기 얘기를 안 해요. 북쪽에서 온 순례자도요. 다들 뭔가 알면서 안 말하는 거예요. …당신은 알게 될 것 같아요. 왠지.",
+  },
+  {
+    id: "skyreach_gatekeeper",
+    region: "skyreach",
+    name: "문지기 청람",
+    role: "quest",
+    description:
+      "화염 능선에서 성지로 드는 마지막 문을 지키는 정찰대원. 말수가 적다.",
+    greeting:
+      "…통과.\n화산 지대 쪽은 아직 시끄러워. 두꺼비도, 슬라임도. 검이 순찰 의뢰를 게시판에 걸어 뒀으니, 손 빌릴 생각 있으면 거기 봐.\n…그리고 한밤중 첨탑엔 올라가지 마. 종 치는 애가 무서워하니까.",
   },
 ];
 

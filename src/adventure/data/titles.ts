@@ -105,6 +105,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "광맥의 수호자, 운봉의 거인, 화산의 심장 — 세 거대한 것을 각각 열 번 잠재운 자.",
     condition: "세 보스 누적 사냥 의뢰(지미·백운·검) 모두 완수",
   },
+  caravan_warden: {
+    id: "caravan_warden",
+    name: "대상의 수호자",
+    description: "바람골 대상의 짐수레가 운저 평원을 무사히 건너게 한 자.",
+    condition: "바람골 상인 노을의 호위 의뢰(약탈자·초원 매) 모두 완수",
+  },
   beggar: {
     id: "beggar",
     name: "거지",
