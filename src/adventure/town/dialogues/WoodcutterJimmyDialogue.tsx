@@ -3,6 +3,9 @@ import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { EquippedSlots } from "@/adventure/character/types";
+import { ownsEquipment } from "@/adventure/inventory/ownership";
 
 // 동굴 → 깊은 동굴 통로 해금 플래그. 의뢰 수락 시 set.
 export const JIMMY_FLAG_DEEP_CAVE_QUEST = "jimmy_deep_cave_quest";
@@ -14,6 +17,8 @@ type Props = {
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
   storyFlags: ReturnType<typeof useStoryFlags>;
+  inventory: ReturnType<typeof useInventory>;
+  equippedSlots: EquippedSlots;
 };
 
 export function WoodcutterJimmyDialogue({
@@ -23,6 +28,8 @@ export function WoodcutterJimmyDialogue({
   quests,
   completeQuest,
   storyFlags,
+  inventory,
+  equippedSlots,
 }: Props) {
   const banditQuest = quests.getEntry("village-jimmy-bandits");
   const deepCaveQuest = quests.getEntry("village-jimmy-deep-cave");
@@ -38,6 +45,60 @@ export function WoodcutterJimmyDialogue({
         }
       />
     );
+  }
+
+  // 히든 — 두더지왕의 드릴을 든(보유/장착) 모험가에게 (§11 hidden-mole-king).
+  {
+    const mole = quests.getEntry("hidden-mole-king");
+    if (
+      mole.state !== "completed" &&
+      ownsEquipment(inventory.state, equippedSlots, "mole_king_drill")
+    ) {
+      if (mole.state === "available") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "그… 그거 두더지왕의 드릴 아니우? 진짜 있었구먼, 그놈.\n그럼 흔적도 있을 거야. 평야 두더지를 백 마리쯤 잡아보쇼 — 땅이 들썩이는 자리가 나올 거요. 거기 뭔가 있을 거란 말이지."
+            }
+            primaryAction={{
+              label: "맡겠다",
+              onClick: () => {
+                quests.accept("hidden-mole-king");
+                onClose();
+              },
+            }}
+          />
+        );
+      }
+      if (mole.state === "active") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={`두더지 백 마리, 만만치 않지. 땅 들썩이는 자리 나오면 알려줘요. — 진행 ${mole.progress}/100`}
+          />
+        );
+      }
+      if (mole.state === "ready") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "백 마리나… 그래서, 들썩이던 자리 파봤더니 — 옛 굴이 하나 있더라고. 두더지왕이 살던 데래. 자네 드릴이 거기서 나온 거지.\n별 보물은 없었지만, 이야기 하나는 건졌수. 자, 수고비요."
+            }
+            primaryAction={{
+              label: "보고를 마친다",
+              onClick: () => {
+                if (completeQuest("hidden-mole-king")) onClose();
+              },
+            }}
+          />
+        );
+      }
+    }
   }
 
   if (banditQuest.state === "available") {

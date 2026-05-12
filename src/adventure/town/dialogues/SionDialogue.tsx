@@ -1,6 +1,8 @@
 import type { Npc } from "@/adventure/data/npcs";
+import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { QuestLineDialogue, type QuestLineStep } from "./questLineDialogue";
 
 type Props = {
@@ -9,7 +11,10 @@ type Props = {
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
   inventory: ReturnType<typeof useInventory>;
+  adventureLog: ReturnType<typeof useAdventureLog>;
 };
+
+const RELIC_QUEST = "hidden-volcano-relic";
 
 // 시온 — 천공 성지 연금술사. 반말. 화산 재료 연구. 전부 deliver 의뢰.
 const STEPS: QuestLineStep[] = [
@@ -43,7 +48,64 @@ const STEPS: QuestLineStep[] = [
   },
 ];
 
-export function SionDialogue({ npc, onClose, quests, completeQuest, inventory }: Props) {
+export function SionDialogue({
+  npc,
+  onClose,
+  quests,
+  completeQuest,
+  inventory,
+  adventureLog,
+}: Props) {
+  // 히든 — 심장이 잠든 자리(§11 hidden-volcano-relic). 화산의 심장 5회 처치 후 시온이 입을 연다.
+  const heartKills = adventureLog.log.monsters["화산의 심장"]?.kills ?? 0;
+  const relic = quests.getEntry(RELIC_QUEST);
+  if (heartKills >= 5 && relic.state !== "completed") {
+    if (relic.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "심장을 그렇게 여러 번 잠재웠지? …그 자리에 정수가 고였더군. 화산 두꺼비를 충분히 잡으면 — 마흔 마리쯤이면 — 그 정수가 흘러나올 거야. 그걸로 뭔가 만들어 보고 싶어."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept(RELIC_QUEST);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (relic.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`두꺼비를 잡을수록 정수가 모여. 화산 지대 웅덩이 가에 많아. — 진행 ${relic.progress}/40`}
+        />
+      );
+    }
+    if (relic.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "마흔 마리라… 정수가 충분히 흘러나왔어. 심장이 남기고 간 것 — 뜨겁고, 무겁고, 아직 살아 있는 것 같아. 이걸로 뭘 만들지는 좀 더 궁리해 봐야겠어.\n자, 사례다. 네 덕이 컸어."
+          }
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              if (completeQuest(RELIC_QUEST)) onClose();
+            },
+          }}
+        />
+      );
+    }
+  }
+
   return (
     <QuestLineDialogue
       npc={npc}

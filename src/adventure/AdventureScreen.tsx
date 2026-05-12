@@ -33,6 +33,7 @@ import { NoeulDialogue } from "@/adventure/town/dialogues/NoeulDialogue";
 import { HansolDialogue } from "@/adventure/town/dialogues/HansolDialogue";
 import { GeomDialogue } from "@/adventure/town/dialogues/GeomDialogue";
 import { SionDialogue } from "@/adventure/town/dialogues/SionDialogue";
+import { BardDialogue } from "@/adventure/town/dialogues/BardDialogue";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -222,6 +223,8 @@ export function AdventureScreen() {
                   quests={quests}
                   completeQuest={completeQuest}
                   storyFlags={storyFlags}
+                  inventory={inventory}
+                  equippedSlots={characterStateHook.equippedSlots}
                 />
               );
             }
@@ -355,6 +358,20 @@ export function AdventureScreen() {
                   npc={npc}
                   onClose={close}
                   storyFlags={storyFlags}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  adventureLog={adventureLog}
+                />
+              );
+            }
+            if (npc.id === "windvale_bard") {
+              return (
+                <BardDialogue
+                  npc={npc}
+                  onClose={close}
+                  storyFlags={storyFlags}
+                  inventory={inventory}
+                  equippedSlots={characterStateHook.equippedSlots}
                 />
               );
             }
@@ -421,6 +438,7 @@ export function AdventureScreen() {
                   quests={quests}
                   completeQuest={completeQuest}
                   inventory={inventory}
+                  adventureLog={adventureLog}
                 />
               );
             }

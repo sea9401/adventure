@@ -1246,6 +1246,74 @@ export const QUESTS: Quest[] = [
     cooldownMs: 12 * 60 * 60 * 1000,
     requiresQuestCompleted: "windvale-volcano-boss",
   },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // 히든 퀘스트 (§11) — 길드 게시판 미노출(giverNpcId 지정). 추가 노출 조건
+  // (아이템 보유 / 보스 N회 처치 / flag) 은 해당 NPC 다이얼로그가 직접 가드한다.
+  // ════════════════════════════════════════════════════════════════════════
+  {
+    id: "hidden-mole-king",
+    regionId: "village",
+    title: "두더지왕의 흔적",
+    description:
+      "두더지왕이 진짜 있다고? …그 드릴을 들고 다니는 걸 보니 빈말은 아닌 모양이군. 평야 두더지를 백 마리쯤 잡아보면 흔적이 나올지도 모르지.",
+    requiredLevel: 1,
+    target: { kind: "kill", monsterName: "두더지", count: 100 },
+    reward: { gold: 800, fame: 10, exp: 1200, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "village_woodcutter_jimmy",
+  },
+  {
+    id: "hidden-deepest-vein",
+    regionId: "village",
+    title: "광맥의 끝",
+    description:
+      "광맥의 수호자를 그렇게 여러 번 잠재웠으면, 동굴 안쪽 더 깊은 데서 마정석이 진하게 고였을 거다. 스무 덩이만 가져와 봐 — 광맥의 끝이 어디까지 뻗었는지, 그걸로 가늠해 보자.",
+    requiredLevel: 6,
+    target: { kind: "deliver", materialId: "mana_crystal", count: 20 },
+    reward: { gold: 1200, exp: 1800, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "village_blacksmith_bold",
+    requiresQuestCompleted: "deep-cave-hunter",
+  },
+  {
+    id: "hidden-blacksmith-duel",
+    regionId: "village",
+    title: "마저 두드린 것",
+    description:
+      "옛날에 만월이랑 무기 하나를 절반씩 만들다 싸우고 헤어졌지. 둘 다 다시 만났으니… 마저 완성해 볼까 싶어. 단단한 결정 여덟 덩이만 가져와 봐.",
+    requiredLevel: 22,
+    target: { kind: "deliver", materialId: "hard_crystal", count: 8 },
+    reward: { gold: 1500, exp: 2500, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "village_blacksmith_bold",
+  },
+  {
+    id: "hidden-giants-origin",
+    regionId: "unhyang",
+    title: "거인은 어디서 왔나",
+    description:
+      "거인이 어디서 왔는지 알고 싶나? …협곡 가장 깊은 곳, 돌풍 정령이 모이는 자리를 봐라. 예순쯤 흩어 놓으면 그 자리가 드러난다. 그 다음은 — 내가 본 것을 말해주지.",
+    requiredLevel: 22,
+    target: { kind: "kill", monsterName: "돌풍 정령", count: 60 },
+    reward: { gold: 1200, fame: 20, exp: 2000 },
+    repeatable: false,
+    giverNpcId: "unhyang_pilgrim",
+    requiresQuestCompleted: "unhyang-baekun-peak-giant",
+  },
+  {
+    id: "hidden-volcano-relic",
+    regionId: "skyreach",
+    title: "심장이 잠든 자리",
+    description:
+      "심장이 잠든 자리에 정수가 고였더군 — 화산 두꺼비를 충분히 잡으면 그 정수가 흘러나올 거야. 마흔 마리쯤이면 돼. 그걸로 뭔가 만들어 볼 수 있겠어.",
+    requiredLevel: 55,
+    target: { kind: "kill", monsterName: "화산 두꺼비", count: 40 },
+    reward: { gold: 1500, exp: 2500, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "skyreach_alchemist",
+    requiresQuestCompleted: "windvale-volcano-boss",
+  },
 ];
 
 // 길드 게시판 노출용 — NPC 전속 퀘스트는 제외, kill 형만 노출.

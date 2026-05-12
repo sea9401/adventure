@@ -741,6 +741,8 @@ function Home() {
     totalStats,
     allRegionsVisited:
       new Set(mapProgress.visitedRegionIds).size >= WORLD_MAP.regions.length,
+    luckyCollected: storyFlags.has("bard_lucky_collected"),
+    cipherDone: storyFlags.has("cipher_done"),
   });
 
   const handleBattleEnd = (payload: BattleEndPayload) =>

@@ -49,6 +49,24 @@ export const STORY_QUESTS = {
       "북쪽에서 왔다는 순례자. 화산의 심장을 잠재우고, 천공 성지의 봉인까지 완성하면 — 그가 자기가 온 곳을 한 겹씩 열어 보인다.",
     giverNpcId: "unhyang_pilgrim",
   },
+  // 히든 — 유실품을 모으는 자의 옛 노래(§11). 바람골 음유시인이 인벤을 보고 행운을 점친다.
+  // 가드: 보유 unique 등급 장비 ≥ 2 종 + 음유시인 대화 → lucky_finder 칭호 (flag bard_lucky_collected).
+  hidden_lucky_collector: {
+    id: "hidden_lucky_collector",
+    title: "운 좋은 손",
+    description:
+      "바람골 음유시인이 부르는 옛 노래 — 유실된 명품을 둘 이상 그러모은 자에게 행운이 따라붙는다고.",
+    giverNpcId: "windvale_bard",
+  },
+  // 히든 — 후드 손님 ↔ 순례자의 표식(§11). 두 미스터리 NPC 가 같은 조직임이 드러난다.
+  // 가드 flag: cipher_started(후드 손님) → cipher_shown_pilgrim(순례자) → cipher_done(후드 손님).
+  hidden_hooded_cipher: {
+    id: "hidden_hooded_cipher",
+    title: "표식",
+    description:
+      "디올라 후드 손님이 건넨 표식을, 운향 순례자에게 보여주면 — 같은 손이 그은 것임을 둘 다 안다.",
+    giverNpcId: "diola_stranger",
+  },
 } as const satisfies Record<string, StoryQuest>;
 
 export type StoryQuestId = keyof typeof STORY_QUESTS;

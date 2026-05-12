@@ -111,6 +111,18 @@ export const TITLES: Record<TitleId, Title> = {
     description: "바람골 대상의 짐수레가 운저 평원을 무사히 건너게 한 자.",
     condition: "바람골 상인 노을의 호위 의뢰(약탈자·초원 매) 모두 완수",
   },
+  lucky_finder: {
+    id: "lucky_finder",
+    name: "운 좋은 손",
+    description: "유실된 명품을 둘 이상 그러모은 자. 옛 노래대로 행운이 따라붙는다.",
+    condition: "유실된 명품(unique 등급) 2종 보유 후 바람골 음유시인과 대화",
+  },
+  cipher_bearer: {
+    id: "cipher_bearer",
+    name: "표식을 든 자",
+    description: "후드 쓴 손님과 북쪽 순례자가 같은 손이 그은 표식을 따른다는 걸 알아낸 자.",
+    condition: "디올라 후드 손님과 운향 순례자 사이의 표식을 잇는다",
+  },
   beggar: {
     id: "beggar",
     name: "거지",

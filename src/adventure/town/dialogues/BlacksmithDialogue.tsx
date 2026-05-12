@@ -206,6 +206,93 @@ export function BlacksmithDialogue({
     }
   }
 
+  // 히든 deliver 의뢰 공용 노드 — 조건이 안 맞거나 이미 완료면 null.
+  const deliverNode = (opts: {
+    id: string;
+    materialId: Parameters<typeof inventory.materialCount>[0];
+    need: number;
+    gateOk: boolean;
+    offer: string;
+    done: string;
+    active: (have: number, need: number) => string;
+  }) => {
+    if (!opts.gateOk) return null;
+    const e = quests.getEntry(opts.id);
+    if (e.state === "completed") return null;
+    if (e.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={opts.offer}
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept(opts.id);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    // active
+    const have = inventory.materialCount(opts.materialId);
+    if (have >= opts.need) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={opts.done}
+          primaryAction={{
+            label: "건네준다",
+            onClick: () => {
+              const r = quests.tryDeliver(
+                opts.id,
+                inventory.materialCount,
+                inventory.consumeMaterial,
+              );
+              if (r.ok) {
+                completeQuest(opts.id);
+                onClose();
+              }
+            },
+          }}
+        />
+      );
+    }
+    return (
+      <NpcDialogue npc={npc} onClose={onClose} text={opts.active(have, opts.need)} />
+    );
+  };
+
+  // 히든 — 광맥의 끝(deep-cave-hunter 완료 후). 마정석 ×20.
+  const veinNode = deliverNode({
+    id: "hidden-deepest-vein",
+    materialId: "mana_crystal",
+    need: 20,
+    gateOk: quests.getEntry("deep-cave-hunter").state === "completed",
+    offer:
+      "광맥의 수호자를 그렇게 여러 번 잠재웠으면, 동굴 안쪽 더 깊은 데 마정석이 진하게 고였을 거다. 스무 덩이만 가져와 봐 — 광맥의 끝이 어디까지 뻗었는지 가늠해 보자.",
+    done:
+      "스무 덩이라… 이건 평범한 광맥에서 나올 양이 아니야. 동굴 안쪽에 — 우리가 못 본 게 더 있어. 언젠가 누가 그 끝까지 가겠지. 자, 사례다.",
+    active: (h, n) => `마정석은 광맥 골렘이 떨군다네. 동굴 안쪽으로 더 들어가 봐. — 진행 ${h}/${n}`,
+  });
+  if (veinNode) return veinNode;
+
+  // 히든 — 마저 두드린 것(만월↔볼드 재회 완료 후). 단단한 결정 ×8.
+  const duelNode = deliverNode({
+    id: "hidden-blacksmith-duel",
+    materialId: "hard_crystal",
+    need: 8,
+    gateOk: storyFlags.has("manwol_bold_reunion_done"),
+    offer:
+      "옛날에 만월이랑 무기 하나를 절반씩 만들다 싸우고 헤어졌지. 둘 다 다시 만났으니… 마저 완성해 볼까 싶어. 단단한 결정 여덟 덩이만 가져와 봐.",
+    done:
+      "여덟 덩이… 됐어. 만월이 절반, 내 절반 — 이제야 한 자루가 됐군. 도면은 만월이가 갖고 있으니 거기서 마저 베껴 가. 둘 다 살아 있길 잘했어. 자, 사례다.",
+    active: (h, n) => `단단한 결정은 협곡·동굴 깊은 데서 나오지. — 진행 ${h}/${n}`,
+  });
+  if (duelNode) return duelNode;
+
   // Stage E — 끝. 일상 대화.
   return (
     <NpcDialogue

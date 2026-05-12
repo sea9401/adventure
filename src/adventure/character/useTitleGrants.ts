@@ -22,6 +22,10 @@ export function useTitleGrants(
     totalStats: Record<StatKey, number>;
     /** 모든 지역(WORLD_MAP.regions) 방문 완료 여부 — '방방곡곡' 칭호. */
     allRegionsVisited: boolean;
+    /** §11 hidden-lucky-collector 완료 flag — 'lucky_finder' 칭호. */
+    luckyCollected: boolean;
+    /** §11 hidden-hooded-cipher 완료 flag — 'cipher_bearer' 칭호. */
+    cipherDone: boolean;
   },
 ) {
   // 카운터형 칭호 — COUNTER_TITLES 표를 한 번에 돌며 임계값 도달분 등록.
@@ -76,6 +80,8 @@ export function useTitleGrants(
     if (opts.maxNpcTalkCount >= 100) grantTitle("phisher");
     if (opts.maxNpcTalkCount >= 500) grantTitle("devoted_listener");
     if (opts.allRegionsVisited) grantTitle("globetrotter");
+    if (opts.luckyCollected) grantTitle("lucky_finder");
+    if (opts.cipherDone) grantTitle("cipher_bearer");
     const high = STAT_KEYS.filter((k) => opts.totalStats[k] >= 30).length;
     const low = STAT_KEYS.filter((k) => opts.totalStats[k] <= 10).length;
     if (high === 1 && low === STAT_KEYS.length - 1) grantTitle("one_track");
@@ -97,6 +103,8 @@ export function useTitleGrants(
     levelMythic,
     opts.allRegionsVisited,
     opts.maxNpcTalkCount,
+    opts.luckyCollected,
+    opts.cipherDone,
     opts.totalStats.str,
     opts.totalStats.dex,
     opts.totalStats.vit,
