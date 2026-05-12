@@ -159,6 +159,42 @@ export const TITLES: Record<TitleId, Title> = {
     description: "맨몸으로도 보스 앞에 선 자. 장비 따위는 거추장스러워졌다.",
     condition: "장비 미착용 상태로 보스 도전",
   },
+  loudspeaker: {
+    id: "loudspeaker",
+    name: "확성기",
+    description: "광장에 천 마디를 얹은 자. 이제 그의 목소리를 모르는 사람이 없다.",
+    condition: "글로벌 채팅 1,000회 발화",
+  },
+  gym_rat: {
+    id: "gym_rat",
+    name: "헬창",
+    description: "근육이 곧 인격이라 믿는 자. '쉰다'는 단어를 어디에 뒀는지 잊었다.",
+    condition: "훈련 500회 완료",
+  },
+  sandbag: {
+    id: "sandbag",
+    name: "샌드백",
+    description: "수십 번 두들겨 맞고도 또 일어선다. 단단해진 건지 무뎌진 건지.",
+    condition: "전투 패배 50회",
+  },
+  vip_patient: {
+    id: "vip_patient",
+    name: "VIP 환자",
+    description: "치료소 회전문이 그의 출입 리듬에 맞춰 돈다. 의사가 전용 이름표를 만들어 줬다.",
+    condition: "치료소 200회 이용",
+  },
+  nouveau_riche: {
+    id: "nouveau_riche",
+    name: "졸부",
+    description: "지갑이 터질 듯하다. 굳이 티는 내지 말자… 라기엔 이미 티가 난다.",
+    condition: "보유 골드 1,000,000 도달",
+  },
+  well_rounded: {
+    id: "well_rounded",
+    name: "골고루",
+    description: "이것저것 다 조금씩 찍은 자. 모난 데 없는 게 장점이라면 장점이다.",
+    condition: "모든 스탯 15 이상이면서 최댓값과 최솟값 차이 4 이하",
+  },
 };
 
 // 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.
@@ -180,8 +216,12 @@ export const COUNTER_TITLES: {
   { id: "training_10", key: "trainingCount", target: 50 },
   { id: "training_50", key: "trainingCount", target: 100 },
   { id: "training_100", key: "trainingCount", target: 200 },
+  { id: "sandbag", key: "battleLosses", target: 50 },
+  { id: "gym_rat", key: "trainingCount", target: 500 },
   { id: "chatterbox", key: "chatCount", target: 100 },
+  { id: "loudspeaker", key: "chatCount", target: 1000 },
   { id: "patient", key: "healingCount", target: 50 },
+  { id: "vip_patient", key: "healingCount", target: 200 },
 ];
 
 export function getTitle(id: TitleId | null | undefined): Title | undefined {

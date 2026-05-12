@@ -53,12 +53,14 @@ export function useTitleGrants(
   // 외골수: 한 스탯 30↑, 나머지 모두 10↓ (11~29 구간이 있으면 미부여).
   const goldZero = opts.gold === 0;
   const goldRich = opts.gold >= 10000;
+  const goldFortune = opts.gold >= 1_000_000;
   const levelVeteran = opts.level >= 30;
   const levelLegend = opts.level >= 50;
   const levelMythic = opts.level >= 70;
   useEffect(() => {
     if (goldZero) grantTitle("beggar");
     if (goldRich) grantTitle("wealthy");
+    if (goldFortune) grantTitle("nouveau_riche");
     if (levelVeteran) grantTitle("level_30");
     if (levelLegend) grantTitle("level_50");
     if (levelMythic) grantTitle("level_70");
@@ -66,10 +68,16 @@ export function useTitleGrants(
     const high = STAT_KEYS.filter((k) => opts.totalStats[k] >= 30).length;
     const low = STAT_KEYS.filter((k) => opts.totalStats[k] <= 10).length;
     if (high === 1 && low === STAT_KEYS.length - 1) grantTitle("one_track");
+    // 골고루: 모든 스탯 15↑ + 최댓값과 최솟값 차이 4↓ (초반엔 전부 낮아 미부여).
+    const vals = STAT_KEYS.map((k) => opts.totalStats[k]);
+    if (Math.min(...vals) >= 15 && Math.max(...vals) - Math.min(...vals) <= 4) {
+      grantTitle("well_rounded");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     goldZero,
     goldRich,
+    goldFortune,
     levelVeteran,
     levelLegend,
     levelMythic,
