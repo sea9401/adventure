@@ -55,6 +55,12 @@ export const SKILL_NAMES = {
   ENDURANCE: "불굴",
   LIGHTSPEED: "광속",
   BLOOM: "만개",
+  // 4티어 (각 스탯 50 도달).
+  BLOODLET: "출혈",
+  SHADOW_CLONE: "그림자 분신",
+  BULWARK: "철벽",
+  FLURRY: "무피해 난무",
+  HEAVEN_DECREE: "천명",
 } as const;
 
 // 강공격 — 힘 10 도달 시 획득.
@@ -152,6 +158,24 @@ export const BLOOM_LUK_THRESHOLD = 35;
 export const BLOOM_CRIT_MULT_BONUS = 0.5;
 export const BLOOM_CRIT_CHANCE_BONUS_PCT = 3;
 
+// ── 4티어 (각 스탯 50 도달) — 전부 자체 완결, 새 메커니즘 ─────────────────
+// 출혈 — 적중 시 출혈 1스택(중첩). 매 적 턴마다 스택당 floor(STR × BLOODLET_DMG_PER_STR) 고정 피해(DEF 무시).
+export const BLOODLET_STR_THRESHOLD = 50;
+export const BLOODLET_DMG_PER_STR = 0.1;
+// 그림자 분신 — 매 플레이어 턴 종료 시 분신이 추가 공격 1회 (ATK의 SHADOW_CLONE_ATK_PCT%).
+export const SHADOW_CLONE_DEX_THRESHOLD = 50;
+export const SHADOW_CLONE_ATK_PCT = 50;
+// 철벽 — 전투 시작 시 floor(VIT × BULWARK_SHIELD_PER_VIT) 보호막. 데미지 우선 흡수, 회복 안 됨.
+export const BULWARK_VIT_THRESHOLD = 50;
+export const BULWARK_SHIELD_PER_VIT = 0.6;
+// 무피해 난무 — 매 플레이어 턴 종료 시, 그 전투에서 받은 누적 피해가 0이면 추가 공격 floor(SPD / FLURRY_SPD_DIVISOR)회.
+export const FLURRY_SPD_THRESHOLD = 50;
+export const FLURRY_SPD_DIVISOR = 25;
+// 천명 — 모든 공격에 (LUK × HEAVEN_DECREE_CHANCE_PER_LUK)% 확률로 적 현재 HP의 HEAVEN_DECREE_HP_PCT% 추가 고정 피해.
+export const HEAVEN_DECREE_LUK_THRESHOLD = 50;
+export const HEAVEN_DECREE_CHANCE_PER_LUK = 0.3;
+export const HEAVEN_DECREE_HP_PCT = 5;
+
 // 스탯 → 그 스탯이 주는 스킬 티어들 (낮은 임계 → 높은 임계 순). 도감 노출 / 발동 판정 모두 이 매핑을 사용.
 // 1차 티어는 STAT_SKILL_INFO_THRESHOLD(5) 도달 시 도감 공개,
 // 2차 티어는 STAT_REVEAL_THRESHOLD(15) 도달 시 도감 공개,
@@ -179,6 +203,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `적 HP ${Math.round(EXECUTION_HP_FRACTION * 100)}% 미만일 때 모든 공격 데미지 ×${EXECUTION_DAMAGE_MULT}`,
       activationThreshold: EXECUTION_STR_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.BLOODLET,
+      description: `적중 시 출혈 1스택(중첩) — 매 적 턴마다 스택당 (STR × ${BLOODLET_DMG_PER_STR}) 고정 피해 (DEF 무시)`,
+      activationThreshold: BLOODLET_STR_THRESHOLD,
+    },
   ],
   dex: [
     {
@@ -195,6 +224,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       name: SKILL_NAMES.PRECISION,
       description: `모든 공격에 대해 적 회피 ×${PRECISION_EVASION_MULT} (비례 절반)`,
       activationThreshold: PRECISION_DEX_THRESHOLD,
+    },
+    {
+      name: SKILL_NAMES.SHADOW_CLONE,
+      description: `매 플레이어 턴 종료 시 분신이 추가 공격 1회 (ATK의 ${SHADOW_CLONE_ATK_PCT}%)`,
+      activationThreshold: SHADOW_CLONE_DEX_THRESHOLD,
     },
   ],
   vit: [
@@ -213,6 +247,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `전투당 1회, HP 0 이 되는 데미지를 HP 1 로 버틴다 + 최대 HP +${ENDURANCE_MAX_HP_BONUS_PCT}%`,
       activationThreshold: ENDURANCE_VIT_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.BULWARK,
+      description: `전투 시작 시 (VIT × ${BULWARK_SHIELD_PER_VIT}) 만큼 보호막 — 받는 피해를 먼저 흡수 (회복 안 됨)`,
+      activationThreshold: BULWARK_VIT_THRESHOLD,
+    },
   ],
   spd: [
     {
@@ -229,6 +268,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       name: SKILL_NAMES.LIGHTSPEED,
       description: `매 턴 마지막 공격 후 ${LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT}% 확률로 추가 1회 공격`,
       activationThreshold: LIGHTSPEED_SPD_THRESHOLD,
+    },
+    {
+      name: SKILL_NAMES.FLURRY,
+      description: `매 플레이어 턴 종료 시, 그 전투에서 받은 피해가 0이면 추가 공격 (SPD / ${FLURRY_SPD_DIVISOR})회`,
+      activationThreshold: FLURRY_SPD_THRESHOLD,
     },
   ],
   luk: [
@@ -247,38 +291,29 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `크리티컬 데미지 배수 +${BLOOM_CRIT_MULT_BONUS} + 크리티컬 확률 +${BLOOM_CRIT_CHANCE_BONUS_PCT}%`,
       activationThreshold: BLOOM_LUK_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.HEAVEN_DECREE,
+      description: `모든 공격에 (LUK × ${HEAVEN_DECREE_CHANCE_PER_LUK})% 확률로 적 현재 HP의 ${HEAVEN_DECREE_HP_PCT}% 추가 고정 피해`,
+      activationThreshold: HEAVEN_DECREE_LUK_THRESHOLD,
+    },
   ],
 };
 
 // 현재 스탯에서 보유(획득) 스킬 목록 도출. 스킬은 별도 저장 없이 스탯에서 파생.
-// "보유" ≠ "장착" — 보유한 스킬 중 SKILL_SLOT_COUNT 개만 effective.
-// 1차 → 2차 → 3차 순으로 묶어 반환 — 자동 슬롯 채움 시 낮은 티어가 우선되도록.
+// "보유" ≠ "장착" — 보유한 스킬 중 일반 슬롯 수만큼만 effective.
+// 1차 → 2차 → 3차 → 4차 순으로 묶어 반환 — 자동 슬롯 채움 시 낮은 티어가 우선되도록.
 export function deriveSkills(stats: Record<StatKey, number>): Skill[] {
-  const tier1: Skill[] = [];
-  const tier2: Skill[] = [];
-  const tier3: Skill[] = [];
+  const buckets: Skill[][] = [[], [], [], []];
   for (const k of STAT_KEYS) {
     const tiers = STAT_SKILL[k];
-    if (tiers[0] && stats[k] >= tiers[0].activationThreshold) {
-      tier1.push({
-        name: tiers[0].name,
-        description: tiers[0].description,
-      });
-    }
-    if (tiers[1] && stats[k] >= tiers[1].activationThreshold) {
-      tier2.push({
-        name: tiers[1].name,
-        description: tiers[1].description,
-      });
-    }
-    if (tiers[2] && stats[k] >= tiers[2].activationThreshold) {
-      tier3.push({
-        name: tiers[2].name,
-        description: tiers[2].description,
-      });
+    for (let t = 0; t < buckets.length; t += 1) {
+      const tier = tiers[t];
+      if (tier && stats[k] >= tier.activationThreshold) {
+        buckets[t].push({ name: tier.name, description: tier.description });
+      }
     }
   }
-  return [...tier1, ...tier2, ...tier3];
+  return buckets.flat();
 }
 
 // 보유 스킬 + 사용자 명시 선택 → 실제 발동될 스킬 이름 (일반 슬롯).
@@ -608,5 +643,59 @@ export function lightspeedExtraAttackPctFor(
   return stats.spd >= LIGHTSPEED_SPD_THRESHOLD &&
     equipped.has(SKILL_NAMES.LIGHTSPEED)
     ? LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT
+    : 0;
+}
+
+// ── 4티어 발동 헬퍼 ─────────────────────────────────────────────────────
+// 출혈 — 출혈 스택당 적이 받는 고정 피해. 미장착 시 0.
+export function bleedDmgPerStackFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.str >= BLOODLET_STR_THRESHOLD &&
+    equipped.has(SKILL_NAMES.BLOODLET)
+    ? Math.floor(stats.str * BLOODLET_DMG_PER_STR)
+    : 0;
+}
+
+// 그림자 분신 — 매 턴 끝 분신 추가타의 ATK 비율(%). 미장착 시 0.
+export function shadowCloneAtkPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.dex >= SHADOW_CLONE_DEX_THRESHOLD &&
+    equipped.has(SKILL_NAMES.SHADOW_CLONE)
+    ? SHADOW_CLONE_ATK_PCT
+    : 0;
+}
+
+// 철벽 — 전투 시작 시 보호막 절대량. 미장착 시 0.
+export function bulwarkShieldFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.vit >= BULWARK_VIT_THRESHOLD && equipped.has(SKILL_NAMES.BULWARK)
+    ? Math.floor(stats.vit * BULWARK_SHIELD_PER_VIT)
+    : 0;
+}
+
+// 무피해 난무 — 무피해 시 매 턴 끝 추가 공격 횟수. 미장착 시 0.
+export function flurryAttacksFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.spd >= FLURRY_SPD_THRESHOLD && equipped.has(SKILL_NAMES.FLURRY)
+    ? Math.floor(stats.spd / FLURRY_SPD_DIVISOR)
+    : 0;
+}
+
+// 천명 — 매 공격마다 적 현재 HP 비율 피해가 터질 확률(%). 미장착 시 0.
+export function heavenDecreeChancePctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.luk >= HEAVEN_DECREE_LUK_THRESHOLD &&
+    equipped.has(SKILL_NAMES.HEAVEN_DECREE)
+    ? stats.luk * HEAVEN_DECREE_CHANCE_PER_LUK
     : 0;
 }

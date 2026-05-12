@@ -1,6 +1,10 @@
 import type { Monster } from "../data/monsters";
 import { computeHealAmount, type Potion, type PotionId } from "../data/potions";
-import { CRIT_MULT_BASE, POWER_ATTACK_TURN_INTERVAL } from "../character/skills";
+import {
+  CRIT_MULT_BASE,
+  HEAVEN_DECREE_HP_PCT,
+  POWER_ATTACK_TURN_INTERVAL,
+} from "../character/skills";
 
 export type BattleLogEntry = {
   kind: "player_attack" | "enemy_attack" | "info" | "phase_trigger";
@@ -46,6 +50,12 @@ export type BattleState = {
   lightspeedUsedThisTurn: boolean;
   // 불굴 1회성 가드. 발동 후 true — 같은 전투에서 두 번째 치명 피해에는 정상 사망.
   enduranceTriggered: boolean;
+  // 출혈 (4티어) — 누적 스택. 매 적 턴 시작 시 스택당 bleedDmgPerStack 만큼 적 HP 감소 (DEF 무시).
+  bleedStacks: number;
+  // 철벽 (4티어) — 남은 보호막. 받는 피해를 먼저 흡수. 회복 안 됨.
+  playerShield: number;
+  // 무피해 난무 (4티어) — 이 전투에서 플레이어가 실제로 받은 누적 HP 피해 (보호막 흡수분 제외). 0 = 무피해.
+  damageTakenThisCombat: number;
 };
 
 export type PlayerCombat = {
@@ -98,6 +108,17 @@ export type PlayerCombat = {
   balanceCritPctPerSpdDiff?: number;
   // 행운의 방패 — 피격을 무효화할 확률(%). 0/undefined = 미장착.
   luckyShieldBlockPct?: number;
+  // ── 4티어 ──────────────────────────────────────────────────────────────
+  // 출혈 — 적중 시 출혈 1스택, 매 적 턴마다 스택당 이만큼 고정 피해(DEF 무시). 0/undefined = 미보유.
+  bleedDmgPerStack?: number;
+  // 그림자 분신 — 매 플레이어 턴 종료 시 분신이 ATK 의 N% 로 추가 공격 1회. 0/undefined = 미보유.
+  shadowCloneAtkPct?: number;
+  // 철벽 — 전투 시작 시 받는 보호막. 0/undefined = 미보유.
+  bulwarkShield?: number;
+  // 무피해 난무 — 무피해 턴 종료 시 추가 공격 횟수. 0/undefined = 미보유.
+  flurryAttacks?: number;
+  // 천명 — 매 공격마다 적 현재 HP 의 HEAVEN_DECREE_HP_PCT% 를 추가 고정 피해로 줄 확률(%). 0/undefined = 미보유.
+  heavenDecreeChancePct?: number;
 };
 
 export type PlayerAction =
@@ -205,6 +226,65 @@ function applyRegenIfAny(
   };
 }
 
+// 부가 공격(분신/난무 등) 1회 — 데미지 적용 + 페이즈 트리거 + 사망 처리. 크리/강공격/브레이스 등 미적용 (반격과 동일하게 단순 데미지).
+function dealExtraEnemyDamage(
+  state: BattleState,
+  dmg: number,
+  label: string,
+): BattleState {
+  const enemyHp = Math.max(0, state.enemyHp - dmg);
+  let next = applyPhaseTriggerIfAny({
+    ...state,
+    enemyHp,
+    log: appendLog(state.log, {
+      kind: "player_attack",
+      text: `[${label}] ${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
+    }),
+  });
+  if (enemyHp <= 0) {
+    next = {
+      ...next,
+      log: appendLog(next.log, {
+        kind: "info",
+        text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
+      }),
+      phase: "ended",
+      outcome: "win",
+    };
+  }
+  return next;
+}
+
+// 플레이어 턴 종료 후 처리 — 그림자 분신 추가타 → 무피해 난무 추가타들 → 재생.
+// 추가타로 적이 죽으면 즉시 종료(이후 단계 건너뜀). 종전 applyRegenIfAny 호출을 이 함수로 대체.
+function finishPlayerTurn(
+  state: BattleState,
+  player: PlayerCombat,
+  playerName: string,
+): BattleState {
+  let st = state;
+  // 그림자 분신 — ATK 의 N% 로 1회.
+  const clonePct = player.shadowCloneAtkPct ?? 0;
+  if (st.phase !== "ended" && clonePct > 0) {
+    const cloneDmg = damageBetween(
+      Math.floor((player.atk * clonePct) / 100),
+      st.enemy.def + st.enemyDefBonus,
+    );
+    st = dealExtraEnemyDamage(st, cloneDmg, "그림자 분신");
+  }
+  // 무피해 난무 — 이 전투에서 받은 피해가 0이면 추가 공격 N회.
+  const flurry = player.flurryAttacks ?? 0;
+  if (st.phase !== "ended" && flurry > 0 && st.damageTakenThisCombat === 0) {
+    for (let i = 0; i < flurry; i += 1) {
+      if (st.phase === "ended") break;
+      const fd = damageBetween(player.atk, st.enemy.def + st.enemyDefBonus);
+      st = dealExtraEnemyDamage(st, fd, "무피해 난무");
+    }
+  }
+  if (st.phase === "ended") return st;
+  return applyRegenIfAny(st, player, playerName);
+}
+
 // 선공 — SPD가 높은 쪽이 먼저 공격. 동점이면 플레이어 우선.
 export function initialBattleState(
   player: PlayerCombat,
@@ -236,6 +316,10 @@ export function initialBattleState(
       text: `${enemy.name} — 능력 [${enemy.skill.name}]`,
     });
   }
+  const startShield = player.bulwarkShield ?? 0;
+  if (startShield > 0) {
+    log.push({ kind: "info", text: `[철벽] 보호막 ${startShield} 전개` });
+  }
   return {
     enemy,
     enemyHp: enemy.hp,
@@ -257,6 +341,9 @@ export function initialBattleState(
     enrageTriggered: false,
     lightspeedUsedThisTurn: false,
     enduranceTriggered: false,
+    bleedStacks: 0,
+    playerShield: startShield,
+    damageTakenThisCombat: 0,
   };
 }
 
@@ -321,7 +408,7 @@ export function advanceTurn(
         doubleStrikeUsedThisTurn: false,
         firstAttackPending: true,
       };
-      return applyRegenIfAny(ended, player, playerName);
+      return finishPlayerTurn(ended, player, playerName);
     }
 
     // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF -crushDefReduction.
@@ -365,15 +452,24 @@ export function advanceTurn(
       state.enemy.skill?.kind === "brace" ? state.enemy.skill.damageReduction : 0;
     const dmg =
       braceReduction > 0 ? Math.max(1, dmgBeforeBrace - braceReduction) : dmgBeforeBrace;
+    // 천명 (4티어) — 일정 확률로 적 현재 HP 의 일부를 추가 고정 피해 (이 공격의 보통 피해와 별개로 합산).
+    const decreeFires =
+      (player.heavenDecreeChancePct ?? 0) > 0 &&
+      Math.random() * 100 < player.heavenDecreeChancePct!;
+    const decreeDmg = decreeFires
+      ? Math.floor((state.enemyHp * HEAVEN_DECREE_HP_PCT) / 100)
+      : 0;
+    const totalDmg = dmg + decreeDmg;
     const labels: string[] = [];
     if (bonus > 0) labels.push("강공격");
     if (bonus > 0 && crushReduction > 0) labels.push("분쇄");
     if (executionActive) labels.push("처형");
     if (critRoll) labels.push("크리티컬");
+    if (decreeFires) labels.push("천명");
     const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
     let log = appendLog(state.log, {
       kind: "player_attack",
-      text: `${prefix}${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
+      text: `${prefix}${state.enemy.name}에게 ${totalDmg} 피해를 입혔다.`,
     });
     // 이중 행운 — 첫 크리티컬 발동 순간 활성화, 후속 공격/회피 부터 보너스 적용.
     const shouldActivateLucky =
@@ -403,13 +499,19 @@ export function advanceTurn(
         text: `[흡혈] ${playerName}의 HP +${actualLifesteal}`,
       });
     }
-    const enemyHp = Math.max(0, state.enemyHp - dmg);
+    const enemyHp = Math.max(0, state.enemyHp - totalDmg);
+    // 출혈 (4티어) — 적중하면 출혈 1스택 누적 (다음 적 턴부터 도트).
+    const bleedStacks =
+      (player.bleedDmgPerStack ?? 0) > 0
+        ? state.bleedStacks + 1
+        : state.bleedStacks;
     // 페이즈 트리거 검사 — 데미지 적용 직후, 사망 분기 전에 처리해야 트리거된 def 가
     // 같은 턴 후속 공격(다중공격/연타)에 즉시 반영된다.
     const afterDamage = applyPhaseTriggerIfAny({
       ...state,
       enemyHp,
       playerHp: newPlayerHp,
+      bleedStacks,
       log,
       luckyBuffActive,
     });
@@ -479,7 +581,33 @@ export function advanceTurn(
       lightspeedUsedThisTurn: false,
       firstAttackPending: true,
     };
-    return applyRegenIfAny(ended, player, playerName);
+    return finishPlayerTurn(ended, player, playerName);
+  }
+
+  // ── 출혈 (4티어) — 적 턴 시작 시 출혈 스택당 고정 피해 (DEF 무시) ──────────
+  if (state.bleedStacks > 0 && (player.bleedDmgPerStack ?? 0) > 0) {
+    const bleedDmg = state.bleedStacks * player.bleedDmgPerStack!;
+    const afterBleedHp = Math.max(0, state.enemyHp - bleedDmg);
+    const bled = applyPhaseTriggerIfAny({
+      ...state,
+      enemyHp: afterBleedHp,
+      log: appendLog(state.log, {
+        kind: "info",
+        text: `[출혈] ${state.enemy.name}이(가) 출혈로 ${bleedDmg} 피해 (스택 ${state.bleedStacks})`,
+      }),
+    });
+    if (afterBleedHp <= 0) {
+      return {
+        ...bled,
+        log: appendLog(bled.log, {
+          kind: "info",
+          text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
+        }),
+        phase: "ended",
+        outcome: "win",
+      };
+    }
+    state = bled;
   }
 
   // enemy phase — 보장 회피 → % 회피 → 행운의 방패 → 데미지 (가드 적용) 순.
@@ -604,11 +732,15 @@ export function advanceTurn(
       : rawDmg;
   const dmg = guarded;
   const guardApplied = guarded < rawDmg;
+  // 철벽 (4티어) — 보호막이 데미지를 먼저 흡수, 남은 만큼만 HP 에 적용. 무피해 난무는 dmgToHp 로 누적.
+  const shieldAbsorbed = Math.min(state.playerShield, dmg);
+  const dmgToHp = dmg - shieldAbsorbed;
+  const newShield = state.playerShield - shieldAbsorbed;
   // 불굴 — HP 0 이 되는 데미지를 HP 1 로 막는다. 전투당 1회 (enduranceTriggered).
-  const wouldKill = state.playerHp - dmg <= 0;
+  const wouldKill = state.playerHp - dmgToHp <= 0;
   const enduranceFires =
     wouldKill && !!player.enduranceActive && !state.enduranceTriggered;
-  const playerHp = enduranceFires ? 1 : Math.max(0, state.playerHp - dmg);
+  const playerHp = enduranceFires ? 1 : Math.max(0, state.playerHp - dmgToHp);
   const enduranceTriggered = state.enduranceTriggered || enduranceFires;
   // 로그 — 격노 발동 → 가드 → (강타 라벨 포함) 공격 → 불굴 순.
   let log = state.log;
@@ -624,11 +756,17 @@ export function advanceTurn(
       text: `[가드] 피해 -${rawDmg - guarded}`,
     });
   }
+  if (shieldAbsorbed > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[철벽] 보호막이 ${shieldAbsorbed} 흡수 (남은 ${newShield})`,
+    });
+  }
   const atkPrefix =
     heavyBlowFired && skill?.kind === "heavy_blow" ? `[${skill.name}] ` : "";
   log = appendLog(log, {
     kind: "enemy_attack",
-    text: `${atkPrefix}${state.enemy.name}이(가) ${playerName}에게 ${dmg} 피해를 입혔다.`,
+    text: `${atkPrefix}${state.enemy.name}이(가) ${playerName}에게 ${dmgToHp} 피해를 입혔다.`,
   });
   if (enduranceFires) {
     log = appendLog(log, {
@@ -640,6 +778,8 @@ export function advanceTurn(
     return {
       ...state,
       playerHp,
+      playerShield: newShield,
+      damageTakenThisCombat: state.damageTakenThisCombat + dmgToHp,
       enduranceTriggered,
       enemyAtkBonus,
       enrageTriggered,
@@ -655,6 +795,8 @@ export function advanceTurn(
   return {
     ...state,
     playerHp,
+    playerShield: newShield,
+    damageTakenThisCombat: state.damageTakenThisCombat + dmgToHp,
     enduranceTriggered,
     enemyAtkBonus,
     enrageTriggered,
