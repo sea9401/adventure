@@ -3,6 +3,16 @@
 날짜·해시는 git log 기준. 카테고리 태그:
 🏗️ infra · 👤 character · 🗺️ adventure · ⚔️ battle · 🏘️ town · 🤝 npc · 🔔 notify · 🎨 ui · 📦 data · 📝 docs
 
+## 미머지 — `feat/unhyang-quests` 브랜치 (머지 시 해시·날짜로 정리)
+
+- 📦 **신규 지역 퀘스트 라인 확장** (quest-expansion-plan M1~M6 전 항목). 운향 메인(백운·만월) + 천공 성지 메인(해무) + 운향/바람골/봉황령/화산 사이드 의뢰·길드 게시판 + 마을 간 연계(마린↔백운·산하↔노라·지미↔도연·만월↔볼드) + 보스 누적 사냥 hunter ×3 + 순례자 미상 대사 분기 + 히든 퀘스트 8종(`hidden-mole-king`·`-deepest-vein`·`-blacksmith-duel`·`-giants-origin`·`-volcano-relic`·`-lucky-collector`·`-hooded-cipher`·`-pilgrim-trail`).
+- 🤝 신규 NPC 3명: 떠돌이 음유시인 / 사미승 운하 / 문지기 청람 (초상화 placeholder — 추후 webp 추가).
+- 👤 신규 칭호 8종: `mountain_friend`·`ridge_crosser`·`herbalists_courier`·`boss_hunter`·`caravan_warden`·`lucky_finder`·`cipher_bearer` + (`giant_slayer` 유지).
+- 📦 신규 아이템 2종: 월광검(`moonlight_blade`)·용암 정수(`lava_essence`) — 히든 의뢰 보상, rare·비거래. 운봉/봉황 무기 4종씩 만월·해무 의뢰로 확정 루트 추가(보스 `recipe_one_of` 병행).
+- 🏗️ 신규 헬퍼: `questLineDialogue`(다단계 의뢰 NPC 공용)·`inventory/ownership`(장비 보유·unique 카운트)·`PilgrimMarkDialogue`(통과 지역 표식 surfacing). 신규 다이얼로그 컴포넌트 ~7개. 기존에 데이터만 있고 노출 안 되던 NPC 의뢰(운향·바람골·천공) 전부 대화에 연결(버그 수정).
+- 🏗️ `integrity.test.ts` 보강 — quest target(monsterName/materialId)·requiresQuestCompleted·id 유일성 정합성 검사.
+- (잔여: 보상 수치 시뮬 튜닝.)
+
 ## 2026-05-06
 
 - `a271480` 🏗️ adventure-rpg 프로젝트 분리 — exten에서 adventure UI만 추출.
