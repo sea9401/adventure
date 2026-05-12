@@ -49,6 +49,17 @@ export type Quest = {
 
 export const REPEAT_COOLDOWN_MS_DEFAULT = 6 * 60 * 60 * 1000;
 
+const H = 60 * 60 * 1000;
+// 지역별 반복 의뢰 기본 쿨다운. 우선순위: quest.cooldownMs > 이 맵 > REPEAT_COOLDOWN_MS_DEFAULT.
+// 초반 마을은 짧게(빌드/명성/골드 빨리), 후반 지역은 길게(반복 효율 억제).
+export const REGION_REPEAT_COOLDOWN_MS: Partial<Record<RegionId, number>> = {
+  village: 3 * H,
+  diola: 6 * H,
+  unhyang: 8 * H,
+  windvale: 10 * H,
+  skyreach: 12 * H,
+};
+
 export const QUESTS: Quest[] = [
   {
     id: "village-beggars",
