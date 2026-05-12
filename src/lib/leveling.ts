@@ -1,7 +1,9 @@
 // 캐릭터 레벨링 시스템.
 // - 만렙 70.
 // - Lv 1~34: floor(120 * level^1.5).  Lv1→2 = 120.
-// - Lv 35~69: floor(120 * level^2.5 / 35).  35레벨 경계에서 연속, 이후 가팔라짐.
+// - Lv 35~59: floor(120 * level^2.5 / 35).  35레벨 경계에서 연속, 이후 가팔라짐.
+// - Lv 60~69: 위 곡선에 (level-60)/30 만큼 선형 가산 (×1.00→×1.30 램프).
+//             엔드게임 구간을 더 무겁게 — 60~70 총 요구치 ≈ 50~60 의 1.75배.
 // - 레벨업당 스탯 포인트 1점 획득(호출측에서 분배).
 
 export const MAX_LEVEL = 70;
@@ -30,13 +32,24 @@ export function applyNewbieBonus(
 const STEEP_LEVEL = 35;
 const STEEP_COEFF = 120 / STEEP_LEVEL;
 
+// 60레벨부터 엔드게임 가산 — 기본 곡선에 (level-60)/30 만큼 선형 추가.
+// 60→69 에서 ×1.00 → ×1.30 으로 램프. 경계(Lv60)에서 연속.
+const ENDGAME_LEVEL = 60;
+const ENDGAME_RAMP_DIVISOR = 30;
+
 export function requiredExpToNext(level: number): number | null {
   if (level >= MAX_LEVEL) return null;
   if (level < 1) return null;
   if (level < STEEP_LEVEL) {
     return Math.floor(120 * Math.pow(level, 1.5));
   }
-  return Math.floor(STEEP_COEFF * Math.pow(level, 2.5));
+  const base = STEEP_COEFF * Math.pow(level, 2.5);
+  if (level < ENDGAME_LEVEL) {
+    return Math.floor(base);
+  }
+  return Math.floor(
+    base * (1 + (level - ENDGAME_LEVEL) / ENDGAME_RAMP_DIVISOR),
+  );
 }
 
 // EXP 누적 적용 + 자동 레벨업 처리.
