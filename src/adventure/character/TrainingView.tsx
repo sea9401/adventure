@@ -2,7 +2,7 @@ import { Sword } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { formatDuration } from "@/lib/format";
 
-// 훈련장 — 8시간 훈련으로 단련 포인트 1개 적립. 적립한 포인트는 성장의 신전에서 사용.
+// 훈련장 — 12시간 훈련으로 단련 포인트 1개 적립. 적립한 포인트는 성장의 신전에서 사용.
 // 완료 횟수는 칭호 마일스톤 트리거에 쓰이며 카드에 노출.
 export function TrainingView({
   remaining,
@@ -31,7 +31,7 @@ export function TrainingView({
           >
             {isTraining
               ? `훈련 중 · ${formatDuration(remaining)}`
-              : "8시간 훈련 시작"}
+              : "12시간 훈련 시작"}
           </button>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             훈련을 마치면 단련 포인트 1개를 얻는다. 보유 단련 포인트{" "}
