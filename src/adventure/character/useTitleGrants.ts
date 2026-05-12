@@ -53,6 +53,7 @@ export function useTitleGrants(
   // 외골수: 한 스탯 30↑, 나머지 모두 10↓ (11~29 구간이 있으면 미부여).
   const goldZero = opts.gold === 0;
   const goldRich = opts.gold >= 10000;
+  const goldLandlord = opts.gold >= 100_000;
   const goldFortune = opts.gold >= 1_000_000;
   const levelVeteran = opts.level >= 30;
   const levelLegend = opts.level >= 50;
@@ -60,11 +61,13 @@ export function useTitleGrants(
   useEffect(() => {
     if (goldZero) grantTitle("beggar");
     if (goldRich) grantTitle("wealthy");
+    if (goldLandlord) grantTitle("landlord");
     if (goldFortune) grantTitle("nouveau_riche");
     if (levelVeteran) grantTitle("level_30");
     if (levelLegend) grantTitle("level_50");
     if (levelMythic) grantTitle("level_70");
     if (opts.maxNpcTalkCount >= 100) grantTitle("phisher");
+    if (opts.maxNpcTalkCount >= 500) grantTitle("devoted_listener");
     const high = STAT_KEYS.filter((k) => opts.totalStats[k] >= 30).length;
     const low = STAT_KEYS.filter((k) => opts.totalStats[k] <= 10).length;
     if (high === 1 && low === STAT_KEYS.length - 1) grantTitle("one_track");
@@ -77,6 +80,7 @@ export function useTitleGrants(
   }, [
     goldZero,
     goldRich,
+    goldLandlord,
     goldFortune,
     levelVeteran,
     levelLegend,

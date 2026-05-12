@@ -195,6 +195,36 @@ export const TITLES: Record<TitleId, Title> = {
     description: "이것저것 다 조금씩 찍은 자. 모난 데 없는 게 장점이라면 장점이다.",
     condition: "모든 스탯 15 이상이면서 최댓값과 최솟값 차이 4 이하",
   },
+  landlord: {
+    id: "landlord",
+    name: "건물주",
+    description: "골드 십만. 동네 가게 한 칸쯤은 살 수 있겠다고 진지하게 계산해 봤다.",
+    condition: "보유 골드 100,000 도달",
+  },
+  devoted_listener: {
+    id: "devoted_listener",
+    name: "전속 청취자",
+    description: "같은 사람을 오백 번 붙들었다. 이젠 그쪽이 먼저 안부를 묻는다.",
+    condition: "동일 NPC 와 500회 대화",
+  },
+  marathoner: {
+    id: "marathoner",
+    name: "마라토너",
+    description: "천 번을 훈련한 자. 운동이 일상을 지나 인생이 됐다.",
+    condition: "훈련 1,000회 완료",
+  },
+  town_broadcaster: {
+    id: "town_broadcaster",
+    name: "마을 방송국",
+    description: "광장 채팅창이 곧 그의 일기장. 마을 사람 모두가 그의 근황을 안다.",
+    condition: "글로벌 채팅 3,000회 발화",
+  },
+  head_patient: {
+    id: "head_patient",
+    name: "수석 환자",
+    description: "치료소가 명예의 전당 헌액을 진지하게 검토 중이다.",
+    condition: "치료소 500회 이용",
+  },
 };
 
 // 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.
@@ -218,10 +248,13 @@ export const COUNTER_TITLES: {
   { id: "training_100", key: "trainingCount", target: 200 },
   { id: "sandbag", key: "battleLosses", target: 50 },
   { id: "gym_rat", key: "trainingCount", target: 500 },
+  { id: "marathoner", key: "trainingCount", target: 1000 },
   { id: "chatterbox", key: "chatCount", target: 100 },
   { id: "loudspeaker", key: "chatCount", target: 1000 },
+  { id: "town_broadcaster", key: "chatCount", target: 3000 },
   { id: "patient", key: "healingCount", target: 50 },
   { id: "vip_patient", key: "healingCount", target: 200 },
+  { id: "head_patient", key: "healingCount", target: 500 },
 ];
 
 export function getTitle(id: TitleId | null | undefined): Title | undefined {
