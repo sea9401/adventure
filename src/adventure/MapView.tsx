@@ -181,6 +181,13 @@ export function MapView({
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center gap-1.5 px-1 text-sm">
+        <span className="text-base leading-none">📍</span>
+        <span className="text-zinc-500 dark:text-zinc-400">현재 위치</span>
+        <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+          {currentRegion?.name ?? "—"}
+        </span>
+      </div>
       <Card padding="none" className="overflow-hidden">
         <MapCanvas
           world={WORLD_MAP.viewBox}
