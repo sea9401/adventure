@@ -67,6 +67,16 @@ export const STORY_QUESTS = {
       "디올라 후드 손님이 건넨 표식을, 운향 순례자에게 보여주면 — 같은 손이 그은 것임을 둘 다 안다.",
     giverNpcId: "diola_stranger",
   },
+  // 히든 — 순례자의 자취(§11.1). 운향 메인 완료 후, 순례자가 운저 평원→잿빛 협로→봉황령에 남긴
+  // 표식을 따라가 천공 성지에서 재회. 4단계: trail-1/2/3 (각 지역에서 PilgrimMarkDialogue 로 surfacing)
+  // → 4단계는 trail-3 완료 + skyreach 도착 시 PilgrimMarkDialogue 가 재회 처리 → pilgrim_revealed flag.
+  hidden_pilgrim_trail: {
+    id: "hidden_pilgrim_trail",
+    title: "순례자의 자취",
+    description:
+      "운향을 떠난 순례자가 길마다 남긴 매듭 표식 — 운저 평원, 잿빛 협로, 봉황령을 거쳐 천공 성지까지. 끝까지 따라가면 그가 처음으로 '북쪽 너머'를 말한다.",
+    giverNpcId: "unhyang_pilgrim",
+  },
 } as const satisfies Record<string, StoryQuest>;
 
 export type StoryQuestId = keyof typeof STORY_QUESTS;

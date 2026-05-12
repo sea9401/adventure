@@ -1340,6 +1340,48 @@ export const QUESTS: Quest[] = [
     giverNpcId: "skyreach_alchemist",
     requiresQuestCompleted: "windvale-volcano-boss",
   },
+
+  // ── 히든: 순례자의 자취 (§11.1) — 운저 평원→잿빛 협로→봉황령 표식 추적 ──────
+  // unhyang_main_cleared 후 순례자가 운향을 떠나며 길마다 표식을 남긴다. 각 지역에서
+  // PilgrimMarkDialogue("알림판" 카드 → 다이얼로그)로 surfacing. 4단계(천공 성지 재회)는
+  // 의뢰 없이 step-3 완료 + skyreach 도착 시 PilgrimMarkDialogue 가 처리 → pilgrim_revealed.
+  // giverNpcId 없음 — 운저 평원·잿빛 협로·봉황령은 게시판이 없는 통과 지역이라 게시판 노출 안 됨.
+  {
+    id: "hidden-pilgrim-trail-1",
+    regionId: "cloud_plain",
+    title: "순례자의 자취 ─ 풀밭의 매듭",
+    description:
+      "풀밭 한가운데 돌무지 위에 낯선 매듭이 묶여 있다. 순례자가 묶은 거다 — 옆에는 떠돌이 약탈자들의 야영지. 길을 트지 않으면 다음 표식을 찾을 수 없다. 열 명만 정리하자.",
+    requiredLevel: 22,
+    target: { kind: "kill", monsterName: "떠돌이 약탈자", count: 10 },
+    reward: { gold: 600, fame: 12, exp: 900 },
+    repeatable: false,
+    requiresQuestCompleted: "unhyang-baekun-peak-giant",
+  },
+  {
+    id: "hidden-pilgrim-trail-2",
+    regionId: "ashen_pass",
+    title: "순례자의 자취 ─ 잿더미의 매듭",
+    description:
+      "잿더미에 반쯤 묻힌 같은 매듭. 옆에 식은 모닥불 자리, 그 둘레에 잿돌이 흩어져 있다. 다섯 덩이를 주워 표식 위에 올려놓으면 — 잿가루 사이로 순례자가 간 방향이 드러난다.",
+    requiredLevel: 34,
+    target: { kind: "deliver", materialId: "ash_stone", count: 5 },
+    reward: { gold: 800, fame: 14, exp: 1200 },
+    repeatable: false,
+    requiresQuestCompleted: "hidden-pilgrim-trail-1",
+  },
+  {
+    id: "hidden-pilgrim-trail-3",
+    regionId: "phoenix_ridge",
+    title: "순례자의 자취 ─ 능선의 매듭",
+    description:
+      "능선 바위에 새겨진 매듭 문양 — 디올라 후드 손님이 준 표식과 같은 모양이다. 순례자가 산악 기사들에게 길을 막혔던 듯. 열둘만 정리하면 능선 너머로 가는 자취가 이어진다.",
+    requiredLevel: 38,
+    target: { kind: "kill", monsterName: "산악 기사", count: 12 },
+    reward: { gold: 1000, fame: 18, exp: 1500 },
+    repeatable: false,
+    requiresQuestCompleted: "hidden-pilgrim-trail-2",
+  },
 ];
 
 // 길드 게시판 노출용 — NPC 전속 퀘스트는 제외, kill 형만 노출.
