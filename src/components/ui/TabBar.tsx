@@ -30,7 +30,7 @@ export function TabBar<K extends string>({
   const cls = [
     "flex gap-1 border-b border-zinc-200 dark:border-zinc-800",
     scrollable
-      ? "flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      ? "no-scrollbar flex-nowrap overflow-x-auto"
       : "",
     className,
   ]

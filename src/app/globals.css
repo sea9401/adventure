@@ -2,6 +2,14 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* 스크롤은 그대로, 스크롤바 막대만 숨김 — UI 와 어울리지 않는 네이티브 스크롤바 제거용 */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
