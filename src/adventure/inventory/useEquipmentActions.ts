@@ -1,0 +1,144 @@
+"use client";
+
+import {
+  ITEMS,
+  findItemId,
+  rarityTextClass,
+  type EquipSlot,
+  type ItemId,
+} from "@/adventure/data/items";
+import { craftTierSuffix, type CraftTier } from "@/adventure/data/craftQuality";
+import {
+  dropQualityPrefix,
+  dropQualityTextClass,
+  resolveDroppedItem,
+  type DropQuality,
+} from "@/adventure/data/dropQuality";
+import { resolveCraftedItem } from "@/adventure/data/recipes";
+import type { EquippedItem } from "@/adventure/character/types";
+import type { useCharacterState } from "@/adventure/character/useCharacterState";
+import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
+
+// 장비 장착/해제/폐기 핸들러 묶음. 순수 클라 상태 조작이라 서버 권위 불필요 —
+// consume/setSlot 후 useRemotePatch 가 inventory.v2 / character.v2 를 동기화한다.
+export function useEquipmentActions(deps: {
+  inventory: ReturnType<typeof useInventory>;
+  characterStateHook: ReturnType<typeof useCharacterState>;
+  addNotification: (
+    kind: NotificationKind,
+    text: string,
+    meta?: NotificationMeta,
+  ) => void;
+}) {
+  const { inventory, characterStateHook, addNotification } = deps;
+
+  // 한 장비 인스턴스의 표시 이름 — 드랍 품질은 prefix("정교한 ○○"), 제작 등급은 suffix("○○ ⟨걸작⟩").
+  const equipDisplayName = (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ): string =>
+    dropQualityPrefix(quality) + ITEMS[id].name + craftTierSuffix(tier);
+
+  // 표시 이름 강조 색 — 드랍 고품질이면 그 등급 톤, 아니면 아이템 rarity 톤.
+  const equipNameClass = (id: ItemId, quality?: DropQuality): string =>
+    quality ? dropQualityTextClass(quality) : rarityTextClass(ITEMS[id]);
+
+  // 슬롯에 장착돼 있던 장비를 인벤토리로 회수 — 제작산/드랍 고품질이면 등급별 칸으로, 아니면 기본 칸으로.
+  const returnEquippedToInventory = (item: EquippedItem | null) => {
+    if (!item) return;
+    const id = findItemId(item);
+    if (!id) return;
+    const tier = item.craftTier;
+    if (tier != null && tier !== 0) {
+      inventory.addCraftedEquipment(id, tier, 1);
+      return;
+    }
+    const q = item.dropQuality;
+    if (q === 1 || q === 2) {
+      inventory.addDroppedEquipment(id, q, 1);
+      return;
+    }
+    inventory.addEquipment(id, 1);
+  };
+
+  // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
+  // tier ±1·±2 = 제작산 등급 스택, quality 1·2 = 드랍 고품질 스택, 둘 다 미지정/0 = 기본 스택.
+  const handleEquipFromInventory = (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ) => {
+    const isCrafted = tier != null && tier !== 0;
+    const isDropped = !isCrafted && (quality === 1 || quality === 2);
+    if (isCrafted) {
+      if (!inventory.consumeCraftedEquipment(id, tier, 1)) return;
+    } else if (isDropped) {
+      if (!inventory.consumeDroppedEquipment(id, quality, 1)) return;
+    } else {
+      if (!inventory.consumeEquipment(id, 1)) return;
+    }
+    const item = ITEMS[id];
+    const equipItem: EquippedItem = isCrafted
+      ? resolveCraftedItem(id, tier)
+      : isDropped
+        ? resolveDroppedItem(id, quality)
+        : item;
+    returnEquippedToInventory(characterStateHook.equippedSlots[item.slot]);
+    characterStateHook.setSlot(item.slot, equipItem);
+    const name = equipDisplayName(id, tier, isDropped ? quality : undefined);
+    addNotification("item", `${name}을(를) 장착했다.`, {
+      highlight: {
+        name,
+        className: equipNameClass(id, isDropped ? quality : undefined),
+      },
+    });
+  };
+
+  const handleUnequip = (slot: EquipSlot) => {
+    const current = characterStateHook.equippedSlots[slot];
+    if (!current) return;
+    returnEquippedToInventory(current);
+    characterStateHook.setSlot(slot, null);
+    const id = findItemId(current);
+    const name = id
+      ? equipDisplayName(id, current.craftTier, current.dropQuality)
+      : current.name;
+    addNotification("item", `${name}을(를) 해제했다.`, {
+      highlight: {
+        name,
+        className: id
+          ? equipNameClass(id, current.dropQuality)
+          : rarityTextClass(current),
+      },
+    });
+  };
+
+  // 인벤토리에서 장비 1개 폐기 — 보상 없음. (장착 중인 장비는 인벤토리 카운트 밖이라
+  // 애초에 폐기 대상이 안 됨 — 가방엔 여분만 보인다.)
+  const handleDiscardFromInventory = (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ) => {
+    const isCrafted = tier != null && tier !== 0;
+    const isDropped = !isCrafted && (quality === 1 || quality === 2);
+    const ok = isCrafted
+      ? inventory.consumeCraftedEquipment(id, tier, 1)
+      : isDropped
+        ? inventory.consumeDroppedEquipment(id, quality, 1)
+        : inventory.consumeEquipment(id, 1);
+    if (!ok) return;
+    addNotification(
+      "item",
+      `${equipDisplayName(id, tier, isDropped ? quality : undefined)}을(를) 폐기했다.`,
+    );
+  };
+
+  return {
+    handleEquipFromInventory,
+    handleUnequip,
+    handleDiscardFromInventory,
+  };
+}
