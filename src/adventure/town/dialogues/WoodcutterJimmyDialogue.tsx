@@ -140,20 +140,63 @@ export function WoodcutterJimmyDialogue({
     );
   }
 
-  // 산악 가이드 도연이 산정 협곡 목재를 부쳐옴(§7.1) — 지미가 전령을 알아본다.
-  if (deepCaveQuest.state === "completed" && storyFlags.has("jimmy_doyeon_timber_done")) {
-    return (
-      <NpcDialogue
-        npc={npc}
-        onClose={onClose}
-        text={
-          "어, 자네! 도연이 산정 협곡 목재를 부쳐왔더라고 — 안 휘는 게 진짜야. 이런 거 어디서 구하나 했는데, 자네가 도연한테 말 넣어준 거지?\n고맙수. 톱밥 한 잔 받아요 — 농담이고, 좋은 손잡이 깎으면 자네한테 먼저 보여줄게."
-        }
-      />
-    );
-  }
-
   if (deepCaveQuest.state === "completed") {
+    // 광맥의 수호자 누적 사냥 "사냥 기록" — 지미가 주는 개인 도전(보스 사냥꾼 칭호 일부).
+    const hunter = quests.getEntry("deep-cave-hunter");
+    if (hunter.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "그놈, 가끔 다시 깨어난다는 소문이 있더라고. 광물 때문인지 뭔지.\n…열 번이나 잠재우면 동굴 안쪽이 한동안 조용하다고들 하던데. 나야 무서워서 못 가지만 — 모험가 양반이라면 기록 한번 채워볼 만하지 않겠어요?"
+          }
+          primaryAction={{
+            label: "맡겠다",
+            onClick: () => {
+              quests.accept("deep-cave-hunter");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (hunter.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`그 광맥 골렘, 몇 번이나 잡았수? 천천히 해요, 무리하지 말고. — 진행 ${hunter.progress}/10`}
+        />
+      );
+    }
+    if (hunter.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"열 번이라니… 이젠 톱밥을 발 뻗고 마실 수 있겠수. 자, 약속한 사례요."}
+          primaryAction={{
+            label: "보고를 마친다",
+            onClick: () => {
+              if (completeQuest("deep-cave-hunter")) onClose();
+            },
+          }}
+        />
+      );
+    }
+    // 산악 가이드 도연이 산정 협곡 목재를 부쳐옴(§7.1) — 지미가 전령을 알아본다.
+    if (storyFlags.has("jimmy_doyeon_timber_done")) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "어, 자네! 도연이 산정 협곡 목재를 부쳐왔더라고 — 안 휘는 게 진짜야. 이런 거 어디서 구하나 했는데, 자네가 도연한테 말 넣어준 거지?\n고맙수. 톱밥 한 잔 받아요 — 농담이고, 좋은 손잡이 깎으면 자네한테 먼저 보여줄게."
+          }
+        />
+      );
+    }
     return (
       <NpcDialogue
         npc={npc}

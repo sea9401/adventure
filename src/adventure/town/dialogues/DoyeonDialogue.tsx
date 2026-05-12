@@ -65,6 +65,13 @@ const STEPS: QuestLineStep[] = [
       `독수리는 능선을 빙빙 돌아 — 내리꽂힐 때를 노려. — 진행 ${have}/${need}`,
     doneText: "능선이 좀 조용해졌겠어. 순례자들도 한시름 놓겠지 — 받아.",
   },
+  {
+    id: "unhyang-guide-flame-lizards",
+    offerText:
+      "봉황령 능선 바위틈에 화염 도마뱀이 들끓어. 15마리만 정리해 주면 길이 좀 트일 거야.",
+    activeText: (have, need) => `도마뱀은 바위틈 그늘에 숨어. 비늘이 뜨거우니 조심하고. — 진행 ${have}/${need}`,
+    doneText: "바위틈이 트였겠어. 능선 길이 한결 낫겠다 — 받아.",
+  },
 ];
 
 export function DoyeonDialogue({

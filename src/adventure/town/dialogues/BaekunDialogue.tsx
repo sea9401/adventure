@@ -16,6 +16,7 @@ const GIANT = "unhyang-baekun-peak-giant";
 const CLIFF = "unhyang-baekun-cliff-wolves";
 const GOATS = "unhyang-baekun-highland-goats";
 const ESCORT = "unhyang-baekun-pilgrim-escort";
+const HUNTER = "peak-giant-hunter"; // 운봉의 거인 누적 ×10 (보스 사냥꾼 칭호 일부)
 
 // 백운 — 운향 메인 라인 "잠들지 않는 산".
 // A 협곡 정찰 → B 운봉의 거인 → C 교역로 정리(절벽 늑대 ×30 + 산양 ×40) → D 교역로 개통.
@@ -247,12 +248,56 @@ export function BaekunDialogue({
         />
       );
     }
+    // 거인 누적 사냥 "사냥 기록" — 백운이 주는 개인 도전.
+    const hunter = quests.getEntry(HUNTER);
+    if (hunter.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "교역로가 열렸고, 순례자도 떠났어. 산정이 한동안은 조용하겠지.\n…한 가지 더. 거인을 열 번 잠재운 무리는 산정의 노래에 이름이 남는다네. 동료들과 함께 그 기록을 채워 보겠나? 정기 토벌은 길드 게시판에도 걸어 뒀으니, 거기 진행도 함께 쌓일 게야."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept(HUNTER);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (hunter.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`거인을 몇 번이나 잠재웠는가? 산정의 노래는 천천히 쓰여도 좋아. — 진행 ${hunter.progress}/10`}
+        />
+      );
+    }
+    if (hunter.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"열 번이라… 자네 무리의 이름이 산정의 노래에 들어갔네. 자, 받게 — 마땅한 사례일세."}
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              if (completeQuest(HUNTER)) onClose();
+            },
+          }}
+        />
+      );
+    }
     return (
       <NpcDialogue
         npc={npc}
         onClose={onClose}
         text={
-          "교역로가 열렸고, 순례자도 떠났어. 산정이 한동안은 조용하겠지.\n…운봉의 거인은 잠재워도 산의 숨결을 먹고 다시 일어선다네. 길드 게시판에 정기 토벌을 걸어 뒀으니, 동료들과 가끔 산정을 살펴 주게."
+          "교역로가 열렸고, 순례자도 떠났어. 산정의 노래에 자네 이름도 남았고.\n…운봉의 거인은 잠재워도 산의 숨결을 먹고 다시 일어선다네. 길드 게시판에 정기 토벌을 걸어 뒀으니, 동료들과 가끔 산정을 살펴 주게."
         }
       />
     );

@@ -99,6 +99,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "산정의 약초를 안개 호숫가까지 실어 나른 자. 두 약초꾼이 그를 기억한다.",
     condition: "운향 약초꾼 산하의 '디올라로 보내는 약초' 완수",
   },
+  boss_hunter: {
+    id: "boss_hunter",
+    name: "보스 사냥꾼",
+    description: "광맥의 수호자, 운봉의 거인, 화산의 심장 — 세 거대한 것을 각각 열 번 잠재운 자.",
+    condition: "세 보스 누적 사냥 의뢰(지미·백운·검) 모두 완수",
+  },
   beggar: {
     id: "beggar",
     name: "거지",

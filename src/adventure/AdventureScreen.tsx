@@ -28,6 +28,11 @@ import { DoyeonDialogue } from "@/adventure/town/dialogues/DoyeonDialogue";
 import { SanhaDialogue } from "@/adventure/town/dialogues/SanhaDialogue";
 import { PilgrimDialogue } from "@/adventure/town/dialogues/PilgrimDialogue";
 import { HaemuDialogue } from "@/adventure/town/dialogues/HaemuDialogue";
+import { MaroDialogue } from "@/adventure/town/dialogues/MaroDialogue";
+import { NoeulDialogue } from "@/adventure/town/dialogues/NoeulDialogue";
+import { HansolDialogue } from "@/adventure/town/dialogues/HansolDialogue";
+import { GeomDialogue } from "@/adventure/town/dialogues/GeomDialogue";
+import { SionDialogue } from "@/adventure/town/dialogues/SionDialogue";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { findEdgeRequirement } from "@/adventure/data/edge-requirement";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -353,6 +358,61 @@ export function AdventureScreen() {
             if (npc.id === "skyreach_elder") {
               return (
                 <HaemuDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "windvale_keeper") {
+              return (
+                <MaroDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "windvale_merchant") {
+              return (
+                <NoeulDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "windvale_pathfinder") {
+              return (
+                <HansolDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "skyreach_guide") {
+              return (
+                <GeomDialogue
+                  npc={npc}
+                  onClose={close}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  inventory={inventory}
+                />
+              );
+            }
+            if (npc.id === "skyreach_alchemist") {
+              return (
+                <SionDialogue
                   npc={npc}
                   onClose={close}
                   quests={quests}

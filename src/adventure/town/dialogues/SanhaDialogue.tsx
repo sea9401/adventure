@@ -67,6 +67,13 @@ const STEPS: QuestLineStep[] = [
     activeText: (have, need) => `화염 비늘은 봉황령 화염 도마뱀에게서 나와요. — 진행 ${have}/${need}`,
     doneText: "화염 비늘 여덟 장, 뜨겁네요. 약속한 포션 한 보따리예요.",
   },
+  {
+    id: "unhyang-herbalist-flame-eagle-cape",
+    offerText:
+      "봉황령 불꽃 독수리의 깃을 통째로 엮으면 가벼운 망토가 돼요. 20마리만 잡아 주시면, 그 깃으로 짠 봉황 망토를 직접 만들어 드릴게요.",
+    activeText: (have, need) => `불꽃 독수리는 봉황령 능선을 돌아요. — 진행 ${have}/${need}`,
+    doneText: "스무 마리나… 깃이 충분하네요. 약속한 봉황 망토예요 — 가벼운데 불에 강해요. 잘 입으세요.",
+  },
 ];
 
 export function SanhaDialogue({

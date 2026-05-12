@@ -891,6 +891,16 @@ function Home() {
       grantTitle("herbalists_courier");
     }
     if (id === "village-jimmy-doyeon-timber") storyFlags.set("jimmy_doyeon_timber_done");
+    // 보스 누적 사냥 의뢰 3종(광맥의 수호자 / 운봉의 거인 / 화산의 심장) 모두 완수 → 칭호.
+    // claim 직후 방금 완료한 쪽 상태가 비동기라, 나머지 둘이 이미 completed 인지로 판정.
+    {
+      const HUNTERS = ["deep-cave-hunter", "peak-giant-hunter", "volcano-heart-hunter"] as const;
+      if ((HUNTERS as readonly string[]).includes(id)) {
+        const others = HUNTERS.filter((h) => h !== id);
+        if (others.every((h) => quests.getEntry(h).state === "completed"))
+          grantTitle("boss_hunter");
+      }
+    }
     return true;
   };
 
