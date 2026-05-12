@@ -198,7 +198,7 @@ export function CharacterScreen() {
           }}
           knownRecipes={crafting.state.known}
           shareableRecipes={crafting.state.shareable}
-          ownedEquipment={inventory.state.equipment}
+          inventoryState={inventory.state}
           equippedSlots={characterStateHook.equippedSlots}
         />
       </div>

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { TabBar } from "@/components/ui/TabBar";
-import type { ItemId } from "@/adventure/data/items";
 import type { EquippedSlots } from "@/adventure/character/types";
 import type { TitleId } from "@/adventure/data/titles";
 import type { StatKey } from "@/adventure/data/stats";
 import type { AdventureLog } from "@/adventure/log/storage";
+import type { InventoryState } from "@/adventure/inventory/useInventory";
 import { ItemsTab } from "./tabs/ItemsTab";
 import { TownsTab } from "./tabs/TownsTab";
 import { PlacesTab } from "./tabs/PlacesTab";
@@ -34,7 +34,7 @@ export function AdventureLogView({
   titleCounters,
   knownRecipes,
   shareableRecipes,
-  ownedEquipment,
+  inventoryState,
   equippedSlots,
 }: {
   log: AdventureLog;
@@ -47,8 +47,8 @@ export function AdventureLogView({
   knownRecipes?: string[];
   /** 거래/우편 공유 가능한 제작서 id 목록. 학습 시 자동 부여, 공유 시 소비. */
   shareableRecipes?: string[];
-  /** 보유 장비 — itemId → 보유 수량. 미지정 시 빈 목록으로 처리. */
-  ownedEquipment?: Partial<Record<ItemId, number>>;
+  /** 현재 인벤토리 — '보유중' 수량 표기용. 미지정 시 도감 등록분만 표시. */
+  inventoryState?: InventoryState;
   /** 현재 장착 중인 슬롯 — '장착중' 배지 표기용. */
   equippedSlots?: EquippedSlots;
 }) {
@@ -69,7 +69,8 @@ export function AdventureLogView({
         <ItemsTab
           knownRecipes={knownRecipes ?? []}
           shareableRecipes={shareableRecipes ?? []}
-          ownedEquipment={ownedEquipment ?? {}}
+          discovered={log.discoveredEquipment ?? {}}
+          inventoryState={inventoryState}
           equippedSlots={equippedSlots}
         />
       )}

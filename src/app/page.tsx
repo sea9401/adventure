@@ -295,6 +295,13 @@ function Home() {
     adventureLog.markRegionVisited(currentRegion.id);
   }, [currentRegion.id, adventureLog]);
 
+  // 인벤토리·장착 상태가 바뀔 때마다 보유/장착 중인 장비를 모험의 서 도감에 등록.
+  // 폐기·판매로 빠진 것은 도감에서 사라지지 않는다. 마운트 시 기존 보유분도 한 번 백필.
+  const syncDiscoveredEquipment = adventureLog.syncDiscoveredEquipment;
+  useEffect(() => {
+    syncDiscoveredEquipment(inventory.state, characterStateHook.equippedSlots);
+  }, [inventory.state, characterStateHook.equippedSlots, syncDiscoveredEquipment]);
+
   // HP<=0 인데 마을이 아닌 곳에 stuck 된 유저를 다음 진입 때 복귀 마을로 강제 이동.
   useRespawnSafetyNet({
     hp: characterState.hp,
