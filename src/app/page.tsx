@@ -701,6 +701,9 @@ function Home() {
       addNotification("item", `${item.name}${suffix}을(를) 만들었다.`, {
         highlight: { name: item.name + suffix, className: rarityTextClass(item) },
       });
+      // 제작 등급 칭호 — 걸작(2): 명장 / 불량(-2): 불량품 제작자.
+      if (data.result.tier === 2) grantTitle("masterwork");
+      if (data.result.tier === -2) grantTitle("botched");
     } else {
       const potion = POTIONS[data.result.potionId];
       const qty = data.result.quantity;
