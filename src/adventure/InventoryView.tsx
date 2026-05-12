@@ -5,7 +5,6 @@ import { Diamond, Flask, Scroll, Sword, Trash } from "@phosphor-icons/react";
 import {
   BONUS_KEYS,
   BONUS_LABELS,
-  ITEMS,
   findItemId,
   rarityTextClass,
   type EquipBonus,
@@ -21,10 +20,12 @@ import {
 import {
   dropQualityPrefix,
   dropQualityTextClass,
-  resolveDroppedItem,
   type DropQuality,
 } from "./data/dropQuality";
-import { resolveCraftedItem } from "./data/recipes";
+import {
+  buildEquipEntries,
+  type EquipEntry,
+} from "./inventory/equipEntries";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, POTION_IDS, potionMax } from "./data/potions";
 import { CONSUMABLES, CONSUMABLE_IDS } from "./data/consumables";
@@ -55,48 +56,6 @@ const SLOT_TABS: { key: EquipSlot; label: string }[] = [
 // 가방 목록 한 줄의 공통 외형 — 카드 대신 얇은 행으로 압축.
 const ROW =
   "rounded-md border border-zinc-200 bg-white/70 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50";
-
-// 보유 장비는 1개당 한 행 — 같은 장비라도 묶지 않는다(중첩 X). 기본(equipment[]) ·
-// 제작산 등급(craftedEquipment[id][tier]) · 드랍 고품질(droppedEquipment[id][q]) 모두 개수만큼 펼침.
-type EquipEntry = {
-  key: string;
-  id: ItemId;
-  tier?: CraftTier;
-  quality?: DropQuality;
-  item: EquipItem;
-};
-
-function buildEquipEntries(inventory: InventoryState): EquipEntry[] {
-  const entries: EquipEntry[] = [];
-  for (const id of Object.keys(ITEMS) as ItemId[]) {
-    const n = inventory.equipment[id] ?? 0;
-    for (let i = 0; i < n; i++) {
-      entries.push({ key: `${id}#${i}`, id, item: ITEMS[id] });
-    }
-  }
-  for (const [id, tiers] of Object.entries(inventory.craftedEquipment)) {
-    for (const [t, n] of Object.entries(tiers ?? {})) {
-      if (!n || n <= 0) continue;
-      const tier = Number(t) as CraftTier;
-      const item = resolveCraftedItem(id as ItemId, tier);
-      for (let i = 0; i < n; i++) {
-        entries.push({ key: `${id}@t${t}#${i}`, id: id as ItemId, tier, item });
-      }
-    }
-  }
-  for (const [id, quals] of Object.entries(inventory.droppedEquipment)) {
-    for (const [q, n] of Object.entries(quals ?? {})) {
-      if (!n || n <= 0) continue;
-      const quality = Number(q) as DropQuality;
-      if (quality !== 1 && quality !== 2) continue;
-      const item = resolveDroppedItem(id as ItemId, quality);
-      for (let i = 0; i < n; i++) {
-        entries.push({ key: `${id}@q${q}#${i}`, id: id as ItemId, quality, item });
-      }
-    }
-  }
-  return entries;
-}
 
 // 같은 슬롯에 장착 중인 게 이 entry 와 동종(id + 제작 등급 + 드랍 등급 일치)인지 — 동종 여분이면 표시상 "장착중".
 function isEntryEquipped(
