@@ -87,25 +87,36 @@ export function MapNode({
         fill="transparent"
       />
       {isCurrent && (
-        <circle
-          cx={region.position.x}
-          cy={region.position.y}
-          r={NODE_RADIUS + 6}
-          className="fill-emerald-500/30"
-        >
-          <animate
-            attributeName="r"
-            values={`${NODE_RADIUS + 4};${NODE_RADIUS + 12};${NODE_RADIUS + 4}`}
-            dur="2s"
-            repeatCount="indefinite"
+        <>
+          {/* 펄스가 옅어지는 구간에도 항상 보이는 정적 후광 링 */}
+          <circle
+            cx={region.position.x}
+            cy={region.position.y}
+            r={NODE_RADIUS + 7}
+            fill="none"
+            strokeWidth={3}
+            className="stroke-emerald-500 dark:stroke-emerald-400"
           />
-          <animate
-            attributeName="opacity"
-            values="0.7;0.15;0.7"
-            dur="2s"
-            repeatCount="indefinite"
-          />
-        </circle>
+          <circle
+            cx={region.position.x}
+            cy={region.position.y}
+            r={NODE_RADIUS + 6}
+            className="fill-emerald-500/30"
+          >
+            <animate
+              attributeName="r"
+              values={`${NODE_RADIUS + 5};${NODE_RADIUS + 15};${NODE_RADIUS + 5}`}
+              dur="2s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0.75;0.1;0.75"
+              dur="2s"
+              repeatCount="indefinite"
+            />
+          </circle>
+        </>
       )}
       {isReachable && (
         <circle
@@ -132,7 +143,7 @@ export function MapNode({
         cx={region.position.x}
         cy={region.position.y}
         r={NODE_RADIUS}
-        strokeWidth={selected ? 3 : 2}
+        strokeWidth={selected || isCurrent ? 3 : 2}
         className={`${fillClass} ${strokeClass}`}
       />
       {isLocked && (
@@ -153,6 +164,27 @@ export function MapNode({
       >
         {region.name}
       </text>
+      {isCurrent && (
+        <>
+          {/* "여기 있다" 핀 — 같은 초록 계열 사냥터 노드들 사이에서도 한눈에 구분되게 */}
+          <text
+            x={region.position.x}
+            y={region.position.y - NODE_RADIUS - 9}
+            textAnchor="middle"
+            className="text-[22px] select-none"
+          >
+            📍
+          </text>
+          <text
+            x={region.position.x}
+            y={region.position.y + NODE_RADIUS + 31}
+            textAnchor="middle"
+            className="fill-emerald-600 dark:fill-emerald-400 text-[10px] font-bold tracking-wide select-none"
+          >
+            현재 위치
+          </text>
+        </>
+      )}
     </g>
   );
 }
