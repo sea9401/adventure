@@ -196,6 +196,9 @@ export function AdventureScreen() {
                   onClose={close}
                   crafting={crafting}
                   inventory={inventory}
+                  quests={quests}
+                  completeQuest={completeQuest}
+                  storyFlags={storyFlags}
                   addNotification={addNotification}
                 />
               );

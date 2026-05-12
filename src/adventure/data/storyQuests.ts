@@ -30,6 +30,16 @@ export const STORY_QUESTS = {
       "디올라로 일하러 간 남편을 걱정하는 수지. 호숫가에서 일한다는 그를 보고 소식을 전해주자.",
     giverNpcId: "village_suzy",
   },
+  // 볼드 ↔ 만월 — 두 대장장이의 재회(§7.1). 의뢰 없이 대사 릴레이.
+  // 가드 flag: manwol_bold_errand_given → manwol_bold_letter_delivered → manwol_bold_reunion_done.
+  // 만월의 운봉석 시연(`unhyang-manwol-ore-demo`) 완료 후 만월이 손잡이를 맡긴다.
+  manwol_bold_reunion: {
+    id: "manwol_bold_reunion",
+    title: "두 대장장이",
+    description:
+      "운향 대장장이 만월이 시작 마을의 옛 동료 볼드에게 손잡이 하나를 전해 달라고 한다. 볼드에게 갔다가, 다시 만월에게 돌아오자.",
+    giverNpcId: "unhyang_smith",
+  },
   // 운향 순례자 미상 — "북쪽 너머" 미스터리. 의뢰 없이 대사 분기로만 진행 (PilgrimDialogue).
   // 진행 가드는 storyFlag: volcano_heart_defeated → skyreach_main_cleared → pilgrim_revealed.
   pilgrim_beyond_north: {

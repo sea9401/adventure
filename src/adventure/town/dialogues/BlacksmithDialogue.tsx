@@ -3,13 +3,21 @@ import { NpcDialogue } from "@/adventure/NpcDialogue";
 import { STORY_QUESTS } from "@/adventure/data/storyQuests";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { useQuests } from "@/adventure/quests/useQuests";
+import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import type { NotificationKind } from "@/lib/notifications";
+
+const MANA_QUEST = "village-bold-mana-crystal";
+const MANA_NEED = 5;
 
 type Props = {
   npc: Npc;
   onClose: () => void;
   crafting: ReturnType<typeof useCrafting>;
   inventory: ReturnType<typeof useInventory>;
+  quests: ReturnType<typeof useQuests>;
+  completeQuest: (id: string) => boolean;
+  storyFlags: ReturnType<typeof useStoryFlags>;
   addNotification: (kind: NotificationKind, text: string) => void;
 };
 
@@ -18,6 +26,9 @@ export function BlacksmithDialogue({
   onClose,
   crafting,
   inventory,
+  quests,
+  completeQuest,
+  storyFlags,
   addNotification,
 }: Props) {
   const knowsBat = crafting.knows("baseball_bat");
@@ -107,6 +118,92 @@ export function BlacksmithDialogue({
         }}
       />
     );
+  }
+
+  // 만월의 손잡이 — 운향 만월이 맡긴 심부름(§7.1). 한 번만, 회복약 한 보따리로 답례.
+  if (
+    storyFlags.has("manwol_bold_errand_given") &&
+    !storyFlags.has("manwol_bold_letter_delivered")
+  ) {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "만월이? …그 까칠한 노인네가 아직 살아 있구먼. 이 손잡이, 만월이 솜씨가 맞아 — 결을 보면 알지.\n답례다. 약통에 좋은 거 좀 채워뒀어. 만월이한테 전해 줘 — 망치질 아직 죽지 않았다고."
+        }
+        primaryAction={{
+          label: "답례를 받는다",
+          onClick: () => {
+            inventory.add("potion_heal_s", 5);
+            storyFlags.set("manwol_bold_letter_delivered");
+            addNotification(
+              "quest_complete",
+              `${STORY_QUESTS.manwol_bold_reunion.title} — 볼드에게 전함`,
+            );
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+
+  // 마정석 시연(§10.1) — 깊은 동굴을 아는(jimmy_deep_cave_quest) 모험가에게 노출.
+  if (storyFlags.has("jimmy_deep_cave_quest")) {
+    const mana = quests.getEntry(MANA_QUEST);
+    if (mana.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "동굴 안쪽 큰 광맥, 거기 있던 놈한테서 마정석이 나온다지? 그거 제대로 다루려면 손이 익어야 해.\n다섯 덩이만 가져와 봐 — 그걸로 시연을 보여주지. 보고 나면 자네도 마정석 무기를 벼릴 수 있을 거야."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept(MANA_QUEST);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (mana.state === "active") {
+      const have = inventory.materialCount("mana_crystal");
+      if (have >= MANA_NEED) {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "마정석 다섯… 제대로 골라왔군. 잘 봐 — 결을 따라 이렇게 두드리면, 깨지지 않고 빛이 안에 머물지.\n됐어. 자네 손에도 새겨졌을 거다 — 마정석 팔찌 제작서다."
+            }
+            primaryAction={{
+              label: "건네준다",
+              onClick: () => {
+                const r = quests.tryDeliver(
+                  MANA_QUEST,
+                  inventory.materialCount,
+                  inventory.consumeMaterial,
+                );
+                if (r.ok) {
+                  completeQuest(MANA_QUEST);
+                  onClose();
+                }
+              },
+            }}
+          />
+        );
+      }
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`마정석은 동굴 안쪽 그 광맥 골렘이 떨군다네. 다섯 덩이 채워 오게. — 진행 ${have}/${MANA_NEED}`}
+        />
+      );
+    }
   }
 
   // Stage E — 끝. 일상 대화.

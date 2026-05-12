@@ -187,6 +187,20 @@ export const QUESTS: Quest[] = [
     repeatable: true,
     requiresQuestCompleted: "village-jimmy-deep-cave",
   },
+  // 볼드 — 마정석 무기 라인 보조(§10.1). 광맥의 수호자 드롭(마정석)을 볼드가 시연 → 팔찌 제작서.
+  // BlacksmithDialogue 에서 노출 (jimmy_deep_cave_quest flag 가 켜진 뒤 — 동굴 안쪽을 안다는 신호).
+  {
+    id: "village-bold-mana-crystal",
+    regionId: "village",
+    title: "마정석을 다루는 법",
+    description:
+      "광맥의 수호자가 떨군 마정석, 그거 제대로 다루려면 손이 익어야 해. 다섯 덩이만 가져와 봐 — 그걸로 시연을 보여주지. 보고 나면 자네도 마정석 무기를 벼릴 수 있을 거야.",
+    requiredLevel: 6,
+    target: { kind: "deliver", materialId: "mana_crystal", count: 5 },
+    reward: { gold: 600, exp: 500, recipes: ["mana_bracelet"], potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "village_blacksmith_bold",
+  },
   // ── 디올라 — "안개 너머의 길" 트라이얼 라인 ──────────────────────────────
   // 후드 손님이 폐허로 안내하기 전에 디올라 사람들의 신뢰를 얻어야 한다.
   // 세 의뢰는 마을·동굴·숲을 거쳐 디올라까지 이른 모험가가 그 동선을 다시
