@@ -241,6 +241,21 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "diola_elder",
   },
+  // 마린 ↔ 백운 — 산정 교역로 개통(§7.2). 운향 백운 라인의 mountain_trade_open flag 가
+  // 켜진 뒤 MarinDialogue 에서 노출. 완료 시 diola_unhyang_trade_done flag → 양 마을 갱신.
+  {
+    id: "diola-marin-mountain-trade",
+    regionId: "diola",
+    title: "산정과의 거래",
+    description:
+      "산정 길이 다시 안전해졌다고 들었소. 그렇다면 거래를 트지 — 우리 쪽 길목도 정리가 필요하오. 폐허 어귀 늑대 서른 마리만 솎아 주시오. 그러면 디올라와 운향 사이로 짐수레가 다시 오갈 게요.",
+    requiredLevel: 22,
+    target: { kind: "kill", monsterName: "폐허 늑대", count: 30 },
+    reward: { gold: 700, fame: 26, exp: 1100, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "diola_elder",
+    requiresQuestCompleted: "unhyang-baekun-highland-goats",
+  },
   // ── 디올라 길드 게시판 — 반복 의뢰 ────────────────────────────────────
   // 호수·폐허 두 인접 지역의 적을 디올라 거점에서 처리. 폐허 적 3종은 트라이얼
   // 통과 후에야 실제로 잡을 수 있어, 길드판 노출이 트라이얼 동기 강화에도 기여.
@@ -495,6 +510,34 @@ export const QUESTS: Quest[] = [
     giverNpcId: "unhyang_elder",
     requiresQuestCompleted: "unhyang-baekun-peak-giant",
   },
+  // 산하 ↔ 노라(디올라 여관) — 산정 약초 배송(§7.2). 완료 시 sanha_nora_herbs_sent flag
+  // + herbalists_courier 칭호 (page.tsx). 디올라 노라 다이얼로그가 갱신된다.
+  {
+    id: "unhyang-sanha-nora-herbs",
+    regionId: "unhyang",
+    title: "디올라로 보내는 약초",
+    description:
+      "디올라 여관 주인 노라한테 산정 약초를 좀 보내고 싶어요. 산초꽃 열 송이만 모아다 주시면 제가 부쳐 드릴게요 — 답례는 노라가 직접 챙겨 줄 거예요. 디올라 들르면 인사 한번 하시고요.",
+    requiredLevel: 18,
+    target: { kind: "deliver", materialId: "sancho_blossom", count: 10 },
+    reward: { gold: 400, exp: 600, potions: [{ id: "potion_heal_s", count: 5 }], potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "unhyang_herbalist",
+  },
+  // 나무꾼 지미 ↔ 산악 가이드 도연(§7.1). 지미가 운을 떼고, 도연이 실제 의뢰를 준다.
+  // 완료 시 jimmy_doyeon_timber_done flag → 시작 마을 지미 다이얼로그 갱신.
+  {
+    id: "village-jimmy-doyeon-timber",
+    regionId: "unhyang",
+    title: "산정의 단단한 목재",
+    description:
+      "시작 마을 나무꾼 지미가 산정 협곡의 목재 이야기를 하더라고. 그건 절벽 늑대 소굴 안쪽에 있어 — 열다섯 마리만 정리하면 안전하게 베어 와서 지미한테 부쳐 줄게.",
+    requiredLevel: 20,
+    target: { kind: "kill", monsterName: "절벽 늑대", count: 15 },
+    reward: { gold: 400, fame: 16, exp: 600, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "unhyang_guide",
+  },
   // ── 운향 모험가 길드 게시판 (정식 로스터) ──────────────────────────────
   {
     id: "unhyang-board-goats",
@@ -579,6 +622,18 @@ export const QUESTS: Quest[] = [
     reward: { gold: 1100, fame: 36, exp: 2400 },
     repeatable: true,
     requiresQuestCompleted: "unhyang-baekun-peak-giant",
+  },
+  {
+    id: "unhyang-board-supply-escort",
+    regionId: "unhyang",
+    title: "디올라행 짐수레 호위",
+    description:
+      "디올라와의 교역로가 열렸습니다. 폐허 어귀 늑대 40마리를 정리해 디올라행 짐수레 길을 지켜 주세요.",
+    requiredLevel: 22,
+    target: { kind: "kill", monsterName: "폐허 늑대", count: 40 },
+    reward: { gold: 500, fame: 18, exp: 950 },
+    repeatable: true,
+    requiresQuestCompleted: "diola-marin-mountain-trade",
   },
   // ── 다리 구간 — 운저 평원 (운향에서 받는 첫 의뢰) ───────────────────────
   {

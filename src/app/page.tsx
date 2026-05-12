@@ -884,6 +884,13 @@ function Home() {
       grantTitle("ridge_crosser");
       storyFlags.set("skyreach_main_cleared");
     }
+    // 마을 간 연계 — 완료 시 양쪽 NPC 다이얼로그 갱신용 flag (+ 칭호).
+    if (id === "diola-marin-mountain-trade") storyFlags.set("diola_unhyang_trade_done");
+    if (id === "unhyang-sanha-nora-herbs") {
+      storyFlags.set("sanha_nora_herbs_sent");
+      grantTitle("herbalists_courier");
+    }
+    if (id === "village-jimmy-doyeon-timber") storyFlags.set("jimmy_doyeon_timber_done");
     return true;
   };
 

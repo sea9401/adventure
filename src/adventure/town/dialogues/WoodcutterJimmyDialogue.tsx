@@ -140,6 +140,19 @@ export function WoodcutterJimmyDialogue({
     );
   }
 
+  // 산악 가이드 도연이 산정 협곡 목재를 부쳐옴(§7.1) — 지미가 전령을 알아본다.
+  if (deepCaveQuest.state === "completed" && storyFlags.has("jimmy_doyeon_timber_done")) {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "어, 자네! 도연이 산정 협곡 목재를 부쳐왔더라고 — 안 휘는 게 진짜야. 이런 거 어디서 구하나 했는데, 자네가 도연한테 말 넣어준 거지?\n고맙수. 톱밥 한 잔 받아요 — 농담이고, 좋은 손잡이 깎으면 자네한테 먼저 보여줄게."
+        }
+      />
+    );
+  }
+
   if (deepCaveQuest.state === "completed") {
     return (
       <NpcDialogue

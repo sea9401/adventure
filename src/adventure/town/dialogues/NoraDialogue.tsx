@@ -33,6 +33,16 @@ export function NoraDialogue({
   }
 
   if (entry.state === "completed") {
+    // 산하(운향 약초꾼)가 보낸 산정 약초 — 전령이 누구였는지 알아본다(§7.2).
+    if (storyFlags.has("sanha_nora_herbs_sent")) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"산하가 보낸 산정 약초, 잘 받았어요! …당신이 전령이었군요. 산기슭 향이 그대로네요 — 고마워요.\n차에 한 줌 우려뒀어요. 안개 짙은 밤엔 이게 제일이에요."}
+        />
+      );
+    }
     return (
       <NpcDialogue
         npc={npc}

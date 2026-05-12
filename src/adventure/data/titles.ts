@@ -93,6 +93,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "화염 능선을 넘어 천공 성지의 마지막 봉인을 다시 채운 자.",
     condition: "천공 성지 — 원로 해무의 봉인 라인('마지막 자물쇠') 완수",
   },
+  herbalists_courier: {
+    id: "herbalists_courier",
+    name: "약초꾼의 전령",
+    description: "산정의 약초를 안개 호숫가까지 실어 나른 자. 두 약초꾼이 그를 기억한다.",
+    condition: "운향 약초꾼 산하의 '디올라로 보내는 약초' 완수",
+  },
   beggar: {
     id: "beggar",
     name: "거지",

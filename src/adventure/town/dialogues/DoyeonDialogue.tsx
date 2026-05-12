@@ -37,6 +37,13 @@ const STEPS: QuestLineStep[] = [
     doneText: "바람이 좀 잦았어. 협곡 다니기가 편해졌겠다 — 자.",
   },
   {
+    id: "village-jimmy-doyeon-timber",
+    offerText:
+      "시작 마을 나무꾼 지미가 그러던데 — 산정 협곡엔 안 휘는 목재가 난다고. 그게 절벽 늑대 소굴 안쪽에 있어.\n열다섯 마리만 정리해 주면 안전하게 베어 와서 지미한테 부쳐 줄게.",
+    activeText: (have, need) => `소굴 안쪽 늑대들이 문제야. 길부터 트자. — 진행 ${have}/${need}`,
+    doneText: "소굴이 트였어. 목재 베어다 지미한테 부쳐 줄게 — 자, 자네 몫이야.",
+  },
+  {
     id: "unhyang-guide-cloud-raiders",
     offerText:
       "운향 아래로 내려가면 너른 들판이 펼쳐져 있어. 요즘 거기 떠돌이 약탈자 무리가 자리를 잡았다더군. 15명만 손봐 주겠나?",
