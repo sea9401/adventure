@@ -3,7 +3,9 @@
 날짜·해시는 git log 기준. 카테고리 태그:
 🏗️ infra · 👤 character · 🗺️ adventure · ⚔️ battle · 🏘️ town · 🤝 npc · 🔔 notify · 🎨 ui · 📦 data · 📝 docs
 
-## 미머지 — `feat/unhyang-quests` 브랜치 (머지 시 해시·날짜로 정리)
+## 2026-05-13
+
+신규 지역 퀘스트 라인 확장 — `feat/unhyang-quests` (PR #37, merge `41ee2b6`).
 
 - 📦 **신규 지역 퀘스트 라인 확장** (quest-expansion-plan M1~M6 전 항목). 운향 메인(백운·만월) + 천공 성지 메인(해무) + 운향/바람골/봉황령/화산 사이드 의뢰·길드 게시판 + 마을 간 연계(마린↔백운·산하↔노라·지미↔도연·만월↔볼드) + 보스 누적 사냥 hunter ×3 + 순례자 미상 대사 분기 + 히든 퀘스트 8종(`hidden-mole-king`·`-deepest-vein`·`-blacksmith-duel`·`-giants-origin`·`-volcano-relic`·`-lucky-collector`·`-hooded-cipher`·`-pilgrim-trail`).
 - 🤝 신규 NPC 3명: 떠돌이 음유시인 / 사미승 운하 / 문지기 청람 (초상화 placeholder — 추후 webp 추가).
