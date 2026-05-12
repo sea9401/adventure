@@ -14,15 +14,12 @@ const ZERO_DRAFT: Record<StatKey, number> = STAT_KEYS.reduce(
   {} as Record<StatKey, number>,
 );
 
-// 되돌리기 포인트 1개 구매 비용 — 캐릭터 레벨 비례. 초반엔 가벼워 빌드 실험 자유,
-// 후반엔 부담 늘어 잦은 리셋을 억제. 세 점 (Lv 1=30 / Lv 5=50 / Lv 10=100) 을
-// 정확히 지나는 piecewise — 슬로프가 5→10→20 으로 단조 가속.
-// 참고: Lv 22≈340G / Lv 30=500G / Lv 50=900G.
-export function revertPointPriceFor(level: number): number {
-  const lv = Math.max(1, Math.floor(level));
-  if (lv <= 5) return 30 + (lv - 1) * 5;     // 30→50  (구간 +5/Lv)
-  if (lv <= 10) return 50 + (lv - 5) * 10;   // 50→100 (+10/Lv)
-  return 100 + (lv - 10) * 20;               // 100→…  (+20/Lv)
+// 되돌리기 포인트 1개 구매 비용 — 레벨 무관 고정 500G.
+// (level 인자는 호출부 호환 위해 유지하지만 사용하지 않음.)
+export const REVERT_POINT_PRICE = 500;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function revertPointPriceFor(_level: number): number {
+  return REVERT_POINT_PRICE;
 }
 
 // 성장의 신전 — 드래프트 모드. +/- 로 분배안을 미리 짜고, '확정' 으로 일괄 반영.
