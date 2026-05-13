@@ -62,6 +62,32 @@ export const RECIPES: Recipe[] = [
     ingredients: [{ kind: "material", materialId: "phoenix_feather", count: 2 }],
     result: { kind: "potion", potionId: "potion_heal_l", quantity: 1 },
   },
+  // ── 마력가루 회복약 공정 3 종 ──────────────────────────────────────────
+  // 잉여 장비/재료를 분해실에서 갈아낸 마력가루를 단일 재료로 사용. 지역
+  // 재료(슬라임 조각·산초꽃·봉황 깃털) 라인과 병행 — 어느 쪽을 쓰든 같은
+  // 결과(potion_heal_*)가 나온다. 이 세 레시피는 시작 시점부터 자동 학습.
+  // (useCrafting.readInitial 이 known 에 자동 보강 — 기존 세이브도 자동 적용.)
+  {
+    id: "potion_heal_s_dust",
+    name: "작은 회복약 — 가루 공정",
+    description: "마력가루를 약불에 졸여 작은 회복약을 만든다. 통화처럼 굳은 가루도 약이 된다.",
+    ingredients: [{ kind: "material", materialId: "mana_dust", count: 1 }],
+    result: { kind: "potion", potionId: "potion_heal_s", quantity: 1 },
+  },
+  {
+    id: "potion_heal_m_dust",
+    name: "중간 회복약 — 가루 공정",
+    description: "마력가루 세 줌을 한 모금으로 졸여 중간 회복약을 만든다.",
+    ingredients: [{ kind: "material", materialId: "mana_dust", count: 3 }],
+    result: { kind: "potion", potionId: "potion_heal_m", quantity: 1 },
+  },
+  {
+    id: "potion_heal_l_dust",
+    name: "큰 회복약 — 가루 공정",
+    description: "마력가루를 한 사발 졸여 큰 회복약을 만든다. 손맛이 굳어야 한 병이 빚어진다.",
+    ingredients: [{ kind: "material", materialId: "mana_dust", count: 7 }],
+    result: { kind: "potion", potionId: "potion_heal_l", quantity: 1 },
+  },
   {
     id: "squishy_armor",
     name: "물컹물컹한 갑옷 제작법",
