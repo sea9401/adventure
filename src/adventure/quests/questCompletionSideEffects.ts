@@ -20,6 +20,16 @@ const ON_COMPLETE: Record<string, readonly SideEffect[]> = {
   ],
   // 해안 지선 메인 라인 "수심의 것" — 여울의 보스 의뢰 완수.
   "saltmarsh-yeoul-deep-one": [{ kind: "grantTitle", titleId: "saltmarsh_friend" }],
+  // 여울의 보스 재도전 3종 — kill_within_hp / no_potion_boss / equip_set 검증.
+  "saltmarsh-yeoul-challenge-pristine": [
+    { kind: "grantTitle", titleId: "pristine_diver" },
+  ],
+  "saltmarsh-yeoul-challenge-no-potion": [
+    { kind: "grantTitle", titleId: "dry_diver" },
+  ],
+  "saltmarsh-yeoul-challenge-abyssal-set": [
+    { kind: "grantTitle", titleId: "abyssal_envoy" },
+  ],
   // 서편 옛길 메인 라인 "옛 성문지기" — 무진의 보스 의뢰 완수.
   "dustford-mujin-gatekeeper": [{ kind: "grantTitle", titleId: "dustford_friend" }],
   // 무진의 보스 재도전 3종 — 새 quest kind(kill_within_hp/no_potion_boss/equip_set) 검증.

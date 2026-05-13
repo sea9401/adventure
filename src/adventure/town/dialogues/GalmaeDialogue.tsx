@@ -44,6 +44,16 @@ const STEPS: QuestLineStep[] = [
     doneText: "여덟 조각 — 좋아. 이만하면 한 철은 버티겠어. 자, 쳐준 값이다.",
     acceptLabel: "들여와 주겠다고 한다",
   },
+  {
+    // craft_item — 게딱지 손방패 두 점. galmae-crabs 보상 제작서를 받은 뒤 노출.
+    id: "saltmarsh-galmae-shell-forge",
+    offerText:
+      "이번엔 통발 손질이 아니라 자네 손을 빌려야겠어 — 게딱지 손방패, 두 점만 새로 짜서 가져와 줘. 갯벌 다니는 일꾼 둘에게 한 점씩 들려 보내려고. 솜씨 좋게.",
+    activeText: (have, need) =>
+      `게딱지 손방패는 자네 공방에서 짜는 거야. 솜씨가 들쭉날쭉하면 그건 안 받아. — 만든 양 ${have}/${need}`,
+    doneText: "두 점 — 좋은 솜씨야. 일꾼들 한 명씩 들려 보내지. 자, 약속한 값이다.",
+    acceptLabel: "맡아 보겠다고 한다",
+  },
 ];
 
 export function GalmaeDialogue({

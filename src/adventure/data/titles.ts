@@ -117,6 +117,24 @@ export const TITLES: Record<TitleId, Title> = {
     description: "수비대 도검·사슬갑옷·성문지기의 핵을 한 복으로 갖춘 자. 한 세대 뒤에 옛 수비대가 다시 섰다.",
     condition: "마른나루 — 무진의 '수비대 한 복' 의뢰 완수",
   },
+  pristine_diver: {
+    id: "pristine_diver",
+    name: "흠 없는 잠수부",
+    description: "소용돌이가 등을 핥기 전에 수심의 것을 가라앉힌 자. 옛 잠수부도 그렇게 들어갔다 한다.",
+    condition: "소만 — 여울의 '흠 없는 한 잠수' 의뢰 완수 (HP 70% 이상 유지하며 처치)",
+  },
+  dry_diver: {
+    id: "dry_diver",
+    name: "마른 잠수부",
+    description: "약 주머니에 손도 대지 않고 수심의 것을 가라앉힌 자. 가진 숨만으로 깊이를 견딘다.",
+    condition: "소만 — 여울의 '마른 한 잠수' 의뢰 완수 (포션 사용 없이 처치)",
+  },
+  abyssal_envoy: {
+    id: "abyssal_envoy",
+    name: "심연의 사절",
+    description: "심연 칼날·사이렌 노래 망토·수심의 핵을 한 복으로 갖춘 자. 한 세대 뒤에 옛 잠수부가 다시 섰다.",
+    condition: "소만 — 여울의 '심연의 한 복' 의뢰 완수",
+  },
   ridge_crosser: {
     id: "ridge_crosser",
     name: "능선을 넘은 자",

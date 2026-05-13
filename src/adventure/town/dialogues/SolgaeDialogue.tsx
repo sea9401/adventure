@@ -36,6 +36,16 @@ const STEPS: QuestLineStep[] = [
     doneText: "흉벽이 좀 트였겠어. 자, 받아.",
     acceptLabel: "받아들인다",
   },
+  {
+    // kill_within_hp — 노상강도 5을 HP 70% 이상으로 처치. solgae-ravens 후 노출.
+    id: "dustford-solgae-pristine-bandits",
+    offerText:
+      "들사냥꾼 한 수는 빗장 맞기 전에 끝내는 거야. 노상강도 다섯을 — HP 70% 이상으로 — 흠 없이 잡아 와 봐. 가능하면 옛길에서 자네 이름이 좀 알려질 거다.",
+    activeText: (have, need) =>
+      `한 방 한 방을 깨끗하게. 빗장이 닿으면 그 한 마리는 안 쳐. — 흠 없이 잡은 수 ${have}/${need}`,
+    doneText: "다섯 다 — 흠 없이. 옛길에서 자네 이름이 들리겠어. 자, 받아.",
+    acceptLabel: "맡아 보겠다고 한다",
+  },
 ];
 
 export function SolgaeDialogue({ npc, onClose, quests, completeQuest, inventory }: Props) {

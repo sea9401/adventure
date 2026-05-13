@@ -596,6 +596,74 @@ export const QUESTS: Quest[] = [
     giverNpcId: "dustford_keeper",
     requiresQuestCompleted: "dustford-mujin-gatekeeper",
   },
+  // ── 마른나루 옛길 — 새 quest kind 의뢰 ─────────────────────────────────
+  // PR A 에서 도입한 craft_item / talk_to_npc / visit_region / kill_within_hp 를
+  // 인트로 라인의 자연스러운 4 번째 단계로 매단다. 각 NPC 의 인트로 의뢰를 한 번
+  // 마친 뒤에야 노출돼, 라인 어휘를 끊지 않는다.
+  {
+    // craft_item — 두루 라인 마지막 단계. 옛 군기 망토(군기 한 폭 + 또 한 폭) 1 회 제작.
+    // tattered_standard_cloak 은 노상강도가 떨궈 모이고, 합쳐 frontier_standard_cloak.
+    id: "dustford-duru-standard-restore",
+    regionId: "dustford",
+    title: "두루의 청 — 옛 군기 복원",
+    description:
+      "성채까지 다닌다며? 그럼 부탁 하나 더 — 옛 변경 군기, 한 폭을 잇대 복원한 걸 한 번이라도 두르고 와 줘. 마른나루 노인들이 그 깃 한 번 보고 싶어 해. 군기 망토(frontier_standard_cloak) 1점 제작.",
+    requiredLevel: 9,
+    target: { kind: "craft_item", itemId: "frontier_standard_cloak", count: 1 },
+    reward: { gold: 360, fame: 14, exp: 520 },
+    repeatable: false,
+    giverNpcId: "dustford_scavenger",
+    requiresQuestCompleted: "dustford-duru-scrap",
+  },
+  {
+    // talk_to_npc — 나래 라인 마지막 단계. 보리(역참 아이)를 N 번 들어주기.
+    id: "dustford-narae-listen-bori",
+    regionId: "dustford",
+    title: "나래의 청 — 보리 들어주기",
+    description:
+      "그 애가 요즘 통 말이 적어요. 밤마다 옛길 끝 쪽을 본대요 — 자기는 안 무섭다면서. 들어줄 사람이 있어야지요. 보리와 세 번만 이야기를 나눠 주세요.",
+    requiredLevel: 4,
+    target: { kind: "talk_to_npc", npcId: "dustford_kid", count: 3 },
+    reward: { gold: 200, fame: 10, exp: 240, potions: [{ id: "potion_heal_s", count: 5 }] },
+    repeatable: false,
+    giverNpcId: "dustford_innkeeper",
+    requiresQuestCompleted: "dustford-narae-feathers",
+  },
+  {
+    // visit_region — 보리(역참 아이) 가 처음으로 내주는 의뢰. 성문이 열린 뒤,
+    // 옛 성채에 다섯 번 들어갔다 와서 어떻게 생겼는지 이야기해 달라는 어린애의 부탁.
+    id: "dustford-bori-keep-tour",
+    regionId: "dustford",
+    title: "보리의 청 — 성채 한 바퀴",
+    description:
+      "무진 할아버지는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서, 안이 어떻게 생겼는지 다 말해 줘요 — 흉벽도, 우물도, 안마당도. 옛 성채 5회 방문.",
+    requiredLevel: 9,
+    target: { kind: "visit_region", regionId: "oldwall_keep", count: 5 },
+    reward: { gold: 220, fame: 11, exp: 320 },
+    repeatable: false,
+    giverNpcId: "dustford_kid",
+    requiresQuestCompleted: "dustford-mujin-clear-road",
+  },
+  {
+    // kill_within_hp — 솔개 라인 마지막 단계. 노상강도 5 마리를 HP 70% 이상으로 처치.
+    // 들사냥꾼다운 "흠 없는 한 수" 어휘를 잡몹으로 끌어다 일상 도전으로 둔다.
+    id: "dustford-solgae-pristine-bandits",
+    regionId: "dustford",
+    title: "솔개의 청 — 흠 없는 사냥",
+    description:
+      "들사냥꾼 한 수는 빗장 맞기 전에 끝내는 거야. 노상강도 다섯을 — HP 70% 이상으로 — 흠 없이 잡아 와 봐. 그게 가능하면 옛길에서 자네 이름이 좀 알려질 거다.",
+    requiredLevel: 5,
+    target: {
+      kind: "kill_within_hp",
+      monsterName: "노상강도",
+      minHpFraction: 0.7,
+      count: 5,
+    },
+    reward: { gold: 280, fame: 12, exp: 380 },
+    repeatable: false,
+    giverNpcId: "dustford_hunter",
+    requiresQuestCompleted: "dustford-solgae-ravens",
+  },
   // ── 마른나루 길드 게시판 — 반복 의뢰 ─────────────────────────────────
   // 옛길 적 3종은 누구나, 옛 변경 성채 적 2종은 무진의 옛길 정리 완료 후 노출.
   {
@@ -812,6 +880,121 @@ export const QUESTS: Quest[] = [
     target: { kind: "kill", monsterName: "수심의 것", count: 3 },
     reward: { gold: 1100, fame: 28, exp: 1500 },
     repeatable: true,
+    giverNpcId: "saltmarsh_elder",
+    requiresQuestCompleted: "saltmarsh-yeoul-deep-one",
+  },
+  // ── 소만 — 새 quest kind 의뢰 ─────────────────────────────────────────
+  // craft_item / talk_to_npc / visit_region / equip_item / equip_set / kill_within_hp
+  // / no_potion_boss 를 자연스러운 4 번째 단계로 매단다. 보스 후 도전 3 종은 무진 패턴
+  // 그대로 — kill_within_hp / no_potion_boss / equip_set 을 한 라인에서 검증.
+  {
+    // craft_item — 갈매 라인 마지막 단계. 게딱지 손방패 2 점 제작.
+    // 게딱지 손방패 제작서는 갈매의 첫 의뢰(crabs) 보상으로 받는다.
+    id: "saltmarsh-galmae-shell-forge",
+    regionId: "saltmarsh",
+    title: "갈매의 청 — 게딱지 손방패 두 점",
+    description:
+      "이번엔 통발 손질이 아니라 자네 손을 빌려야겠어 — 게딱지 손방패, 두 점만 새로 짜서 가져와 줘. 갯벌 다니는 일꾼 둘에게 한 점씩 들려 보내려고. 솜씨 좋게.",
+    requiredLevel: 11,
+    target: { kind: "craft_item", itemId: "crab_shell_buckler", count: 2 },
+    reward: { gold: 320, fame: 13, exp: 480 },
+    repeatable: false,
+    giverNpcId: "saltmarsh_salter",
+    requiresQuestCompleted: "saltmarsh-galmae-crabs",
+  },
+  {
+    // talk_to_npc — 보말 라인 마지막 단계. 미르(갯마을 아이)를 N 번 들어주기.
+    id: "saltmarsh-bomal-listen-mireu",
+    regionId: "saltmarsh",
+    title: "보말의 청 — 미르 들어주기",
+    description:
+      "그 애가 요즘 통 말이 적어요. 한낮에도 갯벌만 보고 있고요 — 들어줄 사람이 있어야지요. 미르와 세 번만 이야기를 나눠 주세요. 사례는 손님이 두고 간 회복약으로요.",
+    requiredLevel: 11,
+    target: { kind: "talk_to_npc", npcId: "saltmarsh_kid", count: 3 },
+    reward: { gold: 220, fame: 11, exp: 280, potions: [{ id: "potion_heal_s", count: 5 }] },
+    repeatable: false,
+    giverNpcId: "saltmarsh_innkeeper",
+    requiresQuestCompleted: "saltmarsh-bomal-crab-shells",
+  },
+  {
+    // visit_region — 미르(갯마을 아이) 가 처음으로 내주는 의뢰. 해랑이 배를 내준 뒤,
+    // 산호초 섬에 다섯 번 다녀와 어떻게 생겼는지 이야기해 달라는 어린애의 부탁.
+    id: "saltmarsh-mireu-reef-tour",
+    regionId: "saltmarsh",
+    title: "미르의 청 — 산호초 섬 한 바퀴",
+    description:
+      "해랑 아저씨는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서, 산호초 섬이 어떻게 생겼는지 다 말해 줘요 — 안개도, 사이렌 노래도, 가시 산호도. 산호초 섬 5회 방문.",
+    requiredLevel: 16,
+    target: { kind: "visit_region", regionId: "reef_isle", count: 5 },
+    reward: { gold: 280, fame: 13, exp: 460 },
+    repeatable: false,
+    giverNpcId: "saltmarsh_kid",
+    requiresQuestCompleted: "saltmarsh-haerang-hull-plating",
+  },
+  {
+    // equip_item — 해랑 라인 마지막 단계. 산호 가시 단검을 한 번이라도 차고 와라.
+    // 뱃사공이 "산호 가시쯤은 익숙해야 난바다를 건너지" 라고 말하는 결.
+    id: "saltmarsh-haerang-coral-bear",
+    regionId: "saltmarsh",
+    title: "해랑의 청 — 산호 가시 자루",
+    description:
+      "암초를 자주 건너는 사람은 산호 가시쯤은 손에 익숙해야 해. 산호 가시 단검 — 한 번이라도 차고 와 줘. 그래야 뱃삯도 깎아 주지.",
+    requiredLevel: 16,
+    target: { kind: "equip_item", itemId: "coral_spine_dagger" },
+    reward: { gold: 260, fame: 12, exp: 420 },
+    repeatable: false,
+    giverNpcId: "saltmarsh_ferryman",
+    requiresQuestCompleted: "saltmarsh-haerang-hull-plating",
+  },
+  // ── 소만 — 수심의 것 보스 재도전 3 종 ──────────────────────────────────
+  // kill_within_hp / no_potion_boss / equip_set 의 인게임 검증. 무진 라인과 짝.
+  // 보스 처치(saltmarsh-yeoul-deep-one) 완료 후에만 노출되며, YeoulDialogue 가 한
+  // 번에 한 단계씩 차례로 제안한다.
+  {
+    id: "saltmarsh-yeoul-challenge-pristine",
+    regionId: "saltmarsh",
+    title: "흠 없는 한 잠수",
+    description:
+      "수심의 것을 한 번 가라앉혔다면 — 두 번째는 흠 없이 가져갈 수 있나? 소용돌이가 등을 핥기 전에. HP 70% 이상으로 수심의 것을 처치.",
+    requiredLevel: 18,
+    target: {
+      kind: "kill_within_hp",
+      monsterName: "수심의 것",
+      minHpFraction: 0.7,
+      count: 1,
+    },
+    reward: { gold: 700, fame: 18, exp: 1100 },
+    repeatable: false,
+    giverNpcId: "saltmarsh_elder",
+    requiresQuestCompleted: "saltmarsh-yeoul-deep-one",
+  },
+  {
+    id: "saltmarsh-yeoul-challenge-no-potion",
+    regionId: "saltmarsh",
+    title: "마른 한 잠수",
+    description:
+      "옛 잠수부는 약 주머니 없이 물에 들었어. 포션 한 병도 쓰지 않고 수심의 것을 가라앉혀 보게.",
+    requiredLevel: 18,
+    target: { kind: "no_potion_boss", monsterName: "수심의 것", count: 1 },
+    reward: { gold: 700, fame: 18, exp: 1100 },
+    repeatable: false,
+    giverNpcId: "saltmarsh_elder",
+    requiresQuestCompleted: "saltmarsh-yeoul-deep-one",
+  },
+  {
+    // equip_set — 무기 / 갑옷 / 액세서리 슬롯이 겹치지 않게 골랐다. 셋을 동시에 차야 진행.
+    id: "saltmarsh-yeoul-challenge-abyssal-set",
+    regionId: "saltmarsh",
+    title: "심연의 한 복",
+    description:
+      "심연 칼날·사이렌 노래 망토·수심의 핵 — 셋을 한 복으로 갖춰 한 번이라도 차고 와 주게. 옛 잠수부 한 식구가 다시 선 모습을 보고 싶소.",
+    requiredLevel: 18,
+    target: {
+      kind: "equip_set",
+      itemIds: ["abyssal_edge", "siren_song_mantle", "abyssal_heart"],
+    },
+    reward: { gold: 800, fame: 20, exp: 1200 },
+    repeatable: false,
     giverNpcId: "saltmarsh_elder",
     requiresQuestCompleted: "saltmarsh-yeoul-deep-one",
   },

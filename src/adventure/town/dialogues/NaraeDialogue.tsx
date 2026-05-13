@@ -37,6 +37,16 @@ const STEPS: QuestLineStep[] = [
     activeText: (have, need) => `탈영병들은 무너진 막사에 떼로 숨어요. 한 놈씩 끌어내는 게 나아요. — 진행 ${have}/${need}`,
     doneText: "행상이 다시 다니겠네요. 물자 들어오면 한 상 차려 드릴게요 — 우선 이거 받아요.",
   },
+  {
+    // talk_to_npc — 보리(역참 아이)를 세 번 들어주기. narae-feathers 완료 후 노출.
+    id: "dustford-narae-listen-bori",
+    offerText:
+      "그 애가 요즘 통 말이 적어요 — 보리요. 밤마다 옛길 끝 쪽을 본대요. 들어줄 사람이 있어야지요. 세 번만 보리와 이야기를 나눠 주세요. 사례는 손님이 두고 간 회복약으로 챙겨 드릴게요.",
+    activeText: (have, need) =>
+      `보리는 보통 마른 억새밭에 있어요. 무섭지 않냐고 묻지 말고, 그냥 듣기만 해도 돼요. — 나눈 이야기 ${have}/${need}`,
+    doneText: "세 번 — 고마워요. 보리가 한결 표정이 환해졌어요. 자, 약속한 사례. 회복약도 함께.",
+    acceptLabel: "들러 보겠다고 한다",
+  },
 ];
 
 export function NaraeDialogue({ npc, onClose, quests, completeQuest, inventory }: Props) {
