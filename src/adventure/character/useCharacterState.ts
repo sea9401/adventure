@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { applyExpGain, MAX_LEVEL } from "@/lib/leveling";
-import { ITEMS, findItemId } from "@/adventure/data/items";
-import { resolveCraftedItem } from "@/adventure/data/recipes";
-import { resolveDroppedItem } from "@/adventure/data/dropQuality";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import { baseCharacter, maxHpForLevel, maxMpForLevel } from "./defaults";
+import { rehydrateEquippedItem } from "./rehydrateEquip";
 import type { EquippedItem, EquippedSlots } from "./types";
 
 export type CharacterDynamicState = {
@@ -46,31 +44,17 @@ export const initialCharacterState: CharacterDynamicState = {
   equippedTitleId: null,
 };
 
-// 저장된 EquipItem(이름·stats·bonus 통째로 직렬화)을 ITEMS 정의의 "지금" 인스턴스로 교체.
-// 이렇게 하지 않으면 밸런스 패치(예: 부적 행운 +3 → +2) 후에도 옛 인스턴스가 그대로 보인다.
-// 제작산(craftTier)은 (itemId, craftTier), 드랍산 고품질(dropQuality)은 (itemId, dropQuality)
-// 로 다시 계산 — variance 패치도 반영된다. 이름 매칭이 안 되면 null — 슬롯에서 사라짐.
-function rehydrateSlot(
-  saved: EquippedItem | null | undefined,
-): EquippedItem | null {
-  if (!saved) return null;
-  const id = findItemId(saved);
-  if (!id) return null;
-  const tier = saved.craftTier;
-  if (tier != null && tier !== 0) return resolveCraftedItem(id, tier);
-  const q = saved.dropQuality;
-  if (q === 1 || q === 2) return resolveDroppedItem(id, q);
-  return ITEMS[id];
-}
-
+// 저장된 EquipItem 슬롯 매핑을 "지금" 데이터 정의로 다시 만들어 옛 인스턴스가 남지 않게.
+// 실제 변환은 rehydrateEquippedItem 공용 헬퍼 — 서버측 autoHunt/derivePlayerCombatFromSaves
+// 도 동일 헬퍼를 써야 craftTier/dropQuality 가 일관되게 반영된다.
 function rehydrateEquipped(
   saved: CharacterDynamicState["equipped"],
 ): CharacterDynamicState["equipped"] {
   if (!saved) return undefined;
   return {
-    weapon: rehydrateSlot(saved.weapon),
-    armor: rehydrateSlot(saved.armor),
-    accessory: rehydrateSlot(saved.accessory),
+    weapon: rehydrateEquippedItem(saved.weapon),
+    armor: rehydrateEquippedItem(saved.armor),
+    accessory: rehydrateEquippedItem(saved.accessory),
   };
 }
 
