@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Hammer } from "@phosphor-icons/react";
 import { ITEMS, type ItemId } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, type PotionId } from "./data/potions";
 import { RECIPES, type Recipe, type RecipeIngredient } from "./data/recipes";
 import { craftVarianceSummary } from "./data/craftQuality";
+import { CRAFT_BATCH_MAX } from "./crafting/types";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
@@ -71,6 +72,29 @@ function summarizeResult(r: Recipe): {
   };
 }
 
+// 한 번 호출로 만들 수 있는 최대 횟수 N — 재료 충분량 ÷ 회당 소비량의 최솟값, 포션 결과면 보유 한도도 함께,
+// 절대 상한은 CRAFT_BATCH_MAX. 0 이면 제작 불가.
+function maxCraftable(
+  r: Recipe,
+  materialCounts: Partial<Record<MaterialId, number>>,
+  equipmentCounts: Partial<Record<ItemId, number>>,
+  potionCounts: Partial<Record<PotionId, number>>,
+  potionMax: number,
+): number {
+  let cap = CRAFT_BATCH_MAX;
+  for (const ing of r.ingredients) {
+    const have = ingredientCount(ing, materialCounts, equipmentCounts).have;
+    cap = Math.min(cap, Math.floor(have / ing.count));
+    if (cap <= 0) return 0;
+  }
+  if (r.result.kind === "potion") {
+    const headroom =
+      potionMax - (potionCounts[r.result.potionId] ?? 0);
+    cap = Math.min(cap, Math.floor(headroom / r.result.quantity));
+  }
+  return Math.max(0, cap);
+}
+
 export function CraftingView({
   knownIds,
   materialCounts,
@@ -84,7 +108,7 @@ export function CraftingView({
   equipmentCounts: Partial<Record<ItemId, number>>;
   potionCounts: Partial<Record<PotionId, number>>;
   potionMax: number;
-  onCraft: (recipe: Recipe) => void;
+  onCraft: (recipe: Recipe, quantity?: number) => void;
 }) {
   const knownRecipes = RECIPES.filter((r) => knownIds.includes(r.id));
   const [tab, setTab] = useState<CraftCategory>("weapon");
@@ -119,88 +143,17 @@ export function CraftingView({
       ) : (
         <Card as="section" padding="md">
           <div className="space-y-2">
-            {pager.pageItems.map((r) => {
-              const { title, meta, variance } = summarizeResult(r);
-              const hasMaterials = r.ingredients.every(
-                (ing) =>
-                  ingredientCount(ing, materialCounts, equipmentCounts).have >=
-                  ing.count,
-              );
-              // 포션 결과는 종류별 한도(potionMax)에 걸리면 제작 불가.
-              // 한도까지 가득 차 있으면 재료만 소비되는 버그를 막기 위해 사전 차단.
-              const potionFull =
-                r.result.kind === "potion" &&
-                (potionCounts[r.result.potionId] ?? 0) >= potionMax;
-              const canCraft = hasMaterials && !potionFull;
-              return (
-                <div
-                  key={r.id}
-                  className="rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/50"
-                >
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      {title}
-                    </span>
-                    <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
-                      {meta}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                    {r.description}
-                  </p>
-                  {variance && (
-                    <p className="mt-1 text-xs text-sky-600 dark:text-sky-400">
-                      품질에 따라 변동 — {variance}
-                    </p>
-                  )}
-                  {r.ingredients.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
-                      <span className="text-zinc-500 dark:text-zinc-400">
-                        재료:
-                      </span>
-                      {r.ingredients.map((ing) => {
-                        const { have, name } = ingredientCount(
-                          ing,
-                          materialCounts,
-                          equipmentCounts,
-                        );
-                        const enough = have >= ing.count;
-                        return (
-                          <span
-                            key={ingredientKey(ing)}
-                            className={
-                              enough
-                                ? "text-zinc-700 dark:text-zinc-300"
-                                : "text-rose-600 dark:text-rose-400"
-                            }
-                          >
-                            {name} {have}/{ing.count}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {potionFull && (
-                    <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-                      포션 보유 한도에 도달해 더 만들 수 없습니다.
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => onCraft(r)}
-                    disabled={!canCraft}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                  >
-                    <Hammer
-                      size={16}
-                      weight="duotone"
-                      className="text-amber-600"
-                    />
-                    제작
-                  </button>
-                </div>
-              );
-            })}
+            {pager.pageItems.map((r) => (
+              <RecipeRow
+                key={r.id}
+                recipe={r}
+                materialCounts={materialCounts}
+                equipmentCounts={equipmentCounts}
+                potionCounts={potionCounts}
+                potionMax={potionMax}
+                onCraft={onCraft}
+              />
+            ))}
             <Pagination
               page={pager.page}
               pageCount={pager.pageCount}
@@ -209,6 +162,137 @@ export function CraftingView({
           </div>
         </Card>
       )}
+    </div>
+  );
+}
+
+// 한 레시피 카드 — 수량 입력 + "최대" 버튼 + "제작 ×N" 버튼.
+// 수량 state 는 행마다 독립이라 페이지/탭이 바뀌어도 보이는 행은 1 로 새로 시작한다.
+function RecipeRow({
+  recipe,
+  materialCounts,
+  equipmentCounts,
+  potionCounts,
+  potionMax,
+  onCraft,
+}: {
+  recipe: Recipe;
+  materialCounts: Partial<Record<MaterialId, number>>;
+  equipmentCounts: Partial<Record<ItemId, number>>;
+  potionCounts: Partial<Record<PotionId, number>>;
+  potionMax: number;
+  onCraft: (recipe: Recipe, quantity?: number) => void;
+}) {
+  const { title, meta, variance } = summarizeResult(recipe);
+  const max = useMemo(
+    () =>
+      maxCraftable(
+        recipe,
+        materialCounts,
+        equipmentCounts,
+        potionCounts,
+        potionMax,
+      ),
+    [recipe, materialCounts, equipmentCounts, potionCounts, potionMax],
+  );
+
+  // 수량 입력 상태 — 사용자 의도를 그대로 들고 있다가, "제작" 누를 때 1..max 로 clamp.
+  // max 가 0 이 되거나 줄어들면 버튼은 disabled 로, 입력 자체는 비우지 않는다(타이핑 중 끊기지 않게).
+  const [qty, setQty] = useState(1);
+  const effectiveQty = Math.min(Math.max(1, qty), Math.max(1, max));
+  const canCraft = max > 0;
+  // 포션 결과 한도 자체에 닿아서 max=0 인 케이스는 별도 안내(과거 동작 유지).
+  const potionFull =
+    recipe.result.kind === "potion" &&
+    (potionCounts[recipe.result.potionId] ?? 0) >= potionMax;
+
+  return (
+    <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/50">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          {title}
+        </span>
+        <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
+          {meta}
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+        {recipe.description}
+      </p>
+      {variance && (
+        <p className="mt-1 text-xs text-sky-600 dark:text-sky-400">
+          품질에 따라 변동 — {variance}
+        </p>
+      )}
+      {recipe.ingredients.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+          <span className="text-zinc-500 dark:text-zinc-400">재료:</span>
+          {recipe.ingredients.map((ing) => {
+            const { have, name } = ingredientCount(
+              ing,
+              materialCounts,
+              equipmentCounts,
+            );
+            const enough = have >= ing.count;
+            return (
+              <span
+                key={ingredientKey(ing)}
+                className={
+                  enough
+                    ? "text-zinc-700 dark:text-zinc-300"
+                    : "text-rose-600 dark:text-rose-400"
+                }
+              >
+                {name} {have}/{ing.count}
+              </span>
+            );
+          })}
+        </div>
+      )}
+      {potionFull && (
+        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+          포션 보유 한도에 도달해 더 만들 수 없습니다.
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          수량
+          <input
+            type="number"
+            min={1}
+            max={Math.max(1, max)}
+            step={1}
+            inputMode="numeric"
+            value={qty}
+            disabled={!canCraft}
+            onChange={(e) => {
+              // 빈 문자열 → 1, NaN/소수 → 정수화. 상한은 제작 시점에 clamp 하므로 여기선 약하게만.
+              const next = Number.parseInt(e.target.value, 10);
+              if (Number.isNaN(next)) setQty(1);
+              else setQty(Math.max(1, Math.min(CRAFT_BATCH_MAX, next)));
+            }}
+            className="w-16 rounded-md border border-zinc-300 bg-white px-2 py-1 text-right text-sm tabular-nums text-zinc-900 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => setQty(max)}
+          disabled={!canCraft}
+          className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          최대 ({max})
+        </button>
+        <button
+          type="button"
+          onClick={() => onCraft(recipe, effectiveQty)}
+          disabled={!canCraft}
+          className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          <Hammer size={16} weight="duotone" className="text-amber-600" />
+          제작{effectiveQty > 1 ? ` ×${effectiveQty}` : ""}
+        </button>
+      </div>
     </div>
   );
 }

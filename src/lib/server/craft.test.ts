@@ -78,8 +78,10 @@ describe("computeCraftOutcome — 검증 실패", () => {
 describe("computeCraftOutcome — 장비 (등급 변동 있음)", () => {
   it("일반(tier 0) 결과는 equipment[] 로, 재료 차감", () => {
     const input = { ...base(), known: ["baseball_bat"], materials: { branch: 5 } };
-    const out = computeCraftOutcome(input, "baseball_bat", rngMid);
-    expect(out.result).toEqual({ kind: "equipment", itemId: "baseball_bat", tier: 0 });
+    const out = computeCraftOutcome(input, "baseball_bat", { rng: rngMid });
+    expect(out.results).toEqual([
+      { kind: "equipment", itemId: "baseball_bat", tier: 0 },
+    ]);
     expect(out.equipment.baseball_bat).toBe(1);
     expect(out.craftedEquipment.baseball_bat).toBeUndefined();
     expect(out.materials.branch).toBe(3); // 5 - 2
@@ -87,8 +89,10 @@ describe("computeCraftOutcome — 장비 (등급 변동 있음)", () => {
 
   it("비-기본 등급(불량) 결과는 craftedEquipment[id][tier] 로", () => {
     const input = { ...base(), known: ["baseball_bat"], materials: { branch: 2 } };
-    const out = computeCraftOutcome(input, "baseball_bat", rngMin);
-    expect(out.result).toEqual({ kind: "equipment", itemId: "baseball_bat", tier: -2 });
+    const out = computeCraftOutcome(input, "baseball_bat", { rng: rngMin });
+    expect(out.results).toEqual([
+      { kind: "equipment", itemId: "baseball_bat", tier: -2 },
+    ]);
     expect(out.craftedEquipment.baseball_bat).toEqual({ "-2": 1 });
     expect(out.equipment.baseball_bat).toBeUndefined();
     expect(out.materials.branch).toBeUndefined(); // 2 - 2 = 0 → 정리됨
@@ -101,7 +105,7 @@ describe("computeCraftOutcome — 장비 (등급 변동 있음)", () => {
       materials: { branch: 4 },
       craftedEquipment: { baseball_bat: { "2": 1 } },
     };
-    const out = computeCraftOutcome(input, "baseball_bat", rngMax);
+    const out = computeCraftOutcome(input, "baseball_bat", { rng: rngMax });
     expect(out.craftedEquipment.baseball_bat).toEqual({ "2": 2 });
   });
 
@@ -113,10 +117,10 @@ describe("computeCraftOutcome — 장비 (등급 변동 있음)", () => {
       equipment: {},
       craftedEquipment: { baseball_bat: { "-1": 1, "2": 1 } },
     };
-    const out = computeCraftOutcome(input, "nailed_baseball_bat", rngMid);
+    const out = computeCraftOutcome(input, "nailed_baseball_bat", { rng: rngMid });
     // baseball_bat ×1 소비 — 낮은 등급("-1")부터 → "2" 만 남음
     expect(out.craftedEquipment.baseball_bat).toEqual({ "2": 1 });
-    expect(out.result.kind).toBe("equipment");
+    expect(out.results[0].kind).toBe("equipment");
     expect(out.materials.rusty_nail).toBeUndefined(); // 28 - 28 = 0
   });
 
@@ -129,10 +133,10 @@ describe("computeCraftOutcome — 장비 (등급 변동 있음)", () => {
       craftedEquipment: {},
       droppedEquipment: { baseball_bat: { "1": 1, "2": 1 } },
     };
-    const out = computeCraftOutcome(input, "nailed_baseball_bat", rngMid);
+    const out = computeCraftOutcome(input, "nailed_baseball_bat", { rng: rngMid });
     // baseball_bat ×1 소비 — 낮은 품질("1")부터 → "2" 만 남음
     expect(out.droppedEquipment.baseball_bat).toEqual({ "2": 1 });
-    expect(out.result.kind).toBe("equipment");
+    expect(out.results[0].kind).toBe("equipment");
   });
 
   it("equip 재료 — equipment + droppedEquipment 합산이 모자라면 missing_ingredient", () => {
@@ -142,9 +146,9 @@ describe("computeCraftOutcome — 장비 (등급 변동 있음)", () => {
       materials: { rusty_nail: 28 },
       droppedEquipment: { baseball_bat: {} },
     };
-    expect(() => computeCraftOutcome(input, "nailed_baseball_bat", rngMid)).toThrow(
-      /missing_ingredient/,
-    );
+    expect(() =>
+      computeCraftOutcome(input, "nailed_baseball_bat", { rng: rngMid }),
+    ).toThrow(/missing_ingredient/);
   });
 });
 
@@ -155,9 +159,91 @@ describe("computeCraftOutcome — 포션 (변동 없음)", () => {
       known: ["potion_heal_s_dust"],
       materials: { mana_dust: 5 },
     };
-    const out = computeCraftOutcome(input, "potion_heal_s_dust", rngMax);
-    expect(out.result).toEqual({ kind: "potion", potionId: "potion_heal_s", quantity: 1 });
+    const out = computeCraftOutcome(input, "potion_heal_s_dust", { rng: rngMax });
+    expect(out.results).toEqual([
+      { kind: "potion", potionId: "potion_heal_s", quantity: 1 },
+    ]);
     expect(out.potions.potion_heal_s).toBe(1);
     expect(out.materials.mana_dust).toBe(4); // 5 - 1
+  });
+});
+
+describe("computeCraftOutcome — 배치(quantity > 1)", () => {
+  it("quantity=5 — 재료 5배 차감 + 결과 5개", () => {
+    const input = {
+      ...base(),
+      known: ["potion_heal_s_dust"],
+      materials: { mana_dust: 7 },
+    };
+    const out = computeCraftOutcome(input, "potion_heal_s_dust", { quantity: 5 });
+    expect(out.results).toHaveLength(5);
+    expect(out.results.every((r) => r.kind === "potion")).toBe(true);
+    expect(out.potions.potion_heal_s).toBe(5);
+    expect(out.materials.mana_dust).toBe(2); // 7 - 5
+  });
+
+  it("재료가 quantity 배에 모자라면 missing_material (부분 차감 없음)", () => {
+    const input = {
+      ...base(),
+      known: ["potion_heal_s_dust"],
+      materials: { mana_dust: 3 },
+    };
+    expect(() =>
+      computeCraftOutcome(input, "potion_heal_s_dust", { quantity: 5 }),
+    ).toThrow(/missing_material/);
+    // 입력은 안 바뀜
+    expect(input.materials.mana_dust).toBe(3);
+  });
+
+  it("포션 누적이 한도 초과면 potion_full — 5개 만들면 11이 되어 한도(10) 초과", () => {
+    const input = {
+      ...base(),
+      known: ["potion_heal_s_dust"],
+      materials: { mana_dust: 99 },
+      potions: { potion_heal_s: 6 }, // 6 + 5 = 11 > 10(기본)
+    };
+    expect(() =>
+      computeCraftOutcome(input, "potion_heal_s_dust", { quantity: 5 }),
+    ).toThrow(/potion_full/);
+  });
+
+  it("장비 배치 — 등급 추첨이 회마다 독립", () => {
+    // rng 가 호출될 때마다 0.0, 0.999, 0.0 ... 으로 번갈아 → -2, 2, -2
+    const seq = [0.0, 0.999, 0.0];
+    let idx = 0;
+    const rng = () => seq[idx++ % seq.length];
+    const input = {
+      ...base(),
+      known: ["baseball_bat"],
+      materials: { branch: 6 }, // 2 × 3
+    };
+    const out = computeCraftOutcome(input, "baseball_bat", { quantity: 3, rng });
+    expect(out.results).toHaveLength(3);
+    const tiers = out.results.map((r) =>
+      r.kind === "equipment" ? r.tier : null,
+    );
+    expect(tiers).toEqual([-2, 2, -2]);
+    expect(out.craftedEquipment.baseball_bat).toEqual({ "-2": 2, "2": 1 });
+    expect(out.materials.branch).toBeUndefined();
+  });
+
+  it("quantity 가 정수 아니거나 범위 밖이면 invalid_quantity", () => {
+    const input = {
+      ...base(),
+      known: ["potion_heal_s_dust"],
+      materials: { mana_dust: 9 },
+    };
+    expect(() =>
+      computeCraftOutcome(input, "potion_heal_s_dust", { quantity: 0 }),
+    ).toThrow(/invalid_quantity/);
+    expect(() =>
+      computeCraftOutcome(input, "potion_heal_s_dust", { quantity: -1 }),
+    ).toThrow(/invalid_quantity/);
+    expect(() =>
+      computeCraftOutcome(input, "potion_heal_s_dust", { quantity: 1.5 }),
+    ).toThrow(/invalid_quantity/);
+    expect(() =>
+      computeCraftOutcome(input, "potion_heal_s_dust", { quantity: 9999 }),
+    ).toThrow(/invalid_quantity/);
   });
 });
