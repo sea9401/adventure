@@ -4,7 +4,7 @@
 //
 // 정확성보다 일관성/단순성을 우선:
 // - engine.ts의 advanceTurn 그대로 재사용 — 실시간 자동 전투와 결과 분포 동일
-// - 시간은 전투당 라이브 쿨다운(battleCooldownMs ≈ 600~2000ms)만 경과 — 전투 자체는 즉시
+// - 시간은 전투당 라이브 쿨다운(battleCooldownMs ≈ 600~5000ms)만 경과 — 전투 자체는 즉시
 // - 시뮬 가능 시간은 OFFLINE_SIM_MAX_MS(1시간)로 cap, 그리고 input.maxBattles 로 전투 수도 cap
 //   (원샷 캐릭터가 한 묶음에 수천 킬 쏟는 것 방지 — 자동 사냥 collect 가 AUTO_HUNT_MAX_BATTLES 주입)
 
@@ -25,14 +25,15 @@ import { applyExpGain, applyNewbieBonus } from "@/lib/leveling";
 
 export const OFFLINE_SIM_MAX_MS = 60 * 60 * 1000;
 
-// 라이브 자동 전투의 전투 사이 쿨다운 — useBattle.ts 의 computeBattleCooldown 과 동일해야 함.
+// 라이브 자동 전투의 전투 사이 쿨다운 — useBattle.ts 의 computeBattleCooldown / 상수와 동일해야 함.
+// (useBattle.ts 는 React hook 이라 여기서 import 하지 않고 값을 복제 — 양쪽을 함께 고칠 것.)
 // 위탁/오프라인 sim 도 이 페이싱을 그대로 따른다: 전투 자체는 "즉시" 끝나고, 한 전투가 끝날
-// 때마다 battleCooldownMs(min(로그줄수, 8)) ≈ 600~2000ms 만큼 흐른 것으로 친다. (옛 모델은
+// 때마다 battleCooldownMs(min(로그줄수, 20)) ≈ 600~5000ms 만큼 흐른 것으로 친다. (옛 모델은
 // 턴당 250ms 라, 강한 캐릭이 한 방에 죽이면 전투당 250ms → 라이브보다 훨씬 빨랐다.)
 const BATTLE_COOLDOWN_PER_LOG_LINE_MS = 250;
 const BATTLE_COOLDOWN_MIN_MS = 600;
-const BATTLE_COOLDOWN_MAX_MS = 4000;
-const BATTLE_LOG_CLAMP = 8;
+const BATTLE_COOLDOWN_MAX_MS = 5000;
+const BATTLE_LOG_CLAMP = 20;
 function battleCooldownMs(logLines: number): number {
   const raw = logLines * BATTLE_COOLDOWN_PER_LOG_LINE_MS;
   return Math.max(BATTLE_COOLDOWN_MIN_MS, Math.min(BATTLE_COOLDOWN_MAX_MS, raw));

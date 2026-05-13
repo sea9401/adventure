@@ -10,7 +10,11 @@ import type {
   PlayerAction,
   PlayerCombat,
 } from "./battle/engine";
-import { useBattle, computeBattleCooldown } from "./battle/useBattle";
+import {
+  useBattle,
+  computeBattleCooldown,
+  BATTLE_LOG_CLAMP,
+} from "./battle/useBattle";
 import { BattleScene, type BattlePlayerStatus } from "./battle/BattleScene";
 import { BattleResult } from "./battle/BattleResult";
 import { EnemyEncounterSection } from "./EnemyEncounterSection";
@@ -162,9 +166,11 @@ export function BattleView({
     // 보스 승리는 결과 모달 확인 후 종료 — 자동 cooldown/다음 적 X.
     // 동기 시뮬 특성상 즉시 stop() 하면 BattleScene 이 한 프레임만 보이고 사라진다.
     if (bossModeRef.current) return;
-    // 로그는 전체 보관하지만 쿨다운은 보이는 마지막 부분 기준이면 충분 — 8줄로 클램프해
-    // 자동 사냥 페이싱을 종전 그대로 유지한다.
-    const cooldown = computeBattleCooldown(Math.min(state.log.length, 8));
+    // 로그는 전체 보관하지만 쿨다운은 보이는 마지막 부분 기준이면 충분 — BATTLE_LOG_CLAMP 줄로
+    // 클램프해 자동 사냥 페이싱을 일정 범위(600~5000ms)로 제한한다.
+    const cooldown = computeBattleCooldown(
+      Math.min(state.log.length, BATTLE_LOG_CLAMP),
+    );
     const finalHp = state.playerHp;
     // 이 전투 종료 시각·쿨다운을 모듈 스코프에 기록 — unmount 후 재진입 시 이어받는다.
     lastBattleEndAt = Date.now();

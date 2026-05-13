@@ -67,7 +67,11 @@ export function useBattle({
 // 한 줄(턴 메시지)당 누적되는 cooldown. 짧은 전투는 빠른 회전, 긴 전투는 사용자가 읽을 시간 확보.
 export const COOLDOWN_PER_LOG_LINE_MS = 250;
 export const MIN_BATTLE_COOLDOWN_MS = 600;
-export const MAX_BATTLE_COOLDOWN_MS = 4000;
+export const MAX_BATTLE_COOLDOWN_MS = 5000;
+
+// 자동 사냥/오프라인 sim 에서 쿨다운 계산에 쓰는 로그 줄 수 상한.
+// 20줄 × 250ms = 5000ms → 긴 전투는 다음 전투까지 최대 5초 대기 (디메리트).
+export const BATTLE_LOG_CLAMP = 20;
 
 export function computeBattleCooldown(logLines: number): number {
   const raw = logLines * COOLDOWN_PER_LOG_LINE_MS;
