@@ -1,0 +1,25 @@
+# /etc/systemd/system/adventure-rpg-test.service
+# 테스트 서버용 Next.js 인스턴스. prod 와 같은 EC2 위에서 포트 3001 로 동시 가동.
+# 환경변수는 ~/adventure-rpg-test/.env.production.local 에 두면 `next start` 가 알아서 로드한다.
+# 핵심 차이값 (prod 대비):
+#   DATABASE_URL          — 새 Neon 프로젝트 URL
+#   NEXT_PUBLIC_XP_RATE_MULT=5
+#   AUTH_SECRET           — 새 랜덤 (test 세션 분리)
+[Unit]
+Description=Adventure RPG (test)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ec2-user/adventure-rpg-test
+ExecStart=/usr/bin/npm start -- -p 3001
+Restart=always
+RestartSec=3
+User=ec2-user
+Group=ec2-user
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

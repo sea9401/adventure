@@ -1,6 +1,7 @@
 name: Deploy to EC2
 
 # main 에 push 되면 EC2 로 SSH 접속해 코드 갱신 + 재빌드 + 재시작.
+# prod (~/adventure-rpg) 와 test (~/adventure-rpg-test) 를 순차로 배포한다.
 # 필요한 GitHub Secrets (Settings → Secrets and variables → Actions):
 #   EC2_HOST    — EC2 의 고정 IP 또는 도메인 (예: 54.180.28.29)
 #   EC2_SSH_KEY — EC2 접속용 private key 전체 (msmsge-key.pem 의 내용)
@@ -24,24 +25,47 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script_stop: true
-          command_timeout: 15m
+          command_timeout: 30m
           script: |
             set -e
             cd ~/adventure-rpg
-            echo "▶ git update"
+            echo "▶ [prod] git update"
             git fetch --prune origin
             git checkout main
             git reset --hard origin/main
-            echo "▶ npm ci"
+            echo "▶ [prod] npm ci"
             npm ci
-            echo "▶ db migrate"
+            echo "▶ [prod] db migrate"
             node --env-file=.env.production.local src/db/migrate.mjs
-            echo "▶ build"
+            echo "▶ [prod] build"
             npm run build
-            echo "▶ restart"
+            echo "▶ [prod] restart"
             sudo systemctl restart adventure-rpg
             sleep 2
             sudo systemctl --no-pager status adventure-rpg | head -n 4
-            echo "▶ health"
-            curl -fsS -o /dev/null -w 'health=%{http_code}\n' http://127.0.0.1:3000/api/health || true
+            echo "▶ [prod] health"
+            curl -fsS -o /dev/null -w 'prod=%{http_code}\n' http://127.0.0.1:3000/api/health || true
+
+            # test 서버 — 디렉토리가 있을 때만 실행 (초기 셋업 전에는 자동 skip).
+            if [ -d ~/adventure-rpg-test ]; then
+              cd ~/adventure-rpg-test
+              echo "▶ [test] git update"
+              git fetch --prune origin
+              git checkout main
+              git reset --hard origin/main
+              echo "▶ [test] npm ci"
+              npm ci
+              echo "▶ [test] db migrate"
+              node --env-file=.env.production.local src/db/migrate.mjs
+              echo "▶ [test] build"
+              npm run build
+              echo "▶ [test] restart"
+              sudo systemctl restart adventure-rpg-test
+              sleep 2
+              sudo systemctl --no-pager status adventure-rpg-test | head -n 4
+              echo "▶ [test] health"
+              curl -fsS -o /dev/null -w 'test=%{http_code}\n' http://127.0.0.1:3001/api/health || true
+            else
+              echo "▶ [test] skipped (~/adventure-rpg-test not present)"
+            fi
             echo "▶ done"
