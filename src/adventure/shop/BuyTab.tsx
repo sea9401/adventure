@@ -9,7 +9,13 @@ import {
   CONSUMABLE_IDS,
   type ConsumableId,
 } from "../data/consumables";
+import { ITEMS, type ItemId } from "../data/items";
 import type { InventoryState } from "../inventory/useInventory";
+
+// 상점에서 살 수 있는 장비 — EquipItem.shopPrice 가 지정된 것 (현재 초반 발판용 싸구려 한두 종).
+const SHOP_EQUIPMENT_IDS = (Object.keys(ITEMS) as ItemId[]).filter(
+  (id) => typeof (ITEMS[id] as { shopPrice?: number }).shopPrice === "number",
+);
 import { Card } from "@/components/ui/Card";
 import { QtyStepper } from "./QtyStepper";
 
@@ -20,6 +26,7 @@ export function BuyTab({
   onPurchasePotion,
   onPurchaseMaterial,
   onPurchaseConsumable,
+  onPurchaseEquipment,
 }: {
   gold: number;
   inventory: InventoryState;
@@ -27,6 +34,7 @@ export function BuyTab({
   onPurchasePotion: (id: PotionId, quantity: number) => void;
   onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
   onPurchaseConsumable: (id: ConsumableId, quantity: number) => void;
+  onPurchaseEquipment: (id: ItemId, quantity: number) => void;
 }) {
   // 구매 가능 재료 = 항상 취급(`inShop`) 또는 누적 100개 이상 판매로 잠금 해제된 것.
   const materialIds = (Object.keys(MATERIALS) as MaterialId[]).filter(
@@ -58,6 +66,37 @@ export function BuyTab({
           })}
         </div>
       </div>
+
+      {SHOP_EQUIPMENT_IDS.length > 0 && (
+        <div>
+          <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            장비
+          </div>
+          <div className="space-y-2">
+            {SHOP_EQUIPMENT_IDS.map((id) => {
+              const item = ITEMS[id];
+              const price = (item as { shopPrice: number }).shopPrice;
+              const statSummary = item.stats
+                .map((s) => `${s.label} ${s.value}`)
+                .join(", ");
+              const owned = inventory.equipment[id] ?? 0;
+              return (
+                <BuyRow
+                  key={id}
+                  name={item.name}
+                  description={`${statSummary}${
+                    item.description ? ` — ${item.description}` : ""
+                  }`}
+                  price={price}
+                  owned={owned}
+                  gold={gold}
+                  onPurchase={(qty) => onPurchaseEquipment(id, qty)}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {materialIds.length > 0 && (
         <div>

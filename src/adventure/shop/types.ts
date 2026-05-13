@@ -5,6 +5,7 @@ export type ShopActionKind =
   | "buy_potion"
   | "buy_material"
   | "buy_consumable"
+  | "buy_equipment"
   | "sell_potion"
   | "sell_material"
   | "sell_equipment";

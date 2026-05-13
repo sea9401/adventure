@@ -31,7 +31,11 @@ const MATERIAL_SELL: Partial<Record<MaterialId, number>> = {
   wolf_king_fang: 20,
 };
 
-const ITEM_SELL: Partial<Record<ItemId, number>> = {};
+const ITEM_SELL: Partial<Record<ItemId, number>> = {
+  // 상점 입문 장비 — 구매가(14G)의 약 20% 환불.
+  worn_dagger: 3,
+  quilted_vest: 3,
+};
 
 export function getPotionSellPrice(id: PotionId): number {
   return POTION_SELL[id] ?? 0;

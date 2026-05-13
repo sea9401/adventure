@@ -120,6 +120,15 @@ export function useShopActions(deps: {
     await runShopAction({ kind: "buy_consumable", id, quantity });
   };
 
+  const handlePurchaseEquipment = async (id: ItemId, quantity: number) => {
+    const r = await runShopAction({ kind: "buy_equipment", id, quantity });
+    if (!r) return;
+    addNotification(
+      "info",
+      `${ITEMS[id].name}${quantity > 1 ? ` ×${quantity}` : ""}을(를) 샀다.`,
+    );
+  };
+
   // 마을 귀환 주문서 사용 — 가본 마을로 즉시 이동.
   // 마을→마을은 무소비 (지도 fast-travel 과 동일), 그 외엔 1개 소비.
   const handleUseTownReturn = (townId: RegionId): boolean => {
@@ -214,6 +223,7 @@ export function useShopActions(deps: {
     handlePurchasePotion,
     handlePurchaseMaterial,
     handlePurchaseConsumable,
+    handlePurchaseEquipment,
     handleUseTownReturn,
     handleSellPotion,
     handleSellMaterial,

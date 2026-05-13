@@ -27,6 +27,7 @@ export function ShopView({
   onPurchasePotion,
   onPurchaseMaterial,
   onPurchaseConsumable,
+  onPurchaseEquipment,
   onSellPotion,
   onSellMaterial,
   onSellEquipment,
@@ -37,6 +38,7 @@ export function ShopView({
   onPurchasePotion: (id: PotionId, quantity: number) => void;
   onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
   onPurchaseConsumable: (id: ConsumableId, quantity: number) => void;
+  onPurchaseEquipment: (id: ItemId, quantity: number) => void;
   onSellPotion: (id: PotionId, quantity: number) => void;
   onSellMaterial: (id: MaterialId, quantity: number) => void;
   onSellEquipment: (
@@ -64,6 +66,7 @@ export function ShopView({
           onPurchasePotion={onPurchasePotion}
           onPurchaseMaterial={onPurchaseMaterial}
           onPurchaseConsumable={onPurchaseConsumable}
+          onPurchaseEquipment={onPurchaseEquipment}
         />
       )}
       {tab === "sell" && (

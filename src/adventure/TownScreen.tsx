@@ -60,6 +60,7 @@ export function TownScreen() {
     handlePurchasePotion,
     handlePurchaseMaterial,
     handlePurchaseConsumable,
+    handlePurchaseEquipment,
     handleSellPotion,
     handleSellMaterial,
     handleSellEquipment,
@@ -363,6 +364,7 @@ export function TownScreen() {
           onPurchasePotion={handlePurchasePotion}
           onPurchaseMaterial={handlePurchaseMaterial}
           onPurchaseConsumable={handlePurchaseConsumable}
+          onPurchaseEquipment={handlePurchaseEquipment}
           onSellPotion={handleSellPotion}
           onSellMaterial={handleSellMaterial}
           onSellEquipment={handleSellEquipment}
