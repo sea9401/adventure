@@ -103,9 +103,9 @@ export const REGEN_INTERVAL = 5;
 export const REGEN_HP_PER_VIT = 0.5;
 
 // 연타 — 속도 10 도달 시 획득.
-// 5턴마다 그 턴의 마지막 공격 후 추가 1회 공격.
+// 4턴마다 그 턴의 마지막 공격 후 추가 1회 공격.
 export const DOUBLE_STRIKE_SPD_THRESHOLD = 10;
-export const DOUBLE_STRIKE_INTERVAL = 5;
+export const DOUBLE_STRIKE_INTERVAL = 4;
 
 // 기습 — 속도 20 도달 시 획득.
 // 효과: 전투 첫 플레이어 턴, 추가 공격 (1 + floor(SPD/50))회.
@@ -141,12 +141,12 @@ export const EXECUTION_DAMAGE_MULT = 1.5;
 // 효과 1) 모든 공격에 대해 적 evasion ×PRECISION_EVASION_MULT (절반). 회피 무력화가 아닌 비례 감소.
 // 효과 2) 플레이어의 모든 공격이 적 방어력의 (DEX × PRECISION_PIERCE_PER_DEX)% 를 무시 (PRECISION_PIERCE_CAP 캡).
 //   "약점을 노린다" — DEX 비례라 후반에도 유효하고, 고방어 보스에 대한 DEX 빌드의 답.
-//   DEX 35=17.5% / 50=25% / 70=35% / 100=50%(캡). 분쇄(고정 감산)는 이 비례 관통 뒤에 적용, 암살은 여전히 DEF 0.
+//   DEX 35=24.5% / 50=35% / 70=49% / 100=60%(캡). 분쇄(고정 감산)는 이 비례 관통 뒤에 적용, 암살은 여전히 DEF 0.
 export const PRECISION_DEX_THRESHOLD = 35;
 export const PRECISION_EVASION_MULT = 0.5;
-// DEX 1pt 당 무시하는 적 DEF 비율(0~1). 0.005 = pt당 0.5%.
-export const PRECISION_PIERCE_PER_DEX = 0.005;
-export const PRECISION_PIERCE_CAP = 0.5;
+// DEX 1pt 당 무시하는 적 DEF 비율(0~1). 0.007 = pt당 0.7%.
+export const PRECISION_PIERCE_PER_DEX = 0.007;
+export const PRECISION_PIERCE_CAP = 0.6;
 
 // 불굴 — 활력 35 도달 시 획득.
 // 효과 1) 전투당 1회, HP 가 0 이 되는 데미지 받으면 HP 1 로 버틴다.
@@ -155,12 +155,12 @@ export const ENDURANCE_VIT_THRESHOLD = 35;
 export const ENDURANCE_MAX_HP_BONUS_PCT = 10;
 
 // 광속 — 속도 35 도달 시 획득.
-// 효과: 매 턴 마지막 공격 후 min(20, floor(SPD/5))% 확률로 추가 1회 공격 (SPD 비례 — 35=7% / 50=10% / 70=14% / 100=20%캡).
+// 효과: 매 턴 마지막 공격 후 min(25, floor(SPD/4))% 확률로 추가 1회 공격 (SPD 비례 — 35=8% / 50=12% / 70=17% / 100=25%캡).
 // 연타와 별개 발동 — 연타 슬롯이 없어도 단독으로 작동, 둘 다 슬롯 시 한 턴에 +2 공격까지 가능.
 // SPD 기본 추가타 확률(EXTRA_ATTACK_PCT_CAP) 캡으로 줄어든 후반 SPD 투자 가치를 여기서 보상.
 export const LIGHTSPEED_SPD_THRESHOLD = 35;
-export const LIGHTSPEED_PCT_SPD_DIVISOR = 5;
-export const LIGHTSPEED_PCT_CAP = 20;
+export const LIGHTSPEED_PCT_SPD_DIVISOR = 4;
+export const LIGHTSPEED_PCT_CAP = 25;
 
 // 만개 — 행운 35 도달 시 획득.
 // 효과 1) 크리티컬 데미지 배수 +BLOOM_CRIT_MULT_BONUS (현재 luk 비례 위에 누적).
@@ -175,7 +175,7 @@ export const BLOODLET_STR_THRESHOLD = 50;
 export const BLOODLET_DMG_PER_STR = 0.1;
 // 그림자 분신 — 매 플레이어 턴 종료 시 분신이 추가 공격 1회 (ATK의 SHADOW_CLONE_ATK_PCT%).
 export const SHADOW_CLONE_DEX_THRESHOLD = 50;
-export const SHADOW_CLONE_ATK_PCT = 50;
+export const SHADOW_CLONE_ATK_PCT = 65;
 // 철벽 — 전투 시작 시 floor(VIT × BULWARK_SHIELD_PER_VIT) 보호막. 데미지 우선 흡수, 회복 안 됨.
 export const BULWARK_VIT_THRESHOLD = 50;
 export const BULWARK_SHIELD_PER_VIT = 0.6;
