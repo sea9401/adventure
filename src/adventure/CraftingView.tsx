@@ -15,6 +15,7 @@ import {
   EQUIP_TIER_FALLBACK,
   getItemTier,
   groupByTier,
+  useTierToggle,
 } from "@/adventure/equipment/tier";
 import { EquipmentSearchInput } from "@/adventure/equipment/EquipmentSearchInput";
 import { TierSectionHeader } from "@/adventure/equipment/TierSectionHeader";
@@ -136,6 +137,9 @@ export function CraftingView({
         : EQUIP_TIER_FALLBACK,
     );
   }, [filtered, tab]);
+  // 티어 접기/펴기 — 기본 접힘. 검색 활성 시 강제 펼침.
+  const { isExpanded, toggle } = useTierToggle();
+  const searching = query.trim().length > 0;
   const tabLabel = CATEGORY_TABS.find((t) => t.key === tab)?.label ?? "";
 
   if (knownRecipes.length === 0) {
@@ -176,24 +180,33 @@ export function CraftingView({
         />
       ) : grouped ? (
         // 장비 — 티어별 카드 묶음.
-        grouped.map(({ tier, meta, entries }) => (
-          <Card key={tier} as="section" padding="md">
-            <div className="space-y-2">
-              <TierSectionHeader meta={meta} count={entries.length} />
-              {entries.map((r) => (
-                <RecipeRow
-                  key={r.id}
-                  recipe={r}
-                  materialCounts={materialCounts}
-                  equipmentCounts={equipmentCounts}
-                  potionCounts={potionCounts}
-                  potionMax={potionMax}
-                  onCraft={onCraft}
+        grouped.map(({ tier, meta, entries }) => {
+          const open = searching || isExpanded(tier);
+          return (
+            <Card key={tier} as="section" padding="md">
+              <div className="space-y-2">
+                <TierSectionHeader
+                  meta={meta}
+                  count={entries.length}
+                  expanded={open}
+                  onToggle={() => toggle(tier)}
                 />
-              ))}
-            </div>
-          </Card>
-        ))
+                {open &&
+                  entries.map((r) => (
+                    <RecipeRow
+                      key={r.id}
+                      recipe={r}
+                      materialCounts={materialCounts}
+                      equipmentCounts={equipmentCounts}
+                      potionCounts={potionCounts}
+                      potionMax={potionMax}
+                      onCraft={onCraft}
+                    />
+                  ))}
+              </div>
+            </Card>
+          );
+        })
       ) : (
         // 포션 — 평면 리스트.
         <Card as="section" padding="md">

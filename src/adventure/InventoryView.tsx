@@ -41,6 +41,7 @@ import {
   getItemTier,
   groupByTier,
   matchesEquipQuery,
+  useTierToggle,
 } from "@/adventure/equipment/tier";
 import { EquipmentSearchInput } from "@/adventure/equipment/EquipmentSearchInput";
 import { TierSectionHeader } from "@/adventure/equipment/TierSectionHeader";
@@ -140,6 +141,9 @@ export function InventoryView({
   const groupedEquipment = groupByTier(filteredEquipment, (e) =>
     getItemTier(e.id),
   );
+  // 티어 접기/펴기 — 기본 접힘. 검색 활성 시 강제 펼침.
+  const { isExpanded: isTierExpanded, toggle: toggleTier } = useTierToggle();
+  const equipSearching = equipQuery.trim().length > 0;
   const materialsPager = usePagination(ownedMaterials, 12);
   const potionsPager = usePagination(ownedPotions, 12);
   const consumablesPager = usePagination(ownedConsumables, 12);
@@ -200,9 +204,17 @@ export function InventoryView({
                   : "해당 종류의 장비가 없습니다."}
               </p>
             ) : (
-              groupedEquipment.map(({ tier, meta, entries }) => (
+              groupedEquipment.map(({ tier, meta, entries }) => {
+                const open = equipSearching || isTierExpanded(tier);
+                return (
                 <div key={tier} className="space-y-1.5">
-                  <TierSectionHeader meta={meta} count={entries.length} />
+                  <TierSectionHeader
+                    meta={meta}
+                    count={entries.length}
+                    expanded={open}
+                    onToggle={() => toggleTier(tier)}
+                  />
+                  {open && (
                   <ul className="space-y-1.5">
                     {entries.map((entry) => {
                       const { key, id, tier: craftTier, quality, item } = entry;
@@ -317,8 +329,10 @@ export function InventoryView({
                       );
                     })}
                   </ul>
+                  )}
                 </div>
-              ))
+                );
+              })
             )}
           </section>
         ))}
