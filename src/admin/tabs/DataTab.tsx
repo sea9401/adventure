@@ -8,7 +8,7 @@ import { ITEMS } from "@/adventure/data/items";
 import { POTIONS } from "@/adventure/data/potions";
 import { MATERIALS } from "@/adventure/data/materials";
 import { RECIPES } from "@/adventure/data/recipes";
-import { QUESTS } from "@/adventure/data/quests";
+import { QUESTS, questTargetSummary } from "@/adventure/data/quests";
 import { NPCS } from "@/adventure/data/npcs";
 import { WORLD_MAP, type EdgeRequirement } from "@/adventure/data/world";
 
@@ -293,9 +293,7 @@ function QuestsTable({ q }: { q: string }) {
       Q.id,
       Q.regionId,
       Q.title,
-      Q.target.kind === "kill"
-        ? `${Q.target.monsterName} ×${Q.target.count}`
-        : `${Q.target.materialId} ×${Q.target.count}`,
+      questTargetSummary(Q.target),
       [
         Q.reward.gold ? `${Q.reward.gold}G` : null,
         Q.reward.fame ? `${Q.reward.fame}명성` : null,

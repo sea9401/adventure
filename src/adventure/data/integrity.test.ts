@@ -4,6 +4,8 @@ import { RECIPES, getRecipeById } from "./recipes";
 import { QUESTS } from "./quests";
 import { ITEMS } from "./items";
 import { MATERIALS } from "./materials";
+import { NPCS } from "./npcs";
+import { WORLD_MAP } from "./world";
 
 // 데이터 정합성 — 콘텐츠가 늘어나면서 ID 참조가 깨지지 않게.
 // "제작법이 드랍됐는데 대장간에 안 뜨는" 사고를 컴파일/CI 단계에서 잡는다.
@@ -93,16 +95,41 @@ describe("quest 의 target / requiresQuestCompleted 참조 정합성", () => {
   });
   for (const q of QUESTS) {
     const target = q.target;
-    if (target.kind === "kill") {
+    if (
+      target.kind === "kill" ||
+      target.kind === "kill_within_hp" ||
+      target.kind === "no_potion_boss"
+    ) {
       const monsterName = target.monsterName;
       it(`${q.id} → monster "${monsterName}"`, () => {
         expect((MONSTERS as Record<string, unknown>)[monsterName]).toBeDefined();
       });
-    } else {
+    } else if (target.kind === "deliver") {
       const materialId = target.materialId;
       it(`${q.id} → material ${materialId}`, () => {
         expect((MATERIALS as Record<string, unknown>)[materialId]).toBeDefined();
       });
+    } else if (target.kind === "talk_to_npc") {
+      const npcId = target.npcId;
+      it(`${q.id} → npc ${npcId}`, () => {
+        expect(NPCS.some((n) => n.id === npcId)).toBe(true);
+      });
+    } else if (target.kind === "visit_region") {
+      const regionId = target.regionId;
+      it(`${q.id} → region ${regionId}`, () => {
+        expect(WORLD_MAP.regions.some((r) => r.id === regionId)).toBe(true);
+      });
+    } else if (target.kind === "craft_item" || target.kind === "equip_item") {
+      const itemId = target.itemId;
+      it(`${q.id} → item ${itemId}`, () => {
+        expect((ITEMS as Record<string, unknown>)[itemId]).toBeDefined();
+      });
+    } else if (target.kind === "equip_set") {
+      for (const itemId of target.itemIds) {
+        it(`${q.id} → set item ${itemId}`, () => {
+          expect((ITEMS as Record<string, unknown>)[itemId]).toBeDefined();
+        });
+      }
     }
     for (const m of q.reward.materials ?? []) {
       const mid = m.id;

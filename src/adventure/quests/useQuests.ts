@@ -1,8 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { QUESTS, getQuestById, type Quest } from "../data/quests";
+import { QUESTS, getQuestById, questTargetTotal, type Quest } from "../data/quests";
 import type { MaterialId } from "../data/materials";
+import type { NpcId } from "../data/npcs";
+import type { RegionId } from "../data/world";
+import type { ItemId } from "../data/items";
+import { findItemId } from "../data/items";
+import type { EquippedSlots } from "../character/types";
 import {
   defaultQuestEntry,
   loadQuestProgress,
@@ -22,6 +27,9 @@ export type ClaimResult =
 export type DeliverResult =
   | { ok: true }
   | { ok: false; reason: "not-found" | "not-deliver" | "not-active" | "insufficient" };
+
+/** 전투 종료 컨텍스트 — kill_within_hp / no_potion_boss 조건 판정용. */
+export type KillCtx = { hpFraction?: number; potionsUsed?: number };
 
 // 서버에서 받은 raw 와 localStorage 백업을 머지해 초기 progress 를 만든다.
 // 서버 PATCH 가 일시적으로 손실(409 drop / 410 race 등)되어도 localStorage 가
@@ -71,26 +79,121 @@ export function useQuests() {
     setProgress(next);
   }, []);
 
-  // 전투 승리 시 호출 — 활성 kill 퀘스트 중 타겟 일치하는 것의 진행도 증가.
-  // deliver 퀘스트는 NPC 대화에서 직접 판정되므로 여기선 건너뜀.
-  // 이번 호출에서 막 ready 로 전환된 퀘스트 ID 목록을 반환 (알림 트리거용).
-  const recordKill = useCallback((monsterName: string): string[] => {
+  // 전투 승리 시 호출 — 활성 kill 계열 퀘스트의 진행도 증가.
+  // ctx 로 kill_within_hp (마지막 HP 비율) / no_potion_boss (소비 포션 수) 판정.
+  // 자동 사냥 경로는 ctx 없이 호출 — 그 경우 조건부 kind 는 진행 안 됨(의도).
+  const recordKill = useCallback(
+    (monsterName: string, ctx?: KillCtx): string[] => {
+      const cur = progressRef.current;
+      const next: QuestProgressMap = { ...cur };
+      const justReady: string[] = [];
+      let changed = false;
+      for (const quest of QUESTS) {
+        const t = quest.target;
+        if (t.kind !== "kill" && t.kind !== "kill_within_hp" && t.kind !== "no_potion_boss") continue;
+        if (t.monsterName !== monsterName) continue;
+        if (t.kind === "kill_within_hp" && (ctx?.hpFraction ?? 0) < t.minHpFraction) continue;
+        if (t.kind === "no_potion_boss" && (ctx?.potionsUsed ?? 0) > 0) continue;
+        const entry = next[quest.id] ?? defaultQuestEntry();
+        if (entry.state !== "active") continue;
+        const total = questTargetTotal(t);
+        if (entry.progress >= total) continue;
+        const newProgress = entry.progress + 1;
+        const newState: QuestProgressEntry["state"] =
+          newProgress >= total ? "ready" : "active";
+        next[quest.id] = { ...entry, progress: newProgress, state: newState };
+        if (newState === "ready") justReady.push(quest.id);
+        changed = true;
+      }
+      if (changed) {
+        progressRef.current = next;
+        setProgress(next);
+      }
+      return justReady;
+    },
+    [],
+  );
+
+  // 단순 누적형 진행도 증가 — talk_to_npc / visit_region / craft_item 공용.
+  // matcher 가 target 을 보고 활성 의뢰인지 판정.
+  const bumpCounter = (
+    matcher: (t: Quest["target"]) => boolean,
+  ): string[] => {
     const cur = progressRef.current;
     const next: QuestProgressMap = { ...cur };
     const justReady: string[] = [];
     let changed = false;
     for (const quest of QUESTS) {
-      if (quest.target.kind !== "kill") continue;
-      if (quest.target.monsterName !== monsterName) continue;
+      if (!matcher(quest.target)) continue;
       const entry = next[quest.id] ?? defaultQuestEntry();
       if (entry.state !== "active") continue;
-      if (entry.progress >= quest.target.count) continue;
+      const total = questTargetTotal(quest.target);
+      if (entry.progress >= total) continue;
       const newProgress = entry.progress + 1;
       const newState: QuestProgressEntry["state"] =
-        newProgress >= quest.target.count ? "ready" : "active";
+        newProgress >= total ? "ready" : "active";
       next[quest.id] = { ...entry, progress: newProgress, state: newState };
       if (newState === "ready") justReady.push(quest.id);
       changed = true;
+    }
+    if (changed) {
+      progressRef.current = next;
+      setProgress(next);
+    }
+    return justReady;
+  };
+
+  const recordTalk = useCallback(
+    (npcId: NpcId): string[] =>
+      bumpCounter((t) => t.kind === "talk_to_npc" && t.npcId === npcId),
+    [],
+  );
+
+  const recordVisit = useCallback(
+    (regionId: RegionId): string[] =>
+      bumpCounter((t) => t.kind === "visit_region" && t.regionId === regionId),
+    [],
+  );
+
+  const recordCraft = useCallback(
+    (itemId: ItemId): string[] =>
+      bumpCounter((t) => t.kind === "craft_item" && t.itemId === itemId),
+    [],
+  );
+
+  // 장착 슬롯이 바뀔 때마다(또는 의뢰 progress 바뀔 때) 호출 — equip_item / equip_set
+  // 조건이 충족되면 active → ready 로 전환. 한 번 ready 가 되면 unequip 해도 demote 안 함
+  // ("입어 본 적 있다"는 사실로 인정). 변화 없으면 setProgress 호출하지 않음 (loop 방지).
+  const checkEquip = useCallback((equippedSlots: EquippedSlots): string[] => {
+    const equippedIds = new Set<ItemId>();
+    for (const slot of ["weapon", "armor", "accessory"] as const) {
+      const id = findItemId(equippedSlots[slot]);
+      if (id) equippedIds.add(id);
+    }
+    const cur = progressRef.current;
+    const next: QuestProgressMap = { ...cur };
+    const justReady: string[] = [];
+    let changed = false;
+    for (const quest of QUESTS) {
+      const t = quest.target;
+      if (t.kind !== "equip_item" && t.kind !== "equip_set") continue;
+      const entry = next[quest.id] ?? defaultQuestEntry();
+      if (entry.state !== "active") continue; // ready/available/completed 은 손대지 않음.
+      if (t.kind === "equip_item") {
+        if (!equippedIds.has(t.itemId)) continue;
+        next[quest.id] = { ...entry, progress: 1, state: "ready" };
+        justReady.push(quest.id);
+        changed = true;
+      } else {
+        const match = t.itemIds.filter((id) => equippedIds.has(id)).length;
+        const total = t.itemIds.length;
+        const newState: QuestProgressEntry["state"] =
+          match >= total ? "ready" : "active";
+        if (entry.progress === match && entry.state === newState) continue;
+        next[quest.id] = { ...entry, progress: match, state: newState };
+        if (newState === "ready") justReady.push(quest.id);
+        changed = true;
+      }
     }
     if (changed) {
       progressRef.current = next;
@@ -158,6 +261,10 @@ export function useQuests() {
     getEntry,
     accept,
     recordKill,
+    recordTalk,
+    recordVisit,
+    recordCraft,
+    checkEquip,
     tryDeliver,
     claim,
   };

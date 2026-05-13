@@ -2,7 +2,7 @@ import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
-import { getQuestById, type Quest } from "@/adventure/data/quests";
+import { getQuestById, questTargetTotal, type Quest } from "@/adventure/data/quests";
 
 // NPC 가 여러 의뢰를 순차적으로 내주는 다이얼로그용 헬퍼.
 // steps 배열을 위→아래로 훑어, "처리 대기"인 첫 의뢰를 보여준다:
@@ -70,7 +70,7 @@ export function QuestLineDialogue({
     }
 
     const { quest, entry, step } = r;
-    const need = quest.target.count;
+    const need = questTargetTotal(quest.target);
 
     if (entry.state === "ready") {
       return (

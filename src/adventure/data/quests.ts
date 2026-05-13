@@ -20,13 +20,73 @@ export type QuestReward = {
   potionCapacityBonus?: number;
 };
 
-// 의뢰 목표 — 두 종류:
-// - "kill"   : 지정 몬스터를 N마리 처치. 진행도는 storage 의 progress 에 누적.
-// - "deliver": 지정 재료를 N개 모아 의뢰주(NPC)에게 직접 건넨다. 진행도는 별도
-//              저장하지 않고, NPC 대화에서 인벤토리 잔량을 보고 즉시 판정·소비한다.
+// 의뢰 목표 — 8 종류:
+// - "kill"             : 지정 몬스터를 N마리 처치. 진행도는 storage 의 progress 에 누적.
+// - "deliver"          : 지정 재료를 N개 모아 의뢰주(NPC)에게 직접 건넨다. 진행도는 별도
+//                        저장하지 않고, NPC 대화에서 인벤토리 잔량을 보고 즉시 판정·소비한다.
+// - "talk_to_npc"      : 지정 NPC 와 N번 대화. 대화창 닫힐 때(TownSubView.onTalkClose) 누적.
+// - "visit_region"     : 지정 지역에 N번 입장. 지역 이동 성공 시(page.tsx region 효과) 누적.
+// - "craft_item"       : 지정 장비를 N개 제작. 제작 성공 시(useCraftAction) 누적.
+// - "equip_item"       : 지정 장비를 한 번이라도 장착. 장착 슬롯 변경 감지(page.tsx checkEquip) 시
+//                        조건 충족 시점에 즉시 ready 로 전환. progress 는 0 또는 1.
+// - "equip_set"        : 지정 장비 N종을 동시에 장착. progress = 현재 동시 장착 중인 수.
+// - "kill_within_hp"   : 지정 몬스터를 처치 시점 HP 가 maxHp×minHpFraction 이상으로 N번 처치.
+//                        조건 미달 처치는 진행도 증가 없음 (보스 도전 의뢰 — 엄격한 처치).
+// - "no_potion_boss"   : 지정 몬스터를 그 전투에서 포션 0병 사용으로 N번 처치.
 export type QuestTarget =
   | { kind: "kill"; monsterName: string; count: number }
-  | { kind: "deliver"; materialId: MaterialId; count: number };
+  | { kind: "deliver"; materialId: MaterialId; count: number }
+  | { kind: "talk_to_npc"; npcId: NpcId; count?: number }
+  | { kind: "visit_region"; regionId: RegionId; count?: number }
+  | { kind: "craft_item"; itemId: ItemId; count: number }
+  | { kind: "equip_item"; itemId: ItemId }
+  | { kind: "equip_set"; itemIds: ItemId[] }
+  | { kind: "kill_within_hp"; monsterName: string; minHpFraction: number; count: number }
+  | { kind: "no_potion_boss"; monsterName: string; count: number };
+
+// 의뢰 목표가 요구하는 총량 — UI 와 useQuests 가 공용으로 쓴다.
+// count 가 없는 kind 는 1 (talk/visit 기본), equip_item 도 1, equip_set 은 itemIds.length.
+export function questTargetTotal(t: QuestTarget): number {
+  switch (t.kind) {
+    case "kill":
+    case "deliver":
+    case "craft_item":
+    case "kill_within_hp":
+    case "no_potion_boss":
+      return t.count;
+    case "talk_to_npc":
+    case "visit_region":
+      return t.count ?? 1;
+    case "equip_item":
+      return 1;
+    case "equip_set":
+      return t.itemIds.length;
+  }
+}
+
+// 행정 패널/덤프용 짧은 요약 문자열. (UI 의 사용자용 설명은 QuestJournalView 의 TargetView 가 그린다.)
+export function questTargetSummary(t: QuestTarget): string {
+  switch (t.kind) {
+    case "kill":
+      return `${t.monsterName} ×${t.count}`;
+    case "kill_within_hp":
+      return `${t.monsterName} ×${t.count} (HP ${Math.round(t.minHpFraction * 100)}%↑)`;
+    case "no_potion_boss":
+      return `${t.monsterName} ×${t.count} (포션 X)`;
+    case "deliver":
+      return `${t.materialId} ×${t.count}`;
+    case "talk_to_npc":
+      return `${t.npcId} 대화 ×${t.count ?? 1}`;
+    case "visit_region":
+      return `${t.regionId} 방문 ×${t.count ?? 1}`;
+    case "craft_item":
+      return `${t.itemId} 제작 ×${t.count}`;
+    case "equip_item":
+      return `${t.itemId} 장착`;
+    case "equip_set":
+      return `한 복 장착 (${t.itemIds.length}종)`;
+  }
+}
 
 export type Quest = {
   id: string;
@@ -488,6 +548,51 @@ export const QUESTS: Quest[] = [
     target: { kind: "kill", monsterName: "옛 성문지기", count: 3 },
     reward: { gold: 850, fame: 24, exp: 1200 },
     repeatable: true,
+    giverNpcId: "dustford_keeper",
+    requiresQuestCompleted: "dustford-mujin-gatekeeper",
+  },
+  // 옛 성문지기 도전 의뢰 3종 — 보스 처치 후 무진이 추가로 내준다.
+  // kill_within_hp / no_potion_boss / equip_set 세 가지 새 quest kind 의 인게임 라인.
+  // 단순히 "한 번 처치"가 아니라 자세를 보는 의뢰들 — 옛 수비대의 결을 잇는 자에게.
+  {
+    id: "dustford-mujin-challenge-pristine",
+    regionId: "dustford",
+    title: "흠 없는 한 수",
+    description:
+      "성문지기를 한 번 잠재웠다면 — 두 번째는 흠 없이 가져갈 수 있나? 빗장이 살갗에 닿기 전에. HP 70% 이상으로 옛 성문지기를 처치.",
+    requiredLevel: 13,
+    target: { kind: "kill_within_hp", monsterName: "옛 성문지기", minHpFraction: 0.7, count: 1 },
+    reward: { gold: 600, fame: 16, exp: 1000 },
+    repeatable: false,
+    giverNpcId: "dustford_keeper",
+    requiresQuestCompleted: "dustford-mujin-gatekeeper",
+  },
+  {
+    id: "dustford-mujin-challenge-no-potion",
+    regionId: "dustford",
+    title: "맨몸의 한 수",
+    description:
+      "옛 수비대는 약 주머니 없이 서 있었어. 포션 한 병도 쓰지 않고 옛 성문지기를 잠재워 보게.",
+    requiredLevel: 13,
+    target: { kind: "no_potion_boss", monsterName: "옛 성문지기", count: 1 },
+    reward: { gold: 600, fame: 16, exp: 1000 },
+    repeatable: false,
+    giverNpcId: "dustford_keeper",
+    requiresQuestCompleted: "dustford-mujin-gatekeeper",
+  },
+  {
+    id: "dustford-mujin-challenge-garrison-set",
+    regionId: "dustford",
+    title: "수비대 한 복",
+    description:
+      "수비대 도검·사슬갑옷·성문지기의 핵 — 셋을 한 복으로 갖춰 한 번이라도 차고 와 주게. 옛 수비대 한 식구가 다시 선 모습을 보고 싶소.",
+    requiredLevel: 13,
+    target: {
+      kind: "equip_set",
+      itemIds: ["garrison_blade", "garrison_hauberk", "gatekeeper_core"],
+    },
+    reward: { gold: 700, fame: 18, exp: 1100 },
+    repeatable: false,
     giverNpcId: "dustford_keeper",
     requiresQuestCompleted: "dustford-mujin-gatekeeper",
   },

@@ -7,10 +7,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { formatRelative } from "@/lib/notifications";
-import { QUESTS, type Quest } from "@/adventure/data/quests";
+import { QUESTS, questTargetTotal, type Quest } from "@/adventure/data/quests";
 import { NPCS } from "@/adventure/data/npcs";
 import { WORLD_MAP } from "@/adventure/data/world";
 import { MATERIALS } from "@/adventure/data/materials";
+import { ITEMS } from "@/adventure/data/items";
 import type { QuestProgressEntry } from "./storage";
 
 const REGION_NAMES = new Map(WORLD_MAP.regions.map((r) => [r.id, r.name]));
@@ -162,19 +163,7 @@ function JournalCard({
             {quest.description}
           </p>
 
-          {quest.target.kind === "kill" ? (
-            <KillProgress
-              monsterName={quest.target.monsterName}
-              progress={entry.progress}
-              count={quest.target.count}
-            />
-          ) : (
-            <DeliverHint
-              materialName={MATERIALS[quest.target.materialId].name}
-              count={quest.target.count}
-              giverName={giverName}
-            />
-          )}
+          <TargetView quest={quest} entry={entry} giverName={giverName} />
 
           <RewardLine quest={quest} />
         </>
@@ -201,21 +190,98 @@ function JournalCard({
   );
 }
 
-function KillProgress({
-  monsterName,
+// 의뢰 타겟 한 종류에 맞춰 진행 안내를 그린다. 누적형(kill/craft/talk N 회 등) 은 진행 바,
+// 일회형/deliver/equip 은 한 줄 힌트. 타겟 종류가 늘어나면 여기서 분기 추가.
+function TargetView({
+  quest,
+  entry,
+  giverName,
+}: {
+  quest: Quest;
+  entry: QuestProgressEntry;
+  giverName: string | null;
+}) {
+  const t = quest.target;
+  const total = questTargetTotal(t);
+  switch (t.kind) {
+    case "kill":
+      return <ProgressBar label={`${t.monsterName} 처치`} progress={entry.progress} count={total} />;
+    case "kill_within_hp":
+      return (
+        <ProgressBar
+          label={`${t.monsterName} 처치 (HP ${Math.round(t.minHpFraction * 100)}% 이상 유지)`}
+          progress={entry.progress}
+          count={total}
+        />
+      );
+    case "no_potion_boss":
+      return (
+        <ProgressBar
+          label={`${t.monsterName} 처치 (포션 없이)`}
+          progress={entry.progress}
+          count={total}
+        />
+      );
+    case "deliver":
+      return (
+        <Hint>
+          {MATERIALS[t.materialId].name} {total}개를 모아 {giverName ?? "의뢰인"}에게 전달
+        </Hint>
+      );
+    case "talk_to_npc": {
+      const name = NPC_NAMES.get(t.npcId) ?? t.npcId;
+      return total > 1 ? (
+        <ProgressBar label={`${name} 와(과) 대화`} progress={entry.progress} count={total} />
+      ) : (
+        <Hint>{name} 와(과) 대화</Hint>
+      );
+    }
+    case "visit_region": {
+      const name = REGION_NAMES.get(t.regionId) ?? t.regionId;
+      return total > 1 ? (
+        <ProgressBar label={`${name} 방문`} progress={entry.progress} count={total} />
+      ) : (
+        <Hint>{name} 에 들른다</Hint>
+      );
+    }
+    case "craft_item":
+      return (
+        <ProgressBar
+          label={`${ITEMS[t.itemId].name} 제작`}
+          progress={entry.progress}
+          count={total}
+        />
+      );
+    case "equip_item":
+      return <Hint>{ITEMS[t.itemId].name} 을(를) 한 번이라도 장착</Hint>;
+    case "equip_set": {
+      const names = t.itemIds.map((id) => ITEMS[id].name).join(" · ");
+      return (
+        <ProgressBar
+          label={`한 복 장착 — ${names}`}
+          progress={entry.progress}
+          count={total}
+        />
+      );
+    }
+  }
+}
+
+function ProgressBar({
+  label,
   progress,
   count,
 }: {
-  monsterName: string;
+  label: string;
   progress: number;
   count: number;
 }) {
   const shown = Math.min(progress, count);
-  const pct = Math.min(1, progress / count);
+  const pct = count > 0 ? Math.min(1, progress / count) : 0;
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-        <span>{monsterName} 처치</span>
+        <span>{label}</span>
         <span className="tabular-nums">
           {shown}/{count}
         </span>
@@ -230,18 +296,9 @@ function KillProgress({
   );
 }
 
-function DeliverHint({
-  materialName,
-  count,
-  giverName,
-}: {
-  materialName: string;
-  count: number;
-  giverName: string | null;
-}) {
+function Hint({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-      {materialName} {count}개를 모아 {giverName ?? "의뢰인"}에게 전달
+    <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">{children}
     </div>
   );
 }
