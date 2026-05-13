@@ -27,6 +27,8 @@ export function useTitleGrants(
     luckyCollected: boolean;
     /** §11 hidden-hooded-cipher 완료 flag — 'cipher_bearer' 칭호. */
     cipherDone: boolean;
+    /** 만월 '부러진 영웅검' 복원 완료 flag(hero_sword_restored) — 'hero_sword_heir' 칭호. */
+    heroSwordRestored: boolean;
     /** 상점에 가장 많이 판 재료 한 종류의 누적 판매량 — 임계치 이상이면 '상인'. */
     maxMaterialSold: number;
   },
@@ -93,6 +95,7 @@ export function useTitleGrants(
     if (opts.allRegionsVisited) grantTitle("globetrotter");
     if (opts.luckyCollected) grantTitle("lucky_finder");
     if (opts.cipherDone) grantTitle("cipher_bearer");
+    if (opts.heroSwordRestored) grantTitle("hero_sword_heir");
     const high = STAT_KEYS.filter((k) => opts.totalStats[k] >= 30).length;
     const low = STAT_KEYS.filter((k) => opts.totalStats[k] <= 10).length;
     if (high === 1 && low === STAT_KEYS.length - 1) grantTitle("one_track");
@@ -116,6 +119,7 @@ export function useTitleGrants(
     opts.maxNpcTalkCount,
     opts.luckyCollected,
     opts.cipherDone,
+    opts.heroSwordRestored,
     opts.totalStats.str,
     opts.totalStats.dex,
     opts.totalStats.vit,

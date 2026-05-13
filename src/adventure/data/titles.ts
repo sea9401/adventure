@@ -123,6 +123,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "후드 쓴 손님과 북쪽 순례자가 같은 손이 그은 표식을 따른다는 걸 알아낸 자.",
     condition: "디올라 후드 손님과 운향 순례자 사이의 표식을 잇는다",
   },
+  hero_sword_heir: {
+    id: "hero_sword_heir",
+    name: "영웅검의 계승자",
+    description: "폐허에 묻혀 있던 부러진 윗동강을, 산정의 대장장이 손에서 한 자루로 되살려 든 자.",
+    condition: "운향 만월의 '부러진 영웅검' 복원 의뢰 완수",
+  },
   beggar: {
     id: "beggar",
     name: "거지",

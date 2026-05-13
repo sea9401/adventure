@@ -77,6 +77,18 @@ export const STORY_QUESTS = {
       "운향을 떠난 순례자가 길마다 남긴 매듭 표식 — 운저 평원, 잿빛 협로, 봉황령을 거쳐 천공 성지까지. 끝까지 따라가면 그가 처음으로 '북쪽 너머'를 말한다.",
     giverNpcId: "unhyang_pilgrim",
   },
+  // 부러진 영웅검 복원 — 폐허 늑대 드랍 unique `hero_broken_sword` 윗동강을 운향 만월이
+  // 운봉석 검신 + 화염 능선 재료 날밑으로 한 자루로 되살린다. 만월 재회 라인(manwol_bold_reunion_done)
+  // + 천공 성지 보스(volcano_heart_defeated) 이후 해금. 가드 flag 릴레이:
+  // hero_sword_started → hero_sword_ore_done → hero_sword_core_done → hero_sword_forging → hero_sword_restored.
+  // 완성 시 `hero_sword`(legendary, atk +16 / spd -1) + 칭호 hero_sword_heir.
+  hero_sword_restoration: {
+    id: "hero_sword_restoration",
+    title: "부러진 영웅검",
+    description:
+      "폐허에서 주운 부러진 영웅검의 윗동강. 산정의 대장장이 만월이라면 — 운봉석으로 검신을 잇고, 날밑을 새로 둘러 한 자루로 되살릴 수 있을지도.",
+    giverNpcId: "unhyang_smith",
+  },
 } as const satisfies Record<string, StoryQuest>;
 
 export type StoryQuestId = keyof typeof STORY_QUESTS;

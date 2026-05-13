@@ -16,6 +16,13 @@
 - ⚔️ 보상 보정 — 화산 지대(reqLv 52~55) 사이드·게시판·연금 의뢰 EXP 상향 (1500~2200 → 2300~2900). `L^2.5` 곡선에서 후반 의뢰 EXP가 레벨업 필요량의 2.2~3.3%로 가라앉던 걸 봉황령 tier(~3.7%)에 맞춤. 메인 라인·hunter·히든 보상은 설계대로 유지.
 - 🗺️ 봉황령→화산 레벨 공백(reqLv ~42 → 52) 보강 — reqLv 44~50 의뢰 8종 추가: 바람골 게시판 4종(`windvale-board-ridge-knights`·`-flame-lizards-large`·`-ridge-eagles-large`·`-lava-foothills`)·운향 게시판 1종(`unhyang-board-phoenix-ridge-grand`)·한솔 라인 2종(`windvale-pathfinder-deep-ridge`→`-foothills`)·도연 1종(`unhyang-guide-ridge-storm`). 각 ~4%/레벨로 봉황령 tier와 연속.
 
+### 부러진 영웅검 복원 의뢰
+
+- 🤝 **만월 — 부러진 영웅검 복원**(storyQuest `hero_sword_restoration`). 만월 재회(`manwol_bold_reunion_done`) + 천공 성지 보스(`volcano_heart_defeated`) 이후 해금. 폐허 늑대 드랍 unique `hero_broken_sword`(윗동강)를 맡기면 → 운봉석 ×16(검신) → 화염 능선 재료(용암 핵 ×6·화염 비늘 ×8·봉황 깃털 ×3, 날밑) → 벼리기 → 완성. flag 릴레이: `hero_sword_started`→`_ore_done`→`_core_done`→`_forging`→`_restored`. 윗동강 미보유 + 보스 처치 상태면 만월이 떡밥 대사. 윗동강은 드랍 품질 0~2 어느 칸이든 회수, 장착 중이면 안내.
+- 📦 신규 아이템 `hero_sword`(영웅검) — 공격력 +16 / 속도 -1, `legendary`, 거래 불가.
+- 👤 신규 칭호 `hero_sword_heir`(영웅검의 계승자) — `hero_sword_restored` flag, useTitleGrants.
+- 🔔 완성 보상: 영웅검 + 골드 400 + 명성 8 + 칭호.
+
 ## 2026-05-06
 
 - `a271480` 🏗️ adventure-rpg 프로젝트 분리 — exten에서 adventure UI만 추출.
