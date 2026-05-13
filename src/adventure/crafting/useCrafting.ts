@@ -17,15 +17,39 @@ function warnIfUnknownRecipe(id: string): void {
   }
 }
 
+// 마력가루 회복약 공정 3 종 — 어디서나 자명한 기본 공정으로 취급해 시작 시점부터
+// 자동 학습된 상태로 둔다 (분해실 + 마력가루 라인의 자연스러운 짝). shareable 에는
+// 포함하지 않아 거래/우편 라인은 건드리지 않는다 (기본기는 trade laundering 무의미).
+const DEFAULT_AUTO_KNOWN: readonly string[] = [
+  "potion_heal_s_dust",
+  "potion_heal_m_dust",
+  "potion_heal_l_dust",
+];
+
+function withAutoKnown(known: readonly string[]): string[] {
+  const out = [...known];
+  for (const id of DEFAULT_AUTO_KNOWN) {
+    if (!out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
 function readInitial(raw: unknown): CraftingState {
-  if (!raw || typeof raw !== "object") return emptyCraftingState();
+  if (!raw || typeof raw !== "object") {
+    const fresh = emptyCraftingState();
+    return { ...fresh, known: withAutoKnown(fresh.known) };
+  }
   const parsed = raw as Partial<CraftingState>;
-  const known = Array.isArray(parsed.known) ? parsed.known : [];
+  const knownRaw = Array.isArray(parsed.known) ? parsed.known : [];
+  const known = withAutoKnown(knownRaw);
   return {
     known,
     crafted: Array.isArray(parsed.crafted) ? parsed.crafted : [],
     // 레거시 데이터: shareable 누락 → 알고 있는 것 모두 1회 공유 가능 상태.
-    shareable: Array.isArray(parsed.shareable) ? parsed.shareable : [...known],
+    // 단, 자동 학습된 가루 공정은 공유 대상에서 제외해 trade laundering 을 막는다.
+    shareable: Array.isArray(parsed.shareable)
+      ? parsed.shareable
+      : knownRaw.filter((id) => !DEFAULT_AUTO_KNOWN.includes(id)),
     boldQuestComplete: !!parsed.boldQuestComplete,
     boldSlimeQuestComplete: !!parsed.boldSlimeQuestComplete,
   };

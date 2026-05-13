@@ -25,6 +25,23 @@ export class CraftError extends Error {
   }
 }
 
+// 가루 공정 3 종은 모든 모험가가 기본으로 아는 공정 — 클라이언트의 useCrafting 도
+// readInitial 에서 known 에 자동 보강한다. 서버도 동일하게 보강해 영속 상태가 아직
+// 보강 전인 레거시 세이브가 "not_learned" 로 거절되지 않게 한다.
+const AUTO_KNOWN_DUST_RECIPES: readonly string[] = [
+  "potion_heal_s_dust",
+  "potion_heal_m_dust",
+  "potion_heal_l_dust",
+];
+
+function withAutoKnownDustRecipes(known: readonly string[]): string[] {
+  const out = [...known];
+  for (const id of AUTO_KNOWN_DUST_RECIPES) {
+    if (!out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
 type CountMap = Record<string, number>;
 // 등급별 인스턴스 맵 — itemId → (등급키 → 개수). 제작산(craftedEquipment, 키 "-2".."2")과
 // 드랍산(droppedEquipment, 키 "1"|"2")이 같은 모양.
@@ -239,7 +256,12 @@ export async function applyCraftAction(
       craftedEquipment: inv.craftedEquipment ?? {},
       droppedEquipment: inv.droppedEquipment ?? {},
       potionCapacityBonus: inv.potionCapacityBonus ?? 0,
-      known: Array.isArray(craftingState.known) ? craftingState.known : [],
+      // 가루 공정 3 종은 기본기 — 서버 권위 검증에서도 자동 학습으로 본다
+      // (클라이언트는 useCrafting.readInitial 가 known 에 보강. 영속 상태가
+      //  아직 보강 전이라도 서버가 거절하지 않도록 한다.)
+      known: withAutoKnownDustRecipes(
+        Array.isArray(craftingState.known) ? craftingState.known : [],
+      ),
     },
     recipeId,
   );
