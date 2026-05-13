@@ -23,6 +23,38 @@ const BOSS_QUEST = "saltmarsh-yeoul-deep-one";
 const RECURRING_QUEST = "saltmarsh-deep-one-recurring";
 const RECURRING_NEED = 3;
 
+// 보스 처치 후 여울이 내주는 도전 의뢰 — 한 줄로 N 개를 차례로 노출.
+// kill_within_hp · no_potion_boss · equip_set 세 가지 새 quest kind 의 인게임 검증 라인.
+// MujinDialogue 의 패턴과 짝.
+const CHALLENGE_STEPS: Array<{
+  id: string;
+  offerText: string;
+  activeText: string;
+  doneText: string;
+}> = [
+  {
+    id: "saltmarsh-yeoul-challenge-pristine",
+    offerText:
+      "수심의 것을 한 번 가라앉혔다면 — 두 번째는 흠 없이 가져갈 수 있나? 그것의 소용돌이가 등을 핥기 전에 끝내 보게. HP 70% 이상으로 처치, 한 번.",
+    activeText: "흠 없이 — 소용돌이를 맞지 말고. 그것의 결을 보고 발을 디뎌.",
+    doneText: "흠 없이 가라앉혔군. 옛 잠수부도 그렇게 들어갔지. 자, 받게.",
+  },
+  {
+    id: "saltmarsh-yeoul-challenge-no-potion",
+    offerText:
+      "옛 잠수부는 약 주머니 없이 물에 들었어. 한 번만 — 포션 한 병도 쓰지 않고 그것을 가라앉혀 보게. 한 번이면 되네.",
+    activeText: "약 주머니에 손 대지 마. 가진 숨만으로.",
+    doneText: "약 한 모금도 안 마시고 — 그래. 그게 옛 잠수부의 결일세. 받게.",
+  },
+  {
+    id: "saltmarsh-yeoul-challenge-abyssal-set",
+    offerText:
+      "한 가지 부탁이 더 있소. 심연 칼날·사이렌 노래 망토·수심의 핵 — 셋을 한 복으로 갖춰 한 번이라도 차고 와 주게. 옛 잠수부 한 식구가 다시 선 모습을 보고 싶소.",
+    activeText: "심연 칼날 + 사이렌 노래 망토 + 수심의 핵 — 셋을 동시에 차야 하오.",
+    doneText: "옛 잠수부의 한 사람이 다시 섰군. 그 모습이면 됐소 — 받게.",
+  },
+];
+
 type Props = {
   npc: Npc;
   onClose: () => void;
@@ -100,6 +132,45 @@ export function YeoulDialogue({
     );
   }
   if (boss.state === "completed") {
+    // 도전 의뢰 — pristine / no-potion / abyssal-set. 한 번에 하나씩 차례로 노출.
+    for (const step of CHALLENGE_STEPS) {
+      const e = quests.getEntry(step.id);
+      if (e.state === "ready") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={step.doneText}
+            primaryAction={{
+              label: "보상을 받는다",
+              onClick: () => {
+                if (completeQuest(step.id)) onClose();
+              },
+            }}
+          />
+        );
+      }
+      if (e.state === "active") {
+        return <NpcDialogue npc={npc} onClose={onClose} text={step.activeText} />;
+      }
+      if (e.state === "available") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={step.offerText}
+            primaryAction={{
+              label: "받아들인다",
+              onClick: () => {
+                quests.accept(step.id);
+                onClose();
+              },
+            }}
+          />
+        );
+      }
+      // completed — 다음 step 으로.
+    }
     if (recurring.state === "available") {
       return (
         <NpcDialogue

@@ -38,6 +38,17 @@ const STEPS: QuestLineStep[] = [
     doneText: "여덟 덩이 — 좋아. 모루가 한동안 쉴 틈이 없겠어. 자, 쳐준 값이다.",
     acceptLabel: "들여와 주겠다고 한다",
   },
+  {
+    // craft_item — 옛 변경 군기 한 폭(frontier_standard_cloak) 1점. duru-scrap 후 노출.
+    // 노상강도가 떨구는 군기 조각(tattered_standard_cloak)을 한 번 더 잇대는 업그레이드.
+    id: "dustford-duru-standard-restore",
+    offerText:
+      "성채까지 다닌다며? 그럼 부탁 하나 더 — 옛 변경 군기, 한 폭을 잇대 복원한 걸 한 번이라도 두르고 와 줘. 마른나루 노인들이 그 깃 한 번 보고 싶어 해.",
+    activeText: (have, need) =>
+      `군기 망토는 자네 공방에서 잇대는 거야. 깃 한 폭에 또 한 폭을 겹쳐 기우면 돼. — 만든 양 ${have}/${need}`,
+    doneText: "그래 — 한 세대 만에 그 깃이 다시 펄럭이는군. 노인들이 한참 봤을 거다. 자, 쳐준 값.",
+    acceptLabel: "맡아 보겠다고 한다",
+  },
 ];
 
 export function DuruDialogue({ npc, onClose, quests, completeQuest, inventory }: Props) {

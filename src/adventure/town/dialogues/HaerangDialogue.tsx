@@ -14,6 +14,7 @@ const HULL_QUEST = "saltmarsh-haerang-hull-plating";
 const HULL_NEED = 15;
 const RUNS_QUEST = "saltmarsh-haerang-reef-runs";
 const RUNS_NEED = 20;
+const CORAL_BEAR_QUEST = "saltmarsh-haerang-coral-bear";
 
 type Props = {
   npc: Npc;
@@ -97,7 +98,51 @@ export function HaerangDialogue({
     );
   }
 
-  // 3) 선저를 덧댐 — 산호초 섬으로 데려갈 수 있음. 사이렌 쫓기 반복 의뢰.
+  // 3) 선저를 덧댐 — 산호초 섬으로 데려갈 수 있음.
+  //    a) equip_item: 산호 가시 단검을 한 번이라도 차고 와라 (가벼운 일상 도전).
+  //    b) 사이렌 쫓기 반복 의뢰.
+  const coralBear = quests.getEntry(CORAL_BEAR_QUEST);
+  if (coralBear.state === "ready") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={"손에 익었군 — 산호 가시쯤은. 이제 자넨 난바다 사람일세. 자, 약속한 뱃삯."}
+        primaryAction={{
+          label: "보상을 받는다",
+          onClick: () => {
+            if (completeQuest(CORAL_BEAR_QUEST)) onClose();
+          },
+        }}
+      />
+    );
+  }
+  if (coralBear.state === "active") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={"산호 가시 단검 — 차고 다니라고. 한 번이라도 손에 익히면 그걸로 됐어."}
+      />
+    );
+  }
+  if (coralBear.state === "available") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={"암초를 자주 건너는 사람은 산호 가시쯤은 손에 익숙해야 해. 산호 가시 단검 — 한 번이라도 차고 와 줘. 그래야 뱃삯도 깎아 주지."}
+        primaryAction={{
+          label: "받아들인다",
+          onClick: () => {
+            quests.accept(CORAL_BEAR_QUEST);
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+
   const runs = quests.getEntry(RUNS_QUEST);
   if (runs.state === "ready") {
     return (

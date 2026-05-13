@@ -338,7 +338,15 @@ export function renderTownNpcDialogue(
         />
       );
     case "saltmarsh_kid":
-      return <MireuDialogue npc={npc} onClose={close} storyFlags={storyFlags} />;
+      return (
+        <MireuDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          storyFlags={storyFlags}
+        />
+      );
     case "dustford_keeper":
       return (
         <MujinDialogue
@@ -381,7 +389,15 @@ export function renderTownNpcDialogue(
         />
       );
     case "dustford_kid":
-      return <BoriDialogue npc={npc} onClose={close} storyFlags={storyFlags} />;
+      return (
+        <BoriDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          storyFlags={storyFlags}
+        />
+      );
     default:
       return null;
   }

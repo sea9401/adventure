@@ -36,6 +36,16 @@ const STEPS: QuestLineStep[] = [
     activeText: (have, need) => `약탈자들은 암초 그늘에 떼로 숨어요. 한 놈씩 끌어내는 게 나아요. — 진행 ${have}/${need}`,
     doneText: "어선이 다시 나가겠네요. 생선 들어오면 한 상 차려 드릴게요 — 우선 이거 받아요.",
   },
+  {
+    // talk_to_npc — 미르(갯마을 아이)를 세 번 들어주기. bomal-crab-shells 완료 후 노출.
+    id: "saltmarsh-bomal-listen-mireu",
+    offerText:
+      "그 애가 요즘 통 말이 적어요 — 미르요. 한낮에도 갯벌만 보고 있고요. 들어줄 사람이 있어야지요. 세 번만 미르와 이야기를 나눠 주세요. 사례는 손님이 두고 간 회복약으로 챙겨 드릴게요.",
+    activeText: (have, need) =>
+      `미르는 보통 한낮에 갯벌 끝에 있어요. 말이 적은 애한테는 답을 재촉하지 말고. — 나눈 이야기 ${have}/${need}`,
+    doneText: "세 번 — 고마워요. 미르가 한결 표정이 환해졌어요. 자, 약속한 사례. 회복약도 함께.",
+    acceptLabel: "들러 보겠다고 한다",
+  },
 ];
 
 export function BomalDialogue({
