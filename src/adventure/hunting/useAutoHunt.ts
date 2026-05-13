@@ -17,6 +17,17 @@ import {
 } from "@/adventure/battle/autoHunt";
 import type { OfflineSimResult } from "@/adventure/battle/offlineSim";
 import type { AutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
+import { readDeviceSessionId } from "@/lib/storage/deviceSession";
+
+// 자동 사냥 fetch 공통 헤더 — 단일 세션 enforce 토큰을 동봉해 다른 디바이스의 collect 가
+// 이 디바이스 화면에 stale 결과를 떠넘기지 않게 한다. checkSession 이 헤더 미동봉이면
+// 통과시켜서, 헤더를 안 보내던 기존엔 멀티 디바이스 collect 가 무방비였다.
+function huntHeaders(): Record<string, string> {
+  const sid = readDeviceSessionId();
+  return sid
+    ? { "content-type": "application/json", "X-Session-Id": sid }
+    : { "content-type": "application/json" };
+}
 
 type StatusResponse =
   | { active: true; startedAt: string; regionId: string; durationMs: number }
@@ -87,7 +98,11 @@ export function useAutoHunt(opts?: {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch("/api/hunt/status");
+        const res = await fetch("/api/hunt/status", {
+          headers: huntHeaders(),
+        });
+        // 410 = 단일 세션 invalidated. 화면 상태 박지 않고 조용히 패스 — SaveProvider 가
+        // 다른 PATCH 경로에서 invalidated 를 감지해 사인아웃 화면을 띄워주는 흐름에 위탁.
         if (!res.ok) return;
         const data = (await res.json()) as StatusResponse;
         if (cancelled) return;
@@ -126,7 +141,7 @@ export function useAutoHunt(opts?: {
     try {
       const res = await fetch("/api/hunt/dispatch", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: huntHeaders(),
         body: "{}",
       });
       if (!res.ok) return { ok: false, reason: "http" };
@@ -153,12 +168,23 @@ export function useAutoHunt(opts?: {
     try {
       const res = await fetch("/api/hunt/collect", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: huntHeaders(),
         body: JSON.stringify({
           playerName,
           autoPotionRules: getRulesRef.current?.() ?? [],
         }),
       });
+      if (res.status === 401 || res.status === 410) {
+        // 410 = 다른 디바이스가 세션 claim 함. 사용자가 받기를 눌렀는데 침묵하면 또 누른다 —
+        // 토스트로 사유 안내. 데이터는 SaveProvider 의 다음 PATCH 경로에서 invalidated 가
+        // 감지돼 사인아웃 화면으로 가는 흐름에 위탁. 여기선 UI 만 정리.
+        if (res.status === 410) {
+          onCollectErrorRef.current?.(
+            "다른 기기에서 접속이 감지됐어요 — 새로고침 후 다시 시도해 주세요.",
+          );
+        }
+        return;
+      }
       if (!res.ok) {
         // 서버 5xx 등 — 그대로 끝내면 버튼이 다시 활성화되는데 사용자엔 아무 신호가
         // 없다. 토스트로 안내 (서버는 lastClaimResult 로 다음 시도에서 replay 가능).
@@ -176,11 +202,16 @@ export function useAutoHunt(opts?: {
         }
         return;
       }
-      // 결과 있음 — sessionStorage 박고 reload.
+      // 결과 있음 — sessionStorage 박고 reload. replayed 플래그도 같이 박아 reload 후
+      // useAutoHuntResultHandler 가 KV 재적용을 건너뛸 수 있게 한다 (이미 다른 경로에서
+      // 적용된 결과를 또 보태면 도감/퀘스트 진행도가 중복 가산되기 때문).
       try {
         sessionStorage.setItem(
           AUTO_HUNT_RESULT_KEY,
-          JSON.stringify(data.result),
+          JSON.stringify({
+            result: data.result,
+            replayed: data.replayed === true,
+          }),
         );
       } catch {}
       window.location.reload();
