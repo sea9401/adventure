@@ -306,6 +306,51 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "hero_broken_sword", chance: 0.00015 },
     ],
   },
+  // ── 버려진 채석장 (quarry) — 폐허(Lv9)와 북풍 산기슭(Lv18) 사이 중간 구간 ──────────
+  // atk 16~19 / hp 150~210 / def 4~9 / exp 13~16 — 폐허↔산기슭 곡선을 매끄럽게.
+  // image 미지정 — 신규 아트 준비 전까지 EnemyAvatar 의 "?" 플레이스홀더로 노출된다.
+  "채석터 들개": {
+    name: "채석터 들개",
+    tags: ["beast"],
+    hp: 150,
+    atk: 19,
+    def: 4,
+    spd: 6,
+    exp: 13,
+    drops: [
+      { kind: "material", materialId: "wilddog_hide", chance: 0.04 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.02 },
+      { kind: "recipe", recipeId: "reinforced_leather_armor", chance: 0.012 },
+    ],
+  },
+  "버려진 광부": {
+    name: "버려진 광부",
+    tags: ["humanoid", "undead"],
+    hp: 155,
+    atk: 18,
+    def: 5,
+    spd: 5,
+    exp: 13,
+    drops: [
+      { kind: "material", materialId: "soul_crystal", chance: 0.02 },
+      { kind: "material", materialId: "hard_crystal", chance: 0.02 },
+      { kind: "gold", amount: 1, chance: 0.08 },
+    ],
+  },
+  "돌부스러기 골렘": {
+    name: "돌부스러기 골렘",
+    tags: ["golem"],
+    hp: 210,
+    atk: 16,
+    def: 9,
+    spd: 3,
+    exp: 16,
+    drops: [
+      { kind: "material", materialId: "ruin_fragment", chance: 0.05 },
+      { kind: "material", materialId: "hard_crystal", chance: 0.03 },
+      { kind: "recipe", recipeId: "golem_armor", chance: 0.012 },
+    ],
+  },
   // ── 운향 라인 (highland / canyon) ───────────────────────────────────────
   산양: {
     name: "산양",

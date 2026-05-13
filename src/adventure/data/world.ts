@@ -7,6 +7,7 @@ export type RegionId =
   | "lake"
   | "diola"
   | "ruins"
+  | "quarry"
   | "highland"
   | "canyon"
   | "unhyang"
@@ -187,10 +188,25 @@ export const WORLD_MAP: WorldMap = {
       recommendedLevel: 9,
     },
     {
+      id: "quarry",
+      name: "버려진 채석장",
+      description:
+        "폐허 동쪽, 산기슭으로 오르는 길목에 버려진 옛 채석장. 깨진 석재가 비탈을 이루고, 무너진 갱도에서 찬 바람이 새어 나온다.",
+      position: { x: 780, y: 440 },
+      biome: "ruins",
+      enemies: ["채석터 들개", "버려진 광부", "돌부스러기 골렘"],
+      encounterWeights: {
+        "채석터 들개": 45,
+        "버려진 광부": 35,
+        "돌부스러기 골렘": 20,
+      },
+      recommendedLevel: 13,
+    },
+    {
       id: "highland",
       name: "북풍 산기슭",
       description:
-        "폐허 동쪽으로 솟은 비탈. 바람이 거칠고 돌투성이라 발 디딜 곳을 골라야 한다.",
+        "채석장 너머로 솟은 비탈. 바람이 거칠고 돌투성이라 발 디딜 곳을 골라야 한다.",
       position: { x: 880, y: 380 },
       biome: "mountain",
       enemies: ["산양", "바위 두꺼비"],
@@ -352,9 +368,14 @@ export const WORLD_MAP: WorldMap = {
         reason: "아직 길을 알지 못한다. 디올라의 후드 쓴 손님이 안다고 한다.",
       },
     },
-    // 운향 라인 (highland → canyon → unhyang).
+    // 운향 라인 (quarry → highland → canyon → unhyang).
     {
       from: "ruins",
+      to: "quarry",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "quarry" },
+    },
+    {
+      from: "quarry",
       to: "highland",
       requires: { kind: "trial", battles: 5, enemiesFrom: "highland" },
     },
