@@ -43,7 +43,6 @@ import { useCrafting } from "@/adventure/crafting/useCrafting";
 import { BulletinBoardView } from "@/adventure/BulletinBoardView";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 import { useNotifications } from "@/adventure/notifications/useNotifications";
-import { TabBar } from "@/components/ui/TabBar";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { RegionBackground } from "@/components/ui/RegionBackground";
@@ -75,35 +74,10 @@ import { applyQuestCompletionSideEffects } from "@/adventure/quests/questComplet
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
-import { useNavTabs, type TabKey } from "@/lib/useNavTabs";
+import { useNavTabs } from "@/lib/useNavTabs";
+import { MainTabs } from "./MainTabs";
 import { usePresenceHeartbeat } from "@/lib/usePresenceHeartbeat";
 import { useTrialState } from "@/adventure/trial/useTrialState";
-
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "adventure", label: "모험" },
-  { key: "town", label: "마을" },
-  { key: "character", label: "캐릭터" },
-  { key: "plaza", label: "광장" },
-];
-
-function MainTabs({
-  active,
-  onChange,
-}: {
-  active: TabKey;
-  onChange: (next: TabKey) => void;
-}) {
-  return (
-    <TabBar
-      tabs={TABS}
-      active={active}
-      onChange={onChange}
-      ariaLabel="메인 탭"
-      size="md"
-      className="mx-auto w-full max-w-2xl px-4 sm:px-6"
-    />
-  );
-}
 
 export default function Page() {
   return (
