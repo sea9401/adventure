@@ -308,9 +308,9 @@ export const MONSTERS: Record<string, Monster> = {
   },
   // ── 버려진 채석장 (quarry) — 폐허(Lv9)와 북풍 산기슭(Lv18) 사이 중간 구간 ──────────
   // atk 16~19 / hp 150~210 / def 4~9 / exp 13~16 — 폐허↔산기슭 곡선을 매끄럽게.
-  // image 미지정 — 신규 아트 준비 전까지 EnemyAvatar 의 "?" 플레이스홀더로 노출된다.
   "채석터 들개": {
     name: "채석터 들개",
+    image: "/images/monster/stonewolf.webp",
     tags: ["beast"],
     hp: 150,
     atk: 19,
@@ -325,6 +325,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "버려진 광부": {
     name: "버려진 광부",
+    image: "/images/monster/undeadminer.webp",
     tags: ["humanoid", "undead"],
     hp: 155,
     atk: 18,
@@ -339,6 +340,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "돌부스러기 골렘": {
     name: "돌부스러기 골렘",
+    image: "/images/monster/debrisgolem.webp",
     tags: ["golem"],
     hp: 210,
     atk: 16,
