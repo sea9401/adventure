@@ -25,6 +25,13 @@ import {
   variantDisplayName,
   variantGradeLabel,
 } from "@/adventure/log/discoveredEquipment";
+import {
+  getItemTier,
+  groupByTier,
+  matchesEquipQuery,
+} from "@/adventure/equipment/tier";
+import { EquipmentSearchInput } from "@/adventure/equipment/EquipmentSearchInput";
+import { TierSectionHeader } from "@/adventure/equipment/TierSectionHeader";
 
 // 모험의 서 → 아이템 탭. 한 번이라도 보유/장착한 적 있는 장비를 슬롯별 sub-tab 으로(폐기해도 유지),
 // 학습한 제작법을 마지막 sub-tab 으로. 인벤토리 액션 패널이 아니라 도감 — 장착 버튼 등은 없고 정보만.
@@ -151,7 +158,16 @@ function EquipmentSubTab({
   discovered: Record<string, DiscoveredEquipmentEntry>;
 }) {
   const rows = useMemo(() => buildRows(discovered, slot), [discovered, slot]);
-  const pager = usePagination(rows, 10);
+  const [query, setQuery] = useState("");
+  // 검색 적용 후 진행 티어로 그룹화 — 이름 부분 일치 + 빈 티어 자동 생략.
+  const filtered = useMemo(
+    () => rows.filter((r) => matchesEquipQuery(r.item, query)),
+    [rows, query],
+  );
+  const grouped = useMemo(
+    () => groupByTier(filtered, (r) => getItemTier(r.id)),
+    [filtered],
+  );
 
   if (rows.length === 0) {
     return (
@@ -165,34 +181,41 @@ function EquipmentSubTab({
 
   return (
     <div className="space-y-2">
-      {pager.pageItems.map((row) => (
-        <Card key={`${row.id}@${row.variantKey}`}>
-          <div className="flex items-baseline justify-between gap-2">
-            <span
-              className={`text-sm font-semibold ${
-                row.grade
-                  ? gradeTextClass(row.variantKey)
-                  : rarityTextClass(row.item)
-              }`}
-            >
-              {SLOT_EMOJI[row.item.slot]} {row.name}
-            </span>
-            <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
-              {row.item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
-            </span>
+      <EquipmentSearchInput value={query} onChange={setQuery} />
+      {filtered.length === 0 ? (
+        <p className="py-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
+          “{query}” — 일치하는 장비가 없습니다.
+        </p>
+      ) : (
+        grouped.map(({ tier, meta, entries }) => (
+          <div key={tier} className="space-y-2">
+            <TierSectionHeader meta={meta} count={entries.length} />
+            {entries.map((row) => (
+              <Card key={`${row.id}@${row.variantKey}`}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span
+                    className={`text-sm font-semibold ${
+                      row.grade
+                        ? gradeTextClass(row.variantKey)
+                        : rarityTextClass(row.item)
+                    }`}
+                  >
+                    {SLOT_EMOJI[row.item.slot]} {row.name}
+                  </span>
+                  <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
+                    {row.item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
+                  </span>
+                </div>
+                {row.item.description && (
+                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                    {row.item.description}
+                  </p>
+                )}
+              </Card>
+            ))}
           </div>
-          {row.item.description && (
-            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-              {row.item.description}
-            </p>
-          )}
-        </Card>
-      ))}
-      <Pagination
-        page={pager.page}
-        pageCount={pager.pageCount}
-        setPage={pager.setPage}
-      />
+        ))
+      )}
     </div>
   );
 }
