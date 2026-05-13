@@ -33,6 +33,23 @@ export function ownsEquipment(
   return false;
 }
 
+// 장비 보유량을 itemId → 총개수 로 합산 — 무등급(equipment) + 제작산(±tier) + 드랍산(고품질) 전부.
+// 제작 재료 충족 판정에 쓴다 (서버 craft.ts 도 셋을 합산해 검사하므로 UI도 동일하게 맞춤).
+export function equipmentCountsAllGrades(
+  inv: InvState,
+): Partial<Record<ItemId, number>> {
+  const out: Partial<Record<ItemId, number>> = { ...inv.equipment };
+  for (const m of [inv.craftedEquipment, inv.droppedEquipment]) {
+    for (const id of Object.keys(m) as ItemId[]) {
+      const grades = m[id];
+      if (!grades) continue;
+      const sum = Object.values(grades).reduce<number>((a, b) => a + (b ?? 0), 0);
+      if (sum > 0) out[id] = (out[id] ?? 0) + sum;
+    }
+  }
+  return out;
+}
+
 // 보유 중인 unique("유실된 명품") 등급 장비의 종류 수 (인스턴스 아닌 distinct itemId).
 export function ownedUniqueItemCount(inv: InvState, slots: EquippedSlots): number {
   const ids = new Set<ItemId>();
