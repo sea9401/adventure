@@ -22,7 +22,7 @@ export type CoopBossDef = {
 export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
   canyon: {
     monsterName: "운봉의 거인",
-    maxHp: 2000,
+    maxHp: 5000,
     expirationMs: 24 * 60 * 60 * 1000, // 24h
     respawnMs: 1 * 60 * 60 * 1000, // 1h (처치/만료 동일)
     onDefeatFlag: "peak_giant_defeated",
