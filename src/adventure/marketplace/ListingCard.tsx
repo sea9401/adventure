@@ -1,0 +1,189 @@
+"use client";
+
+import { useState } from "react";
+import { Card } from "@/components/ui/Card";
+import { formatRelativeTime } from "@/lib/format";
+import { ITEMS, rarityTextClass, type ItemId } from "@/adventure/data/items";
+import type { Listing } from "./types";
+import { hasOwn, listingDetail } from "./listingDetail";
+
+export function ListingCard({
+  item,
+  onCancel,
+  onBuy,
+  currentGold,
+  alreadyKnown,
+}: {
+  item: Listing;
+  onCancel?: (listing: Listing) => Promise<void>;
+  onBuy?: (listing: Listing) => Promise<void>;
+  currentGold?: number;
+  alreadyKnown?: boolean;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
+  const insufficientGold =
+    typeof currentGold === "number" && currentGold < item.price;
+  const blocked = alreadyKnown === true;
+  const isRecipe = item.itemKind === "recipe";
+  // 장비 매물이면 등급색으로 강조 — 다른 종류는 기본 zinc 톤.
+  const equipDef =
+    item.itemKind === "equip" && hasOwn(ITEMS, item.itemId)
+      ? ITEMS[item.itemId as ItemId]
+      : null;
+  const nameClass = rarityTextClass(equipDef, "text-zinc-900 dark:text-zinc-100");
+  const detail = listingDetail(item);
+  return (
+    <Card padding="sm">
+      <div className="flex items-center gap-3">
+        <span className="flex-1 min-w-0">
+          <span
+            className={`block truncate text-sm font-medium ${nameClass} ${
+              detail
+                ? "cursor-pointer underline decoration-dotted decoration-zinc-400 underline-offset-2"
+                : ""
+            }`}
+            role={detail ? "button" : undefined}
+            tabIndex={detail ? 0 : undefined}
+            aria-expanded={detail ? open : undefined}
+            onClick={detail ? () => setOpen((v) => !v) : undefined}
+            onKeyDown={
+              detail
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setOpen((v) => !v);
+                    }
+                  }
+                : undefined
+            }
+          >
+            {isRecipe ? "📜 " : ""}
+            {item.itemName}
+            {item.itemKind === "material" && item.quantity > 1 ? (
+              <span className="ml-1 text-zinc-500">×{item.quantity}</span>
+            ) : null}
+          </span>
+          <span className="mt-0.5 block text-[11px] text-zinc-500">
+            {formatRelativeTime(item.createdAt)}
+            {(() => {
+              // 등록 24시간 만료 — 4시간 이하 남았으면 임박 뱃지 노출.
+              // 시간 기반 1회성 표시라 Date.now() 가 매 렌더 다른 값이어도 무해.
+              // eslint-disable-next-line react-hooks/purity
+              const ageMs = Date.now() - new Date(item.createdAt).getTime();
+              const remainMs = 24 * 60 * 60 * 1000 - ageMs;
+              if (remainMs > 0 && remainMs < 4 * 60 * 60 * 1000) {
+                const hours = Math.max(1, Math.round(remainMs / (60 * 60 * 1000)));
+                return (
+                  <span className="ml-2 text-amber-600 dark:text-amber-400">
+                    {hours}시간 후 만료
+                  </span>
+                );
+              }
+              return null;
+            })()}
+            {item.isMine ? (
+              <span className="ml-2 text-emerald-600">내 매물</span>
+            ) : null}
+            {blocked ? (
+              <span className="ml-2 text-zinc-500">이미 알고 있음</span>
+            ) : null}
+          </span>
+        </span>
+        <span className="shrink-0 text-right">
+          <span className="block text-base font-semibold text-amber-700 dark:text-amber-400">
+            {item.price.toLocaleString()} G
+          </span>
+          {item.isMine && onCancel ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  await onCancel(item);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              className="mt-1 rounded-md border border-red-300 bg-white px-2 py-0.5 text-xs text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/30"
+            >
+              {busy ? "취소 중…" : "취소"}
+            </button>
+          ) : item.isMine ? (
+            <span className="mt-1 block text-[10px] text-zinc-500">내 매물</span>
+          ) : onBuy ? (
+            <button
+              type="button"
+              disabled={busy || insufficientGold || blocked}
+              title={
+                blocked
+                  ? "이미 알고 있는 제작서"
+                  : insufficientGold
+                    ? "골드 부족"
+                    : undefined
+              }
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  await onBuy(item);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              className={
+                insufficientGold || blocked
+                  ? "mt-1 cursor-not-allowed rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+                  : "mt-1 rounded-md border border-emerald-700 bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              }
+            >
+              {busy
+                ? "구매 중…"
+                : blocked
+                  ? "이미 보유"
+                  : insufficientGold
+                    ? "골드 부족"
+                    : "구매"}
+            </button>
+          ) : null}
+        </span>
+      </div>
+      {open && detail ? (
+        <div className="mt-2 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
+          {detail.title ? (
+            <div className="mb-1 font-medium text-zinc-700 dark:text-zinc-300">
+              {detail.title}
+            </div>
+          ) : null}
+          {detail.lines.length > 0 ? (
+            <div className="space-y-0.5">
+              {detail.lines.map((s) => (
+                <div
+                  key={s.label}
+                  className="flex items-baseline justify-between gap-2"
+                >
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    {s.label}
+                  </span>
+                  <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {s.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {detail.variance ? (
+            <div className="mt-1 text-sky-600 dark:text-sky-400">
+              품질에 따라 변동 — {detail.variance}
+            </div>
+          ) : null}
+          {detail.description ? (
+            <div className="mt-1.5 border-t border-zinc-200 pt-1.5 italic text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              {detail.description}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </Card>
+  );
+}
