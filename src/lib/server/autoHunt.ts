@@ -16,7 +16,10 @@ import type {
   OfflineSimResult,
 } from "@/adventure/battle/offlineSim";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
-import { AUTO_HUNT_MAX_BATTLES } from "@/adventure/battle/autoHunt";
+import {
+  AUTO_HUNT_MAX_BATTLES,
+  AUTO_HUNT_SIM_BUDGET_MS,
+} from "@/adventure/battle/autoHunt";
 import { baseCharacter } from "@/adventure/character/defaults";
 import { derivePlayerCombat } from "@/adventure/character/derivePlayerCombat";
 import { applyExpGain } from "@/lib/leveling";
@@ -222,6 +225,9 @@ export function assembleSimInput(opts: AssembleSimInputOpts): OfflineSimInput {
     turnIntervalMs: PLAYER_TURN_INTERVAL_MS,
     awayMs,
     maxBattles: AUTO_HUNT_MAX_BATTLES,
+    // 서버에서만 wall-clock 예산을 건다 — collect 한 건이 이벤트 루프를 수 초씩
+    // 점유하지 않도록. 클라/테스트의 simulateOfflineHunt 직접 호출은 영향 없음.
+    runBudgetMs: AUTO_HUNT_SIM_BUDGET_MS,
     luk: derived.totalStats.luk,
     knowsRecipe: (id) => knownSet.has(id),
     pickAction: (battleState) =>
