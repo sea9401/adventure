@@ -29,6 +29,9 @@ const MATERIAL_SELL: Partial<Record<MaterialId, number>> = {
   wind_mana_stone: 7,
   tough_hide: 7,
   wolf_king_fang: 20,
+  crab_shell: 4,
+  coral_spine: 8,
+  deep_scale: 10,
 };
 
 const ITEM_SELL: Partial<Record<ItemId, number>> = {

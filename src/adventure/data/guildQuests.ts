@@ -76,7 +76,8 @@ export type GuildQuestDef = {
 };
 
 // Phase A — G 등급 의뢰 3종. F 이상 풀은 Phase B 에서 발란스 후 추가.
-// 3개 동시 진행 체제 — 재료 보상 없음, 골드 ×0.5, 명성 ×1.5.
+// 3개 동시 진행 체제 — 재료 보상 없음(보스 의뢰만 예외), 골드 ×0.5, 명성 ×1.5.
+// 해안 지선 2종(F: 갯벌 집게발 게 / E: 수심의 것)을 우선 끼워 넣음 — 전체 풀 발란스는 Phase B 에서.
 export const GUILD_QUESTS: GuildQuestDef[] = [
   {
     id: "g_slime_hunt",
@@ -101,6 +102,26 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
     grade: "G",
     task: { kind: "kill_monster", monsterName: "들개", count: 240 },
     reward: { fame: 110, goldPerMember: 375 },
+  },
+  {
+    id: "f_tideflats_crabs",
+    name: "갯벌 정리 — 집게발 게",
+    description: "디올라 남쪽 조수 갯벌에 들끓는 집게발 게를 솎아 길을 튼다.",
+    grade: "F",
+    task: { kind: "kill_monster", monsterName: "집게발 게", count: 400 },
+    reward: { fame: 150, goldPerMember: 540 },
+  },
+  {
+    id: "e_deep_one_pacify",
+    name: "수심의 것 가라앉히기",
+    description: "산호초 섬 암초 밑에서 뒤척이는 수심의 것을 거듭 가라앉혀 소만 뱃길을 지킨다.",
+    grade: "E",
+    task: { kind: "kill_boss", monsterName: "수심의 것", count: 8 },
+    reward: {
+      fame: 280,
+      goldPerMember: 1200,
+      materialsPerMember: [{ materialId: "deep_scale", count: 3 }],
+    },
   },
 ];
 

@@ -55,6 +55,7 @@ const H = 60 * 60 * 1000;
 export const REGION_REPEAT_COOLDOWN_MS: Partial<Record<RegionId, number>> = {
   village: 3 * H,
   diola: 6 * H,
+  saltmarsh: 7 * H,
   unhyang: 8 * H,
   windvale: 10 * H,
   skyreach: 12 * H,
@@ -316,6 +317,225 @@ export const QUESTS: Quest[] = [
     target: { kind: "kill", monsterName: "부서진 골렘", count: 30 },
     reward: { gold: 280, fame: 14, exp: 380 },
     repeatable: true,
+  },
+  // ── 소만 (해안 지선) ─────────────────────────────────────────────────────
+  // 갯벌(Lv10) 잡몹 의뢰 → 소만 신임(여울 보증) → 뱃사공 해랑 선저 덧대기(ferryman_reef_passage)
+  // → 산호초 섬(Lv16~) 정찰 → 수심의 것 처치. 갈매/보말은 QuestLineDialogue, 해랑/여울은 커스텀.
+  // 산호초 섬 적을 대상으로 하는 의뢰는 모두 해랑의 선저 덧대기(hull-plating) 완료를 선행으로 둔다.
+  {
+    id: "saltmarsh-galmae-crabs",
+    regionId: "saltmarsh",
+    title: "갈매의 통발 — 집게발 게",
+    description:
+      "갯벌에 집게발 게가 너무 불어 통발이며 그물이 남아나질 않아요. 집게발 게 20마리를 솎아 주세요. (게딱지 다루는 법을 알려줍니다)",
+    requiredLevel: 10,
+    target: { kind: "kill", monsterName: "집게발 게", count: 20 },
+    reward: { gold: 170, fame: 11, exp: 360, recipes: ["crab_shell_buckler"] },
+    repeatable: true,
+    giverNpcId: "saltmarsh_salter",
+  },
+  {
+    id: "saltmarsh-galmae-mudfish",
+    regionId: "saltmarsh",
+    title: "갈매의 통발 — 진흙 미꾸라지",
+    description:
+      "진흙 미꾸라지가 통발 미끼를 죄다 파먹어요. 18마리만 정리해 주면 갯벌 각반 짜는 법을 알려드릴게요.",
+    requiredLevel: 10,
+    target: { kind: "kill", monsterName: "진흙 미꾸라지", count: 18 },
+    reward: { gold: 190, fame: 12, exp: 380, recipes: ["tideflats_waders"] },
+    repeatable: true,
+    giverNpcId: "saltmarsh_salter",
+  },
+  {
+    id: "saltmarsh-galmae-shore-birds",
+    regionId: "saltmarsh",
+    title: "갈매의 통발 — 갯도요",
+    description:
+      "갯도요 떼가 말리던 생선을 다 물어가요. 18마리만 쫓아내 주세요.",
+    requiredLevel: 10,
+    target: { kind: "kill", monsterName: "갯도요", count: 18 },
+    reward: { gold: 200, fame: 12, exp: 380 },
+    repeatable: true,
+    giverNpcId: "saltmarsh_salter",
+  },
+  {
+    id: "saltmarsh-galmae-reef-coral",
+    regionId: "saltmarsh",
+    title: "갈매의 청 — 산호 가시",
+    description:
+      "산호 가시는 송곳이며 통발 미늘로 두루 쓰여요. 암초에서 부러진 산호 가시 8개만 들여와 주면 사례하지요.",
+    requiredLevel: 16,
+    target: { kind: "deliver", materialId: "coral_spine", count: 8 },
+    reward: { gold: 360, fame: 17, exp: 700 },
+    repeatable: true,
+    giverNpcId: "saltmarsh_salter",
+    requiresQuestCompleted: "saltmarsh-haerang-hull-plating",
+  },
+  {
+    id: "saltmarsh-bomal-crab-shells",
+    regionId: "saltmarsh",
+    title: "보말의 게장 — 게딱지",
+    description:
+      "손님상에 올릴 게장을 담그려는데 게딱지가 모자라네요. 게딱지 10개만 들여와 주면 섭섭잖게 사례할게요.",
+    requiredLevel: 10,
+    target: { kind: "deliver", materialId: "crab_shell", count: 10 },
+    reward: { gold: 150, fame: 10, exp: 320, potions: [{ id: "potion_heal_s", count: 5 }] },
+    repeatable: true,
+    giverNpcId: "saltmarsh_innkeeper",
+  },
+  {
+    id: "saltmarsh-bomal-galley-larder",
+    regionId: "saltmarsh",
+    title: "보말의 곳간 채우기",
+    description:
+      "대상 길손이 줄줄이 들이닥칠 철이라 곳간을 단단히 채워야 해요. 게딱지 15개만 더 들여와 주면 — 손님이 두고 간 약 주머니를 손봐서 드릴게요.",
+    requiredLevel: 11,
+    target: { kind: "deliver", materialId: "crab_shell", count: 15 },
+    reward: { gold: 240, fame: 13, exp: 420, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "saltmarsh_innkeeper",
+  },
+  {
+    id: "saltmarsh-bomal-reef-stew",
+    regionId: "saltmarsh",
+    title: "보말의 솥 — 갑각 약탈자",
+    description:
+      "난바다에서 갑각 약탈자들이 어선까지 따라붙는대요. 15만 정리해 주면 어선이 다시 나갈 거예요.",
+    requiredLevel: 16,
+    target: { kind: "kill", monsterName: "갑각 약탈자", count: 15 },
+    reward: { gold: 380, fame: 18, exp: 760 },
+    repeatable: true,
+    giverNpcId: "saltmarsh_innkeeper",
+    requiresQuestCompleted: "saltmarsh-haerang-hull-plating",
+  },
+  {
+    id: "saltmarsh-haerang-hull-plating",
+    regionId: "saltmarsh",
+    title: "선저 덧대기",
+    description:
+      "암초 사이를 지나려면 배 밑을 게딱지 갑판으로 덧대야 해. 게딱지 15개만 모아다 줘 — 그러면 난바다로 데려가 주지.",
+    requiredLevel: 13,
+    target: { kind: "deliver", materialId: "crab_shell", count: 15 },
+    reward: { gold: 320, fame: 16, exp: 600 },
+    repeatable: false,
+    giverNpcId: "saltmarsh_ferryman",
+  },
+  {
+    id: "saltmarsh-haerang-reef-runs",
+    regionId: "saltmarsh",
+    title: "건넨 김에 — 사이렌 쫓기",
+    description:
+      "난바다를 건널 때마다 사이렌 노랫소리가 뱃머리를 돌려세워. 산호초 사이렌 20만 쫓아 주면 뱃길이 한결 수월하겠어.",
+    requiredLevel: 16,
+    target: { kind: "kill", monsterName: "산호초 사이렌", count: 20 },
+    reward: { gold: 400, fame: 18, exp: 800 },
+    repeatable: true,
+    giverNpcId: "saltmarsh_ferryman",
+    requiresQuestCompleted: "saltmarsh-haerang-hull-plating",
+  },
+  {
+    id: "saltmarsh-yeoul-reef-survey",
+    regionId: "saltmarsh",
+    title: "여울의 청 — 암초 살피기",
+    description:
+      "해랑이 자네를 난바다로 데려갔다고 들었네. 그렇다면 부탁이 있어 — 암초 둘레의 산호가 어떻게 자라는지 봐 주게. 심해 비늘 10조각이면 충분해. 그걸 보면 밑에서 자는 것이 얼마나 깨어났는지 알 수 있네.",
+    requiredLevel: 16,
+    target: { kind: "deliver", materialId: "deep_scale", count: 10 },
+    reward: { gold: 460, fame: 20, exp: 900 },
+    repeatable: false,
+    giverNpcId: "saltmarsh_elder",
+    requiresQuestCompleted: "saltmarsh-haerang-hull-plating",
+  },
+  {
+    id: "saltmarsh-yeoul-deep-one",
+    regionId: "saltmarsh",
+    title: "수심의 것",
+    description:
+      "이제 알겠네 — 암초 밑에서 뒤척이는 그것이 잠잠해지지 않는 한, 이 포구는 다시 일어서지 못해. 수심의 것. 단단히 준비해 가서 그것을 가라앉혀 주게. 소만의 명운이 거기 달렸네.",
+    requiredLevel: 18,
+    target: { kind: "kill", monsterName: "수심의 것", count: 1 },
+    reward: {
+      gold: 900,
+      fame: 26,
+      exp: 1300,
+      potions: [{ id: "potion_heal_m", count: 5 }],
+      recipes: ["abyssal_heart"],
+    },
+    repeatable: false,
+    giverNpcId: "saltmarsh_elder",
+    requiresQuestCompleted: "saltmarsh-yeoul-reef-survey",
+  },
+  {
+    id: "saltmarsh-deep-one-recurring",
+    regionId: "saltmarsh",
+    title: "수심의 것 — 다시 뒤척일 때",
+    description:
+      "한 번 가라앉혔다고 끝이 아니야. 또 물이 차거든 — 수심의 것을 세 번 더 가라앉혀 주게. 소만이 자네를 기억할 게요.",
+    requiredLevel: 18,
+    target: { kind: "kill", monsterName: "수심의 것", count: 3 },
+    reward: { gold: 1100, fame: 28, exp: 1500 },
+    repeatable: true,
+    giverNpcId: "saltmarsh_elder",
+    requiresQuestCompleted: "saltmarsh-yeoul-deep-one",
+  },
+  // ── 소만 길드 게시판 — 반복 의뢰 ──────────────────────────────────────
+  // 갯벌 적 3종은 누구나, 산호초 섬 적 2종은 해랑의 선저 덧대기 완료 후 노출.
+  {
+    id: "saltmarsh-board-crabs",
+    regionId: "saltmarsh",
+    title: "갯벌의 집게발",
+    description:
+      "썰물 때마다 집게발 게가 갯벌 길을 막아 디올라 어부들이 건너오질 못합니다. 집게발 게 45마리를 정리해 주세요.",
+    requiredLevel: 10,
+    target: { kind: "kill", monsterName: "집게발 게", count: 45 },
+    reward: { gold: 220, fame: 12, exp: 400 },
+    repeatable: true,
+  },
+  {
+    id: "saltmarsh-board-shore-birds",
+    regionId: "saltmarsh",
+    title: "갯도요 떼",
+    description:
+      "갯도요 떼가 소만 어판장 생선을 노립니다. 40마리를 쫓아내 주세요.",
+    requiredLevel: 10,
+    target: { kind: "kill", monsterName: "갯도요", count: 40 },
+    reward: { gold: 230, fame: 12, exp: 400 },
+    repeatable: true,
+  },
+  {
+    id: "saltmarsh-board-mudfish",
+    regionId: "saltmarsh",
+    title: "진창의 미꾸라지",
+    description:
+      "진흙 미꾸라지가 소금밭 수로를 헤집어 놓습니다. 40마리를 정리해 주세요.",
+    requiredLevel: 10,
+    target: { kind: "kill", monsterName: "진흙 미꾸라지", count: 40 },
+    reward: { gold: 210, fame: 11, exp: 380 },
+    repeatable: true,
+  },
+  {
+    id: "saltmarsh-board-sirens",
+    regionId: "saltmarsh",
+    title: "안개 너머의 노랫소리",
+    description:
+      "산호초 섬 둘레로 사이렌 노랫소리가 짙어져 어선이 나가질 못합니다. 산호초 사이렌 45를 잠재워 주세요.",
+    requiredLevel: 16,
+    target: { kind: "kill", monsterName: "산호초 사이렌", count: 45 },
+    reward: { gold: 380, fame: 18, exp: 760 },
+    repeatable: true,
+    requiresQuestCompleted: "saltmarsh-haerang-hull-plating",
+  },
+  {
+    id: "saltmarsh-board-coral-golems",
+    regionId: "saltmarsh",
+    title: "암초를 걷는 것들",
+    description:
+      "가시 산호 골렘이 암초 사이 뱃길을 막아섭니다. 30체를 부숴 주세요.",
+    requiredLevel: 16,
+    target: { kind: "kill", monsterName: "가시 산호 골렘", count: 30 },
+    reward: { gold: 420, fame: 19, exp: 780 },
+    repeatable: true,
+    requiresQuestCompleted: "saltmarsh-haerang-hull-plating",
   },
   // ── 운향 — 메인 라인 "잠들지 않는 산" (노촌장 백운) ──────────────────────
   // 운향 도달(= 운봉의 거인과 한 번 맞붙음, peak_giant_engaged) → 협곡 정찰 →

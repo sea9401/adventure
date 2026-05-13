@@ -358,7 +358,8 @@ export const WORLD_MAP: WorldMap = {
         "갑각 약탈자": 35,
         "가시 산호 골렘": 25,
       },
-      // 보스 "수심의 것"(암초 아래 잠든 해저 생물)은 후속 PR — 보스 몬스터 + 보상 준비 후 boss 필드 추가.
+      // 산호초 섬 보스 — 별도 도전 버튼. 일반 인카운터 풀에선 제외, 자정 기준 일일 3회.
+      boss: { monsterName: "수심의 것", dailyEntryLimit: 3 },
       recommendedLevel: 18,
     },
   ],
@@ -457,8 +458,8 @@ export const WORLD_MAP: WorldMap = {
       },
     },
     // 해안 지선 (diola → tideflats → saltmarsh → reef_isle).
-    // 산호초 섬은 본래 뱃사공의 배가 필요한 자리 — NPC/사이드 퀘스트가 붙으면
-    // saltmarsh→reef_isle 을 story 게이트로 교체 예정. 그전까진 시련 5전으로 열어 둔다.
+    // 산호초 섬은 뱃사공 해랑이 배를 내줘야 — 소만 원로 여울의 신임을 얻고(saltmarsh_vouched),
+    // 해랑에게 게딱지를 모아다 주면(ferryman_reef_passage) 길이 열린다. (HaerangDialogue 참고)
     {
       from: "diola",
       to: "tideflats",
@@ -468,7 +469,11 @@ export const WORLD_MAP: WorldMap = {
     {
       from: "saltmarsh",
       to: "reef_isle",
-      requires: { kind: "trial", battles: 5, enemiesFrom: "reef_isle" },
+      requires: {
+        kind: "story",
+        flagId: "ferryman_reef_passage",
+        reason: "소만의 뱃사공 해랑이 아직 난바다로 가는 배를 내주지 않았다.",
+      },
     },
     // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.
     { from: "village", to: "diola", requires: { kind: "visited", regionId: "diola" } },
