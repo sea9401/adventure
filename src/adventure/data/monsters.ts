@@ -60,6 +60,17 @@ export type Monster = {
    * 레이드급 ≈4 권장 — 비-기본 등급 가중치(raw 4/1)에 곱해진 뒤 정규화된다(dropQuality.ts).
    */
   dropQualityBias?: number;
+  /**
+   * 0~1. 이 몬스터를 공격할 때 무시되는 자신의 DEF 비율 (페이즈로 오른 DEF 포함). 미지정/0 = 정상 감산.
+   * "스펀지 보스" 방지 노브 — 그 시대 정석 장비면 적정 시간 안에 잡히게. 보스 ≈ 0.25~0.35 권장.
+   * 정확 스킬(armorPierceFraction) 과 곱셈으로 겹치고, 분쇄(고정 감산)는 이 뒤에 적용된다.
+   */
+  armorVulnerable?: number;
+  /**
+   * 0~1. 이 몬스터의 공격이 무시하는 플레이어 DEF 비율. 잡몹 pierce 스킬(고정값)과 별개 — 풀탱이
+   * 보스를 무피격으로 농락하지 못하게. 미지정/0 = 정상. 보스 ≈ 0.2~0.3 권장.
+   */
+  playerDefVulnerable?: number;
   /** 처치 시 set 할 storyFlag id — 보스용. 두 번째 처치부터는 useStoryFlags.set 이 idempotent 라 무시. */
   onDefeatFlag?: string;
 };
@@ -273,6 +284,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "recipe", recipeId: "mole_king_borer", chance: 0.05 },
     ],
     dropQualityBias: 3,
+    armorVulnerable: 0.25,
     phaseTrigger: {
       hpFraction: 0.3,
       defBonus: 4,
@@ -391,6 +403,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "recipe", recipeId: "peak_mantle", chance: 0.15 },
     ],
     dropQualityBias: 4,
+    armorVulnerable: 0.25,
+    playerDefVulnerable: 0.2,
     phaseTrigger: {
       hpFraction: 0.4,
       defBonus: 3,
@@ -615,6 +629,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "recipe", recipeId: "volcano_core", chance: 0.15 },
     ],
     dropQualityBias: 4,
+    armorVulnerable: 0.3,
+    playerDefVulnerable: 0.25,
     phaseTrigger: {
       hpFraction: 0.4,
       defBonus: 6,

@@ -136,12 +136,14 @@ export const EXECUTION_DAMAGE_MULT = 1.5;
 
 // 정확 — 민첩 35 도달 시 획득.
 // 효과 1) 모든 공격에 대해 적 evasion ×PRECISION_EVASION_MULT (절반). 회피 무력화가 아닌 비례 감소.
-// 효과 2) 플레이어 공격의 최소 데미지를 1 → 1 + floor(DEX / PRECISION_MIN_DAMAGE_STEP) 로 올린다.
-//   장비/레벨이 한참 모자라 ATK-DEF 가 1 이하일 때만 체감되는 안전망 — DEF 무시 백도어가 아니라
-//   "약점을 노린다" 의 보조 효과. DEX 35=최소2 / 60=최소3 / 90=최소4.
+// 효과 2) 플레이어의 모든 공격이 적 방어력의 (DEX × PRECISION_PIERCE_PER_DEX)% 를 무시 (PRECISION_PIERCE_CAP 캡).
+//   "약점을 노린다" — DEX 비례라 후반에도 유효하고, 고방어 보스에 대한 DEX 빌드의 답.
+//   DEX 35=17.5% / 50=25% / 70=35% / 100=50%(캡). 분쇄(고정 감산)는 이 비례 관통 뒤에 적용, 암살은 여전히 DEF 0.
 export const PRECISION_DEX_THRESHOLD = 35;
 export const PRECISION_EVASION_MULT = 0.5;
-export const PRECISION_MIN_DAMAGE_STEP = 30;
+// DEX 1pt 당 무시하는 적 DEF 비율(0~1). 0.005 = pt당 0.5%.
+export const PRECISION_PIERCE_PER_DEX = 0.005;
+export const PRECISION_PIERCE_CAP = 0.5;
 
 // 불굴 — 활력 35 도달 시 획득.
 // 효과 1) 전투당 1회, HP 가 0 이 되는 데미지 받으면 HP 1 로 버틴다.
@@ -226,7 +228,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.PRECISION,
-      description: `모든 공격에 대해 적 회피 ×${PRECISION_EVASION_MULT} (비례 절반) + 최소 데미지 1+(DEX/${PRECISION_MIN_DAMAGE_STEP}) — DEX 35=최소2`,
+      description: `모든 공격에 대해 적 회피 ×${PRECISION_EVASION_MULT} (비례 절반) + 적 방어력 (DEX × ${PRECISION_PIERCE_PER_DEX * 100})% 무시 — DEX 35=17.5%, 70=35% (최대 ${PRECISION_PIERCE_CAP * 100}%)`,
       activationThreshold: PRECISION_DEX_THRESHOLD,
     },
     {
@@ -728,15 +730,14 @@ export function precisionEvasionMultFor(
     : 1;
 }
 
-// 정확 — 플레이어 공격 최소 데미지에 더해지는 보너스(기본 floor 1 위에). 미장착 시 0.
-// floor 는 1 + 이 값. DEX 35=+1(최소2) / 60=+2(최소3) / 90=+3(최소4).
-export function precisionMinDamageBonusFor(
+// 정확 — 플레이어 공격이 무시하는 적 방어력 비율(0~1). DEX 비례, PRECISION_PIERCE_CAP 캡. 미장착 시 0.
+export function precisionArmorPierceFractionFor(
   stats: Record<StatKey, number>,
   equipped: ReadonlySet<string>,
 ): number {
   return stats.dex >= PRECISION_DEX_THRESHOLD &&
     equipped.has(SKILL_NAMES.PRECISION)
-    ? Math.floor(stats.dex / PRECISION_MIN_DAMAGE_STEP)
+    ? Math.min(PRECISION_PIERCE_CAP, stats.dex * PRECISION_PIERCE_PER_DEX)
     : 0;
 }
 

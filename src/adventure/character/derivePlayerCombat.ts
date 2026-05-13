@@ -38,8 +38,8 @@ import {
   lightspeedExtraAttackPctFor,
   luckyShieldBlockPctFor,
   powerAttackBonusFor,
+  precisionArmorPierceFractionFor,
   precisionEvasionMultFor,
-  precisionMinDamageBonusFor,
   regenFor,
   riposteExtraAttacksFor,
   shadowCloneAtkPctFor,
@@ -186,7 +186,10 @@ export function derivePlayerCombat(
     extraAttackChancePct: Math.min(100, totalStats.spd * 2.5),
     powerAttackBonus: powerAttackBonusFor(totalStats, effectiveSkillSet),
     crushDefReduction: crushDefReductionFor(totalStats, effectiveSkillSet),
-    minDamageBonus: precisionMinDamageBonusFor(totalStats, effectiveSkillSet),
+    armorPierceFraction: precisionArmorPierceFractionFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
     guaranteedEvades: evadeGuaranteedFor(totalStats, effectiveSkillSet),
     counterAtkBonus: counterAtkBonusFor(totalStats, effectiveSkillSet),
     extraAttackEveryNTurns: doubleStrikeIntervalFor(
