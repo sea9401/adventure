@@ -23,6 +23,30 @@ import {
   effectLabel,
 } from "./buffSlots/BuffSlotCards";
 
+// 업그레이드 확정 전 확인 — 명성 비용은 환불 불가(uninstall 시 누적 50% 환급)
+// 라 실수 클릭 한 번에 수백~수천 명성이 날아가는 사고를 막는다. uninstall 의
+// 확인창 패턴과 동일하게 window.confirm 사용.
+function confirmUpgrade(
+  buffId: GuildBuffId,
+  currentTier: number,
+  fameAvailable: number,
+): boolean {
+  const def = GUILD_BUFFS[buffId];
+  const cur = def.tiers[currentTier - 1];
+  const next = def.tiers[currentTier];
+  if (!next) return false; // 최고 티어 — 호출부에서 막혀 도달 안 함.
+  const lines = [
+    `${def.name}  T${currentTier} → T${currentTier + 1}`,
+    "",
+    `효과: ${effectLabel(def, cur.effect)} → ${effectLabel(def, next.effect)}`,
+    `비용: ${next.installCost.toLocaleString()} 명성 (환불 불가, 해제 시 누적 50%만 환급)`,
+    `잔여 명성: ${fameAvailable.toLocaleString()} → ${(fameAvailable - next.installCost).toLocaleString()}`,
+    "",
+    "업그레이드하시겠습니까?",
+  ];
+  return window.confirm(lines.join("\n"));
+}
+
 type State = {
   isMaster: boolean;
   fameAvailable: number;
@@ -97,6 +121,10 @@ export function GuildBuffsPanel({
   };
 
   const handleUpgrade = async (buffId: GuildBuffId) => {
+    if (!state) return;
+    const slot = state.buffs.find((s) => s.buffId === buffId);
+    if (!slot) return;
+    if (!confirmUpgrade(buffId, slot.tier, state.fameAvailable)) return;
     setBusy(true);
     setError(null);
     try {
