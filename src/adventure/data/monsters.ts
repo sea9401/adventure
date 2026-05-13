@@ -811,6 +811,136 @@ export const MONSTERS: Record<string, Monster> = {
     },
     onDefeatFlag: "the_deep_one_stilled",
   },
+  // ── 서편 옛길 (서편 옛길 / 옛 변경 성채) ─────────────────────────────────
+  // 시작 마을 서쪽의 막다른 라인. 옛길 ≈ 동굴(Lv3) tier, 성채 ≈ 폐허~산기슭 사이(Lv13) tier.
+  // 옛 폐허(고대·마법)와 달리 성채는 "한 세대 전 전쟁의 잔해" — 인간 탈영병 + 녹슨 전쟁기계 + 까마귀.
+  // image 필드는 후속 PR(webp 추가).
+  "들까마귀 떼": {
+    name: "들까마귀 떼",
+    tags: ["beast"],
+    hp: 45,
+    atk: 5,
+    def: 1,
+    spd: 8,
+    evasionPct: 15,
+    exp: 4,
+    drops: [
+      { kind: "material", materialId: "raven_feather", chance: 0.06 },
+      // 초반 발판 — 까마귀깃 두건 제작서.
+      { kind: "recipe", recipeId: "crow_feather_cap", chance: 0.04 },
+      // 유실된 명품 — 까마귀가 둥지에 그러모은 잡동사니로 엮인 부적. (두더지왕의 드릴급 — 아주 이른 행운)
+      { kind: "equip", itemId: "crows_hoard_charm", chance: 0.0002 },
+    ],
+  },
+  "갈대 살쾡이": {
+    name: "갈대 살쾡이",
+    tags: ["beast"],
+    hp: 60,
+    atk: 6,
+    def: 2,
+    spd: 6,
+    exp: 5,
+    drops: [
+      { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
+      { kind: "material", materialId: "raven_feather", chance: 0.02 },
+    ],
+  },
+  노상강도: {
+    name: "노상강도",
+    tags: ["humanoid"],
+    hp: 75,
+    atk: 7,
+    def: 3,
+    spd: 5,
+    exp: 6,
+    drops: [
+      { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
+      { kind: "recipe", recipeId: "roadbandit_shortsword", chance: 0.04 },
+    ],
+  },
+  "폐성벽 까마귀": {
+    name: "폐성벽 까마귀",
+    tags: ["beast"],
+    hp: 130,
+    atk: 15,
+    def: 4,
+    spd: 8,
+    evasionPct: 20,
+    exp: 13,
+    drops: [
+      { kind: "material", materialId: "raven_feather", chance: 0.05 },
+      { kind: "recipe", recipeId: "tattered_standard_cloak", chance: 0.04 },
+      // 낡은 군기 망토 → 변경 군기 망토 업그레이드 직조서.
+      { kind: "recipe", recipeId: "frontier_standard_cloak", chance: 0.015 },
+    ],
+  },
+  "탈영 약탈자": {
+    name: "탈영 약탈자",
+    tags: ["humanoid"],
+    hp: 180,
+    atk: 16,
+    def: 7,
+    spd: 6,
+    exp: 15,
+    skill: { kind: "heavy_blow", name: "투창", everyPhases: 3, multiplier: 1.8 },
+    drops: [
+      { kind: "material", materialId: "war_banner_scrap", chance: 0.05 },
+      { kind: "material", materialId: "scrap_iron", chance: 0.02 },
+      { kind: "recipe", recipeId: "garrison_hauberk", chance: 0.04 },
+      // 노상강도의 단검 → 노상강도의 활검 업그레이드 제작서.
+      { kind: "recipe", recipeId: "roadbandit_falchion", chance: 0.02 },
+    ],
+  },
+  "녹슨 자동인형": {
+    name: "녹슨 자동인형",
+    tags: ["golem"],
+    hp: 230,
+    atk: 14,
+    def: 11,
+    spd: 2,
+    exp: 16,
+    skill: { kind: "brace", name: "녹슨 장갑판", damageReduction: 4 },
+    drops: [
+      { kind: "material", materialId: "scrap_iron", chance: 0.05 },
+      { kind: "recipe", recipeId: "geared_warpick", chance: 0.04 },
+      // 수비대 사슬갑옷 → 보강한 수비대 사슬갑옷 업그레이드 제작서.
+      { kind: "recipe", recipeId: "reinforced_garrison_hauberk", chance: 0.02 },
+      // 까마귀 둥지의 부적을 까마귀 보물의 부적으로 끌어올리는 새김서 (결과도 unique·비거래).
+      { kind: "recipe", recipeId: "crows_hoard_engraving", chance: 0.003 },
+    ],
+  },
+  // 옛 변경 성채 보스 — region.boss 도전 버튼으로만 진입. 자정 기준 일일 dailyEntryLimit 회.
+  // 처치 시 oldwall_keep_felled... 가 아니라 gatekeeper_felled flag (성채 fast-travel 게이트와 무관 —
+  // 이미 oldwall_keep_unsealed 로 열림). 항상 녹슨 쇳조각·옛 군기 조각 + 수비대 무구 4종 중 1종 학습.
+  // 0.15 로 성문지기의 핵, 0.05 로 까마귀 둥지 부적 새김서.
+  "옛 성문지기": {
+    name: "옛 성문지기",
+    tags: ["golem"],
+    hp: 650,
+    atk: 25,
+    def: 16,
+    spd: 3,
+    exp: 85,
+    skill: { kind: "heavy_blow", name: "성문 빗장 휘두르기", everyPhases: 3, multiplier: 1.8 },
+    drops: [
+      { kind: "material", materialId: "scrap_iron", chance: 1, amount: 4 },
+      { kind: "material", materialId: "war_banner_scrap", chance: 1, amount: 3 },
+      {
+        kind: "recipe_one_of",
+        recipeIds: ["garrison_blade", "garrison_bulwark", "garrison_glaive", "garrison_cudgel"],
+        chance: 1,
+      },
+      { kind: "recipe", recipeId: "gatekeeper_core", chance: 0.15 },
+      { kind: "recipe", recipeId: "crows_hoard_engraving", chance: 0.05 },
+    ],
+    dropQualityBias: 3,
+    phaseTrigger: {
+      hpFraction: 0.3,
+      defBonus: 5,
+      message: "옛 성문지기가 빗장을 가로지른다 — 강철판이 겹친다.",
+    },
+    onDefeatFlag: "gatekeeper_felled",
+  },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).
   "훈련용 허수아비": {

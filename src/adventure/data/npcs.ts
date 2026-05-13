@@ -30,7 +30,13 @@ export type NpcId =
   | "saltmarsh_ferryman"
   | "saltmarsh_salter"
   | "saltmarsh_innkeeper"
-  | "saltmarsh_kid";
+  | "saltmarsh_kid"
+  // 마른나루 — 서편 옛길의 작은 역참 마을.
+  | "dustford_keeper"
+  | "dustford_scavenger"
+  | "dustford_innkeeper"
+  | "dustford_hunter"
+  | "dustford_kid";
 
 export type NpcRole =
   | "elder"
@@ -354,6 +360,57 @@ export const NPCS: Npc[] = [
       "썰물 때마다 갯벌에서 노는 소만 아이. 늘 조개껍데기를 한 줌씩 들고 다닌다.",
     greeting:
       "쉿. …지금은 물이 안 출렁여요. 가끔 한낮에도 갯벌이 출렁출렁해요 — 바다 밑에 엄청 큰 게 숨 쉬는 것처럼.\n해랑 아저씨는 거짓말 말랬는데, 진짜예요. 어른들도 다 알면서 말 안 하는 거예요.",
+  },
+  // ── 마른나루 (서편 옛길) ─────────────────────────────────────────────────
+  {
+    id: "dustford_keeper",
+    region: "dustford",
+    name: "옛 수비대장 무진",
+    role: "elder",
+    description:
+      "한 세대 전 옛 변경 성채를 지키던 수비대의 마지막 대장. 다리를 절지만 등은 여전히 꼿꼿하다.",
+    greeting:
+      "낯선 발소리군. 시작 마을 서문 쪽에서 옛길을 따라 왔나.\n…이 마른나루는 거의 비었어. 교역로가 비껴간 뒤로. 그래도 우물과 밭을 붙들고 사는 집들이 있지. 우린 떠나지 않아.\n마른나루가 자네를 받아들이거든, 그땐 옛 성채 이야기를 하지. 우선 두루와 나래부터 도와주게.",
+  },
+  {
+    id: "dustford_scavenger",
+    region: "dustford",
+    name: "고물장수 두루",
+    role: "vendor",
+    description:
+      "옛길과 성채에서 거둔 고물을 손질해 파는 장수. 손에 늘 녹가루와 깃털이 묻어 있다.",
+    greeting:
+      "어, 손님인가 — 아니, 일손인가? 마침 잘 왔어.\n옛길에 들고양이가 너무 불었어. 가죽이며 송곳니가 쓸 만한데, 그놈들이 통발을 죄다 헤집어 놔서 원. 좀 솎아 주면 사례하지 — 노상강도 단검 손질하는 법도 알려줄게.",
+  },
+  {
+    id: "dustford_innkeeper",
+    region: "dustford",
+    name: "역참 주인 나래",
+    role: "innkeeper",
+    description:
+      "마른나루 옛 역참을 지키는 주인. 마른 억새와 들밀로 끓인 죽으로 드문 길손들 배를 채운다.",
+    greeting:
+      "어서 와요, 길손. 옛길 걸어오느라 발이 무거웠겠네.\n…요즘 손님 베개 속 채울 깃이 영 모자라서요. 까마귀 깃이라도 좀 들여와 주면 잠자리가 한결 나을 텐데. 사례는 섭섭잖게 할게요.",
+  },
+  {
+    id: "dustford_hunter",
+    region: "dustford",
+    name: "들사냥꾼 솔개",
+    role: "quest",
+    description:
+      "옛길의 들짐승을 쫓아 사는 사냥꾼. 어깨에 늘 들매를 한 마리 앉히고 다닌다.",
+    greeting:
+      "왔구먼. 옛길에서 왔나.\n갈대 살쾡이가 요즘 떼를 키워 — 둥지를 헤집고 다녀서 밭 가는 사람들이 못 살아. 좀 정리해 주면 사례하지. 까마귀깃 두건 짓는 법도 알려줄게.",
+  },
+  {
+    id: "dustford_kid",
+    region: "dustford",
+    name: "역참 아이 보리",
+    role: "lore",
+    description:
+      "마른 억새밭에서 노는 마른나루 아이. 늘 까마귀 깃을 한 줌씩 모아 다닌다.",
+    greeting:
+      "쉿. …지금은 조용해요. 밤마다 옛길 끝에서 쿵, 쿵 소리가 나요 — 성문이 혼자 닫혔다 열렸다 하는 것처럼.\n무진 할아버지는 무서운 거 아니랬는데, 진짜 무서워요. 어른들도 다 알면서 안 가는 거예요.",
   },
 ];
 

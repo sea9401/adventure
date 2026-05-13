@@ -5,6 +5,19 @@
 
 ## 2026-05-13
 
+### 서편 옛길 — 서편 옛길 · 마른나루 · 옛 변경 성채 (`feat/westgate-region`)
+
+상세 설계: `docs/westgate-plan.md`. 시작 마을(Lv1)에서 **서쪽**으로 갈라지는 막다른 3지역 라인 — 동쪽 모험길의 반대편. 고대·마법의 `옛 폐허`와 달리 "한 세대 전 전쟁의 잔해": 인간 노상강도·탈영병 + 녹슨 전쟁기계 + 까마귀. (해안 지선의 자매편.)
+
+- 🗺️ **신규 지역 3곳**: 서편 옛길(`westgate`, Lv3)·마른나루(`dustford`, Lv7 마을)·옛 변경 성채(`oldwall_keep`, Lv13). viewBox `height` 640→700. 엣지: `village→westgate`(시련 5전)·`westgate→dustford`·`dustford→oldwall_keep`(story `oldwall_keep_unsealed`). 마른나루 fast-travel 6쌍.
+- ⚔️ **잡몹 6종 + 보스 1**: 들까마귀 떼(회피)·갈대 살쾡이·노상강도(옛길 Lv3) / 폐성벽 까마귀(회피)·탈영 약탈자(`heavy_blow`)·녹슨 자동인형(`brace`)(옛 변경 성채 Lv13) / **옛 성문지기**(`oldwall_keep.boss`, 일일 3회, `heavy_blow`+phaseTrigger, `onDefeatFlag: gatekeeper_felled`). image 필드는 후속(webp).
+- 📦 **재료 3종**: 까마귀 깃(`raven_feather`)·녹슨 쇳조각(`scrap_iron`)·옛 군기 조각(`war_banner_scrap`) (sellPrices 등록). 노상강도/들고양이 무기 재료로 기존 들개 송곳니 재사용.
+- 📦 **장비 15종**: 옛길 입문 2(까마귀깃 두건·노상강도의 단검) / 옛 변경 성채 잡몹산 3(수비대 사슬갑옷·톱니 전곡괭이·낡은 군기 망토) / 업그레이드 3(노상강도의 활검·보강한 수비대 사슬갑옷·변경 군기 망토) / 옛 성문지기 보상 5(수비대 무구 4 `recipe_one_of`(atk+6+보조)·성문지기의 핵) / 유실된 명품 `crows_hoard_charm`(들까마귀 떼 0.02%) → 업그레이드 `corvid_fortune_charm`(unique·비거래). 마정석 라인과 운봉 라인 사이. 제작법 14종(recipes.ts) — 잡몹/보스 드랍 + equip 업그레이드 + `crows_hoard_engraving`.
+- 🤝 **마른나루 NPC 5명**: 옛 수비대장 무진(`MujinDialogue` 커스텀 — 메인 라인 축, `dustford_vouched` + 옛길 정리 → `oldwall_keep_unsealed` 게이트)·고물장수 두루(`DuruDialogue`, questLine)·역참 주인 나래(`NaraeDialogue`, questLine)·들사냥꾼 솔개(`SolgaeDialogue`, questLine)·역참 아이 보리(`BoriDialogue`, 의뢰 X — 떡밥 대사 분기). 초상화 placeholder(후속 webp). `renderTownNpcDialogue` 디스패치 연결.
+- 🗺️ **퀘스트 ~20종**: 두루/나래/솔개 인트로 라인(들개 송곳니·노상강도 단검 제작서·까마귀깃 두건 제작서·약 주머니 +1) → 무진 보증 → 무진 옛길 정리 → 무진 성채 정찰(deliver) → 옛 성문지기 처치(보상 골드 700·명성 22·EXP 1000·작은 회복약 ×8·제작서 `gatekeeper_core`) → 정기 토벌(반복). 마른나루 길드 게시판 5종(성채 2종은 clear-road 선행). `REGION_REPEAT_COOLDOWN_MS.dustford = 4h`. `STORY_QUESTS.dustford_gatekeeper`.
+- 🤝 **길드 의뢰 2종**(Phase B 우선 추가): `f_westgate_bandits`(F, 노상강도 ×400)·`e_gatekeeper_decommission`(E, `kill_boss` 옛 성문지기 ×8, 녹슨 쇳조각 ×3). 전체 풀 발란스는 Phase B 에서.
+- 📝 `docs/items.md` 동기화(무기 7·방어구 5·장신구 3·재료 3 추가, rarity/유실된 명품 표 갱신) + `docs/westgate-plan.md` 신규.
+
 ### 해안 지선 — 조수 갯벌 · 소만 · 산호초 섬 (`feat/new-region`)
 
 상세 설계: `docs/coast-plan.md`. 디올라(Lv6)에서 남쪽으로 갈라지는 막다른 3지역 라인 — 폐허(Lv9)~산기슭(Lv18) 구간에 산으로 가는 길과 나란히 놓인 바닷길. 첫 비(非)내륙 지역 / 물·바다 몹 / 막다른 지선.

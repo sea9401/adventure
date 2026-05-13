@@ -77,7 +77,8 @@ export type GuildQuestDef = {
 
 // Phase A — G 등급 의뢰 3종. F 이상 풀은 Phase B 에서 발란스 후 추가.
 // 3개 동시 진행 체제 — 재료 보상 없음(보스 의뢰만 예외), 골드 ×0.5, 명성 ×1.5.
-// 해안 지선 2종(F: 갯벌 집게발 게 / E: 수심의 것)을 우선 끼워 넣음 — 전체 풀 발란스는 Phase B 에서.
+// 해안 지선 2종(F: 갯벌 집게발 게 / E: 수심의 것) + 서편 옛길 2종(F: 옛길 노상강도 / E: 옛 성문지기)을
+// 우선 끼워 넣음 — 전체 풀 발란스는 Phase B 에서.
 export const GUILD_QUESTS: GuildQuestDef[] = [
   {
     id: "g_slime_hunt",
@@ -121,6 +122,26 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
       fame: 280,
       goldPerMember: 1200,
       materialsPerMember: [{ materialId: "deep_scale", count: 3 }],
+    },
+  },
+  {
+    id: "f_westgate_bandits",
+    name: "옛길 정리 — 노상강도",
+    description: "시작 마을 서쪽 옛길에 눌러앉은 노상강도를 솎아 행상 길을 튼다.",
+    grade: "F",
+    task: { kind: "kill_monster", monsterName: "노상강도", count: 400 },
+    reward: { fame: 140, goldPerMember: 510 },
+  },
+  {
+    id: "e_gatekeeper_decommission",
+    name: "옛 성문지기 잠재우기",
+    description: "옛 변경 성채 성문을 지키는 옛 성문지기를 거듭 잠재워 마른나루 옛길을 지킨다.",
+    grade: "E",
+    task: { kind: "kill_boss", monsterName: "옛 성문지기", count: 8 },
+    reward: {
+      fame: 270,
+      goldPerMember: 1150,
+      materialsPerMember: [{ materialId: "scrap_iron", count: 3 }],
     },
   },
 ];
