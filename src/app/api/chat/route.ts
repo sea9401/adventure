@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { messages } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { resolveActor } from "@/lib/server/resolveActor";
 import {
   CHAT_FETCH_LIMIT,
   CHAT_MAX_LENGTH,
@@ -45,32 +46,23 @@ export async function POST(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
 
-  let body: {
-    name?: unknown;
-    className?: unknown;
-    title?: unknown;
-    content?: unknown;
-  };
+  // identity(name/className/title)는 클라 body 무시 — 서버에서 권위로 해석.
+  // (이전엔 body 그대로 저장돼 누구나 "관리자" 등으로 사칭 가능했다.)
+  let body: { content?: unknown };
   try {
     body = (await req.json()) as typeof body;
   } catch {
     return new Response("invalid json", { status: 400 });
   }
 
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  const className =
-    typeof body.className === "string" ? body.className.trim() : "";
-  const titleRaw = typeof body.title === "string" ? body.title.trim() : "";
-  const title = titleRaw === "" ? null : titleRaw;
   const content =
     typeof body.content === "string" ? body.content.trim() : "";
-
-  if (!name) return new Response("missing name", { status: 400 });
-  if (!className) return new Response("missing className", { status: 400 });
   if (!content) return new Response("empty content", { status: 400 });
   if (content.length > CHAT_MAX_LENGTH) {
     return new Response(`too long (max ${CHAT_MAX_LENGTH})`, { status: 400 });
   }
+
+  const { name, className, title } = await resolveActor(userId);
 
   const since = new Date(Date.now() - CHAT_RATE_LIMIT_MS);
   const [lastRow] = await db

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { X } from "@phosphor-icons/react";
 import type { Npc } from "./data/npcs";
 import { NpcAvatar } from "./NpcAvatar";
@@ -22,6 +23,18 @@ export function NpcDialogue({
   primaryAction?: NpcDialogueAction;
   closeLabel?: string;
 }) {
+  // primaryAction 중복 실행 방지 — 이전엔 보상 지급(영웅검·골드·포션 등)을 동기 호출 후
+  // 닫는 핸들러가 React 리렌더 전 추가 클릭으로 두 번 실행돼 유니크 장비까지 복제됐다.
+  // label 단위 일회성 락 — 다음 단계(label 변경)로 진행되면 자연스럽게 해제.
+  const firedLabelRef = useRef<string | null>(null);
+  const handlePrimary = primaryAction
+    ? () => {
+        if (firedLabelRef.current === primaryAction.label) return;
+        firedLabelRef.current = primaryAction.label;
+        primaryAction.onClick();
+      }
+    : undefined;
+
   return (
     <div
       role="dialog"
@@ -67,7 +80,7 @@ export function NpcDialogue({
           {primaryAction && (
             <button
               type="button"
-              onClick={primaryAction.onClick}
+              onClick={handlePrimary}
               className="w-full rounded-md bg-amber-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-600"
             >
               {primaryAction.label}

@@ -2,6 +2,7 @@ import { gt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { presence } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { resolveActor } from "@/lib/server/resolveActor";
 import { APP_BUILD_VERSION } from "@/lib/clientVersion";
 
 const ONLINE_WINDOW_SECONDS = 60;
@@ -32,25 +33,14 @@ export async function GET() {
   );
 }
 
-export async function POST(req: Request) {
+export async function POST() {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
 
-  let body: { name?: unknown; className?: unknown; title?: unknown };
-  try {
-    body = (await req.json()) as typeof body;
-  } catch {
-    return new Response("invalid json", { status: 400 });
-  }
-
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  const className =
-    typeof body.className === "string" ? body.className.trim() : "";
-  const titleRaw = typeof body.title === "string" ? body.title.trim() : "";
-  const title = titleRaw === "" ? null : titleRaw;
-
-  if (!name) return new Response("missing name", { status: 400 });
-  if (!className) return new Response("missing className", { status: 400 });
+  // identity 는 서버 권위로 해석 — 클라가 보내는 body 는 무시 (사칭 방지).
+  // 본 라우트는 다른 두 라우트(chat/bulletin)와 달리 본문이 비어도 동작해야 해
+  // body 파싱 자체를 생략한다.
+  const { name, className, title } = await resolveActor(userId);
 
   await db
     .insert(presence)
