@@ -63,13 +63,17 @@ export type AutoHuntHook = {
 export function useAutoHunt(opts?: {
   /** 디바이스별 자동 포션 룰 — collect 시 서버 sim 에 전달 (서버에 동기화 안 됨). */
   getAutoPotionRules?: () => AutoPotionConfig["rules"];
+  /** collect 가 네트워크/HTTP 실패로 빈손 리턴할 때 호출 — 토스트 노출용. */
+  onCollectError?: (message: string) => void;
 }): AutoHuntHook {
   const { data: session, status } = useSession();
   const authLoaded = status !== "loading";
   const userId = session?.user?.id;
   const getRulesRef = useRef(opts?.getAutoPotionRules);
+  const onCollectErrorRef = useRef(opts?.onCollectError);
   useEffect(() => {
     getRulesRef.current = opts?.getAutoPotionRules;
+    onCollectErrorRef.current = opts?.onCollectError;
   });
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
   const [regionId, setRegionId] = useState<string | null>(null);
@@ -155,7 +159,14 @@ export function useAutoHunt(opts?: {
           autoPotionRules: getRulesRef.current?.() ?? [],
         }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        // 서버 5xx 등 — 그대로 끝내면 버튼이 다시 활성화되는데 사용자엔 아무 신호가
+        // 없다. 토스트로 안내 (서버는 lastClaimResult 로 다음 시도에서 replay 가능).
+        onCollectErrorRef.current?.(
+          `위탁 결과 수령 실패 (HTTP ${res.status}) — 잠시 후 다시 시도해 주세요.`,
+        );
+        return;
+      }
       const data = (await res.json()) as CollectResponse;
       if ("noop" in data) {
         // too_soon 외에는 위탁이 이미 해제된 상태 — 카운트다운 클리어.
@@ -174,7 +185,10 @@ export function useAutoHunt(opts?: {
       } catch {}
       window.location.reload();
     } catch {
-      // 무시 — 다시 누르면 됨 (서버는 lastClaimResult 로 replay).
+      // 네트워크 실패 — 토스트로 안내.
+      onCollectErrorRef.current?.(
+        "위탁 결과 수령 실패 — 통신 오류. 잠시 후 다시 시도해 주세요.",
+      );
     } finally {
       busyRef.current = false;
       setBusy(false);

@@ -137,13 +137,14 @@ export function ServerFeedView() {
     setShare(next);
     sharePending.current = true;
     try {
-      await fetch("/api/feed", {
+      const res = await fetch("/api/feed", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ share: next }),
       });
+      if (!res.ok) setShare(!next); // 4xx/5xx — 낙관적 업데이트 되돌림
     } catch {
-      setShare(!next); // 실패 시 되돌림
+      setShare(!next); // 네트워크 실패 시 되돌림
     } finally {
       sharePending.current = false;
     }

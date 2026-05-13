@@ -26,10 +26,13 @@ function getPool(): Pool {
 }
 
 // 호출 시점에 환경변수를 검증. 빌드 타임에는 import 만 되고 실제 연결은 안 함.
+// drizzle 인스턴스는 lazy 1회 생성 후 캐시 — 매 프로퍼티 접근마다 새로 만들면
+// 고 RPS 에서 무의미한 GC 부담이 쌓인다.
+let cachedDb: ReturnType<typeof drizzle> | null = null;
 export const db = new Proxy({} as ReturnType<typeof drizzle>, {
   get(_, prop) {
-    const real = drizzle(getPool(), { schema });
-    return Reflect.get(real, prop);
+    if (!cachedDb) cachedDb = drizzle(getPool(), { schema });
+    return Reflect.get(cachedDb, prop);
   },
 });
 

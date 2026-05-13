@@ -69,9 +69,13 @@ export function useToastPrefs(): {
   }, []);
 
   const setPref = (kind: NotificationKind, enabled: boolean) => {
-    const next: ToastPrefs = { ...prefs, [kind]: enabled };
-    setPrefs(next);
-    writeToastPrefs(next);
+    // 함수형 업데이트 — 같은 렌더 안에서 여러 번 빠르게 토글해도 직전 토글이
+    // 묻히지 않도록 prev 에서 다음 상태를 계산하고 그 상태를 영속화한다.
+    setPrefs((prev) => {
+      const next: ToastPrefs = { ...prev, [kind]: enabled };
+      writeToastPrefs(next);
+      return next;
+    });
   };
 
   return { prefs, setPref };
