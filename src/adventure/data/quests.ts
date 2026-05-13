@@ -1542,6 +1542,49 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "unhyang_guide",
   },
+  // 운향 길드 게시판 — 운저 평원 정기 의뢰 (바람골 게시판에서 이관, 운향 바로 아래 들녘).
+  // id 의 windvale- 접두는 플레이어 진행도 보존을 위해 그대로 유지.
+  {
+    id: "windvale-bison-cull",
+    regionId: "unhyang",
+    title: "운저 평원 — 들소 정리",
+    description:
+      "운저 평원 들소가 다시 떼를 이뤘습니다. 40마리를 정리해 주세요.",
+    requiredLevel: 28,
+    target: { kind: "kill", monsterName: "들소", count: 40 },
+    reward: { gold: 400, fame: 16, exp: 700 },
+    repeatable: true,
+  },
+  {
+    id: "windvale-board-bison-large",
+    regionId: "unhyang",
+    title: "운저 평원 — 들소 대규모 정리",
+    description: "들소가 평원 전체를 뒤덮었습니다. 75마리를 정리해 주세요.",
+    requiredLevel: 29,
+    target: { kind: "kill", monsterName: "들소", count: 75 },
+    reward: { gold: 760, fame: 26, exp: 1350 },
+    repeatable: true,
+  },
+  {
+    id: "windvale-board-hawks",
+    regionId: "unhyang",
+    title: "운저 평원 — 초원 매 사냥",
+    description: "초원 매가 평원 짐수레를 노립니다. 35마리를 사냥해 주세요.",
+    requiredLevel: 28,
+    target: { kind: "kill", monsterName: "초원 매", count: 35 },
+    reward: { gold: 380, fame: 14, exp: 650 },
+    repeatable: true,
+  },
+  {
+    id: "windvale-board-raiders",
+    regionId: "unhyang",
+    title: "운저 평원 — 약탈자 소탕",
+    description: "떠돌이 약탈자가 평원 길목에 자리 잡았습니다. 30명을 소탕해 주세요.",
+    requiredLevel: 28,
+    target: { kind: "kill", monsterName: "떠돌이 약탈자", count: 30 },
+    reward: { gold: 420, fame: 16, exp: 700 },
+    repeatable: true,
+  },
   // ── 다리 구간 — 바람골 역참 ─────────────────────────────────────────────
   {
     id: "windvale-keeper-bison",
@@ -1579,18 +1622,9 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "windvale_pathfinder",
   },
-  // 바람골 역참 길드 게시판 — 다리 구간 반복 의뢰.
-  {
-    id: "windvale-bison-cull",
-    regionId: "windvale",
-    title: "운저 평원 — 들소 정리",
-    description:
-      "운저 평원 들소가 다시 떼를 이뤘습니다. 40마리를 정리해 주세요.",
-    requiredLevel: 28,
-    target: { kind: "kill", monsterName: "들소", count: 40 },
-    reward: { gold: 400, fame: 16, exp: 700 },
-    repeatable: true,
-  },
+  // 바람골 역참 길드 게시판 — 잿빛 협로(다리 동쪽) 반복 의뢰.
+  // 운저 평원(서쪽 들녘) 의뢰는 운향 게시판으로 이관 — 운향 바로 아래 사냥터라.
+  // (id 의 windvale- 접두는 플레이어 진행도 보존을 위해 그대로 두고 regionId 만 옮긴 케이스가 아래로 이어진다.)
   {
     id: "windvale-ash-hounds",
     regionId: "windvale",
@@ -1617,9 +1651,11 @@ export const QUESTS: Quest[] = [
     giverNpcId: "windvale_pathfinder",
     requiresQuestCompleted: "windvale-pathfinder-golems",
   },
+  // 화산 지대 정기 의뢰 — 천공 성지 게시판으로 이관(성지 발치 사냥터). 진행도 보존 위해
+  // id 의 windvale- 접두는 그대로. requires 도 윈드밸 길잡이 한솔 라인 그대로 유지.
   {
     id: "windvale-lava-slimes",
-    regionId: "windvale",
+    regionId: "skyreach",
     title: "화산 지대 — 용암 슬라임 정화",
     description:
       "봉황령 너머 화산 지대에 용암 슬라임이 들끓는다는 소식이 들어왔습니다. 45마리를 정화해 주세요.",
@@ -1659,18 +1695,9 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "unhyang_herbalist",
   },
-  // 운향 길드 게시판 — 봉황령 반복 의뢰.
-  {
-    id: "unhyang-phoenix-ridge-patrol",
-    regionId: "unhyang",
-    title: "봉황령 순찰 — 산악 기사",
-    description:
-      "봉황령을 거점으로 삼은 산악 기사들이 골치야. 30명을 정리하면 길목이 안전해질 거요.",
-    requiredLevel: 40,
-    target: { kind: "kill", monsterName: "산악 기사", count: 30 },
-    reward: { gold: 650, fame: 22, exp: 1300 },
-    repeatable: true,
-  },
+  // 봉황령 정기 의뢰는 바람골 게시판 단독 — 운향은 자기 사냥터·운저 평원에 집중.
+  // (옛 unhyang-phoenix-ridge-patrol / unhyang-board-phoenix-ridge-grand 는 분담 정리로 제거.)
+
   // ── 천공 성지 — 메인 라인 "능선 너머의 봉인" (원로 해무) ─────────────────
   // 화산의 심장 처치(volcano_heart_defeated, 천공 성지 진입 조건) 후 만나는 라인.
   // 봉황 무구 갑옷·액세서리 확정 제작서 + 성지 "또 다른 봉인" 서사. HaemuDialogue.
@@ -1860,37 +1887,9 @@ export const QUESTS: Quest[] = [
     requiresQuestCompleted: "windvale-pathfinder-golems",
   },
 
-  // ── 바람골 역참 길드 게시판 (다리 구간 — 운저 평원·잿빛 협로 + 봉황령·화산 입구) ──
-  {
-    id: "windvale-board-bison-large",
-    regionId: "windvale",
-    title: "운저 평원 — 들소 대규모 정리",
-    description: "들소가 평원 전체를 뒤덮었습니다. 75마리를 정리해 주세요.",
-    requiredLevel: 29,
-    target: { kind: "kill", monsterName: "들소", count: 75 },
-    reward: { gold: 760, fame: 26, exp: 1350 },
-    repeatable: true,
-  },
-  {
-    id: "windvale-board-hawks",
-    regionId: "windvale",
-    title: "운저 평원 — 초원 매 사냥",
-    description: "초원 매가 평원 짐수레를 노립니다. 35마리를 사냥해 주세요.",
-    requiredLevel: 28,
-    target: { kind: "kill", monsterName: "초원 매", count: 35 },
-    reward: { gold: 380, fame: 14, exp: 650 },
-    repeatable: true,
-  },
-  {
-    id: "windvale-board-raiders",
-    regionId: "windvale",
-    title: "운저 평원 — 약탈자 소탕",
-    description: "떠돌이 약탈자가 평원 길목에 자리 잡았습니다. 30명을 소탕해 주세요.",
-    requiredLevel: 28,
-    target: { kind: "kill", monsterName: "떠돌이 약탈자", count: 30 },
-    reward: { gold: 420, fame: 16, exp: 700 },
-    repeatable: true,
-  },
+  // ── 바람골 역참 길드 게시판 (잿빛 협로 + 봉황령·화산 입구 다리 구간) ──
+  // 운저 평원 정기 의뢰는 운향 게시판으로 이관(아래쪽).
+  // 화산 지대 정기 의뢰는 천공 성지 게시판으로 이관(아래쪽).
   {
     id: "windvale-board-ash-golems",
     regionId: "windvale",
@@ -1934,7 +1933,7 @@ export const QUESTS: Quest[] = [
   },
   {
     id: "windvale-board-volcano-toads",
-    regionId: "windvale",
+    regionId: "skyreach",
     title: "화산 입구 — 화산 두꺼비 구제",
     description: "화산 지대 어귀에 화산 두꺼비가 들끓습니다. 30마리를 구제해 주세요.",
     requiredLevel: 52,
@@ -1993,36 +1992,9 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "unhyang_herbalist",
   },
-  {
-    id: "skyreach-phoenix-ridge-eagles",
-    regionId: "skyreach",
-    title: "봉황령 순찰 — 불꽃 독수리",
-    description: "봉황령 능선의 불꽃 독수리가 다시 떼를 이뤘습니다. 35마리를 순찰 중 정리해 주세요.",
-    requiredLevel: 40,
-    target: { kind: "kill", monsterName: "불꽃 독수리", count: 35 },
-    reward: { gold: 700, fame: 22, exp: 1300 },
-    repeatable: true,
-  },
-  {
-    id: "skyreach-phoenix-ridge-lizards",
-    regionId: "skyreach",
-    title: "봉황령 순찰 — 화염 도마뱀",
-    description: "봉황령 바위틈 화염 도마뱀이 길을 막습니다. 35마리를 정리해 주세요.",
-    requiredLevel: 40,
-    target: { kind: "kill", monsterName: "화염 도마뱀", count: 35 },
-    reward: { gold: 680, fame: 21, exp: 1250 },
-    repeatable: true,
-  },
-  {
-    id: "skyreach-knight-captain-hunt",
-    regionId: "skyreach",
-    title: "봉황령 — 산악 기사 대규모 토벌",
-    description: "봉황령에 산악 기사단이 진을 쳤습니다. 35명을 토벌해 순례길을 열어 주세요.",
-    requiredLevel: 42,
-    target: { kind: "kill", monsterName: "산악 기사", count: 35 },
-    reward: { gold: 750, fame: 24, exp: 1400 },
-    repeatable: true,
-  },
+  // 봉황령 정기 의뢰(불꽃 독수리·화염 도마뱀·산악 기사)는 바람골 게시판 단독 — 천공은 자기
+  // 화산 지대·성지 콘텐츠에 집중. (옛 skyreach-phoenix-ridge-* / skyreach-knight-captain-hunt 제거.)
+
 
   // ── 봉황령 → 화산 사이 (reqLv 44~50) — 레벨 공백 보강 ───────────────────
   // 봉황령 콘텐츠(reqLv ~40~42)와 화산 콘텐츠(reqLv 52+) 사이 10레벨 구간을 메운다.
@@ -2062,7 +2034,7 @@ export const QUESTS: Quest[] = [
   },
   {
     id: "windvale-board-lava-foothills",
-    regionId: "windvale",
+    regionId: "skyreach",
     title: "화산 어귀 — 용암 슬라임 정찰",
     description: "봉황령을 넘으면 화산 지대 어귀다. 용암 슬라임 35마리를 정화해 첫 발 디딜 데를 만드세요.",
     requiredLevel: 48,
@@ -2071,17 +2043,7 @@ export const QUESTS: Quest[] = [
     repeatable: true,
     requiresQuestCompleted: "windvale-pathfinder-ridge-scout",
   },
-  {
-    id: "unhyang-board-phoenix-ridge-grand",
-    regionId: "unhyang",
-    title: "봉황령 — 산악 기사 대순찰",
-    description: "운봉의 거인을 잠재운 모험가에게 운향 길드가 거는 고난도 정기 의뢰 — 봉황령 산악 기사 55명 토벌.",
-    requiredLevel: 48,
-    target: { kind: "kill", monsterName: "산악 기사", count: 55 },
-    reward: { gold: 1000, fame: 27, exp: 2100 },
-    repeatable: true,
-    requiresQuestCompleted: "unhyang-baekun-peak-giant",
-  },
+  // (옛 unhyang-board-phoenix-ridge-grand 는 분담 정리로 제거 — 봉황령은 바람골 단독 운영.)
   {
     id: "windvale-pathfinder-deep-ridge",
     regionId: "windvale",
