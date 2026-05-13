@@ -8,19 +8,6 @@
 
 export const MAX_LEVEL = 70;
 
-// 서버 전역 EXP 배율 — 테스트 서버용. 빌드 시 NEXT_PUBLIC_XP_RATE_MULT=5 처럼 주입.
-// NEXT_PUBLIC_ 접두사라 클라/서버 양쪽에서 같은 값. 신참 ×2 와 길드 expMult 와는 곱해짐.
-// 안전 범위 [0.1, 100] 클램프, 파싱 실패/미설정 시 1.
-function parseXpRateMult(): number {
-  const raw = process.env.NEXT_PUBLIC_XP_RATE_MULT;
-  if (!raw) return 1;
-  const n = Number.parseFloat(raw);
-  if (!Number.isFinite(n) || n <= 0) return 1;
-  return Math.min(100, Math.max(0.1, n));
-}
-
-export const XP_RATE_MULT = parseXpRateMult();
-
 // 신참 보너스 — 8레벨 미만이면 사냥/퀘스트 EXP 가 ×2.
 // 레벨업으로 조건이 깨지는 순간 자동으로 꺼진다 (기존 캐릭터 포함).
 export const NEWBIE_BONUS_LEVEL_THRESHOLD = 8;

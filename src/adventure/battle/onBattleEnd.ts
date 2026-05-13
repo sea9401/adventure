@@ -19,7 +19,6 @@ import {
   resolveBuffMultiplier,
   type GuildBuffSlot,
 } from "@/adventure/data/guildBuffs";
-import { XP_RATE_MULT } from "@/lib/leveling";
 import type { MapProgress } from "@/lib/map-progress";
 import type {
   NotificationKind,
@@ -111,7 +110,7 @@ export function onBattleEnd(
     const buffs = deps.guildBuffs ?? [];
     const expMult = resolveBuffMultiplier(buffs, "exp_mult");
     const dropMult = resolveBuffMultiplier(buffs, "drop_mult");
-    const boostedExp = Math.floor(payload.rewards.exp * expMult * XP_RATE_MULT);
+    const boostedExp = Math.floor(payload.rewards.exp * expMult);
     deps.characterState.addExp(boostedExp, deps.vit);
     // 보스 처치 시 storyFlag 발급 (data-driven, monster.onDefeatFlag).
     // useStoryFlags.set 은 idempotent 라 두 번째 처치는 무시 — 안전하게 매 처치마다 호출.

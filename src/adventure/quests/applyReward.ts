@@ -7,7 +7,7 @@ import {
   resolveBuffMultiplier,
   type GuildBuffSlot,
 } from "../data/guildBuffs";
-import { MAX_LEVEL, applyNewbieBonus, XP_RATE_MULT } from "@/lib/leveling";
+import { MAX_LEVEL, applyNewbieBonus } from "@/lib/leveling";
 
 export type RewardServices = {
   // 포션 cap 초과분은 silently 잘림 — 실제 추가량 반환해 호출 측이 부족분 안내 가능.
@@ -68,7 +68,7 @@ export function applyQuestReward(
       ctx.playerLevel != null
         ? applyNewbieBonus(baseExp, ctx.playerLevel)
         : { gained: baseExp, bonusApplied: false };
-    const boosted = Math.floor(expBonus.gained * expMult * XP_RATE_MULT);
+    const boosted = Math.floor(expBonus.gained * expMult);
     services.addExp(boosted);
     if (atMaxLevel) {
       summary.push(`EXP +${boosted} (만렙)`);
