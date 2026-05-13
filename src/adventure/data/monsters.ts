@@ -105,7 +105,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "wilddog_hide", chance: 0.03 },
       { kind: "material", materialId: "wilddog_fang", chance: 0.015 },
-      { kind: "recipe", recipeId: "reinforced_leather_armor", chance: 0.005 },
+      // 초반 발판 — 낡은 가죽갑옷(볼드 무료 지급) → 덧댄 가죽갑옷. Lv 한 자릿수 안에 받게 드랍률 ↑.
+      { kind: "recipe", recipeId: "reinforced_leather_armor", chance: 0.04 },
     ],
   },
   두더지: {
@@ -182,8 +183,9 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 8,
     drops: [
       { kind: "gold", amount: 1, chance: 0.0777 },
-      { kind: "equip", itemId: "bandit_dagger", chance: 0.005 },
-      { kind: "recipe", recipeId: "bandit_chief_dagger", chance: 0.003 },
+      // 초반 발판 — 산적의 단검 → 두목의 단검 체인. 베이스/제작서 둘 다 드랍률 ↑.
+      { kind: "equip", itemId: "bandit_dagger", chance: 0.015 },
+      { kind: "recipe", recipeId: "bandit_chief_dagger", chance: 0.04 },
     ],
   },
   "호수 님프": {
