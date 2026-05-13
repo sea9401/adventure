@@ -122,6 +122,11 @@ export function InventoryView({
   const filteredEquipment = ownedEquipment.filter(
     (e) => e.item.slot === equipSlotTab,
   );
+  // 동종 여분이 여러 개여도 "장착중" 표시는 딱 하나에만 — 첫 매칭 entry 의 key.
+  const equippedEntryKey =
+    filteredEquipment.find((e) =>
+      isEntryEquipped(e, equipped?.[e.item.slot] ?? null),
+    )?.key ?? null;
   const equipPager = usePagination(filteredEquipment, 12);
   const materialsPager = usePagination(ownedMaterials, 12);
   const potionsPager = usePagination(ownedPotions, 12);
@@ -181,7 +186,7 @@ export function InventoryView({
               {equipPager.pageItems.map((entry) => {
                 const { key, id, tier, quality, item } = entry;
                 const current = equipped?.[item.slot] ?? null;
-                const isEquipped = isEntryEquipped(entry, current);
+                const isEquipped = key === equippedEntryKey;
                 const diff = isEquipped ? [] : computeDiff(item, current);
                 const suffix = craftTierSuffix(tier);
                 const prefix = dropQualityPrefix(quality).trim();
