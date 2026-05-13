@@ -466,7 +466,7 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.reinforced_leather_armor.name}을(를) 만든다. ${ITEMS.old_leather_armor.name}에 들개 가죽을 덧대 두텁게 누빈다.`,
     ingredients: [
       { kind: "equip", itemId: "old_leather_armor", count: 1 },
-      { kind: "material", materialId: "wilddog_hide", count: 8 },
+      { kind: "material", materialId: "wilddog_hide", count: 5 },
     ],
     result: { kind: "equipment", itemId: "reinforced_leather_armor", slot: "armor" },
     variance: { def: 1 },
@@ -477,7 +477,7 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.bandit_chief_dagger.name}을(를) 만든다. ${ITEMS.bandit_dagger.name}에 단단한 수정을 박아 날을 다시 세운다.`,
     ingredients: [
       { kind: "equip", itemId: "bandit_dagger", count: 1 },
-      { kind: "material", materialId: "hard_crystal", count: 6 },
+      { kind: "material", materialId: "hard_crystal", count: 4 },
     ],
     result: { kind: "equipment", itemId: "bandit_chief_dagger", slot: "weapon" },
     variance: { atk: 1 },
