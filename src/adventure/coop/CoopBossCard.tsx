@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import {
+  COOP_ATTACK_COOLDOWN_MS,
   COOP_BOSSES,
   COOP_TIER_LABEL,
+  COOP_TIER_ORDER,
   COOP_TIER_THRESHOLDS,
   type CoopRewardTier,
 } from "./data";
@@ -132,7 +134,7 @@ export function CoopBossCard({
       );
     }
     if (r.session.defeated) {
-      notify?.("운봉의 거인이 쓰러졌다 — 보상을 수령할 수 있다.");
+      notify?.(`${s.bossName}이(가) 쓰러졌다 — 보상을 수령할 수 있다.`);
     }
   };
 
@@ -240,7 +242,7 @@ export function CoopBossCard({
                 ? "공격 중…"
                 : onCooldown
                   ? `다음 공격 ${formatDuration(cooldownMs)} 후`
-                  : "공격하기 (5분 쿨)"}
+                  : `공격하기 (${formatDuration(COOP_ATTACK_COOLDOWN_MS)} 쿨)`}
           </button>
         )}
         {defeated && my?.claimable && (
@@ -384,8 +386,7 @@ export function CoopBossCard({
 }
 
 function NextTierHint({ ratio }: { ratio: number }) {
-  const order: CoopRewardTier[] = ["bronze", "silver", "gold", "epic", "legend"];
-  const next = order.find((t) => ratio < COOP_TIER_THRESHOLDS[t]);
+  const next = COOP_TIER_ORDER.find((t) => ratio < COOP_TIER_THRESHOLDS[t]);
   if (!next) return null;
   const need = (COOP_TIER_THRESHOLDS[next] - ratio) * 100;
   return (
@@ -402,9 +403,9 @@ function formatDuration(ms: number): string {
   const hours = Math.floor((totalSec % 86400) / 3600);
   const minutes = Math.floor((totalSec % 3600) / 60);
   const seconds = totalSec % 60;
-  if (days > 0) return `${days}일 ${hours}시간`;
-  if (hours > 0) return `${hours}시간 ${minutes}분`;
-  if (minutes > 0) return `${minutes}분 ${seconds}초`;
+  if (days > 0) return hours > 0 ? `${days}일 ${hours}시간` : `${days}일`;
+  if (hours > 0) return minutes > 0 ? `${hours}시간 ${minutes}분` : `${hours}시간`;
+  if (minutes > 0) return seconds > 0 ? `${minutes}분 ${seconds}초` : `${minutes}분`;
   return `${seconds}초`;
 }
 
