@@ -21,7 +21,7 @@ import {
   type PlayerAction,
   type PlayerCombat,
 } from "./engine";
-import { applyExpGain, applyNewbieBonus } from "@/lib/leveling";
+import { applyExpGain, applyNewbieBonus, XP_RATE_MULT } from "@/lib/leveling";
 
 export const OFFLINE_SIM_MAX_MS = 60 * 60 * 1000;
 
@@ -187,10 +187,11 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
         result.killsByName[enemyName] =
           (result.killsByName[enemyName] ?? 0) + 1;
         const expBonus = applyNewbieBonus(enemy.exp, runningLevel);
-        result.expGained += expBonus.gained;
+        const gained = Math.floor(expBonus.gained * XP_RATE_MULT);
+        result.expGained += gained;
         if (expBonus.bonusApplied) result.expBonusApplied = true;
         // 누적 EXP → 레벨 재계산. 다음 처치는 갱신된 runningLevel 로 보너스 판정.
-        const after = applyExpGain(runningLevel, runningExp, expBonus.gained);
+        const after = applyExpGain(runningLevel, runningExp, gained);
         runningLevel = after.level;
         runningExp = after.exp;
         // 드롭 — onBattleEnd 와 동일 로직(LUK 멀티 + cap 1.0).
