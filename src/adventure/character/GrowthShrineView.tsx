@@ -61,11 +61,9 @@ export function GrowthShrineView({
 
   const onPlus = (k: StatKey) => {
     const cur = draft[k] ?? 0;
-    if (cur < 0) {
-      // 되돌리기 취소 — 예산 부담 없음.
-      setDraft((prev) => ({ ...prev, [k]: cur + 1 }));
-      return;
-    }
+    // cur < 0 이면 "되돌리기 취소" — 하지만 환불됐던 단련 포인트가 이미 다른
+    // 스탯에 분배돼 있으면(remainingUnspent <= 0) 취소할 재원이 없다. 그대로
+    // 풀어주면 remainingUnspent 가 음수로 새서 확정 시 단련 포인트가 깨진다.
     if (remainingUnspent <= 0) return;
     setDraft((prev) => ({ ...prev, [k]: cur + 1 }));
   };
@@ -83,8 +81,12 @@ export function GrowthShrineView({
     setDraft((prev) => ({ ...prev, [k]: cur - 1 }));
   };
 
+  // 음수 잔량은 정상 흐름에선 나올 수 없지만, 혹시라도 새면 확정에서 막는다
+  // (확정 시 단련/되돌리기 포인트가 음수로 영구 저장되는 사고 방지).
+  const canConfirm = hasDraft && remainingUnspent >= 0 && remainingRevert >= 0;
   const reset = () => setDraft(ZERO_DRAFT);
   const confirm = () => {
+    if (!canConfirm) return;
     onCommit(draft);
     setDraft(ZERO_DRAFT);
   };
@@ -144,7 +146,7 @@ export function GrowthShrineView({
             const d = draft[k] ?? 0;
             const newAllocated = allocated + d;
             const total = (baseStats[k] ?? 0) + newAllocated;
-            const canAdd = d < 0 || remainingUnspent > 0;
+            const canAdd = remainingUnspent > 0;
             const canSub = d > 0 || (allocated + d > 0 && remainingRevert > 0);
             const ringCls = d > 0
               ? "ring-1 ring-emerald-400/60 dark:ring-emerald-500/40"
@@ -219,7 +221,7 @@ export function GrowthShrineView({
           <button
             type="button"
             onClick={confirm}
-            disabled={!hasDraft}
+            disabled={!canConfirm}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Check size={14} weight="bold" />
