@@ -112,6 +112,36 @@ describe("deriveSkills — 4티어는 스탯 50 도달 시", () => {
       ]),
     );
   });
+
+  it("STR 64 면 막다른 격노 미보유, 65 이면 보유 (5티어 활성 임계)", () => {
+    expect(deriveSkills({ ...ZERO, str: 64 }).map((s) => s.name)).not.toContain(
+      SKILL_NAMES.RAMPAGE,
+    );
+    expect(deriveSkills({ ...ZERO, str: 65 }).map((s) => s.name)).toContain(
+      SKILL_NAMES.RAMPAGE,
+    );
+  });
+
+  it("스탯 65 면 1~5티어 전부 보유", () => {
+    expect(deriveSkills({ ...ZERO, dex: 65 }).map((s) => s.name)).toEqual(
+      expect.arrayContaining([
+        SKILL_NAMES.EVADE,
+        SKILL_NAMES.COUNTER,
+        SKILL_NAMES.PRECISION,
+        SKILL_NAMES.SHADOW_CLONE,
+        SKILL_NAMES.ANALYSIS,
+      ]),
+    );
+    expect(deriveSkills({ ...ZERO, vit: 65 }).map((s) => s.name)).toContain(
+      SKILL_NAMES.BRAMBLE,
+    );
+    expect(deriveSkills({ ...ZERO, spd: 65 }).map((s) => s.name)).toContain(
+      SKILL_NAMES.GALE_CHAIN,
+    );
+    expect(deriveSkills({ ...ZERO, luk: 65 }).map((s) => s.name)).toContain(
+      SKILL_NAMES.LUCKY_STAR,
+    );
+  });
 });
 
 describe("deriveFeats — 두 요구 스탯 25 이상", () => {

@@ -14,10 +14,12 @@ import { maxHpForLevel } from "./defaults";
 import type { Skill } from "./types";
 import {
   acrobatEvadeHealFor,
+  analysisPerTurnFor,
   assassinateDmgMultFor,
   balanceCritPctPerSpdDiffFor,
   berserkerAtkPctPerLostHpPctFor,
   bleedDmgPerStackFor,
+  bramblePctFor,
   bulwarkShieldFor,
   counterAtkBonusFor,
   critChancePctFor,
@@ -36,15 +38,18 @@ import {
   executionDamageMultFor,
   executionHpFractionFor,
   flurryAttacksFor,
+  galeChainChancePctFor,
   gustAtkPerAttackFor,
   guardFor,
   heavenDecreeChancePctFor,
   lifestealCritHealPctFor,
   lightspeedExtraAttackPctFor,
   luckyShieldBlockPctFor,
+  luckyStarChancePctFor,
   powerAttackBonusFor,
   precisionArmorPierceFractionFor,
   precisionEvasionMultFor,
+  rampagePerTurnFor,
   regenFor,
   riposteExtraAttacksFor,
   shadowCloneAtkPctFor,
@@ -251,6 +256,11 @@ export function derivePlayerCombat(
       effectiveSkillSet,
     ),
     thornsPct: thornsPctFor(totalStats, effectiveSkillSet),
+    rampagePerTurn: rampagePerTurnFor(totalStats, effectiveSkillSet),
+    analysisPerTurn: analysisPerTurnFor(totalStats, effectiveSkillSet),
+    bramblePct: bramblePctFor(totalStats, effectiveSkillSet),
+    galeChainChancePct: galeChainChancePctFor(totalStats, effectiveSkillSet),
+    luckyStarChancePct: luckyStarChancePctFor(totalStats, effectiveSkillSet),
   };
 
   return {

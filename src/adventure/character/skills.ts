@@ -70,6 +70,12 @@ export const SKILL_NAMES = {
   BULWARK: "철벽",
   FLURRY: "무피해 난무",
   HEAVEN_DECREE: "천명",
+  // 5티어 (각 스탯 65 도달) — 만렙 확장 패키지.
+  RAMPAGE: "막다른 격노",
+  ANALYSIS: "약점 분석",
+  BRAMBLE: "가시 갑옷",
+  GALE_CHAIN: "풍사슬",
+  LUCKY_STAR: "행운의 별",
 } as const;
 
 // 강공격 — 힘 10 도달 시 획득.
@@ -196,6 +202,27 @@ export const HEAVEN_DECREE_LUK_THRESHOLD = 50;
 export const HEAVEN_DECREE_CHANCE_PER_LUK = 0.3;
 export const HEAVEN_DECREE_HP_PCT = 5;
 
+// ── 5티어 (각 스탯 65 도달) — 만렙 확장 패키지 ─────────────────────────
+// 막다른 격노 — 전투 RAMPAGE_START_TURN 턴 경과 후, 매 플레이어 턴 종료 시 ATK 영구 누적 +floor(STR/RAMPAGE_ATK_STR_DIVISOR).
+// 그 전투 동안 유지 (다음 전투 리셋). 장기전(보스) 보상.
+export const RAMPAGE_STR_THRESHOLD = 65;
+export const RAMPAGE_START_TURN = 5;
+export const RAMPAGE_ATK_STR_DIVISOR = 12;
+// 약점 분석 — 매 플레이어 턴 종료 시 적 ATK·DEF 각각 -floor(DEX/ANALYSIS_DEX_DIVISOR) (최소 0 클램프, 누적).
+export const ANALYSIS_DEX_THRESHOLD = 65;
+export const ANALYSIS_DEX_DIVISOR = 30;
+// 가시 갑옷 — 받은 피해의 floor(VIT/BRAMBLE_VIT_DIVISOR)% 적에게 반사 (특성 반사 갑주와 별도로 누적).
+export const BRAMBLE_VIT_THRESHOLD = 65;
+export const BRAMBLE_VIT_DIVISOR = 3;
+// 풍사슬 — 추가 공격(연타·광속·난무·기습 등) 발동 후 SPD/GALE_CHAIN_PCT_SPD_DIVISOR% 확률로 1회 더 (체인). 한 턴 최대 GALE_CHAIN_MAX_PER_TURN 회.
+export const GALE_CHAIN_SPD_THRESHOLD = 65;
+export const GALE_CHAIN_PCT_SPD_DIVISOR = 4;
+export const GALE_CHAIN_MAX_PER_TURN = 3;
+// 행운의 별 — 모든 공격이 (LUK × LUCKY_STAR_CHANCE_PER_LUK)% 확률로 데미지 ×LUCKY_STAR_DAMAGE_MULT (크리티컬과 별개·중첩).
+export const LUCKY_STAR_LUK_THRESHOLD = 65;
+export const LUCKY_STAR_CHANCE_PER_LUK = 0.3;
+export const LUCKY_STAR_DAMAGE_MULT = 2;
+
 // 스탯 → 그 스탯이 주는 스킬 티어들 (낮은 임계 → 높은 임계 순). 도감 노출 / 발동 판정 모두 이 매핑을 사용.
 // 1차 티어는 STAT_SKILL_INFO_THRESHOLD(5) 도달 시 도감 공개,
 // 2차 티어는 STAT_REVEAL_THRESHOLD(15) 도달 시 도감 공개,
@@ -228,6 +255,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `적중 시 출혈 1스택(중첩) — 매 적 턴마다 스택당 (STR × ${BLOODLET_DMG_PER_STR}) 고정 피해 (DEF 무시)`,
       activationThreshold: BLOODLET_STR_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.RAMPAGE,
+      description: `전투 ${RAMPAGE_START_TURN}턴 경과 후, 매 플레이어 턴 종료 시 ATK 영구 +(STR/${RAMPAGE_ATK_STR_DIVISOR}) 누적 — STR 65=+5/턴`,
+      activationThreshold: RAMPAGE_STR_THRESHOLD,
+    },
   ],
   dex: [
     {
@@ -249,6 +281,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       name: SKILL_NAMES.SHADOW_CLONE,
       description: `매 플레이어 턴 종료 시 분신이 추가 공격 1회 (ATK의 ${SHADOW_CLONE_ATK_PCT}%)`,
       activationThreshold: SHADOW_CLONE_DEX_THRESHOLD,
+    },
+    {
+      name: SKILL_NAMES.ANALYSIS,
+      description: `매 플레이어 턴 종료 시 적 ATK·DEF 각각 -(DEX/${ANALYSIS_DEX_DIVISOR}) 누적 (최소 0) — DEX 65=-2/턴`,
+      activationThreshold: ANALYSIS_DEX_THRESHOLD,
     },
   ],
   vit: [
@@ -272,6 +309,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `전투 시작 시 (VIT × ${BULWARK_SHIELD_PER_VIT}) 만큼 보호막 — 받는 피해를 먼저 흡수 (회복 안 됨)`,
       activationThreshold: BULWARK_VIT_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.BRAMBLE,
+      description: `받은 피해의 (VIT/${BRAMBLE_VIT_DIVISOR})% 적에게 반사 (특성 반사 갑주와 별도 누적) — VIT 65=21%`,
+      activationThreshold: BRAMBLE_VIT_THRESHOLD,
+    },
   ],
   spd: [
     {
@@ -293,6 +335,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       name: SKILL_NAMES.FLURRY,
       description: `매 플레이어 턴 종료 시, 그 전투에서 받은 피해가 0이면 추가 공격 (SPD / ${FLURRY_SPD_DIVISOR})회`,
       activationThreshold: FLURRY_SPD_THRESHOLD,
+    },
+    {
+      name: SKILL_NAMES.GALE_CHAIN,
+      description: `추가 공격(연타·광속·난무·기습 등) 발동 후 SPD/${GALE_CHAIN_PCT_SPD_DIVISOR}% 확률로 1회 더 (체인) — 한 턴 최대 ${GALE_CHAIN_MAX_PER_TURN}회`,
+      activationThreshold: GALE_CHAIN_SPD_THRESHOLD,
     },
   ],
   luk: [
@@ -316,14 +363,19 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `모든 공격에 (LUK × ${HEAVEN_DECREE_CHANCE_PER_LUK})% 확률로 적 현재 HP의 ${HEAVEN_DECREE_HP_PCT}% 추가 고정 피해`,
       activationThreshold: HEAVEN_DECREE_LUK_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.LUCKY_STAR,
+      description: `모든 공격이 (LUK × ${LUCKY_STAR_CHANCE_PER_LUK})% 확률로 데미지 ×${LUCKY_STAR_DAMAGE_MULT} (크리티컬과 별개·중첩) — LUK 65=19%`,
+      activationThreshold: LUCKY_STAR_LUK_THRESHOLD,
+    },
   ],
 };
 
 // 현재 스탯에서 보유(획득) 스킬 목록 도출. 스킬은 별도 저장 없이 스탯에서 파생.
 // "보유" ≠ "장착" — 보유한 스킬 중 일반 슬롯 수만큼만 effective.
-// 1차 → 2차 → 3차 → 4차 순으로 묶어 반환 — 자동 슬롯 채움 시 낮은 티어가 우선되도록.
+// 1차 → 2차 → 3차 → 4차 → 5차 순으로 묶어 반환 — 자동 슬롯 채움 시 낮은 티어가 우선되도록.
 export function deriveSkills(stats: Record<StatKey, number>): Skill[] {
-  const buckets: Skill[][] = [[], [], [], []];
+  const buckets: Skill[][] = [[], [], [], [], []];
   for (const k of STAT_KEYS) {
     const tiers = STAT_SKILL[k];
     for (let t = 0; t < buckets.length; t += 1) {
@@ -843,5 +895,59 @@ export function heavenDecreeChancePctFor(
   return stats.luk >= HEAVEN_DECREE_LUK_THRESHOLD &&
     equipped.has(SKILL_NAMES.HEAVEN_DECREE)
     ? stats.luk * HEAVEN_DECREE_CHANCE_PER_LUK
+    : 0;
+}
+
+// ── 5티어 헬퍼 ─────────────────────────────────────────────────────────
+// 막다른 격노 — 매 플레이어 턴 ATK 누적량 (전투 RAMPAGE_START_TURN 턴 경과 후). 미장착/미달 시 0.
+export function rampagePerTurnFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.str >= RAMPAGE_STR_THRESHOLD && equipped.has(SKILL_NAMES.RAMPAGE)
+    ? Math.floor(stats.str / RAMPAGE_ATK_STR_DIVISOR)
+    : 0;
+}
+
+// 약점 분석 — 매 플레이어 턴 적 ATK·DEF 감소량 (누적). 미장착/미달 시 0.
+export function analysisPerTurnFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.dex >= ANALYSIS_DEX_THRESHOLD &&
+    equipped.has(SKILL_NAMES.ANALYSIS)
+    ? Math.floor(stats.dex / ANALYSIS_DEX_DIVISOR)
+    : 0;
+}
+
+// 가시 갑옷 — 받은 피해 반사 비율(%). 미장착/미달 시 0. 특기 반사 갑주와 별도로 누적된다.
+export function bramblePctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.vit >= BRAMBLE_VIT_THRESHOLD && equipped.has(SKILL_NAMES.BRAMBLE)
+    ? Math.floor(stats.vit / BRAMBLE_VIT_DIVISOR)
+    : 0;
+}
+
+// 풍사슬 — 추가 공격 발동 후 체인 확률(%). 미장착/미달 시 0.
+export function galeChainChancePctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.spd >= GALE_CHAIN_SPD_THRESHOLD &&
+    equipped.has(SKILL_NAMES.GALE_CHAIN)
+    ? stats.spd / GALE_CHAIN_PCT_SPD_DIVISOR
+    : 0;
+}
+
+// 행운의 별 — 모든 공격이 데미지 ×2 가 될 확률(%). 미장착/미달 시 0.
+export function luckyStarChancePctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.luk >= LUCKY_STAR_LUK_THRESHOLD &&
+    equipped.has(SKILL_NAMES.LUCKY_STAR)
+    ? stats.luk * LUCKY_STAR_CHANCE_PER_LUK
     : 0;
 }

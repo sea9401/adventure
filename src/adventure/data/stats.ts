@@ -36,3 +36,6 @@ export const STAT_TIER3_REVEAL_THRESHOLD = 30;
 
 // 4차 스킬 정보를 공개하는 임계값. 활성은 50 — gap 5.
 export const STAT_TIER4_REVEAL_THRESHOLD = 45;
+
+// 5차 스킬 정보를 공개하는 임계값. 활성은 65 — gap 5. (만렙 확장 Lv100 패키지)
+export const STAT_TIER5_REVEAL_THRESHOLD = 60;
