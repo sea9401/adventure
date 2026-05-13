@@ -28,6 +28,7 @@ import { GuildHallView } from "@/adventure/guild/GuildHallView";
 import { SparringView } from "@/adventure/SparringView";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
+import { equipmentCountsAllGrades } from "@/adventure/inventory/ownership";
 import { START_REGION_ID } from "@/adventure/data/world";
 import { useGame } from "@/adventure/GameContext";
 
@@ -336,7 +337,7 @@ export function TownScreen() {
         <CraftingView
           knownIds={crafting.state.known}
           materialCounts={inventory.state.materials}
-          equipmentCounts={inventory.state.equipment}
+          equipmentCounts={equipmentCountsAllGrades(inventory.state)}
           potionCounts={inventory.state.potions}
           potionMax={inventory.potionMax}
           onCraft={handleCraft}
