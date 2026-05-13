@@ -1,14 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import {
-  Coins,
-  Envelope,
-  MapPin,
-  Note,
-  Storefront,
-  Trophy,
-} from "@phosphor-icons/react";
+import { Coins, MapPin } from "@phosphor-icons/react";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { ChatButton } from "@/components/ChatButton";
 import { NameSetupModal } from "@/components/NameSetupModal";
@@ -16,6 +9,7 @@ import { type BattleEndPayload } from "@/adventure/BattleView";
 import { TownScreen } from "@/adventure/TownScreen";
 import { CharacterScreen } from "@/adventure/CharacterScreen";
 import { AdventureScreen } from "@/adventure/AdventureScreen";
+import { PlazaScreen } from "./PlazaScreen";
 import { GameProvider, type GameCtx } from "@/adventure/GameContext";
 import { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -28,23 +22,13 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { NotificationToast } from "@/components/NotificationToast";
 import { LevelUpOverlay } from "@/components/LevelUpOverlay";
 import { useQuests } from "@/adventure/quests/useQuests";
-import {
-  applyQuestReward,
-  type RewardServices,
-} from "@/adventure/quests/applyReward";
 import { useInventory } from "@/adventure/inventory/useInventory";
-import { MarketplaceTab } from "@/adventure/marketplace/MarketplaceTab";
-import { InboxView } from "@/adventure/marketplace/InboxView";
 import { useInboxCount } from "@/adventure/marketplace/useInboxCount";
-import { RankingsView } from "@/adventure/rankings/RankingsView";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { useCrafting } from "@/adventure/crafting/useCrafting";
-import { BulletinBoardView } from "@/adventure/BulletinBoardView";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 import { useNotifications } from "@/adventure/notifications/useNotifications";
-import { EntryCard } from "@/components/ui/EntryCard";
-import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { RegionBackground } from "@/components/ui/RegionBackground";
 import { formatDuration } from "@/lib/format";
 import { ZERO_ALLOCATED } from "@/adventure/character/statMeta";
@@ -70,7 +54,6 @@ import { useShopUnlocks } from "@/adventure/shop/useShopUnlocks";
 import { useShopActions } from "@/adventure/shop/useShopActions";
 import { useEquipmentActions } from "@/adventure/inventory/useEquipmentActions";
 import { useCraftAction } from "@/adventure/crafting/useCraftAction";
-import { applyQuestCompletionSideEffects } from "@/adventure/quests/questCompletionSideEffects";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
@@ -78,6 +61,8 @@ import { useNavTabs } from "@/lib/useNavTabs";
 import { MainTabs } from "./MainTabs";
 import { usePresenceHeartbeat } from "@/lib/usePresenceHeartbeat";
 import { useTrialState } from "@/adventure/trial/useTrialState";
+import { useTitleGrant } from "@/adventure/quests/useTitleGrant";
+import { useQuestActions } from "@/adventure/quests/useQuestActions";
 
 export default function Page() {
   return (
@@ -279,12 +264,21 @@ function Home() {
 
   // 칭호 등록은 "획득 시"가 트리거 — 신규로 등록되는 시점에만 토스트.
   // 이미 획득한 칭호엔 무반응 (markTitleObtained 자체가 idempotent).
-  const grantTitle = (titleId: string) => {
-    if (adventureLog.log.titles[titleId]) return;
-    adventureLog.markTitleObtained(titleId);
-    const title = getTitle(titleId);
-    if (title) addNotification("milestone", `칭호 획득 — ${title.name}`);
-  };
+  const { grantTitle } = useTitleGrant({ adventureLog, addNotification });
+
+  const { handleAcceptQuest, completeQuest, handleClaimQuest } = useQuestActions(
+    {
+      quests,
+      crafting,
+      inventory,
+      characterStateHook,
+      storyFlags,
+      guildBuffs: guildBuffsCache.buffs,
+      character,
+      grantTitle,
+      addNotification,
+    },
+  );
 
   const {
     handlePurchasePotion,
@@ -380,10 +374,6 @@ function Home() {
       guildBuffs: guildBuffsCache.buffs,
     });
 
-  const handleAcceptQuest = (id: string) => {
-    quests.accept(id);
-  };
-
   const { autoHuntResult, dismiss: dismissAutoHuntResult } =
     useAutoHuntResultHandler({
       adventureLog,
@@ -392,40 +382,6 @@ function Home() {
       replaceLocation,
       addNotification,
     });
-
-  const rewardServices: RewardServices = {
-    addPotion: (id, n) => inventory.add(id, n),
-    addMaterial: (id, n) => inventory.addMaterial(id, n),
-    addEquipment: (id) => inventory.addEquipment(id),
-    learnRecipe: (id) => crafting.learnRecipe(id),
-    addGoldFame: characterStateHook.addGoldFame,
-    // 퀘스트 보상으로 레벨업 시에도 VIT 보너스만큼 maxHp 까지 풀회복.
-    addExp: (n) => characterStateHook.addExp(n, character.stats.vit),
-    addPotionCapacity: (n) => inventory.addPotionCapacity(n),
-  };
-
-  // 퀘스트 보상 지급 + 알림 한 줄로 합성. NPC 다이얼로그/길드 게시판 공용.
-  const completeQuest = (id: string): boolean => {
-    const result = quests.claim(id);
-    if (!result.ok) return false;
-    const tokens = applyQuestReward(result.quest.reward, rewardServices, {
-      playerLevel: character.level,
-      guildBuffs: guildBuffsCache.buffs,
-    });
-    addNotification(
-      "quest_complete",
-      tokens.length > 0
-        ? `${result.quest.title} 완료 — ${tokens.join(", ")}`
-        : `${result.quest.title} 완료`,
-    );
-    // 라인 클로저 후처리 — 의뢰별 칭호 부여 + 스토리 flag.
-    applyQuestCompletionSideEffects(id, { grantTitle, storyFlags, quests });
-    return true;
-  };
-
-  const handleClaimQuest = (id: string) => {
-    completeQuest(id);
-  };
 
   const gameCtx: GameCtx = {
     inventory,
@@ -554,94 +510,7 @@ function Home() {
           {tab === "adventure" && <AdventureScreen />}
           {tab === "town" && <TownScreen />}
           {tab === "character" && <CharacterScreen />}
-          {tab === "plaza" && subView === null && (
-            <div className="space-y-2">
-              <EntryCard
-                icon={
-                  <Storefront
-                    size={28}
-                    weight="duotone"
-                    className="text-emerald-500"
-                  />
-                }
-                title="거래소"
-                description="다른 모험가와 아이템을 사고팔 수 있는 곳."
-                onClick={() => setSubView("marketplace")}
-              />
-              <EntryCard
-                icon={
-                  <Note
-                    size={28}
-                    weight="duotone"
-                    className="text-sky-500"
-                  />
-                }
-                title="게시판"
-                description="마을의 새 소식이 올라오는 곳."
-                onClick={() => setSubView("bulletin")}
-              />
-              <EntryCard
-                icon={
-                  <Envelope
-                    size={28}
-                    weight="duotone"
-                    className="text-amber-500"
-                  />
-                }
-                title={
-                  inbox.count !== null && inbox.count > 0
-                    ? `우편함 (${inbox.count})`
-                    : "우편함"
-                }
-                description={
-                  inbox.count !== null && inbox.count > 0
-                    ? "거래소에서 도착한 우편이 있습니다."
-                    : "거래소 거래 결과가 도착하는 곳."
-                }
-                onClick={() => setSubView("inbox")}
-              />
-              <EntryCard
-                icon={
-                  <Trophy
-                    size={28}
-                    weight="duotone"
-                    className="text-amber-600"
-                  />
-                }
-                title="랭킹"
-                description="모험가 명부 — 등록한 사람들의 레벨, 명성, 전투 횟수 순위."
-                onClick={() => setSubView("rankings")}
-              />
-            </div>
-          )}
-          {tab === "plaza" && subView === "bulletin" && (
-            <div className="space-y-3">
-              <SubViewHeader title="게시판" onBack={back} />
-              <BulletinBoardView
-                name={character.name}
-                className={character.className}
-                title={equippedTitle?.name ?? null}
-              />
-            </div>
-          )}
-          {tab === "plaza" && subView === "marketplace" && (
-            <div className="space-y-3">
-              <SubViewHeader title="거래소" onBack={back} />
-              <MarketplaceTab />
-            </div>
-          )}
-          {tab === "plaza" && subView === "inbox" && (
-            <div className="space-y-3">
-              <SubViewHeader title="우편함" onBack={back} />
-              <InboxView />
-            </div>
-          )}
-          {tab === "plaza" && subView === "rankings" && (
-            <div className="space-y-3">
-              <SubViewHeader title="랭킹" onBack={back} />
-              <RankingsView />
-            </div>
-          )}
+          {tab === "plaza" && <PlazaScreen />}
         </main>
       </div>
       <NotificationToast notifications={notifications.list} />
