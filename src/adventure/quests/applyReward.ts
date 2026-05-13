@@ -47,13 +47,11 @@ export function applyQuestReward(
   const summary: string[] = [];
 
   const buffs = ctx.guildBuffs ?? [];
-  const goldMult = resolveBuffMultiplier(buffs, "gold_mult");
   const fameMult = resolveBuffMultiplier(buffs, "fame_mult");
   const expMult = resolveBuffMultiplier(buffs, "exp_mult");
 
-  const goldBase = reward.gold ?? 0;
+  const gold = reward.gold ?? 0;
   const fameBase = reward.fame ?? 0;
-  const gold = Math.floor(goldBase * goldMult);
   const fame = Math.floor(fameBase * fameMult);
   if (gold > 0 || fame > 0) {
     services.addGoldFame(gold, fame);

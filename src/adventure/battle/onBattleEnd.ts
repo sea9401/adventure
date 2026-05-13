@@ -97,7 +97,6 @@ export function onBattleEnd(
     // 길드 버프 — 비어 있으면 모든 곱셈 ×1.0 (no-op).
     const buffs = deps.guildBuffs ?? [];
     const expMult = resolveBuffMultiplier(buffs, "exp_mult");
-    const goldMult = resolveBuffMultiplier(buffs, "gold_mult");
     const dropMult = resolveBuffMultiplier(buffs, "drop_mult");
     const boostedExp = Math.floor(payload.rewards.exp * expMult);
     deps.characterState.addExp(boostedExp, deps.vit);
@@ -129,9 +128,8 @@ export function onBattleEnd(
             }을(를) 손에 넣었다.`,
           );
         } else if (drop.kind === "gold") {
-          const boosted = Math.floor(drop.amount * goldMult);
-          deps.characterState.addGoldFame(boosted, 0);
-          deps.addNotification("loot", `골드 +${boosted}`);
+          deps.characterState.addGoldFame(drop.amount, 0);
+          deps.addNotification("loot", `골드 +${drop.amount}`);
         } else if (drop.kind === "equip") {
           // 드랍 품질 등급 롤 — 대부분 기본(접두어 없음), 가끔 정교한(+1u)/빼어난(+2u).
           // 보스·고티어는 monster.dropQualityBias 로 좋은 품질 가중치가 올라간다.

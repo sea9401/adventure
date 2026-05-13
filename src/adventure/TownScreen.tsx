@@ -28,6 +28,8 @@ import { GuildHallView } from "@/adventure/guild/GuildHallView";
 import { SparringView } from "@/adventure/SparringView";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
+import { resolveBuffMultiplier } from "@/adventure/data/guildBuffs";
+import { TRAINING_DURATION_MS } from "@/adventure/training/useTraining";
 import { equipmentCountsAllGrades } from "@/adventure/inventory/ownership";
 import { START_REGION_ID } from "@/adventure/data/world";
 import { useGame } from "@/adventure/GameContext";
@@ -64,6 +66,7 @@ export function TownScreen() {
     handleAcceptQuest,
     handleClaimQuest,
     shopUnlocks,
+    guildBuffs,
   } = useGame();
 
   if (!isTown) {
@@ -259,15 +262,18 @@ export function TownScreen() {
   }
 
   if (subView === "training") {
+    const trainSpeedMult = resolveBuffMultiplier(guildBuffs, "train_speed_mult");
+    const trainDurationMs = Math.round(TRAINING_DURATION_MS * trainSpeedMult);
     return (
       <div className="space-y-3">
         <SubViewHeader title="훈련장" onBack={back} />
         <TrainingView
           remaining={training.remaining}
           isTraining={training.isTraining}
+          durationMs={trainDurationMs}
           unspentPoints={training.unspentPoints}
           completedCount={training.completedCount}
-          onStartTraining={training.startTraining}
+          onStartTraining={() => training.startTraining(trainSpeedMult)}
           onStartSparring={() => setSubView("sparring")}
         />
       </div>

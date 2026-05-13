@@ -14,8 +14,8 @@ export function effectLabel(
   switch (effect.kind) {
     case "exp_mult":
       return `EXP +${Math.round((effect.value - 1) * 100)}%`;
-    case "gold_mult":
-      return `골드 +${Math.round((effect.value - 1) * 100)}%`;
+    case "train_speed_mult":
+      return `훈련 시간 -${Math.round((1 - effect.value) * 100)}%`;
     case "drop_mult":
       return `드랍 +${((effect.value - 1) * 100).toFixed(1)}%`;
     case "fame_mult":
