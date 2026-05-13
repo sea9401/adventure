@@ -622,6 +622,83 @@ export const MONSTERS: Record<string, Monster> = {
     },
     onDefeatFlag: "volcano_heart_defeated",
   },
+  // ── 해안 지선 (조수 갯벌 / 산호초 섬) ───────────────────────────────────
+  // 폐허(Lv9)~산기슭(Lv18) 사이에 놓이는 바닷길 잡몹. image 필드는 후속 PR 에서 추가.
+  "집게발 게": {
+    name: "집게발 게",
+    tags: ["beast"],
+    hp: 150,
+    atk: 11,
+    def: 8,
+    spd: 3,
+    exp: 11,
+    drops: [
+      { kind: "material", materialId: "crab_shell", chance: 0.06 },
+    ],
+  },
+  갯도요: {
+    name: "갯도요",
+    tags: ["beast"],
+    hp: 95,
+    atk: 12,
+    def: 3,
+    spd: 9,
+    evasionPct: 20,
+    exp: 11,
+    drops: [
+      { kind: "material", materialId: "crab_shell", chance: 0.02 },
+    ],
+  },
+  "진흙 미꾸라지": {
+    name: "진흙 미꾸라지",
+    tags: ["beast"],
+    hp: 120,
+    atk: 10,
+    def: 4,
+    spd: 6,
+    exp: 10,
+    drops: [
+      { kind: "material", materialId: "crab_shell", chance: 0.03 },
+    ],
+  },
+  "산호초 사이렌": {
+    name: "산호초 사이렌",
+    tags: ["spirit"],
+    hp: 175,
+    atk: 21,
+    def: 6,
+    spd: 7,
+    evasionPct: 20,
+    exp: 20,
+    drops: [
+      { kind: "material", materialId: "deep_scale", chance: 0.04 },
+    ],
+  },
+  "갑각 약탈자": {
+    name: "갑각 약탈자",
+    tags: ["humanoid"],
+    hp: 210,
+    atk: 19,
+    def: 9,
+    spd: 6,
+    exp: 21,
+    drops: [
+      { kind: "material", materialId: "crab_shell", chance: 0.05 },
+      { kind: "material", materialId: "coral_spine", chance: 0.02 },
+    ],
+  },
+  "가시 산호 골렘": {
+    name: "가시 산호 골렘",
+    tags: ["golem"],
+    hp: 250,
+    atk: 17,
+    def: 13,
+    spd: 2,
+    exp: 22,
+    drops: [
+      { kind: "material", materialId: "coral_spine", chance: 0.05 },
+    ],
+  },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).
   "훈련용 허수아비": {

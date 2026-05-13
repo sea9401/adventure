@@ -177,6 +177,28 @@ export const MATERIALS = {
     price: 60,
     inShop: false,
   },
+  // ── 해안 지선 재료 (조수 갯벌 / 산호초 섬) ──────────────────────────────
+  crab_shell: {
+    id: "crab_shell",
+    name: "게딱지",
+    description: "집게발 게의 두툼한 등딱지. 가볍고 단단해 방패나 갑옷에 덧댄다.",
+    price: 12,
+    inShop: false,
+  },
+  coral_spine: {
+    id: "coral_spine",
+    name: "산호 가시",
+    description: "암초에서 부러져 나온 날카로운 산호 조각. 잘 갈면 송곳처럼 박을 수 있다.",
+    price: 20,
+    inShop: false,
+  },
+  deep_scale: {
+    id: "deep_scale",
+    name: "심해 비늘",
+    description: "산호초 사이렌의 몸을 덮은 푸른 비늘. 물기를 머금어 차갑고 매끄럽다.",
+    price: 24,
+    inShop: false,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;
