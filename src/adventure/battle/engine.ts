@@ -2,8 +2,11 @@ import type { Monster } from "../data/monsters";
 import { computeHealAmount, type Potion, type PotionId } from "../data/potions";
 import {
   CRIT_MULT_BASE,
+  GALE_CHAIN_MAX_PER_TURN,
   HEAVEN_DECREE_HP_PCT,
+  LUCKY_STAR_DAMAGE_MULT,
   POWER_ATTACK_TURN_INTERVAL,
+  RAMPAGE_START_TURN,
 } from "../character/skills";
 
 export type BattleLogEntry = {
@@ -62,6 +65,13 @@ export type BattleState = {
   critThisTurn: boolean;
   // 연참 (특기) — 이번 턴에 연참 추가타가 이미 발동했는지 (턴당 1회). 턴 종료 시 false 로 리셋.
   riposteUsedThisTurn: boolean;
+  // 막다른 격노 (5티어) — 그 전투 동안 누적된 ATK 보너스. 매 플레이어 턴 종료 시(RAMPAGE_START_TURN 후) +rampagePerTurn.
+  rampageAtkBonus: number;
+  // 약점 분석 (5티어) — 매 플레이어 턴 종료 시 누적된 적 ATK·DEF 페널티 (각각 clamp to 0).
+  enemyAtkPenalty: number;
+  enemyDefPenalty: number;
+  // 풍사슬 (5티어) — 이번 턴 풍사슬 체인 발동 횟수. 턴 종료 시 0 으로 리셋. 캡 GALE_CHAIN_MAX_PER_TURN.
+  galeChainsThisTurn: number;
 };
 
 export type PlayerCombat = {
@@ -140,6 +150,17 @@ export type PlayerCombat = {
   skirmishNextTurnBonus?: number;
   // 반사 갑주 — 피격 시 받은 HP 피해의 N% 를 적에게 반사. 0/undefined = 미장착.
   thornsPct?: number;
+  // ── 5티어 (각 스탯 65 도달) — 만렙 확장 패키지 ────────────────────────
+  // 막다른 격노 — 전투 RAMPAGE_START_TURN 턴 경과 후, 매 플레이어 턴 종료 시 ATK 영구 +N 누적. 0/undefined = 미보유.
+  rampagePerTurn?: number;
+  // 약점 분석 — 매 플레이어 턴 종료 시 적 ATK·DEF 각각 -N 누적 (clamp to 0). 0/undefined = 미보유.
+  analysisPerTurn?: number;
+  // 가시 갑옷 — 피격 시 받은 HP 피해의 N% 를 적에게 반사 (반사 갑주와 별도 누적). 0/undefined = 미보유.
+  bramblePct?: number;
+  // 풍사슬 — 추가 공격(연타·광속·이전 풍사슬) 발동 후 N% 확률로 1회 더 (한 턴 최대 GALE_CHAIN_MAX_PER_TURN 회). 0/undefined = 미보유.
+  galeChainChancePct?: number;
+  // 행운의 별 — 모든 공격이 N% 확률로 데미지 ×LUCKY_STAR_DAMAGE_MULT (크리티컬과 별개·중첩). 0/undefined = 미보유.
+  luckyStarChancePct?: number;
 };
 
 export type PlayerAction =
@@ -170,7 +191,11 @@ export function damageBetween(atk: number, def: number): number {
 // 정확 스킬(armorPierceFraction) 비례 관통을 차례로 적용. 본타는 여기에 분쇄(고정 감산)/
 // 암살(DEF 0)을 추가로 얹으므로 호출 측에서 따로 처리하고, 단순 추가타(분신/난무/반격)는 이 값 그대로.
 function playerFacingEnemyDef(state: BattleState, player: PlayerCombat): number {
-  const raw = state.enemy.def + state.enemyDefBonus;
+  // 약점 분석(5티어)의 누적 페널티는 raw def 에 직접 적용 → 음수 클램프.
+  const raw = Math.max(
+    0,
+    state.enemy.def + state.enemyDefBonus - state.enemyDefPenalty,
+  );
   const afterVuln = Math.round(raw * (1 - (state.enemy.armorVulnerable ?? 0)));
   const frac = player.armorPierceFraction ?? 0;
   return frac > 0 ? Math.round(afterVuln * (1 - frac)) : afterVuln;
@@ -320,6 +345,35 @@ function finishPlayerTurn(
     }
   }
   if (st.phase === "ended") return st;
+  // 막다른 격노 (5티어) — RAMPAGE_START_TURN 턴 후부터 매 플레이어 턴 종료 시 ATK 영구 누적.
+  // completedPlayerTurns 는 이 시점에 막 +1 된 상태 (ended state 진입 후) — 1턴 종료 시 1.
+  const rampage = player.rampagePerTurn ?? 0;
+  if (rampage > 0 && st.completedPlayerTurns >= RAMPAGE_START_TURN) {
+    const nextBonus = st.rampageAtkBonus + rampage;
+    st = {
+      ...st,
+      rampageAtkBonus: nextBonus,
+      log: appendLog(st.log, {
+        kind: "info",
+        text: `[막다른 격노] ATK +${rampage} (누적 +${nextBonus})`,
+      }),
+    };
+  }
+  // 약점 분석 (5티어) — 매 플레이어 턴 종료 시 적 ATK·DEF 누적 페널티 +N.
+  const analysis = player.analysisPerTurn ?? 0;
+  if (analysis > 0) {
+    const nextAtkPen = st.enemyAtkPenalty + analysis;
+    const nextDefPen = st.enemyDefPenalty + analysis;
+    st = {
+      ...st,
+      enemyAtkPenalty: nextAtkPen,
+      enemyDefPenalty: nextDefPen,
+      log: appendLog(st.log, {
+        kind: "info",
+        text: `[약점 분석] ${st.enemy.name} ATK·DEF -${analysis} (누적 -${nextAtkPen}/-${nextDefPen})`,
+      }),
+    };
+  }
   return applyRegenIfAny(st, player, playerName);
 }
 
@@ -385,6 +439,10 @@ export function initialBattleState(
     assassinateUsed: false,
     critThisTurn: false,
     riposteUsedThisTurn: false,
+    rampageAtkBonus: 0,
+    enemyAtkPenalty: 0,
+    enemyDefPenalty: 0,
+    galeChainsThisTurn: 0,
   };
 }
 
@@ -451,6 +509,7 @@ export function advanceTurn(
         critThisTurn: false,
         riposteUsedThisTurn: false,
         firstAttackPending: true,
+        galeChainsThisTurn: 0,
       };
       return finishPlayerTurn(ended, player, playerName);
     }
@@ -502,7 +561,7 @@ export function advanceTurn(
     const critRoll =
       effectiveCritPct > 0 ? Math.random() * 100 < effectiveCritPct : false;
     const baseDmg = damageBetween(
-      player.atk + bonus + berserkBonus + gustBonus,
+      player.atk + state.rampageAtkBonus + bonus + berserkBonus + gustBonus,
       targetDef,
     );
     // 처형 — 적 HP 비율 < executionHpFraction 일 때 데미지 ×executionDamageMult.
@@ -519,10 +578,17 @@ export function advanceTurn(
     const dmgAfterCrit = critRoll
       ? Math.floor(dmgAfterExecution * critMult)
       : dmgAfterExecution;
-    // 암살 (특기) — 위 모든 배수(처형/크리) 후에 다시 ×N.
-    const dmgBeforeBrace = assassinFires
-      ? Math.floor(dmgAfterCrit * player.assassinateDmgMult!)
+    // 행운의 별 (5티어) — 크리티컬과 별개, 발동 시 데미지 ×LUCKY_STAR_DAMAGE_MULT.
+    const luckyStarPct = player.luckyStarChancePct ?? 0;
+    const luckyStarFires =
+      luckyStarPct > 0 && Math.random() * 100 < luckyStarPct;
+    const dmgAfterLuckyStar = luckyStarFires
+      ? Math.floor(dmgAfterCrit * LUCKY_STAR_DAMAGE_MULT)
       : dmgAfterCrit;
+    // 암살 (특기) — 위 모든 배수(처형/크리/행운의 별) 후에 다시 ×N.
+    const dmgBeforeBrace = assassinFires
+      ? Math.floor(dmgAfterLuckyStar * player.assassinateDmgMult!)
+      : dmgAfterLuckyStar;
     // 잡몹 스킬 "방어 태세" — 이 적을 공격할 때 데미지 -damageReduction (최소 1로 클램프).
     const braceReduction =
       state.enemy.skill?.kind === "brace" ? state.enemy.skill.damageReduction : 0;
@@ -541,6 +607,7 @@ export function advanceTurn(
     if (bonus > 0 && crushReduction > 0) labels.push("분쇄");
     if (executionActive) labels.push("처형");
     if (critRoll) labels.push("크리티컬");
+    if (luckyStarFires) labels.push("행운의 별");
     if (assassinFires) labels.push("암살");
     if (decreeFires) labels.push("천명");
     const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
@@ -651,6 +718,30 @@ export function advanceTurn(
         firstAttackPending: false,
       };
     }
+    // 풍사슬 (5티어) — 추가 공격(연타·광속·이전 풍사슬) 발동 후 확률로 1회 더. 캡: GALE_CHAIN_MAX_PER_TURN.
+    const galePct = player.galeChainChancePct ?? 0;
+    const galeChainReady =
+      state.doubleStrikeUsedThisTurn ||
+      state.lightspeedUsedThisTurn ||
+      state.galeChainsThisTurn > 0;
+    const canGaleChain =
+      galePct > 0 &&
+      galeChainReady &&
+      state.galeChainsThisTurn < GALE_CHAIN_MAX_PER_TURN &&
+      Math.random() * 100 < galePct;
+    if (canGaleChain) {
+      return {
+        ...afterDamage,
+        log: appendLog(afterDamage.log, {
+          kind: "info",
+          text: "[풍사슬] 바람이 한 번 더 휘몰아친다!",
+        }),
+        phase: "player",
+        playerAttacksLeft: 1,
+        galeChainsThisTurn: state.galeChainsThisTurn + 1,
+        firstAttackPending: false,
+      };
+    }
     // 연참 (특기) — 이번 턴에 크리티컬이 났으면 추가 공격 N회 (턴당 1회).
     const canRiposte =
       (player.riposteExtra ?? 0) > 0 &&
@@ -679,6 +770,7 @@ export function advanceTurn(
       critThisTurn: false,
       riposteUsedThisTurn: false,
       firstAttackPending: true,
+      galeChainsThisTurn: 0,
     };
     return finishPlayerTurn(ended, player, playerName);
   }
@@ -830,7 +922,12 @@ export function advanceTurn(
       ? skill.multiplier
       : 1;
   const heavyBlowFired = heavyBlowMult > 1;
-  const baseEnemyDmg = damageBetween(state.enemy.atk + enemyAtkBonus, effectivePlayerDef);
+  // 약점 분석(5티어)의 적 ATK 페널티는 raw atk 에 적용 → 0 클램프.
+  const effectiveEnemyAtk = Math.max(
+    0,
+    state.enemy.atk + enemyAtkBonus - state.enemyAtkPenalty,
+  );
+  const baseEnemyDmg = damageBetween(effectiveEnemyAtk, effectivePlayerDef);
   const rawDmg = heavyBlowFired
     ? Math.max(1, Math.floor(baseEnemyDmg * heavyBlowMult))
     : baseEnemyDmg;
@@ -885,16 +982,24 @@ export function advanceTurn(
       text: `[불굴] 마지막 한 숨 — HP 1 로 버텼다!`,
     });
   }
-  // 반사 갑주 (특기) — 받은 HP 피해의 N% 를 적에게 반사.
+  // 반사 갑주 (특기) + 가시 갑옷 (5티어) — 받은 HP 피해의 N% 를 적에게 반사. 둘 다 있으면 합산.
   const thornsDmg =
     (player.thornsPct ?? 0) > 0
       ? Math.floor((dmgToHp * player.thornsPct!) / 100)
       : 0;
-  const enemyHpAfterThorns = Math.max(0, state.enemyHp - thornsDmg);
-  if (thornsDmg > 0) {
+  const brambleDmg =
+    (player.bramblePct ?? 0) > 0
+      ? Math.floor((dmgToHp * player.bramblePct!) / 100)
+      : 0;
+  const reflectDmg = thornsDmg + brambleDmg;
+  const enemyHpAfterThorns = Math.max(0, state.enemyHp - reflectDmg);
+  if (reflectDmg > 0) {
+    const reflectLabels: string[] = [];
+    if (thornsDmg > 0) reflectLabels.push("반사 갑주");
+    if (brambleDmg > 0) reflectLabels.push("가시 갑옷");
     log = appendLog(log, {
       kind: "player_attack",
-      text: `[반사 갑주] ${state.enemy.name}에게 ${thornsDmg} 반사 피해.`,
+      text: `[${reflectLabels.join(" + ")}] ${state.enemy.name}에게 ${reflectDmg} 반사 피해.`,
     });
   }
   if (playerHp <= 0) {

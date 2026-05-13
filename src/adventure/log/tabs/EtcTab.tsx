@@ -10,6 +10,7 @@ import {
   STAT_SKILL_INFO_THRESHOLD,
   STAT_TIER3_REVEAL_THRESHOLD,
   STAT_TIER4_REVEAL_THRESHOLD,
+  STAT_TIER5_REVEAL_THRESHOLD,
   type StatKey,
 } from "@/adventure/data/stats";
 import {
@@ -29,10 +30,12 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
           const tier2 = tiers[1];
           const tier3 = tiers[2];
           const tier4 = tiers[3];
+          const tier5 = tiers[4];
           const tier1Revealed = value >= STAT_SKILL_INFO_THRESHOLD;
           const conversionRevealed = value >= STAT_REVEAL_THRESHOLD;
           const tier3Revealed = value >= STAT_TIER3_REVEAL_THRESHOLD;
           const tier4Revealed = value >= STAT_TIER4_REVEAL_THRESHOLD;
+          const tier5Revealed = value >= STAT_TIER5_REVEAL_THRESHOLD;
           // 1차 티어 발동 임계가 정보 공개 임계보다 높을 때 발동 안내.
           const showTier1ActivationNote =
             !!tier1 &&
@@ -52,7 +55,11 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
             !!tier4 &&
             tier4Revealed &&
             tier4.activationThreshold > STAT_TIER4_REVEAL_THRESHOLD;
-          // 다음 공개 — tier1 → 환산+tier2 → tier3 → tier4.
+          const showTier5ActivationNote =
+            !!tier5 &&
+            tier5Revealed &&
+            tier5.activationThreshold > STAT_TIER5_REVEAL_THRESHOLD;
+          // 다음 공개 — tier1 → 환산+tier2 → tier3 → tier4 → tier5.
           const nextRevealAt = !tier1Revealed
             ? STAT_SKILL_INFO_THRESHOLD
             : !conversionRevealed
@@ -61,7 +68,9 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                 ? STAT_TIER3_REVEAL_THRESHOLD
                 : !tier4Revealed
                   ? STAT_TIER4_REVEAL_THRESHOLD
-                  : "—";
+                  : !tier5Revealed
+                    ? STAT_TIER5_REVEAL_THRESHOLD
+                    : "—";
           return (
             <Card as="li" key={k}>
               <div className="flex items-baseline justify-between gap-2">
@@ -223,6 +232,43 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                         />
                         <span className="italic text-zinc-500 dark:text-zinc-400">
                           {STAT_TIER4_REVEAL_THRESHOLD} 달성 시 4차 스킬 공개
+                        </span>
+                      </>
+                    )
+                  )}
+                </div>
+              )}
+
+              {/* 5차 스킬 — STAT_TIER5_REVEAL_THRESHOLD(60) 도달 시 공개. 만렙 확장 패키지. */}
+              {tier5 && (
+                <div className="mt-1.5 flex items-start gap-2 text-xs">
+                  {tier5Revealed ? (
+                    <>
+                      <Sparkle
+                        size={14}
+                        weight="duotone"
+                        className="shrink-0 text-amber-500 mt-0.5"
+                      />
+                      <span className="text-zinc-700 dark:text-zinc-200">
+                        <span className="font-medium">{tier5.name}</span> —{" "}
+                        {tier5.description}
+                        {showTier5ActivationNote && (
+                          <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                            ({STAT_LABELS[k]} {tier5.activationThreshold}에서 발동)
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  ) : (
+                    tier4Revealed && (
+                      <>
+                        <Lock
+                          size={14}
+                          weight="duotone"
+                          className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
+                        />
+                        <span className="italic text-zinc-500 dark:text-zinc-400">
+                          {STAT_TIER5_REVEAL_THRESHOLD} 달성 시 5차 스킬 공개
                         </span>
                       </>
                     )
