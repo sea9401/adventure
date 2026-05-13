@@ -574,6 +574,20 @@ export const ITEMS = {
     description: "폐허 한구석에 반쯤 묻혀 있던 검의 윗동강. 폐허 늑대가 자루를 물어뜯고 있었다. 날밑이 떨어져 나가 손이 자꾸 베이지만, 한 번 휘두르면 옛 영웅의 무게가 실린다.",
     rarity: "unique",
   } satisfies EquipItem,
+  // 운향 만월의 '부러진 영웅검' 복원 의뢰(storyQuests: hero_sword_restoration) 보상.
+  // hero_broken_sword 윗동강 + 운봉석 검신 + 화염 능선 재료 날밑 → 한 자루로 복원. 서사 아이템이라 거래 불가.
+  hero_sword: {
+    name: "영웅검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+16" },
+      { label: "속도", value: "-1" },
+    ],
+    bonus: { atk: 16, spd: -1 },
+    description: "운향 대장장이 만월이 부러진 윗동강에 운봉석 검신을 잇고, 화염 능선의 것으로 새 날밑을 둘러 되살린 검. 옛 영웅이 들었을 때의 무게가 고스란히 돌아왔다 — 묵직하지만, 그 무게가 곧 위력이 된다.",
+    rarity: "legendary",
+    tradable: false,
+  } satisfies EquipItem,
   sky_render_talon: {
     name: "하늘가르개",
     slot: "weapon",

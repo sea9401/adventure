@@ -330,6 +330,7 @@ function Home() {
       new Set(mapProgress.visitedRegionIds).size >= WORLD_MAP.regions.length,
     luckyCollected: storyFlags.has("bard_lucky_collected"),
     cipherDone: storyFlags.has("cipher_done"),
+    heroSwordRestored: storyFlags.has("hero_sword_restored"),
     maxMaterialSold,
   });
 

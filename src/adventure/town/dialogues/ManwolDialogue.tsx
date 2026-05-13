@@ -1,8 +1,12 @@
 import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
+import { STORY_QUESTS } from "@/adventure/data/storyQuests";
+import { ownsEquipment } from "@/adventure/inventory/ownership";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { useCharacterState } from "@/adventure/character/useCharacterState";
+import type { NotificationKind } from "@/lib/notifications";
 
 type Props = {
   npc: Npc;
@@ -11,6 +15,8 @@ type Props = {
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
   inventory: ReturnType<typeof useInventory>;
+  characterStateHook: ReturnType<typeof useCharacterState>;
+  addNotification: (kind: NotificationKind, text: string) => void;
 };
 
 const ORE_QUEST = "unhyang-manwol-ore-demo";
@@ -18,8 +24,16 @@ const ORE_NEED = 6;
 const WEAPONS_QUEST = "unhyang-manwol-weapons";
 const WEAPONS_NEED = 8;
 
-// 만월 — "운봉석을 벼리는 법"(견갑 확정) → "운봉 네 자루"(무기 4종 제작서 확정) → 볼드 재회(§7.1).
-// 거인 처치 전엔 도전 종용 → 처치 후 운봉석 ×6 deliver → ×8 더 deliver → 제작 안내 + 손잡이 심부름.
+// ── 부러진 영웅검 복원(storyQuests: hero_sword_restoration) ──
+// 만월 재회(manwol_bold_reunion_done) + 천공 성지 보스(volcano_heart_defeated) 이후 해금.
+// hero_broken_sword 윗동강을 맡기면 → 운봉석 검신 → 화염 능선 재료 날밑 → 벼리기 → hero_sword(legendary).
+// flag 릴레이: hero_sword_started → hero_sword_ore_done → hero_sword_core_done → hero_sword_forging → hero_sword_restored.
+const HERO_ORE_NEED = 16;
+const HERO_CORE = { lava_core: 6, flame_scale: 8, phoenix_feather: 3 } as const;
+const HERO_QUEST_TITLE = STORY_QUESTS.hero_sword_restoration.title;
+
+// 만월 — "운봉석을 벼리는 법"(견갑 확정) → "운봉 네 자루"(무기 4종 제작서 확정) → 볼드 재회(§7.1)
+// → 부러진 영웅검 복원(§12). 거인 처치 전엔 도전 종용 → 처치 후 운봉석 deliver 라인 → 제작 안내/심부름.
 export function ManwolDialogue({
   npc,
   onClose,
@@ -27,6 +41,8 @@ export function ManwolDialogue({
   quests,
   completeQuest,
   inventory,
+  characterStateHook,
+  addNotification,
 }: Props) {
   const giantDefeated = storyFlags.has("peak_giant_defeated");
 
@@ -162,12 +178,210 @@ export function ManwolDialogue({
   const letterDelivered = storyFlags.has("manwol_bold_letter_delivered");
   const reunionDone = storyFlags.has("manwol_bold_reunion_done");
 
+  // ── 볼드 재회까지 끝낸 뒤 — 부러진 영웅검 복원 라인(§12) ──
   if (reunionDone) {
+    const reunionLine =
+      "볼드, 그 대머리 영감 잘 산다니 다행이군. 녀석 망치질은 여전한가 모르겠어.";
+
+    if (storyFlags.has("hero_sword_restored")) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`영웅검은 손에 익었나? …그 윗동강 하나로 그만한 검이 나올 줄은. 옛 영웅도 만족할 거야.\n${reunionLine}\n…${craftHint}`}
+        />
+      );
+    }
+
+    const volcanoDefeated = storyFlags.has("volcano_heart_defeated");
+    const started = storyFlags.has("hero_sword_started");
+    const ownsBroken = ownsEquipment(
+      inventory.state,
+      characterStateHook.equippedSlots,
+      "hero_broken_sword",
+    );
+
+    // 의뢰 개시 전.
+    if (!started) {
+      // 천공 성지 보스 미처치 / 윗동강 미보유 — 평소 재회 idle + (보스 처치했으면) 떡밥.
+      if (!volcanoDefeated || !ownsBroken) {
+        const breadcrumb = volcanoDefeated
+          ? "\n\n…참, 폐허 늑대들이 옛 검의 윗동강 하나를 물고 다닌다는 소문이 있어. 진짜라면 — 그건 내가 손볼 수 있는 물건일지도 모르겠군."
+          : "";
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={`${reunionLine}\n…${craftHint}${breadcrumb}`}
+          />
+        );
+      }
+      // 윗동강 보유 + 천공 성지 보스 처치 → 의뢰 개시.
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "…잠깐, 그 검. 자루 쪽을 이리 줘 보게.\n…윗동강뿐이군. 날밑은 떨어져 나갔고, 검신도 반이 없어. 그런데 이 결 — 옛 영웅검이야. 진짜.\n되살릴 수 있어. 단, 손이 많이 가. 운봉석으로 검신을 새로 잇고, 날밑은 화염 능선 너머의 것으로 둘러야 해. 맡기겠나?"
+          }
+          primaryAction={{
+            label: "윗동강을 맡긴다",
+            onClick: () => {
+              // 드랍 품질(0~2) 어느 칸에 있든 한 자루 회수. 장착 중이면 회수 실패 → 안내.
+              const taken =
+                inventory.consumeDroppedEquipment("hero_broken_sword", 2, 1) ||
+                inventory.consumeDroppedEquipment("hero_broken_sword", 1, 1) ||
+                inventory.consumeDroppedEquipment("hero_broken_sword", 0, 1);
+              if (!taken) {
+                addNotification(
+                  "milestone",
+                  "부러진 영웅검을 장착 해제한 뒤 다시 만월에게 가져가자.",
+                );
+                onClose();
+                return;
+              }
+              storyFlags.set("hero_sword_started");
+              addNotification(
+                "quest_complete",
+                `${HERO_QUEST_TITLE} — 만월이 윗동강을 맡았다. 운봉석 ${HERO_ORE_NEED}덩이를 모아 오자.`,
+              );
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+
+    // 의뢰 진행 중 — 단계별 분기.
+    const oreDone = storyFlags.has("hero_sword_ore_done");
+    const coreDone = storyFlags.has("hero_sword_core_done");
+    const forging = storyFlags.has("hero_sword_forging");
+
+    // 2단계 — 운봉석 검신.
+    if (!oreDone) {
+      const have = inventory.materialCount("unbong_ore");
+      if (have >= HERO_ORE_NEED) {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={`운봉석 열여섯 덩이… 검신 하나에 이만큼이 들어가. 결을 잡아 두지.\n다음은 날밑이야. 화염 능선 너머 — 용암 핵 ${HERO_CORE.lava_core}, 화염 비늘 ${HERO_CORE.flame_scale}, 봉황 깃털 ${HERO_CORE.phoenix_feather}. 그래야 옛 영웅검에 어울리는 날밑이 나와.`}
+            primaryAction={{
+              label: "운봉석을 건넨다",
+              onClick: () => {
+                if (!inventory.consumeMaterial("unbong_ore", HERO_ORE_NEED)) {
+                  onClose();
+                  return;
+                }
+                storyFlags.set("hero_sword_ore_done");
+                onClose();
+              },
+            }}
+          />
+        );
+      }
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`검신을 새로 이으려면 운봉석이 많이 들어. 거인이 떨군 걸 모아 오게. — 진행 ${have}/${HERO_ORE_NEED}`}
+        />
+      );
+    }
+
+    // 3단계 — 화염 능선 재료 날밑.
+    if (!coreDone) {
+      const lc = inventory.materialCount("lava_core");
+      const fs = inventory.materialCount("flame_scale");
+      const pf = inventory.materialCount("phoenix_feather");
+      const enough =
+        lc >= HERO_CORE.lava_core &&
+        fs >= HERO_CORE.flame_scale &&
+        pf >= HERO_CORE.phoenix_feather;
+      if (enough) {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "용암 핵에 화염 비늘, 봉황 깃털까지 — 다 됐군. 날밑은 이걸로 둘러 주지.\n검신·날밑·윗동강, 셋이 다 모였어. 모루에 올려놓고 벼리는 데 시간이 좀 걸려. 잠시 뒤에 다시 오게."
+            }
+            primaryAction={{
+              label: "재료를 건넨다",
+              onClick: () => {
+                if (
+                  inventory.materialCount("lava_core") < HERO_CORE.lava_core ||
+                  inventory.materialCount("flame_scale") <
+                    HERO_CORE.flame_scale ||
+                  inventory.materialCount("phoenix_feather") <
+                    HERO_CORE.phoenix_feather
+                ) {
+                  onClose();
+                  return;
+                }
+                inventory.consumeMaterial("lava_core", HERO_CORE.lava_core);
+                inventory.consumeMaterial("flame_scale", HERO_CORE.flame_scale);
+                inventory.consumeMaterial(
+                  "phoenix_feather",
+                  HERO_CORE.phoenix_feather,
+                );
+                storyFlags.set("hero_sword_core_done");
+                onClose();
+              },
+            }}
+          />
+        );
+      }
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`날밑 재료가 아직이야. 용암 핵 ${lc}/${HERO_CORE.lava_core}, 화염 비늘 ${fs}/${HERO_CORE.flame_scale}, 봉황 깃털 ${pf}/${HERO_CORE.phoenix_feather} — 화염 능선 너머에서 구할 수 있어.`}
+        />
+      );
+    }
+
+    // 4단계 — 벼리는 중.
+    if (!forging) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "아직 모루 위야. 운봉석 검신을 윗동강에 잇고, 날밑을 두르는 중 — 서두르면 또 부러져. 조금만 더 기다리게."
+          }
+          primaryAction={{
+            label: "기다린다",
+            onClick: () => {
+              storyFlags.set("hero_sword_forging");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+
+    // 5단계 — 완성품 수령.
     return (
       <NpcDialogue
         npc={npc}
         onClose={onClose}
-        text={`볼드, 그 대머리 영감 잘 산다니 다행이군. 녀석 망치질은 여전한가 모르겠어.\n…${craftHint}`}
+        text={
+          "…됐어. 받게.\n윗동강에 운봉석 검신을 잇고, 화염 능선의 것으로 날밑을 둘렀어. 묵직하지? 옛 영웅이 들었을 때 그대로야. 그 무게, 휘두르면 곧 위력이 돼.\n— 영웅검일세. 자네 손에 있어야 할 물건이야."
+        }
+        primaryAction={{
+          label: "영웅검을 받는다",
+          onClick: () => {
+            inventory.addEquipment("hero_sword");
+            characterStateHook.addGoldFame(400, 8);
+            storyFlags.set("hero_sword_restored");
+            addNotification(
+              "quest_complete",
+              `${HERO_QUEST_TITLE} 완료 — 영웅검 획득! (+골드 400 / +명성 8)`,
+            );
+            onClose();
+          },
+        }}
       />
     );
   }
