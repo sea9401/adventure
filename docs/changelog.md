@@ -19,7 +19,7 @@
 ### 부러진 영웅검 복원 의뢰
 
 - 🤝 **만월 — 부러진 영웅검 복원**(storyQuest `hero_sword_restoration`). 만월 재회(`manwol_bold_reunion_done`) + 천공 성지 보스(`volcano_heart_defeated`) 이후 해금. 폐허 늑대 드랍 unique `hero_broken_sword`(윗동강)를 맡기면 → 운봉석 ×16(검신) → 화염 능선 재료(용암 핵 ×6·화염 비늘 ×8·봉황 깃털 ×3, 날밑) → 벼리기 → 완성. flag 릴레이: `hero_sword_started`→`_ore_done`→`_core_done`→`_forging`→`_restored`. 윗동강 미보유 + 보스 처치 상태면 만월이 떡밥 대사. 윗동강은 드랍 품질 0~2 어느 칸이든 회수, 장착 중이면 안내.
-- 📦 신규 아이템 `hero_sword`(영웅검) — 공격력 +16 / 속도 -1, `legendary`, 거래 불가.
+- 📦 신규 아이템 `hero_sword`(영웅검) — 공격력 +18 / 힘 +5, `legendary`, 거래 불가. (서사 최종 보상답게 다른 무기 대비 확실히 위 — 같은 날 +16/속-1 에서 상향.)
 - 👤 신규 칭호 `hero_sword_heir`(영웅검의 계승자) — `hero_sword_restored` flag, useTitleGrants.
 - 🔔 완성 보상: 영웅검 + 골드 400 + 명성 8 + 칭호.
 
