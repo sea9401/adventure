@@ -49,6 +49,15 @@ export type GuildBuffSlot = {
 // 비용 곡선: T1=1000, +2000, +3000, +3000, +4000 → 누적 1000/3000/6000/9000/13000.
 // 한 버프 만렙은 13k 명성 — S급 임계(40k)에서도 4개 모두 만렙은 불가능 → 장기 운영 보상.
 const TIER_COSTS = [1000, 2000, 3000, 3000, 4000] as const;
+const CUMULATIVE_TIER_COSTS = [1000, 3000, 6000, 9000, 13000] as const;
+
+// 임의 tier(1~5, 범위 밖은 클램프)의 누적 투자 비용 — 더 이상 카탈로그에 없는 버프 슬롯의
+// 환급 계산 등에 사용 (정의가 사라진 buffId 라 GUILD_BUFFS 로는 못 찾으므로).
+export function cumulativeCostForTier(tier: number): number {
+  const i = Math.min(Math.max(Math.trunc(tier), 1), 5) - 1;
+  return CUMULATIVE_TIER_COSTS[i];
+}
+
 function buildTiers(values: [number, number, number, number, number],
   kind: GuildBuffEffect["kind"]): GuildBuffTierDef[] {
   let cum = 0;
