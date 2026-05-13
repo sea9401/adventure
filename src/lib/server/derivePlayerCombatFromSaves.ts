@@ -9,14 +9,15 @@ import {
   derivePlayerCombat,
   type DerivedPlayerCombat,
 } from "@/adventure/character/derivePlayerCombat";
-import { ITEMS, findItemId, type EquipItem } from "@/adventure/data/items";
+import { rehydrateEquippedItem } from "@/adventure/character/rehydrateEquip";
+import type { EquippedItem } from "@/adventure/character/types";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { STORY_FLAGS_STORAGE_KEY } from "@/adventure/storyFlags/storage";
 
 type SavedEquipped = {
-  weapon?: EquipItem | null;
-  armor?: EquipItem | null;
-  accessory?: EquipItem | null;
+  weapon?: EquippedItem | null;
+  armor?: EquippedItem | null;
+  accessory?: EquippedItem | null;
 };
 
 type SavedCharacterV2 = {
@@ -34,14 +35,6 @@ type SavedTrainingV2 = {
 type SavedStoryFlagsV2 = {
   flags?: string[];
 };
-
-// 저장된 EquipItem 직렬화를 ITEMS 정의의 현재 인스턴스로 교체.
-// useCharacterState.ts 의 rehydrateSlot 과 동일 — 밸런스 패치 후에도 옛 인스턴스가 안 남도록.
-function rehydrateSlot(saved: EquipItem | null | undefined): EquipItem | null {
-  if (!saved) return null;
-  const id = findItemId(saved);
-  return id ? ITEMS[id] : null;
-}
 
 async function readSave<T>(userId: string, key: string): Promise<T | null> {
   const rows = await db
@@ -74,11 +67,13 @@ export async function derivePlayerCombatFromSaves(
     { str: 0, dex: 0, vit: 0, spd: 0, luk: 0 } as Record<StatKey, number>,
   );
 
+  // ⚠️ 반드시 craftTier/dropQuality 까지 반영하는 공용 헬퍼를 써야 한다 — 베이스 아이템만
+  // 돌려주면 걸작/빼어난 장비 보너스가 사라져 feat 임계치 위에 있던 빌드가 침묵 비활성화됨.
   const savedEquipped = character.equipped ?? null;
   const equipped = {
-    weapon: rehydrateSlot(savedEquipped?.weapon),
-    armor: rehydrateSlot(savedEquipped?.armor),
-    accessory: rehydrateSlot(savedEquipped?.accessory),
+    weapon: rehydrateEquippedItem(savedEquipped?.weapon),
+    armor: rehydrateEquippedItem(savedEquipped?.armor),
+    accessory: rehydrateEquippedItem(savedEquipped?.accessory),
   };
 
   return derivePlayerCombat({

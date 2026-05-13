@@ -23,7 +23,8 @@ import {
 import { baseCharacter } from "@/adventure/character/defaults";
 import { derivePlayerCombat } from "@/adventure/character/derivePlayerCombat";
 import { applyExpGain } from "@/lib/leveling";
-import { ITEMS, findItemId, type EquipItem } from "@/adventure/data/items";
+import { rehydrateEquippedItem } from "@/adventure/character/rehydrateEquip";
+import type { EquippedItem } from "@/adventure/character/types";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { WORLD_MAP, START_REGION_ID, type RegionId } from "@/adventure/data/world";
 import type { PotionId } from "@/adventure/data/potions";
@@ -69,9 +70,9 @@ type SavedCharacter = {
   gold?: number;
   stats?: Partial<Record<StatKey, number>>;
   equipped?: {
-    weapon?: EquipItem | null;
-    armor?: EquipItem | null;
-    accessory?: EquipItem | null;
+    weapon?: EquippedItem | null;
+    armor?: EquippedItem | null;
+    accessory?: EquippedItem | null;
   } | null;
   equippedSkills?: string[];
   equippedFeat?: string;
@@ -111,12 +112,6 @@ type SavedMap = {
   respawnRegionId?: RegionId;
 };
 
-function rehydrateEquip(saved: EquipItem | null | undefined): EquipItem | null {
-  if (!saved) return null;
-  const id = findItemId(saved);
-  return id ? ITEMS[id] : null;
-}
-
 function allocatedFrom(training: SavedTraining): Record<StatKey, number> {
   return STAT_KEYS.reduce(
     (acc, k) => {
@@ -127,11 +122,14 @@ function allocatedFrom(training: SavedTraining): Record<StatKey, number> {
   );
 }
 
+// ⚠️ 반드시 craftTier/dropQuality 까지 반영하는 공용 헬퍼를 써야 한다 — 베이스 아이템만
+// 돌려주면 걸작/빼어난 장비 보너스가 사라져 위탁 사냥에서 stat 임계치 위에 있던 빌드의
+// feat(흡혈/곡예/천칭 등)이 침묵 비활성화된다. applyResultToSaves 의 maxHp 재계산도 동일.
 function equippedFrom(character: SavedCharacter) {
   return {
-    weapon: rehydrateEquip(character.equipped?.weapon),
-    armor: rehydrateEquip(character.equipped?.armor),
-    accessory: rehydrateEquip(character.equipped?.accessory),
+    weapon: rehydrateEquippedItem(character.equipped?.weapon),
+    armor: rehydrateEquippedItem(character.equipped?.armor),
+    accessory: rehydrateEquippedItem(character.equipped?.accessory),
   };
 }
 
