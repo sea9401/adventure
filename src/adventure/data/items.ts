@@ -45,6 +45,8 @@ export type EquipItem = {
   // 거래소 등록 가능 여부. 미지정/true 면 거래 가능.
   // 시작 장비·서사 아이템 등에는 false 로 막는다.
   tradable?: boolean;
+  // 상점(BuyTab '장비' 칸)에서 이 가격에 구매 가능. 미지정이면 상점 미취급 — 현재는 초반 발판용 싸구려 장비 한두 종.
+  shopPrice?: number;
   rarity?: ItemRarity;
   // 드랍 품질 등급(정교한/빼어난) variance override. 미지정이면 "주력 양수 스탯 +q×1" 기본 규칙.
   // 드랍 경로(dropQuality.ts)에서만 참조 — 적용 대상이 아닌 장비(퀘 보상 등)에 둬도 무해.
@@ -105,6 +107,27 @@ export const ITEMS = {
     bonus: { luk: 2 },
     description: "어머니의 사랑이 깃든 작은 부적.",
     tradable: false,
+  } satisfies EquipItem,
+
+  // 초반 발판 — 상점에서 싸게 살 수 있는 입문 장비. 볼드 대장간 라인(야구방망이/낡은 가죽갑옷)을
+  // 타기 전이라도 첫 골드로 살 게 생긴다. 곧 그쪽으로 덮이는 잠깐용.
+  worn_dagger: {
+    name: "무딘 단검",
+    slot: "weapon",
+    stats: [{ label: "공격력", value: "+1" }],
+    bonus: { atk: 1 },
+    description: "잡화점 구석에 굴러다니던 날 무딘 단검. 그래도 맨주먹보단 낫다.",
+    tradable: false,
+    shopPrice: 14,
+  } satisfies EquipItem,
+  quilted_vest: {
+    name: "누빈 천 조끼",
+    slot: "armor",
+    stats: [{ label: "방어력", value: "+1" }],
+    bonus: { def: 1 },
+    description: "천을 두어 겹 누벼 만든 헐거운 조끼. 스치는 정도는 막아 준다.",
+    tradable: false,
+    shopPrice: 14,
   } satisfies EquipItem,
 
   // 제작·드랍 장비

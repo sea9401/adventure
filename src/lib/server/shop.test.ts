@@ -108,6 +108,35 @@ describe("computeShopOutcome", () => {
     expect(r.newGold).toBe(4); // price 3 × 2
   });
 
+  it("buy_equipment — shopPrice 지정 장비는 무등급 인스턴스로 구매", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 50 },
+      { kind: "buy_equipment", id: "worn_dagger", quantity: 1 },
+    );
+    expect(r.equipment.worn_dagger).toBe(1);
+    expect(r.newGold).toBe(36); // shopPrice 14
+    expect(r.applied.kind).toBe("buy_equipment");
+  });
+
+  it("buy_equipment — shopPrice 없는 장비는 not_for_sale", () => {
+    expect(() =>
+      computeShopOutcome(base(), {
+        kind: "buy_equipment",
+        id: "baseball_bat",
+        quantity: 1,
+      }),
+    ).toThrow(ShopError);
+  });
+
+  it("buy_equipment — 골드 부족이면 insufficient_gold", () => {
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), gold: 5 },
+        { kind: "buy_equipment", id: "worn_dagger", quantity: 1 },
+      ),
+    ).toThrow(ShopError);
+  });
+
   it("sell_material — 보유분 차감 + 골드 지급", () => {
     const r = computeShopOutcome(
       { ...base(), gold: 0, materials: { slime_core: 5 } },

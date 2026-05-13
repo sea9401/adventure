@@ -35,6 +35,12 @@
 - 🏗️ `integrity.test.ts` 보강 — recipe id 유일성 + recipe `ingredients`의 materialId/itemId 존재 + equip→equip 자기참조(무한 루프) 금지 검사 추가 (기존엔 결과 itemId만 검증).
 - 📝 `docs/items.md` — `(… 업그레이드)` 표기 안내 + 무기/방어구/장신구 표에 11종 추가, rarity 표 갱신.
 
+### 초반 발판 — 상점 입문 장비
+
+- 🏘️ 상점(`BuyTab`)에 **장비** 칸 추가 — 그동안 물약/재료/소모품만 팔던 데 `EquipItem.shopPrice` 가 지정된 장비를 취급. 서버 권위(`/api/shop` `buy_equipment` 액션) 그대로.
+- 📦 신규 입문 장비 2종: 무딘 단검(`worn_dagger`, 공격력 +1) · 누빈 천 조끼(`quilted_vest`, 방어력 +1) — 각 14G, 비거래. 볼드 대장간 라인(야구방망이/낡은 가죽갑옷)을 타기 전이라도 첫 골드로 살 게 생긴다 (곧 그쪽으로 덮이는 잠깐용).
+- 🏗️ `shop.test.ts` — `buy_equipment` 케이스(shopPrice 지정/미지정/골드부족) 추가.
+
 ## 2026-05-06
 
 - `a271480` 🏗️ adventure-rpg 프로젝트 분리 — exten에서 adventure UI만 추출.

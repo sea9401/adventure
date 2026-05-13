@@ -36,6 +36,7 @@ const ACTION_KINDS: readonly ShopActionKind[] = [
   "buy_potion",
   "buy_material",
   "buy_consumable",
+  "buy_equipment",
   "sell_potion",
   "sell_material",
   "sell_equipment",
@@ -152,6 +153,20 @@ export function computeShopOutcome(
       const cost = c.price * qty;
       if (gold < cost) throw new ShopError("insufficient_gold");
       consumables[action.id] = (consumables[action.id] ?? 0) + qty;
+      goldDelta = -cost;
+      break;
+    }
+    case "buy_equipment": {
+      const e = ITEMS[action.id as ItemId];
+      if (!e) throw new ShopError("unknown_item");
+      const price = (e as { shopPrice?: number }).shopPrice;
+      if (typeof price !== "number" || !Number.isFinite(price) || price < 0) {
+        throw new ShopError("not_for_sale");
+      }
+      const cost = price * qty;
+      if (gold < cost) throw new ShopError("insufficient_gold");
+      // 무등급(기본) 인스턴스로 들어간다 — equipment[] 맵.
+      equipment[action.id] = (equipment[action.id] ?? 0) + qty;
       goldDelta = -cost;
       break;
     }
