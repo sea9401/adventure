@@ -5,7 +5,20 @@
 
 ## 2026-05-13
 
-신규 지역 퀘스트 라인 확장 — `feat/unhyang-quests` (PR #37, merge `41ee2b6`).
+### 해안 지선 — 조수 갯벌 · 소만 · 산호초 섬 (`feat/new-region`)
+
+상세 설계: `docs/coast-plan.md`. 디올라(Lv6)에서 남쪽으로 갈라지는 막다른 3지역 라인 — 폐허(Lv9)~산기슭(Lv18) 구간에 산으로 가는 길과 나란히 놓인 바닷길. 첫 비(非)내륙 지역 / 물·바다 몹 / 막다른 지선.
+
+- 🗺️ **신규 지역 3곳**: 조수 갯벌(`tideflats`, Lv10)·소만(`saltmarsh`, Lv13 마을)·산호초 섬(`reef_isle`, Lv18). `Biome "coast"` 신설. viewBox `height` 500→640. 엣지: `diola→tideflats`(시련 5전)·`tideflats→saltmarsh`·`saltmarsh→reef_isle`(story `ferryman_reef_passage`). 소만 fast-travel 5쌍.
+- ⚔️ **잡몹 6종 + 보스 1**: 집게발 게(`pierce`)·갯도요(회피)·진흙 미꾸라지(갯벌 Lv10) / 산호초 사이렌(회피)·갑각 약탈자(`heavy_blow`)·가시 산호 골렘(`brace`)(산호초 섬 Lv18) / **수심의 것**(`reef_isle.boss`, 일일 3회, `enrage`+phaseTrigger, `onDefeatFlag: the_deep_one_stilled`). image 필드는 후속(webp 추가).
+- 📦 **재료 3종**: 게딱지(`crab_shell`)·산호 가시(`coral_spine`)·심해 비늘(`deep_scale`) (sellPrices 등록).
+- 📦 **장비 14종**: 갯벌 입문 2(게딱지 손방패·갯벌 각반) / 산호초 섬 잡몹산 3(산호 가시 단검·사이렌 비늘 로브·조수유리 부적) / 업그레이드 3(갑각 보루방패·가시 산호 단검·사이렌 노래 망토) / 수심의 것 보상 5(심연 무구 4 `recipe_one_of`(atk+7+보조)·수심의 핵) / 유실된 명품 `drowned_signet`(진흙 미꾸라지 0.02%) → 업그레이드 `tidelord_signet`(unique·비거래). 마정석 라인 한 단계 위. 제작법 14종(recipes.ts) — 잡몹/보스 드랍 + `crustacean_bulwark`/`barbed_coral_dagger` 등 equip 업그레이드 + `tidelord_signet_engraving`.
+- 🤝 **소만 NPC 5명**: 원로 여울(`YeoulDialogue` 커스텀 — 메인 라인 축, `saltmarsh_vouched`)·뱃사공 해랑(`HaerangDialogue` 커스텀 — 선저 덧대기 → `ferryman_reef_passage` 게이트)·소금장수 갈매(`GalmaeDialogue`, questLine)·여각 주인 보말(`BomalDialogue`, questLine)·갯마을 아이 미르(`MireuDialogue`, 의뢰 X — 떡밥 대사 분기). 초상화 placeholder(후속 webp). `renderTownNpcDialogue` 디스패치 연결.
+- 🗺️ **퀘스트 ~20종**: 갈매/보말 인트로 라인(게딱지·갯벌 각반 제작서·약 주머니 +1) → 여울 보증 → 해랑 선저 덧대기 → 여울 암초 정찰(deliver) → 수심의 것 처치(보상 골드 900·명성 26·EXP 1300·중간 회복약 ×5·제작서 `abyssal_heart`) → 정기 토벌(반복). 소만 길드 게시판 5종(산호초 섬 2종은 hull-plating 선행). `REGION_REPEAT_COOLDOWN_MS.saltmarsh = 7h`. `STORY_QUESTS.saltmarsh_deep_one`.
+- 🤝 **길드 의뢰 2종**(Phase B 우선 추가): `f_tideflats_crabs`(F, 집게발 게 ×400)·`e_deep_one_pacify`(E, `kill_boss` 수심의 것 ×8, 심해 비늘 ×3). 전체 풀 발란스는 Phase B 에서.
+- 📝 `docs/items.md` 동기화(무기 8·방어구 3·장신구 4·재료 3 추가, rarity/유실된 명품 표 갱신) + `docs/coast-plan.md` 신규.
+
+### 신규 지역 퀘스트 라인 확장 — `feat/unhyang-quests` (PR #37, merge `41ee2b6`)
 
 - 📦 **신규 지역 퀘스트 라인 확장** (quest-expansion-plan M1~M6 전 항목). 운향 메인(백운·만월) + 천공 성지 메인(해무) + 운향/바람골/봉황령/화산 사이드 의뢰·길드 게시판 + 마을 간 연계(마린↔백운·산하↔노라·지미↔도연·만월↔볼드) + 보스 누적 사냥 hunter ×3 + 순례자 미상 대사 분기 + 히든 퀘스트 8종(`hidden-mole-king`·`-deepest-vein`·`-blacksmith-duel`·`-giants-origin`·`-volcano-relic`·`-lucky-collector`·`-hooded-cipher`·`-pilgrim-trail`).
 - 🤝 신규 NPC 3명: 떠돌이 음유시인 / 사미승 운하 / 문지기 청람 (초상화 placeholder — 추후 webp 추가).

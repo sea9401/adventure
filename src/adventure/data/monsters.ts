@@ -622,6 +622,134 @@ export const MONSTERS: Record<string, Monster> = {
     },
     onDefeatFlag: "volcano_heart_defeated",
   },
+  // ── 해안 지선 (조수 갯벌 / 산호초 섬) ───────────────────────────────────
+  // 폐허(Lv9)~산기슭(Lv18) 사이에 놓이는 바닷길 잡몹. 갯벌 ≈ 폐허 난이도, 섬 ≈ 산기슭 난이도.
+  // image 필드는 후속 PR 에서 추가.
+  "집게발 게": {
+    name: "집게발 게",
+    tags: ["beast"],
+    hp: 150,
+    atk: 11,
+    def: 8,
+    spd: 3,
+    exp: 11,
+    skill: { kind: "pierce", name: "집게발 비집기", armorPierce: 2 },
+    drops: [
+      { kind: "material", materialId: "crab_shell", chance: 0.06 },
+      // 초반 발판 — 게딱지 손방패 제작서.
+      { kind: "recipe", recipeId: "crab_shell_buckler", chance: 0.04 },
+    ],
+  },
+  갯도요: {
+    name: "갯도요",
+    tags: ["beast"],
+    hp: 95,
+    atk: 12,
+    def: 3,
+    spd: 9,
+    evasionPct: 20,
+    exp: 11,
+    drops: [
+      { kind: "material", materialId: "crab_shell", chance: 0.02 },
+      { kind: "recipe", recipeId: "tideflats_waders", chance: 0.04 },
+    ],
+  },
+  "진흙 미꾸라지": {
+    name: "진흙 미꾸라지",
+    tags: ["beast"],
+    hp: 120,
+    atk: 10,
+    def: 4,
+    spd: 6,
+    exp: 10,
+    drops: [
+      { kind: "material", materialId: "crab_shell", chance: 0.03 },
+      // 유실된 명품 — 진창 속에서 끌고 다니던 낡은 인장반지.
+      { kind: "equip", itemId: "drowned_signet", chance: 0.0002 },
+    ],
+  },
+  "산호초 사이렌": {
+    name: "산호초 사이렌",
+    tags: ["spirit"],
+    hp: 175,
+    atk: 21,
+    def: 6,
+    spd: 7,
+    evasionPct: 20,
+    exp: 20,
+    drops: [
+      { kind: "material", materialId: "deep_scale", chance: 0.04 },
+      { kind: "recipe", recipeId: "siren_scale_robe", chance: 0.04 },
+      // 사이렌 비늘 로브 → 사이렌 노래 망토 업그레이드 세공서.
+      { kind: "recipe", recipeId: "siren_song_mantle", chance: 0.015 },
+    ],
+  },
+  "갑각 약탈자": {
+    name: "갑각 약탈자",
+    tags: ["humanoid"],
+    hp: 210,
+    atk: 19,
+    def: 9,
+    spd: 6,
+    exp: 21,
+    skill: { kind: "heavy_blow", name: "작살 던지기", everyPhases: 3, multiplier: 1.8 },
+    drops: [
+      { kind: "material", materialId: "crab_shell", chance: 0.05 },
+      { kind: "material", materialId: "coral_spine", chance: 0.02 },
+      { kind: "recipe", recipeId: "coral_spine_dagger", chance: 0.04 },
+      // 게딱지 손방패 → 갑각 보루방패 업그레이드 제작서.
+      { kind: "recipe", recipeId: "crustacean_bulwark", chance: 0.02 },
+    ],
+  },
+  "가시 산호 골렘": {
+    name: "가시 산호 골렘",
+    tags: ["golem"],
+    hp: 250,
+    atk: 17,
+    def: 13,
+    spd: 2,
+    exp: 22,
+    skill: { kind: "brace", name: "가시 산호 껍질", damageReduction: 4 },
+    drops: [
+      { kind: "material", materialId: "coral_spine", chance: 0.05 },
+      { kind: "recipe", recipeId: "tideglass_charm", chance: 0.04 },
+      // 산호 가시 단검 → 가시 산호 단검 업그레이드 제작서.
+      { kind: "recipe", recipeId: "barbed_coral_dagger", chance: 0.02 },
+      // 닳은 인장반지를 조수군주의 인장으로 끌어올리는 새김서 (결과도 unique·비거래).
+      { kind: "recipe", recipeId: "tidelord_signet_engraving", chance: 0.003 },
+    ],
+  },
+  // 산호초 섬 보스 — region.boss 도전 버튼으로만 진입. 자정 기준 일일 dailyEntryLimit 회.
+  // 처치 시 the_deep_one_stilled flag (산호초 섬 fast-travel 게이트와 무관 — 이미 ferryman_reef_passage 로 열림).
+  // 항상 심해 비늘·산호 가시 + 심연 무구 4종 중 1종 학습. 0.15 로 수심의 핵, 0.05 로 인장 새김서.
+  "수심의 것": {
+    name: "수심의 것",
+    tags: ["beast", "spirit"],
+    hp: 800,
+    atk: 30,
+    def: 15,
+    spd: 5,
+    exp: 100,
+    skill: { kind: "enrage", name: "소용돌이", hpFraction: 0.35, atkBonus: 8 },
+    drops: [
+      { kind: "material", materialId: "deep_scale", chance: 1, amount: 3 },
+      { kind: "material", materialId: "coral_spine", chance: 1, amount: 3 },
+      {
+        kind: "recipe_one_of",
+        recipeIds: ["abyssal_edge", "abyssal_ward", "abyssal_pike", "abyssal_clasp"],
+        chance: 1,
+      },
+      { kind: "recipe", recipeId: "abyssal_heart", chance: 0.15 },
+      { kind: "recipe", recipeId: "tidelord_signet_engraving", chance: 0.05 },
+    ],
+    dropQualityBias: 3,
+    phaseTrigger: {
+      hpFraction: 0.3,
+      defBonus: 5,
+      message: "수심의 것이 몸을 둥글게 만다 — 비늘이 겹친다.",
+    },
+    onDefeatFlag: "the_deep_one_stilled",
+  },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).
   "훈련용 허수아비": {

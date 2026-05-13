@@ -15,7 +15,11 @@ export type RegionId =
   | "ashen_pass"
   | "phoenix_ridge"
   | "volcanic_badlands"
-  | "skyreach";
+  | "skyreach"
+  // 해안 지선 (디올라에서 남쪽으로 갈라지는 막다른 라인)
+  | "tideflats"
+  | "saltmarsh"
+  | "reef_isle";
 
 export type Biome =
   | "village"
@@ -24,7 +28,8 @@ export type Biome =
   | "cave"
   | "lake"
   | "ruins"
-  | "mountain";
+  | "mountain"
+  | "coast";
 
 export type RegionTag = "town";
 
@@ -98,7 +103,8 @@ export const WORLD_MAP: WorldMap = {
   // 운향(1280) 동쪽으로 운저 평원(1460)→바람골 역참(1640)→잿빛 협로(1820) 다리 구간 +
   // 봉황령(2000)→화산 지대(2180)→천공 성지(2360) 추가로 width 1400→2440 확장.
   // 운향까지의 기존 region 좌표는 그대로 유지 (봉황령 라인은 다리 삽입으로 동쪽으로 밀림).
-  viewBox: { width: 2440, height: 500 },
+  // 디올라(660,80)에서 남쪽으로 갈라지는 해안 지선(조수 갯벌→소만→산호초 섬)으로 height 500→640 확장.
+  viewBox: { width: 2440, height: 640 },
   regions: [
     {
       id: "village",
@@ -310,6 +316,52 @@ export const WORLD_MAP: WorldMap = {
       tags: ["town"],
       recommendedLevel: 60,
     },
+    // ── 해안 지선 (diola → tideflats → saltmarsh → reef_isle) ───────────────
+    // 폐허(Lv9)~산기슭(Lv18) 구간에 산으로 가는 길과 나란히 놓인 막다른 바닷길.
+    // 디올라(660,80) 남쪽 빈 공간으로 내려가며, height 를 640 으로 늘려 자리를 만든다.
+    {
+      id: "tideflats",
+      name: "조수 갯벌",
+      description:
+        "안개 호수가 바다로 빠지는 너른 하구. 썰물이면 갯벌과 갯바위가 드러나고, 집게발 든 것들이 진흙 위를 기어다닌다.",
+      position: { x: 780, y: 460 },
+      biome: "coast",
+      enemies: ["집게발 게", "갯도요", "진흙 미꾸라지"],
+      encounterWeights: {
+        "집게발 게": 45,
+        갯도요: 30,
+        "진흙 미꾸라지": 25,
+      },
+      recommendedLevel: 10,
+    },
+    {
+      id: "saltmarsh",
+      name: "소만",
+      description:
+        "갯벌 끝에 소금밭과 젓갈 창고가 늘어선 작은 포구. 디올라 어부들과 물자를 주고받고, 뱃사공이 난바다로 나가는 배를 댄다.",
+      position: { x: 640, y: 560 },
+      biome: "village",
+      enemies: [],
+      tags: ["town"],
+      recommendedLevel: 13,
+    },
+    {
+      id: "reef_isle",
+      name: "산호초 섬",
+      description:
+        "안개 너머에 떠 있는 작은 섬과 그 둘레를 두른 암초. 산호 가시에 긁히는 소리 사이로 사이렌의 노래가 섞여 든다.",
+      position: { x: 840, y: 600 },
+      biome: "coast",
+      enemies: ["산호초 사이렌", "갑각 약탈자", "가시 산호 골렘"],
+      encounterWeights: {
+        "산호초 사이렌": 40,
+        "갑각 약탈자": 35,
+        "가시 산호 골렘": 25,
+      },
+      // 산호초 섬 보스 — 별도 도전 버튼. 일반 인카운터 풀에선 제외, 자정 기준 일일 3회.
+      boss: { monsterName: "수심의 것", dailyEntryLimit: 3 },
+      recommendedLevel: 18,
+    },
   ],
   edges: [
     { from: "village", to: "plains" },
@@ -405,6 +457,24 @@ export const WORLD_MAP: WorldMap = {
         reason: "화산의 심장을 쓰러뜨려야 성지로 가는 길이 열린다.",
       },
     },
+    // 해안 지선 (diola → tideflats → saltmarsh → reef_isle).
+    // 산호초 섬은 뱃사공 해랑이 배를 내줘야 — 소만 원로 여울의 신임을 얻고(saltmarsh_vouched),
+    // 해랑에게 게딱지를 모아다 주면(ferryman_reef_passage) 길이 열린다. (HaerangDialogue 참고)
+    {
+      from: "diola",
+      to: "tideflats",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "tideflats" },
+    },
+    { from: "tideflats", to: "saltmarsh" },
+    {
+      from: "saltmarsh",
+      to: "reef_isle",
+      requires: {
+        kind: "story",
+        flagId: "ferryman_reef_passage",
+        reason: "소만의 뱃사공 해랑이 아직 난바다로 가는 배를 내주지 않았다.",
+      },
+    },
     // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.
     { from: "village", to: "diola", requires: { kind: "visited", regionId: "diola" } },
     { from: "diola", to: "village", requires: { kind: "visited", regionId: "village" } },
@@ -426,6 +496,17 @@ export const WORLD_MAP: WorldMap = {
     { from: "skyreach", to: "unhyang", requires: { kind: "visited", regionId: "unhyang" } },
     { from: "windvale", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
     { from: "skyreach", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
+    // 소만 — 다른 마을들과 직통 이동.
+    { from: "village", to: "saltmarsh", requires: { kind: "visited", regionId: "saltmarsh" } },
+    { from: "saltmarsh", to: "village", requires: { kind: "visited", regionId: "village" } },
+    { from: "diola", to: "saltmarsh", requires: { kind: "visited", regionId: "saltmarsh" } },
+    { from: "saltmarsh", to: "diola", requires: { kind: "visited", regionId: "diola" } },
+    { from: "unhyang", to: "saltmarsh", requires: { kind: "visited", regionId: "saltmarsh" } },
+    { from: "saltmarsh", to: "unhyang", requires: { kind: "visited", regionId: "unhyang" } },
+    { from: "windvale", to: "saltmarsh", requires: { kind: "visited", regionId: "saltmarsh" } },
+    { from: "saltmarsh", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
+    { from: "skyreach", to: "saltmarsh", requires: { kind: "visited", regionId: "saltmarsh" } },
+    { from: "saltmarsh", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
   ],
 };
 

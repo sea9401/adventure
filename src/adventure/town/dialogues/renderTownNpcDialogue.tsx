@@ -25,6 +25,11 @@ import { HansolDialogue } from "./HansolDialogue";
 import { GeomDialogue } from "./GeomDialogue";
 import { SionDialogue } from "./SionDialogue";
 import { BardDialogue } from "./BardDialogue";
+import { YeoulDialogue } from "./YeoulDialogue";
+import { HaerangDialogue } from "./HaerangDialogue";
+import { GalmaeDialogue } from "./GalmaeDialogue";
+import { BomalDialogue } from "./BomalDialogue";
+import { MireuDialogue } from "./MireuDialogue";
 
 // 마을 NPC 중 커스텀 다이얼로그를 가진 NPC 들의 디스패치 테이블.
 // TownView 의 renderNpcDialogue prop 으로 넘겨 사용한다. null 이면 기본 NpcDialogue.
@@ -285,6 +290,50 @@ export function renderTownNpcDialogue(
           adventureLog={adventureLog}
         />
       );
+    case "saltmarsh_elder":
+      return (
+        <YeoulDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          inventory={inventory}
+          storyFlags={storyFlags}
+        />
+      );
+    case "saltmarsh_ferryman":
+      return (
+        <HaerangDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          inventory={inventory}
+          storyFlags={storyFlags}
+        />
+      );
+    case "saltmarsh_salter":
+      return (
+        <GalmaeDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          inventory={inventory}
+        />
+      );
+    case "saltmarsh_innkeeper":
+      return (
+        <BomalDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          inventory={inventory}
+        />
+      );
+    case "saltmarsh_kid":
+      return <MireuDialogue npc={npc} onClose={close} storyFlags={storyFlags} />;
     default:
       return null;
   }

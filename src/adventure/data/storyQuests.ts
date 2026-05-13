@@ -89,6 +89,16 @@ export const STORY_QUESTS = {
       "폐허에서 주운 부러진 영웅검의 윗동강. 산정의 대장장이 만월이라면 — 운봉석으로 검신을 잇고, 날밑을 새로 둘러 한 자루로 되살릴 수 있을지도.",
     giverNpcId: "unhyang_smith",
   },
+  // 해안 지선 메인 — 소만 원로 여울. 갯벌 의뢰로 소만 신임(saltmarsh_vouched) → 뱃사공 해랑
+  // 선저 덧대기(ferryman_reef_passage) → 암초 정찰 → 수심의 것 처치(the_deep_one_stilled).
+  // 진행은 quests.ts(saltmarsh-yeoul-*) + YeoulDialogue/HaerangDialogue 의 storyFlag 분기로.
+  saltmarsh_deep_one: {
+    id: "saltmarsh_deep_one",
+    title: "수심의 것",
+    description:
+      "소만 포구의 그물이 비어 오고 한낮에도 물이 차다. 노인들은 암초 너머 안개 밑에서 잠든 것이 다시 뒤척인다고 한다. 소만의 신임을 얻고, 뱃사공의 배로 난바다를 건너 — 수심의 것을 가라앉히면, 포구가 다시 일어선다.",
+    giverNpcId: "saltmarsh_elder",
+  },
 } as const satisfies Record<string, StoryQuest>;
 
 export type StoryQuestId = keyof typeof STORY_QUESTS;

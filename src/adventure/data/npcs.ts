@@ -24,7 +24,13 @@ export type NpcId =
   | "skyreach_guide"
   | "skyreach_alchemist"
   | "skyreach_acolyte"
-  | "skyreach_gatekeeper";
+  | "skyreach_gatekeeper"
+  // 소만 — 해안 지선의 작은 포구.
+  | "saltmarsh_elder"
+  | "saltmarsh_ferryman"
+  | "saltmarsh_salter"
+  | "saltmarsh_innkeeper"
+  | "saltmarsh_kid";
 
 export type NpcRole =
   | "elder"
@@ -297,6 +303,57 @@ export const NPCS: Npc[] = [
       "화염 능선에서 성지로 드는 마지막 문을 지키는 정찰대원. 말수가 적다.",
     greeting:
       "…통과.\n화산 지대 쪽은 아직 시끄러워. 두꺼비도, 슬라임도. 검이 순찰 의뢰를 게시판에 걸어 뒀으니, 손 빌릴 생각 있으면 거기 봐.\n…그리고 한밤중 첨탑엔 올라가지 마. 종 치는 애가 무서워하니까.",
+  },
+  // ── 소만 (해안 지선) ─────────────────────────────────────────────────────
+  {
+    id: "saltmarsh_elder",
+    region: "saltmarsh",
+    name: "원로 여울",
+    role: "elder",
+    description:
+      "소만 포구를 가장 오래 지켜본 노인. 갯바람에 그을린 얼굴로 늘 난바다 쪽을 본다.",
+    greeting:
+      "낯선 발소리군. 디올라 쪽에서 갯벌을 건너왔나.\n…요즘 우리 포구가 영 시원찮네. 그물이 비어 오고, 한낮에도 물이 차. 노인들은 — 그것이 다시 뒤척인다고들 해. 암초 너머, 안개 밑에서 잠든 것 말이야.\n소만이 자네를 알게 되거든, 그때 이야기를 더 하지. 우선 갈매와 보말부터 도와주게.",
+  },
+  {
+    id: "saltmarsh_ferryman",
+    region: "saltmarsh",
+    name: "뱃사공 해랑",
+    role: "quest",
+    description:
+      "소만에서 난바다로 나가는 단 한 척의 배를 부리는 사공. 손마디가 노에 닳아 굵다.",
+    greeting:
+      "난바다로? …아무나 못 데려가. 암초가 배 밑을 갉아 — 잘못 들어가면 둘 다 산호밥이야.\n원로 여울이 자네를 보증하면 그땐 생각해 보지. 먼저 그쪽에 가 봐.",
+  },
+  {
+    id: "saltmarsh_salter",
+    region: "saltmarsh",
+    name: "소금장수 갈매",
+    role: "vendor",
+    description:
+      "소만 소금밭과 젓갈 창고를 도맡은 장수. 손에 늘 굵은소금이 묻어 있다.",
+    greeting:
+      "어, 손님인가 — 아니, 일손인가? 마침 잘 왔어.\n갯벌에 집게발 게가 너무 불었어. 등딱지가 좋아서 통발이며 방패며 두루 쓰는데, 게들이 통발째 끌고 가 버려서 원. 좀 솎아 주면 사례하지 — 게딱지 다루는 법도 알려줄게.",
+  },
+  {
+    id: "saltmarsh_innkeeper",
+    region: "saltmarsh",
+    name: "여각 주인 보말",
+    role: "innkeeper",
+    description:
+      "소만 여각을 꾸리는 주인. 게장과 미역국으로 대상 길손들 배를 채운다.",
+    greeting:
+      "어서 와요, 길손. 갯벌 건너오느라 발이 무거웠겠네.\n…요즘 손님상에 올릴 게 마땅찮아서요. 게딱지라도 좀 들여와 주면 게장이라도 담그지. 사례는 섭섭잖게 할게요.",
+  },
+  {
+    id: "saltmarsh_kid",
+    region: "saltmarsh",
+    name: "갯마을 아이 미르",
+    role: "lore",
+    description:
+      "썰물 때마다 갯벌에서 노는 소만 아이. 늘 조개껍데기를 한 줌씩 들고 다닌다.",
+    greeting:
+      "쉿. …지금은 물이 안 출렁여요. 가끔 한낮에도 갯벌이 출렁출렁해요 — 바다 밑에 엄청 큰 게 숨 쉬는 것처럼.\n해랑 아저씨는 거짓말 말랬는데, 진짜예요. 어른들도 다 알면서 말 안 하는 거예요.",
   },
 ];
 
