@@ -3,6 +3,7 @@ import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { STRANGER_FLAG_RUINS_GUIDE } from "./StrangerDialogue";
 
 // 마린의 의뢰는 폐허(ruins) 가 열린 뒤에야 진행 가능 — 영혼 결정은 망령 드롭.
@@ -21,6 +22,7 @@ type Props = {
   completeQuest: (id: string) => boolean;
   inventory: ReturnType<typeof useInventory>;
   storyFlags: ReturnType<typeof useStoryFlags>;
+  adventureLog: ReturnType<typeof useAdventureLog>;
 };
 
 export function MarinDialogue({
@@ -30,6 +32,7 @@ export function MarinDialogue({
   completeQuest,
   inventory,
   storyFlags,
+  adventureLog,
 }: Props) {
   const ruinsGuided = storyFlags.has(STRANGER_FLAG_RUINS_GUIDE);
   const entry = quests.getEntry(QUEST_ID);
@@ -83,6 +86,17 @@ export function MarinDialogue({
   if (entry.state === "completed") {
     // 영혼 결정 라인 마무리 후 — 첫 모험가의 의장 (equip_set). 다른 분기보다 우선.
     const firstGear = quests.getEntry("diola-marin-first-gear-set");
+    // 부적을 판 캐릭("불효자" 칭호 보유)은 부적이 영영 안 돌아오므로(재제작·드랍 없음)
+    // 의뢰를 제안하지 않고 거절 멘트로 흘려보낸다. (사용자 신고: "받기 후 영영 미완료" 방치)
+    if (firstGear.state === "available" && adventureLog.log.titles.unfilial) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"…자네 어머니의 부적, 두 푼 돈에 넘긴 손이라 들었네.\n그 손으로는 우리 마을 사람들 앞에 처음의 모습을 보일 수 없어. — 첫 모험가의 의장 얘기는, 다른 사람을 찾으시오."}
+        />
+      );
+    }
     if (firstGear.state === "available") {
       return (
         <NpcDialogue

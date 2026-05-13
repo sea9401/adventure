@@ -176,6 +176,7 @@ export function renderTownNpcDialogue(
           completeQuest={completeQuest}
           inventory={inventory}
           storyFlags={storyFlags}
+          adventureLog={adventureLog}
         />
       );
     case "unhyang_elder":

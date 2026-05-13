@@ -1,8 +1,11 @@
+import { useState } from "react";
 import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import { getQuestById, questTargetTotal, type Quest } from "@/adventure/data/quests";
+import { cooldownStatus } from "@/adventure/quests/cooldown";
+import { formatDuration } from "@/lib/format";
 
 // NPC 가 여러 의뢰를 순차적으로 내주는 다이얼로그용 헬퍼.
 // steps 배열을 위→아래로 훑어, "처리 대기"인 첫 의뢰를 보여준다:
@@ -44,6 +47,9 @@ export function QuestLineDialogue({
   steps,
   idleText,
 }: Props) {
+  // 다이얼로그 열린 시각을 한 번 캡처 — 짧은 모달이라 stale 우려 없음.
+  // (Date.now() 를 render 본문에서 직접 부르면 react-hooks/purity 룰에 걸린다.)
+  const [now] = useState(() => Date.now());
   const resolved = steps.map((step) => {
     const quest = getQuestById(step.id);
     if (!quest) return { step, quest: undefined as Quest | undefined, entry: undefined, pending: false };
@@ -51,9 +57,11 @@ export function QuestLineDialogue({
     let pending = false;
     if (entry.state === "ready" || entry.state === "active") pending = true;
     else if (entry.state === "available") {
+      // 선행 의뢰 게이트 — completedCount > 0 로 검사. (선행이 repeatable 이면 claim 후
+      // state 가 "available" 로 돌아가므로 "completed" 만 보면 후속이 영원히 안 열린다.)
       const locked =
         !!quest.requiresQuestCompleted &&
-        quests.getEntry(quest.requiresQuestCompleted).state !== "completed";
+        quests.getEntry(quest.requiresQuestCompleted).completedCount === 0;
       pending = !locked;
     }
     return { step, quest, entry, pending };
@@ -127,7 +135,18 @@ export function QuestLineDialogue({
       );
     }
 
-    // available (잠금 X, 쿨다운 X)
+    // available — 쿨다운 중이면 accept 가 silently no-op 이므로 받기 버튼 대신
+    // "재의뢰 X 후" 안내문만 표시. (이전엔 버튼이 보였는데 눌러도 아무 반응 없어 "먹통" 신고 다수.)
+    const cd = cooldownStatus(quest, entry, now);
+    if (cd.onCooldown) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`${step.offerText}\n\n(아직 ${formatDuration(cd.remaining)} 후에 다시 부탁할 수 있겠어.)`}
+        />
+      );
+    }
     return (
       <NpcDialogue
         npc={npc}
