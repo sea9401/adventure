@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   WORLD_MAP,
   getAdjacent,
@@ -174,6 +174,42 @@ export function MapView({
       return;
     }
   };
+
+  // PC 편의 — Space / Enter 로 "이동" 버튼 발화. 텍스트 입력 / 다른 버튼·링크에 포커스가
+  // 있을 때는 그쪽의 기본 동작에 양보(이중 발화 방지). 모바일은 가상 키보드만 있어 영향 없음.
+  // canMove / canChallenge / 주문서 셋 중 하나라도 가능할 때만 발화.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== " " && e.key !== "Enter") return;
+      if (e.repeat) return; // 키 길게 누름으로 인한 반복 발화 차단.
+      const ae = document.activeElement as HTMLElement | null;
+      if (ae) {
+        const tag = ae.tagName;
+        if (
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT" ||
+          tag === "BUTTON" ||
+          tag === "A" ||
+          ae.isContentEditable
+        )
+          return;
+      }
+      if (lowHpBlocked) return;
+      const canFire =
+        canMove ||
+        canChallenge ||
+        (isScrollEligible && scrollCount > 0);
+      if (!canFire) return;
+      e.preventDefault(); // Space 의 페이지 스크롤 기본 동작 차단.
+      handleMove();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // handleMove 는 매 렌더 새로 만들어지지만 effect 가 매 렌더 재바인딩되는 비용은 작음.
+    // 의존성 명시로 closure 가 항상 최신 selectedId / 플래그를 본다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canMove, canChallenge, isScrollEligible, scrollCount, lowHpBlocked]);
 
   const currentRegion = WORLD_MAP.regions.find(
     (r) => r.id === progress.currentRegionId,

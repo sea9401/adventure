@@ -37,6 +37,10 @@ type Props = {
   dispatched?: boolean;
   /** 서버가 공격/처치 시 set 한 storyFlag 를 클라 상태에도 즉시 반영 (운향 진입로 등이 reload 없이 열리도록). */
   onStoryFlag?: (flagId: string) => void;
+  /** 협동 보스가 쓰러진 시점에 1회 호출 — kill 카운터 의뢰(운봉의 거인 처치 등) 진행용.
+   *  내 일격이 마지막이든 다른 사람이 마지막이든, 내가 1점 이상 기여한 세션이 처치되면 호출.
+   *  sessionId 기준으로 중복 호출 막음. */
+  onKill?: (bossName: string) => void;
 };
 
 export function CoopBossCard({
@@ -49,6 +53,7 @@ export function CoopBossCard({
   onStopHunting,
   dispatched = false,
   onStoryFlag,
+  onKill,
 }: Props) {
   const { data, error, working, attack, claim } = useCoopBoss(regionId, true);
   const [now, setNow] = useState(() => Date.now());
@@ -58,6 +63,9 @@ export function CoopBossCard({
     applied: AppliedCoopReward;
   } | null>(null);
   const tickRef = useRef<NodeJS.Timeout | null>(null);
+  // 이미 kill 카운터에 반영한 sessionId — handleAttack(내 일격이 마지막) 과 polling
+  // (다른 사람이 마지막) 양쪽에서 호출될 수 있으므로 중복 방지.
+  const creditedSessionsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     tickRef.current = setInterval(() => setNow(Date.now()), 1000);
@@ -65,6 +73,19 @@ export function CoopBossCard({
       if (tickRef.current) clearInterval(tickRef.current);
     };
   }, []);
+
+  // 폴링으로 본 처치 — 다른 사람의 마지막 일격으로 죽었어도 내가 데미지 1+ 기여했으면
+  // kill 카운터 1회 반영. attack 응답 경로(handleAttack)와 sessionId 기준 dedupe.
+  useEffect(() => {
+    const session = data?.session;
+    const my = data?.myContribution;
+    if (!session || !my) return;
+    if (!session.defeatedAt) return;
+    if (my.damage <= 0) return;
+    if (creditedSessionsRef.current.has(session.id)) return;
+    creditedSessionsRef.current.add(session.id);
+    onKill?.(session.bossName);
+  }, [data?.session, data?.myContribution, onKill]);
 
   if (!data) return null;
   if (!data.session) {

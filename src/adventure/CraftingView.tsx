@@ -11,8 +11,14 @@ import { CRAFT_BATCH_MAX } from "./crafting/types";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
-import { Pagination } from "@/components/ui/Pagination";
-import { usePagination } from "@/lib/usePagination";
+import {
+  EQUIP_TIER_FALLBACK,
+  getItemTier,
+  groupByTier,
+  useTierToggle,
+} from "@/adventure/equipment/tier";
+import { EquipmentSearchInput } from "@/adventure/equipment/EquipmentSearchInput";
+import { TierSectionHeader } from "@/adventure/equipment/TierSectionHeader";
 
 type CraftCategory = "weapon" | "armor" | "accessory" | "potion";
 
@@ -112,8 +118,28 @@ export function CraftingView({
 }) {
   const knownRecipes = RECIPES.filter((r) => knownIds.includes(r.id));
   const [tab, setTab] = useState<CraftCategory>("weapon");
-  const filtered = knownRecipes.filter((r) => recipeCategory(r) === tab);
-  const pager = usePagination(filtered, 10);
+  const [query, setQuery] = useState("");
+  // 카테고리 + 이름 부분 일치 필터.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return knownRecipes.filter((r) => {
+      if (recipeCategory(r) !== tab) return false;
+      if (!q) return true;
+      return r.name.toLowerCase().includes(q);
+    });
+  }, [knownRecipes, tab, query]);
+  // 장비 카테고리는 진행 티어로 그룹, 포션은 평면 — getItemTier 가 비장비 결과엔 fallback 반환.
+  const grouped = useMemo(() => {
+    if (tab === "potion") return null;
+    return groupByTier(filtered, (r) =>
+      r.result.kind === "equipment"
+        ? getItemTier(r.result.itemId)
+        : EQUIP_TIER_FALLBACK,
+    );
+  }, [filtered, tab]);
+  // 티어 접기/펴기 — 기본 접힘. 검색 활성 시 강제 펼침.
+  const { isExpanded, toggle } = useTierToggle();
+  const searching = query.trim().length > 0;
   const tabLabel = CATEGORY_TABS.find((t) => t.key === tab)?.label ?? "";
 
   if (knownRecipes.length === 0) {
@@ -131,19 +157,61 @@ export function CraftingView({
       <TabBar
         tabs={CATEGORY_TABS}
         active={tab}
-        onChange={setTab}
+        onChange={(k) => {
+          setTab(k);
+          setQuery("");
+        }}
         ariaLabel="대장간 카테고리"
       />
+      <EquipmentSearchInput value={query} onChange={setQuery} />
       {filtered.length === 0 ? (
         <EmptyState
           icon={<Hammer size={40} weight="duotone" />}
-          title={`${tabLabel} 제작서가 없습니다`}
-          message="제작서를 손에 넣으면 여기에 자동으로 등록됩니다."
+          title={
+            query
+              ? `“${query}” — 일치하는 ${tabLabel} 제작서가 없습니다`
+              : `${tabLabel} 제작서가 없습니다`
+          }
+          message={
+            query
+              ? "다른 키워드로 검색해 보세요."
+              : "제작서를 손에 넣으면 여기에 자동으로 등록됩니다."
+          }
         />
+      ) : grouped ? (
+        // 장비 — 티어별 카드 묶음.
+        grouped.map(({ tier, meta, entries }) => {
+          const open = searching || isExpanded(tier);
+          return (
+            <Card key={tier} as="section" padding="md">
+              <div className="space-y-2">
+                <TierSectionHeader
+                  meta={meta}
+                  count={entries.length}
+                  expanded={open}
+                  onToggle={() => toggle(tier)}
+                />
+                {open &&
+                  entries.map((r) => (
+                    <RecipeRow
+                      key={r.id}
+                      recipe={r}
+                      materialCounts={materialCounts}
+                      equipmentCounts={equipmentCounts}
+                      potionCounts={potionCounts}
+                      potionMax={potionMax}
+                      onCraft={onCraft}
+                    />
+                  ))}
+              </div>
+            </Card>
+          );
+        })
       ) : (
+        // 포션 — 평면 리스트.
         <Card as="section" padding="md">
           <div className="space-y-2">
-            {pager.pageItems.map((r) => (
+            {filtered.map((r) => (
               <RecipeRow
                 key={r.id}
                 recipe={r}
@@ -154,11 +222,6 @@ export function CraftingView({
                 onCraft={onCraft}
               />
             ))}
-            <Pagination
-              page={pager.page}
-              pageCount={pager.pageCount}
-              setPage={pager.setPage}
-            />
           </div>
         </Card>
       )}

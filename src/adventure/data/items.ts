@@ -36,6 +36,11 @@ export function signedBonus(n: number): string {
   return (n >= 0 ? "+" : "") + n;
 }
 
+// 진행 구간 티어 — 1 입문 / 2 정착 / 3 다리 구간 / 4 봉황·화산 / 5 엔드.
+// 인벤토리·도감·대장간 UI에서 장비를 진행 구간별로 그룹화하는 용도.
+// 미지정 장비는 EQUIP_TIER_FALLBACK("입문") 으로 묶임 — 신규 장비 추가 시 한 줄만 적어두면 됨.
+export type EquipTier = 1 | 2 | 3 | 4 | 5;
+
 export type EquipItem = {
   name: string;
   slot: EquipSlot;
@@ -52,6 +57,7 @@ export type EquipItem = {
   // 드랍 경로(dropQuality.ts)에서만 참조 — 적용 대상이 아닌 장비(퀘 보상 등)에 둬도 무해.
   // varianceTable 을 쓰면 5칸 중 [2,3,4](일반/고급/걸작 칸)이 드랍 등급 0/1/2 로 재사용된다.
   dropVariance?: CraftVariance;
+  tier?: EquipTier;
 };
 
 // 등급별 텍스트 색상. 인벤토리·장비창·드랍 모달 등 아이템 이름이 노출되는 곳에서 공용으로 쓴다.
@@ -91,6 +97,7 @@ export const ITEMS = {
     bonus: { atk: 0 },
     description: "나뭇가지를 대충 다듬어 만든 평범한 막대.",
     tradable: false,
+    tier: 1,
   } satisfies EquipItem,
   cloth_clothes: {
     name: "천 옷",
@@ -99,6 +106,7 @@ export const ITEMS = {
     bonus: { def: 0 },
     description: "평범한 천으로 만든 옷.",
     tradable: false,
+    tier: 1,
   } satisfies EquipItem,
   mom_amulet: {
     name: "엄마가 준 부적",
@@ -107,6 +115,7 @@ export const ITEMS = {
     bonus: { luk: 2 },
     description: "어머니의 사랑이 깃든 작은 부적.",
     tradable: false,
+    tier: 1,
   } satisfies EquipItem,
 
   // 초반 발판 — 상점에서 싸게 살 수 있는 입문 장비. 볼드 대장간 라인(야구방망이/낡은 가죽갑옷)을
@@ -119,6 +128,7 @@ export const ITEMS = {
     description: "잡화점 구석에 굴러다니던 날 무딘 단검. 그래도 맨주먹보단 낫다.",
     tradable: false,
     shopPrice: 14,
+    tier: 1,
   } satisfies EquipItem,
   quilted_vest: {
     name: "누빈 천 조끼",
@@ -128,6 +138,7 @@ export const ITEMS = {
     description: "천을 두어 겹 누벼 만든 헐거운 조끼. 스치는 정도는 막아 준다.",
     tradable: false,
     shopPrice: 14,
+    tier: 1,
   } satisfies EquipItem,
 
   // 제작·드랍 장비
@@ -138,6 +149,7 @@ export const ITEMS = {
     bonus: { atk: 3 },
     description: "단단한 나무를 깎아 만든 묵직한 방망이.",
     rarity: "uncommon",
+    tier: 1,
   } satisfies EquipItem,
   nailed_baseball_bat: {
     name: "못박힌 야구방망이",
@@ -149,6 +161,7 @@ export const ITEMS = {
     bonus: { atk: 3, vit: 1 },
     description: "방망이 끝에 낡은 못을 잔뜩 박아 넣었다. 휘두를 때마다 묵직하다.",
     rarity: "uncommon",
+    tier: 1,
   } satisfies EquipItem,
   old_leather_armor: {
     name: "낡은 가죽갑옷",
@@ -156,6 +169,7 @@ export const ITEMS = {
     stats: [{ label: "방어력", value: "+2" }],
     bonus: { def: 2 },
     description: "오랜 세월 입던 흔적이 남아있지만 천 옷보단 든든하다.",
+    tier: 1,
   } satisfies EquipItem,
   vitality_ring: {
     name: "활력의 반지",
@@ -163,6 +177,12 @@ export const ITEMS = {
     stats: [{ label: "활력", value: "+2" }],
     bonus: { vit: 2 },
     description: "은은한 녹빛이 도는 반지. 끼고 있으면 몸이 가볍다.",
+    // 스미스의 두더지 솎기 의뢰 보상이지만, 분실(판매/분해) 시 후속 '반지를 차고 와'
+    // 의뢰가 영구 미완으로 묶이는 걸 막기 위해 상점에서 재구매 가능. 가격은 초반
+    // 발판 +1 스탯 장비 14g 의 두 배 — '의뢰 보상으로 받을 수 있다는 가치' 보다
+    // 살짝 비싼 30g 으로 두어 정상 진행 시엔 보상으로 받고, 분실 시에만 재구매 인센티브.
+    shopPrice: 30,
+    tier: 1,
   } satisfies EquipItem,
   squishy_armor: {
     name: "물컹물컹한 갑옷",
@@ -171,6 +191,7 @@ export const ITEMS = {
     bonus: { def: 3 },
     description: "슬라임 핵을 심으로 두른 갑옷. 충격을 부드럽게 흡수한다.",
     rarity: "uncommon",
+    tier: 1,
   } satisfies EquipItem,
   bandit_dagger: {
     name: "산적의 단검",
@@ -181,6 +202,7 @@ export const ITEMS = {
     ],
     bonus: { atk: 4, dex: 2 },
     description: "산적이 품에 숨기고 다니던 단검. 짧지만 손에 착 감긴다.",
+    tier: 2,
   } satisfies EquipItem,
   // "유실된 명품" 1번. 같은 부류 5종은 ITEMS 끝 "유실된 명품" 블록에 모여 있다.
   mole_king_drill: {
@@ -193,6 +215,7 @@ export const ITEMS = {
     bonus: { atk: 5, spd: 2 },
     description: "어느 두더지가 품에 꼭 쥐고 있던 작은 드릴. 회전시키면 묘하게 손맛이 좋다. 정말로 두더지왕이 있었는지는 아무도 모른다.",
     rarity: "unique",
+    tier: 2,
   } satisfies EquipItem,
   spare_hatchet: {
     name: "예비 손도끼",
@@ -204,6 +227,7 @@ export const ITEMS = {
     bonus: { atk: 2, dex: 1 },
     description: "나무꾼 지미가 챙겨 다니던 예비 손도끼. 손에 익으면 제법 매섭다.",
     tradable: false,
+    tier: 1,
   } satisfies EquipItem,
   nymph_ring: {
     name: "님프의 반지",
@@ -211,6 +235,7 @@ export const ITEMS = {
     stats: [{ label: "속도", value: "+2" }],
     bonus: { spd: 2 },
     description: "은은하게 푸른빛이 도는 가는 반지. 호수 님프의 가호가 깃들어 있다.",
+    tier: 2,
   } satisfies EquipItem,
   golem_hammer: {
     name: "골렘의 망치",
@@ -221,6 +246,7 @@ export const ITEMS = {
     ],
     bonus: { atk: 7, spd: -2 },
     description: "부서진 골렘의 팔에서 떼어낸 둔중한 돌망치. 휘두르려면 두 손이 필요하다.",
+    tier: 2,
   } satisfies EquipItem,
   golem_armor: {
     name: "골렘갑주",
@@ -234,6 +260,7 @@ export const ITEMS = {
     bonus: { def: 6, atk: -1, spd: -3, luk: -1 },
     description: "골렘의 잔해를 덧대어 만든 두꺼운 갑주. 묵직한 만큼 휘두름과 발걸음, 운이 따라 무거워진다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   wraith_cloak: {
     name: "망령의 망토",
@@ -245,6 +272,7 @@ export const ITEMS = {
     ],
     bonus: { def: 2, dex: 1, spd: 2 },
     description: "떠도는 망령이 두르고 있던 누더기 망토. 입으면 발걸음이 어딘가 가벼워진다.",
+    tier: 2,
   } satisfies EquipItem,
   sticky_cloak: {
     name: "비단 로브",
@@ -256,6 +284,7 @@ export const ITEMS = {
     bonus: { def: 2, luk: 4 },
     description: "거미줄을 비단처럼 곱게 짜낸 로브. 걸치고 있으면 묘하게 운이 따른다고 한다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   bat_hood: {
     name: "박쥐가죽 후드",
@@ -267,17 +296,19 @@ export const ITEMS = {
     bonus: { def: 1, spd: 3 },
     description: "박쥐 가죽을 이어 만든 후드. 어둠 속에서도 발이 가볍다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   crystal_dagger: {
     name: "수정 단검",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+4" },
+      { label: "공격력", value: "+6" },
       { label: "민첩", value: "+1" },
     ],
-    bonus: { atk: 4, dex: 1 },
+    bonus: { atk: 6, dex: 1 },
     description: "단단한 수정을 깎아 만든 날카로운 단검.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   fairy_blessing: {
     name: "요정의 가호",
@@ -289,6 +320,7 @@ export const ITEMS = {
     bonus: { vit: 3, luk: 2 },
     description: "활력의 반지에 요정가루의 가호를 입힌 것. 끼고 있으면 몸도, 운도 따른다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
 
   // 마정석 무기 4종 — 광맥의 수호자 처치 보상으로 풀리는 동굴 강화 라인.
@@ -303,6 +335,7 @@ export const ITEMS = {
     bonus: { atk: 6, str: 3 },
     description: "마정석을 칼날에 박아 넣은 한손검. 휘두르면 묵직한 무게가 손에 실린다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   mana_shield: {
     name: "마정석 방패",
@@ -314,28 +347,31 @@ export const ITEMS = {
     bonus: { atk: 6, vit: 3 },
     description: "마정석을 박은 묵직한 방패. 막아내며 받아치는 데에도 쓴다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   mana_spear: {
     name: "마정석 창",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+6" },
+      { label: "공격력", value: "+8" },
       { label: "민첩", value: "+3" },
     ],
-    bonus: { atk: 6, dex: 3 },
+    bonus: { atk: 8, dex: 3 },
     description: "끝에 마정석을 깎아 박은 긴 창. 가벼우면서도 묘하게 정확하다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   mana_knuckle: {
     name: "마정석 너클",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+6" },
+      { label: "공격력", value: "+8" },
       { label: "행운", value: "+5" },
     ],
-    bonus: { atk: 6, luk: 5 },
+    bonus: { atk: 8, luk: 5 },
     description: "마정석 조각을 손등에 박은 너클. 한 방 한 방이 묘하게 운에 맡겨지는 느낌이 든다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   mana_bracelet: {
     name: "마정석 팔찌",
@@ -347,6 +383,7 @@ export const ITEMS = {
     bonus: { vit: 3, spd: 2 },
     description: "마정석 조각을 엮어 만든 팔찌. 손목에 두르면 몸이 단단해지면서도 발이 가벼워진다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
 
   // 운봉 무기 4종 + 액세서리 2 — 운봉의 거인 협동 처치 보상으로 풀리는 산정 강화 라인.
@@ -361,6 +398,7 @@ export const ITEMS = {
     bonus: { atk: 8, str: 5 },
     description: "운봉의 거인 뼛조각으로 단련한 한손 대검. 무게가 손에 그대로 실린다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   peak_shield: {
     name: "운봉 방벽",
@@ -372,28 +410,31 @@ export const ITEMS = {
     bonus: { atk: 8, vit: 6 },
     description: "거인의 비늘을 그대로 두른 방패형 무기. 막으며 쳐낸다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   peak_spear: {
     name: "운봉 장창",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+8" },
+      { label: "공격력", value: "+10" },
       { label: "민첩", value: "+6" },
     ],
-    bonus: { atk: 8, dex: 6 },
+    bonus: { atk: 10, dex: 6 },
     description: "운봉석 끝을 깎아 박은 긴 창. 멀리서도 정확하다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   peak_claw: {
     name: "운봉 발톱",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+8" },
+      { label: "공격력", value: "+10" },
       { label: "행운", value: "+6" },
     ],
-    bonus: { atk: 8, luk: 6 },
+    bonus: { atk: 10, luk: 6 },
     description: "거인의 손가락뼈를 갈아 만든 발톱형 너클. 한 방 한 방이 운에 맡겨진다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   peak_mantle: {
     name: "운봉 견갑",
@@ -405,6 +446,7 @@ export const ITEMS = {
     bonus: { dex: 4, spd: 4 },
     description: "운봉의 거인 어깨 비늘을 가볍게 깎아 만든 견갑. 두르면 손이 빨라지고 발이 가벼워진다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   // 운봉의 심장 — 협동 보스 처치 보상. str 중심 공격형 액세서리.
   peak_heart: {
@@ -417,6 +459,7 @@ export const ITEMS = {
     bonus: { str: 4, vit: 3 },
     description: "운봉의 거인의 가슴에서 떼어낸 작은 심장. 손에 쥐면 어깨가 묵직해진다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
 
   // 다리 구간 장비 — 운저 평원 / 잿빛 협로. 운봉 라인과 화염 라인 사이의 빈 구간을 메운다.
@@ -431,6 +474,7 @@ export const ITEMS = {
     bonus: { def: 7, str: 2, spd: -1 },
     description: "들소 가죽을 여러 겹 다져 만든 묵직한 갑옷. 두르면 어깨가 든든해지는 만큼 발이 조금 무겁다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   ashforged_blade: {
     name: "재무쇠 검",
@@ -442,6 +486,7 @@ export const ITEMS = {
     bonus: { atk: 8, str: 4 },
     description: "잿돌을 녹여 단단한 수정과 함께 벼려 낸 검. 베어 낼 때마다 잿가루가 흩날린다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
 
   // 봉황 망토 — 불꽃 독수리 희귀 드랍. 봉황령 파밍 동기.
@@ -455,6 +500,7 @@ export const ITEMS = {
     ],
     bonus: { def: 4, dex: 2, spd: 5 },
     description: "불꽃 독수리의 날개깃을 이어 만든 망토. 두르면 발이 불꽃처럼 가벼워진다.",
+    tier: 4,
   } satisfies EquipItem,
 
   // 봉황 무구 6종 — 화산의 심장 보스 보상으로 풀리는 최상위 강화 라인.
@@ -470,6 +516,7 @@ export const ITEMS = {
     bonus: { atk: 10, str: 6 },
     description: "봉황 깃털을 자루에 감고 용암 핵을 칼날에 녹여 벼린 한손 대검. 휘두를 때마다 붉은 열기가 일렁인다.",
     rarity: "uncommon",
+    tier: 4,
   } satisfies EquipItem,
   volcano_shield: {
     name: "봉황패",
@@ -481,28 +528,31 @@ export const ITEMS = {
     bonus: { atk: 10, vit: 7 },
     description: "화염 비늘을 겹겹이 두른 방패형 무구. 막아내는 순간 봉황의 열기가 역류한다.",
     rarity: "uncommon",
+    tier: 4,
   } satisfies EquipItem,
   volcano_spear: {
     name: "봉황극",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+10" },
+      { label: "공격력", value: "+13" },
       { label: "민첩", value: "+7" },
     ],
-    bonus: { atk: 10, dex: 7 },
+    bonus: { atk: 13, dex: 7 },
     description: "봉황 깃털로 균형을 잡고 끝에 용암 핵을 박은 긴 창. 가볍고 정확하며, 창끝에서 불길이 떨린다.",
     rarity: "uncommon",
+    tier: 4,
   } satisfies EquipItem,
   volcano_claw: {
     name: "봉황조",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+10" },
+      { label: "공격력", value: "+13" },
       { label: "행운", value: "+7" },
     ],
-    bonus: { atk: 10, luk: 7 },
+    bonus: { atk: 13, luk: 7 },
     description: "화산의 심장 파편을 발톱 형태로 깎아 손등에 채운 너클. 한 방 한 방이 불처럼 타오른다.",
     rarity: "uncommon",
+    tier: 4,
   } satisfies EquipItem,
   volcano_armor: {
     name: "봉황갑",
@@ -515,6 +565,7 @@ export const ITEMS = {
     bonus: { def: 8, str: 4, vit: 4 },
     description: "화염 비늘과 용암 핵을 단련해 만든 갑주. 봉황의 불길을 두른 듯 몸 전체가 달아오른다.",
     rarity: "uncommon",
+    tier: 4,
   } satisfies EquipItem,
   volcano_core: {
     name: "봉황주",
@@ -526,6 +577,7 @@ export const ITEMS = {
     bonus: { dex: 5, spd: 5 },
     description: "화산의 심장에서 뽑아낸 가장 순수한 결정을 봉황 깃털로 감싼 구슬. 지니면 몸이 불꽃처럼 날렵해진다.",
     rarity: "uncommon",
+    tier: 4,
   } satisfies EquipItem,
 
   // ── 히든 퀘스트 보상 (§11) — 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────
@@ -543,6 +595,7 @@ export const ITEMS = {
       "두 대장장이가 절반씩 벼려 마침내 한 자루로 합친 검. 달빛 같은 푸른 결이 칼날을 따라 흐른다.",
     rarity: "rare",
     tradable: false,
+    tier: 4,
   } satisfies EquipItem,
   // 용암 정수: 화산의 심장이 잠든 자리에 고인 정수를 시온이 다듬은 것(hidden-volcano-relic). 봉황 액세서리 한 칸 위.
   lava_essence: {
@@ -557,6 +610,7 @@ export const ITEMS = {
       "화산의 심장이 잠든 자리에서 흘러나와 굳은 정수. 손에 쥐면 가슴께가 묵직하게 달아오른다.",
     rarity: "rare",
     tradable: false,
+    tier: 4,
   } satisfies EquipItem,
 
   // ── 유실된 명품 ───────────────────────────────────────────────────────────
@@ -574,6 +628,7 @@ export const ITEMS = {
     bonus: { spd: 4, dex: 2 },
     description: "박쥐 한 마리가 발에 꼭 끼우고 다니던 작은 뼈 장신구. 지니면 발밑이 환해지고 발걸음이 가벼워진다. 박쥐떼가 길을 안다는 옛말이 진짜였을지도.",
     rarity: "unique",
+    tier: 2,
   } satisfies EquipItem,
   spider_queen_silk_robe: {
     name: "거미여왕의 비단갑",
@@ -585,6 +640,7 @@ export const ITEMS = {
     bonus: { def: 3, luk: 7 },
     description: "거미가 제 몸보다 큰 비단 뭉치를 끌어안고 있었다. 풀어 두르면 결이 비단보다 곱고, 묘하게 운이 따라붙는다. 진짜 여왕이 짠 건지는 아무도 모른다.",
     rarity: "unique",
+    tier: 2,
   } satisfies EquipItem,
   hero_broken_sword: {
     name: "부러진 영웅검",
@@ -596,6 +652,7 @@ export const ITEMS = {
     bonus: { atk: 8, def: -2 },
     description: "폐허 한구석에 반쯤 묻혀 있던 검의 윗동강. 폐허 늑대가 자루를 물어뜯고 있었다. 날밑이 떨어져 나가 손이 자꾸 베이지만, 한 번 휘두르면 옛 영웅의 무게가 실린다.",
     rarity: "unique",
+    tier: 2,
   } satisfies EquipItem,
   // 운향 만월의 '부러진 영웅검' 복원 의뢰(storyQuests: hero_sword_restoration) 보상.
   // hero_broken_sword 윗동강 + 운봉석 검신 + 화염 능선 재료 날밑 → 한 자루로 복원. 서사 아이템이라 거래 불가.
@@ -610,17 +667,19 @@ export const ITEMS = {
     description: "운향 대장장이 만월이 부러진 윗동강에 운봉석 검신을 잇고, 화염 능선의 것으로 새 날밑을 둘러 되살린 검. 옛 영웅이 들었을 때의 무게가 고스란히 돌아왔다 — 묵직한데도 손에 착 감기고, 그 무게가 곧 위력이 된다.",
     rarity: "legendary",
     tradable: false,
+    tier: 5,
   } satisfies EquipItem,
   sky_render_talon: {
     name: "하늘가르개",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+9" },
+      { label: "공격력", value: "+11" },
       { label: "민첩", value: "+5" },
     ],
-    bonus: { atk: 9, dex: 5 },
+    bonus: { atk: 11, dex: 5 },
     description: "초원 매가 한쪽 발에 끼우고 다니던 굽은 발톱 모양 쇳조각. 휘두르면 허공이 가늘게 갈라진다. 어느 대장장이가 매에게 빼앗긴 물건이라는 소문이 있다.",
     rarity: "unique",
+    tier: 4,
   } satisfies EquipItem,
   lava_core_maul: {
     name: "굳은 용암핵 망치",
@@ -632,6 +691,7 @@ export const ITEMS = {
     bonus: { atk: 11, spd: -2 },
     description: "용암 슬라임이 미처 녹이지 못한 채 품고 있던 거대한 용암 핵에 자루를 단 것. 둔하기 짝이 없지만, 한 번 내리치면 땅이 운다.",
     rarity: "unique",
+    tier: 4,
   } satisfies EquipItem,
 
   // ── 중간 단계 제작 장비 ───────────────────────────────────────────────────
@@ -649,6 +709,7 @@ export const ITEMS = {
     bonus: { atk: 5, vit: 1 },
     description: "떠도는 망령에게서 거둔 영혼 결정을 칼날 안에 박아 벼린 검. 결정에서 새어 나오는 한기가 칼날을 좀처럼 식지 않게 한다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   sancho_vest: {
     name: "산초 누비 조끼",
@@ -660,6 +721,7 @@ export const ITEMS = {
     bonus: { def: 3, vit: 2 },
     description: "말린 산초꽃을 천 사이에 누벼 넣은 조끼. 두르면 몸이 은근히 따뜻하고, 베인 자리가 더디 곪는다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   windmana_charm: {
     name: "바람 마석 부적",
@@ -671,6 +733,7 @@ export const ITEMS = {
     bonus: { spd: 3, dex: 1 },
     description: "협곡 정령이 흩뿌린 바람 마석을 가는 끈에 꿰어 만든 부적. 손목에 두르면 발끝이 바람을 머금은 듯 가볍다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   wolfking_fang_dagger: {
     name: "늑대왕 송곳니 단검",
@@ -682,6 +745,7 @@ export const ITEMS = {
     bonus: { atk: 7, dex: 3 },
     description: "무리를 이끄는 늑대만이 갖는 길고 굵은 송곳니를 그대로 자루에 박아 만든 단검. 휘두를 때마다 짐승의 무게가 손에 실린다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   hawkfeather_cloak: {
     name: "매깃 망토",
@@ -693,6 +757,7 @@ export const ITEMS = {
     bonus: { def: 2, spd: 4 },
     description: "초원 매의 길고 가벼운 깃털을 이어 짠 망토. 바람을 잘 타 두르면 발걸음이 한결 빨라진다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
 
   // ── 기존 장비를 재료(equip)로 한 단계 끌어올린 결과물 ──
@@ -704,6 +769,7 @@ export const ITEMS = {
     bonus: { def: 4 },
     description: "낡은 가죽갑옷에 들개 가죽을 덧대고 두텁게 누벼 받친 것. 같은 한 벌인데 한층 든든하다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   bandit_chief_dagger: {
     name: "두목의 단검",
@@ -715,6 +781,7 @@ export const ITEMS = {
     bonus: { atk: 6, dex: 3 },
     description: "산적의 단검에 단단한 수정을 박아 날을 다시 세운 것. 두목쯤은 들고 다녔을 법한 무게가 손에 감긴다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   nymph_blessing: {
     name: "호수 님프의 가호",
@@ -726,6 +793,7 @@ export const ITEMS = {
     bonus: { spd: 4, dex: 1 },
     description: "님프의 반지에 요정가루를 입혀 가호를 깊게 한 것. 끼고 있으면 발끝이 호숫물처럼 가볍다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   reforged_golem_hammer: {
     name: "재단조한 골렘 망치",
@@ -738,6 +806,7 @@ export const ITEMS = {
     bonus: { atk: 8, str: 3, spd: -2 },
     description: "골렘의 망치를 마정석으로 다시 벼리고 폐허 잔해로 자루를 보강한 것. 여전히 둔하지만, 한 번 내리치면 무게가 다르다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   wraithking_cloak: {
     name: "망령왕의 망토",
@@ -750,6 +819,7 @@ export const ITEMS = {
     bonus: { def: 3, dex: 2, spd: 3 },
     description: "망령의 망토에 영혼 결정을 엮어 넣어 한기를 깊게 한 것. 두르면 발소리가 사라지고, 베인 자리가 시리다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   lava_core_greatmaul: {
     name: "용암핵 대망치",
@@ -762,18 +832,20 @@ export const ITEMS = {
     description: "굳은 용암핵 망치에 용암 핵을 더 녹여 붓고 화염 비늘로 자루를 감싼 것. 더 둔해진 만큼, 한 번 내리치면 땅이 갈라진다.",
     rarity: "unique",
     tradable: false,
+    tier: 4,
   } satisfies EquipItem,
   azure_talon: {
     name: "창천의 발톱",
     slot: "weapon",
     stats: [
-      { label: "공격력", value: "+11" },
+      { label: "공격력", value: "+13" },
       { label: "민첩", value: "+6" },
     ],
-    bonus: { atk: 11, dex: 6 },
+    bonus: { atk: 13, dex: 6 },
     description: "하늘가르개에 초원 매 깃털을 겹겹이 둘러 균형을 잡은 것. 휘두르면 허공이 한 줄 더 깊게 갈라진다.",
     rarity: "unique",
     tradable: false,
+    tier: 4,
   } satisfies EquipItem,
   spider_queen_silk_plate: {
     name: "거미여왕의 비단 정갑",
@@ -786,6 +858,7 @@ export const ITEMS = {
     description: "거미여왕의 비단갑을 거미줄로 더 곱게 짜 올린 정갑. 결이 비단 위의 비단이고, 운이 더 끈질기게 따라붙는다.",
     rarity: "unique",
     tradable: false,
+    tier: 3,
   } satisfies EquipItem,
   bat_swarm_guide: {
     name: "박쥐떼의 인도자",
@@ -798,6 +871,7 @@ export const ITEMS = {
     description: "박쥐떼의 길잡이에 박쥐 눈알을 박아 어둠을 더 멀리 읽게 한 것. 지니면 한 발 앞이 늘 환하고, 그만큼 발이 앞선다.",
     rarity: "unique",
     tradable: false,
+    tier: 3,
   } satisfies EquipItem,
   phoenix_flight_cape: {
     name: "봉황 비행깃 망토",
@@ -810,6 +884,7 @@ export const ITEMS = {
     bonus: { def: 4, dex: 3, spd: 6 },
     description: "봉황 망토에 봉황 깃털을 더 이어 짜 비행깃을 살린 것. 두르면 발이 불꽃처럼 가벼워지고, 방향을 트는 게 한결 빠르다.",
     rarity: "uncommon",
+    tier: 4,
   } satisfies EquipItem,
   mole_king_borer: {
     name: "두더지왕의 굴착드릴",
@@ -822,6 +897,7 @@ export const ITEMS = {
     description: "두더지왕의 드릴에 단단한 수정 날과 마정석 동력부를 단 것. 회전이 묵직해지고, 파고드는 손맛이 한 단계 위다.",
     rarity: "unique",
     tradable: false,
+    tier: 2,
   } satisfies EquipItem,
 
   // ── 해안 지선 장비 (조수 갯벌 / 산호초 섬 / 수심의 것) ─────────────────────
@@ -838,6 +914,7 @@ export const ITEMS = {
     bonus: { atk: 3, def: 2 },
     description: "집게발 게의 등딱지를 깎아 댄 작은 손방패. 가볍고, 보기보다 단단하다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   tideflats_waders: {
     name: "갯벌 각반",
@@ -849,6 +926,7 @@ export const ITEMS = {
     bonus: { def: 3, spd: 1 },
     description: "게딱지 조각을 정강이에 누벼 감싼 각반. 진흙에 발이 빠져도 미끄러지지 않는다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   coral_spine_dagger: {
     name: "산호 가시 단검",
@@ -860,6 +938,7 @@ export const ITEMS = {
     bonus: { atk: 5, dex: 2 },
     description: "암초에서 부러진 산호 가시를 갈아 자루에 박은 단검. 끝이 송곳처럼 예리하다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   siren_scale_robe: {
     name: "사이렌 비늘 로브",
@@ -871,6 +950,7 @@ export const ITEMS = {
     bonus: { def: 4, spd: 2 },
     description: "산호초 사이렌의 비늘을 이어 짠 로브. 물기를 머금어 서늘하고, 걸치면 발이 매끄럽게 미끄러진다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   tideglass_charm: {
     name: "조수유리 부적",
@@ -882,6 +962,7 @@ export const ITEMS = {
     bonus: { vit: 3, luk: 2 },
     description: "심해 비늘과 산호 조각을 가는 끈에 엮어 만든 부적. 파도가 드나드는 소리가 은은하게 난다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   // 업그레이드 결과 3종 — 베이스를 'equip' 재료로 소비 (recipes.ts).
   crustacean_bulwark: {
@@ -895,6 +976,7 @@ export const ITEMS = {
     bonus: { atk: 5, def: 4, spd: -1 },
     description: "게딱지 손방패에 더 큰 갑각판과 산호 가시를 덧대 보루처럼 키운 방패. 묵직한 만큼 발이 조금 무겁다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   barbed_coral_dagger: {
     name: "가시 산호 단검",
@@ -906,6 +988,7 @@ export const ITEMS = {
     bonus: { atk: 7, dex: 3 },
     description: "산호 가시 단검에 잔가시를 더 박아 넣은 것. 스칠 때마다 살갗을 긁는다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   siren_song_mantle: {
     name: "사이렌 노래 망토",
@@ -918,6 +1001,7 @@ export const ITEMS = {
     bonus: { def: 6, dex: 2, spd: 3 },
     description: "사이렌 비늘 로브에 심해 비늘을 더 이어 짠 망토. 두르면 물살을 가르듯 움직임이 부드러워진다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   // 수심의 것 보스 보상 — 심연 무구 4종(무기, atk +7 공통 + 보조 stat) + 수심의 핵(액세서리).
   // recipe_one_of 로 무기 1종 확정 학습, 0.15 로 수심의 핵 제작서. 마정석 라인의 한 단계 위.
@@ -931,6 +1015,7 @@ export const ITEMS = {
     bonus: { atk: 7, str: 4 },
     description: "수심의 것의 비늘을 벼려 만든 칼날. 휘두를 때마다 깊은 물의 무게가 손에 실린다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   abyssal_ward: {
     name: "심연 방벽",
@@ -942,6 +1027,7 @@ export const ITEMS = {
     bonus: { atk: 7, vit: 4 },
     description: "수심의 것의 등딱지를 그대로 두른 방패형 무구. 막아내면 차가운 물살이 손끝까지 전해진다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   abyssal_pike: {
     name: "심연 장창",
@@ -953,6 +1039,7 @@ export const ITEMS = {
     bonus: { atk: 7, dex: 5 },
     description: "수심의 것의 가시뼈를 깎아 박은 긴 창. 멀리서도 물살을 가르듯 곧게 뻗는다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   abyssal_clasp: {
     name: "심연 손아귀",
@@ -964,6 +1051,7 @@ export const ITEMS = {
     bonus: { atk: 7, luk: 5 },
     description: "수심의 것의 발톱뼈를 손등에 박은 너클. 한 방 한 방이 깊은 물처럼 어디로 향할지 알 수 없다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   abyssal_heart: {
     name: "수심의 핵",
@@ -975,6 +1063,7 @@ export const ITEMS = {
     bonus: { dex: 3, vit: 3 },
     description: "수심의 것의 가슴 깊은 곳에서 꺼낸 차가운 핵. 손에 쥐면 숨이 길어지고 손끝이 또렷해진다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   // 유실된 명품 — 진흙 미꾸라지가 아주 드물게 떨군다. tidelord_signet 은 가시 산호 골렘/수심의 것이
   // 떨구는 새김서로 끌어올린 결과(결과도 unique·비거래) — "손에 맞춰진 보물".
@@ -988,6 +1077,7 @@ export const ITEMS = {
     bonus: { luk: 4, spd: 1 },
     description: "어느 진흙 미꾸라지가 진창 속에 끌고 다니던 낡은 인장반지. 문장이 닳아 누구 것이었는지는 알 수 없지만, 끼고 있으면 묘하게 운이 따른다.",
     rarity: "unique",
+    tier: 2,
   } satisfies EquipItem,
   tidelord_signet: {
     name: "조수군주의 인장",
@@ -1001,6 +1091,7 @@ export const ITEMS = {
     description: "닳은 인장반지에 심해 비늘을 녹여 새 문장을 새겨 넣은 것. 무슨 문장인지는 아무도 모르지만, 끼고 있으면 파도가 제 편인 듯하다.",
     rarity: "unique",
     tradable: false,
+    tier: 3,
   } satisfies EquipItem,
 
   // ── 서편 옛길 장비 (서편 옛길 / 옛 변경 성채 / 옛 성문지기) ─────────────────
@@ -1017,6 +1108,7 @@ export const ITEMS = {
     bonus: { def: 1, spd: 2 },
     description: "들까마귀 깃을 이어 댄 가벼운 두건. 머리에 쓰면 발걸음이 묘하게 가벼워진다.",
     rarity: "uncommon",
+    tier: 1,
   } satisfies EquipItem,
   roadbandit_shortsword: {
     name: "노상강도의 단검",
@@ -1028,6 +1120,7 @@ export const ITEMS = {
     bonus: { atk: 3, dex: 1 },
     description: "옛길에 눌러앉은 노상강도가 품에 차고 다니던 짧은 검. 들고양이 송곳니로 손잡이를 감았다.",
     rarity: "uncommon",
+    tier: 1,
   } satisfies EquipItem,
   garrison_hauberk: {
     name: "수비대 사슬갑옷",
@@ -1039,6 +1132,7 @@ export const ITEMS = {
     bonus: { def: 4, vit: 1 },
     description: "녹슨 쇳조각을 다시 엮어 짠 사슬갑옷. 한 세대 전 변경 수비대가 입던 것과 같은 짜임이다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   geared_warpick: {
     name: "톱니 전곡괭이",
@@ -1050,6 +1144,7 @@ export const ITEMS = {
     bonus: { atk: 5, str: 2 },
     description: "녹슨 자동인형의 톱니와 강철판으로 머리를 벼린 전쟁용 곡괭이. 한 번 내리찍으면 묵직하게 박힌다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   tattered_standard_cloak: {
     name: "낡은 군기 망토",
@@ -1062,6 +1157,7 @@ export const ITEMS = {
     bonus: { def: 3, spd: 2, luk: 1 },
     description: "옛 변경 수비대의 군기를 기워 두른 망토. 빛바랜 문장이 등에 희미하게 남아 있다.",
     rarity: "uncommon",
+    tier: 2,
   } satisfies EquipItem,
   // 업그레이드 결과 3종 — 베이스를 'equip' 재료로 소비 (recipes.ts).
   roadbandit_falchion: {
@@ -1074,6 +1170,7 @@ export const ITEMS = {
     bonus: { atk: 5, dex: 3 },
     description: "노상강도의 단검에 녹슨 쇳조각을 덧대 날을 길게 늘이고 굽힌 것. 휘둘러 베는 맛이 한결 매섭다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   reinforced_garrison_hauberk: {
     name: "보강한 수비대 사슬갑옷",
@@ -1086,6 +1183,7 @@ export const ITEMS = {
     bonus: { def: 6, vit: 2, spd: -1 },
     description: "수비대 사슬갑옷에 녹슨 쇳조각으로 가슴판을 덧대고 옛 군기 조각으로 안감을 받친 것. 두터워진 만큼 발이 조금 무겁다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   frontier_standard_cloak: {
     name: "변경 군기 망토",
@@ -1098,6 +1196,7 @@ export const ITEMS = {
     bonus: { def: 5, spd: 3, luk: 2 },
     description: "낡은 군기 망토에 또 다른 군기 조각을 겹쳐 기워 결을 두텁게 한 것. 등의 문장이 한결 또렷해졌다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   // 옛 성문지기 보스 보상 — 수비대 무구 4종(무기, atk +6 공통 + 보조 +4) + 성문지기의 핵(액세서리).
   // recipe_one_of 로 무기 1종 확정 학습, 0.15 로 성문지기의 핵. 마정석 라인과 운봉 라인 사이 tier.
@@ -1111,6 +1210,7 @@ export const ITEMS = {
     bonus: { atk: 6, str: 4 },
     description: "옛 성문지기의 강철판을 다시 벼려 만든 한손 도검. 휘두를 때마다 옛 수비대의 무게가 손에 실린다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   garrison_bulwark: {
     name: "수비대 방패",
@@ -1122,6 +1222,7 @@ export const ITEMS = {
     bonus: { atk: 6, vit: 4 },
     description: "옛 성문지기의 빗장을 그대로 두른 방패형 무구. 막아내면 묵직한 강철의 무게가 손목에 전해진다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   garrison_glaive: {
     name: "수비대 미늘창",
@@ -1133,6 +1234,7 @@ export const ITEMS = {
     bonus: { atk: 6, dex: 4 },
     description: "옛 성문지기의 톱니 끝을 깎아 미늘로 박은 긴 창. 멀리서도 정확하게 찔러 건다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   garrison_cudgel: {
     name: "수비대 철퇴",
@@ -1144,6 +1246,7 @@ export const ITEMS = {
     bonus: { atk: 6, luk: 4 },
     description: "옛 성문지기의 강철판을 뭉쳐 머리를 단 철퇴. 한 방 한 방이 어디로 떨어질지 휘두르는 자도 모른다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   gatekeeper_core: {
     name: "성문지기의 핵",
@@ -1155,6 +1258,7 @@ export const ITEMS = {
     bonus: { vit: 4, str: 2 },
     description: "옛 성문지기의 가슴 깊은 곳에서 멈춰 있던 강철 핵. 손에 쥐면 어깨가 묵직해지고 버티는 힘이 단단해진다.",
     rarity: "uncommon",
+    tier: 3,
   } satisfies EquipItem,
   // 유실된 명품 — 들까마귀 떼가 아주 드물게 떨군다. corvid_fortune_charm 은 녹슨 자동인형/옛
   // 성문지기가 떨구는 새김서로 끌어올린 결과(결과도 unique·비거래) — "손에 맞춰진 보물".
@@ -1168,6 +1272,7 @@ export const ITEMS = {
     bonus: { luk: 3, spd: 2 },
     description: "들까마귀 떼가 둥지에 그러모은 잡동사니 — 닳은 동전, 깨진 거울 조각, 가는 사슬을 엮어 만든 듯한 장신구. 누가 만든 건지 아무도 모르지만, 지니면 묘하게 운이 따른다.",
     rarity: "unique",
+    tier: 2,
   } satisfies EquipItem,
   corvid_fortune_charm: {
     name: "까마귀 보물의 부적",
@@ -1181,6 +1286,7 @@ export const ITEMS = {
     description: "까마귀 둥지의 부적에 녹슨 동전과 톱니를 더 엮어 무겁게 한 것. 누가 손본 건지 모르지만, 지니면 운이 한층 끈질기게 따라붙는다.",
     rarity: "unique",
     tradable: false,
+    tier: 3,
   } satisfies EquipItem,
 } as const;
 
