@@ -1,10 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Coins, MapPin } from "@phosphor-icons/react";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { ChatButton } from "@/components/ChatButton";
-import { NameSetupModal } from "@/components/NameSetupModal";
 import { type BattleEndPayload } from "@/adventure/BattleView";
 import { TownScreen } from "@/adventure/TownScreen";
 import { CharacterScreen } from "@/adventure/CharacterScreen";
@@ -71,6 +71,19 @@ export default function Page() {
         <Home />
       </Suspense>
     </SaveProvider>
+  );
+}
+
+// 아직 캐릭터가 없으면 게임 화면 대신 /create 로 보낸다 (모달 → 별도 페이지).
+function RedirectToCreate() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/create");
+  }, [router]);
+  return (
+    <div className="flex min-h-screen items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
+      모험가를 만들러 가는 중...
+    </div>
   );
 }
 
@@ -446,6 +459,8 @@ function Home() {
     completeQuest,
   };
 
+  if (showModal) return <RedirectToCreate />;
+
   return (
     <GameProvider value={gameCtx}>
       <RegionBackground regionId={currentRegion.id} />
@@ -516,7 +531,6 @@ function Home() {
       </div>
       <NotificationToast notifications={notifications.list} />
       <LevelUpOverlay level={character.level} triggerKey={levelUpTrigger} />
-      {showModal && <NameSetupModal onSubmit={profile.submit} />}
       {autoHuntResult && (
         <AutoHuntResultModal
           result={autoHuntResult}
