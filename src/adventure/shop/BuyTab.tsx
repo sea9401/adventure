@@ -11,13 +11,23 @@ import {
 } from "../data/consumables";
 import { ITEMS, type ItemId } from "../data/items";
 import type { InventoryState } from "../inventory/useInventory";
+import { Card } from "@/components/ui/Card";
+import { TabBar } from "@/components/ui/TabBar";
+import { QtyStepper } from "./QtyStepper";
 
 // 상점에서 살 수 있는 장비 — EquipItem.shopPrice 가 지정된 것 (현재 초반 발판용 싸구려 한두 종).
 const SHOP_EQUIPMENT_IDS = (Object.keys(ITEMS) as ItemId[]).filter(
   (id) => typeof (ITEMS[id] as { shopPrice?: number }).shopPrice === "number",
 );
-import { Card } from "@/components/ui/Card";
-import { QtyStepper } from "./QtyStepper";
+
+type BuyCategoryKey = "equipment" | "materials" | "consumables";
+
+// 카테고리 순서는 SellTab 과 동일하게 — 장비 → 재료 → 소모품. 포션은 소모품 탭에서 같이 노출.
+const BUY_TABS: { key: BuyCategoryKey; label: string }[] = [
+  { key: "equipment", label: "장비" },
+  { key: "materials", label: "재료" },
+  { key: "consumables", label: "소모품" },
+];
 
 export function BuyTab({
   gold,
@@ -36,21 +46,26 @@ export function BuyTab({
   onPurchaseConsumable: (id: ConsumableId, quantity: number) => void;
   onPurchaseEquipment: (id: ItemId, quantity: number) => void;
 }) {
+  const [category, setCategory] = useState<BuyCategoryKey>("equipment");
+
   // 구매 가능 재료 = 항상 취급(`inShop`) 또는 누적 100개 이상 판매로 잠금 해제된 것.
   const materialIds = (Object.keys(MATERIALS) as MaterialId[]).filter(
     (id) => MATERIALS[id].inShop || isMaterialBuyable(id),
   );
   const cap = potionMax(inventory.potionCapacityBonus ?? 0);
-  // 카테고리 순서: 장비 → 재료 → 소모품. 포션은 소모품 카테고리 상단에 함께 표시
-  // (보유 한도 cap 이 있어 BuyRow 에 cap 만 추가로 전달).
   const potionIds = POTION_IDS.filter((id) => POTIONS[id].inShop !== false);
+
   return (
     <div className="space-y-3">
-      {SHOP_EQUIPMENT_IDS.length > 0 && (
-        <div>
-          <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            장비
-          </div>
+      <TabBar
+        tabs={BUY_TABS}
+        active={category}
+        onChange={setCategory}
+        ariaLabel="구매 카테고리"
+      />
+
+      {category === "equipment" &&
+        (SHOP_EQUIPMENT_IDS.length > 0 ? (
           <div className="space-y-2">
             {SHOP_EQUIPMENT_IDS.map((id) => {
               const item = ITEMS[id];
@@ -74,14 +89,12 @@ export function BuyTab({
               );
             })}
           </div>
-        </div>
-      )}
+        ) : (
+          <BuyCategoryEmpty label="장비" />
+        ))}
 
-      {materialIds.length > 0 && (
-        <div>
-          <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            재료
-          </div>
+      {category === "materials" &&
+        (materialIds.length > 0 ? (
           <div className="space-y-2">
             {materialIds.map((id) => {
               const m = MATERIALS[id];
@@ -99,14 +112,12 @@ export function BuyTab({
               );
             })}
           </div>
-        </div>
-      )}
+        ) : (
+          <BuyCategoryEmpty label="재료" />
+        ))}
 
-      {(potionIds.length > 0 || CONSUMABLE_IDS.length > 0) && (
-        <div>
-          <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            소모품
-          </div>
+      {category === "consumables" &&
+        (potionIds.length > 0 || CONSUMABLE_IDS.length > 0 ? (
           <div className="space-y-2">
             {potionIds.map((id) => {
               const potion = POTIONS[id];
@@ -140,8 +151,17 @@ export function BuyTab({
               );
             })}
           </div>
-        </div>
-      )}
+        ) : (
+          <BuyCategoryEmpty label="소모품" />
+        ))}
+    </div>
+  );
+}
+
+function BuyCategoryEmpty({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-dashed border-zinc-300 bg-white/60 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/60 dark:text-zinc-400">
+      판매 중인 {label}이(가) 없습니다.
     </div>
   );
 }
