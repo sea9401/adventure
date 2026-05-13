@@ -364,7 +364,6 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "sancho_blossom", chance: 0.02 },
       { kind: "material", materialId: "tough_hide", chance: 0.03 },
-      { kind: "recipe", recipeId: "potion_heal_m", chance: 0.01 },
     ],
   },
   "바위 두꺼비": {
@@ -392,7 +391,6 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "wilddog_fang", chance: 0.05 },
       { kind: "material", materialId: "sancho_blossom", chance: 0.03 },
-      { kind: "recipe", recipeId: "potion_heal_m", chance: 0.01 },
     ],
   },
   "돌풍 정령": {
@@ -568,7 +566,6 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "phoenix_feather", chance: 0.01 },
       { kind: "equip", itemId: "flame_eagle_cape", chance: 0.003 },
-      { kind: "recipe", recipeId: "potion_heal_l", chance: 0.008 },
       { kind: "recipe", recipeId: "phoenix_flight_cape", chance: 0.004 },
     ],
     skill: { kind: "pierce", name: "강하 일격", armorPierce: 4 },
@@ -584,7 +581,6 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 48,
     drops: [
       { kind: "material", materialId: "flame_scale", chance: 0.015 },
-      { kind: "recipe", recipeId: "potion_heal_l", chance: 0.008 },
     ],
     skill: { kind: "enrage", name: "화염 비늘 폭발", hpFraction: 0.4, atkBonus: 6 },
   },

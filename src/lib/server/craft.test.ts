@@ -63,12 +63,12 @@ describe("computeCraftOutcome — 검증 실패", () => {
   it("포션 가득 → potion_full", () => {
     const input = {
       ...base(),
-      known: ["potion_heal_s"],
-      materials: { slime_chunk: 9 },
+      known: ["potion_heal_s_dust"],
+      materials: { mana_dust: 9 },
       potions: { potion_heal_s: 999 },
     };
     try {
-      computeCraftOutcome(input, "potion_heal_s");
+      computeCraftOutcome(input, "potion_heal_s_dust");
     } catch (e) {
       expect((e as CraftError).code).toBe("potion_full");
     }
@@ -150,10 +150,14 @@ describe("computeCraftOutcome — 장비 (등급 변동 있음)", () => {
 
 describe("computeCraftOutcome — 포션 (변동 없음)", () => {
   it("포션 결과는 항상 그대로, tier 개념 없음", () => {
-    const input = { ...base(), known: ["potion_heal_s"], materials: { slime_chunk: 5 } };
-    const out = computeCraftOutcome(input, "potion_heal_s", rngMax);
+    const input = {
+      ...base(),
+      known: ["potion_heal_s_dust"],
+      materials: { mana_dust: 5 },
+    };
+    const out = computeCraftOutcome(input, "potion_heal_s_dust", rngMax);
     expect(out.result).toEqual({ kind: "potion", potionId: "potion_heal_s", quantity: 1 });
     expect(out.potions.potion_heal_s).toBe(1);
-    expect(out.materials.slime_chunk).toBe(2); // 5 - 3
+    expect(out.materials.mana_dust).toBe(4); // 5 - 1
   });
 });
