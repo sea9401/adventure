@@ -38,10 +38,11 @@ export async function GET(_req: Request, { params }: Ctx) {
     return new Response("invalid region", { status: 400 });
   }
 
-  // self-healing — cron 미동작(dev) / Vercel Hobby 의 cron 강등 환경에서도 카드를
-  // 여는 순간 만료 정리 + 도달한 nextSpawnAt 에 신규 spawn 이 일어나도록.
-  // partial uniqueIndex 가 동시성 막아줌.
-  await respawnCoopRegion(region);
+  // self-healing — cron 미동작(dev) / 강등 환경에서 카드 여는 순간 만료 정리 +
+  // 도달한 nextSpawnAt 에 신규 spawn. partial uniqueIndex 가 동시성 막아줌.
+  // GET 은 클라가 N초마다 폴링하는 hot path 라 매 호출마다 돌리면 write 부담이
+  // 큼 → 5% 확률로만 트리거. 5초 폴이면 평균 100초당 한 번 self-heal 됨.
+  if (Math.random() < 0.05) await respawnCoopRegion(region);
 
   // 활성 세션 (defeatedAt IS NULL) 우선, 없으면 가장 최근 정리된 세션 (nextSpawnAt 정보 표시용).
   const active = await db

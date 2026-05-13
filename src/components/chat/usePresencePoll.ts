@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { fetchPresence, type PresenceUser } from "./chatApi";
 
-const PRESENCE_POLL_MS = 3000;
+// 접속자 목록은 "지금 누가 있나" 정도라 3초 갱신은 과도 — 10초면 충분.
+// 폴마다 presence 테이블 시간윈도우 스캔이 돌므로 빈도가 곧 부하.
+const PRESENCE_POLL_MS = 10000;
 
 // 패널이 열려 있는 동안 접속자 목록을 주기적으로 폴링. 닫히면 폴링 중단.
 export function usePresencePoll(open: boolean): PresenceUser[] {

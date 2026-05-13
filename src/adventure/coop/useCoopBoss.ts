@@ -76,7 +76,9 @@ export type CoopClaimResponse = {
   };
 };
 
-const POLL_INTERVAL_MS = 5_000;
+// 보스 카드는 GET 한 번에 6~9 query 가 도는 무거운 호출이라 폴 주기를 길게.
+// 활성 보스 카드 들고 있는 유저 수 × 1/Nsec 만큼 부하가 누적된다.
+const POLL_INTERVAL_MS = 10_000;
 
 export function useCoopBoss(regionId: string, enabled: boolean) {
   const [data, setData] = useState<CoopFetchResult | null>(null);
