@@ -198,8 +198,6 @@ export function CharacterScreen() {
           }}
           knownRecipes={crafting.state.known}
           shareableRecipes={crafting.state.shareable}
-          inventoryState={inventory.state}
-          equippedSlots={characterStateHook.equippedSlots}
         />
       </div>
     );

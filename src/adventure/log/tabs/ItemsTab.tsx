@@ -9,7 +9,6 @@ import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import {
   ITEMS,
-  findItemId,
   rarityTextClass,
   type EquipItem,
   type EquipSlot,
@@ -18,15 +17,12 @@ import {
 import { getRecipeById } from "@/adventure/data/recipes";
 import { dropQualityTextClass } from "@/adventure/data/dropQuality";
 import { craftTierTextClass } from "@/adventure/data/craftQuality";
-import type { EquippedSlots } from "@/adventure/character/types";
-import type { InventoryState } from "@/adventure/inventory/useInventory";
 import type { DiscoveredEquipmentEntry } from "@/adventure/log/storage";
 import {
   parseVariantKey,
   resolveVariant,
   variantDisplayName,
   variantGradeLabel,
-  variantKey,
 } from "@/adventure/log/discoveredEquipment";
 
 // 모험의 서 → 아이템 탭. 한 번이라도 보유/장착한 적 있는 장비를 슬롯별 sub-tab 으로(폐기해도 유지),
@@ -50,14 +46,10 @@ export function ItemsTab({
   knownRecipes,
   shareableRecipes,
   discovered,
-  inventoryState,
-  equippedSlots,
 }: {
   knownRecipes: string[];
   shareableRecipes: string[];
   discovered: Record<string, DiscoveredEquipmentEntry>;
-  inventoryState?: InventoryState;
-  equippedSlots?: EquippedSlots;
 }) {
   const [sub, setSub] = useState<ItemSubTab>("weapon");
 
@@ -76,12 +68,7 @@ export function ItemsTab({
           shareableRecipes={shareableRecipes}
         />
       ) : (
-        <EquipmentSubTab
-          slot={sub}
-          discovered={discovered}
-          inventoryState={inventoryState}
-          equippedSlots={equippedSlots}
-        />
+        <EquipmentSubTab slot={sub} discovered={discovered} />
       )}
     </div>
   );
@@ -124,32 +111,6 @@ function buildRows(
   return rows;
 }
 
-// 그 변형을 현재 인벤토리에 몇 개 들고 있는지 (장착 중인 것은 제외 — 별도 배지).
-function ownedCountOf(
-  inv: InventoryState | undefined,
-  id: ItemId,
-  key: string,
-): number {
-  if (!inv) return 0;
-  const p = parseVariantKey(key);
-  if (!p) return 0;
-  if (p.kind === "base") return inv.equipment[id] ?? 0;
-  if (p.kind === "crafted") return inv.craftedEquipment[id]?.[String(p.tier)] ?? 0;
-  return inv.droppedEquipment[id]?.[String(p.quality)] ?? 0;
-}
-
-// 그 변형이 현재 해당 슬롯에 장착돼 있는지.
-function isVariantEquipped(
-  equipped: EquippedSlots | undefined,
-  slot: EquipSlot,
-  id: ItemId,
-  key: string,
-): boolean {
-  const e = equipped?.[slot];
-  if (!e || findItemId(e) !== id) return false;
-  return variantKey(e.craftTier ?? null, e.dropQuality ?? null) === key;
-}
-
 function gradeTextClass(key: string): string {
   const p = parseVariantKey(key);
   if (!p) return "";
@@ -161,13 +122,9 @@ function gradeTextClass(key: string): string {
 function EquipmentSubTab({
   slot,
   discovered,
-  inventoryState,
-  equippedSlots,
 }: {
   slot: EquipSlot;
   discovered: Record<string, DiscoveredEquipmentEntry>;
-  inventoryState?: InventoryState;
-  equippedSlots?: EquippedSlots;
 }) {
   const rows = useMemo(() => buildRows(discovered, slot), [discovered, slot]);
   const pager = usePagination(rows, 10);
@@ -184,56 +141,29 @@ function EquipmentSubTab({
 
   return (
     <div className="space-y-2">
-      {pager.pageItems.map((row) => {
-        const owned = ownedCountOf(inventoryState, row.id, row.variantKey);
-        const equipped = isVariantEquipped(
-          equippedSlots,
-          slot,
-          row.id,
-          row.variantKey,
-        );
-        const have = owned > 0 || equipped;
-        return (
-          <Card key={`${row.id}@${row.variantKey}`}>
-            <div className="flex items-baseline justify-between gap-2">
-              <span
-                className={`text-sm font-semibold ${
-                  !have
-                    ? "text-zinc-400 dark:text-zinc-500"
-                    : row.grade
-                      ? gradeTextClass(row.variantKey)
-                      : rarityTextClass(row.item)
-                }`}
-              >
-                {SLOT_EMOJI[row.item.slot]} {row.name}
-                {owned > 1 && (
-                  <span className="ml-1 text-xs font-normal tabular-nums text-zinc-500 dark:text-zinc-400">
-                    ×{owned}
-                  </span>
-                )}
-                {equipped && (
-                  <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-normal text-emerald-700 dark:text-emerald-400">
-                    장착중
-                  </span>
-                )}
-                {!have && (
-                  <span className="ml-2 rounded-full bg-zinc-500/10 px-2 py-0.5 text-[11px] font-normal text-zinc-500 dark:text-zinc-400">
-                    미보유
-                  </span>
-                )}
-              </span>
-              <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
-                {row.item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
-              </span>
-            </div>
-            {row.item.description && (
-              <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                {row.item.description}
-              </p>
-            )}
-          </Card>
-        );
-      })}
+      {pager.pageItems.map((row) => (
+        <Card key={`${row.id}@${row.variantKey}`}>
+          <div className="flex items-baseline justify-between gap-2">
+            <span
+              className={`text-sm font-semibold ${
+                row.grade
+                  ? gradeTextClass(row.variantKey)
+                  : rarityTextClass(row.item)
+              }`}
+            >
+              {SLOT_EMOJI[row.item.slot]} {row.name}
+            </span>
+            <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
+              {row.item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
+            </span>
+          </div>
+          {row.item.description && (
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+              {row.item.description}
+            </p>
+          )}
+        </Card>
+      ))}
       <Pagination
         page={pager.page}
         pageCount={pager.pageCount}
