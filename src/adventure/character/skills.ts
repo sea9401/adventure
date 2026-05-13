@@ -8,11 +8,15 @@ export const BASE_NORMAL_SLOTS = SKILL_SLOT_COUNT;
 // ── 스킬 슬롯 해금 ───────────────────────────────────────────────────────
 // 4번째 = 특기 전용 슬롯 (Lv40 또는 운봉의 거인 처치 — 먼저 만족 시).
 // 5번째 = 일반 슬롯 (Lv65 그리고 화산의 심장 처치 — 둘 다).
+// 6번째 = 일반 슬롯 (Lv90 그리고 만렙 컨텐츠 최종 보스 처치 — 둘 다).
+//         FLAG 는 향후 신규 보스 추가 시 처치 플래그 ID 와 매칭. 그때까진 자연히 false.
 export const SKILL_SLOT_UNLOCK = {
   FEAT_SLOT_LEVEL: 40,
   FEAT_SLOT_FLAG: "peak_giant_defeated",
   FIFTH_NORMAL_LEVEL: 65,
   FIFTH_NORMAL_FLAG: "volcano_heart_defeated",
+  SIXTH_NORMAL_LEVEL: 90,
+  SIXTH_NORMAL_FLAG: "endgame_apex_defeated",
 } as const;
 
 export type SkillSlotContext = {
@@ -30,8 +34,13 @@ export function skillLayout(ctx: SkillSlotContext): SkillLayout {
   const fifthNormal =
     ctx.level >= SKILL_SLOT_UNLOCK.FIFTH_NORMAL_LEVEL &&
     ctx.hasFlag(SKILL_SLOT_UNLOCK.FIFTH_NORMAL_FLAG);
+  // 6번째는 5번째 해금이 선행되어야 — normalSlots 가 단조 증가하도록.
+  const sixthNormal =
+    fifthNormal &&
+    ctx.level >= SKILL_SLOT_UNLOCK.SIXTH_NORMAL_LEVEL &&
+    ctx.hasFlag(SKILL_SLOT_UNLOCK.SIXTH_NORMAL_FLAG);
   return {
-    normalSlots: BASE_NORMAL_SLOTS + (fifthNormal ? 1 : 0),
+    normalSlots: BASE_NORMAL_SLOTS + (fifthNormal ? 1 : 0) + (sixthNormal ? 1 : 0),
     hasFeatSlot:
       ctx.level >= SKILL_SLOT_UNLOCK.FEAT_SLOT_LEVEL ||
       ctx.hasFlag(SKILL_SLOT_UNLOCK.FEAT_SLOT_FLAG),

@@ -80,6 +80,7 @@ export function useTitleGrants(
   const levelVeteran = opts.level >= 30;
   const levelLegend = opts.level >= 50;
   const levelMythic = opts.level >= 70;
+  const levelTranscendent = opts.level >= 100;
   useEffect(() => {
     if (goldZero) grantTitle("beggar");
     if (goldOneCoin) grantTitle("one_coin");
@@ -90,6 +91,7 @@ export function useTitleGrants(
     if (levelVeteran) grantTitle("level_30");
     if (levelLegend) grantTitle("level_50");
     if (levelMythic) grantTitle("level_70");
+    if (levelTranscendent) grantTitle("level_100");
     if (opts.maxNpcTalkCount >= 100) grantTitle("phisher");
     if (opts.maxNpcTalkCount >= 500) grantTitle("devoted_listener");
     if (opts.allRegionsVisited) grantTitle("globetrotter");
@@ -115,6 +117,7 @@ export function useTitleGrants(
     levelVeteran,
     levelLegend,
     levelMythic,
+    levelTranscendent,
     opts.allRegionsVisited,
     opts.maxNpcTalkCount,
     opts.luckyCollected,
