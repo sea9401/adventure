@@ -39,34 +39,11 @@ export const RECIPES: Recipe[] = [
     result: { kind: "equipment", itemId: "baseball_bat", slot: "weapon" },
     variance: { atk: 1 },
   },
-  {
-    id: "potion_heal_s",
-    name: "작은 회복약 조합법",
-    description: "슬라임 조각의 점액을 졸여 작은 회복약을 만든다.",
-    ingredients: [{ kind: "material", materialId: "slime_chunk", count: 3 }],
-    result: { kind: "potion", potionId: "potion_heal_s", quantity: 1 },
-  },
-  {
-    id: "potion_heal_m",
-    name: "중간 회복약 조합법",
-    description:
-      "산초꽃을 약불에 졸여 중간 회복약을 만든다. 운향 일대에서 산초꽃을 모아야 한다.",
-    ingredients: [{ kind: "material", materialId: "sancho_blossom", count: 3 }],
-    result: { kind: "potion", potionId: "potion_heal_m", quantity: 1 },
-  },
-  {
-    id: "potion_heal_l",
-    name: "큰 회복약 조합법",
-    description:
-      "봉황 깃털을 우려내 큰 회복약을 만든다. 봉황령에서 깃털을 모아야 한다.",
-    ingredients: [{ kind: "material", materialId: "phoenix_feather", count: 2 }],
-    result: { kind: "potion", potionId: "potion_heal_l", quantity: 1 },
-  },
   // ── 마력가루 회복약 공정 3 종 ──────────────────────────────────────────
-  // 잉여 장비/재료를 분해실에서 갈아낸 마력가루를 단일 재료로 사용. 지역
-  // 재료(슬라임 조각·산초꽃·봉황 깃털) 라인과 병행 — 어느 쪽을 쓰든 같은
-  // 결과(potion_heal_*)가 나온다. 이 세 레시피는 시작 시점부터 자동 학습.
-  // (useCrafting.readInitial 이 known 에 자동 보강 — 기존 세이브도 자동 적용.)
+  // 작은 회복약은 상점에서 구입 가능. 중간/큰 회복약은 분해실에서 잉여 장비/재료를
+  // 갈아낸 마력가루(mana_dust) 한 가지로만 제작. 이 세 레시피는 시작 시점부터
+  // 자동 학습 (useCrafting.readInitial 이 known 에 자동 보강 — 기존 세이브도 자동 적용).
+  // (지역 재료 라인 — 슬라임 조각/산초꽃/봉황 깃털 — 3 종은 제거됐다.)
   {
     id: "potion_heal_s_dust",
     name: "작은 회복약 — 가루 공정",

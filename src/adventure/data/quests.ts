@@ -176,7 +176,6 @@ export const QUESTS: Quest[] = [
     target: { kind: "kill", monsterName:"슬라임", count: 5 },
     reward: {
       potions: [{ id: "potion_heal_s", count: 5 }],
-      recipes: ["potion_heal_s"],
     },
     repeatable: false,
     giverNpcId: "village_trainer_smith",

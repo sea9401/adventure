@@ -59,9 +59,9 @@ describe("applyQuestReward", () => {
 
   it("recipes는 learnRecipe + 제작서 이름으로 요약", () => {
     const s = makeServices();
-    const tokens = applyQuestReward({ recipes: ["potion_heal_s"] }, s);
-    expect(s.learnRecipe).toHaveBeenCalledWith("potion_heal_s");
-    expect(tokens).toEqual(["작은 회복약 조합법"]);
+    const tokens = applyQuestReward({ recipes: ["potion_heal_s_dust"] }, s);
+    expect(s.learnRecipe).toHaveBeenCalledWith("potion_heal_s_dust");
+    expect(tokens).toEqual(["작은 회복약 — 가루 공정"]);
   });
 
   it("EXP 보상은 addExp 호출 + 'EXP +n' 토큰", () => {
@@ -113,7 +113,7 @@ describe("applyQuestReward", () => {
         fame: 1,
         exp: 10,
         potions: [{ id: "potion_heal_s", count: 5 }],
-        recipes: ["potion_heal_s"],
+        recipes: ["potion_heal_s_dust"],
       },
       s,
     );
@@ -122,7 +122,7 @@ describe("applyQuestReward", () => {
       "명성 +1",
       "EXP +10",
       "작은 회복약 ×5",
-      "작은 회복약 조합법",
+      "작은 회복약 — 가루 공정",
     ]);
   });
 });
