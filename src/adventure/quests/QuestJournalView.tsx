@@ -11,8 +11,6 @@ import {
 } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Pagination } from "@/components/ui/Pagination";
-import { usePagination } from "@/lib/usePagination";
 import { formatRelative } from "@/lib/notifications";
 import { QUESTS, questTargetTotal, type Quest } from "@/adventure/data/quests";
 import { NPCS } from "@/adventure/data/npcs";
@@ -29,13 +27,16 @@ const NPC_NAMES = new Map(NPCS.map((n) => [n.id, n.name]));
 
 type Tab = "active" | "completed";
 
-type ActiveEntry = { quest: Quest; entry: QuestProgressEntry };
-type ActiveGroup = {
+type QuestRow = { quest: Quest; entry: QuestProgressEntry };
+type RegionGroup = {
   regionId: string;
   regionName: string;
   level: number | undefined;
-  quests: ActiveEntry[];
+  quests: QuestRow[];
+  /** 진행 중 탭 — 보상 대기(ready) 개수. 완료 탭에선 항상 0. */
   readyCount: number;
+  /** 완료 탭 — 그룹 내 가장 최근 완료 시각(없으면 0). 진행 중 탭에선 0. */
+  mostRecentAt: number;
 };
 
 export function QuestJournalView({
@@ -49,17 +50,12 @@ export function QuestJournalView({
   const activeGroups = buildActiveGroups(getEntry);
   const activeCount = activeGroups.reduce((a, g) => a + g.quests.length, 0);
 
-  // 완료 — 평탄 리스트, 최근 완료 순. lastCompletedAt 가 없으면 맨 뒤.
-  const completed = QUESTS.map((q) => ({ quest: q, entry: getEntry(q.id) }))
-    .filter(
-      ({ entry }) => entry.state === "completed" || entry.completedCount > 0,
-    )
-    .sort(
-      (a, b) =>
-        (b.entry.lastCompletedAt ?? 0) - (a.entry.lastCompletedAt ?? 0),
-    );
-
-  const completedPager = usePagination(completed, 10);
+  // 완료 — 지역별로 묶고 지역은 적정레벨 오름차순. 같은 지역 안에서는 최근 완료 순.
+  const completedGroups = buildCompletedGroups(getEntry);
+  const completedCount = completedGroups.reduce(
+    (a, g) => a + g.quests.length,
+    0,
+  );
 
   return (
     <div className="space-y-3">
@@ -70,7 +66,7 @@ export function QuestJournalView({
           onClick={() => setTab("active")}
         />
         <TabButton
-          label={`완료 ${completed.length}`}
+          label={`완료 ${completedCount}`}
           active={tab === "completed"}
           onClick={() => setTab("completed")}
         />
@@ -86,35 +82,33 @@ export function QuestJournalView({
         ) : (
           <div className="space-y-2">
             {activeGroups.map((g) => (
-              <RegionSection key={g.regionId} group={g} />
+              <RegionSection
+                key={g.regionId}
+                group={g}
+                tab="active"
+                defaultOpen
+              />
             ))}
           </div>
         )
-      ) : completed.length === 0 ? (
+      ) : completedGroups.length === 0 ? (
         <EmptyState
           icon={<ClipboardText size={40} weight="duotone" />}
           title="아직 완료한 의뢰가 없습니다"
           message="의뢰를 완료하면 여기에 기록됩니다."
         />
       ) : (
-        <>
-          <ul className="space-y-2">
-            {completedPager.pageItems.map(({ quest, entry }) => (
-              <JournalCard
-                key={quest.id}
-                quest={quest}
-                entry={entry}
-                tab="completed"
-                showRegion
-              />
-            ))}
-          </ul>
-          <Pagination
-            page={completedPager.page}
-            pageCount={completedPager.pageCount}
-            setPage={completedPager.setPage}
-          />
-        </>
+        <div className="space-y-2">
+          {completedGroups.map((g) => (
+            <RegionSection
+              key={g.regionId}
+              group={g}
+              tab="completed"
+              // 완료 탭은 의뢰가 쌓이면 길어져 기본 접힘. 사용자가 관심 지역만 펼치게.
+              defaultOpen={false}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
@@ -125,8 +119,8 @@ export function QuestJournalView({
 // - 지역 내 정렬: ready → active 순, 같은 상태 내에서는 QUESTS 선언 순 유지
 function buildActiveGroups(
   getEntry: (id: string) => QuestProgressEntry,
-): ActiveGroup[] {
-  const map = new Map<string, ActiveGroup>();
+): RegionGroup[] {
+  const map = new Map<string, RegionGroup>();
   for (const quest of QUESTS) {
     const entry = getEntry(quest.id);
     if (entry.state !== "active" && entry.state !== "ready") continue;
@@ -138,6 +132,7 @@ function buildActiveGroups(
         level: REGION_LEVELS.get(quest.regionId),
         quests: [],
         readyCount: 0,
+        mostRecentAt: 0,
       };
       map.set(quest.regionId, g);
     }
@@ -159,9 +154,58 @@ function buildActiveGroups(
   return groups;
 }
 
-function RegionSection({ group }: { group: ActiveGroup }) {
-  // 진행 중 탭은 평소 의뢰가 많지 않아 기본 펼침이 더 편하다.
-  const [open, setOpen] = useState(true);
+// 완료한 의뢰들을 지역별로 묶어 정렬한다.
+// - 지역 정렬: recommendedLevel 오름차순 (진행 중 탭과 통일)
+// - 지역 내 정렬: lastCompletedAt 내림차순 (최근 완료가 위)
+// - 그룹별 mostRecentAt 도 함께 계산해 헤더 부제로 "마지막 완료 N일 전" 표시
+function buildCompletedGroups(
+  getEntry: (id: string) => QuestProgressEntry,
+): RegionGroup[] {
+  const map = new Map<string, RegionGroup>();
+  for (const quest of QUESTS) {
+    const entry = getEntry(quest.id);
+    if (entry.state !== "completed" && entry.completedCount === 0) continue;
+    let g = map.get(quest.regionId);
+    if (!g) {
+      g = {
+        regionId: quest.regionId,
+        regionName: REGION_NAMES.get(quest.regionId) ?? quest.regionId,
+        level: REGION_LEVELS.get(quest.regionId),
+        quests: [],
+        readyCount: 0,
+        mostRecentAt: 0,
+      };
+      map.set(quest.regionId, g);
+    }
+    g.quests.push({ quest, entry });
+    if ((entry.lastCompletedAt ?? 0) > g.mostRecentAt) {
+      g.mostRecentAt = entry.lastCompletedAt ?? 0;
+    }
+  }
+  const groups = Array.from(map.values()).sort(
+    (a, b) =>
+      (a.level ?? Number.POSITIVE_INFINITY) -
+      (b.level ?? Number.POSITIVE_INFINITY),
+  );
+  for (const g of groups) {
+    g.quests.sort(
+      (a, b) =>
+        (b.entry.lastCompletedAt ?? 0) - (a.entry.lastCompletedAt ?? 0),
+    );
+  }
+  return groups;
+}
+
+function RegionSection({
+  group,
+  tab,
+  defaultOpen,
+}: {
+  group: RegionGroup;
+  tab: Tab;
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <section>
       <button
@@ -190,6 +234,11 @@ function RegionSection({ group }: { group: ActiveGroup }) {
               보상 대기 {group.readyCount}
             </span>
           )}
+          {tab === "completed" && group.mostRecentAt > 0 && (
+            <span className="text-zinc-400 dark:text-zinc-500">
+              마지막 {formatRelative(group.mostRecentAt)}
+            </span>
+          )}
           <span className="text-zinc-500 dark:text-zinc-400">
             {group.quests.length}건
           </span>
@@ -202,7 +251,7 @@ function RegionSection({ group }: { group: ActiveGroup }) {
               key={quest.id}
               quest={quest}
               entry={entry}
-              tab="active"
+              tab={tab}
               showRegion={false}
             />
           ))}
