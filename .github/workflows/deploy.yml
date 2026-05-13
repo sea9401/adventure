@@ -1,7 +1,8 @@
 name: Deploy to EC2
 
 # main 에 push 되면 EC2 로 SSH 접속해 코드 갱신 + 재빌드 + 재시작.
-# prod (~/adventure-rpg) 와 test (~/adventure-rpg-test) 를 순차로 배포한다.
+# prod (~/adventure-rpg) 와 test (~/adventure-rpg-test) 를 두 step 으로 분리해
+# 배포한다 — test 실패는 prod 가 끝나 있다면 워크플로 자체를 빨간불로 만들지 않는다.
 # 필요한 GitHub Secrets (Settings → Secrets and variables → Actions):
 #   EC2_HOST    — EC2 의 고정 IP 또는 도메인 (예: 54.180.28.29)
 #   EC2_SSH_KEY — EC2 접속용 private key 전체 (msmsge-key.pem 의 내용)
@@ -18,7 +19,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH & deploy
+      # ──────────────────────────────────────────────────────────────────
+      # prod 배포 — 실패 시 워크플로 전체 실패. 91fb8d2 까지 잘 돌던 원형 스크립트
+      # 를 그대로 유지 (multi-line if/subshell 을 끼우니 prod 헬스 직후 SSH 세션이
+      # silent 하게 끊겨 워크플로가 빨간불이 되는 케이스가 발생 — #93 이후 두 번).
+      # ──────────────────────────────────────────────────────────────────
+      - name: SSH & deploy [prod]
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -28,15 +34,7 @@ jobs:
           command_timeout: 30m
           script: |
             set -e
-            # set +o pipefail 명시 — systemctl | head 가 SIGPIPE 로 비-0 종료해도
-            # 파이프라인 자체는 head 의 0 만 본다. 일부 appleboy 버전이 pipefail 을
-            # 켜고 시작하는 경우가 보고됐어서 안전망.
-            set +o pipefail
-
-            ##############################
-            # prod 배포 — 실패 시 워크플로 전체 실패.
-            ##############################
-            cd "$HOME/adventure-rpg"
+            cd ~/adventure-rpg
             echo "▶ [prod] git update"
             git fetch --prune origin
             git checkout main
@@ -50,38 +48,34 @@ jobs:
             echo "▶ [prod] restart"
             sudo systemctl restart adventure-rpg
             sleep 2
-            (sudo systemctl --no-pager status adventure-rpg | head -n 4) || true
+            sudo systemctl --no-pager status adventure-rpg | head -n 4
             echo "▶ [prod] health"
             curl -fsS -o /dev/null -w 'prod=%{http_code}\n' http://127.0.0.1:3000/api/health || true
+            echo "▶ [prod] done"
 
-            ##############################
-            # test 배포 — best-effort. 디렉토리 없거나 실패해도 워크플로 자체는 계속.
-            # (prod 가 이미 끝났는데 test 한 단계 때문에 빨간불이 되는 건 의미 없음.)
-            ##############################
-            TEST_DIR="$HOME/adventure-rpg-test"
-            if [ -d "$TEST_DIR" ] && [ -r "$TEST_DIR" ] && [ -x "$TEST_DIR" ]; then
-              echo "▶ [test] start ($TEST_DIR)"
-              (
-                set -e
-                cd "$TEST_DIR"
-                echo "▶ [test] git update"
-                git fetch --prune origin
-                git checkout main
-                git reset --hard origin/main
-                echo "▶ [test] npm ci"
-                npm ci
-                echo "▶ [test] db migrate"
-                node --env-file=.env.production.local src/db/migrate.mjs
-                echo "▶ [test] build"
-                npm run build
-                echo "▶ [test] restart"
-                sudo systemctl restart adventure-rpg-test
-                sleep 2
-                (sudo systemctl --no-pager status adventure-rpg-test | head -n 4) || true
-                echo "▶ [test] health"
-                curl -fsS -o /dev/null -w 'test=%{http_code}\n' http://127.0.0.1:3001/api/health || true
-              ) || echo "⚠ [test] 배포 단계 실패 — prod 는 정상, 다음 push 또는 수동 deploy-test.sh 로 재시도"
-            else
-              echo "▶ [test] skipped ($TEST_DIR 미존재/접근 불가)"
+      # ──────────────────────────────────────────────────────────────────
+      # test 배포 — best-effort. 별도 SSH 세션이라 prod 의 set -e 컨텍스트와 분리.
+      # continue-on-error: true + 디렉토리 부재 시 skip → 실패해도 워크플로는 success.
+      # 실제 배포 로직은 레포에 이미 있는 deploy/deploy-test.sh 에 위임.
+      # ──────────────────────────────────────────────────────────────────
+      - name: SSH & deploy [test]
+        if: success()
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: false
+          command_timeout: 30m
+          script: |
+            if [ ! -d "$HOME/adventure-rpg-test" ]; then
+              echo "▶ [test] skipped (~/adventure-rpg-test not present)"
+              exit 0
             fi
-            echo "▶ done"
+            cd "$HOME/adventure-rpg-test"
+            if [ ! -x ./deploy/deploy-test.sh ]; then
+              echo "▶ [test] skipped (deploy-test.sh missing or not executable)"
+              exit 0
+            fi
+            ./deploy/deploy-test.sh
