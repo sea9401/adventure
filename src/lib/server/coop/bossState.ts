@@ -61,17 +61,25 @@ export async function setStoryFlagServer(
   // 클라/서버 공용 상수 — 리터럴 재기재 금지 (불일치 시 서버가 박은 플래그가
   // 클라에 영원히 안 보임 — 운봉의 거인 후 운향 진입로 안 열리던 버그 이력).
   const STORAGE_KEY = STORY_FLAGS_STORAGE_KEY;
-  // 기존 값 조회 → 합치기 → upsertSave.
-  const existing = await db
-    .select({ value: savesKv.value })
-    .from(savesKv)
-    .where(and(eq(savesKv.userId, userId), eq(savesKv.key, STORAGE_KEY)))
-    .limit(1);
-  const value = existing[0]?.value as { flags?: unknown } | undefined;
-  const flags: string[] = Array.isArray(value?.flags)
-    ? (value.flags as string[])
-    : [];
-  if (flags.includes(flagId)) return;
-  flags.push(flagId);
-  await upsertSave(db, userId, STORAGE_KEY, { flags });
+  // 행을 FOR UPDATE 로 잠그고 읽기 → 합치기 → 쓰기, 전부 단일 트랜잭션.
+  // (route 가 이 함수를 onDefeatFlag/onAttackFlag 로 2회 연속 호출하고, 클라의
+  //  useRemotePatch("storyFlags.v2") PATCH 도 동시에 in-flight 일 수 있다 — 락 없는
+  //  read-modify-write 는 lost update 로 플래그가 조용히 안 박혀 진행 게이트가 안 열린다.)
+  await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({ value: savesKv.value })
+      .from(savesKv)
+      .where(and(eq(savesKv.userId, userId), eq(savesKv.key, STORAGE_KEY)))
+      .for("update")
+      .limit(1);
+    const value = existing[0]?.value as { flags?: unknown } | undefined;
+    const flags: string[] = Array.isArray(value?.flags)
+      ? (value.flags as unknown[]).filter(
+          (f): f is string => typeof f === "string",
+        )
+      : [];
+    if (flags.includes(flagId)) return;
+    flags.push(flagId);
+    await upsertSave(tx, userId, STORAGE_KEY, { flags });
+  });
 }
