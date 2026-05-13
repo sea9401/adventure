@@ -56,6 +56,39 @@ describe("skillLayout — 슬롯 해금", () => {
       }).normalSlots,
     ).toBe(4);
   });
+
+  it("6번째 일반 슬롯은 5번째 해금 + Lv90 AND endgame_apex_defeated", () => {
+    // Lv90 + endgame_apex 만 있고 화산 심장 없으면 5번째 안 열려 6번째도 안 열림
+    expect(
+      skillLayout({
+        level: 90,
+        hasFlag: (id) => id === "endgame_apex_defeated",
+      }).normalSlots,
+    ).toBe(3);
+    // 5번째까지만 열림
+    expect(
+      skillLayout({
+        level: 90,
+        hasFlag: (id) => id === "volcano_heart_defeated",
+      }).normalSlots,
+    ).toBe(4);
+    // Lv89 면 6번째 안 열림 (5번째만 4)
+    expect(
+      skillLayout({
+        level: 89,
+        hasFlag: (id) =>
+          id === "volcano_heart_defeated" || id === "endgame_apex_defeated",
+      }).normalSlots,
+    ).toBe(4);
+    // 모두 충족 → 6번째 열림
+    expect(
+      skillLayout({
+        level: 90,
+        hasFlag: (id) =>
+          id === "volcano_heart_defeated" || id === "endgame_apex_defeated",
+      }).normalSlots,
+    ).toBe(5);
+  });
 });
 
 describe("deriveSkills — 4티어는 스탯 50 도달 시", () => {

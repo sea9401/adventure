@@ -27,6 +27,19 @@ describe("requiredExpToNext", () => {
     expect(requiredExpToNext(0)).toBeNull();
     expect(requiredExpToNext(-1)).toBeNull();
   });
+
+  it("엔드게임 multiplier 구간 경계 — Lv60 ×1.00 / Lv70 ×1.30 / Lv90 ×1.55", () => {
+    const base = (lv: number) => (120 / 35) * Math.pow(lv, 2.5);
+    expect(requiredExpToNext(60)).toBe(Math.floor(base(60) * 1.0));
+    expect(requiredExpToNext(70)).toBe(Math.floor(base(70) * 1.3));
+    expect(requiredExpToNext(90)).toBe(Math.floor(base(90) * 1.55));
+  });
+});
+
+describe("MAX_LEVEL", () => {
+  it("만렙은 100", () => {
+    expect(MAX_LEVEL).toBe(100);
+  });
 });
 
 describe("applyExpGain", () => {
