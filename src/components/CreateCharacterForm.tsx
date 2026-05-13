@@ -20,13 +20,17 @@ type CheckState =
   | { kind: "taken" }
   | { kind: "error" };
 
-export function NameSetupModal({
+// 캐릭터 생성 폼 — 이름 + 외형. 모달 chrome 없이 순수 폼만 담당하므로
+// /create 페이지든 다른 컨테이너든 재사용 가능. 제출 성공 시 onSuccess() 콜백.
+export function CreateCharacterForm({
   onSubmit,
+  onSuccess,
 }: {
   onSubmit: (
     data: { name: string; gender: Avatar },
     options?: SubmitOptions,
   ) => Promise<SubmitResult>;
+  onSuccess: () => void;
 }) {
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<Avatar | null>(null);
@@ -86,7 +90,7 @@ export function NameSetupModal({
       { onRetry: () => setRetrying(true) },
     );
     if (result.ok) {
-      // needsSetup=false 가 되어 부모가 모달 unmount — 별도 처리 불필요.
+      onSuccess();
       return;
     }
     setSubmitting(false);
@@ -107,69 +111,60 @@ export function NameSetupModal({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="name-setup-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-    >
-      <div className="no-scrollbar max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 id="name-setup-title" className="text-xl font-semibold">
-          모험가를 만들어보세요
-        </h2>
-        <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
-          이름과 외형을 골라 새로운 모험을 시작합니다.
-        </p>
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              이름
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="이름 입력"
-              maxLength={NAME_MAX}
-              autoFocus
-              disabled={submitting}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base outline-none transition-colors focus:border-zinc-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-400"
-            />
-            <NameCheckIndicator state={check} />
+    <div>
+      <h1 className="text-xl font-semibold">모험가를 만들어보세요</h1>
+      <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+        이름과 외형을 골라 새로운 모험을 시작합니다.
+      </p>
+      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        <div>
+          <label className="mb-1.5 block text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            이름
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="이름 입력"
+            maxLength={NAME_MAX}
+            autoFocus
+            disabled={submitting}
+            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base outline-none transition-colors focus:border-zinc-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-400"
+          />
+          <NameCheckIndicator state={check} />
+        </div>
+        <div>
+          <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            외형
           </div>
-          <div>
-            <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              외형
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {AVATARS.map((id) => (
-                <AvatarCard
-                  key={id}
-                  id={id}
-                  selected={avatar === id}
-                  onSelect={() => setAvatar(id)}
-                />
-              ))}
-            </div>
+          <div className="grid grid-cols-3 gap-2">
+            {AVATARS.map((id) => (
+              <AvatarCard
+                key={id}
+                id={id}
+                selected={avatar === id}
+                onSelect={() => setAvatar(id)}
+              />
+            ))}
           </div>
-          {submitError && (
-            <p className="text-sm text-rose-600 dark:text-rose-400">
-              {submitError}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="w-full rounded-md bg-zinc-900 px-3 py-2 text-base font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            {submitting
-              ? retrying
-                ? "재시도 중..."
-                : "저장 중..."
-              : "모험 시작"}
-          </button>
-        </form>
-      </div>
+        </div>
+        {submitError && (
+          <p className="text-sm text-rose-600 dark:text-rose-400">
+            {submitError}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="w-full rounded-md bg-zinc-900 px-3 py-2 text-base font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        >
+          {submitting
+            ? retrying
+              ? "재시도 중..."
+              : "저장 중..."
+            : "모험 시작"}
+        </button>
+      </form>
     </div>
   );
 }
