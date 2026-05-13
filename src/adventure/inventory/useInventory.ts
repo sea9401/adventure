@@ -10,6 +10,13 @@ import {
 } from "../data/dropQuality";
 import type { MaterialId } from "../data/materials";
 import { potionMax, type PotionId } from "../data/potions";
+import {
+  applyDisassemble,
+  planDisassemble,
+  type DisassemblePlan,
+  type DisassembleRequest,
+} from "../crafting/disassemble";
+import type { EquippedSlots } from "../character/types";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 
@@ -367,6 +374,23 @@ export function useInventory() {
     [state],
   );
 
+  // 분해 — 대장간 분해실(PR E)의 진입점. 잉여 장비/재료를 갈아 마력가루로 환산한다.
+  // 엔진은 crafting/disassemble.ts (순수 함수). 여기서는 현 state + 장착 슬롯을 받아
+  // 계획을 세우고, 차단된 항목은 호출자에게 그대로 돌려준다 (UI 가 사유 표시).
+  const disassemble = useCallback(
+    (request: DisassembleRequest, slots: EquippedSlots): DisassemblePlan => {
+      const cur = stateRef.current;
+      const plan = planDisassemble(request, cur, slots);
+      if (plan.totalDust > 0) {
+        const next = applyDisassemble(plan, cur);
+        stateRef.current = next;
+        setState(next);
+      }
+      return plan;
+    },
+    [],
+  );
+
   // 서버 권위 액션(상점 등)의 응답으로 받은 inventory.v2 값으로 통째 교체.
   // 이후 useRemotePatch 가 동일 값을 다시 PATCH 하지만 서버 version 과 409 재시도로 자가 수렴.
   const replaceFromSaved = useCallback((raw: unknown) => {
@@ -399,6 +423,7 @@ export function useInventory() {
     consumeConsumable,
     consumableCount,
     addPotionCapacity,
+    disassemble,
     replaceFromSaved,
     potionMax: potionMaxValue,
   };

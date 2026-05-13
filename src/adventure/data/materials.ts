@@ -221,6 +221,16 @@ export const MATERIALS = {
     price: 12,
     inShop: false,
   },
+  // 통화성 재료 — 잉여 장비/재료를 대장간 분해실에서 갈아내면 가루처럼 부서지며 쌓인다.
+  // 어디든 통하는 작은 마력의 결정이라, 회복약 라인의 통합 재료로 쓰인다.
+  // inShop: false (상점 미취급) — 분해로만 얻고, 회복약 제작으로 소진한다.
+  mana_dust: {
+    id: "mana_dust",
+    name: "마력가루",
+    description: "잉여 장비와 재료를 갈아내면 가루처럼 부서지며 모이는, 어디든 통하는 작은 마력의 결정. 약을 졸이는 데 두루 쓰인다.",
+    price: 4,
+    inShop: false,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;
