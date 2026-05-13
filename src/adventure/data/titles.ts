@@ -87,6 +87,18 @@ export const TITLES: Record<TitleId, Title> = {
     description: "잠들지 않던 것을 잠재우고, 구름 위 마을의 숨을 되돌린 자.",
     condition: "운향 — 노촌장 백운의 '운봉의 거인' 의뢰 완수",
   },
+  saltmarsh_friend: {
+    id: "saltmarsh_friend",
+    name: "소만의 식구",
+    description: "암초 밑에서 뒤척이던 것을 가라앉히고, 마른 그물을 다시 채운 자.",
+    condition: "소만 — 원로 여울의 '수심의 것' 의뢰 완수",
+  },
+  dustford_friend: {
+    id: "dustford_friend",
+    name: "마른나루의 식구",
+    description: "한 세대 동안 빈 벽을 지키던 옛 성문지기를 잠재우고, 메마른 포구가 성채를 되찾게 한 자.",
+    condition: "마른나루 — 옛 수비대장 무진의 '옛 성문지기' 의뢰 완수",
+  },
   ridge_crosser: {
     id: "ridge_crosser",
     name: "능선을 넘은 자",

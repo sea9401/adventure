@@ -18,6 +18,10 @@ const ON_COMPLETE: Record<string, readonly SideEffect[]> = {
     { kind: "grantTitle", titleId: "mountain_friend" },
     { kind: "setFlag", flag: "unhyang_main_cleared" },
   ],
+  // 해안 지선 메인 라인 "수심의 것" — 여울의 보스 의뢰 완수.
+  "saltmarsh-yeoul-deep-one": [{ kind: "grantTitle", titleId: "saltmarsh_friend" }],
+  // 서편 옛길 메인 라인 "옛 성문지기" — 무진의 보스 의뢰 완수.
+  "dustford-mujin-gatekeeper": [{ kind: "grantTitle", titleId: "dustford_friend" }],
   // 천공 성지 메인 라인 "능선 너머의 봉인" — 해무의 마지막 자물쇠 완수.
   "skyreach-haemu-flame-scale": [
     { kind: "grantTitle", titleId: "ridge_crosser" },
