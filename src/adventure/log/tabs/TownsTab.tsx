@@ -16,9 +16,15 @@ import { ROLE_LABEL, relativeTime } from "./shared";
 // NPC 노트는 별도 탭이 아니라 여기에 통합돼 있다: 각 마을의 NPC 행을 펼치면
 // 소개·첫인사 등 인물 정보가 보인다.
 export function TownsTab({ log }: { log: AdventureLog }) {
-  const towns = WORLD_MAP.regions.filter(
-    (r) => r.tags?.includes("town") && log.towns[r.id]?.visited,
-  );
+  // 적정 레벨 오름차순 정렬 — recommendedLevel 미지정은 맨 뒤. 동률은 world.ts
+  // 정의 순서 유지(stable sort).
+  const towns = WORLD_MAP.regions
+    .filter((r) => r.tags?.includes("town") && log.towns[r.id]?.visited)
+    .sort(
+      (a, b) =>
+        (a.recommendedLevel ?? Number.POSITIVE_INFINITY) -
+        (b.recommendedLevel ?? Number.POSITIVE_INFINITY),
+    );
 
   // 방문한 마을 어디에도 속하지 않은 대화 NPC → '기타' 카드로.
   const townIds = new Set(towns.map((r) => r.id));

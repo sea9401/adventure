@@ -17,9 +17,15 @@ import { MonsterAvatarMini, MonsterStatBlock, relativeTime } from "./shared";
 // 주의: log.monsters[name].kills 는 region 무관 누적이므로, 같은 몬스터가 여러 지역에
 // 등장하면 양쪽 카드에 동일 수치가 보인다. 현재 데이터 모델 한계 (region 별 분리 추적은 별도 작업).
 export function PlacesTab({ log }: { log: AdventureLog }) {
-  const places = WORLD_MAP.regions.filter(
-    (r) => !r.tags?.includes("town") && log.towns[r.id]?.visited,
-  );
+  // 적정 레벨 오름차순 정렬 — recommendedLevel 미지정은 맨 뒤. 동률은 world.ts
+  // 정의 순서 유지(stable sort).
+  const places = WORLD_MAP.regions
+    .filter((r) => !r.tags?.includes("town") && log.towns[r.id]?.visited)
+    .sort(
+      (a, b) =>
+        (a.recommendedLevel ?? Number.POSITIVE_INFINITY) -
+        (b.recommendedLevel ?? Number.POSITIVE_INFINITY),
+    );
 
   // 어떤 지역의 enemies 목록에도 없는 조우 몬스터 (특수 보스·이벤트 등) → '기타' 카드로.
   const placedNames = new Set(WORLD_MAP.regions.flatMap((r) => r.enemies));
