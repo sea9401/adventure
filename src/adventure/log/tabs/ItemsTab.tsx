@@ -13,6 +13,7 @@ import {
   type EquipItem,
   type EquipSlot,
   type ItemId,
+  type ItemRarity,
 } from "@/adventure/data/items";
 import { getRecipeById } from "@/adventure/data/recipes";
 import { dropQualityTextClass } from "@/adventure/data/dropQuality";
@@ -82,7 +83,24 @@ type DiscoveredRow = {
   grade: string | null;
 };
 
-// 도감 등록분 → 표시 행 목록. (itemId × 변형) 한 줄. 슬롯 필터 + 이름순 정렬.
+// 등급 오름차순 정렬 키. ItemRarity 미지정은 common 취급(== 0). PlacesTab 의 적정레벨 오름차순과 동일한 방향.
+const RARITY_ORDER: Record<ItemRarity, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  unique: 3,
+  legendary: 4,
+};
+
+// 같은 아이템의 변형끼리 묶일 때 내부 정렬 키 — 조잡한(-2) → 불량한(-1) → base(0) → 정교한/걸작(+1) → 빼어난(+2).
+function variantTierOrder(key: string): number {
+  const p = parseVariantKey(key);
+  if (!p || p.kind === "base") return 0;
+  if (p.kind === "crafted") return p.tier;
+  return p.quality;
+}
+
+// 도감 등록분 → 표시 행 목록. (itemId × 변형) 한 줄. 슬롯 필터 + 등급 → 이름 → 변형 등급 순 정렬.
 function buildRows(
   discovered: Record<string, DiscoveredEquipmentEntry>,
   slot: EquipSlot,
@@ -104,10 +122,16 @@ function buildRows(
       });
     }
   }
-  rows.sort(
-    (a, b) =>
-      a.name.localeCompare(b.name) || a.variantKey.localeCompare(b.variantKey),
-  );
+  rows.sort((a, b) => {
+    const ra = RARITY_ORDER[a.item.rarity ?? "common"];
+    const rb = RARITY_ORDER[b.item.rarity ?? "common"];
+    if (ra !== rb) return ra - rb;
+    const baseA = ITEMS[a.id]?.name ?? a.id;
+    const baseB = ITEMS[b.id]?.name ?? b.id;
+    const byBaseName = baseA.localeCompare(baseB);
+    if (byBaseName !== 0) return byBaseName;
+    return variantTierOrder(a.variantKey) - variantTierOrder(b.variantKey);
+  });
   return rows;
 }
 
