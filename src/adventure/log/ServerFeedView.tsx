@@ -2,7 +2,7 @@
 
 // 전체 소식 — 모험탭 하단 패널. 서버 전체에 흘러가는 자랑거리(유실된 명품 획득, 걸작 제작 성공).
 // 글로벌 채팅과 분리된 "전광판". 최근 FEED_FETCH_LIMIT 개만 노출, FEED_POLL_MS 주기 폴링.
-// 기본은 접힌 상태(최근 3개 미리보기) — 펼치면 전체 + 내 소식 공유 토글.
+// 기본은 접힌 상태(최근 7개 미리보기) — 펼치면 전체 + 내 소식 공유 토글.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -21,7 +21,7 @@ import {
   type FeedType,
 } from "@/lib/feed-config";
 
-const PREVIEW_COUNT = 3;
+const PREVIEW_COUNT = 7;
 
 function itemName(itemId: string): string {
   return (ITEMS as Record<string, { name?: string }>)[itemId]?.name ?? itemId;
