@@ -263,6 +263,50 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "village_blacksmith_bold",
   },
+  // ── 시작 마을 — 새 quest kind 의뢰 3종 ─────────────────────────────────
+  // 각 인트로 라인의 4 번째 단계로 매단다. 라인 어휘를 잇는 자연스러운 결.
+  {
+    // equip_item — 트레이너 라인 마무리. 활력의 반지 한 번이라도 차고 와 봐.
+    id: "village-trainer-equip-vitality-ring",
+    regionId: "village",
+    title: "스미스의 청 — 반지를 차고 와",
+    description:
+      "내가 준 활력의 반지 — 끼고 다녀? 한 번이라도 차고 와 보게. 그래야 자네가 평야 졸업이라고 인정해 주지.",
+    requiredLevel: 1,
+    target: { kind: "equip_item", itemId: "vitality_ring" },
+    reward: { gold: 60, fame: 5, exp: 90 },
+    repeatable: false,
+    giverNpcId: "village_trainer_smith",
+    requiresQuestCompleted: "village-trainer-moles",
+  },
+  {
+    // visit_region — 지미의 깊은 동굴 라인 마무리. 광맥 자리를 다섯 번 더 봐 두고 와라.
+    id: "village-jimmy-deep-cave-tour",
+    regionId: "village",
+    title: "나무꾼 지미의 청 — 광맥 자리 다시 보기",
+    description:
+      "사람들이 안 믿어요. 자네가 봤다는 그 광맥 자리, 한 번 더 가서 확인하고 와 주쇼. 다섯 번이면 마을 사람들도 자네 말을 믿을 게요.",
+    requiredLevel: 6,
+    target: { kind: "visit_region", regionId: "deep_cave", count: 5 },
+    reward: { gold: 320, fame: 14, exp: 480 },
+    repeatable: false,
+    giverNpcId: "village_woodcutter_jimmy",
+    requiresQuestCompleted: "village-jimmy-deep-cave",
+  },
+  {
+    // craft_item — 볼드의 마정석 라인 마무리. 자네 손으로 한 자루 짜 봐.
+    id: "village-bold-mana-sword-craft",
+    regionId: "village",
+    title: "대장장이 볼드의 청 — 자네 손으로 한 자루",
+    description:
+      "팔찌까지 짜 봤으니, 이젠 칼이야. 마정석 검 — 자네 손으로 한 자루 짜 봐. 그래야 그 마정석이 손에 어떻게 익는지 알지.",
+    requiredLevel: 7,
+    target: { kind: "craft_item", itemId: "mana_sword", count: 1 },
+    reward: { gold: 400, fame: 16, exp: 600 },
+    repeatable: false,
+    giverNpcId: "village_blacksmith_bold",
+    requiresQuestCompleted: "village-bold-mana-crystal",
+  },
   // ── 디올라 — "안개 너머의 길" 트라이얼 라인 ──────────────────────────────
   // 후드 손님이 폐허로 안내하기 전에 디올라 사람들의 신뢰를 얻어야 한다.
   // 세 의뢰는 마을·동굴·숲을 거쳐 디올라까지 이른 모험가가 그 동선을 다시
@@ -378,6 +422,90 @@ export const QUESTS: Quest[] = [
     target: { kind: "kill", monsterName: "부서진 골렘", count: 30 },
     reward: { gold: 280, fame: 14, exp: 380 },
     repeatable: true,
+  },
+  // ── 디올라 — 새 quest kind 의뢰 5종 ─────────────────────────────────────
+  // 트라이얼 통과 후 라인을 한 번씩 마친 NPC 들이 각자 결에 맞춰 한 단계 더 내준다.
+  {
+    // talk_to_npc — 리오의 라인 마무리. 어부 카이를 세 번 들러줘라.
+    id: "diola-rio-listen-kai",
+    regionId: "diola",
+    title: "리오의 청 — 카이 아저씨한테 가 줘",
+    description:
+      "카이 아저씨가 요즘 밤마다 호숫가만 봐요. 새벽에도. 엄마가 가서 한번 들어주랬는데 — 나 무서워. 형/누나가 세 번만 들러줘요. 진짜로!",
+    requiredLevel: 5,
+    target: { kind: "talk_to_npc", npcId: "diola_fisher", count: 3 },
+    reward: { gold: 140, fame: 9, exp: 220 },
+    repeatable: false,
+    giverNpcId: "diola_kid",
+    requiresQuestCompleted: "diola-rio-nails",
+  },
+  {
+    // talk_to_npc — 노라의 라인 마무리. 리오를 세 번 들러줘라.
+    id: "diola-nora-listen-rio",
+    regionId: "diola",
+    title: "노라의 청 — 리오 들어주기",
+    description:
+      "리오가 요즘 다 큰 척만 해요. 후드 손님 흉내 내면서요. 어린애가 어른 흉내 내는 게 마음 쓰여서요 — 형/누나가 세 번만 들러줘요. 차 한 잔 끓여 둘게요.",
+    requiredLevel: 5,
+    target: { kind: "talk_to_npc", npcId: "diola_kid", count: 3 },
+    reward: { gold: 160, fame: 10, exp: 240, potions: [{ id: "potion_heal_s", count: 4 }] },
+    repeatable: false,
+    giverNpcId: "diola_innkeeper",
+    requiresQuestCompleted: "diola-nora-bat-eyes",
+  },
+  {
+    // equip_item — 보로의 라인 마무리. 산적 단검 한 번이라도 차고 와라.
+    id: "diola-boro-bandit-dagger-bear",
+    regionId: "diola",
+    title: "보로의 청 — 손에 자루를",
+    description:
+      "다음에 거래소에 오실 땐 — 산적 단검 한 자루라도 차고 와 주세요. 다른 손님이 그 모습을 보면 따라 거래하거든요. 거래는 양쪽이 다 좋아야 거래라잖아요?",
+    requiredLevel: 6,
+    target: { kind: "equip_item", itemId: "bandit_dagger" },
+    reward: { gold: 220, fame: 12, exp: 320 },
+    repeatable: false,
+    giverNpcId: "diola_merchant",
+    requiresQuestCompleted: "diola-boro-spider-silk",
+  },
+  {
+    // kill_within_hp — 카이가 마지막에 내주는 일상 도전. 호수 님프를 흠 없이 다섯.
+    // 카이의 결("그 노랫소리에 만져지기 전에 끝내야 해")을 그대로 잇는다.
+    id: "diola-kai-pristine-nymphs",
+    regionId: "diola",
+    title: "카이의 청 — 흠 없는 호수 사냥",
+    description:
+      "그 노랫소리에 만져지기 전에 끝내야 해요. 호수 님프 다섯을 — HP 70% 이상으로 — 흠 없이 잡고 오세요. 그래야 새벽 그물을 다시 걷을 수 있을 거예요.",
+    requiredLevel: 8,
+    target: {
+      kind: "kill_within_hp",
+      monsterName: "호수 님프",
+      minHpFraction: 0.7,
+      count: 5,
+    },
+    reward: { gold: 260, fame: 13, exp: 420 },
+    repeatable: false,
+    giverNpcId: "diola_fisher",
+    // 후드 손님이 호수 떡밥을 카이에게 흘린 뒤에야 노출 (Kai 라인 클로저 flag 활용).
+    // KaiDialogue 의 lakeHint 단계까지 진행해야 의뢰가 노출되도록, requiresQuestCompleted
+    // 가 아니라 KaiDialogue 자체에서 storyFlag 로 게이팅한다 (아래 KaiDialogue 참고).
+  },
+  {
+    // equip_set — 마린의 라인 마무리. 자네가 처음 손에 든 것 한 복으로 차고 와라.
+    // 시작 장비 3 종(branch_stick·cloth_clothes·mom_amulet)을 동시에 장착하면 진행.
+    id: "diola-marin-first-gear-set",
+    regionId: "diola",
+    title: "촌장의 청 — 첫 모험가의 의장",
+    description:
+      "자네가 처음 손에 든 것 — 나뭇가지·천 옷·어머니의 부적. 한 번이라도 다시 한 복으로 차고 와 보게. 우리 마을 사람들도 한 번 봐야 해 — 자네가 어디서 시작했는지를.",
+    requiredLevel: 10,
+    target: {
+      kind: "equip_set",
+      itemIds: ["branch_stick", "cloth_clothes", "mom_amulet"],
+    },
+    reward: { gold: 320, fame: 15, exp: 500 },
+    repeatable: false,
+    giverNpcId: "diola_elder",
+    requiresQuestCompleted: "diola-marin-soul-crystals",
   },
   // ── 마른나루 (서편 옛길) ─────────────────────────────────────────────────
   // 옛길(Lv3) 잡몹 의뢰 → 마른나루 신임(무진 보증) → 무진 옛길 정리(oldwall_keep_unsealed)

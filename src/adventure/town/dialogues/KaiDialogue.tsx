@@ -1,5 +1,6 @@
 import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
+import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import {
   SUZY_FLAG_ACCEPTED,
@@ -11,13 +12,21 @@ import {
 // 호수에 이상한 게 있다, 후드 쓴 사람이 알지도 모른다는 힌트.
 export const KAI_FLAG_LAKE_HINT = "kai_lake_hint";
 
+// lakeHint 까지 진행한 뒤(= 카이가 호수 이상을 털어놓은 뒤)에야 진짜로 도전 의뢰를 내준다 —
+// "호수 님프를 흠 없이 다섯" (kill_within_hp). 카이의 결("그 노랫소리에 만져지기 전에 끝내야 해")
+// 을 그대로 잇는다.
+const PRISTINE_QUEST = "diola-kai-pristine-nymphs";
+const PRISTINE_NEED = 5;
+
 type Props = {
   npc: Npc;
   onClose: () => void;
+  quests: ReturnType<typeof useQuests>;
+  completeQuest: (id: string) => boolean;
   storyFlags: ReturnType<typeof useStoryFlags>;
 };
 
-export function KaiDialogue({ npc, onClose, storyFlags }: Props) {
+export function KaiDialogue({ npc, onClose, quests, completeQuest, storyFlags }: Props) {
   const accepted = storyFlags.has(SUZY_FLAG_ACCEPTED);
   const kaiSeen = storyFlags.has(SUZY_FLAG_KAI_SEEN);
   const suzyComplete = storyFlags.has(SUZY_FLAG_COMPLETE);
@@ -62,6 +71,52 @@ export function KaiDialogue({ npc, onClose, storyFlags }: Props) {
         }}
       />
     );
+  }
+
+  // Stage F — lakeHint 단계까지 진행한 뒤. 카이가 직접 호수 도전 의뢰를 내준다.
+  // 노랫소리에 만져지기 전에 — HP 70% 이상 유지하며 호수 님프 다섯.
+  if (lakeHint) {
+    const e = quests.getEntry(PRISTINE_QUEST);
+    if (e.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"다섯 다 — 노랫소리에 만져지지 않고. 새벽 그물이 한결 가벼워졌어요. 자, 약속한 사례요."}
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              if (completeQuest(PRISTINE_QUEST)) onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (e.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`그 노랫소리에 만져지기 전에 끝내야 해요. 한 마리라도 들리면 다음 한 마리는 손이 떨립니다. — 흠 없이 잡은 수 ${e.progress}/${PRISTINE_NEED}`}
+        />
+      );
+    }
+    if (e.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"그 노랫소리에 만져지기 전에 끝내야 해요. 호수 님프 다섯을 — HP 70% 이상으로 — 흠 없이 잡고 오세요. 그래야 새벽 그물을 다시 걷을 수 있을 거예요."}
+          primaryAction={{
+            label: "맡겠다고 한다",
+            onClick: () => {
+              quests.accept(PRISTINE_QUEST);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
   }
 
   // 그 외에는 기본 인사 (npcs.ts 의 greeting 사용).

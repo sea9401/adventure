@@ -202,6 +202,51 @@ export function WoodcutterJimmyDialogue({
   }
 
   if (deepCaveQuest.state === "completed") {
+    // 광맥 자리 재확인 — visit_region. deep-cave-hunter 노출 전에 우선 노출되는 한 단계.
+    const tour = quests.getEntry("village-jimmy-deep-cave-tour");
+    if (tour.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "사람들이 안 믿어요. 자네가 봤다는 그 광맥 자리, 한 번 더 가서 확인하고 와 주쇼. 다섯 번이면 마을 사람들도 자네 말을 믿을 게요."
+          }
+          primaryAction={{
+            label: "맡겠다",
+            onClick: () => {
+              quests.accept("village-jimmy-deep-cave-tour");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (tour.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`광맥 자리, 또 다녀왔수? 다섯 번이면 마을 사람들도 자네 말을 믿을 게요. — 다녀온 횟수 ${tour.progress}/5`}
+        />
+      );
+    }
+    if (tour.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"다섯 번 다 — 좋아. 이제 마을 사람들도 그 광맥 자리 이야기를 믿어. 자, 사례요."}
+          primaryAction={{
+            label: "보고를 마친다",
+            onClick: () => {
+              if (completeQuest("village-jimmy-deep-cave-tour")) onClose();
+            },
+          }}
+        />
+      );
+    }
+
     // 광맥의 수호자 누적 사냥 "사냥 기록" — 지미가 주는 개인 도전(보스 사냥꾼 칭호 일부).
     const hunter = quests.getEntry("deep-cave-hunter");
     if (hunter.state === "available") {

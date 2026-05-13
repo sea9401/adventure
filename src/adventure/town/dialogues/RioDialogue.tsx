@@ -34,6 +34,48 @@ export function RioDialogue({
   }
 
   if (entry.state === "completed") {
+    // 후속 — 카이 들어주기 (talk_to_npc). 못 의뢰가 끝난 뒤에야 노출.
+    const listenKai = quests.getEntry("diola-rio-listen-kai");
+    if (listenKai.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"카이 아저씨가 요즘 밤마다 호숫가만 봐요. 새벽에도. 엄마가 가서 한번 들어주랬는데 — 나 무서워. 형/누나가 세 번만 들러줘요. 진짜로!"}
+          primaryAction={{
+            label: "알았다고 한다",
+            onClick: () => {
+              quests.accept("diola-rio-listen-kai");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (listenKai.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`아직 안 들러줬어요? 카이 아저씨, 호숫가에 있어요. 세 번이면 돼요. — 다녀온 횟수 ${listenKai.progress}/3`}
+        />
+      );
+    }
+    if (listenKai.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"세 번 다 들러줬다고요? 아저씨 표정이 좀 풀린 거 같았어요. 자, 약속한 거 — 형/누나한테 진짜로 줄게요."}
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              if (completeQuest("diola-rio-listen-kai")) onClose();
+            },
+          }}
+        />
+      );
+    }
     return (
       <NpcDialogue
         npc={npc}

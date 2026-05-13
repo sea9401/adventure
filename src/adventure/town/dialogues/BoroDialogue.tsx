@@ -33,6 +33,48 @@ export function BoroDialogue({
   }
 
   if (entry.state === "completed") {
+    // 후속 — 산적 단검 차고 와 (equip_item). 거미줄 의뢰가 끝난 뒤에야 노출.
+    const bearDagger = quests.getEntry("diola-boro-bandit-dagger-bear");
+    if (bearDagger.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"다음에 거래소에 오실 땐 — 산적 단검 한 자루라도 차고 와 주세요. 다른 손님이 그 모습을 보면 따라 거래하거든요. 거래는 양쪽이 다 좋아야 거래라잖아요?"}
+          primaryAction={{
+            label: "맡겠다고 한다",
+            onClick: () => {
+              quests.accept("diola-boro-bandit-dagger-bear");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (bearDagger.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"인벤토리에 두지 마시고, 손에. 그래야 다른 손님 눈에 띄지요."}
+        />
+      );
+    }
+    if (bearDagger.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"오, 산적 단검 — 차고 오셨네요. 그 모습이면 됐어요. 자, 약속한 답례요."}
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              if (completeQuest("diola-boro-bandit-dagger-bear")) onClose();
+            },
+          }}
+        />
+      );
+    }
     return (
       <NpcDialogue
         npc={npc}

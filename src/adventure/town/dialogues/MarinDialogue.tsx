@@ -81,6 +81,49 @@ export function MarinDialogue({
   }
 
   if (entry.state === "completed") {
+    // 영혼 결정 라인 마무리 후 — 첫 모험가의 의장 (equip_set). 다른 분기보다 우선.
+    const firstGear = quests.getEntry("diola-marin-first-gear-set");
+    if (firstGear.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"자네가 처음 손에 든 것 — 나뭇가지·천 옷·어머니의 부적. 한 번이라도 다시 한 복으로 차고 와 보게. 우리 마을 사람들도 한 번 봐야 해 — 자네가 어디서 시작했는지를."}
+          primaryAction={{
+            label: "그러겠다고 한다",
+            onClick: () => {
+              quests.accept("diola-marin-first-gear-set");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (firstGear.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"세 가지 — 다 한 복으로. 인벤토리에 두지 말고 몸에. 잠깐이라도 좋아."}
+        />
+      );
+    }
+    if (firstGear.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"…그 모습, 우리 마을 사람들도 한 번씩은 봤어. 자네가 어디서 시작했는지를. 자, 약속한 사례요."}
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              if (completeQuest("diola-marin-first-gear-set")) onClose();
+            },
+          }}
+        />
+      );
+    }
+
     const tradeOpen = storyFlags.has("diola_unhyang_trade_done");
     return (
       <NpcDialogue
