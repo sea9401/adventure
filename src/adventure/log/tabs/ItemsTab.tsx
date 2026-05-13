@@ -29,6 +29,7 @@ import {
   getItemTier,
   groupByTier,
   matchesEquipQuery,
+  useTierToggle,
 } from "@/adventure/equipment/tier";
 import { EquipmentSearchInput } from "@/adventure/equipment/EquipmentSearchInput";
 import { TierSectionHeader } from "@/adventure/equipment/TierSectionHeader";
@@ -168,6 +169,9 @@ function EquipmentSubTab({
     () => groupByTier(filtered, (r) => getItemTier(r.id)),
     [filtered],
   );
+  // 티어 접기/펴기 — 기본 접힘. 검색 활성 시 모든 가시 tier 강제 펼침.
+  const { isExpanded, toggle } = useTierToggle();
+  const searching = query.trim().length > 0;
 
   if (rows.length === 0) {
     return (
@@ -187,34 +191,43 @@ function EquipmentSubTab({
           “{query}” — 일치하는 장비가 없습니다.
         </p>
       ) : (
-        grouped.map(({ tier, meta, entries }) => (
-          <div key={tier} className="space-y-2">
-            <TierSectionHeader meta={meta} count={entries.length} />
-            {entries.map((row) => (
-              <Card key={`${row.id}@${row.variantKey}`}>
-                <div className="flex items-baseline justify-between gap-2">
-                  <span
-                    className={`text-sm font-semibold ${
-                      row.grade
-                        ? gradeTextClass(row.variantKey)
-                        : rarityTextClass(row.item)
-                    }`}
-                  >
-                    {SLOT_EMOJI[row.item.slot]} {row.name}
-                  </span>
-                  <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
-                    {row.item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
-                  </span>
-                </div>
-                {row.item.description && (
-                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                    {row.item.description}
-                  </p>
-                )}
-              </Card>
-            ))}
-          </div>
-        ))
+        grouped.map(({ tier, meta, entries }) => {
+          const open = searching || isExpanded(tier);
+          return (
+            <div key={tier} className="space-y-2">
+              <TierSectionHeader
+                meta={meta}
+                count={entries.length}
+                expanded={open}
+                onToggle={() => toggle(tier)}
+              />
+              {open &&
+                entries.map((row) => (
+                  <Card key={`${row.id}@${row.variantKey}`}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span
+                        className={`text-sm font-semibold ${
+                          row.grade
+                            ? gradeTextClass(row.variantKey)
+                            : rarityTextClass(row.item)
+                        }`}
+                      >
+                        {SLOT_EMOJI[row.item.slot]} {row.name}
+                      </span>
+                      <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">
+                        {row.item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
+                      </span>
+                    </div>
+                    {row.item.description && (
+                      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                        {row.item.description}
+                      </p>
+                    )}
+                  </Card>
+                ))}
+            </div>
+          );
+        })
       )}
     </div>
   );

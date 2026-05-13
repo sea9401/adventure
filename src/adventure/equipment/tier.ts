@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { ITEMS, type EquipItem, type EquipTier, type ItemId } from "@/adventure/data/items";
 
 // 진행 구간 5단계 — 인벤·도감·대장간이 공통으로 쓰는 그룹 키.
@@ -47,6 +48,26 @@ export function matchesEquipQuery(item: EquipItem | null | undefined, query: str
   if (!item) return false;
   const hay = `${item.name} ${item.description ?? ""}`;
   return hay.toLowerCase().includes(q.toLowerCase());
+}
+
+// 인벤·도감·대장간 공용 — tier 그룹 접기/펴기 토글 상태.
+// 기본은 모두 접힘. 검색 활성 시(query.length > 0) 모든 가시 tier 가 자동 펼침 — UI 측에서 OR 처리.
+// 같은 화면 안의 다른 탭(슬롯/카테고리) 으로 옮겨도 토글이 유지되도록 컴포넌트 마운트 동안만 가짐.
+export function useTierToggle() {
+  const [expanded, setExpanded] = useState<ReadonlySet<EquipTier>>(new Set());
+  const toggle = useCallback((tier: EquipTier) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(tier)) next.delete(tier);
+      else next.add(tier);
+      return next;
+    });
+  }, []);
+  const isExpanded = useCallback(
+    (tier: EquipTier) => expanded.has(tier),
+    [expanded],
+  );
+  return { isExpanded, toggle };
 }
 
 // 임의 entry 배열을 tier 별로 묶어 [{ tier, meta, entries }] 로 반환.
