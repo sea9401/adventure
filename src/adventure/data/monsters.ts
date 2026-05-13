@@ -681,9 +681,9 @@ export const MONSTERS: Record<string, Monster> = {
   },
   // ── 해안 지선 (조수 갯벌 / 산호초 섬) ───────────────────────────────────
   // 폐허(Lv9)~산기슭(Lv18) 사이에 놓이는 바닷길 잡몹. 갯벌 ≈ 폐허 난이도, 섬 ≈ 산기슭 난이도.
-  // image 필드는 후속 PR 에서 추가.
   "집게발 게": {
     name: "집게발 게",
+    image: "/images/monster/crab.webp",
     tags: ["beast"],
     hp: 150,
     atk: 11,
@@ -699,6 +699,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   갯도요: {
     name: "갯도요",
+    image: "/images/monster/curlewsandpiper.webp",
     tags: ["beast"],
     hp: 95,
     atk: 12,
@@ -713,6 +714,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "진흙 미꾸라지": {
     name: "진흙 미꾸라지",
+    image: "/images/monster/mudloach.webp",
     tags: ["beast"],
     hp: 120,
     atk: 10,
@@ -727,6 +729,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "산호초 사이렌": {
     name: "산호초 사이렌",
+    image: "/images/monster/coralmermaid.webp",
     tags: ["spirit"],
     hp: 175,
     atk: 21,
@@ -743,6 +746,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "갑각 약탈자": {
     name: "갑각 약탈자",
+    image: "/images/monster/shellbandit.webp",
     tags: ["humanoid"],
     hp: 210,
     atk: 19,
@@ -760,6 +764,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "가시 산호 골렘": {
     name: "가시 산호 골렘",
+    image: "/images/monster/coralgolem.webp",
     tags: ["golem"],
     hp: 250,
     atk: 17,
@@ -781,6 +786,7 @@ export const MONSTERS: Record<string, Monster> = {
   // 항상 심해 비늘·산호 가시 + 심연 무구 4종 중 1종 학습. 0.15 로 수심의 핵, 0.05 로 인장 새김서.
   "수심의 것": {
     name: "수심의 것",
+    image: "/images/monster/deepseamonster.webp",
     tags: ["beast", "spirit"],
     hp: 800,
     atk: 30,

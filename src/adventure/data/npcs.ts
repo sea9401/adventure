@@ -316,6 +316,7 @@ export const NPCS: Npc[] = [
     region: "saltmarsh",
     name: "원로 여울",
     role: "elder",
+    portrait: "/images/npc/yeowool.webp",
     description:
       "소만 포구를 가장 오래 지켜본 노인. 갯바람에 그을린 얼굴로 늘 난바다 쪽을 본다.",
     greeting:
@@ -326,6 +327,7 @@ export const NPCS: Npc[] = [
     region: "saltmarsh",
     name: "뱃사공 해랑",
     role: "quest",
+    portrait: "/images/npc/haerang.webp",
     description:
       "소만에서 난바다로 나가는 단 한 척의 배를 부리는 사공. 손마디가 노에 닳아 굵다.",
     greeting:
@@ -336,6 +338,7 @@ export const NPCS: Npc[] = [
     region: "saltmarsh",
     name: "소금장수 갈매",
     role: "vendor",
+    portrait: "/images/npc/galmae.webp",
     description:
       "소만 소금밭과 젓갈 창고를 도맡은 장수. 손에 늘 굵은소금이 묻어 있다.",
     greeting:
@@ -346,6 +349,7 @@ export const NPCS: Npc[] = [
     region: "saltmarsh",
     name: "여각 주인 보말",
     role: "innkeeper",
+    portrait: "/images/npc/bomal.webp",
     description:
       "소만 여각을 꾸리는 주인. 게장과 미역국으로 대상 길손들 배를 채운다.",
     greeting:
@@ -356,6 +360,7 @@ export const NPCS: Npc[] = [
     region: "saltmarsh",
     name: "갯마을 아이 미르",
     role: "lore",
+    portrait: "/images/npc/mirr.webp",
     description:
       "썰물 때마다 갯벌에서 노는 소만 아이. 늘 조개껍데기를 한 줌씩 들고 다닌다.",
     greeting:
