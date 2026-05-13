@@ -4,7 +4,12 @@
 
 import type { PlayerCombat } from "@/adventure/battle/engine";
 import type { EquipItem } from "@/adventure/data/items";
-import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
+import {
+  EXTRA_ATTACK_PCT_CAP,
+  EXTRA_ATTACK_PCT_PER_SPD,
+  STAT_KEYS,
+  type StatKey,
+} from "@/adventure/data/stats";
 import { maxHpForLevel } from "./defaults";
 import type { Skill } from "./types";
 import {
@@ -38,8 +43,8 @@ import {
   lightspeedExtraAttackPctFor,
   luckyShieldBlockPctFor,
   powerAttackBonusFor,
+  precisionArmorPierceFractionFor,
   precisionEvasionMultFor,
-  precisionMinDamageBonusFor,
   regenFor,
   riposteExtraAttacksFor,
   shadowCloneAtkPctFor,
@@ -183,10 +188,16 @@ export function derivePlayerCombat(
     evasionPct:
       totalStats.dex * 0.5 + evadeBonusPctFor(totalStats, effectiveSkillSet),
     attackCount: 1,
-    extraAttackChancePct: Math.min(100, totalStats.spd * 2.5),
+    extraAttackChancePct: Math.min(
+      EXTRA_ATTACK_PCT_CAP,
+      totalStats.spd * EXTRA_ATTACK_PCT_PER_SPD,
+    ),
     powerAttackBonus: powerAttackBonusFor(totalStats, effectiveSkillSet),
     crushDefReduction: crushDefReductionFor(totalStats, effectiveSkillSet),
-    minDamageBonus: precisionMinDamageBonusFor(totalStats, effectiveSkillSet),
+    armorPierceFraction: precisionArmorPierceFractionFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
     guaranteedEvades: evadeGuaranteedFor(totalStats, effectiveSkillSet),
     counterAtkBonus: counterAtkBonusFor(totalStats, effectiveSkillSet),
     extraAttackEveryNTurns: doubleStrikeIntervalFor(

@@ -78,8 +78,8 @@ export type PlayerCombat = {
   powerAttackBonus?: number;
   // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF 감산. 0/undefined = 스킬 미보유.
   crushDefReduction?: number;
-  // 정확 — 플레이어 공격 최소 데미지를 1 → 1 + minDamageBonus 로 올림. 0/undefined = 스킬 미보유.
-  minDamageBonus?: number;
+  // 정확 — 플레이어의 모든 공격이 적 DEF 의 이 비율(0~1)을 무시. 0/undefined = 스킬 미보유.
+  armorPierceFraction?: number;
   // 회피 강화 — 전투 시작 시 적립할 보장 회피 횟수. 0/undefined = 스킬 미보유.
   guaranteedEvades?: number;
   // 반격 — 회피 성공 시 즉시 카운터 1회, ATK + bonus 데미지. 0/undefined = 스킬 미보유.
@@ -155,8 +155,25 @@ export function appendLog(
   return [...log, entry];
 }
 
+// 데미지 최소 비율 — 순수 감산(atk-def)이 0 이하가 되는 "방어력 임계 초과 = 1딜 고정" 절벽을 완화.
+// 공격력의 이 비율(올림)만큼은 항상 들어간다. 정상 장비 구간에선 atk-def 가 항상 더 커서 무의미하고,
+// def 가 atk 의 ~0.85 배를 넘는 (= 한참 저장비/저레벨) 구간에서만 체감된다.
+// 플레이어↔적 양쪽 공격에 모두 적용 — 방어력을 무한 적층해 무피격이 되는 것도 같이 막힌다.
+export const DAMAGE_FLOOR_FRACTION = 0.15;
+
 export function damageBetween(atk: number, def: number): number {
-  return Math.max(1, atk - def);
+  const minByAtk = Math.ceil(Math.max(0, atk) * DAMAGE_FLOOR_FRACTION);
+  return Math.max(1, minByAtk, atk - def);
+}
+
+// 플레이어 공격이 마주하는 적 DEF — 누적 페이즈 보너스 포함, 보스 취약(armorVulnerable)·
+// 정확 스킬(armorPierceFraction) 비례 관통을 차례로 적용. 본타는 여기에 분쇄(고정 감산)/
+// 암살(DEF 0)을 추가로 얹으므로 호출 측에서 따로 처리하고, 단순 추가타(분신/난무/반격)는 이 값 그대로.
+function playerFacingEnemyDef(state: BattleState, player: PlayerCombat): number {
+  const raw = state.enemy.def + state.enemyDefBonus;
+  const afterVuln = Math.round(raw * (1 - (state.enemy.armorVulnerable ?? 0)));
+  const frac = player.armorPierceFraction ?? 0;
+  return frac > 0 ? Math.round(afterVuln * (1 - frac)) : afterVuln;
 }
 
 // 다음 플레이어 턴의 공격 횟수 — 기본 attackCount + extraAttackChancePct 1회 판정.
@@ -192,9 +209,9 @@ function applyCounterIfAny(
 ): { state: BattleState; ended: boolean } {
   const bonus = player.counterAtkBonus ?? 0;
   if (bonus <= 0) return { state, ended: false };
-  const dmg = Math.max(
-    1 + (player.minDamageBonus ?? 0),
-    damageBetween(player.atk + bonus, state.enemy.def + state.enemyDefBonus),
+  const dmg = damageBetween(
+    player.atk + bonus,
+    playerFacingEnemyDef(state, player),
   );
   const enemyHp = Math.max(0, state.enemyHp - dmg);
   let next: BattleState = {
@@ -289,7 +306,7 @@ function finishPlayerTurn(
   if (st.phase !== "ended" && clonePct > 0) {
     const cloneDmg = damageBetween(
       Math.floor((player.atk * clonePct) / 100),
-      st.enemy.def + st.enemyDefBonus,
+      playerFacingEnemyDef(st, player),
     );
     st = dealExtraEnemyDamage(st, cloneDmg, "그림자 분신");
   }
@@ -298,7 +315,7 @@ function finishPlayerTurn(
   if (st.phase !== "ended" && flurry > 0 && st.damageTakenThisCombat === 0) {
     for (let i = 0; i < flurry; i += 1) {
       if (st.phase === "ended") break;
-      const fd = damageBetween(player.atk, st.enemy.def + st.enemyDefBonus);
+      const fd = damageBetween(player.atk, playerFacingEnemyDef(st, player));
       st = dealExtraEnemyDamage(st, fd, "무피해 난무");
     }
   }
@@ -445,8 +462,10 @@ export function advanceTurn(
       state.completedPlayerTurns === 0 &&
       isFirstAttackOfTurn;
     // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF -crushDefReduction. 암살이면 DEF 0.
+    // baseDef 는 보스 취약(armorVulnerable) + 정확(armorPierceFraction) 비례 관통이 이미 반영된 값 —
+    // 분쇄는 그 위에 추가 고정 감산.
     const crushReduction = player.crushDefReduction ?? 0;
-    const baseDef = state.enemy.def + state.enemyDefBonus;
+    const baseDef = playerFacingEnemyDef(state, player);
     const targetDef = assassinFires
       ? 0
       : bonus > 0 && crushReduction > 0
@@ -482,14 +501,9 @@ export function advanceTurn(
     const effectiveCritPct = baseCritPct + luckCritBonus + balanceCritBonus;
     const critRoll =
       effectiveCritPct > 0 ? Math.random() * 100 < effectiveCritPct : false;
-    // 정확 — 최소 데미지 floor 를 1 → 1 + minDamageBonus 로 올림 (ATK-DEF 가 그보다 작을 때만 체감).
-    const minFloor = 1 + (player.minDamageBonus ?? 0);
-    const baseDmg = Math.max(
-      minFloor,
-      damageBetween(
-        player.atk + bonus + berserkBonus + gustBonus,
-        targetDef,
-      ),
+    const baseDmg = damageBetween(
+      player.atk + bonus + berserkBonus + gustBonus,
+      targetDef,
     );
     // 처형 — 적 HP 비율 < executionHpFraction 일 때 데미지 ×executionDamageMult.
     // 강공격/분쇄 후 데미지에 곱하고, 크리티컬은 그 위에 다시 곱한다 (다단 누적).
@@ -801,9 +815,12 @@ export function advanceTurn(
       ? state.enemyAtkBonus + skill.atkBonus
       : state.enemyAtkBonus;
   const enrageTriggered = state.enrageTriggered || enrageReady;
-  // 관통 — 이 적의 공격이 플레이어 DEF 를 armorPierce 만큼 무시.
-  const effectivePlayerDef =
+  // 관통 — 잡몹 pierce 스킬의 고정 관통 먼저, 그 위에 보스 playerDefVulnerable 비례 관통.
+  const pierced =
     skill?.kind === "pierce" ? Math.max(0, player.def - skill.armorPierce) : player.def;
+  const playerDefVuln = state.enemy.playerDefVulnerable ?? 0;
+  const effectivePlayerDef =
+    playerDefVuln > 0 ? Math.round(pierced * (1 - playerDefVuln)) : pierced;
   // 강타 — everyPhases 번째 적 페이즈마다 데미지 ×multiplier. 이번 페이즈 종료 후
   // enemyPhasesCompleted 가 N 의 배수가 되는지로 판단.
   const heavyBlowMult =

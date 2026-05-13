@@ -54,6 +54,34 @@ describe("damageBetween", () => {
     expect(damageBetween(3, 10)).toBe(1);
     expect(damageBetween(5, 5)).toBe(1);
   });
+  it("데미지 바닥 — atk-def 가 ceil(atk×0.15) 보다 작으면 그 값으로 클램프", () => {
+    // atk 100, def 95 → atk-def=5 < ceil(15)=15 → 15.
+    expect(damageBetween(100, 95)).toBe(15);
+    // atk 100, def 200 → ceil(15) 만큼은 들어간다.
+    expect(damageBetween(100, 200)).toBe(15);
+    // 정상 구간(atk-def 가 충분히 큼)에는 영향 없음.
+    expect(damageBetween(100, 50)).toBe(50);
+  });
+});
+
+describe("보스 부분 관통 (armorVulnerable / playerDefVulnerable)", () => {
+  it("armorVulnerable — 플레이어 공격이 적 DEF 의 그 비율을 무시", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99); // 추가공격/회피/크리 미발동
+    const enemy = makeEnemy({ hp: 100, def: 20, armorVulnerable: 0.25 });
+    // 실효 DEF = round(20 × 0.75) = 15 → 데미지 = 10 - 15 = -5 → 바닥 ceil(10×0.15)=2.
+    // (바닥이 가려서 잘 안 보이니 ATK 를 키운 케이스로도 확인)
+    const strong: PlayerCombat = { ...PLAYER, atk: 50 };
+    const s = advanceTurn(initialBattleState(strong, enemy, "용사"), strong, "용사");
+    // 실효 DEF 15 → 50 - 15 = 35.
+    expect(s.enemyHp).toBe(100 - 35);
+  });
+  it("playerDefVulnerable — 적 공격이 플레이어 DEF 의 그 비율을 무시", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const enemy = makeEnemy({ atk: 20, def: 0, spd: 99, playerDefVulnerable: 0.5 });
+    // 적 선공. 실효 플레이어 DEF = round(5 × 0.5) = 3 → 데미지 = 20 - 3 = 17 (단, 바닥 ceil(20×0.15)=3 보다 큼).
+    const s = advanceTurn(initialBattleState(PLAYER, enemy, "용사"), PLAYER, "용사");
+    expect(s.playerHp).toBe(PLAYER.hp - 17);
+  });
 });
 
 describe("appendLog", () => {
