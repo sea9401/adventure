@@ -9,12 +9,17 @@ export const STAT_LABELS: Record<StatKey, string> = {
   luk: "행운",
 };
 
+// SPD → 매 턴 1회 추가 공격 판정 확률(%). 1pt 당 EXTRA_ATTACK_PCT_PER_SPD%, 최대 EXTRA_ATTACK_PCT_CAP%.
+// 캡으로 "확정 2연타"(예전 SPD 40 = 100%)를 막는다 — 폭발 화력은 연타/광속/난무 등 슬롯 스킬 쪽.
+export const EXTRA_ATTACK_PCT_PER_SPD = 2.5;
+export const EXTRA_ATTACK_PCT_CAP = 75;
+
 // 스탯 1pt 당 전투 수치 환산 — UI 도감 노출용 설명.
 export const STAT_CONVERSIONS: Record<StatKey, string> = {
   str: "1pt 당 공격력 +1",
   dex: "1pt 당 회피 +0.5% / 5pt 당 공격력 +1",
   vit: "1pt 당 방어력 +1 / 1pt 당 최대 HP +2 / 방어력 5 당 공격력 +1 (방어구 합산)",
-  spd: "1pt 당 추가 공격 확률 +2.5% (매 턴 1회 판정) / 5pt 당 공격력 +1",
+  spd: `1pt 당 추가 공격 확률 +${EXTRA_ATTACK_PCT_PER_SPD}% (매 턴 1회 판정, 최대 ${EXTRA_ATTACK_PCT_CAP}%) / 5pt 당 공격력 +1`,
   luk: "1pt 당 드랍률 +1% / 1pt 당 크리티컬 확률 +0.5% / 1pt 당 크리티컬 데미지 +0.025배 / 5pt 당 공격력 +1",
 };
 

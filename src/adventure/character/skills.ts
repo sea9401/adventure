@@ -64,9 +64,11 @@ export const SKILL_NAMES = {
 } as const;
 
 // 강공격 — 힘 10 도달 시 획득.
-// 효과: 3턴마다 자동 발동, 그 턴의 첫 공격이 ATK +2 데미지로 나감.
+// 효과: POWER_ATTACK_TURN_INTERVAL 턴마다 자동 발동 — 그 턴의 첫 공격이 ATK +(2 + floor(STR/8)) 데미지.
+// STR 비례라 후반에도 의미가 남는다 (STR 10=+3 / 35=+6 / 70=+10). 분쇄 트리거도 겸함.
 export const POWER_ATTACK_STR_THRESHOLD = 10;
-export const POWER_ATTACK_BONUS = 2;
+export const POWER_ATTACK_BASE_BONUS = 2;
+export const POWER_ATTACK_STR_DIVISOR = 8;
 export const POWER_ATTACK_TURN_INTERVAL = 3;
 
 // 분쇄 — 힘 20 도달 시 획득.
@@ -76,21 +78,22 @@ export const CRUSH_STR_THRESHOLD = 20;
 export const CRUSH_DEF_PER_STR = 0.5;
 
 // 회피 강화 — 민첩 10 도달 시 획득.
-// 전투 시작 시 "보장 회피" 1회 적립 + 그 전투 동안 회피 확률 +EVADE_BONUS_PCT%.
+// 전투 시작 시 "보장 회피" (1 + floor(DEX/40))회 적립 + 그 전투 동안 회피 확률 +EVADE_BONUS_PCT%.
 export const EVADE_DEX_THRESHOLD = 10;
-export const EVADE_GUARANTEED = 1;
+export const EVADE_GUARANTEED_BASE = 1;
+export const EVADE_GUARANTEED_DEX_DIVISOR = 40;
 export const EVADE_BONUS_PCT = 5;
 
 // 반격 — 민첩 20 도달 시 획득.
-// 효과: 회피 성공 시 즉시 카운터 1회 (ATK +COUNTER_ATK_BONUS).
+// 효과: 회피 성공 시 즉시 카운터 1회 — ATK +floor(DEX/COUNTER_ATK_DEX_DIVISOR) (DEX 비례, 후반에도 유효).
 export const COUNTER_DEX_THRESHOLD = 20;
-export const COUNTER_ATK_BONUS = 1;
+export const COUNTER_ATK_DEX_DIVISOR = 5;
 
 // 가드 — 활력 10 도달 시 획득.
-// 전투 시작 후 첫 3턴 동안 받는 피해 -1 (최소 0).
+// 전투 시작 후 첫 GUARD_TURNS 적 페이즈 동안 받는 피해 -max(1, floor(VIT/10)) (최소 0).
 export const GUARD_VIT_THRESHOLD = 10;
 export const GUARD_TURNS = 3;
-export const GUARD_REDUCTION = 1;
+export const GUARD_REDUCTION_VIT_DIVISOR = 10;
 
 // 재생 — 활력 20 도달 시 획득.
 // 효과: 매 REGEN_INTERVAL 플레이어 턴 종료 시 HP +floor(VIT × REGEN_HP_PER_VIT).
@@ -105,9 +108,10 @@ export const DOUBLE_STRIKE_SPD_THRESHOLD = 10;
 export const DOUBLE_STRIKE_INTERVAL = 5;
 
 // 기습 — 속도 20 도달 시 획득.
-// 효과: 전투 첫 플레이어 턴, 추가 공격 1회.
+// 효과: 전투 첫 플레이어 턴, 추가 공격 (1 + floor(SPD/50))회.
 export const VANGUARD_SPD_THRESHOLD = 20;
-export const VANGUARD_FIRST_TURN_BONUS = 1;
+export const VANGUARD_BONUS_BASE = 1;
+export const VANGUARD_BONUS_SPD_DIVISOR = 50;
 
 // 크리티컬 — 행운 10 도달 시 획득.
 // 스킬 효과: 크리티컬 확률 +CRIT_CHANCE_PCT% 추가 (luk 1pt 당 +0.5% 기본과 누적).
@@ -122,10 +126,9 @@ export const CRIT_MULT_PER_LUK = 0.025;
 export const CRIT_CHANCE_PER_LUK = 0.5;
 
 // 이중 행운 — 행운 20 도달 시 획득.
-// 효과: 크리티컬 발동 시 그 전투 동안 회피 +DOUBLE_LUCK_EVADE_BONUS%, 크리티컬 +DOUBLE_LUCK_CRIT_BONUS% (누적 X).
+// 효과: 크리티컬 발동 시 그 전투 동안 회피 +floor(LUK/4)%, 크리티컬 +floor(LUK/4)% (누적 X). LUK 비례.
 export const DOUBLE_LUCK_LUK_THRESHOLD = 20;
-export const DOUBLE_LUCK_EVADE_BONUS = 5;
-export const DOUBLE_LUCK_CRIT_BONUS = 5;
+export const DOUBLE_LUCK_PCT_LUK_DIVISOR = 4;
 
 // 처형 — 힘 35 도달 시 획득.
 // 효과: 적 HP 가 EXECUTION_HP_FRACTION 미만일 때 모든 공격 데미지 ×EXECUTION_DAMAGE_MULT.
@@ -152,10 +155,12 @@ export const ENDURANCE_VIT_THRESHOLD = 35;
 export const ENDURANCE_MAX_HP_BONUS_PCT = 10;
 
 // 광속 — 속도 35 도달 시 획득.
-// 효과: 매 턴 마지막 공격 후 LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT% 확률로 추가 1회 공격.
+// 효과: 매 턴 마지막 공격 후 min(20, floor(SPD/5))% 확률로 추가 1회 공격 (SPD 비례 — 35=7% / 50=10% / 70=14% / 100=20%캡).
 // 연타와 별개 발동 — 연타 슬롯이 없어도 단독으로 작동, 둘 다 슬롯 시 한 턴에 +2 공격까지 가능.
+// SPD 기본 추가타 확률(EXTRA_ATTACK_PCT_CAP) 캡으로 줄어든 후반 SPD 투자 가치를 여기서 보상.
 export const LIGHTSPEED_SPD_THRESHOLD = 35;
-export const LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT = 5;
+export const LIGHTSPEED_PCT_SPD_DIVISOR = 5;
+export const LIGHTSPEED_PCT_CAP = 20;
 
 // 만개 — 행운 35 도달 시 획득.
 // 효과 1) 크리티컬 데미지 배수 +BLOOM_CRIT_MULT_BONUS (현재 luk 비례 위에 누적).
@@ -196,7 +201,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
   str: [
     {
       name: SKILL_NAMES.POWER_ATTACK,
-      description: `${POWER_ATTACK_TURN_INTERVAL}턴마다 자동 발동 — ATK +${POWER_ATTACK_BONUS} 데미지로 공격`,
+      description: `${POWER_ATTACK_TURN_INTERVAL}턴마다 자동 발동 — 첫 공격이 ATK +(${POWER_ATTACK_BASE_BONUS} + STR/${POWER_ATTACK_STR_DIVISOR}) 데미지 (STR 35=+6)`,
       activationThreshold: POWER_ATTACK_STR_THRESHOLD,
     },
     {
@@ -218,12 +223,12 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
   dex: [
     {
       name: SKILL_NAMES.EVADE,
-      description: `전투당 첫 ${EVADE_GUARANTEED}회 피격을 무조건 회피 + 회피 +${EVADE_BONUS_PCT}%`,
+      description: `전투당 첫 (${EVADE_GUARANTEED_BASE} + DEX/${EVADE_GUARANTEED_DEX_DIVISOR})회 피격을 무조건 회피 + 회피 +${EVADE_BONUS_PCT}%`,
       activationThreshold: EVADE_DEX_THRESHOLD,
     },
     {
       name: SKILL_NAMES.COUNTER,
-      description: `회피 성공 시 즉시 카운터 1회 (ATK +${COUNTER_ATK_BONUS})`,
+      description: `회피 성공 시 즉시 카운터 1회 — ATK +(DEX/${COUNTER_ATK_DEX_DIVISOR}) (DEX 35=+7)`,
       activationThreshold: COUNTER_DEX_THRESHOLD,
     },
     {
@@ -240,7 +245,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
   vit: [
     {
       name: SKILL_NAMES.GUARD,
-      description: `전투 시작 후 첫 ${GUARD_TURNS}턴 동안 받는 피해 -${GUARD_REDUCTION}`,
+      description: `전투 시작 후 첫 ${GUARD_TURNS}턴 동안 받는 피해 -max(1, VIT/${GUARD_REDUCTION_VIT_DIVISOR}) (VIT 35=-3)`,
       activationThreshold: GUARD_VIT_THRESHOLD,
     },
     {
@@ -267,12 +272,12 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.VANGUARD,
-      description: `전투 첫 턴 추가 공격 ${VANGUARD_FIRST_TURN_BONUS}회`,
+      description: `전투 첫 턴 추가 공격 (${VANGUARD_BONUS_BASE} + SPD/${VANGUARD_BONUS_SPD_DIVISOR})회`,
       activationThreshold: VANGUARD_SPD_THRESHOLD,
     },
     {
       name: SKILL_NAMES.LIGHTSPEED,
-      description: `매 턴 마지막 공격 후 ${LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT}% 확률로 추가 1회 공격`,
+      description: `매 턴 마지막 공격 후 min(${LIGHTSPEED_PCT_CAP}, SPD/${LIGHTSPEED_PCT_SPD_DIVISOR})% 확률로 추가 1회 공격 (SPD 50=10%)`,
       activationThreshold: LIGHTSPEED_SPD_THRESHOLD,
     },
     {
@@ -289,7 +294,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.DOUBLE_LUCK,
-      description: `크리티컬 발동 시 그 전투 동안 회피 +${DOUBLE_LUCK_EVADE_BONUS}%, 크리티컬 +${DOUBLE_LUCK_CRIT_BONUS}% (누적 X)`,
+      description: `크리티컬 발동 시 그 전투 동안 회피 +(LUK/${DOUBLE_LUCK_PCT_LUK_DIVISOR})%, 크리티컬 +(LUK/${DOUBLE_LUCK_PCT_LUK_DIVISOR})% (누적 X) — LUK 20=+5`,
       activationThreshold: DOUBLE_LUCK_LUK_THRESHOLD,
     },
     {
@@ -360,7 +365,7 @@ export const FEAT_NAMES = {
 // 흡혈 (DEX & LUK) — 크리티컬로 준 피해의 N%만큼 HP 회복.
 export const LIFESTEAL_CRIT_HEAL_PCT = 30;
 // 곡예 (DEX & VIT) — 회피 성공 시 HP +floor(VIT × N) 회복.
-export const ACROBAT_HEAL_PER_VIT = 0.3;
+export const ACROBAT_HEAL_PER_VIT = 0.4;
 // 천칭 (SPD & LUK) — 내 SPD 가 적보다 높으면 그 전투 크리티컬 확률 +floor((내SPD-적SPD) × N)%.
 export const BALANCE_CRIT_PCT_PER_SPD_DIFF = 0.5;
 // 행운의 방패 (VIT & LUK) — 피격당할 때마다 (LUK × N)% 확률로 그 피해를 0으로.
@@ -395,7 +400,7 @@ export const FEAT_SKILL: FeatSkillInfo[] = [
   },
   {
     name: FEAT_NAMES.ACROBAT,
-    description: `회피 성공 시 HP +(VIT × ${ACROBAT_HEAL_PER_VIT}) 회복 — VIT 30=+9`,
+    description: `회피 성공 시 HP +(VIT × ${ACROBAT_HEAL_PER_VIT}) 회복 — VIT 30=+12`,
     req: ["dex", "vit"],
   },
   {
@@ -575,7 +580,7 @@ export function powerAttackBonusFor(
 ): number {
   return stats.str >= POWER_ATTACK_STR_THRESHOLD &&
     equipped.has(SKILL_NAMES.POWER_ATTACK)
-    ? POWER_ATTACK_BONUS
+    ? POWER_ATTACK_BASE_BONUS + Math.floor(stats.str / POWER_ATTACK_STR_DIVISOR)
     : 0;
 }
 
@@ -593,7 +598,7 @@ export function evadeGuaranteedFor(
   equipped: ReadonlySet<string>,
 ): number {
   return stats.dex >= EVADE_DEX_THRESHOLD && equipped.has(SKILL_NAMES.EVADE)
-    ? EVADE_GUARANTEED
+    ? EVADE_GUARANTEED_BASE + Math.floor(stats.dex / EVADE_GUARANTEED_DEX_DIVISOR)
     : 0;
 }
 
@@ -611,7 +616,7 @@ export function counterAtkBonusFor(
   equipped: ReadonlySet<string>,
 ): number {
   return stats.dex >= COUNTER_DEX_THRESHOLD && equipped.has(SKILL_NAMES.COUNTER)
-    ? COUNTER_ATK_BONUS
+    ? Math.floor(stats.dex / COUNTER_ATK_DEX_DIVISOR)
     : 0;
 }
 
@@ -631,7 +636,7 @@ export function vanguardFirstTurnBonusFor(
 ): number {
   return stats.spd >= VANGUARD_SPD_THRESHOLD &&
     equipped.has(SKILL_NAMES.VANGUARD)
-    ? VANGUARD_FIRST_TURN_BONUS
+    ? VANGUARD_BONUS_BASE + Math.floor(stats.spd / VANGUARD_BONUS_SPD_DIVISOR)
     : 0;
 }
 
@@ -672,10 +677,14 @@ export function doubleLuckBonusesFor(
   stats: Record<StatKey, number>,
   equipped: ReadonlySet<string>,
 ): { evade: number; crit: number } {
-  return stats.luk >= DOUBLE_LUCK_LUK_THRESHOLD &&
-    equipped.has(SKILL_NAMES.DOUBLE_LUCK)
-    ? { evade: DOUBLE_LUCK_EVADE_BONUS, crit: DOUBLE_LUCK_CRIT_BONUS }
-    : { evade: 0, crit: 0 };
+  if (
+    stats.luk < DOUBLE_LUCK_LUK_THRESHOLD ||
+    !equipped.has(SKILL_NAMES.DOUBLE_LUCK)
+  ) {
+    return { evade: 0, crit: 0 };
+  }
+  const pct = Math.floor(stats.luk / DOUBLE_LUCK_PCT_LUK_DIVISOR);
+  return { evade: pct, crit: pct };
 }
 
 export function guardFor(
@@ -683,7 +692,10 @@ export function guardFor(
   equipped: ReadonlySet<string>,
 ): { turns: number; reduction: number } {
   return stats.vit >= GUARD_VIT_THRESHOLD && equipped.has(SKILL_NAMES.GUARD)
-    ? { turns: GUARD_TURNS, reduction: GUARD_REDUCTION }
+    ? {
+        turns: GUARD_TURNS,
+        reduction: Math.max(1, Math.floor(stats.vit / GUARD_REDUCTION_VIT_DIVISOR)),
+      }
     : { turns: 0, reduction: 0 };
 }
 
@@ -767,7 +779,7 @@ export function lightspeedExtraAttackPctFor(
 ): number {
   return stats.spd >= LIGHTSPEED_SPD_THRESHOLD &&
     equipped.has(SKILL_NAMES.LIGHTSPEED)
-    ? LIGHTSPEED_EXTRA_ATTACK_CHANCE_PCT
+    ? Math.min(LIGHTSPEED_PCT_CAP, Math.floor(stats.spd / LIGHTSPEED_PCT_SPD_DIVISOR))
     : 0;
 }
 
