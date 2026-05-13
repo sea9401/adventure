@@ -16,6 +16,14 @@ export type GuildMember = {
   joinedAt: string;
 };
 
+export type GuildJoinRequestSummary = {
+  requestId: number;
+  userId: string;
+  name: string;
+  level: number | null;
+  requestedAt: string;
+};
+
 export type GuildInfo = {
   id: number;
   name: string;
@@ -26,7 +34,9 @@ export type GuildInfo = {
   fameAvailable: number;
   grade: string;
   isMaster: boolean;
+  acceptingRequests: boolean;
   members: GuildMember[];
+  pendingRequests: GuildJoinRequestSummary[];
   buffs: GuildBuffSlot[];
   maxBuffSlots: number;
 };
@@ -34,6 +44,22 @@ export type GuildInfo = {
 export type GuildMeResponse = {
   guild: GuildInfo | null;
   leaveCooldownUntil: string | null;
+};
+
+export type GuildBrowseEntry = {
+  id: number;
+  name: string;
+  description: string | null;
+  fameTotal: number;
+  grade: string;
+  memberCount: number;
+  acceptingRequests: boolean;
+};
+
+export type GuildBrowseResponse = {
+  maxMembers: number;
+  myPendingRequest: { requestId: number; guildId: number } | null;
+  guilds: GuildBrowseEntry[];
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -71,6 +97,13 @@ const ERROR_MESSAGES: Record<string, string> = {
   invite_not_pending: "이미 처리된 초대장입니다.",
   invite_expired: "만료된 초대장입니다.",
   not_recipient: "본인의 초대장이 아닙니다.",
+  not_accepting: "이 길드는 가입 신청을 받지 않습니다.",
+  already_requested: "이미 가입 신청 중인 길드가 있습니다 — 먼저 신청을 취소해 주세요.",
+  request_not_found: "가입 신청을 찾을 수 없습니다.",
+  request_not_pending: "이미 처리된 가입 신청입니다.",
+  not_requester: "본인의 가입 신청이 아닙니다.",
+  applicant_in_guild: "신청자가 이미 다른 길드에 소속됐습니다.",
+  applicant_cooldown: "신청자가 탈퇴/추방 쿨다운 중입니다.",
 };
 
 export class GuildError extends Error {
@@ -208,6 +241,73 @@ export async function updateGuildDescription(
   });
   if (!r.ok) throw await parseError(r);
   return (await r.json()) as { ok: true; description: string | null };
+}
+
+// ───── 길드 가입 신청 ─────
+
+export async function fetchGuildBrowse(
+  q?: string,
+): Promise<GuildBrowseResponse> {
+  const qs = q && q.trim().length > 0 ? `?q=${encodeURIComponent(q.trim())}` : "";
+  const r = await fetch(`/api/guilds/browse${qs}`);
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as GuildBrowseResponse;
+}
+
+export async function requestJoinGuild(
+  guildId: number,
+): Promise<{ ok: true; requestId: number; guildId: number; guildName: string }> {
+  const r = await fetch(`/api/guilds/${guildId}/requests`, { method: "POST" });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as {
+    ok: true;
+    requestId: number;
+    guildId: number;
+    guildName: string;
+  };
+}
+
+export async function cancelJoinRequest(
+  requestId: number,
+): Promise<{ ok: true }> {
+  const r = await fetch(`/api/guilds/requests/${requestId}/cancel`, {
+    method: "POST",
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as { ok: true };
+}
+
+export async function acceptJoinRequest(
+  requestId: number,
+): Promise<{ ok: true; guildId: number; userId: string }> {
+  const r = await fetch(`/api/guilds/requests/${requestId}/accept`, {
+    method: "POST",
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as { ok: true; guildId: number; userId: string };
+}
+
+export async function declineJoinRequest(
+  requestId: number,
+): Promise<{ ok: true }> {
+  const r = await fetch(`/api/guilds/requests/${requestId}/decline`, {
+    method: "POST",
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as { ok: true };
+}
+
+export async function setGuildAcceptingRequests(
+  guildId: number,
+  accepting: boolean,
+): Promise<{ ok: true; acceptingRequests: boolean }> {
+  const r = await fetch(`/api/guilds/${guildId}/accepting-requests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ accepting }),
+  });
+  if (!r.ok) throw await parseError(r);
+  return (await r.json()) as { ok: true; acceptingRequests: boolean };
 }
 
 // ───── 길드 의뢰 (Phase A) ─────

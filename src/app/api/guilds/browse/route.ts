@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     .limit(BROWSE_LIMIT);
 
   const myPending = await db
-    .select({ guildId: guildJoinRequests.guildId })
+    .select({ id: guildJoinRequests.id, guildId: guildJoinRequests.guildId })
     .from(guildJoinRequests)
     .where(
       and(
@@ -51,7 +51,9 @@ export async function GET(req: Request) {
 
   return Response.json({
     maxMembers: GUILD_MAX_MEMBERS,
-    myPendingRequestGuildId: myPending[0]?.guildId ?? null,
+    myPendingRequest: myPending[0]
+      ? { requestId: myPending[0].id, guildId: myPending[0].guildId }
+      : null,
     guilds: rows.map((g) => ({
       id: g.id,
       name: g.name,
