@@ -20,12 +20,14 @@ import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { QtyStepper } from "./QtyStepper";
 
-type SellCategoryKey = "equipment" | "materials" | "potions";
+type SellCategoryKey = "equipment" | "materials" | "consumables";
 
+// 소비 가능 카테고리는 "소모품"으로 통합 — 현재는 포션만 거래 가능(귀환 주문서 등
+// 다른 소모품은 미거래). 카테고리 순서는 BuyTab 과 맞춤: 장비 → 재료 → 소모품.
 const SELL_TABS: { key: SellCategoryKey; label: string }[] = [
   { key: "equipment", label: "장비" },
   { key: "materials", label: "재료" },
-  { key: "potions", label: "포션" },
+  { key: "consumables", label: "소모품" },
 ];
 
 // 판매 가능한 장비 한 줄 — 기본 스택(등급 없음) · 제작산 등급(±1·±2) · 드랍 고품질(1·2).
@@ -140,7 +142,7 @@ export function SellTab({
           <SellCategoryEmpty label="재료" />
         ))}
 
-      {category === "potions" &&
+      {category === "consumables" &&
         (ownedPotions.length > 0 ? (
           <SellRows
             rows={ownedPotions.map((id) => ({
@@ -153,7 +155,7 @@ export function SellTab({
             }))}
           />
         ) : (
-          <SellCategoryEmpty label="포션" />
+          <SellCategoryEmpty label="소모품" />
         ))}
     </div>
   );
