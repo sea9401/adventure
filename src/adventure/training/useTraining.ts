@@ -38,9 +38,10 @@ function readInitial(raw: unknown): TrainingPersisted {
   };
   return {
     endsAt: parsed.endsAt ?? null,
-    points: parsed.points ?? 0,
+    // 음수 방어 — 과거 신전 드래프트 버그로 음수가 저장된 세이브 복구.
+    points: Math.max(0, parsed.points ?? 0),
     allocated: { ...ZERO_ALLOCATED, ...parsed.allocated },
-    revertPoints: parsed.revertPoints ?? STARTING_REVERT_POINTS,
+    revertPoints: Math.max(0, parsed.revertPoints ?? STARTING_REVERT_POINTS),
     completedCount: parsed.completedCount ?? 0,
   };
 }
