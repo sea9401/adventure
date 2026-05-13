@@ -22,6 +22,7 @@ import {
 } from "@/adventure/character/GrowthShrineView";
 import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CraftingView } from "@/adventure/CraftingView";
+import { DisassemblePanel } from "@/adventure/crafting/DisassemblePanel";
 import { ShopView } from "@/adventure/ShopView";
 import { GuildView } from "@/adventure/GuildView";
 import { GuildHallView } from "@/adventure/guild/GuildHallView";
@@ -341,6 +342,16 @@ export function TownScreen() {
     return (
       <div className="space-y-3">
         <SubViewHeader title="대장간" onBack={back} />
+        {/* 대장간 옆 분해실 진입 — 같은 SubView 안에 두지 않고 별도 패널로 띄운다. */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setSubView("disassemble")}
+            className="inline-flex items-center gap-1.5 rounded-md border border-violet-300 bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-700 dark:bg-violet-950 dark:text-violet-300 dark:hover:bg-violet-900"
+          >
+            <Sparkle size={16} weight="duotone" /> 분해실
+          </button>
+        </div>
         <CraftingView
           knownIds={crafting.state.known}
           materialCounts={inventory.state.materials}
@@ -348,6 +359,21 @@ export function TownScreen() {
           potionCounts={inventory.state.potions}
           potionMax={inventory.potionMax}
           onCraft={handleCraft}
+        />
+      </div>
+    );
+  }
+
+  if (subView === "disassemble") {
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="분해실" onBack={() => setSubView("crafting")} />
+        <DisassemblePanel
+          inventory={inventory.state}
+          equippedSlots={characterStateHook.equippedSlots}
+          onDisassemble={(req) =>
+            inventory.disassemble(req, characterStateHook.equippedSlots)
+          }
         />
       </div>
     );
