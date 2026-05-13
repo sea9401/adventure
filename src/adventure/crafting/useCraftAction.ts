@@ -5,14 +5,17 @@ import { POTIONS } from "@/adventure/data/potions";
 import { MATERIALS } from "@/adventure/data/materials";
 import { craftTierSuffix } from "@/adventure/data/craftQuality";
 import type { Recipe } from "@/adventure/data/recipes";
-import { craftErrorMessage, type CraftResult } from "@/adventure/crafting/types";
+import {
+  craftErrorMessage,
+  type CraftResult,
+} from "@/adventure/crafting/types";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 
-// 제작 — 서버 권위. 클라는 recipeId 만 보내고, 서버가 inventory.v2 / crafting.v2 를 잠그고
-// 검증·적용(품질 등급 추첨 포함)한 새 값을 받아 in-memory state 를 replace.
+// 제작 — 서버 권위. 클라는 recipeId + quantity 만 보내고, 서버가 inventory.v2 / crafting.v2 를
+// 잠그고 검증·적용(품질 등급 추첨 포함)한 새 값을 받아 in-memory state 를 replace.
 // 사전 검사(재료/포션 한도)는 UX 용 — 라운드트립 전에 부족분을 안내. 권한은 서버가 갖는다.
 export function useCraftAction(deps: {
   inventory: ReturnType<typeof useInventory>;
@@ -29,13 +32,17 @@ export function useCraftAction(deps: {
   const { inventory, crafting, addNotification, grantTitle, recordCraft } = deps;
   const remote = useRemoteSave();
 
-  const handleCraft = async (recipe: Recipe) => {
+  const handleCraft = async (recipe: Recipe, quantity: number = 1) => {
+    if (!Number.isInteger(quantity) || quantity < 1) return;
+
+    // UX 용 사전 검사 — quantity 배 기준. 서버도 같은 검사를 다시 한다.
     for (const ing of recipe.ingredients) {
+      const need = ing.count * quantity;
       if (ing.kind === "material") {
-        if (inventory.materialCount(ing.materialId) < ing.count) {
+        if (inventory.materialCount(ing.materialId) < need) {
           addNotification(
             "info",
-            `재료가 부족하다 — ${MATERIALS[ing.materialId].name} ${ing.count}개 필요.`,
+            `재료가 부족하다 — ${MATERIALS[ing.materialId].name} ${need}개 필요.`,
           );
           return;
         }
@@ -44,10 +51,10 @@ export function useCraftAction(deps: {
           (inventory.state.equipment[ing.itemId] ?? 0) +
           inventory.craftedTotalCount(ing.itemId) +
           inventory.droppedTotalCount(ing.itemId);
-        if (have < ing.count) {
+        if (have < need) {
           addNotification(
             "info",
-            `재료가 부족하다 — ${ITEMS[ing.itemId].name} ${ing.count}개 필요.`,
+            `재료가 부족하다 — ${ITEMS[ing.itemId].name} ${need}개 필요.`,
           );
           return;
         }
@@ -55,7 +62,8 @@ export function useCraftAction(deps: {
     }
     if (recipe.result.kind === "potion") {
       const have = inventory.state.potions[recipe.result.potionId] ?? 0;
-      if (have + recipe.result.quantity > inventory.potionMax) {
+      const totalProduce = recipe.result.quantity * quantity;
+      if (have + totalProduce > inventory.potionMax) {
         addNotification(
           "info",
           `${POTIONS[recipe.result.potionId].name}을(를) 더 들 수 없다.`,
@@ -74,7 +82,7 @@ export function useCraftAction(deps: {
       res = await fetch("/api/craft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipeId: recipe.id }),
+        body: JSON.stringify({ recipeId: recipe.id, quantity }),
       });
     } catch {
       addNotification("info", "통신 오류 — 잠시 후 다시 시도해 주세요.");
@@ -82,7 +90,12 @@ export function useCraftAction(deps: {
     }
     if (res.status === 401 || res.status === 410) return;
     const data = (await res.json().catch(() => null)) as
-      | { ok: true; inventory: unknown; crafting: unknown; result: CraftResult }
+      | {
+          ok: true;
+          inventory: unknown;
+          crafting: unknown;
+          results: CraftResult[];
+        }
       | { ok: false; error: string }
       | null;
     if (!data) {
@@ -96,20 +109,33 @@ export function useCraftAction(deps: {
     inventory.replaceFromSaved(data.inventory);
     crafting.replaceFromSaved(data.crafting);
 
-    if (data.result.kind === "equipment") {
-      const item = ITEMS[data.result.itemId];
-      const suffix = craftTierSuffix(data.result.tier);
-      addNotification("item", `${item.name}${suffix}을(를) 만들었다.`, {
-        highlight: { name: item.name + suffix, className: rarityTextClass(item) },
-      });
-      // 제작 등급 칭호 — 걸작(2): 명장 / 불량(-2): 불량품 제작자.
-      if (data.result.tier === 2) grantTitle("masterwork");
-      if (data.result.tier === -2) grantTitle("botched");
-      // craft_item 의뢰 진행도 — 장비 결과에 한해 누적.
-      recordCraft?.(data.result.itemId);
-    } else {
-      const potion = POTIONS[data.result.potionId];
-      const qty = data.result.quantity;
+    // 알림 — 장비는 결과 회마다 개별(걸작/일반/불량 각각 한 줄), 포션은 같은 ID 끼리 묶어
+    // 한 줄로 합산(품질 변동이 없으므로 줄여도 정보 손실 없음).
+    const potionTotals = new Map<string, number>();
+    for (const r of data.results) {
+      if (r.kind === "equipment") {
+        const item = ITEMS[r.itemId];
+        const suffix = craftTierSuffix(r.tier);
+        addNotification("item", `${item.name}${suffix}을(를) 만들었다.`, {
+          highlight: {
+            name: item.name + suffix,
+            className: rarityTextClass(item),
+          },
+        });
+        // 제작 등급 칭호 — 걸작(2): 명장 / 불량(-2): 불량품 제작자. 동일 칭호 중복 grant 는 idempotent.
+        if (r.tier === 2) grantTitle("masterwork");
+        if (r.tier === -2) grantTitle("botched");
+        // craft_item 의뢰 진행도 — 장비 결과에 한해 누적.
+        recordCraft?.(r.itemId);
+      } else {
+        potionTotals.set(
+          r.potionId,
+          (potionTotals.get(r.potionId) ?? 0) + r.quantity,
+        );
+      }
+    }
+    for (const [potionId, qty] of potionTotals) {
+      const potion = POTIONS[potionId as keyof typeof POTIONS];
       addNotification(
         "item",
         qty > 1

@@ -139,7 +139,7 @@ export type GameCtx = {
     tier?: CraftTier,
     quality?: DropQuality,
   ) => void;
-  handleCraft: (recipe: Recipe) => void;
+  handleCraft: (recipe: Recipe, quantity?: number) => void;
   handleBattleEnd: (payload: BattleEndPayload) => void;
   handleAcceptQuest: (id: string) => void;
   handleClaimQuest: (id: string) => void;

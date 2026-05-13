@@ -13,7 +13,11 @@ import { upsertSave, type DbExecutor } from "@/lib/server/savesKv";
 import { potionMax } from "@/adventure/data/potions";
 import { getRecipeById, recipeHasVariance } from "@/adventure/data/recipes";
 import { rollCraftTier, type CraftTier } from "@/adventure/data/craftQuality";
-import type { CraftOutcome, CraftResult } from "@/adventure/crafting/types";
+import {
+  CRAFT_BATCH_MAX,
+  type CraftOutcome,
+  type CraftResult,
+} from "@/adventure/crafting/types";
 
 export type { CraftOutcome, CraftResult };
 
@@ -68,7 +72,15 @@ export type CraftComputeResult = {
   equipment: CountMap;
   craftedEquipment: GradedMap;
   droppedEquipment: GradedMap;
-  result: CraftResult;
+  // 배치 제작 시 호출 수량만큼 채워지고 단일 제작이면 길이 1. 등급 추첨은 회마다 독립.
+  results: CraftResult[];
+};
+
+export type CraftComputeOptions = {
+  /** 한 번에 만들 수량(1 ≤ q ≤ CRAFT_BATCH_MAX). 미지정 = 1. */
+  quantity?: number;
+  /** 등급 추첨 RNG 주입(테스트용). 미지정 = Math.random. */
+  rng?: () => number;
 };
 
 function cloneGraded(src: GradedMap): GradedMap {
@@ -114,12 +126,22 @@ function cleanupGraded(map: GradedMap): void {
   }
 }
 
-// 순수 함수 — savesKv 읽은 값으로 새 상태 + result 를 계산. 위반 시 CraftError.
+// 순수 함수 — savesKv 읽은 값으로 새 상태 + results 를 계산. 위반 시 CraftError.
+// quantity 는 1 이상 CRAFT_BATCH_MAX 이하 정수. 재료/포션 한도는 quantity 배로 한 번에 검사하고
+// 만족 못 하면 즉시 throw (all-or-nothing). 만족하면 재료를 quantity 배 차감하고 결과는 N 회
+// 적용한다. 등급 변동 레시피는 매 회 rollCraftTier 를 다시 굴리므로 results 안에 서로 다른 tier
+// 가 섞일 수 있다 — 클라가 results 를 그대로 알림에 풀어 "걸작/일반/불량" 을 개별로 보여 준다.
 export function computeCraftOutcome(
   input: CraftComputeInput,
   recipeId: string,
-  rng: () => number = Math.random,
+  options: CraftComputeOptions = {},
 ): CraftComputeResult {
+  const quantity = options.quantity ?? 1;
+  const rng = options.rng ?? Math.random;
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > CRAFT_BATCH_MAX) {
+    throw new CraftError("invalid_quantity");
+  }
+
   const recipe = getRecipeById(recipeId);
   if (!recipe) throw new CraftError("unknown_recipe");
   if (!input.known.includes(recipe.id)) throw new CraftError("not_learned");
@@ -130,34 +152,37 @@ export function computeCraftOutcome(
   const crafted = cloneGraded(input.craftedEquipment);
   const dropped = cloneGraded(input.droppedEquipment ?? {});
 
-  // 1) 재료 충족 검사
+  // 1) 재료 충족 검사 — quantity 배.
   for (const ing of recipe.ingredients) {
+    const need = ing.count * quantity;
     if (ing.kind === "material") {
-      if ((materials[ing.materialId] ?? 0) < ing.count)
+      if ((materials[ing.materialId] ?? 0) < need)
         throw new CraftError("missing_material");
     } else {
       const have =
         (equipment[ing.itemId] ?? 0) +
         gradedTotal(crafted, ing.itemId) +
         gradedTotal(dropped, ing.itemId);
-      if (have < ing.count) throw new CraftError("missing_ingredient");
+      if (have < need) throw new CraftError("missing_ingredient");
     }
   }
 
-  // 2) 포션 결과 한도 검사 (all-or-nothing)
+  // 2) 포션 결과 한도 검사 (all-or-nothing, quantity 배 생산 기준)
   if (recipe.result.kind === "potion") {
     const have = potions[recipe.result.potionId] ?? 0;
-    if (have + recipe.result.quantity > potionMax(input.potionCapacityBonus))
+    const totalProduce = recipe.result.quantity * quantity;
+    if (have + totalProduce > potionMax(input.potionCapacityBonus))
       throw new CraftError("potion_full");
   }
 
-  // 3) 재료 차감
+  // 3) 재료 차감 — quantity 배.
   for (const ing of recipe.ingredients) {
+    const need = ing.count * quantity;
     if (ing.kind === "material") {
-      materials[ing.materialId] = (materials[ing.materialId] ?? 0) - ing.count;
+      materials[ing.materialId] = (materials[ing.materialId] ?? 0) - need;
     } else {
       // 기본(equipment[]) 카운트 먼저, 모자라면 제작산 낮은 등급부터, 그래도 모자라면 드랍 고품질.
-      let remaining = ing.count;
+      let remaining = need;
       const fromEquip = Math.min(remaining, equipment[ing.itemId] ?? 0);
       equipment[ing.itemId] = (equipment[ing.itemId] ?? 0) - fromEquip;
       remaining -= fromEquip;
@@ -171,24 +196,30 @@ export function computeCraftOutcome(
     }
   }
 
-  // 4) 결과 적용
-  let result: CraftResult;
-  if (recipe.result.kind === "equipment") {
-    const itemId = recipe.result.itemId;
-    const tier: CraftTier = recipeHasVariance(recipe) ? rollCraftTier(rng) : 0;
-    if (tier === 0) {
-      equipment[itemId] = (equipment[itemId] ?? 0) + 1;
+  // 4) 결과 적용 — quantity 회. 등급은 매 회 독립 추첨.
+  const results: CraftResult[] = [];
+  for (let i = 0; i < quantity; i++) {
+    if (recipe.result.kind === "equipment") {
+      const itemId = recipe.result.itemId;
+      const tier: CraftTier = recipeHasVariance(recipe) ? rollCraftTier(rng) : 0;
+      if (tier === 0) {
+        equipment[itemId] = (equipment[itemId] ?? 0) + 1;
+      } else {
+        const tierMap = crafted[itemId] ?? {};
+        const key = String(tier);
+        tierMap[key] = (tierMap[key] ?? 0) + 1;
+        crafted[itemId] = tierMap;
+      }
+      results.push({ kind: "equipment", itemId, tier });
     } else {
-      const tierMap = crafted[itemId] ?? {};
-      const key = String(tier);
-      tierMap[key] = (tierMap[key] ?? 0) + 1;
-      crafted[itemId] = tierMap;
+      const potionId = recipe.result.potionId;
+      potions[potionId] = (potions[potionId] ?? 0) + recipe.result.quantity;
+      results.push({
+        kind: "potion",
+        potionId,
+        quantity: recipe.result.quantity,
+      });
     }
-    result = { kind: "equipment", itemId, tier };
-  } else {
-    const potionId = recipe.result.potionId;
-    potions[potionId] = (potions[potionId] ?? 0) + recipe.result.quantity;
-    result = { kind: "potion", potionId, quantity: recipe.result.quantity };
   }
 
   // 0/빈 항목 정리
@@ -203,7 +234,7 @@ export function computeCraftOutcome(
     equipment,
     craftedEquipment: crafted,
     droppedEquipment: dropped,
-    result,
+    results,
   };
 }
 
@@ -243,6 +274,7 @@ export async function applyCraftAction(
   tx: DbExecutor,
   userId: string,
   recipeId: string,
+  quantity: number = 1,
 ): Promise<CraftOutcome> {
   const inv = (await readKv<SavedInventory>(tx, userId, "inventory.v2")) ?? {};
   const craftingState =
@@ -264,6 +296,7 @@ export async function applyCraftAction(
       ),
     },
     recipeId,
+    { quantity },
   );
 
   const newInventory: SavedInventory = {
@@ -286,5 +319,5 @@ export async function applyCraftAction(
   if (newCrafting !== craftingState)
     await upsertSave(tx, userId, "crafting.v2", newCrafting);
 
-  return { inventory: newInventory, crafting: newCrafting, result: out.result };
+  return { inventory: newInventory, crafting: newCrafting, results: out.results };
 }
