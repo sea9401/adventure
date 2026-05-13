@@ -41,32 +41,11 @@ export function BuyTab({
     (id) => MATERIALS[id].inShop || isMaterialBuyable(id),
   );
   const cap = potionMax(inventory.potionCapacityBonus ?? 0);
+  // 카테고리 순서: 장비 → 재료 → 소모품. 포션은 소모품 카테고리 상단에 함께 표시
+  // (보유 한도 cap 이 있어 BuyRow 에 cap 만 추가로 전달).
+  const potionIds = POTION_IDS.filter((id) => POTIONS[id].inShop !== false);
   return (
     <div className="space-y-3">
-      <div>
-        <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          물약
-        </div>
-        <div className="space-y-2">
-          {POTION_IDS.filter((id) => POTIONS[id].inShop !== false).map((id) => {
-            const potion = POTIONS[id];
-            const owned = inventory.potions[id] ?? 0;
-            return (
-              <BuyRow
-                key={id}
-                name={potion.name}
-                description={potion.description}
-                price={potion.price}
-                owned={owned}
-                gold={gold}
-                cap={cap}
-                onPurchase={(qty) => onPurchasePotion(id, qty)}
-              />
-            );
-          })}
-        </div>
-      </div>
-
       {SHOP_EQUIPMENT_IDS.length > 0 && (
         <div>
           <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
@@ -123,28 +102,46 @@ export function BuyTab({
         </div>
       )}
 
-      <div>
-        <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          소모품
+      {(potionIds.length > 0 || CONSUMABLE_IDS.length > 0) && (
+        <div>
+          <div className="mb-1.5 text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            소모품
+          </div>
+          <div className="space-y-2">
+            {potionIds.map((id) => {
+              const potion = POTIONS[id];
+              const owned = inventory.potions[id] ?? 0;
+              return (
+                <BuyRow
+                  key={id}
+                  name={potion.name}
+                  description={potion.description}
+                  price={potion.price}
+                  owned={owned}
+                  gold={gold}
+                  cap={cap}
+                  onPurchase={(qty) => onPurchasePotion(id, qty)}
+                />
+              );
+            })}
+            {CONSUMABLE_IDS.map((id) => {
+              const c = CONSUMABLES[id];
+              const owned = inventory.consumables[id] ?? 0;
+              return (
+                <BuyRow
+                  key={id}
+                  name={c.name}
+                  description={c.description}
+                  price={c.price}
+                  owned={owned}
+                  gold={gold}
+                  onPurchase={(qty) => onPurchaseConsumable(id, qty)}
+                />
+              );
+            })}
+          </div>
         </div>
-        <div className="space-y-2">
-          {CONSUMABLE_IDS.map((id) => {
-            const c = CONSUMABLES[id];
-            const owned = inventory.consumables[id] ?? 0;
-            return (
-              <BuyRow
-                key={id}
-                name={c.name}
-                description={c.description}
-                price={c.price}
-                owned={owned}
-                gold={gold}
-                onPurchase={(qty) => onPurchaseConsumable(id, qty)}
-              />
-            );
-          })}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
