@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ClipboardText, Coins, Scroll, Star } from "@phosphor-icons/react";
+import {
+  CaretDown,
+  CaretRight,
+  ClipboardText,
+  Coins,
+  Scroll,
+  Star,
+} from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
@@ -15,9 +22,21 @@ import { ITEMS } from "@/adventure/data/items";
 import type { QuestProgressEntry } from "./storage";
 
 const REGION_NAMES = new Map(WORLD_MAP.regions.map((r) => [r.id, r.name]));
+const REGION_LEVELS = new Map(
+  WORLD_MAP.regions.map((r) => [r.id, r.recommendedLevel]),
+);
 const NPC_NAMES = new Map(NPCS.map((n) => [n.id, n.name]));
 
 type Tab = "active" | "completed";
+
+type ActiveEntry = { quest: Quest; entry: QuestProgressEntry };
+type ActiveGroup = {
+  regionId: string;
+  regionName: string;
+  level: number | undefined;
+  quests: ActiveEntry[];
+  readyCount: number;
+};
 
 export function QuestJournalView({
   getEntry,
@@ -26,24 +45,27 @@ export function QuestJournalView({
 }) {
   const [tab, setTab] = useState<Tab>("active");
 
-  const active = QUESTS.filter((q) => {
-    const e = getEntry(q.id);
-    return e.state === "active" || e.state === "ready";
-  });
+  // 진행 중 — 지역별로 묶고 지역은 적정레벨 오름차순. 같은 지역 안에서는 보상 대기를 위로.
+  const activeGroups = buildActiveGroups(getEntry);
+  const activeCount = activeGroups.reduce((a, g) => a + g.quests.length, 0);
 
-  const completed = QUESTS.filter((q) => {
-    const e = getEntry(q.id);
-    return e.state === "completed" || e.completedCount > 0;
-  });
+  // 완료 — 평탄 리스트, 최근 완료 순. lastCompletedAt 가 없으면 맨 뒤.
+  const completed = QUESTS.map((q) => ({ quest: q, entry: getEntry(q.id) }))
+    .filter(
+      ({ entry }) => entry.state === "completed" || entry.completedCount > 0,
+    )
+    .sort(
+      (a, b) =>
+        (b.entry.lastCompletedAt ?? 0) - (a.entry.lastCompletedAt ?? 0),
+    );
 
-  const list = tab === "active" ? active : completed;
-  const pager = usePagination(list, 10);
+  const completedPager = usePagination(completed, 10);
 
   return (
     <div className="space-y-3">
       <div className="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900/60">
         <TabButton
-          label={`진행 중 ${active.length}`}
+          label={`진행 중 ${activeCount}`}
           active={tab === "active"}
           onClick={() => setTab("active")}
         />
@@ -54,40 +76,139 @@ export function QuestJournalView({
         />
       </div>
 
-      {list.length === 0 ? (
+      {tab === "active" ? (
+        activeGroups.length === 0 ? (
+          <EmptyState
+            icon={<ClipboardText size={40} weight="duotone" />}
+            title="진행 중인 의뢰가 없습니다"
+            message="길드 게시판이나 마을 사람들에게서 새 의뢰를 받아 보세요."
+          />
+        ) : (
+          <div className="space-y-2">
+            {activeGroups.map((g) => (
+              <RegionSection key={g.regionId} group={g} />
+            ))}
+          </div>
+        )
+      ) : completed.length === 0 ? (
         <EmptyState
           icon={<ClipboardText size={40} weight="duotone" />}
-          title={
-            tab === "active"
-              ? "진행 중인 의뢰가 없습니다"
-              : "아직 완료한 의뢰가 없습니다"
-          }
-          message={
-            tab === "active"
-              ? "길드 게시판이나 마을 사람들에게서 새 의뢰를 받아 보세요."
-              : "의뢰를 완료하면 여기에 기록됩니다."
-          }
+          title="아직 완료한 의뢰가 없습니다"
+          message="의뢰를 완료하면 여기에 기록됩니다."
         />
       ) : (
         <>
           <ul className="space-y-2">
-            {pager.pageItems.map((q) => (
+            {completedPager.pageItems.map(({ quest, entry }) => (
               <JournalCard
-                key={q.id}
-                quest={q}
-                entry={getEntry(q.id)}
-                tab={tab}
+                key={quest.id}
+                quest={quest}
+                entry={entry}
+                tab="completed"
+                showRegion
               />
             ))}
           </ul>
           <Pagination
-            page={pager.page}
-            pageCount={pager.pageCount}
-            setPage={pager.setPage}
+            page={completedPager.page}
+            pageCount={completedPager.pageCount}
+            setPage={completedPager.setPage}
           />
         </>
       )}
     </div>
+  );
+}
+
+// 진행 중/보상 대기 의뢰들을 지역별로 묶어 정렬한다.
+// - 지역 정렬: recommendedLevel 오름차순 (미지정은 맨 뒤, 동률은 stable)
+// - 지역 내 정렬: ready → active 순, 같은 상태 내에서는 QUESTS 선언 순 유지
+function buildActiveGroups(
+  getEntry: (id: string) => QuestProgressEntry,
+): ActiveGroup[] {
+  const map = new Map<string, ActiveGroup>();
+  for (const quest of QUESTS) {
+    const entry = getEntry(quest.id);
+    if (entry.state !== "active" && entry.state !== "ready") continue;
+    let g = map.get(quest.regionId);
+    if (!g) {
+      g = {
+        regionId: quest.regionId,
+        regionName: REGION_NAMES.get(quest.regionId) ?? quest.regionId,
+        level: REGION_LEVELS.get(quest.regionId),
+        quests: [],
+        readyCount: 0,
+      };
+      map.set(quest.regionId, g);
+    }
+    g.quests.push({ quest, entry });
+    if (entry.state === "ready") g.readyCount += 1;
+  }
+  const groups = Array.from(map.values()).sort(
+    (a, b) =>
+      (a.level ?? Number.POSITIVE_INFINITY) -
+      (b.level ?? Number.POSITIVE_INFINITY),
+  );
+  for (const g of groups) {
+    g.quests.sort((a, b) => {
+      const ar = a.entry.state === "ready" ? 0 : 1;
+      const br = b.entry.state === "ready" ? 0 : 1;
+      return ar - br;
+    });
+  }
+  return groups;
+}
+
+function RegionSection({ group }: { group: ActiveGroup }) {
+  // 진행 중 탭은 평소 의뢰가 많지 않아 기본 펼침이 더 편하다.
+  const [open, setOpen] = useState(true);
+  return (
+    <section>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-baseline justify-between gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-left hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:bg-zinc-800/60"
+      >
+        <span className="flex items-baseline gap-2">
+          {open ? (
+            <CaretDown size={14} className="self-center text-zinc-400" />
+          ) : (
+            <CaretRight size={14} className="self-center text-zinc-400" />
+          )}
+          <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            {group.regionName}
+          </span>
+          {group.level !== undefined && (
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              적정 Lv.{group.level}
+            </span>
+          )}
+        </span>
+        <span className="flex items-center gap-2 text-xs">
+          {group.readyCount > 0 && (
+            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-700 dark:text-emerald-400">
+              보상 대기 {group.readyCount}
+            </span>
+          )}
+          <span className="text-zinc-500 dark:text-zinc-400">
+            {group.quests.length}건
+          </span>
+        </span>
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-2">
+          {group.quests.map(({ quest, entry }) => (
+            <JournalCard
+              key={quest.id}
+              quest={quest}
+              entry={entry}
+              tab="active"
+              showRegion={false}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -119,17 +240,21 @@ function JournalCard({
   quest,
   entry,
   tab,
+  showRegion,
 }: {
   quest: Quest;
   entry: QuestProgressEntry;
   tab: Tab;
+  showRegion: boolean;
 }) {
   const regionName = REGION_NAMES.get(quest.regionId) ?? quest.regionId;
   const giverName = quest.giverNpcId
     ? (NPC_NAMES.get(quest.giverNpcId) ?? null)
     : null;
 
-  const meta: string[] = [regionName];
+  // 지역 그룹 헤더 안에서는 지역명을 카드 메타에서 생략(중복 회피).
+  const meta: string[] = [];
+  if (showRegion) meta.push(regionName);
   if (giverName) meta.push(`의뢰인 ${giverName}`);
 
   return (
@@ -148,14 +273,16 @@ function JournalCard({
         )}
       </div>
 
-      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-        {meta.map((m, i) => (
-          <span key={m} className="inline-flex items-center gap-2">
-            {i > 0 && <span aria-hidden>·</span>}
-            <span>{m}</span>
-          </span>
-        ))}
-      </div>
+      {meta.length > 0 && (
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+          {meta.map((m, i) => (
+            <span key={m} className="inline-flex items-center gap-2">
+              {i > 0 && <span aria-hidden>·</span>}
+              <span>{m}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {tab === "active" && (
         <>
