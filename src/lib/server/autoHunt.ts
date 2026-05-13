@@ -17,7 +17,7 @@ import type {
 } from "@/adventure/battle/offlineSim";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { AUTO_HUNT_MAX_BATTLES } from "@/adventure/battle/autoHunt";
-import { baseCharacter, maxHpForLevel } from "@/adventure/character/defaults";
+import { baseCharacter } from "@/adventure/character/defaults";
 import { derivePlayerCombat } from "@/adventure/character/derivePlayerCombat";
 import { applyExpGain } from "@/lib/leveling";
 import { ITEMS, findItemId, type EquipItem } from "@/adventure/data/items";
@@ -319,15 +319,20 @@ export async function applyResultToSaves(
     character.exp ?? 0,
     result.expGained,
   );
-  const vitAtNewLevel = derivePlayerCombat({
+  // 새 레벨 기준 maxHp — derivePlayerCombat 과 동일하게 VIT·불굴(endurance HP%) 등을
+  // 모두 반영해 계산한다. (예전엔 maxHpForLevel + vit*2 만 직접 계산해 불굴 보너스를
+  //  빼먹어서, 불굴 빌드는 위탁 사냥 후 HP 가 비보너스 최대치로 깎였다 — 무피해
+  //  사이클에서도 아래 Math.min(maxHpNew, ...) 가 진짜 최대치를 끌어내렸다.)
+  const maxHpNew = derivePlayerCombat({
     level: newLevelExp.level,
     baseStats: baseCharacter.stats,
     allocatedStats: allocatedFrom(state.training),
     equipped: equippedFrom(character),
     equippedSkills: character.equippedSkills,
+    equippedFeat: character.equippedFeat,
+    storyFlagIds: new Set(state.storyFlags.flags ?? []),
     hp: result.finalPlayerHp,
-  }).totalStats.vit;
-  const maxHpNew = maxHpForLevel(newLevelExp.level) + vitAtNewLevel * 2;
+  }).maxHp;
 
   let newHp: number;
   if (died) {

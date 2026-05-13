@@ -1,6 +1,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
+import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { POTIONS, type PotionId } from "@/adventure/data/potions";
@@ -59,6 +60,7 @@ export function useShopActions(deps: {
     addNotification,
     grantTitle,
   } = deps;
+  const remote = useRemoteSave();
 
   const runShopAction = async (body: {
     kind: ShopActionKind;
@@ -68,6 +70,11 @@ export function useShopActions(deps: {
     dropQuality?: number;
   }): Promise<{ applied: ShopOutcome["applied"] } | null> => {
     if (!Number.isInteger(body.quantity) || body.quantity < 1) return null;
+    // 서버가 character.v2 / inventory.v2 를 read-modify-write 하므로, 디바운스 큐에
+    // 쌓인 로컬 PATCH(방금 주운 전투 드랍 등)를 먼저 flush 해 서버가 최신 값을 보게 한다.
+    // (안 하면 서버가 stale 값으로 적용 → replaceFromSaved 가 그 값을 덮어쓰고 →
+    //  뒤늦게 fire 된 PATCH 가 409→재시도로 덮인 값을 다시 올려 드랍이 영구 유실.)
+    await remote.flush();
     let res: Response;
     try {
       res = await fetch("/api/shop", {

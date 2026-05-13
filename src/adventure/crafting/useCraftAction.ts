@@ -8,6 +8,7 @@ import type { Recipe } from "@/adventure/data/recipes";
 import { craftErrorMessage, type CraftResult } from "@/adventure/crafting/types";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useInventory } from "@/adventure/inventory/useInventory";
+import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 
 // 제작 — 서버 권위. 클라는 recipeId 만 보내고, 서버가 inventory.v2 / crafting.v2 를 잠그고
@@ -24,6 +25,7 @@ export function useCraftAction(deps: {
   grantTitle: (titleId: string) => void;
 }) {
   const { inventory, crafting, addNotification, grantTitle } = deps;
+  const remote = useRemoteSave();
 
   const handleCraft = async (recipe: Recipe) => {
     for (const ing of recipe.ingredients) {
@@ -60,6 +62,11 @@ export function useCraftAction(deps: {
       }
     }
 
+    // 서버가 inventory.v2 / crafting.v2 를 read-modify-write 하므로, 디바운스 큐의
+    // 로컬 PATCH(방금 주운 드랍 등)를 먼저 flush 해 서버가 최신 값에서 차감하게 한다.
+    // (안 하면 stale 값 적용 → replaceFromSaved 가 덮어쓰고 → 뒤늦은 PATCH 가 409→재시도로
+    //  덮인 값을 다시 올려 드랍이 영구 유실. 마켓플레이스와 동일한 처리.)
+    await remote.flush();
     let res: Response;
     try {
       res = await fetch("/api/craft", {
