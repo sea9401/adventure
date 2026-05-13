@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  guildJoinRequests,
   guildLeaveCooldown,
   guildMembers,
   guilds,
@@ -51,6 +52,7 @@ export async function GET() {
     return Response.json({ guild: null, leaveCooldownUntil });
   }
   const guild = guildRows[0];
+  const isMaster = guild.masterId === userId;
 
   const memberRows = await db
     .select({
@@ -67,9 +69,36 @@ export async function GET() {
     .leftJoin(presence, eq(presence.userId, guildMembers.userId))
     .where(eq(guildMembers.guildId, guildId));
 
+  // 가입 신청 대기 목록 — 마스터에게만 노출.
+  const requestRows = isMaster
+    ? await db
+        .select({
+          id: guildJoinRequests.id,
+          userId: guildJoinRequests.userId,
+          createdAt: guildJoinRequests.createdAt,
+          name: users.gameName,
+          presenceName: presence.name,
+        })
+        .from(guildJoinRequests)
+        .leftJoin(users, eq(users.id, guildJoinRequests.userId))
+        .leftJoin(presence, eq(presence.userId, guildJoinRequests.userId))
+        .where(
+          and(
+            eq(guildJoinRequests.guildId, guildId),
+            eq(guildJoinRequests.status, "pending"),
+          ),
+        )
+        .orderBy(guildJoinRequests.createdAt)
+    : [];
+
   // savesKv 한 번에 character.v2 + character-profile.v2 둘 다 가져옴 — 레벨 + 이름 fallback.
-  const memberUserIds = memberRows.map((r) => r.userId);
-  const kvRows = memberUserIds.length
+  const lookupUserIds = [
+    ...new Set([
+      ...memberRows.map((r) => r.userId),
+      ...requestRows.map((r) => r.userId),
+    ]),
+  ];
+  const kvRows = lookupUserIds.length
     ? await db
         .select({
           userId: savesKv.userId,
@@ -80,7 +109,7 @@ export async function GET() {
         .where(
           and(
             inArray(savesKv.key, [SAVES_CHARACTER, "character-profile.v2"]),
-            inArray(savesKv.userId, memberUserIds),
+            inArray(savesKv.userId, lookupUserIds),
           ),
         )
     : [];
@@ -97,21 +126,33 @@ export async function GET() {
       }
     }
   }
+  const nameOf = (
+    uid: string,
+    gameName: string | null,
+    presenceName: string | null,
+  ) =>
+    gameName ??
+    presenceName ??
+    profileNameByUserId.get(uid) ??
+    "(이름 미설정)";
 
   // 이름 fallback: users.gameName → presence.name → character-profile.v2.name → "(이름 미설정)".
   // 레거시 유저는 users.gameName 이 NULL 일 수 있어 보강.
   const members = memberRows.map((r) => ({
     userId: r.userId,
-    name:
-      r.name ??
-      r.presenceName ??
-      profileNameByUserId.get(r.userId) ??
-      "(이름 미설정)",
+    name: nameOf(r.userId, r.name, r.presenceName),
     role: r.role,
     level: levelByUserId.get(r.userId) ?? null,
     title: r.title,
     lastSeenAt: r.lastSeenAt?.toISOString() ?? null,
     joinedAt: r.joinedAt.toISOString(),
+  }));
+  const pendingRequests = requestRows.map((r) => ({
+    requestId: r.id,
+    userId: r.userId,
+    name: nameOf(r.userId, r.name, r.presenceName),
+    level: levelByUserId.get(r.userId) ?? null,
+    requestedAt: r.createdAt.toISOString(),
   }));
 
   // 카탈로그에서 사라진 버프(gold_boost 등) 슬롯은 자동 해제 + 50% 환급 후 반영.
@@ -131,8 +172,10 @@ export async function GET() {
       fameTotal: guild.fameTotal,
       fameAvailable,
       grade,
-      isMaster: guild.masterId === userId,
+      isMaster,
+      acceptingRequests: guild.acceptingRequests,
       members,
+      pendingRequests,
       buffs,
       maxBuffSlots: buffSlotsForGrade(grade),
     },

@@ -11,6 +11,7 @@ import {
 import { ensureUser } from "@/lib/server/ensureUser";
 import { upsertSave } from "@/lib/server/savesKv";
 import { SAVES_CHARACTER } from "@/lib/server/guildAffiliation";
+import { cancelPendingJoinRequestsInTx } from "@/lib/server/guildJoinRequests";
 import { GUILD_MAX_MEMBERS } from "@/adventure/data/guild";
 
 export async function POST(
@@ -98,6 +99,8 @@ export async function POST(
         .update(guildInvites)
         .set({ status: "accepted" })
         .where(eq(guildInvites.id, inviteId));
+      // 길드에 들어갔으니 그 유저의 다른 pending 가입 신청은 정리.
+      await cancelPendingJoinRequestsInTx(tx, userId);
 
       const charRows = await tx
         .select()

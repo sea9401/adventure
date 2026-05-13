@@ -2,6 +2,7 @@ import { and, eq, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   guildInvites,
+  guildJoinRequests,
   guildLeaveCooldown,
   guilds,
   marketplaceInbox,
@@ -10,6 +11,7 @@ import { GUILD_DISBANDED_NAME_HOLD_DAYS } from "@/adventure/data/guild";
 
 // Phase 1 cron — 매일 1회.
 //   1) 만료된 pending 초대장 → status='expired' (우편함 row 도 같이 claim 처리)
+//   1b) 만료된 pending 가입 신청 → status='expired'
 //   2) 멤버 0인 활성 길드 → disbandedAt 마킹
 //   3) 30일 지난 disbandedAt 길드 → hard delete (이름 재사용 허용)
 //   4) 만료된 leave_cooldown row 정리
@@ -45,6 +47,17 @@ export async function GET(req: Request) {
       );
   }
 
+  const expiredRequests = await db
+    .update(guildJoinRequests)
+    .set({ status: "expired" })
+    .where(
+      and(
+        eq(guildJoinRequests.status, "pending"),
+        lt(guildJoinRequests.expiresAt, now),
+      ),
+    )
+    .returning({ id: guildJoinRequests.id });
+
   const orphanedDisband = await db.execute(sql`
     UPDATE guilds
     SET disbanded_at = ${now}
@@ -75,6 +88,7 @@ export async function GET(req: Request) {
   return Response.json({
     ok: true,
     invitesExpired: expiredInvites.length,
+    joinRequestsExpired: expiredRequests.length,
     guildsDisbanded: orphanedCount,
     guildsPurged: purged.length,
     cooldownsPurged: cooldownPurged.length,

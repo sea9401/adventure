@@ -11,6 +11,7 @@ export const GUILD_CREATE_GOLD = 200;
 // 시간 정책.
 export const GUILD_LEAVE_COOLDOWN_DAYS = 1;
 export const GUILD_INVITE_EXPIRES_DAYS = 7;
+export const GUILD_JOIN_REQUEST_EXPIRES_DAYS = 7;
 export const GUILD_DISBANDED_NAME_HOLD_DAYS = 30;
 export const GUILD_INACTIVITY_DAYS = 30; // Phase 2 — 30일 미접속 자동 해체/위임
 

@@ -9,6 +9,7 @@ import {
 import { ensureUser } from "@/lib/server/ensureUser";
 import { upsertSave } from "@/lib/server/savesKv";
 import { SAVES_CHARACTER } from "@/lib/server/guildAffiliation";
+import { cancelPendingJoinRequestsInTx } from "@/lib/server/guildJoinRequests";
 import {
   GUILD_CREATE_GOLD,
   GUILD_CREATE_LEVEL,
@@ -138,6 +139,8 @@ export async function POST(req: Request) {
         userId,
         role: "master",
       });
+      // 길드를 만들었으니 그 유저의 pending 가입 신청은 정리.
+      await cancelPendingJoinRequestsInTx(tx, userId);
 
       return {
         ok: true as const,

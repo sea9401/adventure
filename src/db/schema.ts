@@ -311,6 +311,8 @@ export const guilds = pgTable(
     fameAvailable: integer("fame_available").notNull().default(0),
     // 마스터가 자유롭게 적는 짧은 소개글. 최대 120자(앱단 검증). NULL = 미설정.
     description: text("description"),
+    // 가입 신청을 받는지 — 마스터 토글. false 면 둘러보기에서 "신청" 비활성.
+    acceptingRequests: boolean("accepting_requests").notNull().default(true),
     // 길드 버프 슬롯 — { buffId, tier, installedAt }[]. 슬롯 수 한도는 등급 산식.
     buffs: jsonb("buffs")
       .$type<GuildBuffSlotRow[]>()
@@ -368,6 +370,33 @@ export const guildInvites = pgTable(
       .where(sql`${t.status} = 'pending'`),
     index("guild_invites_recipient_idx")
       .on(t.toUserId, t.createdAt)
+      .where(sql`${t.status} = 'pending'`),
+  ],
+);
+
+// 길드 가입 신청 (둘러보기 → 신청). 7일 유효, 만료 시 cron 이 status='expired'.
+// status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired'.
+// 유저당 pending 1건만 — 다른 길드에 신청하려면 먼저 취소. (guild, user) pending 도 partial unique.
+export const guildJoinRequests = pgTable(
+  "guild_join_requests",
+  {
+    id: serial("id").primaryKey(),
+    guildId: integer("guild_id")
+      .notNull()
+      .references(() => guilds.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    status: text("status").notNull().default("pending"),
+  },
+  (t) => [
+    uniqueIndex("guild_join_requests_user_pending_unique_idx")
+      .on(t.userId)
+      .where(sql`${t.status} = 'pending'`),
+    index("guild_join_requests_guild_idx")
+      .on(t.guildId, t.createdAt)
       .where(sql`${t.status} = 'pending'`),
   ],
 );
@@ -467,6 +496,7 @@ export type RankingRow = typeof rankings.$inferSelect;
 export type GuildRow = typeof guilds.$inferSelect;
 export type GuildMemberRow = typeof guildMembers.$inferSelect;
 export type GuildInviteRow = typeof guildInvites.$inferSelect;
+export type GuildJoinRequestRow = typeof guildJoinRequests.$inferSelect;
 export type GuildLeaveCooldownRow = typeof guildLeaveCooldown.$inferSelect;
 export type GuildQuestInstanceRow = typeof guildQuestInstances.$inferSelect;
 // 공격마다 1줄씩 기록되는 협동 보스 전투 로그.
