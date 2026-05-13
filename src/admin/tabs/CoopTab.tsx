@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAdmin } from "../AdminContext";
+import { useAsyncData } from "@/lib/useAsyncData";
 import { Button } from "../ui/Field";
 import { COOP_BOSSES } from "@/adventure/coop/data";
 
@@ -40,27 +41,25 @@ function formatTime(iso: string | null): string {
 
 export function CoopTab() {
   const { readOnly, showToast } = useAdmin();
-  const [sessions, setSessions] = useState<AdminSession[]>([]);
-  const [loading, setLoading] = useState(false);
   const [region, setRegion] = useState(REGION_OPTIONS[0] ?? "");
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await fetch("/api/admin/coop");
+  const {
+    data,
+    loading,
+    error,
+    refetch: refresh,
+  } = useAsyncData<{ sessions: AdminSession[] }>(
+    async (signal) => {
+      const r = await fetch("/api/admin/coop", { signal });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = (await r.json()) as { sessions: AdminSession[] };
-      setSessions(data.sessions);
-    } catch (e) {
-      showToast(`조회 실패: ${e instanceof Error ? e.message : "unknown"}`);
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
+      return (await r.json()) as { sessions: AdminSession[] };
+    },
+    [region],
+  );
+  const sessions = data?.sessions ?? [];
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (error) showToast(`조회 실패: ${error}`);
+  }, [error, showToast]);
 
   const post = async (action: string, extra: Record<string, unknown> = {}) => {
     if (readOnly) {

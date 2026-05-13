@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAdmin } from "../AdminContext";
+import { useAsyncData } from "@/lib/useAsyncData";
 import { Button } from "../ui/Field";
 import { DangerAction } from "../ui/DangerAction";
 
@@ -25,27 +26,20 @@ const STATUS_ORDER = ["proposed", "active", "completed", "dismissed", "expired"]
 
 export function GuildsTab() {
   const { readOnly, showToast } = useAdmin();
-  const [data, setData] = useState<Overview | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await fetch("/api/admin/guilds");
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      setData((await r.json()) as Overview);
-    } catch (e) {
-      showToast(`조회 실패: ${e instanceof Error ? e.message : "unknown"}`);
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
+  const {
+    data,
+    loading,
+    error,
+    refetch: refresh,
+  } = useAsyncData<Overview>(async (signal) => {
+    const r = await fetch("/api/admin/guilds", { signal });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return (await r.json()) as Overview;
+  });
 
   useEffect(() => {
-    // 마운트 시 1회 현황 로드 — refresh 내부의 setLoading 은 의도된 동작.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refresh();
-  }, [refresh]);
+    if (error) showToast(`조회 실패: ${error}`);
+  }, [error, showToast]);
 
   const post = async (action: string) => {
     if (readOnly) {

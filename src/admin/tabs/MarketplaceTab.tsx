@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useAdmin } from "../AdminContext";
+import { useAsyncData } from "@/lib/useAsyncData";
 import { Button, Field, Select, TextInput } from "../ui/Field";
 
 type Status = "active" | "sold" | "cancelled";
@@ -54,16 +55,17 @@ export function MarketplaceTab() {
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("active");
   const [kindFilter, setKindFilter] = useState<"" | "equip" | "material">("");
 
-  const [items, setItems] = useState<AdminListing[]>([]);
-  const [summary, setSummary] = useState<Summary>({});
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const {
+    data,
+    loading,
+    error,
+    refetch: load,
+  } = useAsyncData<{
+    items: AdminListing[];
+    summary: Summary;
+    nextCursor: string | null;
+  }>(
+    async (signal) => {
       const url = new URL(
         "/api/admin/marketplace/listings",
         window.location.origin,
@@ -71,27 +73,20 @@ export function MarketplaceTab() {
       if (statusFilter !== "all") url.searchParams.set("status", statusFilter);
       if (kindFilter) url.searchParams.set("kind", kindFilter);
       if (submitted) url.searchParams.set("q", submitted);
-      const r = await fetch(url.toString());
+      const r = await fetch(url.toString(), { signal });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = (await r.json()) as {
+      return (await r.json()) as {
         items: AdminListing[];
         summary: Summary;
         nextCursor: string | null;
       };
-      setItems(data.items);
-      setSummary(data.summary);
-      setNextCursor(data.nextCursor);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "로드 실패");
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, kindFilter, submitted]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
-  }, [load]);
+    },
+    [statusFilter, kindFilter, submitted],
+    { errorMessage: "로드 실패" },
+  );
+  const items = data?.items ?? [];
+  const summary = data?.summary ?? {};
+  const nextCursor = data?.nextCursor ?? null;
 
   const forceCancel = async (listing: AdminListing) => {
     const note = window.prompt(
