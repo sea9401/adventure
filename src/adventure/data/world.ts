@@ -198,7 +198,7 @@ export const WORLD_MAP: WorldMap = {
       name: "버려진 채석장",
       description:
         "폐허 동쪽, 산기슭으로 오르는 길목에 버려진 옛 채석장. 깨진 석재가 비탈을 이루고, 무너진 갱도에서 찬 바람이 새어 나온다.",
-      position: { x: 780, y: 440 },
+      position: { x: 800, y: 350 },
       biome: "ruins",
       enemies: ["채석터 들개", "버려진 광부", "돌부스러기 골렘"],
       encounterWeights: {
@@ -340,7 +340,7 @@ export const WORLD_MAP: WorldMap = {
       name: "조수 갯벌",
       description:
         "안개 호수가 바다로 빠지는 너른 하구. 썰물이면 갯벌과 갯바위가 드러나고, 집게발 든 것들이 진흙 위를 기어다닌다.",
-      position: { x: 780, y: 460 },
+      position: { x: 760, y: 500 },
       biome: "coast",
       enemies: ["집게발 게", "갯도요", "진흙 미꾸라지"],
       encounterWeights: {
