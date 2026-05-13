@@ -206,6 +206,54 @@ export function BlacksmithDialogue({
     }
   }
 
+  // 마정석 라인 마무리 — 자네 손으로 마정석 검 한 자루 짜 봐 (craft_item).
+  // mana-crystal 완료 후 노출. 짜고 와서 신고하면 완료.
+  if (quests.getEntry(MANA_QUEST).state === "completed") {
+    const swordQuest = quests.getEntry("village-bold-mana-sword-craft");
+    if (swordQuest.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "팔찌까지 짜 봤으니, 이젠 칼이야. 마정석 검 — 자네 손으로 한 자루 짜 봐. 그래야 그 마정석이 손에 어떻게 익는지 알지."
+          }
+          primaryAction={{
+            label: "맡겠다",
+            onClick: () => {
+              quests.accept("village-bold-mana-sword-craft");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (swordQuest.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"마정석 검 — 자네 공방에서 짜 봐. 결을 보고 두드리면 빛이 안에 머문다."}
+        />
+      );
+    }
+    if (swordQuest.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"오, 한 자루 — 결이 곧군. 자네 손에 마정석이 익었어. 자, 약속한 사례다."}
+          primaryAction={{
+            label: "보고를 마친다",
+            onClick: () => {
+              if (completeQuest("village-bold-mana-sword-craft")) onClose();
+            },
+          }}
+        />
+      );
+    }
+  }
+
   // 히든 deliver 의뢰 공용 노드 — 조건이 안 맞거나 이미 완료면 null.
   const deliverNode = (opts: {
     id: string;

@@ -158,6 +158,51 @@ export function TrainerDialogue({ npc, onClose, quests, completeQuest }: Props) 
     );
   }
 
+  // === 추가 단계 — 활력의 반지를 한 번이라도 차고 와라 (equip_item) ===
+  const ringQuest = quests.getEntry("village-trainer-equip-vitality-ring");
+  if (ringQuest.state === "available") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "내가 준 활력의 반지 — 끼고 다니나? 한 번이라도 차고 와 보게. 그래야 자네가 평야 졸업이라고 인정해 주지."
+        }
+        primaryAction={{
+          label: "차고 오겠다고 한다",
+          onClick: () => {
+            quests.accept("village-trainer-equip-vitality-ring");
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+  if (ringQuest.state === "active") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={"인벤토리에 두지 말고 손가락에. 그래야 활력이 흘러."}
+      />
+    );
+  }
+  if (ringQuest.state === "ready") {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={"끼고 다닌 흔적이 보이는군. 좋아 — 자네 평야 졸업, 이제 진짜다."}
+        primaryAction={{
+          label: "보상을 받는다",
+          onClick: () => {
+            if (completeQuest("village-trainer-equip-vitality-ring")) onClose();
+          },
+        }}
+      />
+    );
+  }
+
   // 모든 단련 완료 후 일상 대화.
   return (
     <NpcDialogue

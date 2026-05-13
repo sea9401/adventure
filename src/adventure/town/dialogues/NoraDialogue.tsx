@@ -33,6 +33,49 @@ export function NoraDialogue({
   }
 
   if (entry.state === "completed") {
+    // 후속 — 리오 들어주기 (talk_to_npc). 박쥐 의뢰가 끝난 뒤에야 노출.
+    const listenRio = quests.getEntry("diola-nora-listen-rio");
+    if (listenRio.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"리오가 요즘 다 큰 척만 해요. 후드 손님 흉내 내면서요. 어린애가 어른 흉내 내는 게 마음 쓰여서요 — 세 번만 그 애 들러줘요. 차 한 잔 끓여 둘게요."}
+          primaryAction={{
+            label: "들러 보겠다고 한다",
+            onClick: () => {
+              quests.accept("diola-nora-listen-rio");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (listenRio.state === "active") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`리오는 보통 마을 어귀에 있어요. 어른 흉내 내려 들지 말고, 그냥 그 애 이야기를 들어 주세요. — 들른 횟수 ${listenRio.progress}/3`}
+        />
+      );
+    }
+    if (listenRio.state === "ready") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={"세 번 다 들러줬다고요? 그 애 표정이 한결 어려졌네요. 자, 약속한 사례. 회복약도 함께."}
+          primaryAction={{
+            label: "보상을 받는다",
+            onClick: () => {
+              if (completeQuest("diola-nora-listen-rio")) onClose();
+            },
+          }}
+        />
+      );
+    }
+
     // 산하(운향 약초꾼)가 보낸 산정 약초 — 전령이 누구였는지 알아본다(§7.2).
     if (storyFlags.has("sanha_nora_herbs_sent")) {
       return (

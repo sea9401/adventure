@@ -116,7 +116,15 @@ export function renderTownNpcDialogue(
         />
       );
     case "diola_fisher":
-      return <KaiDialogue npc={npc} onClose={close} storyFlags={storyFlags} />;
+      return (
+        <KaiDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          storyFlags={storyFlags}
+        />
+      );
     case "diola_stranger":
       return (
         <StrangerDialogue
