@@ -125,8 +125,11 @@ export async function GET(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
 
-  // 만료 매물 정리 — 본 응답 전에 한 번 sweep. 실패해도 listings 응답에는 영향 X.
-  await sweepExpiredListings();
+  // 만료 매물 정리 — 5% 확률로만 sweep. 매 listings GET 마다 돌리면 만료가 쌓였을 때
+  // 한 유저가 100+ sequential 쿼리(per-listing 환불 INSERT)를 paying 하는 동안 다른
+  // 요청이 락 대기. 확률 게이트로 평균 20호출 1회 sweep — 트래픽 있으면 충분.
+  // (실패해도 listings 응답에는 영향 X.)
+  if (Math.random() < 0.05) await sweepExpiredListings();
 
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();

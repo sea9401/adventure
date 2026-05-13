@@ -7,7 +7,8 @@ import { ChatPanel, type ChatMessage } from "./ChatPanel";
 
 // 패널이 닫혀 있을 땐 unread 배지 갱신용으로 느리게,
 // 열려 있을 땐 상대 메시지 수신감을 살리려 짧게 폴링.
-const POLL_INTERVAL_BG_MS = 3000;
+// 배경 폴링은 모든 로그인 유저에게서 영구히 도는 비용이라 보수적으로 길게.
+const POLL_INTERVAL_BG_MS = 10000;
 const POLL_INTERVAL_OPEN_MS = 1500;
 // 채팅 / 알림(협동 보스 등) 의 "마지막으로 본 메시지 id" 를 따로 저장 — 둘이 섞이지 않게.
 const LAST_SEEN_KEY = "chat:lastSeenId";

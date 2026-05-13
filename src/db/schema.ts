@@ -131,7 +131,11 @@ export const bulletinPosts = pgTable(
     content: text("content").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (t) => [index("bulletin_posts_created_at_idx").on(t.createdAt)],
+  (t) => [
+    index("bulletin_posts_created_at_idx").on(t.createdAt),
+    // POST 의 rate-limit 조회("내 마지막 글" lookup) 가 매번 userId 로 seqscan+sort 했었다.
+    index("bulletin_posts_user_created_at_idx").on(t.userId, t.createdAt),
+  ],
 );
 
 // 글로벌 채팅 메시지. 3일 후 cron 으로 일괄 삭제.
@@ -150,7 +154,11 @@ export const messages = pgTable(
     content: text("content").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (t) => [index("messages_created_at_idx").on(t.createdAt)],
+  (t) => [
+    index("messages_created_at_idx").on(t.createdAt),
+    // POST 의 rate-limit 조회용 — userId 로 본인 마지막 메시지 시각.
+    index("messages_user_created_at_idx").on(t.userId, t.createdAt),
+  ],
 );
 
 // 전체 소식 (서버 피드) — 서버 전체에 흘러가는 "자랑거리" 한 줄 (유실된 명품 획득, 걸작 제작 성공 등).
@@ -179,15 +187,23 @@ export const serverFeed = pgTable(
 // 현재 접속 중인 유저 — 클라이언트가 주기적으로 하트비트(POST /api/presence)
 // 보내 last_seen_at 갱신. "최근 X 초 이내 본 유저"가 온라인으로 간주된다.
 // 행은 누적되지만 GET 시 시간 필터로 제외 — 별도 cleanup 불필요.
-export const presence = pgTable("presence", {
-  userId: text("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  className: text("class_name").notNull(),
-  title: text("title"),
-  lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
-});
+export const presence = pgTable(
+  "presence",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    className: text("class_name").notNull(),
+    title: text("title"),
+    lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+  },
+  (t) => [
+    // GET 의 lastSeenAt > since 윈도우 필터 + ORDER BY — 인덱스 없으면 매 폴마다
+    // presence 전체 seqscan + sort. 폴 빈도가 높아 누적 비용이 크다.
+    index("presence_last_seen_at_idx").on(t.lastSeenAt),
+  ],
+);
 
 // 거래소 listing — 활성/판매됨/취소됨 모두 보관 (분석/감사용).
 // item_kind: 'equip' | 'material' — 인벤토리 카테고리 매핑.
@@ -479,6 +495,12 @@ export const coopBossContributors = pgTable(
   (t) => [
     primaryKey({ columns: [t.sessionId, t.userId] }),
     index("coop_boss_contributors_user_idx").on(t.userId),
+    // GET /api/coop/[region] 의 "기여자 top 5" 정렬용 — 인덱스 없으면 세션당
+    // 전체 기여자 seqscan + ORDER BY damage DESC. 인기 보스는 수십~수백 명.
+    index("coop_boss_contributors_session_damage_idx").on(
+      t.sessionId,
+      sql`${t.damage} DESC`,
+    ),
   ],
 );
 
