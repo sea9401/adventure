@@ -103,9 +103,11 @@ export function useTraining() {
   const remaining = trainingEndsAt ? Math.max(0, trainingEndsAt - now) : 0;
   const isTraining = !!trainingEndsAt && remaining > 0;
 
-  const startTraining = () => {
+  // durationMult: 길드 "수련 결사" 버프 — 1.0(없음) ~ 0.85(T5). 훈련 소요시간에 곱한다.
+  const startTraining = (durationMult = 1) => {
     if (trainingEndsAt) return;
-    setTrainingEndsAt(Date.now() + TRAINING_DURATION_MS);
+    const dur = Math.round(TRAINING_DURATION_MS * durationMult);
+    setTrainingEndsAt(Date.now() + dur);
     setNow(Date.now());
   };
 

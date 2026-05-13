@@ -6,18 +6,19 @@ import type { GuildGrade } from "./guildQuests";
 
 export type GuildBuffId =
   | "exp_boost"
-  | "gold_boost"
+  | "train_speed"
   | "drop_boost"
   | "fame_boost"
   | "boss_attempt";
 
 export type GuildBuffTier = 1 | 2 | 3 | 4 | 5;
 
-// 효과 타입 — 곱셈 4종 + 가산 1종. 곱셈 value 는 multiplier (1.01~1.05),
-// 가산 value 는 정수 (보스 일일 시도 +1~+3).
+// 효과 타입 — 곱셈 4종 + 가산 1종.
+// exp/drop/fame_mult: multiplier ≥ 1 (1.01~1.05). train_speed_mult: multiplier ≤ 1
+// (0.97~0.85 — 훈련 소요시간에 곱한다). boss_attempt_bonus: 정수 (+1~+3).
 export type GuildBuffEffect =
   | { kind: "exp_mult"; value: number }
-  | { kind: "gold_mult"; value: number }
+  | { kind: "train_speed_mult"; value: number }
   | { kind: "drop_mult"; value: number }
   | { kind: "fame_mult"; value: number }
   | { kind: "boss_attempt_bonus"; value: number };
@@ -69,11 +70,11 @@ export const GUILD_BUFFS: Record<GuildBuffId, GuildBuffDef> = {
     description: "길드원의 전투 EXP 획득량을 증가시킨다.",
     tiers: buildTiers([1.01, 1.02, 1.03, 1.04, 1.05], "exp_mult"),
   },
-  gold_boost: {
-    id: "gold_boost",
-    name: "황금손 결사",
-    description: "몬스터가 떨어뜨리는 골드 양을 증가시킨다.",
-    tiers: buildTiers([1.01, 1.02, 1.03, 1.04, 1.05], "gold_mult"),
+  train_speed: {
+    id: "train_speed",
+    name: "수련 결사",
+    description: "훈련장 수련에 걸리는 시간을 단축한다.",
+    tiers: buildTiers([0.97, 0.94, 0.91, 0.88, 0.85], "train_speed_mult"),
   },
   drop_boost: {
     id: "drop_boost",
@@ -97,7 +98,7 @@ export const GUILD_BUFFS: Record<GuildBuffId, GuildBuffDef> = {
 
 export const GUILD_BUFF_IDS: GuildBuffId[] = [
   "exp_boost",
-  "gold_boost",
+  "train_speed",
   "drop_boost",
   "fame_boost",
   "boss_attempt",
