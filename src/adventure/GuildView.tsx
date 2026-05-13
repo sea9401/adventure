@@ -26,9 +26,11 @@ export function GuildView({
   onClaim: (id: string) => void;
 }) {
   // 메인 의뢰 완료를 전제하는 의뢰는 prerequisite 가 충족되기 전엔 게시판에서 숨김.
+  // (선행이 repeatable 이면 claim 후 state 가 다시 "available" 이 되므로 completedCount
+  //  로 검사. questLineDialogue 도 동일.)
   const quests = getQuestsForRegion(regionId).filter((q) => {
     if (!q.requiresQuestCompleted) return true;
-    return getEntry(q.requiresQuestCompleted).state === "completed";
+    return getEntry(q.requiresQuestCompleted).completedCount > 0;
   });
   const [now, setNow] = useState(() => Date.now());
 
