@@ -326,11 +326,11 @@ export function TownScreen() {
           gold={character.gold}
           level={character.level}
           onCommit={training.commitAllocations}
-          onBuyRevertPoint={() => {
-            const price = revertPointPriceFor(character.level);
+          onBuyRevertPoint={(qty) => {
+            const price = revertPointPriceFor(character.level) * qty;
             if (character.gold < price) return;
             characterStateHook.addGold(-price);
-            training.addRevertPoints(1);
+            training.addRevertPoints(qty);
           }}
         />
       </div>

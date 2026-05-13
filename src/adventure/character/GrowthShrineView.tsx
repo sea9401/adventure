@@ -14,9 +14,9 @@ const ZERO_DRAFT: Record<StatKey, number> = STAT_KEYS.reduce(
   {} as Record<StatKey, number>,
 );
 
-// 되돌리기 포인트 1개 구매 비용 — 레벨 무관 고정 500G.
+// 되돌리기 포인트 1개 구매 비용 — 레벨 무관 고정 1G.
 // (level 인자는 호출부 호환 위해 유지하지만 사용하지 않음.)
-export const REVERT_POINT_PRICE = 500;
+export const REVERT_POINT_PRICE = 1;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function revertPointPriceFor(_level: number): number {
   return REVERT_POINT_PRICE;
@@ -41,7 +41,7 @@ export function GrowthShrineView({
   gold: number;
   level: number;
   onCommit: (deltas: Record<StatKey, number>) => void;
-  onBuyRevertPoint: () => void;
+  onBuyRevertPoint: (qty: number) => void;
 }) {
   const revertPrice = revertPointPriceFor(level);
   const [draft, setDraft] = useState<Record<StatKey, number>>(ZERO_DRAFT);
@@ -122,21 +122,28 @@ export function GrowthShrineView({
           />
           <div className="min-w-0 flex-1 text-xs text-amber-900 dark:text-amber-200">
             되돌리기 포인트 1개를 {revertPrice.toLocaleString()}G 에 살 수 있다.
-            <span className="ml-1 text-[10px] text-amber-700/80 dark:text-amber-300/70">
-              (Lv 비례)
-            </span>
             <span className="ml-2 tabular-nums text-zinc-500 dark:text-zinc-400">
               잔액 {gold.toLocaleString()} G
             </span>
           </div>
-          <button
-            type="button"
-            onClick={onBuyRevertPoint}
-            disabled={gold < revertPrice}
-            className="shrink-0 rounded-md border border-amber-700 bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            +1 구매
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onBuyRevertPoint(1)}
+              disabled={gold < revertPrice}
+              className="rounded-md border border-amber-700 bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              +1 구매
+            </button>
+            <button
+              type="button"
+              onClick={() => onBuyRevertPoint(10)}
+              disabled={gold < revertPrice * 10}
+              className="rounded-md border border-amber-700 bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              +10 구매
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2">
