@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bulletinPosts } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { resolveActor } from "@/lib/server/resolveActor";
 import {
   BULLETIN_FETCH_LIMIT,
   BULLETIN_MAX_LENGTH,
@@ -45,34 +46,24 @@ export async function POST(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
 
-  let body: {
-    name?: unknown;
-    className?: unknown;
-    title?: unknown;
-    content?: unknown;
-  };
+  // identity 는 클라 body 무시 — 서버 권위로 해석 (사칭 방지, 채팅과 동일).
+  let body: { content?: unknown };
   try {
     body = (await req.json()) as typeof body;
   } catch {
     return new Response("invalid json", { status: 400 });
   }
 
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  const className =
-    typeof body.className === "string" ? body.className.trim() : "";
-  const titleRaw = typeof body.title === "string" ? body.title.trim() : "";
-  const title = titleRaw === "" ? null : titleRaw;
   const content =
     typeof body.content === "string" ? body.content.trim() : "";
-
-  if (!name) return new Response("missing name", { status: 400 });
-  if (!className) return new Response("missing className", { status: 400 });
   if (!content) return new Response("empty content", { status: 400 });
   if (content.length > BULLETIN_MAX_LENGTH) {
     return new Response(`too long (max ${BULLETIN_MAX_LENGTH})`, {
       status: 400,
     });
   }
+
+  const { name, className, title } = await resolveActor(userId);
 
   // rate limit — 본인 마지막 글 시각 기준 X ms 이내면 차단.
   const since = new Date(Date.now() - BULLETIN_RATE_LIMIT_MS);
