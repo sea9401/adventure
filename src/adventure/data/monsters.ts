@@ -105,6 +105,7 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "wilddog_hide", chance: 0.03 },
       { kind: "material", materialId: "wilddog_fang", chance: 0.015 },
+      { kind: "recipe", recipeId: "reinforced_leather_armor", chance: 0.005 },
     ],
   },
   두더지: {
@@ -134,6 +135,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "recipe", recipeId: "bat_hood", chance: 0.004 },
       // 유실된 명품 — 두더지왕의 드릴과 같은 부류(unique). 잡몹이 떡상 장신구를 떨군다.
       { kind: "equip", itemId: "bat_swarm_charm", chance: 0.0002 },
+      // bat_swarm_charm 을 한 단계 끌어올리는 개조서 (결과도 unique·비거래).
+      { kind: "recipe", recipeId: "bat_swarm_guide", chance: 0.003 },
     ],
   },
   동굴뱀: {
@@ -164,6 +167,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "recipe", recipeId: "sticky_cloak", chance: 0.003 },
       // 유실된 명품(unique) — 행운 +7 갑옷. "운으로 성장하는" 손맛 전용.
       { kind: "equip", itemId: "spider_queen_silk_robe", chance: 0.0002 },
+      // 그 비단갑을 한 단계 끌어올리는 직조서 (결과도 unique·비거래).
+      { kind: "recipe", recipeId: "spider_queen_silk_plate", chance: 0.002 },
     ],
   },
   산적: {
@@ -178,6 +183,7 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "gold", amount: 1, chance: 0.0777 },
       { kind: "equip", itemId: "bandit_dagger", chance: 0.005 },
+      { kind: "recipe", recipeId: "bandit_chief_dagger", chance: 0.003 },
     ],
   },
   "호수 님프": {
@@ -193,6 +199,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "fairy_dust", chance: 0.02 },
       { kind: "equip", itemId: "nymph_ring", chance: 0.005 },
       { kind: "recipe", recipeId: "fairy_blessing", chance: 0.002 },
+      { kind: "recipe", recipeId: "nymph_blessing", chance: 0.002 },
     ],
   },
   "부서진 골렘": {
@@ -208,6 +215,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "ruin_fragment", chance: 0.05 },
       { kind: "recipe", recipeId: "golem_armor", chance: 0.02 },
       { kind: "equip", itemId: "golem_hammer", chance: 0.001 },
+      { kind: "recipe", recipeId: "reforged_golem_hammer", chance: 0.015 },
     ],
   },
   "떠도는 망령": {
@@ -223,6 +231,7 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "soul_crystal", chance: 0.01 },
       { kind: "equip", itemId: "wraith_cloak", chance: 0.002 },
+      { kind: "recipe", recipeId: "wraithking_cloak", chance: 0.002 },
     ],
   },
   "작은 광물 골렘": {
@@ -258,6 +267,8 @@ export const MONSTERS: Record<string, Monster> = {
         chance: 1,
       },
       { kind: "recipe", recipeId: "mana_bracelet", chance: 0.15 },
+      // 두더지왕의 드릴(유실된 명품)을 한 단계 끌어올리는 개조서 (결과도 unique·비거래).
+      { kind: "recipe", recipeId: "mole_king_borer", chance: 0.05 },
     ],
     dropQualityBias: 3,
     phaseTrigger: {
@@ -415,6 +426,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "hawk_feather", chance: 0.02 },
       // 유실된 명품(unique) — 매의 발에 끼워져 있던 발톱 모양 쇳조각. atk +9 / dex +5.
       { kind: "equip", itemId: "sky_render_talon", chance: 0.00015 },
+      // 그 발톱을 한 단계 끌어올리는 세공서 (결과도 unique·비거래).
+      { kind: "recipe", recipeId: "azure_talon", chance: 0.003 },
     ],
     skill: { kind: "pierce", name: "급강하", armorPierce: 2 },
   },
@@ -495,6 +508,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "phoenix_feather", chance: 0.01 },
       { kind: "equip", itemId: "flame_eagle_cape", chance: 0.003 },
       { kind: "recipe", recipeId: "potion_heal_l", chance: 0.008 },
+      { kind: "recipe", recipeId: "phoenix_flight_cape", chance: 0.004 },
     ],
     skill: { kind: "pierce", name: "강하 일격", armorPierce: 4 },
   },
@@ -542,6 +556,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "lava_core", chance: 0.003 },
       // 유실된 명품(unique) — 미처 못 녹인 거대 용암 핵. atk +11 / spd -2. 가장 희귀한 한 자루.
       { kind: "equip", itemId: "lava_core_maul", chance: 0.0001 },
+      // 그 망치를 한 단계 끌어올리는 단조서 (결과도 unique·비거래).
+      { kind: "recipe", recipeId: "lava_core_greatmaul", chance: 0.005 },
     ],
     skill: { kind: "heavy_blow", name: "용암 비산", everyPhases: 4, multiplier: 1.5 },
   },
