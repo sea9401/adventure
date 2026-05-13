@@ -810,9 +810,9 @@ export const MONSTERS: Record<string, Monster> = {
   // ── 서편 옛길 (서편 옛길 / 옛 변경 성채) ─────────────────────────────────
   // 시작 마을 서쪽의 막다른 라인. 옛길 ≈ 동굴(Lv3) tier, 성채 ≈ 폐허~산기슭 사이(Lv13) tier.
   // 옛 폐허(고대·마법)와 달리 성채는 "한 세대 전 전쟁의 잔해" — 인간 탈영병 + 녹슨 전쟁기계 + 까마귀.
-  // image 필드는 후속 PR(webp 추가).
   "들까마귀 떼": {
     name: "들까마귀 떼",
+    image: "/images/monster/flockofcrows.webp",
     tags: ["beast"],
     hp: 45,
     atk: 5,
@@ -830,6 +830,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "갈대 살쾡이": {
     name: "갈대 살쾡이",
+    image: "/images/monster/reedcat.webp",
     tags: ["beast"],
     hp: 60,
     atk: 6,
@@ -843,6 +844,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   노상강도: {
     name: "노상강도",
+    image: "/images/monster/highwayman.webp",
     tags: ["humanoid"],
     hp: 75,
     atk: 7,
@@ -856,6 +858,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "폐성벽 까마귀": {
     name: "폐성벽 까마귀",
+    image: "/images/monster/oldfortresscrow.webp",
     tags: ["beast"],
     hp: 130,
     atk: 15,
@@ -872,6 +875,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "탈영 약탈자": {
     name: "탈영 약탈자",
+    image: "/images/monster/deserterbandit.webp",
     tags: ["humanoid"],
     hp: 180,
     atk: 16,
@@ -889,6 +893,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "녹슨 자동인형": {
     name: "녹슨 자동인형",
+    image: "/images/monster/automaton.webp",
     tags: ["golem"],
     hp: 230,
     atk: 14,
@@ -911,6 +916,7 @@ export const MONSTERS: Record<string, Monster> = {
   // 0.15 로 성문지기의 핵, 0.05 로 까마귀 둥지 부적 새김서.
   "옛 성문지기": {
     name: "옛 성문지기",
+    image: "/images/monster/oldgatekeeper.webp",
     tags: ["golem"],
     hp: 650,
     atk: 25,

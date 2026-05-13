@@ -367,6 +367,7 @@ export const NPCS: Npc[] = [
     region: "dustford",
     name: "옛 수비대장 무진",
     role: "elder",
+    portrait: "/images/npc/mujin.webp",
     description:
       "한 세대 전 옛 변경 성채를 지키던 수비대의 마지막 대장. 다리를 절지만 등은 여전히 꼿꼿하다.",
     greeting:
@@ -377,6 +378,7 @@ export const NPCS: Npc[] = [
     region: "dustford",
     name: "고물장수 두루",
     role: "vendor",
+    portrait: "/images/npc/duru.webp",
     description:
       "옛길과 성채에서 거둔 고물을 손질해 파는 장수. 손에 늘 녹가루와 깃털이 묻어 있다.",
     greeting:
@@ -387,6 +389,7 @@ export const NPCS: Npc[] = [
     region: "dustford",
     name: "역참 주인 나래",
     role: "innkeeper",
+    portrait: "/images/npc/narae.webp",
     description:
       "마른나루 옛 역참을 지키는 주인. 마른 억새와 들밀로 끓인 죽으로 드문 길손들 배를 채운다.",
     greeting:
@@ -397,6 +400,7 @@ export const NPCS: Npc[] = [
     region: "dustford",
     name: "들사냥꾼 솔개",
     role: "quest",
+    portrait: "/images/npc/solgae.webp",
     description:
       "옛길의 들짐승을 쫓아 사는 사냥꾼. 어깨에 늘 들매를 한 마리 앉히고 다닌다.",
     greeting:
@@ -407,6 +411,7 @@ export const NPCS: Npc[] = [
     region: "dustford",
     name: "역참 아이 보리",
     role: "lore",
+    portrait: "/images/npc/vory.webp",
     description:
       "마른 억새밭에서 노는 마른나루 아이. 늘 까마귀 깃을 한 줌씩 모아 다닌다.",
     greeting:
