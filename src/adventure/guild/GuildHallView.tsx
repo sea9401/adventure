@@ -10,11 +10,14 @@ import {
   GUILD_MAX_MEMBERS,
 } from "@/adventure/data/guild";
 import {
+  acceptJoinRequest,
   createGuild,
+  declineJoinRequest,
   disbandGuild,
   fetchMyGuild,
   kickFromGuild,
   leaveGuild,
+  setGuildAcceptingRequests,
   transferMaster,
   updateGuildDescription,
   GuildError,
@@ -26,6 +29,7 @@ import { GuildBuffsPanel } from "./GuildBuffsPanel";
 import { GuildTabButton } from "./GuildTabButton";
 import { GuildSummaryPanel } from "./GuildSummaryPanel";
 import { GuildNoGuildPanel } from "./GuildNoGuildPanel";
+import { GuildBrowsePanel } from "./GuildBrowsePanel";
 import { GuildMembersPanel } from "./GuildMembersPanel";
 import { GuildManagePanel } from "./GuildManagePanel";
 
@@ -191,6 +195,55 @@ export function GuildHallView() {
     }
   };
 
+  const handleAcceptRequest = async (requestId: number, name: string) => {
+    if (!data?.guild) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await acceptJoinRequest(requestId);
+      pushToast(`${name} 님의 가입 신청을 수락했습니다.`);
+      await load();
+    } catch (e) {
+      handleApiError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeclineRequest = async (requestId: number, name: string) => {
+    if (!data?.guild) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await declineJoinRequest(requestId);
+      pushToast(`${name} 님의 가입 신청을 거절했습니다.`);
+      await load();
+    } catch (e) {
+      handleApiError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleToggleAccepting = async (next: boolean) => {
+    if (!data?.guild) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await setGuildAcceptingRequests(data.guild.id, next);
+      setData((prev) =>
+        prev?.guild
+          ? { ...prev, guild: { ...prev.guild, acceptingRequests: next } }
+          : prev,
+      );
+      pushToast(next ? "가입 신청을 받습니다." : "가입 신청을 받지 않습니다.");
+    } catch (e) {
+      handleApiError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onInviteSuccess = (targetName: string) => {
     pushToast(`${targetName} 님에게 초대장을 보냈습니다.`);
     setShowInvite(false);
@@ -255,6 +308,9 @@ export function GuildHallView() {
               guild={data.guild}
               busy={busy}
               onInviteClick={() => setShowInvite(true)}
+              onAcceptRequest={handleAcceptRequest}
+              onDeclineRequest={handleDeclineRequest}
+              onToggleAccepting={handleToggleAccepting}
               onDisband={handleDisband}
             />
           ) : tab === "quests" ? (
@@ -272,16 +328,27 @@ export function GuildHallView() {
           )}
         </>
       ) : (
-        <GuildNoGuildPanel
-          showCreate={showCreate}
-          onShowCreate={() => setShowCreate(true)}
-          onCancelCreate={() => setShowCreate(false)}
-          onCreate={handleCreate}
-          busy={busy}
-          characterLevel={character.level}
-          characterGold={character.gold}
-          leaveCooldownUntil={data?.leaveCooldownUntil ?? null}
-        />
+        <>
+          <GuildNoGuildPanel
+            showCreate={showCreate}
+            onShowCreate={() => setShowCreate(true)}
+            onCancelCreate={() => setShowCreate(false)}
+            onCreate={handleCreate}
+            busy={busy}
+            characterLevel={character.level}
+            characterGold={character.gold}
+            leaveCooldownUntil={data?.leaveCooldownUntil ?? null}
+          />
+          <GuildBrowsePanel
+            busy={busy}
+            leaveCooldownUntil={data?.leaveCooldownUntil ?? null}
+            onToast={pushToast}
+            onError={(msg) => {
+              setError(msg);
+              pushToast(msg);
+            }}
+          />
+        </>
       )}
 
       {showInvite && data?.guild ? (
