@@ -671,6 +671,135 @@ export const ITEMS = {
     description: "초원 매의 길고 가벼운 깃털을 이어 짠 망토. 바람을 잘 타 두르면 발걸음이 한결 빨라진다.",
     rarity: "uncommon",
   } satisfies EquipItem,
+
+  // ── 기존 장비를 재료(equip)로 한 단계 끌어올린 결과물 ──
+  // 베이스가 'equip' 재료로 소비된다 (recipes.ts). 명품(unique) 업그레이드는 결과도 unique·비거래 ("손에 맞춰진 보물").
+  reinforced_leather_armor: {
+    name: "덧댄 가죽갑옷",
+    slot: "armor",
+    stats: [{ label: "방어력", value: "+4" }],
+    bonus: { def: 4 },
+    description: "낡은 가죽갑옷에 들개 가죽을 덧대고 두텁게 누벼 받친 것. 같은 한 벌인데 한층 든든하다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  bandit_chief_dagger: {
+    name: "두목의 단검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+6" },
+      { label: "민첩", value: "+3" },
+    ],
+    bonus: { atk: 6, dex: 3 },
+    description: "산적의 단검에 단단한 수정을 박아 날을 다시 세운 것. 두목쯤은 들고 다녔을 법한 무게가 손에 감긴다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  nymph_blessing: {
+    name: "호수 님프의 가호",
+    slot: "accessory",
+    stats: [
+      { label: "속도", value: "+4" },
+      { label: "민첩", value: "+1" },
+    ],
+    bonus: { spd: 4, dex: 1 },
+    description: "님프의 반지에 요정가루를 입혀 가호를 깊게 한 것. 끼고 있으면 발끝이 호숫물처럼 가볍다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  reforged_golem_hammer: {
+    name: "재단조한 골렘 망치",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+8" },
+      { label: "힘", value: "+3" },
+      { label: "속도", value: "-2" },
+    ],
+    bonus: { atk: 8, str: 3, spd: -2 },
+    description: "골렘의 망치를 마정석으로 다시 벼리고 폐허 잔해로 자루를 보강한 것. 여전히 둔하지만, 한 번 내리치면 무게가 다르다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  wraithking_cloak: {
+    name: "망령왕의 망토",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+3" },
+      { label: "민첩", value: "+2" },
+      { label: "속도", value: "+3" },
+    ],
+    bonus: { def: 3, dex: 2, spd: 3 },
+    description: "망령의 망토에 영혼 결정을 엮어 넣어 한기를 깊게 한 것. 두르면 발소리가 사라지고, 베인 자리가 시리다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  lava_core_greatmaul: {
+    name: "용암핵 대망치",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+14" },
+      { label: "속도", value: "-2" },
+    ],
+    bonus: { atk: 14, spd: -2 },
+    description: "굳은 용암핵 망치에 용암 핵을 더 녹여 붓고 화염 비늘로 자루를 감싼 것. 더 둔해진 만큼, 한 번 내리치면 땅이 갈라진다.",
+    rarity: "unique",
+    tradable: false,
+  } satisfies EquipItem,
+  azure_talon: {
+    name: "창천의 발톱",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+11" },
+      { label: "민첩", value: "+6" },
+    ],
+    bonus: { atk: 11, dex: 6 },
+    description: "하늘가르개에 초원 매 깃털을 겹겹이 둘러 균형을 잡은 것. 휘두르면 허공이 한 줄 더 깊게 갈라진다.",
+    rarity: "unique",
+    tradable: false,
+  } satisfies EquipItem,
+  spider_queen_silk_plate: {
+    name: "거미여왕의 비단 정갑",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+4" },
+      { label: "행운", value: "+9" },
+    ],
+    bonus: { def: 4, luk: 9 },
+    description: "거미여왕의 비단갑을 거미줄로 더 곱게 짜 올린 정갑. 결이 비단 위의 비단이고, 운이 더 끈질기게 따라붙는다.",
+    rarity: "unique",
+    tradable: false,
+  } satisfies EquipItem,
+  bat_swarm_guide: {
+    name: "박쥐떼의 인도자",
+    slot: "accessory",
+    stats: [
+      { label: "속도", value: "+6" },
+      { label: "민첩", value: "+3" },
+    ],
+    bonus: { spd: 6, dex: 3 },
+    description: "박쥐떼의 길잡이에 박쥐 눈알을 박아 어둠을 더 멀리 읽게 한 것. 지니면 한 발 앞이 늘 환하고, 그만큼 발이 앞선다.",
+    rarity: "unique",
+    tradable: false,
+  } satisfies EquipItem,
+  phoenix_flight_cape: {
+    name: "봉황 비행깃 망토",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+4" },
+      { label: "민첩", value: "+3" },
+      { label: "속도", value: "+6" },
+    ],
+    bonus: { def: 4, dex: 3, spd: 6 },
+    description: "봉황 망토에 봉황 깃털을 더 이어 짜 비행깃을 살린 것. 두르면 발이 불꽃처럼 가벼워지고, 방향을 트는 게 한결 빠르다.",
+    rarity: "uncommon",
+  } satisfies EquipItem,
+  mole_king_borer: {
+    name: "두더지왕의 굴착드릴",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+8" },
+      { label: "속도", value: "+3" },
+    ],
+    bonus: { atk: 8, spd: 3 },
+    description: "두더지왕의 드릴에 단단한 수정 날과 마정석 동력부를 단 것. 회전이 묵직해지고, 파고드는 손맛이 한 단계 위다.",
+    rarity: "unique",
+    tradable: false,
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;

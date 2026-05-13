@@ -57,6 +57,34 @@ describe("recipe 가 결과 itemId 참조 정합성", () => {
   }
 });
 
+describe("recipe id / 재료 / equip→equip 체인 정합성", () => {
+  it("recipe id 가 유일하다", () => {
+    const ids = RECIPES.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+  for (const r of RECIPES) {
+    for (const ing of r.ingredients) {
+      if (ing.kind === "material") {
+        const mid = ing.materialId;
+        it(`${r.id} ← material ${mid}`, () => {
+          expect((MATERIALS as Record<string, unknown>)[mid]).toBeDefined();
+        });
+      } else {
+        const iid = ing.itemId;
+        it(`${r.id} ← equip ${iid}`, () => {
+          expect((ITEMS as Record<string, unknown>)[iid]).toBeDefined();
+        });
+        // 자기 자신을 재료로 쓰는 무한 루프 방지.
+        it(`${r.id} 는 자기 결과물을 재료로 쓰지 않는다`, () => {
+          if (r.result.kind === "equipment") {
+            expect(iid).not.toBe(r.result.itemId);
+          }
+        });
+      }
+    }
+  }
+});
+
 describe("quest 의 target / requiresQuestCompleted 참조 정합성", () => {
   const questIds = new Set(QUESTS.map((q) => q.id));
   // id 중복 없음.
