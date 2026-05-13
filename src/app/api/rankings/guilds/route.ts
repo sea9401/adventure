@@ -4,14 +4,23 @@ import { ensureUser } from "@/lib/server/ensureUser";
 import { gradeForFame } from "@/adventure/data/guildQuests";
 
 const LIST_LIMIT = 100;
+// 메모리 캐시 TTL — 길드 명성/멤버수는 매우 빨리 변하지 않으니 30초 staleness OK.
+// 캐시는 길드 전체 정렬 결과만 보관, 본인 길드 매칭은 매 요청마다 (요청 유저별 가변).
+const CACHE_TTL_MS = 30_000;
 
-// GET /api/rankings/guilds — 활성 길드를 누적 명성(fameTotal) 내림차순으로 정렬.
-// 동률은 createdAt 오래된 순. 응답에는 등급/멤버 수도 포함.
-export async function GET() {
-  const userId = await ensureUser();
-  if (!userId) return new Response("unauthorized", { status: 401 });
+type GuildRow = {
+  guildId: number;
+  name: string;
+  fameTotal: number;
+  memberCount: number;
+  rank: number;
+};
 
-  // ranked: fameTotal DESC + createdAt ASC. 멤버 수는 LATERAL count 로.
+let cachedRows: GuildRow[] | null = null;
+let cachedAt = 0;
+let inFlight: Promise<GuildRow[]> | null = null;
+
+async function fetchRows(): Promise<GuildRow[]> {
   const result = await db.execute(sql`
     WITH stats AS (
       SELECT
@@ -28,8 +37,7 @@ export async function GET() {
       WHERE g.disbanded_at IS NULL
     ),
     ranked AS (
-      SELECT
-        *,
+      SELECT *,
         ROW_NUMBER() OVER (ORDER BY fame_total DESC, created_at ASC)::int AS rank
       FROM stats
     )
@@ -38,20 +46,49 @@ export async function GET() {
     ORDER BY rank
   `);
 
-  type Row = {
+  type DbRow = {
     guild_id: number;
     name: string;
     fame_total: number;
     member_count: number;
     rank: number;
   };
-  const rows = (result.rows as unknown as Row[]).map((r) => ({
-    rank: Number(r.rank),
+  return (result.rows as unknown as DbRow[]).map((r) => ({
     guildId: Number(r.guild_id),
     name: String(r.name),
     fameTotal: Number(r.fame_total),
     memberCount: Number(r.member_count),
+    rank: Number(r.rank),
   }));
+}
+
+async function getRows(): Promise<GuildRow[]> {
+  const now = Date.now();
+  if (cachedRows && now - cachedAt < CACHE_TTL_MS) return cachedRows;
+  if (inFlight) return inFlight;
+  inFlight = fetchRows().then(
+    (rows) => {
+      cachedRows = rows;
+      cachedAt = Date.now();
+      inFlight = null;
+      return rows;
+    },
+    (err: unknown) => {
+      inFlight = null;
+      throw err;
+    },
+  );
+  return inFlight;
+}
+
+// GET /api/rankings/guilds — 활성 길드를 누적 명성(fameTotal) 내림차순으로 정렬.
+// 동률은 createdAt 오래된 순. 응답에는 등급/멤버 수도 포함.
+// 정렬 결과는 30초 메모리 캐시 — 본인 길드 매칭만 매 요청 (요청 유저별 가변).
+export async function GET() {
+  const userId = await ensureUser();
+  if (!userId) return new Response("unauthorized", { status: 401 });
+
+  const rows = await getRows();
 
   // 본인 길드 — 1회 쿼리로 결정. 가입 안 했거나 해체된 길드면 null.
   const myMembership = await db.execute(sql`

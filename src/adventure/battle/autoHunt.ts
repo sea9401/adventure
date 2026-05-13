@@ -23,6 +23,14 @@ export const AUTO_HUNT_EFFICIENCY = 0.7;
 /** 보낸 지 이 시간 미만이면 "지금 수령"을 거부 — 실수로 슬롯 날리는 것 방지. */
 export const AUTO_HUNT_MIN_COLLECT_MS = 10_000;
 
+/**
+ * 서버측 sim 실행 wall-clock 예산(ms). 단일 EC2 의 이벤트 루프를 한 collect 요청이
+ * 수 초 동안 점유하는 사고를 막는 안전망. 보통 사이클은 200~500ms 안에 끝나므로
+ * 일반 유저는 영향 없고, 극단 케이스(낮은 레벨 × 높은 HP 적 × 최대 전투 수)에서만
+ * 잘리며 그 시점까지 결과가 정상 반환된다.
+ */
+export const AUTO_HUNT_SIM_BUDGET_MS = 2_000;
+
 /** reload 직전 결과를 박아두는 sessionStorage 키. 마운트 직후 핸들러가 읽고 삭제. */
 export const AUTO_HUNT_RESULT_KEY = "auto-hunt-result.v1";
 

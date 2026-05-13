@@ -66,6 +66,13 @@ export type OfflineSimInput = {
   knowsRecipe: (recipeId: string) => boolean;
   // 적 선택 + 드롭 굴림에 쓰일 RNG. 테스트에서 시드 가능.
   rng?: () => number;
+  /**
+   * Wall-clock 예산(ms). sim 이 이 시간을 넘기면 외측 루프에서 즉시 종료하고
+   * 그 시점까지의 결과를 돌려준다. 서버에서 단일 EC2 의 이벤트 루프를 한 collect
+   * 가 수 초 동안 점유하는 사고를 방지 — 미지정 시 무제한(기존 동작). 클라/테스트는
+   * 굳이 쓸 필요 없음.
+   */
+  runBudgetMs?: number;
 };
 
 export type OfflineSimResult = {
@@ -85,6 +92,8 @@ export type OfflineSimResult = {
   potionsConsumed: Partial<Record<PotionId, number>>;
   finalPlayerHp: number;
   died: boolean; // 도중 사망?
+  /** runBudgetMs 가 발동돼 sim 이 잘렸으면 true (observability). */
+  cappedByBudget?: boolean;
 };
 
 export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
@@ -92,6 +101,11 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
   const cappedByLimit = input.awayMs > OFFLINE_SIM_MAX_MS;
   const maxBattles = input.maxBattles ?? Infinity;
   const rng = input.rng ?? Math.random;
+  // wall-clock 예산 — 시작 시각 + 마감 시각 캐시. 미지정 시 Infinity (기존 동작).
+  const runDeadline =
+    typeof input.runBudgetMs === "number" && input.runBudgetMs > 0
+      ? Date.now() + input.runBudgetMs
+      : Infinity;
 
   const result: OfflineSimResult = {
     simulatedMs: 0,
@@ -125,6 +139,12 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
   let runningExp = input.playerExp ?? 0;
 
   while (elapsed < cap && currentHp > 0 && result.battles < maxBattles) {
+    // wall-clock 예산 초과 시 즉시 종료 — 이벤트 루프 점유 방지.
+    // (전투 한 판 단위로만 체크 — 내측 turn 루프는 짧으므로 충분.)
+    if (runDeadline !== Infinity && Date.now() > runDeadline) {
+      result.cappedByBudget = true;
+      break;
+    }
     const enemyName = pickEnemyName(input.region, rng);
     if (!enemyName) break;
     const enemy = MONSTERS[enemyName];
