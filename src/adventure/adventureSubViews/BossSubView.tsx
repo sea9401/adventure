@@ -8,6 +8,7 @@ import { applyCoopReward } from "@/adventure/coop/applyReward";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { useGame } from "@/adventure/GameContext";
 import { resolveBuffMultiplier } from "@/adventure/data/guildBuffs";
+import { getQuestById } from "@/adventure/data/quests";
 
 export function BossSubView() {
   const {
@@ -30,6 +31,7 @@ export function BossSubView() {
     addNotification,
     grantTitle,
     guildBuffs,
+    quests,
   } = useGame();
   const bossAttemptBonus = resolveBuffMultiplier(
     guildBuffs,
@@ -59,6 +61,21 @@ export function BossSubView() {
           onStopHunting={() => setHuntingActive(false)}
           dispatched={autoHunt.isDispatched}
           onStoryFlag={storyFlags.set}
+          onKill={(bossName) => {
+            // 협동 보스 처치를 kill 카운터 의뢰(운봉의 거인 처치/정기/숙련도)에 반영.
+            // 도감 kill 카운트도 같이 — 솔로 보스 onBattleEnd 와 일관성.
+            adventureLog.addKill(bossName);
+            const readyIds = quests.recordKill(bossName);
+            for (const id of readyIds) {
+              const q = getQuestById(id);
+              if (q) {
+                addNotification(
+                  "quest_ready",
+                  `의뢰 조건 달성 — ${q.title}: 길드에서 보상을 받을 수 있다.`,
+                );
+              }
+            }
+          }}
         />
       </div>
     );
