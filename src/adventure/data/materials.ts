@@ -199,6 +199,28 @@ export const MATERIALS = {
     price: 24,
     inShop: false,
   },
+  // ── 서편 옛길 재료 (서편 옛길 / 옛 변경 성채) ──────────────────────────
+  raven_feather: {
+    id: "raven_feather",
+    name: "까마귀 깃",
+    description: "옛길과 폐성벽에 들끓는 까마귀의 검은 깃털. 가볍고 질겨 두건이나 망토 안감에 댄다.",
+    price: 3,
+    inShop: false,
+  },
+  scrap_iron: {
+    id: "scrap_iron",
+    name: "녹슨 쇳조각",
+    description: "옛 변경 성채의 자동인형과 무너진 막사에서 거둔 녹슨 철. 다시 벼리면 갑옷·무기가 된다.",
+    price: 8,
+    inShop: false,
+  },
+  war_banner_scrap: {
+    id: "war_banner_scrap",
+    name: "옛 군기 조각",
+    description: "한 세대 전 변경 수비대가 들었던 깃발의 누더기. 빛바랜 문장이 희미하게 남아 있다.",
+    price: 12,
+    inShop: false,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;

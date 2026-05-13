@@ -30,6 +30,11 @@ import { HaerangDialogue } from "./HaerangDialogue";
 import { GalmaeDialogue } from "./GalmaeDialogue";
 import { BomalDialogue } from "./BomalDialogue";
 import { MireuDialogue } from "./MireuDialogue";
+import { MujinDialogue } from "./MujinDialogue";
+import { DuruDialogue } from "./DuruDialogue";
+import { NaraeDialogue } from "./NaraeDialogue";
+import { SolgaeDialogue } from "./SolgaeDialogue";
+import { BoriDialogue } from "./BoriDialogue";
 
 // 마을 NPC 중 커스텀 다이얼로그를 가진 NPC 들의 디스패치 테이블.
 // TownView 의 renderNpcDialogue prop 으로 넘겨 사용한다. null 이면 기본 NpcDialogue.
@@ -334,6 +339,49 @@ export function renderTownNpcDialogue(
       );
     case "saltmarsh_kid":
       return <MireuDialogue npc={npc} onClose={close} storyFlags={storyFlags} />;
+    case "dustford_keeper":
+      return (
+        <MujinDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          inventory={inventory}
+          storyFlags={storyFlags}
+        />
+      );
+    case "dustford_scavenger":
+      return (
+        <DuruDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          inventory={inventory}
+        />
+      );
+    case "dustford_innkeeper":
+      return (
+        <NaraeDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          inventory={inventory}
+        />
+      );
+    case "dustford_hunter":
+      return (
+        <SolgaeDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          inventory={inventory}
+        />
+      );
+    case "dustford_kid":
+      return <BoriDialogue npc={npc} onClose={close} storyFlags={storyFlags} />;
     default:
       return null;
   }

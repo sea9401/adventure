@@ -20,7 +20,11 @@ export type RegionId =
   // 해안 지선 (디올라에서 남쪽으로 갈라지는 막다른 라인)
   | "tideflats"
   | "saltmarsh"
-  | "reef_isle";
+  | "reef_isle"
+  // 서편 옛길 (시작 마을에서 서쪽으로 갈라지는 막다른 라인 — 동쪽 모험길의 반대편)
+  | "westgate"
+  | "dustford"
+  | "oldwall_keep";
 
 export type Biome =
   | "village"
@@ -105,7 +109,9 @@ export const WORLD_MAP: WorldMap = {
   // 봉황령(2000)→화산 지대(2180)→천공 성지(2360) 추가로 width 1400→2440 확장.
   // 운향까지의 기존 region 좌표는 그대로 유지 (봉황령 라인은 다리 삽입으로 동쪽으로 밀림).
   // 디올라(660,80)에서 남쪽으로 갈라지는 해안 지선(조수 갯벌→소만→산호초 섬)으로 height 500→640 확장.
-  viewBox: { width: 2440, height: 640 },
+  // 시작 마을(160,380)에서 서쪽-아래로 갈라지는 서편 옛길(옛길→마른나루→옛 변경 성채)을 좌하단
+  // 빈 공간에 깔면서 height 640→700 확장.
+  viewBox: { width: 2440, height: 700 },
   regions: [
     {
       id: "village",
@@ -378,6 +384,52 @@ export const WORLD_MAP: WorldMap = {
       boss: { monsterName: "수심의 것", dailyEntryLimit: 3 },
       recommendedLevel: 18,
     },
+    // ── 서편 옛길 (village → westgate → dustford → oldwall_keep) ────────────
+    // 동쪽 모험길의 반대편 — 시작 마을 서쪽으로 난, 아무도 다니지 않는 옛 변경길.
+    // 시작 마을(160,380) 좌하단의 빈 공간을 따라 내려가며, height 를 700 으로 늘려 자리를 만든다.
+    {
+      id: "westgate",
+      name: "서편 옛길",
+      description:
+        "시작 마을 서문 밖으로 난, 마른 억새에 반쯤 묻힌 옛 수레길. 무너진 이정표가 옛 변경이 시작되던 자리를 가리킨다. 까마귀와 들고양이, 길에 눌러앉은 노상강도가 어슬렁거린다.",
+      position: { x: 55, y: 480 },
+      biome: "plains",
+      enemies: ["들까마귀 떼", "갈대 살쾡이", "노상강도"],
+      encounterWeights: {
+        "들까마귀 떼": 45,
+        "갈대 살쾡이": 30,
+        노상강도: 25,
+      },
+      recommendedLevel: 3,
+    },
+    {
+      id: "dustford",
+      name: "마른나루",
+      description:
+        "옛길 한가운데, 한때 강을 건너던 여울이 말라붙은 자리에 선 작은 역참 마을. 교역로가 비껴간 뒤로 거의 비었지만, 떠나길 거부한 몇 집이 우물과 메마른 밭을 붙들고 산다.",
+      position: { x: 130, y: 580 },
+      biome: "village",
+      enemies: [],
+      tags: ["town"],
+      recommendedLevel: 7,
+    },
+    {
+      id: "oldwall_keep",
+      name: "옛 변경 성채",
+      description:
+        "옛길 끝, 무너진 성벽 위에 버려진 변경 요새. 녹슨 성문과 주저앉은 막사 사이로, 한 세대 전 침공을 막으라 세워진 성문지기 자동인형이 아직도 빈 성벽을 지키며 깨어난다.",
+      position: { x: 40, y: 660 },
+      biome: "ruins",
+      enemies: ["폐성벽 까마귀", "탈영 약탈자", "녹슨 자동인형"],
+      encounterWeights: {
+        "폐성벽 까마귀": 35,
+        "탈영 약탈자": 35,
+        "녹슨 자동인형": 30,
+      },
+      // 옛 변경 성채 보스 — 별도 도전 버튼. 일반 인카운터 풀에선 제외, 자정 기준 일일 3회.
+      boss: { monsterName: "옛 성문지기", dailyEntryLimit: 3 },
+      recommendedLevel: 13,
+    },
   ],
   edges: [
     { from: "village", to: "plains" },
@@ -496,6 +548,25 @@ export const WORLD_MAP: WorldMap = {
         reason: "소만의 뱃사공 해랑이 아직 난바다로 가는 배를 내주지 않았다.",
       },
     },
+    // 서편 옛길 (village → westgate → dustford → oldwall_keep).
+    // 옛 변경 성채는 옛 수비대장 무진이 무너진 북쪽 벽으로 가는 길을 열어줘야 — 마른나루 사람들의
+    // 신임을 얻고(dustford_vouched), 무진에게 옛길 노상강도를 솎아 주면(oldwall_keep_unsealed)
+    // 길이 열린다. (MujinDialogue 참고)
+    {
+      from: "village",
+      to: "westgate",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "westgate" },
+    },
+    { from: "westgate", to: "dustford" },
+    {
+      from: "dustford",
+      to: "oldwall_keep",
+      requires: {
+        kind: "story",
+        flagId: "oldwall_keep_unsealed",
+        reason: "옛 수비대장 무진이 아직 무너진 성벽으로 가는 길을 열어주지 않았다.",
+      },
+    },
     // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.
     { from: "village", to: "diola", requires: { kind: "visited", regionId: "diola" } },
     { from: "diola", to: "village", requires: { kind: "visited", regionId: "village" } },
@@ -528,6 +599,19 @@ export const WORLD_MAP: WorldMap = {
     { from: "saltmarsh", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
     { from: "skyreach", to: "saltmarsh", requires: { kind: "visited", regionId: "saltmarsh" } },
     { from: "saltmarsh", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
+    // 마른나루 — 다른 마을들과 직통 이동.
+    { from: "village", to: "dustford", requires: { kind: "visited", regionId: "dustford" } },
+    { from: "dustford", to: "village", requires: { kind: "visited", regionId: "village" } },
+    { from: "diola", to: "dustford", requires: { kind: "visited", regionId: "dustford" } },
+    { from: "dustford", to: "diola", requires: { kind: "visited", regionId: "diola" } },
+    { from: "saltmarsh", to: "dustford", requires: { kind: "visited", regionId: "dustford" } },
+    { from: "dustford", to: "saltmarsh", requires: { kind: "visited", regionId: "saltmarsh" } },
+    { from: "unhyang", to: "dustford", requires: { kind: "visited", regionId: "dustford" } },
+    { from: "dustford", to: "unhyang", requires: { kind: "visited", regionId: "unhyang" } },
+    { from: "windvale", to: "dustford", requires: { kind: "visited", regionId: "dustford" } },
+    { from: "dustford", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
+    { from: "skyreach", to: "dustford", requires: { kind: "visited", regionId: "dustford" } },
+    { from: "dustford", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
   ],
 };
 

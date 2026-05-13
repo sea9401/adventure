@@ -54,6 +54,7 @@ const H = 60 * 60 * 1000;
 // 초반 마을은 짧게(빌드/명성/골드 빨리), 후반 지역은 길게(반복 효율 억제).
 export const REGION_REPEAT_COOLDOWN_MS: Partial<Record<RegionId, number>> = {
   village: 3 * H,
+  dustford: 4 * H,
   diola: 6 * H,
   saltmarsh: 7 * H,
   unhyang: 8 * H,
@@ -317,6 +318,237 @@ export const QUESTS: Quest[] = [
     target: { kind: "kill", monsterName: "부서진 골렘", count: 30 },
     reward: { gold: 280, fame: 14, exp: 380 },
     repeatable: true,
+  },
+  // ── 마른나루 (서편 옛길) ─────────────────────────────────────────────────
+  // 옛길(Lv3) 잡몹 의뢰 → 마른나루 신임(무진 보증) → 무진 옛길 정리(oldwall_keep_unsealed)
+  // → 옛 변경 성채(Lv13) 정찰 → 옛 성문지기 처치. 두루/나래/솔개는 QuestLineDialogue, 무진은 커스텀.
+  // 옛 변경 성채 적을 대상으로 하는 의뢰는 모두 무진의 옛길 정리(clear-road) 완료를 선행으로 둔다.
+  {
+    id: "dustford-duru-fangs",
+    regionId: "dustford",
+    title: "두루의 수집 — 들고양이 송곳니",
+    description:
+      "옛길 들고양이가 통발을 헤집어 놓아 큰일이에요. 들고양이 송곳니 10개만 모아 주면 사례하지요 — 노상강도 단검 손질하는 법도 알려드릴게요.",
+    requiredLevel: 3,
+    target: { kind: "deliver", materialId: "wilddog_fang", count: 10 },
+    reward: { gold: 80, fame: 7, exp: 130, recipes: ["roadbandit_shortsword"] },
+    repeatable: true,
+    giverNpcId: "dustford_scavenger",
+  },
+  {
+    id: "dustford-duru-feathers",
+    regionId: "dustford",
+    title: "두루의 수집 — 까마귀 깃",
+    description:
+      "두건이며 안감이며 까마귀 깃이 자꾸 모자랍니다. 12장만 모아 주면 후하게 쳐드리지요.",
+    requiredLevel: 3,
+    target: { kind: "deliver", materialId: "raven_feather", count: 12 },
+    reward: { gold: 95, fame: 8, exp: 150 },
+    repeatable: true,
+    giverNpcId: "dustford_scavenger",
+  },
+  {
+    id: "dustford-duru-scrap",
+    regionId: "dustford",
+    title: "두루의 청 — 녹슨 쇳조각",
+    description:
+      "녹슨 쇳조각은 다시 벼리면 갑옷이고 무기고 다 됩니다. 옛 성채에서 8덩이만 들여와 주면 후하게 쳐드리지요.",
+    requiredLevel: 13,
+    target: { kind: "deliver", materialId: "scrap_iron", count: 8 },
+    reward: { gold: 330, fame: 16, exp: 560 },
+    repeatable: true,
+    giverNpcId: "dustford_scavenger",
+    requiresQuestCompleted: "dustford-mujin-clear-road",
+  },
+  {
+    id: "dustford-narae-feathers",
+    regionId: "dustford",
+    title: "나래의 베갯속 — 까마귀 깃",
+    description:
+      "손님 베개 속 채울 깃이 영 모자라네요. 까마귀 깃 10장만 들여와 주면 잠자리가 한결 나을 텐데 — 손님이 두고 간 회복약도 챙겨 드릴게요.",
+    requiredLevel: 3,
+    target: { kind: "deliver", materialId: "raven_feather", count: 10 },
+    reward: { gold: 75, fame: 6, exp: 120, potions: [{ id: "potion_heal_s", count: 5 }] },
+    repeatable: true,
+    giverNpcId: "dustford_innkeeper",
+  },
+  {
+    id: "dustford-narae-larder",
+    regionId: "dustford",
+    title: "나래의 겨우살이",
+    description:
+      "찬바람 들 철이라 깃을 넉넉히 둬야 해요. 까마귀 깃 15장만 더 들여와 주면 — 손님이 두고 간 약 주머니를 손봐서 드릴게요.",
+    requiredLevel: 4,
+    target: { kind: "deliver", materialId: "raven_feather", count: 15 },
+    reward: { gold: 120, fame: 8, exp: 180, potionCapacityBonus: 1 },
+    repeatable: false,
+    giverNpcId: "dustford_innkeeper",
+  },
+  {
+    id: "dustford-narae-keep-stew",
+    regionId: "dustford",
+    title: "나래의 솥 — 탈영 약탈자",
+    description:
+      "옛 성채에 눌러앉은 탈영병들이 옛길 행상까지 따라붙는대요. 15만 정리해 주면 행상이 다시 다닐 거예요.",
+    requiredLevel: 13,
+    target: { kind: "kill", monsterName: "탈영 약탈자", count: 15 },
+    reward: { gold: 350, fame: 17, exp: 600 },
+    repeatable: true,
+    giverNpcId: "dustford_innkeeper",
+    requiresQuestCompleted: "dustford-mujin-clear-road",
+  },
+  {
+    id: "dustford-solgae-wildcats",
+    regionId: "dustford",
+    title: "솔개의 사냥 — 갈대 살쾡이",
+    description:
+      "갈대 살쾡이가 둥지를 헤집고 다녀 밭 가는 사람들이 못 살아요. 18마리만 정리해 주면 까마귀깃 두건 짓는 법을 알려드리지요.",
+    requiredLevel: 3,
+    target: { kind: "kill", monsterName: "갈대 살쾡이", count: 18 },
+    reward: { gold: 85, fame: 7, exp: 140, recipes: ["crow_feather_cap"] },
+    repeatable: true,
+    giverNpcId: "dustford_hunter",
+  },
+  {
+    id: "dustford-solgae-ravens",
+    regionId: "dustford",
+    title: "솔개의 사냥 — 들까마귀 떼",
+    description:
+      "들까마귀 떼가 옛길 위를 빙빙 돌며 행상 짐을 노립니다. 18마리만 떨어뜨려 주세요.",
+    requiredLevel: 3,
+    target: { kind: "kill", monsterName: "들까마귀 떼", count: 18 },
+    reward: { gold: 90, fame: 7, exp: 140 },
+    repeatable: true,
+    giverNpcId: "dustford_hunter",
+  },
+  {
+    id: "dustford-solgae-wall-ravens",
+    regionId: "dustford",
+    title: "솔개의 사냥 — 폐성벽 까마귀",
+    description:
+      "옛 성채 흉벽에 폐성벽 까마귀가 둥지를 텄어요. 15마리만 정리해 주면 흉벽 다니기가 한결 낫겠어요.",
+    requiredLevel: 13,
+    target: { kind: "kill", monsterName: "폐성벽 까마귀", count: 15 },
+    reward: { gold: 340, fame: 16, exp: 580 },
+    repeatable: true,
+    giverNpcId: "dustford_hunter",
+    requiresQuestCompleted: "dustford-mujin-clear-road",
+  },
+  {
+    id: "dustford-mujin-clear-road",
+    regionId: "dustford",
+    title: "옛길 트기",
+    description:
+      "옛 성채로 일꾼을 데려가려면 옛길에 눌러앉은 노상강도부터 솎아야 해. 15만 정리해 주게 — 그러면 무너진 북쪽 벽으로 가는 길을 열고, 자네도 데려가지.",
+    requiredLevel: 7,
+    target: { kind: "kill", monsterName: "노상강도", count: 15 },
+    reward: { gold: 220, fame: 12, exp: 380 },
+    repeatable: false,
+    giverNpcId: "dustford_keeper",
+  },
+  {
+    id: "dustford-mujin-keep-survey",
+    regionId: "dustford",
+    title: "무진의 청 — 성채 살피기",
+    description:
+      "성채에 일꾼들을 데리고 들어가 봤네. 다만 안에 녹슨 쇳조각이 얼마나 쌓였는지 봐 와 주게 — 10덩이면 재건에 쓸 만한지 알 수 있소.",
+    requiredLevel: 12,
+    target: { kind: "deliver", materialId: "scrap_iron", count: 10 },
+    reward: { gold: 380, fame: 18, exp: 700 },
+    repeatable: false,
+    giverNpcId: "dustford_keeper",
+    requiresQuestCompleted: "dustford-mujin-clear-road",
+  },
+  {
+    id: "dustford-mujin-gatekeeper",
+    regionId: "dustford",
+    title: "옛 성문지기",
+    description:
+      "성채는 멀쩡해. 한 가지만 빼면 — 성문지기. 사람을 막으라 만든 게 아니야, 군대를 막으라 세운 거지. 군대는 오지 않았고 그것만 남아 빈 벽을 지켜. 단단히 준비해 가서 그것을 잠재워 주게. 마른나루의 명운이 거기 달렸소.",
+    requiredLevel: 13,
+    target: { kind: "kill", monsterName: "옛 성문지기", count: 1 },
+    reward: {
+      gold: 700,
+      fame: 22,
+      exp: 1000,
+      potions: [{ id: "potion_heal_s", count: 8 }],
+      recipes: ["gatekeeper_core"],
+    },
+    repeatable: false,
+    giverNpcId: "dustford_keeper",
+    requiresQuestCompleted: "dustford-mujin-keep-survey",
+  },
+  {
+    id: "dustford-gatekeeper-recurring",
+    regionId: "dustford",
+    title: "옛 성문지기 — 다시 깨어날 때",
+    description:
+      "한 번 잠재웠다고 끝이 아니야. 또 성문이 깨어나거든 — 옛 성문지기를 세 번 더 잠재워 주게. 마른나루가 자네를 잊지 않을 게요.",
+    requiredLevel: 13,
+    target: { kind: "kill", monsterName: "옛 성문지기", count: 3 },
+    reward: { gold: 850, fame: 24, exp: 1200 },
+    repeatable: true,
+    giverNpcId: "dustford_keeper",
+    requiresQuestCompleted: "dustford-mujin-gatekeeper",
+  },
+  // ── 마른나루 길드 게시판 — 반복 의뢰 ─────────────────────────────────
+  // 옛길 적 3종은 누구나, 옛 변경 성채 적 2종은 무진의 옛길 정리 완료 후 노출.
+  {
+    id: "dustford-board-wildcats",
+    regionId: "dustford",
+    title: "갈대밭의 들고양이",
+    description:
+      "옛길 갈대밭에 들고양이가 떼를 키워 시작 마을 쪽 밭까지 헤집습니다. 갈대 살쾡이 40마리를 정리해 주세요.",
+    requiredLevel: 3,
+    target: { kind: "kill", monsterName: "갈대 살쾡이", count: 40 },
+    reward: { gold: 110, fame: 7, exp: 160 },
+    repeatable: true,
+  },
+  {
+    id: "dustford-board-ravens",
+    regionId: "dustford",
+    title: "옛길의 까마귀",
+    description:
+      "들까마귀 떼가 옛길을 뒤덮어 행상 짐을 노립니다. 들까마귀 떼 45마리를 정리해 주세요.",
+    requiredLevel: 3,
+    target: { kind: "kill", monsterName: "들까마귀 떼", count: 45 },
+    reward: { gold: 105, fame: 7, exp: 150 },
+    repeatable: true,
+  },
+  {
+    id: "dustford-board-bandits",
+    regionId: "dustford",
+    title: "옛길의 노상강도",
+    description:
+      "옛길에 눌러앉은 노상강도가 시작 마을과 마른나루 사이 행상을 턴다는 신고가 들어왔습니다. 노상강도 36명을 정리해 주세요.",
+    requiredLevel: 3,
+    target: { kind: "kill", monsterName: "노상강도", count: 36 },
+    reward: { gold: 130, fame: 8, exp: 170 },
+    repeatable: true,
+  },
+  {
+    id: "dustford-board-wall-ravens",
+    regionId: "dustford",
+    title: "흉벽을 도는 것들",
+    description:
+      "옛 변경 성채 흉벽에 폐성벽 까마귀가 둥지를 틀어 일꾼들이 못 올라갑니다. 폐성벽 까마귀 40마리를 정리해 주세요.",
+    requiredLevel: 13,
+    target: { kind: "kill", monsterName: "폐성벽 까마귀", count: 40 },
+    reward: { gold: 340, fame: 16, exp: 580 },
+    repeatable: true,
+    requiresQuestCompleted: "dustford-mujin-clear-road",
+  },
+  {
+    id: "dustford-board-automata",
+    regionId: "dustford",
+    title: "녹슨 보초들",
+    description:
+      "옛 변경 성채 안마당에 녹슨 자동인형이 아직도 보초를 돕니다. 30체를 부숴 주세요.",
+    requiredLevel: 13,
+    target: { kind: "kill", monsterName: "녹슨 자동인형", count: 30 },
+    reward: { gold: 400, fame: 18, exp: 620 },
+    repeatable: true,
+    requiresQuestCompleted: "dustford-mujin-clear-road",
   },
   // ── 소만 (해안 지선) ─────────────────────────────────────────────────────
   // 갯벌(Lv10) 잡몹 의뢰 → 소만 신임(여울 보증) → 뱃사공 해랑 선저 덧대기(ferryman_reef_passage)

@@ -99,6 +99,16 @@ export const STORY_QUESTS = {
       "소만 포구의 그물이 비어 오고 한낮에도 물이 차다. 노인들은 암초 너머 안개 밑에서 잠든 것이 다시 뒤척인다고 한다. 소만의 신임을 얻고, 뱃사공의 배로 난바다를 건너 — 수심의 것을 가라앉히면, 포구가 다시 일어선다.",
     giverNpcId: "saltmarsh_elder",
   },
+  // 서편 옛길 메인 — 마른나루 옛 수비대장 무진. 옛길 의뢰로 마른나루 신임(dustford_vouched) →
+  // 무진 옛길 정리(oldwall_keep_unsealed, 무너진 북쪽 벽으로 가는 길) → 성채 정찰 → 옛 성문지기
+  // 처치(gatekeeper_felled). 진행은 quests.ts(dustford-mujin-*) + MujinDialogue 의 storyFlag 분기로.
+  dustford_gatekeeper: {
+    id: "dustford_gatekeeper",
+    title: "옛 성문지기",
+    description:
+      "시작 마을 서쪽 옛길 끝, 무너진 변경 성채에서 밤마다 성문이 쿵쿵거린다. 한 세대 전 군대를 막으라 세워진 성문지기 자동인형이 빈 벽을 지키며 깨어난다. 마른나루의 신임을 얻고, 무너진 북쪽 벽으로 들어가 — 옛 성문지기를 잠재우면, 마을이 성채를 되찾는다.",
+    giverNpcId: "dustford_keeper",
+  },
 } as const satisfies Record<string, StoryQuest>;
 
 export type StoryQuestId = keyof typeof STORY_QUESTS;
