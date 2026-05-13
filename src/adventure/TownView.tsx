@@ -2,8 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { UserCircle } from "@phosphor-icons/react";
-import type { Region } from "./data/world";
-import { getNpcsByRegion, type Npc, type NpcRole } from "./data/npcs";
+import type { Region, RegionId } from "./data/world";
+import { getNpcsByRegion, type Npc, type NpcId, type NpcRole } from "./data/npcs";
 import { NpcDialogue } from "./NpcDialogue";
 import { NpcAvatar } from "./NpcAvatar";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -27,7 +27,7 @@ export function TownView({
   onInitialNpcConsumed,
 }: {
   region: Region;
-  onTalkClose?: (npcId: string, regionId: string) => void;
+  onTalkClose?: (npcId: NpcId, regionId: RegionId) => void;
   /**
    * 특정 NPC에 대해 기본 NpcDialogue 대신 커스텀 다이얼로그를 렌더할 때 사용.
    * null/undefined를 반환하면 기본 NpcDialogue 렌더.

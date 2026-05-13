@@ -39,7 +39,12 @@ export type BattleEndDeps = {
     markTitleObtained: (titleId: string) => void;
     incrementBattleLosses: () => void;
   };
-  quests: { recordKill: (name: string) => string[] };
+  quests: {
+    recordKill: (
+      name: string,
+      ctx?: { hpFraction?: number; potionsUsed?: number },
+    ) => string[];
+  };
   crafting: {
     knows: (id: string) => boolean;
     learnRecipe: (id: string) => void;
@@ -91,7 +96,14 @@ export function onBattleEnd(
     if (payload.finalPlayerHp === 1) {
       deps.adventureLog.markTitleObtained("close_call");
     }
-    const readyQuestIds = deps.quests.recordKill(payload.enemyName);
+    // kill_within_hp / no_potion_boss 의뢰 판정용 ctx. autohunt 경로는 ctx 없이 호출 →
+    // 조건부 kind 는 자동으로 진행 안 됨 (의도 — 라이브 도전 의뢰).
+    const hpFraction =
+      payload.playerMaxHp > 0 ? payload.finalPlayerHp / payload.playerMaxHp : 0;
+    const readyQuestIds = deps.quests.recordKill(payload.enemyName, {
+      hpFraction,
+      potionsUsed: potionTotal,
+    });
     deps.reportGuildKill?.(payload.enemyName);
     deps.characterState.setHp(payload.finalPlayerHp);
     // 길드 버프 — 비어 있으면 모든 곱셈 ×1.0 (no-op).

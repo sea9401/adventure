@@ -31,6 +31,8 @@ export function TownSubView() {
         onTalkClose={(npcId, regionId) => {
           adventureLog.incrementNpcTalk(npcId);
           adventureLog.addTownNpcTalked(regionId, npcId);
+          // talk_to_npc 의뢰 — 대화창 닫을 때 1회 누적.
+          quests.recordTalk(npcId);
         }}
         renderNpcDialogue={(npc, close) =>
           renderTownNpcDialogue(npc, close, {

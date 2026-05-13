@@ -26,6 +26,37 @@ const BOSS_QUEST = "dustford-mujin-gatekeeper";
 const RECURRING_QUEST = "dustford-gatekeeper-recurring";
 const RECURRING_NEED = 3;
 
+// 보스 처치 후 무진이 내주는 도전 의뢰 — 한 줄로 N 개를 차례로 노출.
+// kill_within_hp · no_potion_boss · equip_set 세 가지 새 quest kind 의 인게임 검증 라인.
+const CHALLENGE_STEPS: Array<{
+  id: string;
+  offerText: string;
+  activeText: string;
+  doneText: string;
+}> = [
+  {
+    id: "dustford-mujin-challenge-pristine",
+    offerText:
+      "성문지기를 한 번 잠재웠다면 — 두 번째는 흠 없이 가져갈 수 있나? 그놈 빗장이 살갗에 닿기 전에 끝내 보게. HP 70% 이상으로 처치, 한 번.",
+    activeText: "흠 없이 — 빗장을 맞지 말고. 사슬을 보고 발을 디뎌.",
+    doneText: "흠 없이 잠재웠군. 옛 수비대도 그렇게 했지. 자, 받아.",
+  },
+  {
+    id: "dustford-mujin-challenge-no-potion",
+    offerText:
+      "옛 수비대는 약 주머니 없이 서 있었어. 한 번만 — 포션 한 병도 쓰지 않고 그놈을 잠재워 보게. 한 번이면 되네.",
+    activeText: "약 주머니에 손 대지 마. 자네가 가진 것만으로.",
+    doneText: "약 한 모금도 안 마시고 — 그래. 그게 수비대의 기개일세. 받아.",
+  },
+  {
+    id: "dustford-mujin-challenge-garrison-set",
+    offerText:
+      "한 가지 부탁이 더 있소. 수비대 도검·사슬갑옷·성문지기의 핵 — 셋을 한 복으로 갖춰 한 번이라도 차고 와 주게. 옛 수비대 한 식구가 다시 선 모습을 보고 싶소.",
+    activeText: "수비대 도검 + 수비대 사슬갑옷 + 성문지기의 핵 — 셋을 동시에 차야 하오.",
+    doneText: "옛 수비대의 한 사람이 다시 섰군. 그 모습이면 됐소 — 받아.",
+  },
+];
+
 type Props = {
   npc: Npc;
   onClose: () => void;
@@ -104,6 +135,45 @@ export function MujinDialogue({
     );
   }
   if (boss.state === "completed") {
+    // 도전 의뢰 — pristine / no-potion / garrison-set. 한 번에 하나씩 차례로 노출.
+    for (const step of CHALLENGE_STEPS) {
+      const e = quests.getEntry(step.id);
+      if (e.state === "ready") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={step.doneText}
+            primaryAction={{
+              label: "보상을 받는다",
+              onClick: () => {
+                if (completeQuest(step.id)) onClose();
+              },
+            }}
+          />
+        );
+      }
+      if (e.state === "active") {
+        return <NpcDialogue npc={npc} onClose={onClose} text={step.activeText} />;
+      }
+      if (e.state === "available") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={step.offerText}
+            primaryAction={{
+              label: "받아들인다",
+              onClick: () => {
+                quests.accept(step.id);
+                onClose();
+              },
+            }}
+          />
+        );
+      }
+      // completed — 다음 step 으로.
+    }
     if (recurring.state === "available") {
       return (
         <NpcDialogue

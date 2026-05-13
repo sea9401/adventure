@@ -5,7 +5,7 @@ import { loadBundle, writeBundleKey } from "../storage-bundle";
 import { useAdmin } from "../AdminContext";
 import { Button, NumberInput, Select } from "../ui/Field";
 import { DangerAction } from "../ui/DangerAction";
-import { QUESTS } from "@/adventure/data/quests";
+import { QUESTS, questTargetSummary, questTargetTotal } from "@/adventure/data/quests";
 import {
   defaultQuestEntry,
   type QuestProgressMap,
@@ -75,11 +75,7 @@ export function QuestsTab() {
                   <td className="px-2 py-1">
                     <div className="text-sm font-medium">{q.title}</div>
                     <div className="font-mono text-[11px] text-zinc-500">
-                      {q.id} ·{" "}
-                      {q.target.kind === "kill"
-                        ? q.target.monsterName
-                        : q.target.materialId}
-                      ×{q.target.count}
+                      {q.id} · {questTargetSummary(q.target)}
                     </div>
                   </td>
                   <td className="px-2 py-1">{q.regionId}</td>
@@ -96,7 +92,7 @@ export function QuestsTab() {
                     <NumberInput
                       value={entry.progress}
                       min={0}
-                      max={q.target.count}
+                      max={questTargetTotal(q.target)}
                       disabled={readOnly}
                       onChange={(progress) => upsert(q.id, { progress })}
                     />
@@ -118,7 +114,7 @@ export function QuestsTab() {
                         onClick={() =>
                           upsert(q.id, {
                             state: "ready",
-                            progress: q.target.count,
+                            progress: questTargetTotal(q.target),
                           })
                         }
                       >
@@ -129,7 +125,7 @@ export function QuestsTab() {
                         onClick={() =>
                           upsert(q.id, {
                             state: "completed",
-                            progress: q.target.count,
+                            progress: questTargetTotal(q.target),
                             completedCount: entry.completedCount + 1,
                             lastCompletedAt: Date.now(),
                           })

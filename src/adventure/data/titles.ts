@@ -99,6 +99,24 @@ export const TITLES: Record<TitleId, Title> = {
     description: "한 세대 동안 빈 벽을 지키던 옛 성문지기를 잠재우고, 메마른 포구가 성채를 되찾게 한 자.",
     condition: "마른나루 — 옛 수비대장 무진의 '옛 성문지기' 의뢰 완수",
   },
+  pristine_warden: {
+    id: "pristine_warden",
+    name: "흠 없는 수문장",
+    description: "빗장 한 번 닿지 않고 옛 성문지기를 잠재운 자. 옛 수비대도 그렇게 했다 한다.",
+    condition: "마른나루 — 무진의 '흠 없는 한 수' 의뢰 완수 (HP 70% 이상 유지하며 처치)",
+  },
+  bare_hands_warden: {
+    id: "bare_hands_warden",
+    name: "맨몸의 수문장",
+    description: "약 주머니에 손도 대지 않고 옛 성문지기를 잠재운 자. 가진 것만으로 한 식구가 된다.",
+    condition: "마른나루 — 무진의 '맨몸의 한 수' 의뢰 완수 (포션 사용 없이 처치)",
+  },
+  last_garrison: {
+    id: "last_garrison",
+    name: "마지막 수비대",
+    description: "수비대 도검·사슬갑옷·성문지기의 핵을 한 복으로 갖춘 자. 한 세대 뒤에 옛 수비대가 다시 섰다.",
+    condition: "마른나루 — 무진의 '수비대 한 복' 의뢰 완수",
+  },
   ridge_crosser: {
     id: "ridge_crosser",
     name: "능선을 넘은 자",

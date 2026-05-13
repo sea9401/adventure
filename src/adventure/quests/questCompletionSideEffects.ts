@@ -22,6 +22,16 @@ const ON_COMPLETE: Record<string, readonly SideEffect[]> = {
   "saltmarsh-yeoul-deep-one": [{ kind: "grantTitle", titleId: "saltmarsh_friend" }],
   // 서편 옛길 메인 라인 "옛 성문지기" — 무진의 보스 의뢰 완수.
   "dustford-mujin-gatekeeper": [{ kind: "grantTitle", titleId: "dustford_friend" }],
+  // 무진의 보스 재도전 3종 — 새 quest kind(kill_within_hp/no_potion_boss/equip_set) 검증.
+  "dustford-mujin-challenge-pristine": [
+    { kind: "grantTitle", titleId: "pristine_warden" },
+  ],
+  "dustford-mujin-challenge-no-potion": [
+    { kind: "grantTitle", titleId: "bare_hands_warden" },
+  ],
+  "dustford-mujin-challenge-garrison-set": [
+    { kind: "grantTitle", titleId: "last_garrison" },
+  ],
   // 천공 성지 메인 라인 "능선 너머의 봉인" — 해무의 마지막 자물쇠 완수.
   "skyreach-haemu-flame-scale": [
     { kind: "grantTitle", titleId: "ridge_crosser" },

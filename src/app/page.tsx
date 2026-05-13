@@ -222,14 +222,18 @@ function Home() {
 
   useEffect(() => {
     adventureLog.markRegionVisited(currentRegion.id);
-  }, [currentRegion.id, adventureLog]);
+    // visit_region 의뢰 진행도 — 지역 진입 시 1회 누적.
+    quests.recordVisit(currentRegion.id);
+  }, [currentRegion.id, adventureLog, quests]);
 
   // 인벤토리·장착 상태가 바뀔 때마다 보유/장착 중인 장비를 모험의 서 도감에 등록.
   // 폐기·판매로 빠진 것은 도감에서 사라지지 않는다. 마운트 시 기존 보유분도 한 번 백필.
   const syncDiscoveredEquipment = adventureLog.syncDiscoveredEquipment;
   useEffect(() => {
     syncDiscoveredEquipment(inventory.state, characterStateHook.equippedSlots);
-  }, [inventory.state, characterStateHook.equippedSlots, syncDiscoveredEquipment]);
+    // equip_item / equip_set 의뢰 — 장착 조건 충족 시 active → ready.
+    quests.checkEquip(characterStateHook.equippedSlots);
+  }, [inventory.state, characterStateHook.equippedSlots, syncDiscoveredEquipment, quests]);
 
   // HP<=0 인데 마을이 아닌 곳에 stuck 된 유저를 다음 진입 때 복귀 마을로 강제 이동.
   useRespawnSafetyNet({
@@ -320,6 +324,7 @@ function Home() {
     crafting,
     addNotification,
     grantTitle,
+    recordCraft: quests.recordCraft,
   });
 
   // 카운터/상태/시간 기반 자동 칭호 부여.

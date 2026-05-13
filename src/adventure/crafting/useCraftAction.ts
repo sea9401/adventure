@@ -1,6 +1,6 @@
 "use client";
 
-import { ITEMS, rarityTextClass } from "@/adventure/data/items";
+import { ITEMS, rarityTextClass, type ItemId } from "@/adventure/data/items";
 import { POTIONS } from "@/adventure/data/potions";
 import { MATERIALS } from "@/adventure/data/materials";
 import { craftTierSuffix } from "@/adventure/data/craftQuality";
@@ -23,8 +23,10 @@ export function useCraftAction(deps: {
     meta?: NotificationMeta,
   ) => void;
   grantTitle: (titleId: string) => void;
+  /** craft_item 의뢰 진행도 보고 — 장비 제작 성공 시. 미지정 가능(서버 사이드 등). */
+  recordCraft?: (itemId: ItemId) => void;
 }) {
-  const { inventory, crafting, addNotification, grantTitle } = deps;
+  const { inventory, crafting, addNotification, grantTitle, recordCraft } = deps;
   const remote = useRemoteSave();
 
   const handleCraft = async (recipe: Recipe) => {
@@ -103,6 +105,8 @@ export function useCraftAction(deps: {
       // 제작 등급 칭호 — 걸작(2): 명장 / 불량(-2): 불량품 제작자.
       if (data.result.tier === 2) grantTitle("masterwork");
       if (data.result.tier === -2) grantTitle("botched");
+      // craft_item 의뢰 진행도 — 장비 결과에 한해 누적.
+      recordCraft?.(data.result.itemId);
     } else {
       const potion = POTIONS[data.result.potionId];
       const qty = data.result.quantity;
