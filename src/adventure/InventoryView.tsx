@@ -37,6 +37,13 @@ import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import {
+  getItemTier,
+  groupByTier,
+  matchesEquipQuery,
+} from "@/adventure/equipment/tier";
+import { EquipmentSearchInput } from "@/adventure/equipment/EquipmentSearchInput";
+import { TierSectionHeader } from "@/adventure/equipment/TierSectionHeader";
 
 type InvTabKey = "equipment" | "materials" | "potions" | "consumables";
 
@@ -96,6 +103,7 @@ export function InventoryView({
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
   const [equipSlotTab, setEquipSlotTab] = useState<EquipSlot>("weapon");
+  const [equipQuery, setEquipQuery] = useState("");
   // 폐기 2단계 확인 — 현재 "정말 폐기?" 단계인 행의 key.
   const [confirmKey, setConfirmKey] = useState<string | null>(null);
 
@@ -119,15 +127,19 @@ export function InventoryView({
   })).filter((e) => e.count > 0);
   const potionCap = potionMax(inventory.potionCapacityBonus ?? 0);
 
+  // 슬롯 탭 + 이름 검색으로 필터, 진행 티어로 그룹화 — 페이저 대신 티어 헤더가 자연 분할.
   const filteredEquipment = ownedEquipment.filter(
-    (e) => e.item.slot === equipSlotTab,
+    (e) =>
+      e.item.slot === equipSlotTab && matchesEquipQuery(e.item, equipQuery),
   );
   // 동종 여분이 여러 개여도 "장착중" 표시는 딱 하나에만 — 첫 매칭 entry 의 key.
   const equippedEntryKey =
     filteredEquipment.find((e) =>
       isEntryEquipped(e, equipped?.[e.item.slot] ?? null),
     )?.key ?? null;
-  const equipPager = usePagination(filteredEquipment, 12);
+  const groupedEquipment = groupByTier(filteredEquipment, (e) =>
+    getItemTier(e.id),
+  );
   const materialsPager = usePagination(ownedMaterials, 12);
   const potionsPager = usePagination(ownedPotions, 12);
   const consumablesPager = usePagination(ownedConsumables, 12);
@@ -177,128 +189,137 @@ export function InventoryView({
               ariaLabel="장비 슬롯 탭"
               size="sm"
             />
-            {filteredEquipment.length === 0 && (
-              <p className="px-1 py-3 text-xs text-zinc-500 dark:text-zinc-400">
-                해당 종류의 장비가 없습니다.
-              </p>
-            )}
-            <ul className="space-y-1.5">
-              {equipPager.pageItems.map((entry) => {
-                const { key, id, tier, quality, item } = entry;
-                const current = equipped?.[item.slot] ?? null;
-                const isEquipped = key === equippedEntryKey;
-                const diff = isEquipped ? [] : computeDiff(item, current);
-                const suffix = craftTierSuffix(tier);
-                const prefix = dropQualityPrefix(quality).trim();
-                const confirming = confirmKey === key;
-                return (
-                  <li key={key} className={`flex items-start gap-2 ${ROW}`}>
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <div className="flex flex-wrap items-baseline gap-x-1.5">
-                        {prefix && (
-                          <span className={`text-xs ${dropQualityTextClass(quality)}`}>
-                            {prefix}
-                          </span>
-                        )}
-                        <span
-                          className={`text-sm font-medium ${
-                            quality ? dropQualityTextClass(quality) : rarityTextClass(item)
-                          }`}
-                        >
-                          {item.name}
-                        </span>
-                        {suffix && (
-                          <span className={`text-xs ${craftTierTextClass(tier)}`}>
-                            {suffix.trim()}
-                          </span>
-                        )}
-                        {isEquipped && (
-                          <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
-                            장착중
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="text-xs text-amber-600 dark:text-amber-400">
-                          {item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
-                        </span>
-                        {!isEquipped && diff.length > 0 && (
-                          <span className="inline-flex flex-wrap items-baseline gap-x-1.5 text-[11px]">
-                            <span className="text-zinc-400 dark:text-zinc-500">장착 시</span>
-                            {diff.map((d) => (
-                              <span
-                                key={d.key}
-                                className={
-                                  d.delta > 0
-                                    ? "tabular-nums text-emerald-600 dark:text-emerald-400"
-                                    : "tabular-nums text-rose-600 dark:text-rose-400"
-                                }
-                              >
-                                {d.label}
-                                {d.delta > 0 ? "+" : ""}
-                                {d.delta}
-                              </span>
-                            ))}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1 pt-0.5">
-                      {confirming ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onDiscard?.(id, tier, quality);
-                              setConfirmKey(null);
-                            }}
-                            className="rounded-md bg-rose-600 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-rose-700"
-                          >
-                            폐기
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setConfirmKey(null)}
-                            className="rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                          >
-                            취소
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          {onEquip && (
-                            <button
-                              type="button"
-                              onClick={() => onEquip(id, tier, quality)}
-                              disabled={isEquipped}
-                              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                            >
-                              {isEquipped ? "장착중" : "장착"}
-                            </button>
-                          )}
-                          {onDiscard && (
-                            <button
-                              type="button"
-                              onClick={() => setConfirmKey(key)}
-                              aria-label="폐기"
-                              title="폐기"
-                              className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:text-zinc-500 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
-                            >
-                              <Trash size={15} weight="bold" />
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            <Pagination
-              page={equipPager.page}
-              pageCount={equipPager.pageCount}
-              setPage={equipPager.setPage}
+            <EquipmentSearchInput
+              value={equipQuery}
+              onChange={setEquipQuery}
             />
+            {filteredEquipment.length === 0 ? (
+              <p className="px-1 py-3 text-xs text-zinc-500 dark:text-zinc-400">
+                {equipQuery
+                  ? `“${equipQuery}” — 일치하는 장비가 없습니다.`
+                  : "해당 종류의 장비가 없습니다."}
+              </p>
+            ) : (
+              groupedEquipment.map(({ tier, meta, entries }) => (
+                <div key={tier} className="space-y-1.5">
+                  <TierSectionHeader meta={meta} count={entries.length} />
+                  <ul className="space-y-1.5">
+                    {entries.map((entry) => {
+                      const { key, id, tier: craftTier, quality, item } = entry;
+                      const current = equipped?.[item.slot] ?? null;
+                      const isEquipped = key === equippedEntryKey;
+                      const diff = isEquipped
+                        ? []
+                        : computeDiff(item, current);
+                      const suffix = craftTierSuffix(craftTier);
+                      const prefix = dropQualityPrefix(quality).trim();
+                      const confirming = confirmKey === key;
+                      return (
+                        <li key={key} className={`flex items-start gap-2 ${ROW}`}>
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex flex-wrap items-baseline gap-x-1.5">
+                              {prefix && (
+                                <span className={`text-xs ${dropQualityTextClass(quality)}`}>
+                                  {prefix}
+                                </span>
+                              )}
+                              <span
+                                className={`text-sm font-medium ${
+                                  quality ? dropQualityTextClass(quality) : rarityTextClass(item)
+                                }`}
+                              >
+                                {item.name}
+                              </span>
+                              {suffix && (
+                                <span className={`text-xs ${craftTierTextClass(craftTier)}`}>
+                                  {suffix.trim()}
+                                </span>
+                              )}
+                              {isEquipped && (
+                                <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                                  장착중
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                              <span className="text-xs text-amber-600 dark:text-amber-400">
+                                {item.stats.map((s) => `${s.label} ${s.value}`).join(" · ")}
+                              </span>
+                              {!isEquipped && diff.length > 0 && (
+                                <span className="inline-flex flex-wrap items-baseline gap-x-1.5 text-[11px]">
+                                  <span className="text-zinc-400 dark:text-zinc-500">장착 시</span>
+                                  {diff.map((d) => (
+                                    <span
+                                      key={d.key}
+                                      className={
+                                        d.delta > 0
+                                          ? "tabular-nums text-emerald-600 dark:text-emerald-400"
+                                          : "tabular-nums text-rose-600 dark:text-rose-400"
+                                      }
+                                    >
+                                      {d.label}
+                                      {d.delta > 0 ? "+" : ""}
+                                      {d.delta}
+                                    </span>
+                                  ))}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                            {confirming ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onDiscard?.(id, craftTier, quality);
+                                    setConfirmKey(null);
+                                  }}
+                                  className="rounded-md bg-rose-600 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-rose-700"
+                                >
+                                  폐기
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmKey(null)}
+                                  className="rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                >
+                                  취소
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                {onEquip && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onEquip(id, craftTier, quality)}
+                                    disabled={isEquipped}
+                                    className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                  >
+                                    {isEquipped ? "장착중" : "장착"}
+                                  </button>
+                                )}
+                                {onDiscard && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmKey(key)}
+                                    aria-label="폐기"
+                                    title="폐기"
+                                    className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:text-zinc-500 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                                  >
+                                    <Trash size={15} weight="bold" />
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))
+            )}
           </section>
         ))}
 
