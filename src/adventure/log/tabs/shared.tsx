@@ -1,6 +1,6 @@
 "use client";
 
-import { MONSTERS } from "@/adventure/data/monsters";
+import { MONSTERS, type MonsterSkill } from "@/adventure/data/monsters";
 import { MATERIALS } from "@/adventure/data/materials";
 import { ITEMS } from "@/adventure/data/items";
 import { getRecipeById } from "@/adventure/data/recipes";
@@ -42,6 +42,21 @@ export function describeDrop(
   if (d.kind === "recipe") return getRecipeById(d.recipeId)?.name ?? d.recipeId;
   // recipe_one_of
   return `${d.recipeIds.length}종 중 1`;
+}
+
+// 몬스터 스킬 효과 한 줄 — 도감 펼침에서 스킬명 옆 회색 부제로 노출.
+// 전투 로그에 "[name]" 으로 찍히는 그 스킬의 메커니즘 요약.
+export function describeMonsterSkill(s: MonsterSkill): string {
+  switch (s.kind) {
+    case "heavy_blow":
+      return `${s.everyPhases}턴마다 강타 — 데미지 ×${s.multiplier}`;
+    case "enrage":
+      return `HP ${Math.round(s.hpFraction * 100)}% 이하에서 격노 — ATK +${s.atkBonus}`;
+    case "brace":
+      return `피격 데미지 -${s.damageReduction} (최소 1)`;
+    case "pierce":
+      return `이 적의 공격이 방어 -${s.armorPierce} 관통`;
+  }
 }
 
 export function MonsterAvatar({
@@ -122,6 +137,21 @@ export function MonsterStatBlock({
         <StatRow label="DEF" value={monster.def} unlocked={stage >= 3} />
         <StatRow label="SPD" value={monster.spd} unlocked={stage >= 3} />
       </div>
+      {monster.skill && stage >= 3 && (
+        <div className="mt-2 border-t border-dashed border-zinc-200 pt-1 dark:border-zinc-700">
+          <div className="text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            스킬
+          </div>
+          <div className="mt-0.5 text-[11px]">
+            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+              {monster.skill.name}
+            </span>
+            <span className="ml-1.5 text-zinc-500 dark:text-zinc-400">
+              — {describeMonsterSkill(monster.skill)}
+            </span>
+          </div>
+        </div>
+      )}
       {monster.drops && monster.drops.length > 0 && stage >= 3 && (
         <div className="mt-2 border-t border-dashed border-zinc-200 pt-1 dark:border-zinc-700">
           <div className="text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
