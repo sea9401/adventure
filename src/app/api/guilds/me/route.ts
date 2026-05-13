@@ -11,10 +11,8 @@ import {
 import { ensureUser } from "@/lib/server/ensureUser";
 import { SAVES_CHARACTER } from "@/lib/server/guildAffiliation";
 import { gradeForFame } from "@/adventure/data/guildQuests";
-import {
-  buffSlotsForGrade,
-  type GuildBuffSlot,
-} from "@/adventure/data/guildBuffs";
+import { buffSlotsForGrade } from "@/adventure/data/guildBuffs";
+import { pruneStaleGuildBuffs } from "@/lib/server/guildBuffs";
 
 // 내 길드 정보 + 멤버 목록 + 탈퇴 쿨다운 상태.
 // 소속 없으면 guild=null. 마지막 접속/레벨/칭호는 best-effort (없으면 null).
@@ -116,6 +114,12 @@ export async function GET() {
     joinedAt: r.joinedAt.toISOString(),
   }));
 
+  // 카탈로그에서 사라진 버프(gold_boost 등) 슬롯은 자동 해제 + 50% 환급 후 반영.
+  const { buffs, fameAvailable } = await pruneStaleGuildBuffs({
+    id: guild.id,
+    buffs: guild.buffs ?? [],
+    fameAvailable: guild.fameAvailable,
+  });
   const grade = gradeForFame(guild.fameTotal);
   return Response.json({
     guild: {
@@ -125,11 +129,11 @@ export async function GET() {
       createdAt: guild.createdAt.toISOString(),
       description: guild.description ?? null,
       fameTotal: guild.fameTotal,
-      fameAvailable: guild.fameAvailable,
+      fameAvailable,
       grade,
       isMaster: guild.masterId === userId,
       members,
-      buffs: (guild.buffs as GuildBuffSlot[]) ?? [],
+      buffs,
       maxBuffSlots: buffSlotsForGrade(grade),
     },
     leaveCooldownUntil,
