@@ -5,6 +5,13 @@
 
 ## 2026-05-13
 
+### 해안·서편 라인 클로저 칭호 2종 (`feat/region-line-titles`)
+
+후속 — 해안/서편 지선 PR 에서 보류했던 라인 클리어 칭호. 디올라의 친구·산정의 벗과 같은 패턴(`questCompletionSideEffects` 의 `ON_COMPLETE`).
+
+- 👤 `saltmarsh_friend` "소만의 식구" — 여울의 `saltmarsh-yeoul-deep-one` 의뢰 완수 시 부여.
+- 👤 `dustford_friend` "마른나루의 식구" — 무진의 `dustford-mujin-gatekeeper` 의뢰 완수 시 부여.
+
 ### 서편 옛길 — 서편 옛길 · 마른나루 · 옛 변경 성채 (`feat/westgate-region`)
 
 상세 설계: `docs/westgate-plan.md`. 시작 마을(Lv1)에서 **서쪽**으로 갈라지는 막다른 3지역 라인 — 동쪽 모험길의 반대편. 고대·마법의 `옛 폐허`와 달리 "한 세대 전 전쟁의 잔해": 인간 노상강도·탈영병 + 녹슨 전쟁기계 + 까마귀. (해안 지선의 자매편.)
