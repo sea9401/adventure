@@ -462,16 +462,17 @@ export const RECIPES: Recipe[] = [
   },
 
   // ── 별빛 회랑 무구 5종 (Lv75) — star → corridor → aether 라인 중간 단계.
-  // 별 무구 한 자루에 회랑의 별빛(stellar_essence) + 천공 합금(sky_alloy) + 별먼지 결을 더해 다시 단조.
+  // 별 무구 한 자루 + 회랑 결정(중간 사냥터 전용 mat) + sky_alloy + stellar_essence + stardust 결합.
   {
     id: "corridor_blade",
     name: "회랑검 제작서",
-    description: `${ITEMS.corridor_blade.name}을(를) 만든다. ${ITEMS.star_blade.name}을 회랑의 별빛에 다시 담갔다 천공 합금으로 두드려 결을 새긴다.`,
+    description: `${ITEMS.corridor_blade.name}을(를) 만든다. ${ITEMS.star_blade.name}을 회랑 결정에 담갔다 천공 합금으로 두드려 결을 새긴다.`,
     ingredients: [
       { kind: "equip", itemId: "star_blade", count: 1 },
+      { kind: "material", materialId: "corridor_relic", count: 3 },
       { kind: "material", materialId: "sky_alloy", count: 1 },
-      { kind: "material", materialId: "stellar_essence", count: 3 },
-      { kind: "material", materialId: "stardust", count: 4 },
+      { kind: "material", materialId: "stellar_essence", count: 2 },
+      { kind: "material", materialId: "stardust", count: 3 },
     ],
     result: { kind: "equipment", itemId: "corridor_blade", slot: "weapon" },
     variance: { atk: 1 },
@@ -479,12 +480,13 @@ export const RECIPES: Recipe[] = [
   {
     id: "corridor_aegis",
     name: "회랑 방패 제작서",
-    description: `${ITEMS.corridor_aegis.name}을(를) 만든다. ${ITEMS.star_aegis.name}의 골격을 회랑의 별빛으로 보강하고 천공 합금 결을 한 겹 더 두른다.`,
+    description: `${ITEMS.corridor_aegis.name}을(를) 만든다. ${ITEMS.star_aegis.name}의 골격을 회랑 결정으로 보강하고 천공 합금 결을 한 겹 더 두른다.`,
     ingredients: [
       { kind: "equip", itemId: "star_aegis", count: 1 },
+      { kind: "material", materialId: "corridor_relic", count: 3 },
       { kind: "material", materialId: "sky_alloy", count: 1 },
-      { kind: "material", materialId: "stellar_essence", count: 3 },
-      { kind: "material", materialId: "stardust", count: 4 },
+      { kind: "material", materialId: "stellar_essence", count: 2 },
+      { kind: "material", materialId: "stardust", count: 3 },
     ],
     result: { kind: "equipment", itemId: "corridor_aegis", slot: "weapon" },
     variance: { atk: 1 },
@@ -492,12 +494,13 @@ export const RECIPES: Recipe[] = [
   {
     id: "corridor_lance",
     name: "회랑창 제작서",
-    description: `${ITEMS.corridor_lance.name}을(를) 만든다. ${ITEMS.star_lance.name} 끝에 회랑의 별빛을 박고 천공 합금으로 결을 잡는다.`,
+    description: `${ITEMS.corridor_lance.name}을(를) 만든다. ${ITEMS.star_lance.name} 끝에 회랑 결정을 박고 천공 합금으로 결을 잡는다.`,
     ingredients: [
       { kind: "equip", itemId: "star_lance", count: 1 },
+      { kind: "material", materialId: "corridor_relic", count: 3 },
       { kind: "material", materialId: "sky_alloy", count: 1 },
-      { kind: "material", materialId: "stellar_essence", count: 3 },
-      { kind: "material", materialId: "stardust", count: 4 },
+      { kind: "material", materialId: "stellar_essence", count: 2 },
+      { kind: "material", materialId: "stardust", count: 3 },
     ],
     result: { kind: "equipment", itemId: "corridor_lance", slot: "weapon" },
     variance: { atk: 1 },
@@ -505,12 +508,13 @@ export const RECIPES: Recipe[] = [
   {
     id: "corridor_grip",
     name: "회랑 너클 제작서",
-    description: `${ITEMS.corridor_grip.name}을(를) 만든다. ${ITEMS.star_grip.name}을 풀어 회랑의 별빛 결로 다시 새기고 천공 합금으로 손등을 보강한다.`,
+    description: `${ITEMS.corridor_grip.name}을(를) 만든다. ${ITEMS.star_grip.name}을 풀어 회랑 결정으로 다시 새기고 천공 합금으로 손등을 보강한다.`,
     ingredients: [
       { kind: "equip", itemId: "star_grip", count: 1 },
+      { kind: "material", materialId: "corridor_relic", count: 3 },
       { kind: "material", materialId: "sky_alloy", count: 1 },
-      { kind: "material", materialId: "stellar_essence", count: 3 },
-      { kind: "material", materialId: "stardust", count: 4 },
+      { kind: "material", materialId: "stellar_essence", count: 2 },
+      { kind: "material", materialId: "stardust", count: 3 },
     ],
     result: { kind: "equipment", itemId: "corridor_grip", slot: "weapon" },
     variance: { atk: 1 },
@@ -518,12 +522,13 @@ export const RECIPES: Recipe[] = [
   {
     id: "corridor_mantle",
     name: "회랑 망토 제작서",
-    description: `${ITEMS.corridor_mantle.name}을(를) 만든다. ${ITEMS.star_mantle.name}에 회랑의 별빛 실을 한 결 더 짜내고 천공 합금으로 가장자리를 묶는다.`,
+    description: `${ITEMS.corridor_mantle.name}을(를) 만든다. ${ITEMS.star_mantle.name}에 회랑 결정 실을 한 결 더 짜내고 천공 합금으로 가장자리를 묶는다.`,
     ingredients: [
       { kind: "equip", itemId: "star_mantle", count: 1 },
+      { kind: "material", materialId: "corridor_relic", count: 2 },
       { kind: "material", materialId: "sky_alloy", count: 1 },
       { kind: "material", materialId: "stellar_essence", count: 2 },
-      { kind: "material", materialId: "stardust", count: 3 },
+      { kind: "material", materialId: "stardust", count: 2 },
     ],
     result: { kind: "equipment", itemId: "corridor_mantle", slot: "accessory" },
     variance: { dex: 1 },
@@ -593,16 +598,17 @@ export const RECIPES: Recipe[] = [
   },
 
   // ── 옥좌의 길 무구 5종 (Lv85) — aether → road → empyrean 라인 중간 단계.
-  // 에테르 무구 한 자루에 황성의 결(aether_alloy) + 창공 조각 + 별의 정수를 더해 다시 단조.
+  // 에테르 무구 한 자루 + 옥좌 조각(중간 사냥터 전용 mat) + aether_alloy + empyrean_shard + stellar_essence 결합.
   {
     id: "road_blade",
     name: "황성검 제작서",
-    description: `${ITEMS.road_blade.name}을(를) 만든다. ${ITEMS.aether_blade.name}을 황성의 결로 한 겹 더 입히고 창공 조각으로 칼날을 단조한다.`,
+    description: `${ITEMS.road_blade.name}을(를) 만든다. ${ITEMS.aether_blade.name}을 옥좌 조각으로 한 겹 더 입히고 창공 조각으로 칼날을 단조한다.`,
     ingredients: [
       { kind: "equip", itemId: "aether_blade", count: 1 },
+      { kind: "material", materialId: "road_relic", count: 3 },
       { kind: "material", materialId: "aether_alloy", count: 1 },
-      { kind: "material", materialId: "empyrean_shard", count: 3 },
-      { kind: "material", materialId: "stellar_essence", count: 4 },
+      { kind: "material", materialId: "empyrean_shard", count: 2 },
+      { kind: "material", materialId: "stellar_essence", count: 3 },
     ],
     result: { kind: "equipment", itemId: "road_blade", slot: "weapon" },
     variance: { atk: 1 },
@@ -610,12 +616,13 @@ export const RECIPES: Recipe[] = [
   {
     id: "road_aegis",
     name: "황성 방패 제작서",
-    description: `${ITEMS.road_aegis.name}을(를) 만든다. ${ITEMS.aether_aegis.name}의 골격을 황성의 결로 보강하고 창공 조각으로 면을 깎는다.`,
+    description: `${ITEMS.road_aegis.name}을(를) 만든다. ${ITEMS.aether_aegis.name}의 골격을 옥좌 조각으로 보강하고 창공 조각으로 면을 깎는다.`,
     ingredients: [
       { kind: "equip", itemId: "aether_aegis", count: 1 },
+      { kind: "material", materialId: "road_relic", count: 3 },
       { kind: "material", materialId: "aether_alloy", count: 1 },
-      { kind: "material", materialId: "empyrean_shard", count: 3 },
-      { kind: "material", materialId: "stellar_essence", count: 4 },
+      { kind: "material", materialId: "empyrean_shard", count: 2 },
+      { kind: "material", materialId: "stellar_essence", count: 3 },
     ],
     result: { kind: "equipment", itemId: "road_aegis", slot: "weapon" },
     variance: { atk: 1 },
@@ -623,12 +630,13 @@ export const RECIPES: Recipe[] = [
   {
     id: "road_lance",
     name: "황성창 제작서",
-    description: `${ITEMS.road_lance.name}을(를) 만든다. ${ITEMS.aether_lance.name} 끝에 황성의 결을 더하고 창공 조각 창끝을 잇는다.`,
+    description: `${ITEMS.road_lance.name}을(를) 만든다. ${ITEMS.aether_lance.name} 끝에 옥좌 조각을 더하고 창공 조각 창끝을 잇는다.`,
     ingredients: [
       { kind: "equip", itemId: "aether_lance", count: 1 },
+      { kind: "material", materialId: "road_relic", count: 3 },
       { kind: "material", materialId: "aether_alloy", count: 1 },
-      { kind: "material", materialId: "empyrean_shard", count: 3 },
-      { kind: "material", materialId: "stellar_essence", count: 4 },
+      { kind: "material", materialId: "empyrean_shard", count: 2 },
+      { kind: "material", materialId: "stellar_essence", count: 3 },
     ],
     result: { kind: "equipment", itemId: "road_lance", slot: "weapon" },
     variance: { atk: 1 },
@@ -636,12 +644,13 @@ export const RECIPES: Recipe[] = [
   {
     id: "road_grip",
     name: "황성 너클 제작서",
-    description: `${ITEMS.road_grip.name}을(를) 만든다. ${ITEMS.aether_grip.name}을 풀어 황성의 결로 손등을 다시 새기고 창공 조각으로 표면을 매만진다.`,
+    description: `${ITEMS.road_grip.name}을(를) 만든다. ${ITEMS.aether_grip.name}을 풀어 옥좌 조각으로 손등을 다시 새기고 창공 조각으로 표면을 매만진다.`,
     ingredients: [
       { kind: "equip", itemId: "aether_grip", count: 1 },
+      { kind: "material", materialId: "road_relic", count: 3 },
       { kind: "material", materialId: "aether_alloy", count: 1 },
-      { kind: "material", materialId: "empyrean_shard", count: 3 },
-      { kind: "material", materialId: "stellar_essence", count: 4 },
+      { kind: "material", materialId: "empyrean_shard", count: 2 },
+      { kind: "material", materialId: "stellar_essence", count: 3 },
     ],
     result: { kind: "equipment", itemId: "road_grip", slot: "weapon" },
     variance: { atk: 1 },
@@ -649,12 +658,13 @@ export const RECIPES: Recipe[] = [
   {
     id: "road_mantle",
     name: "황성 망토 제작서",
-    description: `${ITEMS.road_mantle.name}을(를) 만든다. ${ITEMS.aether_mantle.name}에 황성의 결을 한 줄 더 짜내고 창공 조각으로 가장자리를 묶는다.`,
+    description: `${ITEMS.road_mantle.name}을(를) 만든다. ${ITEMS.aether_mantle.name}에 옥좌 조각을 한 줄 더 짜내고 창공 조각으로 가장자리를 묶는다.`,
     ingredients: [
       { kind: "equip", itemId: "aether_mantle", count: 1 },
+      { kind: "material", materialId: "road_relic", count: 2 },
       { kind: "material", materialId: "aether_alloy", count: 1 },
       { kind: "material", materialId: "empyrean_shard", count: 2 },
-      { kind: "material", materialId: "stellar_essence", count: 3 },
+      { kind: "material", materialId: "stellar_essence", count: 2 },
     ],
     result: { kind: "equipment", itemId: "road_mantle", slot: "accessory" },
     variance: { dex: 1 },

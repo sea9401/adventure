@@ -47,6 +47,11 @@ const ON_COMPLETE: Record<string, readonly SideEffect[]> = {
     { kind: "grantTitle", titleId: "ridge_crosser" },
     { kind: "setFlag", flag: "skyreach_main_cleared" },
   ],
+  // 별바다 노수호자 유성 게이트 의뢰 — 천공인의 왕 / 창공의 주재 협동 보스 진입 자격.
+  "star-haven-skyfolk-gate": [
+    { kind: "setFlag", flag: "skyfolk_gate_cleared" },
+  ],
+  "star-haven-apex-gate": [{ kind: "setFlag", flag: "apex_gate_cleared" }],
   // 마을 간 연계 — 완료 시 양쪽 NPC 다이얼로그 갱신용 flag (+ 칭호).
   "diola-marin-mountain-trade": [
     { kind: "setFlag", flag: "diola_unhyang_trade_done" },

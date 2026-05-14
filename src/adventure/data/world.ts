@@ -118,7 +118,8 @@ export const WORLD_MAP: WorldMap = {
   // 시작 마을(160,380)에서 서쪽-아래로 갈라지는 서편 옛길(옛길→마른나루→옛 변경 성채)을 좌하단
   // 빈 공간에 깔면서 height 640→700 확장.
   // 천공 성지(2360, 150) 에서 남쪽으로 꺾어 starspire/star_corridor/star_haven/skyfolk_ruins/
-  // throne_road/apex_throne 일렬로 내려가며 height 700→820 확장. 모두 x=2360 라인.
+  // throne_road/apex_throne 까지 부드러운 S-자 곡선으로 내려가며 height 700→820 확장.
+  // (직선 일렬 대신 별바다 근처에서 서쪽으로 휘었다가 옥좌로 동쪽으로 돌아온다.)
   viewBox: { width: 2440, height: 820 },
   regions: [
     {
@@ -347,13 +348,15 @@ export const WORLD_MAP: WorldMap = {
       recommendedLevel: 60,
     },
     // 천공 성지 남쪽 라인 — starspire → star_corridor → star_haven(town) → skyfolk_ruins
-    //   → throne_road → apex_throne. 모두 x=2360 일렬, y 95 간격.
+    //   → throne_road → apex_throne. skyreach(2360,150) 에서 남쪽으로 부드러운 S-자
+    //   곡선: 살짝 동쪽으로 내려갔다가 별바다(town) 근처에서 서쪽으로 깊이 휜 뒤 옥좌로
+    //   돌아오는 형태. y 는 ~95 간격 유지.
     {
       id: "starspire",
       name: "별의 첨탑",
       description:
         "천공 성지의 옛 문이 다시 열리며 드러난, 별빛을 떠받친다 전해지는 천공 첨탑. 구름층 너머에 떠 있는 옛 천공인의 군도와 첨탑 정상에는 봉인된 수호자가 잠들어 있다.",
-      position: { x: 2360, y: 245 },
+      position: { x: 2380, y: 250 },
       biome: "mountain",
       enemies: ["별빛 정찰자", "구름 사냥꾼", "운명 직조자"],
       encounterWeights: {
@@ -368,7 +371,7 @@ export const WORLD_MAP: WorldMap = {
       name: "별빛 회랑",
       description:
         "별의 첨탑 정상에서 폐도로 이어지는 별빛의 회랑. 첨탑의 별빛이 끊긴 자리에 옛 천공인의 흔적이 떠도는 사냥터.",
-      position: { x: 2360, y: 340 },
+      position: { x: 2310, y: 340 },
       biome: "mountain",
       enemies: ["회랑 정찰자", "별빛 망령", "회랑의 골렘"],
       encounterWeights: {
@@ -383,7 +386,7 @@ export const WORLD_MAP: WorldMap = {
       name: "별바다",
       description:
         "별빛 회랑 끝에 남은 마지막 천공인 정거장. 별을 보살피던 자들의 후예가 작은 등을 켜 두고 폐도로 향하는 자들을 맞이한다.",
-      position: { x: 2360, y: 435 },
+      position: { x: 2210, y: 425 },
       biome: "village",
       enemies: [],
       tags: ["town"],
@@ -394,7 +397,7 @@ export const WORLD_MAP: WorldMap = {
       name: "선인의 폐도",
       description:
         "별바다 너머 옛 천공인의 폐도. 별빛으로 살아남은 마지막 잔재들이 무너진 첨탑 사이를 떠돌며 침입자의 발을 잡는다.",
-      position: { x: 2360, y: 530 },
+      position: { x: 2170, y: 525 },
       biome: "ruins",
       enemies: ["폐도 정찰병", "천공인 전사", "옛 천공의 골렘"],
       encounterWeights: {
@@ -409,7 +412,7 @@ export const WORLD_MAP: WorldMap = {
       name: "옥좌의 길",
       description:
         "폐도 너머 옥좌로 이어지는 옛 황성의 길. 봉인의 파편이 굴러다니고 호위병의 잔재가 길목마다 일어선다.",
-      position: { x: 2360, y: 625 },
+      position: { x: 2240, y: 630 },
       biome: "ruins",
       enemies: ["길의 정찰관", "황성 호위병", "봉인 파편"],
       encounterWeights: {
@@ -424,7 +427,7 @@ export const WORLD_MAP: WorldMap = {
       name: "창공의 옥좌",
       description:
         "옥좌의 길 끝, 옛 천공인 마지막 황제가 별빛 자체를 봉인했다는 옥좌. 마지막 시험을 통과한 자에게만 별빛이 완전히 열린다.",
-      position: { x: 2360, y: 720 },
+      position: { x: 2340, y: 735 },
       biome: "mountain",
       enemies: ["별빛 사도", "옥좌의 호위", "봉인된 황좌 골렘"],
       encounterWeights: {

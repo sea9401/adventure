@@ -2309,6 +2309,101 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     requiresQuestCompleted: "hidden-pilgrim-trail-2",
   },
+  // ── 별바다 — 노수호자 유성의 사냥 의뢰 라인 (4단). ────────────────────────
+  // 1차 출처: 회랑 정찰자(Lv75) → 별빛 망령(Lv75) → 회랑 골렘(Lv75) → 황성 호위병(Lv85).
+  // 보상: 4단으로 corridor 5종 + road 5종 제작서 전부 풀린다 (5단 craft chain 의 중간 출처).
+  {
+    id: "star-haven-corridor-scouts",
+    regionId: "star_corridor",
+    title: "회랑의 흩어진 별빛",
+    description:
+      "별바다 노수호자 유성의 첫 부탁이오. 별빛 회랑에 흩어진 정찰자 잔재가 회랑의 결을 거꾸로 흩어 놓고 있소. 열둘만 가라앉히면 — 회랑검과 회랑 방패의 결을 자네 손에 새겨 주리다.",
+    requiredLevel: 75,
+    target: { kind: "kill", monsterName: "회랑 정찰자", count: 12 },
+    reward: { gold: 1200, fame: 18, exp: 2800, recipes: ["corridor_blade", "corridor_aegis"] },
+    repeatable: false,
+    giverNpcId: "star_haven_elder",
+  },
+  {
+    id: "star-haven-corridor-wraiths",
+    regionId: "star_corridor",
+    title: "망령의 결을 풀어내라",
+    description:
+      "회랑 깊은 곳에 별빛 망령이 결을 묶고 있소. 열다섯만 풀어주면 — 회랑창과 회랑 너클의 결도 함께 새겨 주리다.",
+    requiredLevel: 76,
+    target: { kind: "kill", monsterName: "별빛 망령", count: 15 },
+    reward: { gold: 1500, fame: 20, exp: 3400, recipes: ["corridor_lance", "corridor_grip"] },
+    repeatable: false,
+    giverNpcId: "star_haven_elder",
+    requiresQuestCompleted: "star-haven-corridor-scouts",
+  },
+  {
+    id: "star-haven-corridor-golems",
+    regionId: "star_corridor",
+    title: "회랑의 봉인",
+    description:
+      "회랑의 골렘이 옛 회랑의 봉인 결을 쥐고 있소. 열만 가라앉히면 — 회랑 망토의 결을 자네 어깨에 얹어 주리다. 별의 정수도 자네 몫이오.",
+    requiredLevel: 78,
+    target: { kind: "kill", monsterName: "회랑의 골렘", count: 10 },
+    reward: {
+      gold: 1900,
+      fame: 24,
+      exp: 4200,
+      recipes: ["corridor_mantle"],
+      materials: [{ id: "stellar_essence", count: 3 }],
+    },
+    repeatable: false,
+    giverNpcId: "star_haven_elder",
+    requiresQuestCompleted: "star-haven-corridor-wraiths",
+  },
+  // 폐도의 봉인 — 천공인의 왕 협동 보스 진입 자격 게이트.
+  // 회랑 골렘(Q3) 완수 후 노출 / 완료 시 storyFlag `skyfolk_gate_cleared` 셋.
+  {
+    id: "star-haven-skyfolk-gate",
+    regionId: "skyfolk_ruins",
+    title: "폐도의 봉인을 풀어라",
+    description:
+      "폐도 안쪽 깊은 결을 더는 잘못 굳게 둘 수 없소. 폐도 정찰병 열만 가라앉히면 — 천공인의 왕이 자네의 결을 알아볼 자격이 생기오. 그래야 결의 주인을 만날 수 있소.",
+    requiredLevel: 80,
+    target: { kind: "kill", monsterName: "폐도 정찰병", count: 10 },
+    reward: { gold: 1700, fame: 22, exp: 3800 },
+    repeatable: false,
+    giverNpcId: "star_haven_elder",
+    requiresQuestCompleted: "star-haven-corridor-golems",
+  },
+  {
+    id: "star-haven-throne-guards",
+    regionId: "throne_road",
+    title: "옥좌의 길목 — 황성의 결",
+    description:
+      "옥좌의 길에서 황성 호위병들이 길을 막고 있소. 열다섯만 정리해 길을 열면 — 황성 무구 다섯 자루의 결을 모두 자네 손에 새겨 주리다. 별바다가 자네에게 줄 수 있는 마지막 결이오.",
+    requiredLevel: 85,
+    target: { kind: "kill", monsterName: "황성 호위병", count: 15 },
+    reward: {
+      gold: 3500,
+      fame: 40,
+      exp: 7500,
+      recipes: ["road_blade", "road_aegis", "road_lance", "road_grip", "road_mantle"],
+    },
+    repeatable: false,
+    giverNpcId: "star_haven_elder",
+    requiresQuestCompleted: "star-haven-skyfolk-gate",
+  },
+  // 옥좌의 봉인 — 창공의 주재 협동 보스 진입 자격 게이트. 만렙 정점 마지막 자격.
+  // 황성 호위병(Q4 throne-guards) 완수 후 노출 / 완료 시 storyFlag `apex_gate_cleared` 셋.
+  {
+    id: "star-haven-apex-gate",
+    regionId: "apex_throne",
+    title: "옥좌의 봉인을 풀어라",
+    description:
+      "옥좌 둘레에 별빛 사도들이 마지막 결을 두르고 있소. 열만 가라앉히면 — 창공의 주재가 자네 앞에 일어설 자격이 생기오. 별빛이 그날을 기억할 것이오.",
+    requiredLevel: 90,
+    target: { kind: "kill", monsterName: "별빛 사도", count: 10 },
+    reward: { gold: 3000, fame: 36, exp: 6500 },
+    repeatable: false,
+    giverNpcId: "star_haven_elder",
+    requiresQuestCompleted: "star-haven-throne-guards",
+  },
 ];
 
 // 길드 게시판 노출용 — NPC 전속 퀘스트는 제외, kill 형만 노출.

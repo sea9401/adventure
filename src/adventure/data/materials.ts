@@ -236,6 +236,14 @@ export const MATERIALS = {
     price: 80,
     inShop: false,
   },
+  // ── 별빛 회랑 재료 (star_corridor 사냥터 전용) ────────────────────────────
+  corridor_relic: {
+    id: "corridor_relic",
+    name: "회랑 결정",
+    description: "별빛 회랑에 흩어진 옛 결이 굳어 만들어진 결정. 회랑 무구의 결을 잇기 위한 핵심 재료.",
+    price: 60,
+    inShop: false,
+  },
   // ── 선인의 폐도 재료 ─────────────────────────────────────────────────────
   stellar_essence: {
     id: "stellar_essence",
@@ -249,6 +257,14 @@ export const MATERIALS = {
     name: "에테르 합금",
     description: "선인의 폐도 골렘 안쪽에서만 꺼낼 수 있는, 별빛과 에테르를 함께 두드려 짠 단단하면서 가벼운 합금.",
     price: 180,
+    inShop: false,
+  },
+  // ── 옥좌의 길 재료 (throne_road 사냥터 전용) ──────────────────────────────
+  road_relic: {
+    id: "road_relic",
+    name: "옥좌 조각",
+    description: "옥좌의 길에서 굴러나오는 황성의 결이 떨어져 나온 조각. 황성 무구의 골격을 잡는 핵심 재료.",
+    price: 140,
     inShop: false,
   },
   // ── 창공의 옥좌 재료 ─────────────────────────────────────────────────────
