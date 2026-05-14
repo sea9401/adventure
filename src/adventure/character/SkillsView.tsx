@@ -180,8 +180,12 @@ function UnequippedSkillsTabs({
   );
   const tabs = visibleTabs.map((key) => ({ key, label: labelOf(key) }));
 
-  // 기본 활성 탭 = 첫 노출 탭 (특기 슬롯 열려 있으면 "feat", 아니면 "str").
-  const [active, setActive] = useState<SkillTabKey>(visibleTabs[0]);
+  // 기본 활성 탭 = 노출 탭 중 항목이 있는 첫 탭 (없으면 첫 탭). 빈 탭으로 시작해서
+  // 사용자가 빈 화면을 마주치지 않도록. 초기 마운트 시 한 번만 결정 — 이후 사용자
+  // 선택을 그대로 따른다(useState 의 lazy initializer).
+  const [active, setActive] = useState<SkillTabKey>(
+    () => visibleTabs.find((k) => countOf(k) > 0) ?? visibleTabs[0],
+  );
 
   return (
     <Card as="section" padding="md">
