@@ -44,6 +44,15 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     onDefeatFlag: "skyfolk_king_defeated",
     onAttackFlag: "skyfolk_engaged",
   },
+  apex_throne: {
+    monsterName: "창공의 주재",
+    maxHp: 45000,
+    expirationMs: 24 * 60 * 60 * 1000, // 24h
+    respawnMs: 1 * 60 * 60 * 1000, // 1h
+    // 만렙 정점 — 처치 시 6번째 일반 슬롯 + 2번째 특기 슬롯 동시 해금 (SKILL_SLOT_UNLOCK 참조).
+    onDefeatFlag: "endgame_apex_defeated",
+    onAttackFlag: "apex_engaged",
+  },
 };
 
 // 5단계 reward tier — 누적 데미지 / maxHp 비율 임계.

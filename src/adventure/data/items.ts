@@ -763,6 +763,90 @@ export const ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
+  // ── 창공의 옥좌 무구 5종 — 창공의 주재 협동 처치 보상 (에테르 라인의 한 단계 위, 만렙 정점). ──
+  // 무기 atk +20(검/방패) / +22(창/너클) 공통(제작 `일반` 기준) + 보조 스탯.
+  empyrean_blade: {
+    name: "창공검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+20" },
+      { label: "힘", value: "+10" },
+    ],
+    bonus: { atk: 20, str: 10 },
+    description: "창공 조각을 태초의 정수에 담갔다 단조한 한손 대검. 휘두를 때마다 별 그 자체의 결이 칼날을 따라 흐른다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  empyrean_aegis: {
+    name: "창공 방패",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+20" },
+      { label: "활력", value: "+11" },
+    ],
+    bonus: { atk: 20, vit: 11 },
+    description: "창공 조각을 겹쳐 태초의 정수로 결을 잡은 방패형 무기. 막아낼 때마다 별이 일렁이며 충격을 흩는다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  empyrean_lance: {
+    name: "창공창",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+22" },
+      { label: "민첩", value: "+11" },
+    ],
+    bonus: { atk: 22, dex: 11 },
+    description: "태초의 정수로 균형을 잡고 창공 조각 끝을 깎아 박은 긴 창. 끝에서 별이 떨어지는 듯한 결이 인다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  empyrean_grip: {
+    name: "창공 너클",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+22" },
+      { label: "행운", value: "+11" },
+    ],
+    bonus: { atk: 22, luk: 11 },
+    description: "창공 조각을 깎아 손등에 채운 너클. 한 방 한 방이 옥좌가 별을 떨어뜨렸다는 그 순간을 닮았다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  empyrean_mantle: {
+    name: "창공 망토",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+9" },
+      { label: "속도", value: "+9" },
+      { label: "활력", value: "+5" },
+    ],
+    bonus: { dex: 9, spd: 9, vit: 5 },
+    description: "태초의 정수를 짜낸 실로 짠 가장 가벼우면서 가장 단단한 망토. 두르면 어깨에 별 한 자루의 결이 얹힌다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  // 창공의 옥새 — 창공의 주재 협동 legend 티어 1% 드랍 (만렙 정점 물욕템).
+  // accessory 슬롯, 천공인의 관 위의 전스탯 + 양면 분포 — 거래 불가.
+  apex_regalia: {
+    name: "창공의 옥새",
+    slot: "accessory",
+    stats: [
+      { label: "공격력", value: "+8" },
+      { label: "방어력", value: "+8" },
+      { label: "힘", value: "+4" },
+      { label: "민첩", value: "+4" },
+      { label: "활력", value: "+4" },
+      { label: "속도", value: "+4" },
+      { label: "행운", value: "+4" },
+    ],
+    bonus: { atk: 8, def: 8, str: 4, dex: 4, vit: 4, spd: 4, luk: 4 },
+    description: "창공의 주재가 옥좌에 두고 떠난 옥새. 한 손에 별 한 자루의 무게가 그대로 실린다 — 마지막에 닿은 자에게만 허락된 결.",
+    rarity: "unique",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+
   // ── 히든 퀘스트 보상 (§11) — 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────
   // 월광검: 볼드 ↔ 만월 옛 합작 무기를 마저 완성한 것(hidden-blacksmith-duel). 운봉 무기 한 칸 위.
   moonlight_blade: {

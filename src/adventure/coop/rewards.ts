@@ -103,10 +103,39 @@ const SKYFOLK_KING_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
   },
 };
 
+const SKY_ARBITER_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
+  bronze: {
+    materials: { empyrean_shard: 2 },
+    recipes: [],
+  },
+  silver: {
+    materials: { primordial_essence: 1 },
+    recipes: [],
+  },
+  gold: {
+    materials: { empyrean_shard: 2, primordial_essence: 1 },
+    recipes: [],
+    recipeOneOf: ["empyrean_blade", "empyrean_aegis", "empyrean_lance", "empyrean_grip"],
+    recipeRolls: [{ recipeId: "empyrean_mantle", chance: 0.15 }],
+  },
+  epic: {
+    materials: { primordial_essence: 1 },
+    recipes: [],
+  },
+  legend: {
+    materials: {},
+    recipes: [],
+    titleId: "apex_slayer",
+    // 만렙 정점 물욕 드랍 — 운봉령/별빛 두루마기/천공인의 관 같은 결, legend 도달 후 1% 굴림.
+    equipRolls: [{ itemId: "apex_regalia", chance: 0.01 }],
+  },
+};
+
 const TIER_TABLES: Record<string, Record<CoopRewardTier, CoopReward>> = {
   "운봉의 거인": PEAK_GIANT_TIER_REWARDS,
   "별을 지키는 자": STAR_KEEPER_TIER_REWARDS,
   "천공인의 왕": SKYFOLK_KING_TIER_REWARDS,
+  "창공의 주재": SKY_ARBITER_TIER_REWARDS,
 };
 
 const TIER_ORDER: CoopRewardTier[] = ["bronze", "silver", "gold", "epic", "legend"];

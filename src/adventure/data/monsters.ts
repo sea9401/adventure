@@ -825,6 +825,80 @@ export const MONSTERS: Record<string, Monster> = {
     },
     onDefeatFlag: "skyfolk_king_defeated",
   },
+  // ── 창공의 옥좌 (apex_throne) — 선인의 폐도 깊은 곳 Lv90 마지막 구간. 협동 보스 창공의 주재.
+  // 처치 시 endgame_apex_defeated flag → 6번째 일반 슬롯 + 2번째 특기 슬롯 해금.
+  "별빛 사도": {
+    name: "별빛 사도",
+    tags: ["spirit"],
+    hp: 1300,
+    atk: 110,
+    def: 50,
+    spd: 14,
+    evasionPct: 25,
+    exp: 230,
+    drops: [
+      { kind: "material", materialId: "empyrean_shard", chance: 0.008 },
+    ],
+    skill: { kind: "pierce", name: "사도의 일섬", armorPierce: 6 },
+  },
+  "옥좌의 호위": {
+    name: "옥좌의 호위",
+    tags: ["humanoid"],
+    hp: 1650,
+    atk: 115,
+    def: 65,
+    spd: 9,
+    exp: 255,
+    drops: [
+      { kind: "material", materialId: "empyrean_shard", chance: 0.012 },
+    ],
+    skill: { kind: "heavy_blow", name: "호위 강타", everyPhases: 3, multiplier: 1.6 },
+  },
+  "봉인된 황좌 골렘": {
+    name: "봉인된 황좌 골렘",
+    tags: ["golem"],
+    hp: 1900,
+    atk: 125,
+    def: 75,
+    spd: 5,
+    exp: 280,
+    drops: [
+      { kind: "material", materialId: "empyrean_shard", chance: 0.01 },
+      { kind: "material", materialId: "primordial_essence", chance: 0.005 },
+    ],
+    skill: { kind: "enrage", name: "봉인 해제", hpFraction: 0.4, atkBonus: 15 },
+  },
+  // 창공의 옥좌 협동 보스 — coop/data.ts 의 COOP_BOSSES 로 등장.
+  // solo stat 은 시뮬·테스트 용도 (coop maxHp 는 coop/data.ts 의 45000).
+  // 처치 시 endgame_apex_defeated flag 설정 → 6번째 일반 슬롯 / 2번째 특기 슬롯 동시 해금.
+  "창공의 주재": {
+    name: "창공의 주재",
+    tags: ["humanoid"],
+    hp: 3500,
+    atk: 135,
+    def: 80,
+    spd: 7,
+    exp: 1000,
+    drops: [
+      { kind: "material", materialId: "empyrean_shard", chance: 1, amount: 10 },
+      { kind: "material", materialId: "primordial_essence", chance: 1, amount: 4 },
+      {
+        kind: "recipe_one_of",
+        recipeIds: ["empyrean_blade", "empyrean_aegis", "empyrean_lance", "empyrean_grip"],
+        chance: 1,
+      },
+      { kind: "recipe", recipeId: "empyrean_mantle", chance: 0.15 },
+    ],
+    dropQualityBias: 5,
+    armorVulnerable: 0.3,
+    playerDefVulnerable: 0.25,
+    phaseTrigger: {
+      hpFraction: 0.4,
+      defBonus: 12,
+      message: "창공의 주재가 별빛을 끌어내려 옥좌 둘레에 두른다.",
+    },
+    onDefeatFlag: "endgame_apex_defeated",
+  },
   // ── 해안 지선 (조수 갯벌 / 산호초 섬) ───────────────────────────────────
   // 폐허(Lv9)~산기슭(Lv18) 사이에 놓이는 바닷길 잡몹. 갯벌 ≈ 폐허 난이도, 섬 ≈ 산기슭 난이도.
   "집게발 게": {
