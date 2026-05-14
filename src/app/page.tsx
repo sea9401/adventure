@@ -497,7 +497,7 @@ function Home() {
               <span
                 title="라이브 자동 전투 진행 중"
                 aria-label="라이브 자동 전투 진행 중"
-                className="inline-flex items-center gap-1 rounded-full border border-emerald-500/50 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300"
+                className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-emerald-500/50 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300"
               >
                 <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                 사냥
@@ -507,7 +507,7 @@ function Home() {
               <span
                 title="자동 사냥(원정) 진행 중"
                 aria-label="자동 사냥 원정 진행 중"
-                className="inline-flex items-center gap-1 rounded-full border border-sky-500/50 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-sky-700 dark:text-sky-300"
+                className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-sky-500/50 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-sky-700 dark:text-sky-300"
               >
                 <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-500" />
                 {autoHunt.state === "complete"
@@ -521,7 +521,9 @@ function Home() {
           <div className="flex shrink-0 items-center gap-3">
             <span className="inline-flex items-center gap-1.5 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
               <Coins size={20} weight="fill" className="text-yellow-500" />
-              {character.gold.toLocaleString()}
+              {character.gold >= 10_000
+                ? `${Math.floor(character.gold / 1000)}K`
+                : character.gold.toLocaleString()}
             </span>
             <NotificationBell
               notifications={notifications.bellList}
