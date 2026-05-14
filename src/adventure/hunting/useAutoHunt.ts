@@ -1,9 +1,9 @@
 "use client";
 
-// 자동 사냥(타이머형 4시간 원정) 클라이언트 hook.
+// 자동 사냥(타이머형 6시간 원정) 클라이언트 hook.
 //
 // dispatch → 서버가 huntBaselineAt=now 박음 (region/hp 는 서버가 map.v2/character.v2 에서 읽음).
-// 4시간 카운트다운 후 collect → 서버가 simMs=min(경과,4시간) 만큼 sim·적용·종료 → 결과를
+// 6시간 카운트다운 후 collect → 서버가 simMs=min(경과,6시간) 만큼 sim·적용·종료 → 결과를
 // sessionStorage 에 박고 reload (SaveProvider fresh hydrate + page.tsx 마운트 핸들러가 모달).
 // 새로고침해도 mount 시 GET /api/hunt/status 로 카운트다운 복원.
 //
@@ -67,7 +67,7 @@ type CollectResponse =
 export type AutoHuntState = "idle" | "active" | "complete";
 
 export type AutoHuntHook = {
-  /** "idle" = 안 보냄, "active" = 진행 중(4시간 안 지남), "complete" = 4시간 경과(수령 대기). */
+  /** "idle" = 안 보냄, "active" = 진행 중(6시간 안 지남), "complete" = 6시간 경과(수령 대기). */
   state: AutoHuntState;
   /** 위탁 진행 중 여부 (다른 곳에서 라이브 전투·보스 등 잠금 판정용). */
   isDispatched: boolean;
@@ -166,7 +166,7 @@ export function useAutoHunt(opts?: {
     if (completeAtMs > nowMs) {
       timers.push(
         setTimeout(() => {
-          notifyHunt("complete", "4시간 원정이 끝났습니다 — 보상을 수령하세요.");
+          notifyHunt("complete", "6시간 원정이 끝났습니다 — 보상을 수령하세요.");
         }, completeAtMs - nowMs),
       );
     }
