@@ -17,7 +17,10 @@ import {
 import {
   FEAT_SKILL,
   FEAT_STAT_THRESHOLD,
+  FEAT_TIER2_SKILL,
+  FEAT_TIER2_STAT_THRESHOLD,
   STAT_SKILL,
+  type FeatSkillInfo,
 } from "@/adventure/character/skills";
 
 export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
@@ -326,67 +329,94 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
         })}
       </ul>
 
-      {/* 특기 — 두 요구 스탯이 모두 FEAT_STAT_THRESHOLD 도달 시 보유. 특기 전용 슬롯에 1개만.
+      {/* 특기 — 기본(임계 25) / 2티어(임계 50) 두 카탈로그. 같은 스탯쌍을 공유하며 동시 보유·장착 가능.
           공개 단계: 둘 다 미달 → ??? / 한쪽만 달성 → 이름 + 남은 스탯 조건 / 둘 다 → 전체 + 효과. */}
-      <Card as="section">
-        <div className="mb-1.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
-          특기{" "}
-          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
-            (요구 스탯 둘 다 {FEAT_STAT_THRESHOLD} 도달 시 보유 · 한쪽만 달성하면 이름·남은 조건 공개 · 특기 슬롯에 1개)
-          </span>
-        </div>
-        <ul className="space-y-1.5">
-          {FEAT_SKILL.map((f) => {
-            const met = f.req.filter((s) => stats[s] >= FEAT_STAT_THRESHOLD);
-            const owned = met.length === f.req.length;
-            const revealed = met.length >= 1; // 한쪽이라도 25 도달 → 이름/조건 공개
-            const remaining = f.req.find((s) => stats[s] < FEAT_STAT_THRESHOLD);
-            return (
-              <li key={f.name} className="flex items-start gap-2 text-xs">
-                {owned ? (
-                  <Star
-                    size={14}
-                    weight="fill"
-                    className="shrink-0 text-violet-500 mt-0.5"
-                  />
-                ) : (
-                  <Lock
-                    size={14}
-                    weight="duotone"
-                    className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
-                  />
-                )}
-                {owned ? (
-                  <span className="text-zinc-700 dark:text-zinc-200">
-                    <span className="font-medium">{f.name}</span> — {f.description}
-                    <span className="ml-1 text-zinc-500 dark:text-zinc-400">
-                      (
-                      {f.req
-                        .map((s) => `${STAT_LABELS[s]} ${FEAT_STAT_THRESHOLD}`)
-                        .join(" & ")}{" "}
-                      · 보유 중)
-                    </span>
-                  </span>
-                ) : revealed && remaining ? (
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    <span className="font-medium text-zinc-600 dark:text-zinc-300">
-                      {f.name}
-                    </span>
-                    <span className="ml-1">
-                      — 남은 해금 조건: {STAT_LABELS[remaining]}{" "}
-                      {FEAT_STAT_THRESHOLD} (현재 {stats[remaining]})
-                    </span>
-                  </span>
-                ) : (
-                  <span className="italic text-zinc-400 dark:text-zinc-500">
-                    ??? — 요구 스탯 중 하나가 {FEAT_STAT_THRESHOLD} 도달 시 공개
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </Card>
+      <FeatSection
+        title="특기"
+        catalog={FEAT_SKILL}
+        threshold={FEAT_STAT_THRESHOLD}
+        stats={stats}
+      />
+      <FeatSection
+        title="2티어 특기"
+        catalog={FEAT_TIER2_SKILL}
+        threshold={FEAT_TIER2_STAT_THRESHOLD}
+        stats={stats}
+      />
     </div>
+  );
+}
+
+function FeatSection({
+  title,
+  catalog,
+  threshold,
+  stats,
+}: {
+  title: string;
+  catalog: readonly FeatSkillInfo[];
+  threshold: number;
+  stats: Record<StatKey, number>;
+}) {
+  return (
+    <Card as="section">
+      <div className="mb-1.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+        {title}{" "}
+        <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
+          (요구 스탯 둘 다 {threshold} 도달 시 보유 · 한쪽만 달성하면 이름·남은 조건 공개 · 특기 슬롯에 장착)
+        </span>
+      </div>
+      <ul className="space-y-1.5">
+        {catalog.map((f) => {
+          const met = f.req.filter((s) => stats[s] >= threshold);
+          const owned = met.length === f.req.length;
+          const revealed = met.length >= 1;
+          const remaining = f.req.find((s) => stats[s] < threshold);
+          return (
+            <li key={f.name} className="flex items-start gap-2 text-xs">
+              {owned ? (
+                <Star
+                  size={14}
+                  weight="fill"
+                  className="shrink-0 text-violet-500 mt-0.5"
+                />
+              ) : (
+                <Lock
+                  size={14}
+                  weight="duotone"
+                  className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
+                />
+              )}
+              {owned ? (
+                <span className="text-zinc-700 dark:text-zinc-200">
+                  <span className="font-medium">{f.name}</span> — {f.description}
+                  <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                    (
+                    {f.req
+                      .map((s) => `${STAT_LABELS[s]} ${threshold}`)
+                      .join(" & ")}{" "}
+                    · 보유 중)
+                  </span>
+                </span>
+              ) : revealed && remaining ? (
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  <span className="font-medium text-zinc-600 dark:text-zinc-300">
+                    {f.name}
+                  </span>
+                  <span className="ml-1">
+                    — 남은 해금 조건: {STAT_LABELS[remaining]} {threshold} (현재{" "}
+                    {stats[remaining]})
+                  </span>
+                </span>
+              ) : (
+                <span className="italic text-zinc-400 dark:text-zinc-500">
+                  ??? — 요구 스탯 중 하나가 {threshold} 도달 시 공개
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
   );
 }
