@@ -10,6 +10,21 @@ import type { PotionId } from "../data/potions";
 // 삽입이 폭주하지 않도록 50 으로 막아 둔다.
 export const CRAFT_BATCH_MAX = 50;
 
+// "고급 재료 사용" opt-in — equip 재료의 등급별 소비량을 클라가 명시.
+// 키는 recipe.ingredients[].itemId. 명시된 itemId 는 정확히 picks 대로 차감(자동 fallback 비활성),
+// 비-기본 등급은 결과 등급 bias 적용. 명시 안 한 itemId 는 기존 동작(낮은 등급부터 자동).
+export type EquipPicks = Record<
+  string,
+  {
+    /** equipment[itemId] 에서 가져갈 갯수 — bias 영향 없음(0 등급). */
+    base?: number;
+    /** craftedEquipment[itemId][tierKey] — 키는 "-2"/"-1"/"1"/"2". */
+    crafted?: Record<string, number>;
+    /** droppedEquipment[itemId][qualityKey] — 키는 "1"/"2". */
+    dropped?: Record<string, number>;
+  }
+>;
+
 // 서버가 실제로 적용한 제작 결과 — 한 회분.
 export type CraftResult =
   | { kind: "equipment"; itemId: ItemId; tier: CraftTier }
@@ -31,6 +46,7 @@ const CRAFT_ERROR_MESSAGES: Record<string, string> = {
   missing_ingredient: "필요한 장비가 부족하다.",
   potion_full: "포션을 더 들 수 없다.",
   invalid_quantity: "제작 수량이 잘못됐다.",
+  invalid_picks: "재료 선택이 잘못됐다.",
 };
 
 export function craftErrorMessage(code: string): string {

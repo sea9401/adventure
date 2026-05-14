@@ -107,6 +107,42 @@ describe("rollCraftTier", () => {
     expect(counts[-2] / N).toBeGreaterThan(0.03);
     expect(counts[-2] / N).toBeLessThan(0.09);
   });
+
+  it("bias>1: 양수 등급 가중치만 곱해진다 — 음수 등급 가중치는 그대로", () => {
+    // bias=3 → 가중치 6/22/44/66/18 = 156. 누적: [0,6) -2 / [6,28) -1 / [28,72) 0 / [72,138) +1 / [138,156) +2.
+    // r=rng*156 → -2: rng<6/156≈0.0385, -1: rng<28/156≈0.1795, 0: rng<72/156≈0.4615,
+    //              +1: rng<138/156≈0.8846, +2: 이상.
+    expect(rollCraftTier(() => 0.0, 3)).toBe(-2);
+    expect(rollCraftTier(() => 0.17, 3)).toBe(-1);
+    expect(rollCraftTier(() => 0.4, 3)).toBe(0);
+    expect(rollCraftTier(() => 0.5, 3)).toBe(1);
+    expect(rollCraftTier(() => 0.88, 3)).toBe(1);
+    expect(rollCraftTier(() => 0.9, 3)).toBe(2);
+  });
+
+  it("bias 분포 — ×3 이면 걸작 비율이 약 11~13% 로 오른다", () => {
+    let i = 0;
+    const N = 100_000;
+    const counts: Record<number, number> = { [-2]: 0, [-1]: 0, 0: 0, 1: 0, 2: 0 };
+    for (let n = 0; n < N; n++) {
+      const t = rollCraftTier(
+        () => ((i = (i * 1103515245 + 12345) & 0x7fffffff), i / 0x80000000),
+        3,
+      );
+      counts[t]++;
+    }
+    expect(counts[2] / N).toBeGreaterThan(0.09);
+    expect(counts[2] / N).toBeLessThan(0.14);
+    expect(counts[1] / N).toBeGreaterThan(0.38);
+    expect(counts[1] / N).toBeLessThan(0.46);
+  });
+
+  it("bias 가 유효하지 않으면 1 로 본다", () => {
+    // bias=0 / NaN / 음수 → 기본 가중치와 동일 동작이어야 함.
+    expect(rollCraftTier(() => 0.5, 0)).toBe(rollCraftTier(() => 0.5));
+    expect(rollCraftTier(() => 0.5, NaN)).toBe(rollCraftTier(() => 0.5));
+    expect(rollCraftTier(() => 0.5, -2)).toBe(rollCraftTier(() => 0.5));
+  });
 });
 
 describe("helpers", () => {

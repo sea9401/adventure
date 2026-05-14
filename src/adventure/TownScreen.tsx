@@ -359,6 +359,9 @@ export function TownScreen() {
           knownIds={crafting.state.known}
           materialCounts={inventory.state.materials}
           equipmentCounts={equipmentCountsAllGrades(inventory.state)}
+          baseEquipmentCounts={inventory.state.equipment}
+          craftedEquipmentCounts={inventory.state.craftedEquipment}
+          droppedEquipmentCounts={inventory.state.droppedEquipment}
           potionCounts={inventory.state.potions}
           potionMax={inventory.potionMax}
           onCraft={handleCraft}

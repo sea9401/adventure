@@ -1,13 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Hammer } from "@phosphor-icons/react";
+import { Hammer, Sparkle } from "@phosphor-icons/react";
 import { ITEMS, type ItemId } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, type PotionId } from "./data/potions";
 import { RECIPES, type Recipe, type RecipeIngredient } from "./data/recipes";
-import { craftVarianceSummary } from "./data/craftQuality";
-import { CRAFT_BATCH_MAX } from "./crafting/types";
+import {
+  CRAFT_TIER_NAMES,
+  craftTierTextClass,
+  craftVarianceSummary,
+} from "./data/craftQuality";
+import {
+  DROP_QUALITY_NAMES,
+  dropQualityTextClass,
+} from "./data/dropQuality";
+import { CRAFT_BATCH_MAX, type EquipPicks } from "./crafting/types";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
@@ -101,20 +110,33 @@ function maxCraftable(
   return Math.max(0, cap);
 }
 
+// 한 itemId 의 등급별 보유 — 모달이 등급 슬롯을 그릴 때 본다.
+export type GradedCount = Partial<Record<string, number>>;
+
 export function CraftingView({
   knownIds,
   materialCounts,
   equipmentCounts,
+  baseEquipmentCounts,
+  craftedEquipmentCounts,
+  droppedEquipmentCounts,
   potionCounts,
   potionMax,
   onCraft,
 }: {
   knownIds: string[];
   materialCounts: Partial<Record<MaterialId, number>>;
+  /** 등급 합산 — "have/need" 표시용. */
   equipmentCounts: Partial<Record<ItemId, number>>;
+  /** 기본(0 등급) 카운트. */
+  baseEquipmentCounts: Partial<Record<ItemId, number>>;
+  /** 제작산 등급별 인스턴스 — 모달 슬롯용. */
+  craftedEquipmentCounts: Partial<Record<ItemId, GradedCount>>;
+  /** 드랍산 등급별 인스턴스 — 모달 슬롯용. */
+  droppedEquipmentCounts: Partial<Record<ItemId, GradedCount>>;
   potionCounts: Partial<Record<PotionId, number>>;
   potionMax: number;
-  onCraft: (recipe: Recipe, quantity?: number) => void;
+  onCraft: (recipe: Recipe, quantity?: number, equipPicks?: EquipPicks) => void;
 }) {
   const knownRecipes = RECIPES.filter((r) => knownIds.includes(r.id));
   const [tab, setTab] = useState<CraftCategory>("weapon");
@@ -198,6 +220,9 @@ export function CraftingView({
                       recipe={r}
                       materialCounts={materialCounts}
                       equipmentCounts={equipmentCounts}
+                      baseEquipmentCounts={baseEquipmentCounts}
+                      craftedEquipmentCounts={craftedEquipmentCounts}
+                      droppedEquipmentCounts={droppedEquipmentCounts}
                       potionCounts={potionCounts}
                       potionMax={potionMax}
                       onCraft={onCraft}
@@ -217,6 +242,9 @@ export function CraftingView({
                 recipe={r}
                 materialCounts={materialCounts}
                 equipmentCounts={equipmentCounts}
+                baseEquipmentCounts={baseEquipmentCounts}
+                craftedEquipmentCounts={craftedEquipmentCounts}
+                droppedEquipmentCounts={droppedEquipmentCounts}
                 potionCounts={potionCounts}
                 potionMax={potionMax}
                 onCraft={onCraft}
@@ -235,6 +263,9 @@ function RecipeRow({
   recipe,
   materialCounts,
   equipmentCounts,
+  baseEquipmentCounts,
+  craftedEquipmentCounts,
+  droppedEquipmentCounts,
   potionCounts,
   potionMax,
   onCraft,
@@ -242,9 +273,12 @@ function RecipeRow({
   recipe: Recipe;
   materialCounts: Partial<Record<MaterialId, number>>;
   equipmentCounts: Partial<Record<ItemId, number>>;
+  baseEquipmentCounts: Partial<Record<ItemId, number>>;
+  craftedEquipmentCounts: Partial<Record<ItemId, GradedCount>>;
+  droppedEquipmentCounts: Partial<Record<ItemId, GradedCount>>;
   potionCounts: Partial<Record<PotionId, number>>;
   potionMax: number;
-  onCraft: (recipe: Recipe, quantity?: number) => void;
+  onCraft: (recipe: Recipe, quantity?: number, equipPicks?: EquipPicks) => void;
 }) {
   const { title, meta, variance } = summarizeResult(recipe);
   const max = useMemo(
@@ -264,6 +298,12 @@ function RecipeRow({
   const [qty, setQty] = useState(1);
   const effectiveQty = Math.min(Math.max(1, qty), Math.max(1, max));
   const canCraft = max > 0;
+  // 고급 재료 모달 open. 장비 재료가 있는 레시피에만 노출.
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const equipIngs = recipe.ingredients.filter(
+    (i): i is Extract<RecipeIngredient, { kind: "equip" }> => i.kind === "equip",
+  );
+  const showPicker = equipIngs.length > 0;
   // 포션 결과 한도 자체에 닿아서 max=0 인 케이스는 별도 안내(과거 동작 유지).
   const potionFull =
     recipe.result.kind === "potion" &&
@@ -355,6 +395,324 @@ function RecipeRow({
           <Hammer size={16} weight="duotone" className="text-amber-600" />
           제작{effectiveQty > 1 ? ` ×${effectiveQty}` : ""}
         </button>
+        {showPicker && (
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            disabled={!canCraft}
+            title="등급 있는 장비를 재료로 태워 결과 등급 확률을 올린다"
+            className="inline-flex items-center gap-1.5 rounded-md border border-violet-300 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-700 dark:bg-violet-950 dark:text-violet-300 dark:hover:bg-violet-900"
+          >
+            <Sparkle size={14} weight="duotone" /> 고급 재료 사용
+          </button>
+        )}
+      </div>
+      {pickerOpen && showPicker && (
+        <MaterialPickerModal
+          recipe={recipe}
+          equipIngs={equipIngs}
+          quantity={effectiveQty}
+          baseEquipmentCounts={baseEquipmentCounts}
+          craftedEquipmentCounts={craftedEquipmentCounts}
+          droppedEquipmentCounts={droppedEquipmentCounts}
+          onClose={() => setPickerOpen(false)}
+          onConfirm={(picks) => {
+            setPickerOpen(false);
+            onCraft(recipe, effectiveQty, picks);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// 슬롯 정의 — 모달이 그리는 등급 행 순서(강한 등급부터, 기본 가운데, 음수 끝).
+// "kind"는 인벤 buckets 가운데 어디에서 가져오는지: equipment / craftedEquipment / droppedEquipment.
+type PickerSlot = {
+  key: string; // 입력 state 키 — itemId 안에서 unique
+  kind: "base" | "crafted" | "dropped";
+  /** kind 가 crafted/dropped 일 때 등급 키("-2"|"-1"|"1"|"2" / "1"|"2"). base 면 사용 안 함. */
+  gradeKey?: string;
+  label: string;
+  bias: number; // 1.0 / 2.0 / 3.0
+  textClass: string;
+};
+
+function buildSlots(): PickerSlot[] {
+  return [
+    {
+      key: "c2",
+      kind: "crafted",
+      gradeKey: "2",
+      label: `⟨${CRAFT_TIER_NAMES[2]}⟩`,
+      bias: 3,
+      textClass: craftTierTextClass(2),
+    },
+    {
+      key: "d2",
+      kind: "dropped",
+      gradeKey: "2",
+      label: DROP_QUALITY_NAMES[2],
+      bias: 3,
+      textClass: dropQualityTextClass(2),
+    },
+    {
+      key: "c1",
+      kind: "crafted",
+      gradeKey: "1",
+      label: `⟨${CRAFT_TIER_NAMES[1]}⟩`,
+      bias: 2,
+      textClass: craftTierTextClass(1),
+    },
+    {
+      key: "d1",
+      kind: "dropped",
+      gradeKey: "1",
+      label: DROP_QUALITY_NAMES[1],
+      bias: 2,
+      textClass: dropQualityTextClass(1),
+    },
+    {
+      key: "base",
+      kind: "base",
+      label: "기본",
+      bias: 1,
+      textClass: "text-zinc-600 dark:text-zinc-300",
+    },
+    {
+      key: "c-1",
+      kind: "crafted",
+      gradeKey: "-1",
+      label: `⟨${CRAFT_TIER_NAMES[-1]}⟩`,
+      bias: 1,
+      textClass: craftTierTextClass(-1),
+    },
+    {
+      key: "c-2",
+      kind: "crafted",
+      gradeKey: "-2",
+      label: `⟨${CRAFT_TIER_NAMES[-2]}⟩`,
+      bias: 1,
+      textClass: craftTierTextClass(-2),
+    },
+  ];
+}
+
+// 한 itemId 의 슬롯별 보유량을 인벤에서 읽어 반환.
+function slotHave(
+  slot: PickerSlot,
+  itemId: ItemId,
+  base: Partial<Record<ItemId, number>>,
+  crafted: Partial<Record<ItemId, GradedCount>>,
+  dropped: Partial<Record<ItemId, GradedCount>>,
+): number {
+  if (slot.kind === "base") return base[itemId] ?? 0;
+  const map = slot.kind === "crafted" ? crafted[itemId] : dropped[itemId];
+  return (map?.[slot.gradeKey ?? ""] ?? 0) as number;
+}
+
+function MaterialPickerModal({
+  recipe,
+  equipIngs,
+  quantity,
+  baseEquipmentCounts,
+  craftedEquipmentCounts,
+  droppedEquipmentCounts,
+  onClose,
+  onConfirm,
+}: {
+  recipe: Recipe;
+  equipIngs: Array<Extract<RecipeIngredient, { kind: "equip" }>>;
+  quantity: number;
+  baseEquipmentCounts: Partial<Record<ItemId, number>>;
+  craftedEquipmentCounts: Partial<Record<ItemId, GradedCount>>;
+  droppedEquipmentCounts: Partial<Record<ItemId, GradedCount>>;
+  onClose: () => void;
+  onConfirm: (picks: EquipPicks) => void;
+}) {
+  useEscapeKey(onClose);
+  const slots = useMemo(() => buildSlots(), []);
+
+  // picks state — itemId 별 슬롯 키 → 갯수. 초기값 0.
+  const [picks, setPicks] = useState<
+    Partial<Record<ItemId, Record<string, number>>>
+  >(() => {
+    const init: Partial<Record<ItemId, Record<string, number>>> = {};
+    for (const ing of equipIngs) {
+      const row: Record<string, number> = {};
+      for (const s of slots) row[s.key] = 0;
+      init[ing.itemId] = row;
+    }
+    return init;
+  });
+
+  const setPick = (itemId: ItemId, slotKey: string, value: number) => {
+    setPicks((prev) => ({
+      ...prev,
+      [itemId]: { ...(prev[itemId] ?? {}), [slotKey]: Math.max(0, value) },
+    }));
+  };
+
+  // ingredient 별 합 / 목표.
+  const summaries = equipIngs.map((ing) => {
+    const need = ing.count * quantity;
+    const sum = Object.values(picks[ing.itemId] ?? {}).reduce(
+      (a, b) => a + (b ?? 0),
+      0,
+    );
+    return { ing, need, sum };
+  });
+  const allMatched = summaries.every((s) => s.sum === s.need);
+  // 빼어난/걸작(bias=3) 슬롯이 하나라도 0 보다 크면 confirm 강제.
+  const hasMasterTier = equipIngs.some((ing) => {
+    const p = picks[ing.itemId] ?? {};
+    return (p["c2"] ?? 0) > 0 || (p["d2"] ?? 0) > 0;
+  });
+
+  const submit = () => {
+    if (!allMatched) return;
+    if (hasMasterTier) {
+      const ok = window.confirm(
+        "걸작/빼어난 등급 장비를 재료로 소모합니다. 진행할까요?",
+      );
+      if (!ok) return;
+    }
+    // picks state → EquipPicks payload 로 변환. 0 슬롯은 제외.
+    const payload: EquipPicks = {};
+    for (const ing of equipIngs) {
+      const p = picks[ing.itemId] ?? {};
+      const out: EquipPicks[string] = {};
+      for (const slot of slots) {
+        const n = p[slot.key] ?? 0;
+        if (n <= 0) continue;
+        if (slot.kind === "base") out.base = n;
+        else if (slot.kind === "crafted") {
+          out.crafted = { ...(out.crafted ?? {}), [slot.gradeKey!]: n };
+        } else {
+          out.dropped = { ...(out.dropped ?? {}), [slot.gradeKey!]: n };
+        }
+      }
+      if (out.base != null || out.crafted != null || out.dropped != null) {
+        payload[ing.itemId] = out;
+      }
+    }
+    onConfirm(payload);
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="craft-picker-title"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+      >
+        <h2
+          id="craft-picker-title"
+          className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+        >
+          고급 재료 사용 — {recipe.name}
+        </h2>
+        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+          비-기본 등급 재료를 태우면 결과 등급 확률이 회마다 보정됩니다 ·
+          정교한/고급 ×2.0 · 빼어난/걸작 ×3.0 · 회마다 가장 강한 1개만 적용.
+        </p>
+
+        <div className="mt-3 space-y-4">
+          {summaries.map(({ ing, need, sum }) => (
+            <div
+              key={ing.itemId}
+              className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800"
+            >
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  {ITEMS[ing.itemId].name}
+                </span>
+                <span
+                  className={
+                    sum === need
+                      ? "text-xs text-emerald-600 dark:text-emerald-400"
+                      : "text-xs text-rose-600 dark:text-rose-400"
+                  }
+                >
+                  합계 {sum} / {need}
+                </span>
+              </div>
+              <div className="mt-2 space-y-1.5">
+                {slots.map((slot) => {
+                  const have = slotHave(
+                    slot,
+                    ing.itemId,
+                    baseEquipmentCounts,
+                    craftedEquipmentCounts,
+                    droppedEquipmentCounts,
+                  );
+                  const value = picks[ing.itemId]?.[slot.key] ?? 0;
+                  const disabled = have <= 0;
+                  return (
+                    <div
+                      key={slot.key}
+                      className="flex items-center justify-between gap-2 text-xs"
+                    >
+                      <span className={`${slot.textClass} min-w-16`}>
+                        {slot.label}
+                      </span>
+                      <span className="flex-1 text-zinc-500 dark:text-zinc-400">
+                        보유 {have}
+                        {slot.bias > 1 && (
+                          <span className="ml-2 text-violet-600 dark:text-violet-400">
+                            보정 ×{slot.bias.toFixed(1)}
+                          </span>
+                        )}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={have}
+                        step={1}
+                        inputMode="numeric"
+                        value={value}
+                        disabled={disabled}
+                        onChange={(e) => {
+                          const next = Number.parseInt(e.target.value, 10);
+                          setPick(
+                            ing.itemId,
+                            slot.key,
+                            Number.isNaN(next) ? 0 : Math.min(next, have),
+                          );
+                        }}
+                        className="w-16 rounded-md border border-zinc-300 bg-white px-2 py-1 text-right text-sm tabular-nums text-zinc-900 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!allMatched}
+            className="inline-flex items-center gap-1.5 rounded-md border border-violet-400 bg-violet-100 px-3 py-1.5 text-sm font-medium text-violet-800 hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-600 dark:bg-violet-900 dark:text-violet-100 dark:hover:bg-violet-800"
+          >
+            <Hammer size={16} weight="duotone" /> 제작
+            {quantity > 1 ? ` ×${quantity}` : ""}
+          </button>
+        </div>
       </div>
     </div>
   );

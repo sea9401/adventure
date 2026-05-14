@@ -17,9 +17,10 @@ import {
   CRAFT_BATCH_MAX,
   type CraftOutcome,
   type CraftResult,
+  type EquipPicks,
 } from "@/adventure/crafting/types";
 
-export type { CraftOutcome, CraftResult };
+export type { CraftOutcome, CraftResult, EquipPicks };
 
 // 호출부(route)가 HTTP 400 으로 매핑 — 모두 "요청이 게임 규칙 위반" 케이스.
 export class CraftError extends Error {
@@ -55,6 +56,20 @@ type GradedMap = Record<string, Record<string, number>>;
 const NON_ZERO_TIERS = ["-2", "-1", "1", "2"] as const;
 const NON_ZERO_DROP_QUALITIES = ["1", "2"] as const;
 
+// 한 인스턴스의 결과 등급 bias — 빼어난(드랍 2) / 걸작(제작 +2) = 3.0, 정교한(드랍 1) / 고급(제작 +1) = 2.0,
+// 그 외(기본·하급·불량·일반) = 1.0. 음수 제작 등급은 "상등품" 아니므로 보정 없음.
+function instanceTagBias(kind: "crafted" | "dropped", key: string): number {
+  if (kind === "crafted") {
+    if (key === "2") return 3;
+    if (key === "1") return 2;
+    return 1; // -2, -1
+  }
+  // dropped
+  if (key === "2") return 3;
+  if (key === "1") return 2;
+  return 1;
+}
+
 export type CraftComputeInput = {
   potions: CountMap;
   materials: CountMap;
@@ -81,6 +96,8 @@ export type CraftComputeOptions = {
   quantity?: number;
   /** 등급 추첨 RNG 주입(테스트용). 미지정 = Math.random. */
   rng?: () => number;
+  /** "고급 재료 사용" opt-in. 명시된 itemId 만 picks 대로 차감 + 결과 등급 bias 적용. */
+  equipPicks?: EquipPicks;
 };
 
 function cloneGraded(src: GradedMap): GradedMap {
@@ -118,6 +135,37 @@ function drainGraded(
   return remaining;
 }
 
+function pickTotal(pick: EquipPicks[string]): number {
+  let sum = pick.base ?? 0;
+  for (const n of Object.values(pick.crafted ?? {})) sum += n;
+  for (const n of Object.values(pick.dropped ?? {})) sum += n;
+  return sum;
+}
+
+// picks 의 모든 비-기본 인스턴스 → bias 값을 강한 등급부터 정렬해 회별 1 개씩 배정.
+// 한 회당 한 인스턴스 — 회 i 의 bias 는 i 번째 인스턴스(0 등급 제외)의 bias. 부족하면 1.
+function computeBiasPerRound(
+  picks: EquipPicks,
+  quantity: number,
+): number[] {
+  const biases: number[] = [];
+  for (const pick of Object.values(picks)) {
+    for (const [k, n] of Object.entries(pick.crafted ?? {})) {
+      const b = instanceTagBias("crafted", k);
+      if (b > 1) for (let i = 0; i < n; i++) biases.push(b);
+    }
+    for (const [k, n] of Object.entries(pick.dropped ?? {})) {
+      const b = instanceTagBias("dropped", k);
+      if (b > 1) for (let i = 0; i < n; i++) biases.push(b);
+    }
+  }
+  // 강한 bias 부터.
+  biases.sort((a, b) => b - a);
+  const out: number[] = new Array(quantity).fill(1);
+  for (let i = 0; i < quantity && i < biases.length; i++) out[i] = biases[i];
+  return out;
+}
+
 function cleanupGraded(map: GradedMap): void {
   for (const k of Object.keys(map)) {
     const grades = map[k];
@@ -151,6 +199,7 @@ export function computeCraftOutcome(
   const equipment = { ...input.equipment };
   const crafted = cloneGraded(input.craftedEquipment);
   const dropped = cloneGraded(input.droppedEquipment ?? {});
+  const equipPicks = options.equipPicks ?? {};
 
   // 1) 재료 충족 검사 — quantity 배.
   for (const ing of recipe.ingredients) {
@@ -159,11 +208,28 @@ export function computeCraftOutcome(
       if ((materials[ing.materialId] ?? 0) < need)
         throw new CraftError("missing_material");
     } else {
-      const have =
-        (equipment[ing.itemId] ?? 0) +
-        gradedTotal(crafted, ing.itemId) +
-        gradedTotal(dropped, ing.itemId);
-      if (have < need) throw new CraftError("missing_ingredient");
+      const pick = equipPicks[ing.itemId];
+      if (pick) {
+        // picks 명시 — 합계가 정확히 need 와 같아야 한다.
+        const sum = pickTotal(pick);
+        if (sum !== need) throw new CraftError("invalid_picks");
+        if ((pick.base ?? 0) > (equipment[ing.itemId] ?? 0))
+          throw new CraftError("missing_ingredient");
+        for (const [k, n] of Object.entries(pick.crafted ?? {})) {
+          if ((crafted[ing.itemId]?.[k] ?? 0) < n)
+            throw new CraftError("missing_ingredient");
+        }
+        for (const [k, n] of Object.entries(pick.dropped ?? {})) {
+          if ((dropped[ing.itemId]?.[k] ?? 0) < n)
+            throw new CraftError("missing_ingredient");
+        }
+      } else {
+        const have =
+          (equipment[ing.itemId] ?? 0) +
+          gradedTotal(crafted, ing.itemId) +
+          gradedTotal(dropped, ing.itemId);
+        if (have < need) throw new CraftError("missing_ingredient");
+      }
     }
   }
 
@@ -181,27 +247,50 @@ export function computeCraftOutcome(
     if (ing.kind === "material") {
       materials[ing.materialId] = (materials[ing.materialId] ?? 0) - need;
     } else {
-      // 기본(equipment[]) 카운트 먼저, 모자라면 제작산 낮은 등급부터, 그래도 모자라면 드랍 고품질.
-      let remaining = need;
-      const fromEquip = Math.min(remaining, equipment[ing.itemId] ?? 0);
-      equipment[ing.itemId] = (equipment[ing.itemId] ?? 0) - fromEquip;
-      remaining -= fromEquip;
-      remaining = drainGraded(crafted, ing.itemId, NON_ZERO_TIERS, remaining);
-      remaining = drainGraded(
-        dropped,
-        ing.itemId,
-        NON_ZERO_DROP_QUALITIES,
-        remaining,
-      );
+      const pick = equipPicks[ing.itemId];
+      if (pick) {
+        // picks 대로 정확히 차감 — 자동 fallback 비활성.
+        const fromEquip = pick.base ?? 0;
+        equipment[ing.itemId] = (equipment[ing.itemId] ?? 0) - fromEquip;
+        for (const [k, n] of Object.entries(pick.crafted ?? {})) {
+          const grades = crafted[ing.itemId] ?? {};
+          grades[k] = (grades[k] ?? 0) - n;
+          crafted[ing.itemId] = grades;
+        }
+        for (const [k, n] of Object.entries(pick.dropped ?? {})) {
+          const grades = dropped[ing.itemId] ?? {};
+          grades[k] = (grades[k] ?? 0) - n;
+          dropped[ing.itemId] = grades;
+        }
+      } else {
+        // 기본(equipment[]) 카운트 먼저, 모자라면 제작산 낮은 등급부터, 그래도 모자라면 드랍 고품질.
+        let remaining = need;
+        const fromEquip = Math.min(remaining, equipment[ing.itemId] ?? 0);
+        equipment[ing.itemId] = (equipment[ing.itemId] ?? 0) - fromEquip;
+        remaining -= fromEquip;
+        remaining = drainGraded(crafted, ing.itemId, NON_ZERO_TIERS, remaining);
+        remaining = drainGraded(
+          dropped,
+          ing.itemId,
+          NON_ZERO_DROP_QUALITIES,
+          remaining,
+        );
+      }
     }
   }
+
+  // 회별 bias 미리 계산 — picks 의 모든 비-기본 인스턴스를 강한 등급부터 회 0,1,..,N-1 에 1 개씩 배정.
+  // 회 i 는 i 번째 인스턴스의 bias 를 받음. 인스턴스가 회보다 적으면 나머지 회는 bias=1.
+  const biasPerRound = computeBiasPerRound(equipPicks, quantity);
 
   // 4) 결과 적용 — quantity 회. 등급은 매 회 독립 추첨.
   const results: CraftResult[] = [];
   for (let i = 0; i < quantity; i++) {
     if (recipe.result.kind === "equipment") {
       const itemId = recipe.result.itemId;
-      const tier: CraftTier = recipeHasVariance(recipe) ? rollCraftTier(rng) : 0;
+      const tier: CraftTier = recipeHasVariance(recipe)
+        ? rollCraftTier(rng, biasPerRound[i] ?? 1)
+        : 0;
       if (tier === 0) {
         equipment[itemId] = (equipment[itemId] ?? 0) + 1;
       } else {
@@ -275,6 +364,7 @@ export async function applyCraftAction(
   userId: string,
   recipeId: string,
   quantity: number = 1,
+  equipPicks?: EquipPicks,
 ): Promise<CraftOutcome> {
   const inv = (await readKv<SavedInventory>(tx, userId, "inventory.v2")) ?? {};
   const craftingState =
@@ -296,7 +386,7 @@ export async function applyCraftAction(
       ),
     },
     recipeId,
-    { quantity },
+    { quantity, equipPicks },
   );
 
   const newInventory: SavedInventory = {

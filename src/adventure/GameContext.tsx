@@ -14,6 +14,7 @@ import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import type { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import type { useCharacterState } from "@/adventure/character/useCharacterState";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
+import type { EquipPicks } from "@/adventure/crafting/types";
 import type { useTrialUnlocks } from "@/adventure/edges/useTrialUnlocks";
 import type { useInboxCount } from "@/adventure/marketplace/useInboxCount";
 import type { useInventory } from "@/adventure/inventory/useInventory";
@@ -147,7 +148,11 @@ export type GameCtx = {
   ) => void;
   /** 모험의 서 보관함 → 가방 (variantKey: "base"|"c±N"|"dN"). */
   handleWithdrawFromVault: (id: ItemId, variantKey: string) => void;
-  handleCraft: (recipe: Recipe, quantity?: number) => void;
+  handleCraft: (
+    recipe: Recipe,
+    quantity?: number,
+    equipPicks?: EquipPicks,
+  ) => void;
   handleBattleEnd: (payload: BattleEndPayload) => void;
   handleAcceptQuest: (id: string) => void;
   handleClaimQuest: (id: string) => void;
