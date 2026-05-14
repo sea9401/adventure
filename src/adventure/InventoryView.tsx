@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Diamond, Flask, Scroll, Sword, Trash } from "@phosphor-icons/react";
 import {
   BONUS_KEYS,
@@ -142,8 +142,19 @@ export function InventoryView({
     getItemTier(e.id),
   );
   // 티어 접기/펴기 — 기본 접힘. 검색 활성 시 강제 펼침.
-  const { isExpanded: isTierExpanded, toggle: toggleTier } = useTierToggle();
+  const {
+    isExpanded: isTierExpanded,
+    toggle: toggleTier,
+    expand: expandTier,
+  } = useTierToggle();
   const equipSearching = equipQuery.trim().length > 0;
+  // 현 슬롯에 장착 중인 아이템의 tier — 슬롯 진입/장비 교체 시 그 섹션을 자동 펼침(이후 사용자가 접을 수 있음).
+  const equippedTier = equipped?.[equipSlotTab]
+    ? getItemTier(findItemId(equipped[equipSlotTab]) ?? null)
+    : null;
+  useEffect(() => {
+    if (equippedTier !== null) expandTier(equippedTier);
+  }, [equipSlotTab, equippedTier, expandTier]);
   const materialsPager = usePagination(ownedMaterials, 12);
   const potionsPager = usePagination(ownedPotions, 12);
   const consumablesPager = usePagination(ownedConsumables, 12);

@@ -63,11 +63,20 @@ export function useTierToggle() {
       return next;
     });
   }, []);
+  // 멱등 펼침 — 이미 펼쳐져 있으면 no-op. 슬롯 진입 시 "장착중 tier 자동 펼침" 같은 시드용.
+  const expand = useCallback((tier: EquipTier) => {
+    setExpanded((prev) => {
+      if (prev.has(tier)) return prev;
+      const next = new Set(prev);
+      next.add(tier);
+      return next;
+    });
+  }, []);
   const isExpanded = useCallback(
     (tier: EquipTier) => expanded.has(tier),
     [expanded],
   );
-  return { isExpanded, toggle };
+  return { isExpanded, toggle, expand };
 }
 
 // 임의 entry 배열을 tier 별로 묶어 [{ tier, meta, entries }] 로 반환.
