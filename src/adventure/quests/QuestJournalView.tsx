@@ -87,7 +87,7 @@ export function QuestJournalView({
                 key={g.regionId}
                 group={g}
                 tab="active"
-                defaultOpen
+                defaultOpen={false}
               />
             ))}
           </div>
@@ -105,7 +105,6 @@ export function QuestJournalView({
               key={g.regionId}
               group={g}
               tab="completed"
-              // 완료 탭은 의뢰가 쌓이면 길어져 기본 접힘. 사용자가 관심 지역만 펼치게.
               defaultOpen={false}
             />
           ))}
