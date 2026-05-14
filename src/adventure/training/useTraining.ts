@@ -10,15 +10,15 @@ type TrainingPersisted = {
   endsAt: number | null;
   points: number;
   allocated: Record<StatKey, number>;
-  // 되돌리기(스탯 차감) 에 필요한 별도 포인트. 첫 시작 시 3개 지급.
+  // 되돌리기(스탯 차감) 에 필요한 별도 포인트. 첫 시작 시 10개 지급.
   revertPoints: number;
   // 누적 완료 횟수 — 칭호 마일스톤 트리거에 사용.
   completedCount: number;
 };
 
-// 첫 시작 보너스 — 신규 유저 + 기존 유저(아직 revertPoints 필드 미저장) 모두 3 부여.
+// 첫 시작 보너스 — 신규 유저 + 기존 유저(아직 revertPoints 필드 미저장) 모두 10 부여.
 // 기존에 0 으로 명시 저장된 유저는 그대로 0 유지 (?? 가 undefined 일 때만 fallback).
-const STARTING_REVERT_POINTS = 3;
+const STARTING_REVERT_POINTS = 10;
 
 function readInitial(raw: unknown): TrainingPersisted {
   const empty: TrainingPersisted = {
