@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Coins, Scroll, Star } from "@phosphor-icons/react";
-import { getQuestsForRegion, type KillQuest } from "./data/quests";
+import { type KillQuest } from "./data/quests";
 import type { RegionId } from "./data/world";
 import type { QuestProgressEntry } from "./quests/storage";
 import { cooldownStatus } from "./quests/cooldown";
+import { getBoardQuestsForRegion } from "./quests/board";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
@@ -25,13 +26,9 @@ export function GuildView({
   onAccept: (id: string) => void;
   onClaim: (id: string) => void;
 }) {
-  // 메인 의뢰 완료를 전제하는 의뢰는 prerequisite 가 충족되기 전엔 게시판에서 숨김.
-  // (선행이 repeatable 이면 claim 후 state 가 다시 "available" 이 되므로 completedCount
-  //  로 검사. questLineDialogue 도 동일.)
-  const quests = getQuestsForRegion(regionId).filter((q) => {
-    if (!q.requiresQuestCompleted) return true;
-    return getEntry(q.requiresQuestCompleted).completedCount > 0;
-  });
+  // 게시판은 매일 5개로 캡 (board.ts) — 선행 충족 / 비반복 완료 제외는 그쪽에서 처리.
+  // active/ready 의뢰는 5개 캡과 무관하게 항상 노출.
+  const quests = getBoardQuestsForRegion(regionId, getEntry);
   const [now, setNow] = useState(() => Date.now());
 
   // 쿨다운 중인 카드가 하나라도 있을 때만 분 단위 tick.
