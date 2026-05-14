@@ -755,6 +755,48 @@ export const MONSTERS: Record<string, Monster> = {
     },
     onDefeatFlag: "starspire_keeper_defeated",
   },
+  // ── 별빛 회랑 (star_corridor) — 별의 첨탑 → 선인의 폐도 사이 Lv75 사냥터. 보스 없음. ───
+  "회랑 정찰자": {
+    name: "회랑 정찰자",
+    tags: ["spirit"],
+    hp: 820,
+    atk: 72,
+    def: 34,
+    spd: 12,
+    evasionPct: 20,
+    exp: 135,
+    drops: [
+      { kind: "material", materialId: "stardust", chance: 0.01 },
+    ],
+    skill: { kind: "pierce", name: "회랑 일섬", armorPierce: 4 },
+  },
+  "별빛 망령": {
+    name: "별빛 망령",
+    tags: ["spirit"],
+    hp: 950,
+    atk: 76,
+    def: 36,
+    spd: 8,
+    exp: 145,
+    drops: [
+      { kind: "material", materialId: "stardust", chance: 0.012 },
+    ],
+    skill: { kind: "enrage", name: "망령의 잔영", hpFraction: 0.4, atkBonus: 9 },
+  },
+  "회랑의 골렘": {
+    name: "회랑의 골렘",
+    tags: ["golem"],
+    hp: 1080,
+    atk: 78,
+    def: 44,
+    spd: 6,
+    exp: 155,
+    drops: [
+      { kind: "material", materialId: "stardust", chance: 0.013 },
+      { kind: "material", materialId: "stellar_essence", chance: 0.004 },
+    ],
+    skill: { kind: "heavy_blow", name: "회랑 충격", everyPhases: 3, multiplier: 1.5 },
+  },
   // ── 선인의 폐도 (skyfolk_ruins) — 별의 첨탑 위 Lv80 구간. 협동 보스 천공인의 왕. ─────
   "폐도 정찰병": {
     name: "폐도 정찰병",
@@ -828,6 +870,48 @@ export const MONSTERS: Record<string, Monster> = {
       message: "천공인의 왕이 옛 별빛을 두른다.",
     },
     onDefeatFlag: "skyfolk_king_defeated",
+  },
+  // ── 옥좌의 길 (throne_road) — 선인의 폐도 → 창공의 옥좌 사이 Lv85 사냥터. 보스 없음. ───
+  "길의 정찰관": {
+    name: "길의 정찰관",
+    tags: ["humanoid"],
+    hp: 1300,
+    atk: 100,
+    def: 50,
+    spd: 13,
+    evasionPct: 20,
+    exp: 200,
+    drops: [
+      { kind: "material", materialId: "empyrean_shard", chance: 0.01 },
+    ],
+    skill: { kind: "pierce", name: "정찰관 일섬", armorPierce: 5 },
+  },
+  "황성 호위병": {
+    name: "황성 호위병",
+    tags: ["humanoid"],
+    hp: 1500,
+    atk: 105,
+    def: 60,
+    spd: 8,
+    exp: 220,
+    drops: [
+      { kind: "material", materialId: "empyrean_shard", chance: 0.012 },
+    ],
+    skill: { kind: "heavy_blow", name: "호위 일격", everyPhases: 3, multiplier: 1.55 },
+  },
+  "봉인 파편": {
+    name: "봉인 파편",
+    tags: ["golem"],
+    hp: 1650,
+    atk: 110,
+    def: 68,
+    spd: 5,
+    exp: 240,
+    drops: [
+      { kind: "material", materialId: "empyrean_shard", chance: 0.013 },
+      { kind: "material", materialId: "primordial_essence", chance: 0.004 },
+    ],
+    skill: { kind: "enrage", name: "파편 폭주", hpFraction: 0.4, atkBonus: 13 },
   },
   // ── 창공의 옥좌 (apex_throne) — 선인의 폐도 깊은 곳 Lv90 마지막 구간. 협동 보스 창공의 주재.
   // 처치 시 endgame_apex_defeated flag → 6번째 일반 슬롯 + 2번째 특기 슬롯 해금.
