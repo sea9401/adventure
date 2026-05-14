@@ -568,11 +568,19 @@ export const FEAT_SKILL: FeatSkillInfo[] = [
   },
 ];
 
-// 보유 특기 — 두 요구 스탯이 모두 FEAT_STAT_THRESHOLD 이상.
+// 보유 특기 — 기본(임계 25) + 2티어(임계 50) 두 카탈로그 합쳐 반환.
+// 같은 스탯쌍의 기본+2티어가 둘 다 보유 상태가 될 수 있고, 두 특기 슬롯에 동시 장착 가능.
 export function deriveFeats(stats: Record<StatKey, number>): Skill[] {
-  return FEAT_SKILL.filter((f) =>
+  const base = FEAT_SKILL.filter((f) =>
     f.req.every((k) => stats[k] >= FEAT_STAT_THRESHOLD),
-  ).map((f) => ({ name: f.name, description: f.description }));
+  );
+  const tier2 = FEAT_TIER2_SKILL.filter((f) =>
+    f.req.every((k) => stats[k] >= FEAT_TIER2_STAT_THRESHOLD),
+  );
+  return [...base, ...tier2].map((f) => ({
+    name: f.name,
+    description: f.description,
+  }));
 }
 
 // 장착 특기 이름들 — 특기 슬롯이 열린 만큼, 보유 특기여야 effective. 미해금/미장착/미보유 슬롯은 결과에서 제외.
@@ -705,6 +713,211 @@ export function thornsPctFor(
 ): number {
   return featActive(stats, equipped, FEAT_NAMES.THORN_ARMOR, ["vit", "spd"])
     ? Math.floor((stats.vit + stats.spd) / THORN_ARMOR_STAT_DIVISOR)
+    : 0;
+}
+
+// ── 2티어 특기 (두 요구 스탯 모두 50 도달) ────────────────────────────────
+// 기본 특기와 같은 스탯쌍을 공유하되 임계를 2배로 올린 강화/다른 방향 효과.
+// 슬롯은 기존 특기 슬롯(featSlots) 을 공유 — 같은 스탯쌍의 기본+2티어 둘 다 장착도 가능.
+export const FEAT_TIER2_STAT_THRESHOLD = 50;
+
+export const FEAT_TIER2_NAMES = {
+  ENDURING_STRIKE: "불굴의 일격", // STR+VIT
+  WEAKPOINT_HIT: "약점 적중",     // STR+DEX
+  LIGHT_HAND: "광속 격투",        // STR+SPD
+  FATED_CHAIN: "연쇄 운명",       // STR+LUK
+  REFLEX_EVADE: "반사 회피",      // DEX+VIT
+  SHADOW_STEP: "그림자 보법",     // DEX+SPD
+  LUCKY_LIFESTEAL: "행운의 흡혈", // DEX+LUK
+  INFINITE_THORNS: "무한 가시",   // VIT+SPD
+  STEADFAST_WILL: "굳건한 의지",  // VIT+LUK
+  CYCLING_CHI: "회전 운기",       // SPD+LUK
+} as const;
+
+// 불굴의 일격 (STR+VIT) — 매 턴 첫 공격(본타)에 (이번 전투 누적 받은 피해 × N) 추가.
+export const ENDURING_STRIKE_MULT = 0.25;
+// 약점 적중 (STR+DEX) — 크리티컬 발동 시 그 턴에 한해 추가 공격 1회 + DEF 무시. 턴당 1회.
+export const WEAKPOINT_EXTRA_ATTACKS = 1;
+// 광속 격투 (STR+SPD) — 매 턴 기본 공격 횟수 +N.
+export const LIGHT_HAND_EXTRA_ATTACK = 1;
+// 연쇄 운명 (STR+LUK) — 크리티컬 발동 시 그 전투의 다음 공격 1회 크리 100% 보장. 턴당 1회.
+// (실제 발동은 "다음 공격" 1회로 한정 — 트리거 자체는 턴당 1회.)
+// 연쇄 운명은 상수 없음 (boolean 활성 여부만).
+// 반사 회피 (DEX+VIT) — 회피 성공 시 받았을 피해의 N 비율을 적에게 반사.
+export const REFLEX_EVADE_MULT = 0.5;
+// 그림자 보법 (DEX+SPD) — 매 적 턴 시작 시 (DEX+SPD)/N % 확률로 그 턴 무피격.
+export const SHADOW_STEP_STAT_DIVISOR = 10;
+// 행운의 흡혈 (DEX+LUK) — 모든 공격(크리 외도) 피해의 (LUK/N)% HP 회복.
+export const LUCKY_LIFESTEAL_LUK_DIVISOR = 8;
+// 무한 가시 (VIT+SPD) — 매 적 공격에 적 ATK 의 (VIT/N)% 반사 (회피/피격 무관).
+export const INFINITE_THORNS_VIT_DIVISOR = 4;
+// 굳건한 의지 (VIT+LUK) — 받은 피해 평탄 -(LUK/N).
+export const STEADFAST_WILL_LUK_DIVISOR = 4;
+// 회전 운기 (SPD+LUK) — 매 플레이어 턴 시작 시 회피/크리 확률 +(LUK/N)% 누적.
+export const CYCLING_CHI_LUK_DIVISOR = 10;
+
+// 2티어 특기는 같은 카탈로그(FeatSkillInfo) 로 deriveFeats 에서 함께 반환되도록 한다.
+// req 임계가 다르므로 항목별 threshold 를 두는 대신 별도 배열로 보관하고
+// deriveFeats 가 두 배열을 모두 검사한다.
+export const FEAT_TIER2_SKILL: FeatSkillInfo[] = [
+  {
+    name: FEAT_TIER2_NAMES.ENDURING_STRIKE,
+    description: `매 턴 본타(첫 공격) 데미지에 이번 전투 누적 피해 × ${ENDURING_STRIKE_MULT} 추가`,
+    req: ["str", "vit"],
+  },
+  {
+    name: FEAT_TIER2_NAMES.WEAKPOINT_HIT,
+    description: `크리티컬 발동 시 그 턴 즉시 추가 공격 ${WEAKPOINT_EXTRA_ATTACKS}회 + 적 DEF 무시 (턴당 1회)`,
+    req: ["str", "dex"],
+  },
+  {
+    name: FEAT_TIER2_NAMES.LIGHT_HAND,
+    description: `매 턴 기본 공격 횟수 +${LIGHT_HAND_EXTRA_ATTACK}`,
+    req: ["str", "spd"],
+  },
+  {
+    name: FEAT_TIER2_NAMES.FATED_CHAIN,
+    description: `크리티컬 발동 시 다음 공격 1회 크리 100% 보장 (턴당 1회)`,
+    req: ["str", "luk"],
+  },
+  {
+    name: FEAT_TIER2_NAMES.REFLEX_EVADE,
+    description: `회피 성공 시 받았을 피해의 ${Math.round(REFLEX_EVADE_MULT * 100)}% 를 적에게 반사`,
+    req: ["dex", "vit"],
+  },
+  {
+    name: FEAT_TIER2_NAMES.SHADOW_STEP,
+    description: `매 적 턴 시작 시 ((DEX+SPD)/${SHADOW_STEP_STAT_DIVISOR})% 확률로 그 턴 모든 적 공격 무효`,
+    req: ["dex", "spd"],
+  },
+  {
+    name: FEAT_TIER2_NAMES.LUCKY_LIFESTEAL,
+    description: `모든 공격 피해의 (LUK/${LUCKY_LIFESTEAL_LUK_DIVISOR})% HP 회복 — LUK 50=6%`,
+    req: ["dex", "luk"],
+  },
+  {
+    name: FEAT_TIER2_NAMES.INFINITE_THORNS,
+    description: `매 적 공격에 적 ATK 의 (VIT/${INFINITE_THORNS_VIT_DIVISOR})% 반사 (회피/피격 무관) — VIT 50=12%`,
+    req: ["vit", "spd"],
+  },
+  {
+    name: FEAT_TIER2_NAMES.STEADFAST_WILL,
+    description: `받은 피해 평탄 -(LUK/${STEADFAST_WILL_LUK_DIVISOR}) 감소 — LUK 50=-12`,
+    req: ["vit", "luk"],
+  },
+  {
+    name: FEAT_TIER2_NAMES.CYCLING_CHI,
+    description: `매 플레이어 턴 시작 시 회피·크리 확률 +(LUK/${CYCLING_CHI_LUK_DIVISOR})% 누적 — LUK 50=+5%/턴`,
+    req: ["spd", "luk"],
+  },
+];
+
+function featTier2Active(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+  name: string,
+  req: readonly [StatKey, StatKey],
+): boolean {
+  return (
+    equipped.has(name) && req.every((k) => stats[k] >= FEAT_TIER2_STAT_THRESHOLD)
+  );
+}
+
+// 불굴의 일격 — 누적 피해에 곱할 비율. 미장착 시 0.
+export function enduringStrikeMultFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.ENDURING_STRIKE, ["str", "vit"])
+    ? ENDURING_STRIKE_MULT
+    : 0;
+}
+
+// 약점 적중 — 크리 시 즉시 추가 공격 횟수 (DEF 무시). 미장착 시 0.
+export function weakpointExtraAttacksFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.WEAKPOINT_HIT, ["str", "dex"])
+    ? WEAKPOINT_EXTRA_ATTACKS
+    : 0;
+}
+
+// 광속 격투 — 기본 공격 횟수 보너스. 미장착 시 0.
+export function lightHandExtraAttackFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.LIGHT_HAND, ["str", "spd"])
+    ? LIGHT_HAND_EXTRA_ATTACK
+    : 0;
+}
+
+// 연쇄 운명 — 활성 여부 (boolean). 미장착 시 false.
+export function fatedChainActiveFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): boolean {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.FATED_CHAIN, ["str", "luk"]);
+}
+
+// 반사 회피 — 회피 시 반사할 비율. 미장착 시 0.
+export function reflexEvadeMultFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.REFLEX_EVADE, ["dex", "vit"])
+    ? REFLEX_EVADE_MULT
+    : 0;
+}
+
+// 그림자 보법 — 매 적 턴 무피격 발동 확률 (%). 미장착 시 0.
+export function shadowStepPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.SHADOW_STEP, ["dex", "spd"])
+    ? (stats.dex + stats.spd) / SHADOW_STEP_STAT_DIVISOR
+    : 0;
+}
+
+// 행운의 흡혈 — 모든 공격 피해의 회복 비율 (%). 미장착 시 0.
+export function luckyLifestealPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.LUCKY_LIFESTEAL, ["dex", "luk"])
+    ? stats.luk / LUCKY_LIFESTEAL_LUK_DIVISOR
+    : 0;
+}
+
+// 무한 가시 — 매 적 공격에 적 ATK 의 반사 비율 (%). 미장착 시 0.
+export function infiniteThornsAtkPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.INFINITE_THORNS, ["vit", "spd"])
+    ? stats.vit / INFINITE_THORNS_VIT_DIVISOR
+    : 0;
+}
+
+// 굳건한 의지 — 받은 피해 평탄 감소량. 미장착 시 0.
+export function steadfastWillFlatFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.STEADFAST_WILL, ["vit", "luk"])
+    ? Math.floor(stats.luk / STEADFAST_WILL_LUK_DIVISOR)
+    : 0;
+}
+
+// 회전 운기 — 매 플레이어 턴 누적 회피/크리 보너스 (%). 미장착 시 0.
+export function cyclingChiPerTurnFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return featTier2Active(stats, equipped, FEAT_TIER2_NAMES.CYCLING_CHI, ["spd", "luk"])
+    ? stats.luk / CYCLING_CHI_LUK_DIVISOR
     : 0;
 }
 

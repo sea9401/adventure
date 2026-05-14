@@ -26,6 +26,7 @@ import {
   critChancePctFor,
   critMultFor,
   crushDefReductionFor,
+  cyclingChiPerTurnFor,
   deriveFeats,
   deriveSkills,
   doubleLuckBonusesFor,
@@ -34,36 +35,45 @@ import {
   effectiveSkillNames,
   enduranceActiveFor,
   enduranceMaxHpBonusPctFor,
+  enduringStrikeMultFor,
   eternalGaleBonusPctFor,
   eternalGaleNoCapFor,
   evadeBonusPctFor,
   evadeGuaranteedFor,
   executionDamageMultFor,
   executionHpFractionFor,
+  fatedChainActiveFor,
   flurryAttacksFor,
   galeChainChancePctFor,
   gustAtkPerAttackFor,
   guardFor,
   heavenDecreeChancePctFor,
   impactWaveHpPctFor,
+  infiniteThornsAtkPctFor,
   lifestealCritHealPctFor,
+  lightHandExtraAttackFor,
   lightspeedExtraAttackPctFor,
+  luckyLifestealPctFor,
   luckyShieldBlockPctFor,
   luckyStarChancePctFor,
   powerAttackBonusFor,
   precisionArmorPierceFractionFor,
   precisionEvasionMultFor,
   rampagePerTurnFor,
+  reflexEvadeMultFor,
   regenFor,
   riposteExtraAttacksFor,
   shadowCloneAtkPctFor,
   shadowLegionExtraClonesFor,
+  shadowStepPctFor,
   skillLayout,
   skirmishNextTurnBonusFor,
+  steadfastWillFlatFor,
   SHADOW_CLONE_ATK_PCT,
   thornsPctFor,
   universalLuckBonusPctFor,
   vanguardFirstTurnBonusFor,
+  weakpointExtraAttacksFor,
   type SkillLayout,
 } from "./skills";
 
@@ -185,6 +195,8 @@ export function derivePlayerCombat(
   );
   const playerDef = totalStats.vit + equipDef;
 
+  // 광속 격투 (2티어 특기) — 기본 공격 횟수 +1. derive 단계에서 attackCount 에 미리 합산.
+  const lightHandExtra = lightHandExtraAttackFor(totalStats, effectiveSkillSet);
   const player: PlayerCombat = {
     hp: Math.max(0, Math.min(input.hp, maxHp)),
     maxHp,
@@ -199,7 +211,7 @@ export function derivePlayerCombat(
     spd: totalStats.spd,
     evasionPct:
       totalStats.dex * 0.5 + evadeBonusPctFor(totalStats, effectiveSkillSet),
-    attackCount: 1,
+    attackCount: 1 + lightHandExtra,
     extraAttackChancePct: Math.min(
       EXTRA_ATTACK_PCT_CAP,
       totalStats.spd * EXTRA_ATTACK_PCT_PER_SPD,
@@ -287,6 +299,23 @@ export function derivePlayerCombat(
       totalStats,
       effectiveSkillSet,
     ),
+    // ── 2티어 특기 (각 스탯 50) ─────────────────────────────────────────
+    enduringStrikeMult: enduringStrikeMultFor(totalStats, effectiveSkillSet),
+    weakpointExtraAttacks: weakpointExtraAttacksFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
+    lightHandExtraAttack: lightHandExtra,
+    fatedChainActive: fatedChainActiveFor(totalStats, effectiveSkillSet),
+    reflexEvadeMult: reflexEvadeMultFor(totalStats, effectiveSkillSet),
+    shadowStepPct: shadowStepPctFor(totalStats, effectiveSkillSet),
+    luckyLifestealPct: luckyLifestealPctFor(totalStats, effectiveSkillSet),
+    infiniteThornsAtkPct: infiniteThornsAtkPctFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
+    steadfastWillFlat: steadfastWillFlatFor(totalStats, effectiveSkillSet),
+    cyclingChiPerTurn: cyclingChiPerTurnFor(totalStats, effectiveSkillSet),
   };
 
   return {
