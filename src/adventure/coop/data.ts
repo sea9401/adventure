@@ -34,7 +34,7 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
   },
   starspire: {
     monsterName: "별을 지키는 자",
-    maxHp: 20000,
+    maxHp: 21800,
     expirationMs: 24 * 60 * 60 * 1000, // 24h
     respawnMs: 1 * 60 * 60 * 1000, // 1h
     onDefeatFlag: "starspire_keeper_defeated",
@@ -42,7 +42,7 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
   },
   skyfolk_ruins: {
     monsterName: "천공인의 왕",
-    maxHp: 30000,
+    maxHp: 32700,
     expirationMs: 24 * 60 * 60 * 1000, // 24h
     respawnMs: 1 * 60 * 60 * 1000, // 1h
     onDefeatFlag: "skyfolk_king_defeated",
@@ -54,7 +54,7 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
   },
   apex_throne: {
     monsterName: "창공의 주재",
-    maxHp: 45000,
+    maxHp: 49000,
     expirationMs: 24 * 60 * 60 * 1000, // 24h
     respawnMs: 1 * 60 * 60 * 1000, // 1h
     // 만렙 정점 — 처치 시 6번째 일반 슬롯 + 2번째 특기 슬롯 동시 해금 (SKILL_SLOT_UNLOCK 참조).
