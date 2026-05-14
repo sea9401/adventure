@@ -39,7 +39,7 @@ export const initialCharacterState: CharacterDynamicState = {
   mp: 30,
   level: 1,
   exp: 0,
-  gold: 10,
+  gold: 50,
   fame: 0,
   equippedTitleId: null,
 };
