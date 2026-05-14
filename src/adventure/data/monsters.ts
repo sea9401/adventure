@@ -696,6 +696,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "stardust", chance: 0.012 },
       // 유실된 명품(legendary) — 정찰자들이 한 자루씩 들고 다닌다는 가느다란 활. ultra-rare.
       { kind: "equip", itemId: "starlight_bow", chance: 0.0002 },
+      // 빌드 정의 unique — 한쪽 눈에 끼우던 별빛 렌즈 (DEX accessory).
+      { kind: "equip", itemId: "starlight_lens", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "별빛 일섬", armorPierce: 4 },
   },
@@ -710,6 +712,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 120,
     drops: [
       { kind: "material", materialId: "stardust", chance: 0.018 },
+      // 빌드 정의 unique — 어깨에 메고 다니던 가느다란 활 (DEX weapon).
+      { kind: "equip", itemId: "cloud_hunter_string", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "구름 가르기", everyPhases: 3, multiplier: 1.5 },
   },
@@ -725,6 +729,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "stardust", chance: 0.015 },
       { kind: "material", materialId: "sky_alloy", chance: 0.0075 },
+      // 빌드 정의 unique — 끝까지 풀지 못한 별빛 실타래 (LUK accessory).
+      { kind: "equip", itemId: "fate_weaver_skein", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "운명의 실", hpFraction: 0.4, atkBonus: 10 },
   },
@@ -774,6 +780,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "stardust", chance: 0.015 },
       { kind: "material", materialId: "corridor_relic", chance: 0.03 },
+      // 빌드 정의 unique — 별빛 결을 한 가닥 더 매어 둔 활 (DEX weapon).
+      { kind: "equip", itemId: "corridor_string", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "회랑 일섬", armorPierce: 4 },
   },
@@ -788,6 +796,10 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "stardust", chance: 0.018 },
       { kind: "material", materialId: "corridor_relic", chance: 0.0375 },
+      // 빌드 정의 unique — 마지막까지 쥐고 있던 별점 부적 (LUK accessory).
+      { kind: "equip", itemId: "wraith_omen_charm", chance: 0.0004 },
+      // 빌드 정의 unique — 한 줌의 경갑 (DEX armor).
+      { kind: "equip", itemId: "starlight_dust_armor", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "망령의 잔영", hpFraction: 0.4, atkBonus: 9 },
   },
@@ -803,6 +815,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "stardust", chance: 0.0195 },
       { kind: "material", materialId: "corridor_relic", chance: 0.045 },
       { kind: "material", materialId: "stellar_essence", chance: 0.006 },
+      // 빌드 정의 unique — 골렘의 잔해를 두른 두꺼운 갑주 (순수 DEF armor).
+      { kind: "equip", itemId: "corridor_carapace", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "회랑 충격", everyPhases: 3, multiplier: 1.5 },
   },
@@ -818,6 +832,10 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 160,
     drops: [
       { kind: "material", materialId: "stellar_essence", chance: 0.012 },
+      // 빌드 정의 unique — 신고 다녔다는 별빛 짚신 (SPD accessory).
+      { kind: "equip", itemId: "ruin_scout_sandals", chance: 0.0004 },
+      // 빌드 정의 unique — 환영처럼 휘둘렀다는 가벼운 칼 (SPD weapon).
+      { kind: "equip", itemId: "ruin_phantom_blade", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "예봉", armorPierce: 5 },
   },
@@ -833,6 +851,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "stellar_essence", chance: 0.018 },
       // 유실된 명품(legendary) — 전사가 폐도 끝에서 두고 떠난 옛 천공인의 칼. ultra-rare.
       { kind: "equip", itemId: "ancient_sky_blade", chance: 0.0002 },
+      // 빌드 정의 unique — 두르고 있던 두꺼운 갑주 (순수 DEF armor).
+      { kind: "equip", itemId: "skyfolk_warden_plate", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "천공 강타", everyPhases: 3, multiplier: 1.5 },
   },
@@ -847,6 +867,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "stellar_essence", chance: 0.015 },
       { kind: "material", materialId: "aether_alloy", chance: 0.0075 },
+      // 빌드 정의 unique — 한 손에 들고 있던 양손검 (순수 ATK weapon).
+      { kind: "equip", itemId: "skyfolk_greatsword", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "옛 가동", hpFraction: 0.4, atkBonus: 12 },
   },
@@ -895,6 +917,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "empyrean_shard", chance: 0.015 },
       { kind: "material", materialId: "road_relic", chance: 0.03 },
+      // 빌드 정의 unique — 옥좌의 길에서 다듬은 가느다란 단검 (DEX weapon).
+      { kind: "equip", itemId: "road_flash_dagger", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "정찰관 일섬", armorPierce: 5 },
   },
@@ -909,6 +933,10 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "empyrean_shard", chance: 0.018 },
       { kind: "material", materialId: "road_relic", chance: 0.0375 },
+      // 빌드 정의 unique — 옛 결의 칼 (순수 ATK weapon).
+      { kind: "equip", itemId: "road_resolve_blade", chance: 0.0004 },
+      // 빌드 정의 unique — 옥좌의 길을 달렸다는 가벼운 짚신 (SPD armor).
+      { kind: "equip", itemId: "road_sandals", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "호위 일격", everyPhases: 3, multiplier: 1.55 },
   },
@@ -924,6 +952,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "empyrean_shard", chance: 0.0195 },
       { kind: "material", materialId: "road_relic", chance: 0.045 },
       { kind: "material", materialId: "primordial_essence", chance: 0.006 },
+      // 빌드 정의 unique — 옛 봉인의 결정을 두른 갑주 (순수 DEF armor).
+      { kind: "equip", itemId: "shard_seal_plate", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "파편 폭주", hpFraction: 0.4, atkBonus: 13 },
   },
@@ -942,6 +972,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "empyrean_shard", chance: 0.012 },
       // 유실된 명품(legendary) — 사도들이 마지막까지 품에 두고 있었다는 작은 부적. ultra-rare.
       { kind: "equip", itemId: "starbound_charm", chance: 0.0002 },
+      // 빌드 정의 unique — 끝까지 부러뜨리지 못한 잔검 (LUK weapon).
+      { kind: "equip", itemId: "apostle_shard_blade", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "사도의 일섬", armorPierce: 6 },
   },
@@ -955,6 +987,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 255,
     drops: [
       { kind: "material", materialId: "empyrean_shard", chance: 0.018 },
+      // 빌드 정의 unique — 옥좌 둘레를 돌았다는 가벼운 짚신 (SPD accessory).
+      { kind: "equip", itemId: "throne_pursuer_sandals", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "호위 강타", everyPhases: 3, multiplier: 1.6 },
   },
@@ -971,6 +1005,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "primordial_essence", chance: 0.0075 },
       // 유실된 명품(legendary) — 골렘 내부에 함께 잠들어 있던 옛 호위병 갑주. ultra-rare.
       { kind: "equip", itemId: "enthrone_plate", chance: 0.00015 },
+      // 빌드 정의 unique — 옛 황성에서 두고 떠난 별책 (LUK accessory).
+      { kind: "equip", itemId: "throne_starbook", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "봉인 해제", hpFraction: 0.4, atkBonus: 15 },
   },
