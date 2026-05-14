@@ -159,24 +159,27 @@ export type LoadedState = {
   storyFlags: SavedStoryFlags;
 };
 
-// 트랜잭션 안에서 sim 에 필요한 모든 savesKv 키를 잠금 + 읽음.
-// 전부 결과 반영 대상이라 for update — character/inventory/crafting 은 항상, map 은 사망 시
+// sim 에 필요한 모든 savesKv 키를 읽음.
+// 결과 반영 대상이라 보통은 for update — character/inventory/crafting 은 항상, map 은 사망 시
 // (respawn), training 은 레벨업 시(단련 포인트) 쓰여진다. 동시 클라 PATCH 와의 lost-update 방지.
+// lock=false 는 collect tx1 의 "sim 입력 스냅샷" 용도 — tx 가 짧게 끝나야 하므로 잠금 없이 읽고,
+// 결과 적용은 별도 tx2 에서 lock=true 로 다시 읽어 델타 기반으로 반영한다.
 export async function loadStateForSim(
   tx: DbExecutor,
   userId: string,
+  lock = true,
 ): Promise<LoadedState | null> {
-  const character = await readKv<SavedCharacter>(tx, userId, "character.v2", true);
+  const character = await readKv<SavedCharacter>(tx, userId, "character.v2", lock);
   if (!character) return null;
   const inventory =
-    (await readKv<SavedInventory>(tx, userId, "inventory.v2", true)) ?? {};
+    (await readKv<SavedInventory>(tx, userId, "inventory.v2", lock)) ?? {};
   const crafting =
-    (await readKv<SavedCrafting>(tx, userId, "crafting.v2", true)) ?? {};
-  const map = (await readKv<SavedMap>(tx, userId, "map.v2", true)) ?? {};
+    (await readKv<SavedCrafting>(tx, userId, "crafting.v2", lock)) ?? {};
+  const map = (await readKv<SavedMap>(tx, userId, "map.v2", lock)) ?? {};
   const training =
-    (await readKv<SavedTraining>(tx, userId, "training.v2", true)) ?? {};
+    (await readKv<SavedTraining>(tx, userId, "training.v2", lock)) ?? {};
   const storyFlags =
-    (await readKv<SavedStoryFlags>(tx, userId, STORY_FLAGS_STORAGE_KEY, true)) ??
+    (await readKv<SavedStoryFlags>(tx, userId, STORY_FLAGS_STORAGE_KEY, lock)) ??
     {};
   return { character, inventory, crafting, map, training, storyFlags };
 }
@@ -457,4 +460,60 @@ export async function updateBaseline(
 /** 보여줄 만한 결과인지 — 전투 1판 이상 또는 사망. */
 export function hasMeaningfulResult(result: OfflineSimResult): boolean {
   return result.battles > 0 || result.died;
+}
+
+// collect tx1 의 클레임 결정. users row 와 NOW 만 보면 정해지는 순수 함수.
+// (state 로딩은 호출자가 별도로 — tx 안에서 짧게 잠금 없이 읽는다.)
+export type ClaimSnapshot = {
+  huntActive: boolean;
+  huntBaselineAt: Date | null;
+  huntBaselineHp: number | null;
+  huntRegion: string | null;
+  lastClaimResult: OfflineSimResult | null;
+};
+
+export type ClaimDecision =
+  | { kind: "ready"; baselineMs: number; baselineHp: number | null; regionId: string }
+  | { kind: "replay"; result: OfflineSimResult }
+  | { kind: "noop"; reason: "no_user" | "inactive" | "too_soon" | "no_region" }
+  | { kind: "clear_baseline"; reason: "no_region" };
+
+export function decideClaim(
+  u: ClaimSnapshot | null,
+  nowMs: number,
+  minCollectMs: number,
+): ClaimDecision {
+  if (!u) return { kind: "noop", reason: "no_user" };
+  if (!u.huntActive || !u.huntBaselineAt) {
+    if (u.lastClaimResult) return { kind: "replay", result: u.lastClaimResult };
+    return { kind: "noop", reason: "inactive" };
+  }
+  const elapsedMs = nowMs - u.huntBaselineAt.getTime();
+  if (elapsedMs < minCollectMs) return { kind: "noop", reason: "too_soon" };
+  if (!u.huntRegion) return { kind: "clear_baseline", reason: "no_region" };
+  return {
+    kind: "ready",
+    baselineMs: u.huntBaselineAt.getTime(),
+    baselineHp: u.huntBaselineHp,
+    regionId: u.huntRegion,
+  };
+}
+
+// collect tx2 의 winner 결정. tx1 에서 캡처한 baselineMs 가 여전히 유효한지 본다.
+// - 여전히 active 하고 같은 baseline → 내가 적용한다 (winner).
+// - 그 외 (다른 collect 가 끝냈거나, 새 dispatch 가 baseline 을 갈아엎었거나) → lastClaimResult 로 replay 또는 noop.
+export type WinnerDecision =
+  | { kind: "winner" }
+  | { kind: "replay"; result: OfflineSimResult }
+  | { kind: "lost" };
+
+export function decideWinner(
+  u: ClaimSnapshot,
+  capturedBaselineMs: number,
+): WinnerDecision {
+  const stillSameBaseline =
+    u.huntActive && u.huntBaselineAt?.getTime() === capturedBaselineMs;
+  if (stillSameBaseline) return { kind: "winner" };
+  if (u.lastClaimResult) return { kind: "replay", result: u.lastClaimResult };
+  return { kind: "lost" };
 }
