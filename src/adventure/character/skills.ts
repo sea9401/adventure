@@ -127,13 +127,13 @@ export const GUARD_REDUCTION_VIT_DIVISOR = 10;
 
 // 재생 — 활력 20 도달 시 획득.
 // 효과: 매 REGEN_INTERVAL 플레이어 턴 종료 시 HP +floor(VIT × REGEN_HP_PER_VIT).
-// VIT 비례라 후반에도 유효 — VIT 20=+10 / 40=+20 / 70=+35.
+// VIT 비례라 후반에도 유효 — VIT 20=+5 / 40=+10 / 70=+17.
 export const REGEN_VIT_THRESHOLD = 20;
 export const REGEN_INTERVAL = 4;
 export const REGEN_HP_PER_VIT = 0.25;
 
 // 연타 — 속도 10 도달 시 획득.
-// 4턴마다 그 턴의 마지막 공격 후 추가 1회 공격.
+// DOUBLE_STRIKE_INTERVAL 턴마다 그 턴의 마지막 공격 후 추가 1회 공격.
 export const DOUBLE_STRIKE_SPD_THRESHOLD = 10;
 export const DOUBLE_STRIKE_INTERVAL = 3;
 
