@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Backpack,
   BookOpen,
@@ -21,7 +20,7 @@ import { AdventureLogView } from "@/adventure/log/AdventureLogView";
 import { InventoryView } from "@/adventure/InventoryView";
 import { RecentLogView } from "@/adventure/RecentLogView";
 import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
-import { TowerModal } from "@/adventure/tower/TowerModal";
+import { TowerSubView } from "@/adventure/adventureSubViews/TowerSubView";
 import { QUESTS } from "@/adventure/data/quests";
 import { useGame } from "@/adventure/GameContext";
 
@@ -47,9 +46,7 @@ export function CharacterScreen() {
     handleWithdrawFromVault,
     quests,
     crafting,
-    playerStatus,
   } = useGame();
-  const [towerOpen, setTowerOpen] = useState(false);
 
   const activeQuestCount = QUESTS.reduce((n, q) => {
     const e = quests.getEntry(q.id);
@@ -123,24 +120,14 @@ export function CharacterScreen() {
           icon={<Crown size={28} weight="duotone" className="text-amber-500" />}
           title="고탑"
           description="영원히 끝나지 않는 수직 미궁. 일일 3회 도전."
-          onClick={() => setTowerOpen(true)}
+          onClick={() => setSubView("tower")}
         />
-        {towerOpen && (
-          <TowerModal
-            onClose={() => setTowerOpen(false)}
-            playerName={character.name}
-            playerStatus={playerStatus}
-            onApplied={(r) => {
-              // 마일스톤 보상으로 character.v2 (gold) 가 갱신됐으면 in-memory 도 동기화.
-              if (r.character && typeof r.character.gold === "number") {
-                characterStateHook.replaceFromSaved(r.character);
-              }
-              // 재료 보상은 inventory hook 이 다음 PATCH 에서 자가 수렴(409 재시도).
-            }}
-          />
-        )}
       </div>
     );
+  }
+
+  if (subView === "tower") {
+    return <TowerSubView />;
   }
 
   if (subView === "info") {

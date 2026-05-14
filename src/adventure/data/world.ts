@@ -50,7 +50,7 @@ export type Biome =
   | "coast";
 
 // "town"  — 마을(전투 풀 없음, NPC dialogue 호스트)
-// "tower" — 고탑 진입 전용 지역(전투 풀 없음, AdventureHome 에 TowerModal 진입 카드 노출)
+// "tower" — 고탑 진입 전용 지역(전투 풀 없음, AdventureHome 에 TowerPage 진입 카드 노출)
 export type RegionTag = "town" | "tower";
 
 export type Region = {

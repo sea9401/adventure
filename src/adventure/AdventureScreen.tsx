@@ -5,6 +5,7 @@ import { BattleSubView } from "@/adventure/adventureSubViews/BattleSubView";
 import { BossSubView } from "@/adventure/adventureSubViews/BossSubView";
 import { TownSubView } from "@/adventure/adventureSubViews/TownSubView";
 import { MapSubView } from "@/adventure/adventureSubViews/MapSubView";
+import { TowerSubView } from "@/adventure/adventureSubViews/TowerSubView";
 import { useGame } from "@/adventure/GameContext";
 
 export function AdventureScreen() {
@@ -21,6 +22,8 @@ export function AdventureScreen() {
       return <BossSubView />;
     case "map":
       return <MapSubView />;
+    case "tower":
+      return <TowerSubView />;
     default:
       return null;
   }
