@@ -566,7 +566,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 25,
     exp: 50,
     drops: [
-      { kind: "material", materialId: "phoenix_feather", chance: 0.01 },
+      { kind: "material", materialId: "phoenix_feather", chance: 0.02 },
       { kind: "equip", itemId: "flame_eagle_cape", chance: 0.003 },
       { kind: "recipe", recipeId: "phoenix_flight_cape", chance: 0.004 },
     ],
