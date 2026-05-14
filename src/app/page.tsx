@@ -56,6 +56,7 @@ import { useEquipmentActions } from "@/adventure/inventory/useEquipmentActions";
 import { useCraftAction } from "@/adventure/crafting/useCraftAction";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
+import { STARTER_SAVES } from "@/adventure/starterSaves";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import { useNavTabs } from "@/lib/useNavTabs";
 import { MainTabs } from "./MainTabs";
@@ -66,7 +67,7 @@ import { useQuestActions } from "@/adventure/quests/useQuestActions";
 
 export default function Page() {
   return (
-    <SaveProvider>
+    <SaveProvider starters={STARTER_SAVES}>
       <Suspense fallback={null}>
         <Home />
       </Suspense>

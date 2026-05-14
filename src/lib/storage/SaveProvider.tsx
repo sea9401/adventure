@@ -36,9 +36,21 @@ const SaveCtx = createContext<{
 // 디바이스 세션 ID 로직은 deviceSession.ts 로 분리 — 자동 사냥 등 다른 변경성 엔드포인트도
 // 같은 토큰을 헤더로 동봉해야 단일 세션 보호망에 들어가서.
 
-export function SaveProvider({ children }: { children: React.ReactNode }) {
+export function SaveProvider({
+  children,
+  starters,
+}: {
+  children: React.ReactNode;
+  // 서버에 해당 키가 없을 때 부트스트랩에서 시드. 신규 유저의 클라 default 가 서버에
+  // 박히지 않는 문제(useRemotePatch 의 first-mount skip) 차단용. localStorage 마이그레이션
+  // 값이 있으면 그쪽이 우선 — starter 는 진짜 둘 다 비었을 때만.
+  starters?: Partial<Record<SyncedKey, unknown>>;
+}) {
   const [state, setState] = useState<ProviderState>({ status: "loading" });
   const remoteRef = useRef<RemoteSave | null>(null);
+  // 부트스트랩 effect 는 한 번만 실행 (deps []) — starters 도 mount 시점 값만 보면 충분.
+  // useRef 의 initial argument 가 그 스냅샷 역할 (이후 prop 변경은 무시).
+  const startersAtMountRef = useRef(starters);
 
   useEffect(() => {
     const sessionId = getOrCreateDeviceSessionId();
@@ -65,44 +77,61 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         remote.seedVersions(versions);
 
-        // 마이그레이션 — 서버에 없는 키 중 로컬에 있는 걸 일괄 push. 사용자 모달 없음.
-        // 마커는 모든 시도가 성공한 경우에만 박음. 부분 실패면 다음 진입에서 누락 키만 재시도.
-        // (예전: serverEmpty 만 보고 결정 → 한 번 부분 마이그레이션 후엔 server 가 비지 않아
-        // 영원히 재시도 안 됐고, 미전송 키는 영구 손실.)
+        // 부트스트랩 시드 — 서버에 없는 키 채우기. 두 출처:
+        //  (1) localStorage 마이그레이션 — 디바이스에 남은 옛 로컬 값. MIGRATION_MARKER_KEY
+        //      로 1회만 시도.
+        //  (2) starter defaults — 신규 유저용 클라 기본값 (character.v2 의 gold 10 등).
+        //      useRemotePatch 가 첫 마운트 patch 를 skip 하기 때문에 서버에 영영 안 박히던
+        //      걸 여기서 한 번 박는다. 매 마운트 idempotent — 서버에 이미 있으면 skip.
+        // 마이그레이션 마커는 모든 시도가 성공한 경우에만 박음. 부분 실패면 다음 진입에서
+        // 누락 키만 재시도. starter 도 마찬가지로 미전송 키는 다음 진입 때 다시 시도된다.
         let final: SaveData = serverData;
         const alreadyMigrated =
           typeof window !== "undefined" &&
           localStorage.getItem(MIGRATION_MARKER_KEY) === "1";
+        const toSeed: SaveData = {};
 
         if (!alreadyMigrated) {
-          const toMigrate: SaveData = {};
           for (const key of SYNCED_KEYS) {
             // 서버에 이미 있는 키는 건너뛰기 — 로컬이 더 옛날일 수 있어 덮으면 안 됨.
             if (serverData[key] !== undefined) continue;
             const raw = localStorage.getItem(key);
             if (raw) {
               try {
-                toMigrate[key] = JSON.parse(raw);
+                toSeed[key] = JSON.parse(raw);
               } catch {}
             }
           }
-          if (Object.keys(toMigrate).length > 0) {
-            for (const [k, v] of Object.entries(toMigrate)) {
-              remote.patch(k as SyncedKey, v);
-            }
-            try {
-              await remote.flush();
-              // 모두 성공 — marker 박음 + 메모리 final 에 합침.
-              localStorage.setItem(MIGRATION_MARKER_KEY, "1");
-              final = { ...serverData, ...toMigrate };
-            } catch {
-              // 부분 실패 — marker 안 박음. 다음 진입에서 server 에 아직 없는 키만 재시도.
-              // (이번에 성공한 키는 다음 mount 의 serverData 에 포함돼 자연스레 skip 됨.)
-            }
-          } else {
-            // 옮길 게 없음 — 마이그레이션 완료로 본다.
-            localStorage.setItem(MIGRATION_MARKER_KEY, "1");
+        }
+
+        // starter — 서버에도 없고 localStorage 도 안 채운 키만. localStorage 가 우선.
+        const starterMap = startersAtMountRef.current ?? {};
+        for (const [key, value] of Object.entries(starterMap)) {
+          const k = key as SyncedKey;
+          if (serverData[k] !== undefined) continue;
+          if (toSeed[k] !== undefined) continue;
+          toSeed[k] = value;
+        }
+
+        if (Object.keys(toSeed).length > 0) {
+          for (const [k, v] of Object.entries(toSeed)) {
+            remote.patch(k as SyncedKey, v);
           }
+          try {
+            await remote.flush();
+            // 모두 성공 — marker 박음(있다면) + 메모리 final 에 합침.
+            if (!alreadyMigrated) {
+              localStorage.setItem(MIGRATION_MARKER_KEY, "1");
+            }
+            final = { ...serverData, ...toSeed };
+          } catch {
+            // 부분 실패 — marker 안 박음. 다음 진입에서 server 에 아직 없는 키만 재시도.
+            // (이번에 성공한 키는 다음 mount 의 serverData 에 포함돼 자연스레 skip 됨.)
+            // pending 큐에 남은 starter patch 는 이후 사용자 액션 시 자연스레 함께 발사.
+          }
+        } else if (!alreadyMigrated) {
+          // 옮길 것도 박을 starter 도 없음 — 마이그레이션 완료로 본다.
+          localStorage.setItem(MIGRATION_MARKER_KEY, "1");
         }
 
         setState({ status: "ready", data: final, remote });
