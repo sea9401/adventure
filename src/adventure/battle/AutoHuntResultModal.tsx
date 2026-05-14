@@ -67,6 +67,11 @@ export function AutoHuntResultModal({
     ([, n]) => (n ?? 0) > 0,
   );
 
+  const grantedPotions = Object.entries(result.potionsGranted ?? {}).filter(
+    ([, n]) => (n ?? 0) > 0,
+  );
+  const revives = result.revives ?? 0;
+
   const hasAnyDrop =
     result.goldGained > 0 ||
     materials.length > 0 ||
@@ -268,6 +273,25 @@ export function AutoHuntResultModal({
             </div>
           )}
 
+          {revives > 0 && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-2.5 text-center text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+              사냥 중 {revives}회 쓰러져 {revives * 20}분의 휴식을 보냈다.
+              {grantedPotions.length > 0 && (
+                <>
+                  {" "}
+                  보급으로{" "}
+                  {grantedPotions
+                    .map(([id, n]) => {
+                      const potion = POTIONS[id as PotionId];
+                      return `${potion?.name ?? id} ×${n}`;
+                    })
+                    .join(", ")}
+                  을(를) 받았다.
+                </>
+              )}
+            </div>
+          )}
+
           {result.died && (
             <div className="rounded-md border border-rose-300 bg-rose-50 p-2.5 text-center text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
               사냥 중 사망 — 시작 마을로 옮겨졌다. 치유소에서 회복이 필요하다.
@@ -277,7 +301,8 @@ export function AutoHuntResultModal({
           {kills.length === 0 &&
             result.expGained === 0 &&
             !hasAnyDrop &&
-            !result.died && (
+            !result.died &&
+            revives === 0 && (
               <div className="text-center text-zinc-500 dark:text-zinc-400">
                 아무 일도 일어나지 않았다.
               </div>
