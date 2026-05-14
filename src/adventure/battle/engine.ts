@@ -2,8 +2,10 @@ import type { Monster } from "../data/monsters";
 import { computeHealAmount, type Potion, type PotionId } from "../data/potions";
 import {
   CRIT_MULT_BASE,
+  ETERNAL_GALE_ABSOLUTE_CAP,
   GALE_CHAIN_MAX_PER_TURN,
   HEAVEN_DECREE_HP_PCT,
+  IMPACT_WAVE_INTERVAL,
   LUCKY_STAR_DAMAGE_MULT,
   POWER_ATTACK_TURN_INTERVAL,
   RAMPAGE_START_TURN,
@@ -161,6 +163,19 @@ export type PlayerCombat = {
   galeChainChancePct?: number;
   // 행운의 별 — 모든 공격이 N% 확률로 데미지 ×LUCKY_STAR_DAMAGE_MULT (크리티컬과 별개·중첩). 0/undefined = 미보유.
   luckyStarChancePct?: number;
+  // ── 6티어 (각 스탯 85 도달) — 만렙 확장 패키지 ────────────────────────
+  // 충돌파 — 매 IMPACT_WAVE_INTERVAL 턴마다 본타가 적 현재 HP 의 N% 추가 고정 피해 (DEF 무시). 0/undefined = 미보유.
+  impactWaveHpPct?: number;
+  // 그림자 군단 — 매 플레이어 턴 종료 시 분신 추가 횟수 (기존 분신과 누적). 0/undefined = 미보유.
+  shadowLegionExtraClones?: number;
+  // 흡혈 갑옷 — 피격 시 받은 HP 피해의 N% HP 회복. 0/undefined = 미보유.
+  bloodfeastPct?: number;
+  // 무한 풍사슬 — 풍사슬 확률에 더할 보너스(%). 5티어 풍사슬 슬롯 같이 장착해야 의미.
+  eternalGaleBonusPct?: number;
+  // 무한 풍사슬 — true 면 풍사슬 한 턴 캡 해제. 5티어와 동반 장착 시.
+  eternalGaleNoCap?: boolean;
+  // 만물 행운 — 회피·크리·추가타 모든 확률에 더할 보너스(%). 0/undefined = 미보유.
+  universalLuckBonusPct?: number;
 };
 
 export type PlayerAction =
@@ -202,9 +217,11 @@ function playerFacingEnemyDef(state: BattleState, player: PlayerCombat): number 
 }
 
 // 다음 플레이어 턴의 공격 횟수 — 기본 attackCount + extraAttackChancePct 1회 판정.
+// 6티어 만물 행운 보너스가 있으면 추가타 확률에 가산.
 function rollPlayerAttackCount(player: PlayerCombat): number {
   const base = Math.max(1, player.attackCount);
-  const chance = player.extraAttackChancePct ?? 0;
+  const luckBonus = player.universalLuckBonusPct ?? 0;
+  const chance = (player.extraAttackChancePct ?? 0) + luckBonus;
   if (chance > 0 && Math.random() * 100 < chance) return base + 1;
   return base;
 }
@@ -326,14 +343,23 @@ function finishPlayerTurn(
   playerName: string,
 ): BattleState {
   let st = state;
-  // 그림자 분신 — ATK 의 N% 로 1회.
+  // 그림자 분신 — ATK 의 N% 로 1회. 6티어 그림자 군단 보유 시 추가 횟수만큼 더 발동.
   const clonePct = player.shadowCloneAtkPct ?? 0;
-  if (st.phase !== "ended" && clonePct > 0) {
-    const cloneDmg = damageBetween(
-      Math.floor((player.atk * clonePct) / 100),
-      playerFacingEnemyDef(st, player),
-    );
-    st = dealExtraEnemyDamage(st, cloneDmg, "그림자 분신");
+  const cloneExtra = player.shadowLegionExtraClones ?? 0;
+  const cloneCount = clonePct > 0 ? 1 + cloneExtra : 0;
+  if (st.phase !== "ended" && cloneCount > 0) {
+    for (let i = 0; i < cloneCount; i += 1) {
+      if (st.phase === "ended") break;
+      const cloneDmg = damageBetween(
+        Math.floor((player.atk * clonePct) / 100),
+        playerFacingEnemyDef(st, player),
+      );
+      st = dealExtraEnemyDamage(
+        st,
+        cloneDmg,
+        cloneExtra > 0 ? "그림자 군단" : "그림자 분신",
+      );
+    }
   }
   // 무피해 난무 — 이 전투에서 받은 피해가 0이면 추가 공격 N회.
   const flurry = player.flurryAttacks ?? 0;
@@ -557,7 +583,10 @@ export function advanceTurn(
               player.balanceCritPctPerSpdDiff!,
           )
         : 0;
-    const effectiveCritPct = baseCritPct + luckCritBonus + balanceCritBonus;
+    // 만물 행운 (6티어) — 크리티컬 확률 +N%.
+    const universalLuckBonus = player.universalLuckBonusPct ?? 0;
+    const effectiveCritPct =
+      baseCritPct + luckCritBonus + balanceCritBonus + universalLuckBonus;
     const critRoll =
       effectiveCritPct > 0 ? Math.random() * 100 < effectiveCritPct : false;
     const baseDmg = damageBetween(
@@ -601,7 +630,16 @@ export function advanceTurn(
     const decreeDmg = decreeFires
       ? Math.floor((state.enemyHp * HEAVEN_DECREE_HP_PCT) / 100)
       : 0;
-    const totalDmg = dmg + decreeDmg;
+    // 충돌파 (6티어) — 매 IMPACT_WAVE_INTERVAL 턴마다 본타 첫 공격에 적 현재 HP 의 N% 추가 고정 피해.
+    const impactPct = player.impactWaveHpPct ?? 0;
+    const impactFires =
+      impactPct > 0 &&
+      isFirstAttackOfTurn &&
+      turnNumber % IMPACT_WAVE_INTERVAL === 0;
+    const impactDmg = impactFires
+      ? Math.floor((state.enemyHp * impactPct) / 100)
+      : 0;
+    const totalDmg = dmg + decreeDmg + impactDmg;
     const labels: string[] = [];
     if (bonus > 0) labels.push("강공격");
     if (bonus > 0 && crushReduction > 0) labels.push("분쇄");
@@ -610,6 +648,7 @@ export function advanceTurn(
     if (luckyStarFires) labels.push("행운의 별");
     if (assassinFires) labels.push("암살");
     if (decreeFires) labels.push("천명");
+    if (impactFires) labels.push("충돌파");
     const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
     let log = appendLog(state.log, {
       kind: "player_attack",
@@ -719,16 +758,23 @@ export function advanceTurn(
       };
     }
     // 풍사슬 (5티어) — 추가 공격(연타·광속·이전 풍사슬) 발동 후 확률로 1회 더. 캡: GALE_CHAIN_MAX_PER_TURN.
-    const galePct = player.galeChainChancePct ?? 0;
+    // 6티어 무한 풍사슬: 확률 +eternalGaleBonusPct% + 캡 해제.
+    const baseGalePct = player.galeChainChancePct ?? 0;
+    const eternalBonusPct = player.eternalGaleBonusPct ?? 0;
+    const effectiveGalePct = baseGalePct + eternalBonusPct;
     const galeChainReady =
       state.doubleStrikeUsedThisTurn ||
       state.lightspeedUsedThisTurn ||
       state.galeChainsThisTurn > 0;
+    // 무한 풍사슬 시 절대 캡 (ETERNAL_GALE_ABSOLUTE_CAP) 까지만 — 정상 확률엔 도달 불가, cheese 방지용.
+    const galeCap = player.eternalGaleNoCap
+      ? ETERNAL_GALE_ABSOLUTE_CAP
+      : GALE_CHAIN_MAX_PER_TURN;
     const canGaleChain =
-      galePct > 0 &&
+      effectiveGalePct > 0 &&
       galeChainReady &&
-      state.galeChainsThisTurn < GALE_CHAIN_MAX_PER_TURN &&
-      Math.random() * 100 < galePct;
+      state.galeChainsThisTurn < galeCap &&
+      Math.random() * 100 < effectiveGalePct;
     if (canGaleChain) {
       return {
         ...afterDamage,
@@ -838,7 +884,10 @@ export function advanceTurn(
   const luckEvadeBonus = state.luckyBuffActive
     ? player.doubleLuck?.evade ?? 0
     : 0;
-  const effectiveEvadePct = player.evasionPct + luckEvadeBonus;
+  // 만물 행운 (6티어) — 회피 확률에도 +N%.
+  const universalLuckEvadeBonus = player.universalLuckBonusPct ?? 0;
+  const effectiveEvadePct =
+    player.evasionPct + luckEvadeBonus + universalLuckEvadeBonus;
   if (Math.random() * 100 < effectiveEvadePct) {
     const healedHp = healOnDodge(state.playerHp);
     let log = appendLog(state.log, {
@@ -948,7 +997,19 @@ export function advanceTurn(
   const wouldKill = state.playerHp - dmgToHp <= 0;
   const enduranceFires =
     wouldKill && !!player.enduranceActive && !state.enduranceTriggered;
-  const playerHp = enduranceFires ? 1 : Math.max(0, state.playerHp - dmgToHp);
+  const playerHpAfterDmg = enduranceFires
+    ? 1
+    : Math.max(0, state.playerHp - dmgToHp);
+  // 흡혈 갑옷 (6티어) — 받은 HP 피해의 N% HP 회복. HP 0 으로 죽은 후엔 미발동, 불굴로 버틴 후엔 발동.
+  const bloodfeastPct = player.bloodfeastPct ?? 0;
+  const bloodfeastHeal =
+    bloodfeastPct > 0 && dmgToHp > 0 && playerHpAfterDmg > 0
+      ? Math.floor((dmgToHp * bloodfeastPct) / 100)
+      : 0;
+  const playerHp =
+    bloodfeastHeal > 0
+      ? Math.min(state.playerMaxHp, playerHpAfterDmg + bloodfeastHeal)
+      : playerHpAfterDmg;
   const enduranceTriggered = state.enduranceTriggered || enduranceFires;
   // 로그 — 격노 발동 → 가드 → (강타 라벨 포함) 공격 → 불굴 순.
   let log = state.log;
@@ -980,6 +1041,12 @@ export function advanceTurn(
     log = appendLog(log, {
       kind: "info",
       text: `[불굴] 마지막 한 숨 — HP 1 로 버텼다!`,
+    });
+  }
+  if (bloodfeastHeal > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[흡혈 갑옷] ${playerName}의 HP +${bloodfeastHeal}`,
     });
   }
   // 반사 갑주 (특기) + 가시 갑옷 (5티어) — 받은 HP 피해의 N% 를 적에게 반사. 둘 다 있으면 합산.

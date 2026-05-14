@@ -19,6 +19,7 @@ import {
   balanceCritPctPerSpdDiffFor,
   berserkerAtkPctPerLostHpPctFor,
   bleedDmgPerStackFor,
+  bloodfeastPctFor,
   bramblePctFor,
   bulwarkShieldFor,
   counterAtkBonusFor,
@@ -33,6 +34,8 @@ import {
   effectiveSkillNames,
   enduranceActiveFor,
   enduranceMaxHpBonusPctFor,
+  eternalGaleBonusPctFor,
+  eternalGaleNoCapFor,
   evadeBonusPctFor,
   evadeGuaranteedFor,
   executionDamageMultFor,
@@ -42,6 +45,7 @@ import {
   gustAtkPerAttackFor,
   guardFor,
   heavenDecreeChancePctFor,
+  impactWaveHpPctFor,
   lifestealCritHealPctFor,
   lightspeedExtraAttackPctFor,
   luckyShieldBlockPctFor,
@@ -53,9 +57,12 @@ import {
   regenFor,
   riposteExtraAttacksFor,
   shadowCloneAtkPctFor,
+  shadowLegionExtraClonesFor,
   skillLayout,
   skirmishNextTurnBonusFor,
+  SHADOW_CLONE_ATK_PCT,
   thornsPctFor,
+  universalLuckBonusPctFor,
   vanguardFirstTurnBonusFor,
   type SkillLayout,
 } from "./skills";
@@ -237,7 +244,14 @@ export function derivePlayerCombat(
     ),
     luckyShieldBlockPct: luckyShieldBlockPctFor(totalStats, effectiveSkillSet),
     bleedDmgPerStack: bleedDmgPerStackFor(totalStats, effectiveSkillSet),
-    shadowCloneAtkPct: shadowCloneAtkPctFor(totalStats, effectiveSkillSet),
+    // 6티어 그림자 군단 단독 보유 시도 분신 발동 가능하도록 atkPct 폴백.
+    shadowCloneAtkPct: (() => {
+      const base = shadowCloneAtkPctFor(totalStats, effectiveSkillSet);
+      if (base > 0) return base;
+      return shadowLegionExtraClonesFor(totalStats, effectiveSkillSet) > 0
+        ? SHADOW_CLONE_ATK_PCT
+        : 0;
+    })(),
     bulwarkShield: bulwarkShieldFor(totalStats, effectiveSkillSet),
     flurryAttacks: flurryAttacksFor(totalStats, effectiveSkillSet),
     heavenDecreeChancePct: heavenDecreeChancePctFor(
@@ -261,6 +275,18 @@ export function derivePlayerCombat(
     bramblePct: bramblePctFor(totalStats, effectiveSkillSet),
     galeChainChancePct: galeChainChancePctFor(totalStats, effectiveSkillSet),
     luckyStarChancePct: luckyStarChancePctFor(totalStats, effectiveSkillSet),
+    impactWaveHpPct: impactWaveHpPctFor(totalStats, effectiveSkillSet),
+    shadowLegionExtraClones: shadowLegionExtraClonesFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
+    bloodfeastPct: bloodfeastPctFor(totalStats, effectiveSkillSet),
+    eternalGaleBonusPct: eternalGaleBonusPctFor(totalStats, effectiveSkillSet),
+    eternalGaleNoCap: eternalGaleNoCapFor(totalStats, effectiveSkillSet),
+    universalLuckBonusPct: universalLuckBonusPctFor(
+      totalStats,
+      effectiveSkillSet,
+    ),
   };
 
   return {

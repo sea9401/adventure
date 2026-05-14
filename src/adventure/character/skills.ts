@@ -76,6 +76,12 @@ export const SKILL_NAMES = {
   BRAMBLE: "가시 갑옷",
   GALE_CHAIN: "풍사슬",
   LUCKY_STAR: "행운의 별",
+  // 6티어 (각 스탯 85 도달) — 만렙 확장 패키지.
+  IMPACT_WAVE: "충돌파",
+  SHADOW_LEGION: "그림자 군단",
+  BLOODFEAST_ARMOR: "흡혈 갑옷",
+  ETERNAL_GALE: "무한 풍사슬",
+  UNIVERSAL_LUCK: "만물 행운",
 } as const;
 
 // 강공격 — 힘 10 도달 시 획득.
@@ -223,6 +229,28 @@ export const LUCKY_STAR_LUK_THRESHOLD = 65;
 export const LUCKY_STAR_CHANCE_PER_LUK = 0.3;
 export const LUCKY_STAR_DAMAGE_MULT = 2;
 
+// ── 6티어 (각 스탯 85 도달) — 만렙 확장 패키지 ─────────────────────────
+// 충돌파 — 매 IMPACT_WAVE_INTERVAL 플레이어 턴마다 본타에 적 현재 HP 의 floor(STR/IMPACT_WAVE_HP_DIVISOR)% 추가 고정 피해 (DEF 무시).
+// POWER_ATTACK 과 동일 주기(3턴)라 강공격 턴에 함께 발동.
+export const IMPACT_WAVE_STR_THRESHOLD = 85;
+export const IMPACT_WAVE_INTERVAL = 3;
+export const IMPACT_WAVE_HP_DIVISOR = 10;
+// 그림자 군단 — 4티어 분신을 SHADOW_LEGION_EXTRA_CLONES 회 더 (둘 다 보유 시 매 턴 분신 1+2=3회).
+// 6티어 단독 보유 시도 분신 데미지 활성 (atkPct = SHADOW_CLONE_ATK_PCT) + 2회. 즉 군단만 있으면 매 턴 2회.
+export const SHADOW_LEGION_DEX_THRESHOLD = 85;
+export const SHADOW_LEGION_EXTRA_CLONES = 2;
+// 흡혈 갑옷 — 받은 HP 피해의 floor(VIT/BLOODFEAST_VIT_DIVISOR)% HP 회복 (HP 0 으로 죽은 후엔 미발동, 불굴로 버틴 후엔 발동).
+export const BLOODFEAST_VIT_THRESHOLD = 85;
+export const BLOODFEAST_VIT_DIVISOR = 3;
+// 무한 풍사슬 — 5티어 풍사슬 확률 +(SPD/ETERNAL_GALE_PCT_SPD_DIVISOR)% + 한 턴 캡 해제. 5티어 슬롯 같이 장착해야 의미.
+// 절대 캡 — "캡 해제" 라도 무한 루프 방지를 위한 안전장치. 정상 게임 확률(<=50%)에선 통계적으로 도달 거의 불가.
+export const ETERNAL_GALE_SPD_THRESHOLD = 85;
+export const ETERNAL_GALE_PCT_SPD_DIVISOR = 4;
+export const ETERNAL_GALE_ABSOLUTE_CAP = 30;
+// 만물 행운 — 회피·크리·추가타 확률 모두 +floor(LUK/UNIVERSAL_LUCK_LUK_DIVISOR)%.
+export const UNIVERSAL_LUCK_LUK_THRESHOLD = 85;
+export const UNIVERSAL_LUCK_LUK_DIVISOR = 10;
+
 // 스탯 → 그 스탯이 주는 스킬 티어들 (낮은 임계 → 높은 임계 순). 도감 노출 / 발동 판정 모두 이 매핑을 사용.
 // 1차 티어는 STAT_SKILL_INFO_THRESHOLD(5) 도달 시 도감 공개,
 // 2차 티어는 STAT_REVEAL_THRESHOLD(15) 도달 시 도감 공개,
@@ -260,6 +288,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `전투 ${RAMPAGE_START_TURN}턴 경과 후, 매 플레이어 턴 종료 시 ATK 영구 +(STR/${RAMPAGE_ATK_STR_DIVISOR}) 누적 — STR 65=+5/턴`,
       activationThreshold: RAMPAGE_STR_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.IMPACT_WAVE,
+      description: `매 ${IMPACT_WAVE_INTERVAL}턴마다 본타에 적 현재 HP의 (STR/${IMPACT_WAVE_HP_DIVISOR})% 추가 고정 피해 (DEF 무시) — STR 85=8%`,
+      activationThreshold: IMPACT_WAVE_STR_THRESHOLD,
+    },
   ],
   dex: [
     {
@@ -286,6 +319,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       name: SKILL_NAMES.ANALYSIS,
       description: `매 플레이어 턴 종료 시 적 ATK·DEF 각각 -(DEX/${ANALYSIS_DEX_DIVISOR}) 누적 (최소 0) — DEX 65=-2/턴`,
       activationThreshold: ANALYSIS_DEX_THRESHOLD,
+    },
+    {
+      name: SKILL_NAMES.SHADOW_LEGION,
+      description: `매 플레이어 턴 종료 시 분신이 ${SHADOW_LEGION_EXTRA_CLONES}회 더 추가타 (4티어 분신과 누적 시 매 턴 ${1 + SHADOW_LEGION_EXTRA_CLONES}회)`,
+      activationThreshold: SHADOW_LEGION_DEX_THRESHOLD,
     },
   ],
   vit: [
@@ -314,6 +352,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `받은 피해의 (VIT/${BRAMBLE_VIT_DIVISOR})% 적에게 반사 (특성 반사 갑주와 별도 누적) — VIT 65=21%`,
       activationThreshold: BRAMBLE_VIT_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.BLOODFEAST_ARMOR,
+      description: `피격 시 받은 HP 피해의 (VIT/${BLOODFEAST_VIT_DIVISOR})% HP 회복 — VIT 85=28%`,
+      activationThreshold: BLOODFEAST_VIT_THRESHOLD,
+    },
   ],
   spd: [
     {
@@ -340,6 +383,11 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       name: SKILL_NAMES.GALE_CHAIN,
       description: `추가 공격(연타·광속·난무·기습 등) 발동 후 SPD/${GALE_CHAIN_PCT_SPD_DIVISOR}% 확률로 1회 더 (체인) — 한 턴 최대 ${GALE_CHAIN_MAX_PER_TURN}회`,
       activationThreshold: GALE_CHAIN_SPD_THRESHOLD,
+    },
+    {
+      name: SKILL_NAMES.ETERNAL_GALE,
+      description: `5티어 풍사슬 강화 — 확률 +(SPD/${ETERNAL_GALE_PCT_SPD_DIVISOR})% + 한 턴 캡 해제 (풍사슬 슬롯 함께 장착 필요)`,
+      activationThreshold: ETERNAL_GALE_SPD_THRESHOLD,
     },
   ],
   luk: [
@@ -368,14 +416,19 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       description: `모든 공격이 (LUK × ${LUCKY_STAR_CHANCE_PER_LUK})% 확률로 데미지 ×${LUCKY_STAR_DAMAGE_MULT} (크리티컬과 별개·중첩) — LUK 65=19%`,
       activationThreshold: LUCKY_STAR_LUK_THRESHOLD,
     },
+    {
+      name: SKILL_NAMES.UNIVERSAL_LUCK,
+      description: `회피·크리·추가타 확률 모두 +(LUK/${UNIVERSAL_LUCK_LUK_DIVISOR})% — LUK 85=+8%`,
+      activationThreshold: UNIVERSAL_LUCK_LUK_THRESHOLD,
+    },
   ],
 };
 
 // 현재 스탯에서 보유(획득) 스킬 목록 도출. 스킬은 별도 저장 없이 스탯에서 파생.
 // "보유" ≠ "장착" — 보유한 스킬 중 일반 슬롯 수만큼만 effective.
-// 1차 → 2차 → 3차 → 4차 → 5차 순으로 묶어 반환 — 자동 슬롯 채움 시 낮은 티어가 우선되도록.
+// 1차 → 2차 → 3차 → 4차 → 5차 → 6차 순으로 묶어 반환 — 자동 슬롯 채움 시 낮은 티어가 우선되도록.
 export function deriveSkills(stats: Record<StatKey, number>): Skill[] {
-  const buckets: Skill[][] = [[], [], [], [], []];
+  const buckets: Skill[][] = [[], [], [], [], [], []];
   for (const k of STAT_KEYS) {
     const tiers = STAT_SKILL[k];
     for (let t = 0; t < buckets.length; t += 1) {
@@ -949,5 +1002,74 @@ export function luckyStarChancePctFor(
   return stats.luk >= LUCKY_STAR_LUK_THRESHOLD &&
     equipped.has(SKILL_NAMES.LUCKY_STAR)
     ? stats.luk * LUCKY_STAR_CHANCE_PER_LUK
+    : 0;
+}
+
+// ── 6티어 헬퍼 ─────────────────────────────────────────────────────────
+// 충돌파 — 매 IMPACT_WAVE_INTERVAL 턴마다 본타가 추가로 적 현재 HP 의 N% 고정 피해.
+// 반환값 = HP 비율(%). 미장착/미달 시 0.
+export function impactWaveHpPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.str >= IMPACT_WAVE_STR_THRESHOLD &&
+    equipped.has(SKILL_NAMES.IMPACT_WAVE)
+    ? Math.floor(stats.str / IMPACT_WAVE_HP_DIVISOR)
+    : 0;
+}
+
+// 그림자 군단 — 매 턴 분신 추가 횟수. 미장착/미달 시 0.
+// 6티어 단독 보유 시도 의미 있도록, derivePlayerCombat 에서 shadowCloneAtkPct 도 함께 활성시킨다.
+export function shadowLegionExtraClonesFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.dex >= SHADOW_LEGION_DEX_THRESHOLD &&
+    equipped.has(SKILL_NAMES.SHADOW_LEGION)
+    ? SHADOW_LEGION_EXTRA_CLONES
+    : 0;
+}
+
+// 흡혈 갑옷 — 받은 HP 피해의 N% HP 회복. 미장착/미달 시 0.
+export function bloodfeastPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.vit >= BLOODFEAST_VIT_THRESHOLD &&
+    equipped.has(SKILL_NAMES.BLOODFEAST_ARMOR)
+    ? Math.floor(stats.vit / BLOODFEAST_VIT_DIVISOR)
+    : 0;
+}
+
+// 무한 풍사슬 — 5티어 풍사슬 확률에 더할 보너스(%) + 한 턴 캡 해제 여부.
+// 두 효과를 하나의 헬퍼로 묶고, 미장착/미달 시 둘 다 0/false.
+export function eternalGaleBonusPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.spd >= ETERNAL_GALE_SPD_THRESHOLD &&
+    equipped.has(SKILL_NAMES.ETERNAL_GALE)
+    ? stats.spd / ETERNAL_GALE_PCT_SPD_DIVISOR
+    : 0;
+}
+
+export function eternalGaleNoCapFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): boolean {
+  return (
+    stats.spd >= ETERNAL_GALE_SPD_THRESHOLD &&
+    equipped.has(SKILL_NAMES.ETERNAL_GALE)
+  );
+}
+
+// 만물 행운 — 회피·크리·추가타 모두에 더할 보너스(%). 미장착/미달 시 0.
+export function universalLuckBonusPctFor(
+  stats: Record<StatKey, number>,
+  equipped: ReadonlySet<string>,
+): number {
+  return stats.luk >= UNIVERSAL_LUCK_LUK_THRESHOLD &&
+    equipped.has(SKILL_NAMES.UNIVERSAL_LUCK)
+    ? Math.floor(stats.luk / UNIVERSAL_LUCK_LUK_DIVISOR)
     : 0;
 }
