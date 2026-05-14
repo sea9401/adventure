@@ -219,6 +219,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "운봉의 거인을 홀로 절반 이상 깎아낸 자. 산정의 메아리가 그를 기억한다.",
     condition: "운봉의 거인 협동 처치에서 누적 데미지 50% 이상 (legend 티어)",
   },
+  star_keeper: {
+    id: "star_keeper",
+    name: "별을 지킨 자",
+    description: "별의 첨탑 정상에 잠든 수호자를 홀로 절반 이상 깎아낸 자. 별빛이 그를 기억한다.",
+    condition: "별을 지키는 자 협동 처치에서 누적 데미지 50% 이상 (legend 티어)",
+  },
   level_30: {
     id: "level_30",
     name: "베테랑",

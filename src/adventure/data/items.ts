@@ -461,6 +461,24 @@ export const ITEMS = {
     rarity: "uncommon",
     tier: 3,
   } satisfies EquipItem,
+  // 운봉령 — 협동 보스 legend 티어에서 아주 낮은 확률로만 떨어지는 unique 액세서리 (물욕템).
+  // 모든 스탯이 한 결로 펴진 균형형 — 거래 불가, 자랑용.
+  peak_relic: {
+    name: "운봉령",
+    slot: "accessory",
+    stats: [
+      { label: "힘", value: "+3" },
+      { label: "민첩", value: "+3" },
+      { label: "활력", value: "+3" },
+      { label: "속도", value: "+3" },
+      { label: "행운", value: "+3" },
+    ],
+    bonus: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 },
+    description: "운봉의 거인 척추 한 마디에서 떼어낸 운봉석 결정. 다섯 결이 한 결로 펴져 손에 쥔 자의 모든 발이 같이 가벼워진다.",
+    rarity: "unique",
+    tradable: false,
+    tier: 3,
+  } satisfies EquipItem,
 
   // 다리 구간 장비 — 운저 평원 / 잿빛 협로. 운봉 라인과 화염 라인 사이의 빈 구간을 메운다.
   bison_hide_armor: {
@@ -578,6 +596,87 @@ export const ITEMS = {
     description: "화산의 심장에서 뽑아낸 가장 순수한 결정을 봉황 깃털로 감싼 구슬. 지니면 몸이 불꽃처럼 날렵해진다.",
     rarity: "uncommon",
     tier: 4,
+  } satisfies EquipItem,
+
+  // ── 별의 첨탑 무구 5종 — 별을 지키는 자 협동 처치 보상으로 풀리는 엔드 라인. ──
+  // 봉황·화산 라인의 한 단계 위. 무기 atk +13(검/방패) / +15(창/너클) 공통(제작 `일반` 기준) + 보조 stat.
+  star_blade: {
+    name: "별검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+13" },
+      { label: "힘", value: "+6" },
+    ],
+    bonus: { atk: 13, str: 6 },
+    description: "천공 합금을 별먼지에 담갔다가 단조한 한손 대검. 칼날에 별빛이 옅게 머문다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  star_aegis: {
+    name: "별의 방패",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+13" },
+      { label: "활력", value: "+7" },
+    ],
+    bonus: { atk: 13, vit: 7 },
+    description: "천공 합금을 겹쳐 별먼지로 무늬를 새긴 방패형 무기. 막아낼 때마다 별빛이 일렁인다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  star_lance: {
+    name: "별창",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+15" },
+      { label: "민첩", value: "+7" },
+    ],
+    bonus: { atk: 15, dex: 7 },
+    description: "별먼지로 균형을 잡고 천공 합금 창끝을 깎아 박은 긴 창. 끝에서 별빛이 가늘게 떨린다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  star_grip: {
+    name: "별의 너클",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+15" },
+      { label: "행운", value: "+7" },
+    ],
+    bonus: { atk: 15, luk: 7 },
+    description: "천공 합금을 깎아 손등에 채운 너클. 한 방 한 방이 별빛을 따라 떨어진다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  star_mantle: {
+    name: "별의 망토",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+6" },
+      { label: "속도", value: "+6" },
+    ],
+    bonus: { dex: 6, spd: 6 },
+    description: "별먼지를 짜낸 가느다란 실로 짠 가벼운 망토. 두르면 발걸음에 별빛이 따라 붙는다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  // 별빛 두루마기 — 별을 지키는 자 협동 legend 티어 확정 드랍 (물욕템).
+  // armor 슬롯을 채우는 전스탯 균형형 — 거래 불가, 자랑용.
+  star_robe: {
+    name: "별빛 두루마기",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+10" },
+      { label: "힘", value: "+4" },
+      { label: "민첩", value: "+4" },
+      { label: "활력", value: "+4" },
+      { label: "속도", value: "+4" },
+    ],
+    bonus: { def: 10, str: 4, dex: 4, vit: 4, spd: 4 },
+    description: "별을 지키는 자가 두르고 있던 망토가 그 잠을 깨운 자의 손에 닿자 별빛으로 결정화된 두루마기. 어느 스탯에도 치우치지 않은 옛 천공인의 유물.",
+    rarity: "unique",
+    tradable: false,
+    tier: 5,
   } satisfies EquipItem,
 
   // ── 히든 퀘스트 보상 (§11) — 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────

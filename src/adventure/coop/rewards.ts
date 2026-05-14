@@ -2,6 +2,7 @@
 // 운봉의 거인 협동 한 보스 한정 (다른 보스 추가 시 보스별 분기 추가).
 
 import type { MaterialId } from "@/adventure/data/materials";
+import type { ItemId } from "@/adventure/data/items";
 import type { CoopRewardTier } from "./data";
 
 export type CoopReward = {
@@ -12,6 +13,8 @@ export type CoopReward = {
   recipeOneOf?: string[];
   /** 추가 굴림: { recipeId, chance } — chance 비율로 학습 시도. */
   recipeRolls?: { recipeId: string; chance: number }[];
+  /** 장비 드랍 굴림: { itemId, chance } — chance 비율로 그 장비를 인벤토리에 추가. legend 티어의 물욕 드랍용. */
+  equipRolls?: { itemId: ItemId; chance: number }[];
   /** 부여할 칭호. */
   titleId?: string;
 };
@@ -39,11 +42,42 @@ const PEAK_GIANT_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
     materials: {},
     recipes: [],
     titleId: "giant_slayer",
+    // 물욕 드랍 — legend 도달자에게도 아주 낮은 확률로만 떨어지는 unique 액세서리.
+    equipRolls: [{ itemId: "peak_relic", chance: 0.02 }],
+  },
+};
+
+const STAR_KEEPER_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
+  bronze: {
+    materials: { stardust: 2 },
+    recipes: [],
+  },
+  silver: {
+    materials: { sky_alloy: 1 },
+    recipes: [],
+  },
+  gold: {
+    materials: { stardust: 2, sky_alloy: 1 },
+    recipes: [],
+    recipeOneOf: ["star_blade", "star_aegis", "star_lance", "star_grip"],
+    recipeRolls: [{ recipeId: "star_mantle", chance: 0.15 }],
+  },
+  epic: {
+    materials: { sky_alloy: 1 },
+    recipes: [],
+  },
+  legend: {
+    materials: {},
+    recipes: [],
+    titleId: "star_keeper",
+    // 물욕 드랍 — legend 도달자에게도 아주 낮은 확률로만 떨어지는 armor 슬롯 unique.
+    equipRolls: [{ itemId: "star_robe", chance: 0.01 }],
   },
 };
 
 const TIER_TABLES: Record<string, Record<CoopRewardTier, CoopReward>> = {
   "운봉의 거인": PEAK_GIANT_TIER_REWARDS,
+  "별을 지키는 자": STAR_KEEPER_TIER_REWARDS,
 };
 
 const TIER_ORDER: CoopRewardTier[] = ["bronze", "silver", "gold", "epic", "legend"];
@@ -72,6 +106,9 @@ export function computeCoopReward(
     }
     if (r.recipeRolls) {
       out.recipeRolls = [...(out.recipeRolls ?? []), ...r.recipeRolls];
+    }
+    if (r.equipRolls) {
+      out.equipRolls = [...(out.equipRolls ?? []), ...r.equipRolls];
     }
     if (r.titleId) out.titleId = r.titleId;
     if (t === tier) break;

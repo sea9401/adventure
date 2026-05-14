@@ -681,6 +681,78 @@ export const MONSTERS: Record<string, Monster> = {
     },
     onDefeatFlag: "volcano_heart_defeated",
   },
+  // ── 별의 첨탑 (starspire) — 천공 성지 위 Lv70 구간. 협동 보스 별을 지키는 자. ─────
+  "별빛 정찰자": {
+    name: "별빛 정찰자",
+    tags: ["spirit"],
+    hp: 720,
+    atk: 64,
+    def: 30,
+    spd: 12,
+    evasionPct: 25,
+    exp: 110,
+    drops: [
+      { kind: "material", materialId: "stardust", chance: 0.008 },
+    ],
+    skill: { kind: "pierce", name: "별빛 일섬", armorPierce: 4 },
+  },
+  "구름 사냥꾼": {
+    name: "구름 사냥꾼",
+    tags: ["beast"],
+    hp: 900,
+    atk: 68,
+    def: 38,
+    spd: 7,
+    exp: 120,
+    drops: [
+      { kind: "material", materialId: "stardust", chance: 0.012 },
+    ],
+    skill: { kind: "heavy_blow", name: "구름 가르기", everyPhases: 3, multiplier: 1.5 },
+  },
+  "운명 직조자": {
+    name: "운명 직조자",
+    tags: ["spirit"],
+    hp: 850,
+    atk: 78,
+    def: 32,
+    spd: 8,
+    exp: 130,
+    drops: [
+      { kind: "material", materialId: "stardust", chance: 0.01 },
+      { kind: "material", materialId: "sky_alloy", chance: 0.005 },
+    ],
+    skill: { kind: "enrage", name: "운명의 실", hpFraction: 0.4, atkBonus: 10 },
+  },
+  // 별의 첨탑 협동 보스 — coop/data.ts 의 COOP_BOSSES 로 등장. region.boss 없이 coop UI 로만 진입.
+  // solo stat 은 시뮬·테스트 용도 (coop maxHp 는 coop/data.ts 의 20000).
+  "별을 지키는 자": {
+    name: "별을 지키는 자",
+    tags: ["spirit"],
+    hp: 1700,
+    atk: 92,
+    def: 45,
+    spd: 7,
+    exp: 500,
+    drops: [
+      { kind: "material", materialId: "stardust", chance: 1, amount: 6 },
+      { kind: "material", materialId: "sky_alloy", chance: 1, amount: 2 },
+      {
+        kind: "recipe_one_of",
+        recipeIds: ["star_blade", "star_aegis", "star_lance", "star_grip"],
+        chance: 1,
+      },
+      { kind: "recipe", recipeId: "star_mantle", chance: 0.15 },
+    ],
+    dropQualityBias: 4,
+    armorVulnerable: 0.3,
+    playerDefVulnerable: 0.25,
+    phaseTrigger: {
+      hpFraction: 0.4,
+      defBonus: 8,
+      message: "별을 지키는 자의 갑주가 별빛으로 빛난다.",
+    },
+    onDefeatFlag: "starspire_keeper_defeated",
+  },
   // ── 해안 지선 (조수 갯벌 / 산호초 섬) ───────────────────────────────────
   // 폐허(Lv9)~산기슭(Lv18) 사이에 놓이는 바닷길 잡몹. 갯벌 ≈ 폐허 난이도, 섬 ≈ 산기슭 난이도.
   "집게발 게": {

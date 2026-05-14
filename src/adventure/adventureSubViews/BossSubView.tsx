@@ -51,6 +51,7 @@ export function BossSubView() {
               addMaterial: inventory.addMaterial,
               learnRecipe: crafting.learnRecipe,
               knowsRecipe: crafting.knows,
+              addEquipment: inventory.addEquipment,
               markTitleObtained: adventureLog.markTitleObtained,
             })
           }
