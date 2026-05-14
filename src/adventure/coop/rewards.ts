@@ -42,8 +42,35 @@ const PEAK_GIANT_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
   },
 };
 
+const STAR_KEEPER_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
+  bronze: {
+    materials: { stardust: 2 },
+    recipes: [],
+  },
+  silver: {
+    materials: { sky_alloy: 1 },
+    recipes: [],
+  },
+  gold: {
+    materials: { stardust: 2, sky_alloy: 1 },
+    recipes: [],
+    recipeOneOf: ["star_blade", "star_aegis", "star_lance", "star_grip"],
+    recipeRolls: [{ recipeId: "star_mantle", chance: 0.15 }],
+  },
+  epic: {
+    materials: { sky_alloy: 1 },
+    recipes: [],
+  },
+  legend: {
+    materials: {},
+    recipes: [],
+    titleId: "star_keeper",
+  },
+};
+
 const TIER_TABLES: Record<string, Record<CoopRewardTier, CoopReward>> = {
   "운봉의 거인": PEAK_GIANT_TIER_REWARDS,
+  "별을 지키는 자": STAR_KEEPER_TIER_REWARDS,
 };
 
 const TIER_ORDER: CoopRewardTier[] = ["bronze", "silver", "gold", "epic", "legend"];

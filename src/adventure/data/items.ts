@@ -580,6 +580,69 @@ export const ITEMS = {
     tier: 4,
   } satisfies EquipItem,
 
+  // ── 별의 첨탑 무구 5종 — 별을 지키는 자 협동 처치 보상으로 풀리는 엔드 라인. ──
+  // 봉황·화산 라인의 한 단계 위. 무기 atk +13(검/방패) / +15(창/너클) 공통(제작 `일반` 기준) + 보조 stat.
+  star_blade: {
+    name: "별검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+13" },
+      { label: "힘", value: "+6" },
+    ],
+    bonus: { atk: 13, str: 6 },
+    description: "천공 합금을 별먼지에 담갔다가 단조한 한손 대검. 칼날에 별빛이 옅게 머문다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  star_aegis: {
+    name: "별의 방패",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+13" },
+      { label: "활력", value: "+7" },
+    ],
+    bonus: { atk: 13, vit: 7 },
+    description: "천공 합금을 겹쳐 별먼지로 무늬를 새긴 방패형 무기. 막아낼 때마다 별빛이 일렁인다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  star_lance: {
+    name: "별창",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+15" },
+      { label: "민첩", value: "+7" },
+    ],
+    bonus: { atk: 15, dex: 7 },
+    description: "별먼지로 균형을 잡고 천공 합금 창끝을 깎아 박은 긴 창. 끝에서 별빛이 가늘게 떨린다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  star_grip: {
+    name: "별의 너클",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+15" },
+      { label: "행운", value: "+7" },
+    ],
+    bonus: { atk: 15, luk: 7 },
+    description: "천공 합금을 깎아 손등에 채운 너클. 한 방 한 방이 별빛을 따라 떨어진다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  star_mantle: {
+    name: "별의 망토",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+6" },
+      { label: "속도", value: "+6" },
+    ],
+    bonus: { dex: 6, spd: 6 },
+    description: "별먼지를 짜낸 가느다란 실로 짠 가벼운 망토. 두르면 발걸음에 별빛이 따라 붙는다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+
   // ── 히든 퀘스트 보상 (§11) — 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────
   // 월광검: 볼드 ↔ 만월 옛 합작 무기를 마저 완성한 것(hidden-blacksmith-duel). 운봉 무기 한 칸 위.
   moonlight_blade: {

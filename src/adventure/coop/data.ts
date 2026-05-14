@@ -28,6 +28,14 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     onDefeatFlag: "peak_giant_defeated",
     onAttackFlag: "peak_giant_engaged",
   },
+  starspire: {
+    monsterName: "별을 지키는 자",
+    maxHp: 20000,
+    expirationMs: 24 * 60 * 60 * 1000, // 24h
+    respawnMs: 1 * 60 * 60 * 1000, // 1h
+    onDefeatFlag: "starspire_keeper_defeated",
+    onAttackFlag: "starspire_engaged",
+  },
 };
 
 // 5단계 reward tier — 누적 데미지 / maxHp 비율 임계.

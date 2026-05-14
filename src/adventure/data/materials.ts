@@ -221,6 +221,21 @@ export const MATERIALS = {
     price: 12,
     inShop: false,
   },
+  // ── 별의 첨탑 재료 ───────────────────────────────────────────────────────
+  stardust: {
+    id: "stardust",
+    name: "별먼지",
+    description: "별빛이 흩어져 가라앉은 미세한 가루. 모아 두면 손바닥에서 옅게 빛난다.",
+    price: 45,
+    inShop: false,
+  },
+  sky_alloy: {
+    id: "sky_alloy",
+    name: "천공 합금",
+    description: "옛 천공인이 별빛 아래에서 단조했다 전해지는 가벼우면서 단단한 금속. 첨탑 안에서만 마주칠 수 있다.",
+    price: 80,
+    inShop: false,
+  },
   // 통화성 재료 — 잉여 장비/재료를 대장간 분해실에서 갈아내면 가루처럼 부서지며 쌓인다.
   // 어디든 통하는 작은 마력의 결정이라, 회복약 라인의 통합 재료로 쓰인다.
   // inShop: false (상점 미취급) — 분해로만 얻고, 회복약 제작으로 소진한다.

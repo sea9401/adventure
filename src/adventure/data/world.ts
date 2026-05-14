@@ -17,6 +17,7 @@ export type RegionId =
   | "phoenix_ridge"
   | "volcanic_badlands"
   | "skyreach"
+  | "starspire"
   // 해안 지선 (디올라에서 남쪽으로 갈라지는 막다른 라인)
   | "tideflats"
   | "saltmarsh"
@@ -338,6 +339,21 @@ export const WORLD_MAP: WorldMap = {
       tags: ["town"],
       recommendedLevel: 60,
     },
+    {
+      id: "starspire",
+      name: "별의 첨탑",
+      description:
+        "천공 성지의 옛 문이 다시 열리며 드러난, 별빛을 떠받친다 전해지는 천공 첨탑. 구름층 너머에 떠 있는 옛 천공인의 군도와 첨탑 정상에는 봉인된 수호자가 잠들어 있다.",
+      position: { x: 2540, y: 60 },
+      biome: "mountain",
+      enemies: ["별빛 정찰자", "구름 사냥꾼", "운명 직조자"],
+      encounterWeights: {
+        "별빛 정찰자": 35,
+        "구름 사냥꾼": 40,
+        "운명 직조자": 25,
+      },
+      recommendedLevel: 70,
+    },
     // ── 해안 지선 (diola → tideflats → saltmarsh → reef_isle) ───────────────
     // 폐허(Lv9)~산기슭(Lv18) 구간에 산으로 가는 길과 나란히 놓인 막다른 바닷길.
     // 디올라(660,80) 남쪽 빈 공간으로 내려가며, height 를 640 으로 늘려 자리를 만든다.
@@ -529,6 +545,12 @@ export const WORLD_MAP: WorldMap = {
         flagId: "volcano_heart_defeated",
         reason: "화산의 심장을 쓰러뜨려야 성지로 가는 길이 열린다.",
       },
+    },
+    // 별의 첨탑 — 천공 성지에서 첨탑으로. trial 5번으로 진입.
+    {
+      from: "skyreach",
+      to: "starspire",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "starspire" },
     },
     // 해안 지선 (diola → tideflats → saltmarsh → reef_isle).
     // 산호초 섬은 뱃사공 해랑이 배를 내줘야 — 소만 원로 여울의 신임을 얻고(saltmarsh_vouched),
