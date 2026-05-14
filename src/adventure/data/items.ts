@@ -679,6 +679,70 @@ export const ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
+  // ── 별빛 회랑 무구 5종 (Lv75) — star 와 aether 사이 중간 tier. ──
+  // 무기 atk +14(검/방패) / +16(창/너클). 별 무구 한 자루를 잡아 회랑의 별빛 + 합금으로 보강.
+  corridor_blade: {
+    name: "회랑검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+14" },
+      { label: "힘", value: "+7" },
+    ],
+    bonus: { atk: 14, str: 7 },
+    description: "별빛 회랑에 떨어진 회랑 정찰자의 잔재를 별검 위에 한 결 더 입힌 칼. 별빛의 결이 손잡이까지 따라 흐른다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  corridor_aegis: {
+    name: "회랑 방패",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+14" },
+      { label: "활력", value: "+8" },
+    ],
+    bonus: { atk: 14, vit: 8 },
+    description: "별의 방패에 회랑의 별빛 합금을 한 겹 더 두른 방패형 무기. 회랑의 결이 충격을 가른다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  corridor_lance: {
+    name: "회랑창",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+16" },
+      { label: "민첩", value: "+8" },
+    ],
+    bonus: { atk: 16, dex: 8 },
+    description: "별창 끝에 회랑의 별빛을 압축해 박은 긴 창. 끝에서 회랑의 결이 가늘게 떨린다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  corridor_grip: {
+    name: "회랑 너클",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+16" },
+      { label: "행운", value: "+8" },
+    ],
+    bonus: { atk: 16, luk: 8 },
+    description: "별의 너클을 한 번 풀어 회랑의 별빛 결로 다시 새긴 너클. 한 방 한 방이 회랑을 닮은 결을 낸다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  corridor_mantle: {
+    name: "회랑 망토",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+7" },
+      { label: "속도", value: "+7" },
+      { label: "활력", value: "+2" },
+    ],
+    bonus: { dex: 7, spd: 7, vit: 2 },
+    description: "별의 망토에 회랑의 별빛 실을 한 결 더 짜낸 가벼운 망토. 두르면 발걸음에 회랑의 결이 따라 붙는다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+
   // ── 선인의 폐도 무구 5종 — 천공인의 왕 협동 처치 보상 (별 라인의 한 단계 위). ──
   // 무기 atk +16(검/방패) / +18(창/너클) 공통(제작 `일반` 기준) + 보조 스탯.
   aether_blade: {
@@ -760,6 +824,70 @@ export const ITEMS = {
     description: "옛 천공인의 마지막 왕이 별빛에 두고 떠난 관. 닿은 자는 어느 결로도 꺾이지 않는다.",
     rarity: "unique",
     tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+
+  // ── 옥좌의 길 무구 5종 (Lv85) — aether 와 empyrean 사이 중간 tier. ──
+  // 무기 atk +18(검/방패) / +20(창/너클). 에테르 무구를 잡아 황성 합금 + 별의 결로 다시 단조.
+  road_blade: {
+    name: "황성검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+18" },
+      { label: "힘", value: "+9" },
+    ],
+    bonus: { atk: 18, str: 9 },
+    description: "옥좌의 길에서 무너진 황성 호위병의 칼을 에테르검 위에 한 겹 더 입힌 한손 대검. 휘두를 때마다 황성의 결이 칼날을 따라 흐른다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  road_aegis: {
+    name: "황성 방패",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+18" },
+      { label: "활력", value: "+10" },
+    ],
+    bonus: { atk: 18, vit: 10 },
+    description: "에테르 방패에 황성 호위병이 두르고 있던 보호의 결을 한 겹 더 두른 방패형 무기. 막아낼 때마다 황성의 결이 충격을 흩는다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  road_lance: {
+    name: "황성창",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+20" },
+      { label: "민첩", value: "+10" },
+    ],
+    bonus: { atk: 20, dex: 10 },
+    description: "에테르창 끝에 황성의 결을 압축해 박은 긴 창. 끝에서 옥좌가 빛을 떨군다는 그 결이 가늘게 떨린다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  road_grip: {
+    name: "황성 너클",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+20" },
+      { label: "행운", value: "+10" },
+    ],
+    bonus: { atk: 20, luk: 10 },
+    description: "에테르 너클에 황성 호위병의 한 결을 더 새긴 너클. 한 방 한 방이 옥좌로 가는 길을 닮은 결을 낸다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  road_mantle: {
+    name: "황성 망토",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+8" },
+      { label: "속도", value: "+8" },
+      { label: "활력", value: "+4" },
+    ],
+    bonus: { dex: 8, spd: 8, vit: 4 },
+    description: "에테르 망토에 황성의 결을 한 줄 더 짜낸 가벼운 망토. 두르면 어깨에 옥좌로 가는 길의 결이 얹힌다.",
+    rarity: "uncommon",
     tier: 5,
   } satisfies EquipItem,
 
