@@ -1,9 +1,16 @@
+import { useState } from "react";
 import { Sparkle, Star } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { STAT_KEYS, STAT_LABELS, type StatKey } from "@/adventure/data/stats";
+import { TabBar } from "@/components/ui/TabBar";
+import { STAT_LABELS, type StatKey } from "@/adventure/data/stats";
 import { statOfSkill } from "./skills";
 import type { Skill } from "./types";
+
+// 미장착 스킬 목록의 탭 키 — "feat" 은 특기, 나머지는 STAT_LABELS 와 동일한 stat key.
+// 순서: 특기 / 힘 / 활력 / 민첩 / 속도 / 행운 (STAT_KEYS 기본 순서와 다름 — 사용자 요청).
+type SkillTabKey = "feat" | StatKey;
+const SKILL_TAB_ORDER: SkillTabKey[] = ["feat", "str", "vit", "dex", "spd", "luk"];
 
 // 보유 스킬을 슬롯으로 관리. 슬롯에 들어간 스킬만 전투에서 발동.
 // 일반 슬롯(normalSlots, 3~5) + 특기 전용 슬롯(featSlots, 0~2).
@@ -108,112 +115,148 @@ export function SkillsView({
         </ul>
       </Card>
 
-      {unequippedSkills.length > 0 && (
-        <Card as="section" padding="md">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            보유 (미장착)
-          </h3>
-          <UnequippedSkillsByStat
-            skills={unequippedSkills}
-            slotsFull={slotsFull}
-            onEquip={onEquip}
-          />
-        </Card>
-      )}
-
-      {featSlotOpen && unequippedFeats.length > 0 && (
-        <Card as="section" padding="md">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            특기 (특기 슬롯 전용 — {featSlots}개까지 장착)
-          </h3>
-          <ul className="space-y-2">
-            {unequippedFeats.map((f) => (
-              <ListRow
-                key={f.name}
-                skill={f}
-                icon={
-                  <Star
-                    size={18}
-                    weight="duotone"
-                    className="mt-0.5 shrink-0 text-violet-400 dark:text-violet-500"
-                  />
-                }
-                actionLabel="장착"
-                disabled={featSlotsFull}
-                onAction={onEquipFeat ? () => onEquipFeat(f.name) : undefined}
-              />
-            ))}
-          </ul>
-        </Card>
+      {(unequippedSkills.length > 0 ||
+        (featSlotOpen && unequippedFeats.length > 0)) && (
+        <UnequippedSkillsTabs
+          unequippedSkills={unequippedSkills}
+          unequippedFeats={unequippedFeats}
+          featSlotOpen={featSlotOpen}
+          featSlots={featSlots}
+          slotsFull={slotsFull}
+          featSlotsFull={featSlotsFull}
+          onEquip={onEquip}
+          onEquipFeat={onEquipFeat}
+        />
       )}
     </div>
   );
 }
 
-// 미장착 스킬을 소속 스탯별로 묶어 표시. STAT_KEYS 순서를 유지(STR→DEX→VIT→SPD→LUK).
-// statOfSkill 이 null 인 항목(이론상 없어야 함)은 "기타" 섹션에 떨어진다.
-function UnequippedSkillsByStat({
-  skills,
+// 미장착 스킬 + 특기를 하나의 카드 안 탭으로 묶어 보여준다. 탭 순서는 특기 → 힘 → 활력
+// → 민첩 → 속도 → 행운. 특기 슬롯이 닫혀 있으면(featSlotOpen=false) 특기 탭은 숨김.
+// 각 탭에 해당 카테고리의 개수를 라벨에 함께 표시.
+function UnequippedSkillsTabs({
+  unequippedSkills,
+  unequippedFeats,
+  featSlotOpen,
+  featSlots,
   slotsFull,
+  featSlotsFull,
   onEquip,
+  onEquipFeat,
 }: {
-  skills: Skill[];
+  unequippedSkills: Skill[];
+  unequippedFeats: Skill[];
+  featSlotOpen: boolean;
+  featSlots: number;
   slotsFull: boolean;
+  featSlotsFull: boolean;
   onEquip?: (name: string) => void;
+  onEquipFeat?: (name: string) => void;
 }) {
-  const groups = new Map<StatKey | "other", Skill[]>();
-  for (const s of skills) {
+  // 스탯별 버킷 — 한 번만 분류.
+  const byStat: Record<StatKey, Skill[]> = {
+    str: [],
+    dex: [],
+    vit: [],
+    spd: [],
+    luk: [],
+  };
+  for (const s of unequippedSkills) {
     const stat = statOfSkill(s.name);
-    const key: StatKey | "other" = stat ?? "other";
-    const arr = groups.get(key);
-    if (arr) arr.push(s);
-    else groups.set(key, [s]);
+    if (stat) byStat[stat].push(s);
   }
+
+  const countOf = (key: SkillTabKey): number =>
+    key === "feat" ? unequippedFeats.length : byStat[key].length;
+  const labelOf = (key: SkillTabKey): string => {
+    const base = key === "feat" ? "특기" : STAT_LABELS[key];
+    return `${base} ${countOf(key)}`;
+  };
+
+  // 특기 슬롯이 닫혀 있으면 특기 탭은 노출하지 않음.
+  const visibleTabs = SKILL_TAB_ORDER.filter(
+    (k) => k !== "feat" || featSlotOpen,
+  );
+  const tabs = visibleTabs.map((key) => ({ key, label: labelOf(key) }));
+
+  // 기본 활성 탭 = 첫 노출 탭 (특기 슬롯 열려 있으면 "feat", 아니면 "str").
+  const [active, setActive] = useState<SkillTabKey>(visibleTabs[0]);
+
   return (
-    <div className="space-y-3">
-      {STAT_KEYS.map((k) => {
-        const list = groups.get(k);
-        if (!list || list.length === 0) return null;
-        return (
-          <div key={k}>
-            <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              {STAT_LABELS[k]}
-            </div>
+    <Card as="section" padding="md">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        보유 (미장착)
+      </h3>
+      <TabBar
+        tabs={tabs}
+        active={active}
+        onChange={setActive}
+        ariaLabel="미장착 스킬 카테고리"
+        size="sm"
+        scrollable
+        className="mb-3"
+      />
+      {active === "feat" ? (
+        unequippedFeats.length === 0 ? (
+          <EmptyTabHint>
+            장착할 수 있는 특기가 없습니다. 두 요구 스탯을 함께 올리면 새 특기가
+            해금됩니다.
+          </EmptyTabHint>
+        ) : (
+          <>
+            <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
+              특기 슬롯 전용 — {featSlots}개까지 장착
+            </p>
             <ul className="space-y-2">
-              {list.map((s) => (
+              {unequippedFeats.map((f) => (
                 <ListRow
-                  key={s.name}
-                  skill={s}
+                  key={f.name}
+                  skill={f}
+                  icon={
+                    <Star
+                      size={18}
+                      weight="duotone"
+                      className="mt-0.5 shrink-0 text-violet-400 dark:text-violet-500"
+                    />
+                  }
                   actionLabel="장착"
-                  disabled={slotsFull}
-                  onAction={onEquip ? () => onEquip(s.name) : undefined}
+                  disabled={featSlotsFull}
+                  onAction={
+                    onEquipFeat ? () => onEquipFeat(f.name) : undefined
+                  }
                 />
               ))}
             </ul>
-          </div>
-        );
-      })}
-      {groups.get("other") && groups.get("other")!.length > 0 && (
-        <div>
-          <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            기타
-          </div>
-          <ul className="space-y-2">
-            {groups.get("other")!.map((s) => (
-              <ListRow
-                key={s.name}
-                skill={s}
-                actionLabel="장착"
-                disabled={slotsFull}
-                onAction={onEquip ? () => onEquip(s.name) : undefined}
-              />
-            ))}
-          </ul>
-        </div>
+          </>
+        )
+      ) : byStat[active].length === 0 ? (
+        <EmptyTabHint>{STAT_LABELS[active]} 계열 보유 스킬이 없습니다.</EmptyTabHint>
+      ) : (
+        <ul className="space-y-2">
+          {byStat[active].map((s) => (
+            <ListRow
+              key={s.name}
+              skill={s}
+              actionLabel="장착"
+              disabled={slotsFull}
+              onAction={onEquip ? () => onEquip(s.name) : undefined}
+            />
+          ))}
+        </ul>
       )}
-    </div>
+    </Card>
   );
 }
+
+function EmptyTabHint({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 px-3 py-4 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
+      {children}
+    </p>
+  );
+}
+
 
 function SlotRow({
   skill,
