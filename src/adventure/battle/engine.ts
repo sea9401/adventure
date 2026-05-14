@@ -122,6 +122,8 @@ export type PlayerCombat = {
   guard?: { turns: number; reduction: number };
   // 재생 — interval 턴마다 HP +amount. 둘 다 0 이면 스킬 미보유.
   regen?: { interval: number; amount: number };
+  // 자연회복 — 모든 빌드 공통 상시 baseline. interval 턴마다 HP +amount.
+  baselineRegen?: { interval: number; amount: number };
   // 처형 — 적 HP 비율이 hpFraction 미만일 때 데미지 ×mult. mult <= 1 또는 hpFraction <= 0 = 미보유.
   executionDamageMult?: number;
   executionHpFraction?: number;
@@ -340,6 +342,29 @@ function applyRegenIfAny(
   };
 }
 
+// 자연회복 — 모든 빌드 공통. applyRegenIfAny 와 같은 로직, 다른 interval/amount.
+function applyBaselineRegenIfAny(
+  state: BattleState,
+  player: PlayerCombat,
+  playerName: string,
+): BattleState {
+  const r = player.baselineRegen;
+  if (!r || r.interval <= 0 || r.amount <= 0) return state;
+  if (state.completedPlayerTurns === 0) return state;
+  if (state.completedPlayerTurns % r.interval !== 0) return state;
+  if (state.playerHp >= state.playerMaxHp) return state;
+  const newHp = Math.min(state.playerMaxHp, state.playerHp + r.amount);
+  const actual = newHp - state.playerHp;
+  return {
+    ...state,
+    playerHp: newHp,
+    log: appendLog(state.log, {
+      kind: "info",
+      text: `[자연회복] ${playerName}의 HP +${actual}`,
+    }),
+  };
+}
+
 // 부가 공격(분신/난무 등) 1회 — 데미지 적용 + 페이즈 트리거 + 사망 처리. 크리/강공격/브레이스 등 미적용 (반격과 동일하게 단순 데미지).
 function dealExtraEnemyDamage(
   state: BattleState,
@@ -434,6 +459,7 @@ function finishPlayerTurn(
       }),
     };
   }
+  st = applyBaselineRegenIfAny(st, player, playerName);
   return applyRegenIfAny(st, player, playerName);
 }
 

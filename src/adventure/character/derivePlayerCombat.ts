@@ -62,6 +62,7 @@ import {
   rampagePerTurnFor,
   reflexEvadeMultFor,
   regenFor,
+  baselineRegenFor,
   riposteExtraAttacksFor,
   shadowCloneAtkPctFor,
   shadowLegionExtraClonesFor,
@@ -237,6 +238,7 @@ export function derivePlayerCombat(
     doubleLuck: doubleLuckBonusesFor(totalStats, effectiveSkillSet),
     guard: guardFor(totalStats, effectiveSkillSet),
     regen: regenFor(totalStats, effectiveSkillSet),
+    baselineRegen: baselineRegenFor(maxHp),
     executionDamageMult: executionDamageMultFor(totalStats, effectiveSkillSet),
     executionHpFraction: executionHpFractionFor(totalStats, effectiveSkillSet),
     precisionEvasionMult: precisionEvasionMultFor(
