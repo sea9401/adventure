@@ -129,13 +129,13 @@ export const GUARD_REDUCTION_VIT_DIVISOR = 10;
 // 효과: 매 REGEN_INTERVAL 플레이어 턴 종료 시 HP +floor(VIT × REGEN_HP_PER_VIT).
 // VIT 비례라 후반에도 유효 — VIT 20=+10 / 40=+20 / 70=+35.
 export const REGEN_VIT_THRESHOLD = 20;
-export const REGEN_INTERVAL = 5;
-export const REGEN_HP_PER_VIT = 0.5;
+export const REGEN_INTERVAL = 4;
+export const REGEN_HP_PER_VIT = 0.25;
 
 // 연타 — 속도 10 도달 시 획득.
 // 4턴마다 그 턴의 마지막 공격 후 추가 1회 공격.
 export const DOUBLE_STRIKE_SPD_THRESHOLD = 10;
-export const DOUBLE_STRIKE_INTERVAL = 4;
+export const DOUBLE_STRIKE_INTERVAL = 3;
 
 // 기습 — 속도 20 도달 시 획득.
 // 효과: 전투 첫 플레이어 턴, 추가 공격 (1 + floor(SPD/50))회.
@@ -221,7 +221,7 @@ export const HEAVEN_DECREE_HP_PCT = 5;
 // 막다른 격노 — 전투 RAMPAGE_START_TURN 턴 경과 후, 매 플레이어 턴 종료 시 ATK 영구 누적 +floor(STR/RAMPAGE_ATK_STR_DIVISOR).
 // 그 전투 동안 유지 (다음 전투 리셋). 장기전(보스) 보상.
 export const RAMPAGE_STR_THRESHOLD = 65;
-export const RAMPAGE_START_TURN = 5;
+export const RAMPAGE_START_TURN = 3;
 export const RAMPAGE_ATK_STR_DIVISOR = 12;
 // 약점 분석 — 매 플레이어 턴 종료 시 적 ATK·DEF 각각 -floor(DEX/ANALYSIS_DEX_DIVISOR) (최소 0 클램프, 누적).
 export const ANALYSIS_DEX_THRESHOLD = 65;
@@ -343,7 +343,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.REGEN,
-      description: `${REGEN_INTERVAL}턴마다 HP +(VIT × ${REGEN_HP_PER_VIT}) 회복 — VIT 20=+10`,
+      description: `${REGEN_INTERVAL}턴마다 HP +(VIT × ${REGEN_HP_PER_VIT}) 회복 — VIT 20=+5`,
       activationThreshold: REGEN_VIT_THRESHOLD,
     },
     {
