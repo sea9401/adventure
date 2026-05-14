@@ -14,7 +14,6 @@ import { EntryCard } from "@/components/ui/EntryCard";
 import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { ServerFeedView } from "@/adventure/log/ServerFeedView";
 import { COOP_BOSSES } from "@/adventure/coop/data";
-import { TowerModal } from "@/adventure/tower/TowerModal";
 import {
   PilgrimMarkDialogue,
   pilgrimMarkStep,
@@ -32,13 +31,10 @@ export function AdventureHome() {
     quests,
     storyFlags,
     completeQuest,
-    playerStatus,
-    characterStateHook,
   } = useGame();
 
   // 순례자의 자취(§11.1) — 통과 지역에서 표식이 surfacing 되는지 + 다이얼로그 열림 상태.
   const [pilgrimMarkOpen, setPilgrimMarkOpen] = useState(false);
-  const [towerOpen, setTowerOpen] = useState(false);
   const pilgrimMark = pilgrimMarkStep(currentRegion.id, quests, storyFlags);
   const isTower = currentRegion.tags?.includes("tower") ?? false;
 
@@ -156,7 +152,7 @@ export function AdventureHome() {
             icon={<Crown size={28} weight="duotone" className="text-amber-500" />}
             title="고탑 도전"
             description="영원히 끝나지 않는 수직 미궁. 일일 3회 도전."
-            onClick={() => setTowerOpen(true)}
+            onClick={() => setSubView("tower")}
           />
         )}
         <EntryCard
@@ -173,18 +169,6 @@ export function AdventureHome() {
         />
       </div>
       <ServerFeedView />
-      {towerOpen && (
-        <TowerModal
-          onClose={() => setTowerOpen(false)}
-          playerName={character.name}
-          playerStatus={playerStatus}
-          onApplied={(r) => {
-            if (r.character && typeof r.character.gold === "number") {
-              characterStateHook.replaceFromSaved(r.character);
-            }
-          }}
-        />
-      )}
       {pilgrimMarkOpen && (
         <PilgrimMarkDialogue
           currentRegionId={currentRegion.id}

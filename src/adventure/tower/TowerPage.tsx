@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowsClockwise, Coins, Crown, Skull, Star, X } from "@phosphor-icons/react";
+import { ArrowsClockwise, Coins, Skull, Star } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
-import { useEscapeKey } from "@/lib/useEscapeKey";
+import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import type { BattleState } from "@/adventure/battle/engine";
 import {
   BattleScene,
@@ -28,9 +28,12 @@ import { milestoneFor } from "./rewards";
 import { TOWER_DAILY_ATTEMPTS, type TowerState } from "./types";
 import { useTower, type TowerApiResponse } from "./useTower";
 
-// 고탑 진입 모달 — 한 컴포넌트 안에서 entry / ready / result / run_ended 화면을 전환.
+// 고탑 진입 페이지 — 한 컴포넌트 안에서 entry / ready / result / run_ended 화면을 전환.
 // 전투는 서버 측 resolveBattle 이 수행. 클라는 의도(fight_floor) 만 보내고 응답으로 받은
 // BattleState 를 BattleScene 에 그대로 넘긴다 (anti-cheat).
+//
+// 페이지 형태로 운영 — 이전엔 모달이었으나 모달 안에서 상태 갱신이 한 박자 늦어 화면이
+// 어긋나는 사례가 있어 서브뷰 페이지로 전환 (router.push ?sub=tower).
 
 type View =
   | { kind: "entry" } // 시작 또는 이어하기 선택
@@ -38,13 +41,13 @@ type View =
   | { kind: "result"; outcome: "win" | "lose"; floor: number; enemy: Monster; finalState: BattleState }
   | { kind: "run_ended"; lastFloor: number };
 
-export function TowerModal({
-  onClose,
+export function TowerPage({
+  onBack,
   playerName,
   playerStatus,
   onApplied,
 }: {
-  onClose: () => void;
+  onBack: () => void;
   playerName: string;
   /** BattleScene 의 HUD (MP/EXP 바, 캐릭터 아바타) 에 필요한 상태. */
   playerStatus: BattlePlayerStatus;
@@ -53,135 +56,105 @@ export function TowerModal({
 }) {
   const tower = useTower({ onApplied });
   const [view, setView] = useState<View>({ kind: "entry" });
-  useEscapeKey(onClose);
 
   const state = tower.state;
   const runActive = state.run !== null;
 
-  // 결과 화면에선 BattleScene 을 넣어야 해서 모달을 더 넓게 — 그 외엔 컴팩트.
-  const wide = view.kind === "result";
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tower-modal-title"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-[90vh] overflow-y-auto rounded-lg border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950`}
-      >
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div>
-            <h2
-              id="tower-modal-title"
-              className="flex items-center gap-1.5 text-base font-semibold text-zinc-900 dark:text-zinc-100"
-            >
-              <Crown size={18} weight="duotone" className="text-amber-500" />
-              고탑
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              영원히 끝나지 않는 수직 미궁. 10층마다 보스가 길을 막는다.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="닫기"
-            className="shrink-0 rounded-md p-1 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
-          >
-            <X size={18} weight="bold" />
-          </button>
-        </div>
+    <div className="space-y-3">
+      <SubViewHeader title="고탑" onBack={onBack} />
+      <Card padding="md">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          영원히 끝나지 않는 수직 미궁. 10층마다 보스가 길을 막는다.
+        </p>
+      </Card>
 
-        {view.kind === "entry" && (
-          <EntryView
-            state={state}
-            pending={tower.pending}
-            error={tower.error}
-            onStart={async () => {
-              const r = await tower.start();
-              if (r.ok && r.tower?.run) {
-                const floor = r.tower.run.currentFloor;
-                setView(buildReady(floor));
-              }
-            }}
-            onResume={() => {
-              if (state.run) setView(buildReady(state.run.currentFloor));
-            }}
-            onForfeit={async () => {
-              await tower.forfeit();
-            }}
-          />
-        )}
+      {view.kind === "entry" && (
+        <EntryView
+          state={state}
+          pending={tower.pending}
+          error={tower.error}
+          onStart={async () => {
+            const r = await tower.start();
+            if (r.ok && r.tower?.run) {
+              const floor = r.tower.run.currentFloor;
+              setView(buildReady(floor));
+            }
+          }}
+          onResume={() => {
+            if (state.run) setView(buildReady(state.run.currentFloor));
+          }}
+          onForfeit={async () => {
+            await tower.forfeit();
+          }}
+        />
+      )}
 
-        {view.kind === "ready" && (
-          <ReadyView
-            floor={view.floor}
-            enemy={view.enemy}
-            isBoss={view.isBoss}
-            disabled={tower.pending !== null}
-            onFight={async () => {
-              const apiResult = await tower.fightFloor();
-              if (!apiResult.ok || !apiResult.battle) return;
-              const outcome =
-                apiResult.applied?.outcome === "lose" ? "lose" : "win";
-              setView({
-                kind: "result",
-                outcome,
-                floor: view.floor,
-                enemy: { ...view.enemy, name: apiResult.battle.enemyName },
-                finalState: apiResult.battle.finalState,
-              });
-            }}
-            onForfeit={async () => {
-              await tower.forfeit();
+      {view.kind === "ready" && (
+        <ReadyView
+          floor={view.floor}
+          enemy={view.enemy}
+          isBoss={view.isBoss}
+          disabled={tower.pending !== null}
+          onFight={async () => {
+            const apiResult = await tower.fightFloor();
+            if (!apiResult.ok || !apiResult.battle) return;
+            const outcome =
+              apiResult.applied?.outcome === "lose" ? "lose" : "win";
+            setView({
+              kind: "result",
+              outcome,
+              floor: view.floor,
+              enemy: { ...view.enemy, name: apiResult.battle.enemyName },
+              finalState: apiResult.battle.finalState,
+            });
+          }}
+          onForfeit={async () => {
+            await tower.forfeit();
+            setView({ kind: "run_ended", lastFloor: view.floor - 1 });
+          }}
+        />
+      )}
+
+      {view.kind === "result" && (
+        <ResultView
+          outcome={view.outcome}
+          floor={view.floor}
+          enemy={view.enemy}
+          finalState={view.finalState}
+          milestone={apparentMilestone(view.outcome, view.floor)}
+          playerName={playerName}
+          playerStatus={playerStatus}
+          onNext={() => {
+            if (view.outcome === "win") {
+              // 다음 층 — 서버 응답에 따라 currentFloor 가 이미 +1 됐을 것.
+              const nextFloor = state.run?.currentFloor ?? view.floor + 1;
+              setView(buildReady(nextFloor));
+            } else {
               setView({ kind: "run_ended", lastFloor: view.floor - 1 });
-            }}
-          />
-        )}
+            }
+          }}
+        />
+      )}
 
-        {view.kind === "result" && (
-          <ResultView
-            outcome={view.outcome}
-            floor={view.floor}
-            enemy={view.enemy}
-            finalState={view.finalState}
-            milestone={apparentMilestone(view.outcome, view.floor)}
-            playerName={playerName}
-            playerStatus={playerStatus}
-            onNext={() => {
-              if (view.outcome === "win") {
-                // 다음 층 — 서버 응답에 따라 currentFloor 가 이미 +1 됐을 것.
-                const nextFloor = state.run?.currentFloor ?? view.floor + 1;
-                setView(buildReady(nextFloor));
-              } else {
-                setView({ kind: "run_ended", lastFloor: view.floor - 1 });
-              }
-            }}
-          />
-        )}
+      {view.kind === "run_ended" && (
+        <RunEndedView
+          state={state}
+          lastFloor={view.lastFloor}
+          onClose={() => setView({ kind: "entry" })}
+        />
+      )}
 
-        {view.kind === "run_ended" && (
-          <RunEndedView
-            state={state}
-            lastFloor={view.lastFloor}
-            onClose={() => setView({ kind: "entry" })}
-          />
-        )}
-
-        {!runActive && view.kind !== "entry" && view.kind !== "run_ended" && (
-          // 안전망 — 서버 측 run 이 비었는데 화면이 ready/result 면 entry 로 복귀.
-          <button
-            type="button"
-            onClick={() => setView({ kind: "entry" })}
-            className="mt-3 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-          >
-            돌아가기
-          </button>
-        )}
-      </div>
+      {!runActive && view.kind !== "entry" && view.kind !== "run_ended" && (
+        // 안전망 — 서버 측 run 이 비었는데 화면이 ready/result 면 entry 로 복귀.
+        <button
+          type="button"
+          onClick={() => setView({ kind: "entry" })}
+          className="mt-3 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+        >
+          돌아가기
+        </button>
+      )}
     </div>
   );
 }
