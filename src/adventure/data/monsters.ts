@@ -753,6 +753,8 @@ export const MONSTERS: Record<string, Monster> = {
       defBonus: 8,
       message: "별을 지키는 자의 갑주가 별빛으로 빛난다.",
     },
+    // 시그니처 — 느리지만 무거운 별빛 일격. 4 페이즈마다 ×1.6.
+    skill: { kind: "heavy_blow", name: "별빛 일섬", everyPhases: 4, multiplier: 1.6 },
     onDefeatFlag: "starspire_keeper_defeated",
   },
   // ── 별빛 회랑 (star_corridor) — 별의 첨탑 → 선인의 폐도 사이 Lv75 사냥터. 보스 없음. ───
@@ -872,6 +874,8 @@ export const MONSTERS: Record<string, Monster> = {
       defBonus: 10,
       message: "천공인의 왕이 옛 별빛을 두른다.",
     },
+    // 시그니처 — phase trigger(40%) 와 동시 발동: DEF 도 오르고 ATK 도 +15. 두 번째 페이즈 deadly.
+    skill: { kind: "enrage", name: "왕의 진노", hpFraction: 0.4, atkBonus: 15 },
     onDefeatFlag: "skyfolk_king_defeated",
   },
   // ── 옥좌의 길 (throne_road) — 선인의 폐도 → 창공의 옥좌 사이 Lv85 사냥터. 보스 없음. ───
@@ -995,6 +999,8 @@ export const MONSTERS: Record<string, Monster> = {
       defBonus: 12,
       message: "창공의 주재가 별빛을 끌어내려 옥좌 둘레에 두른다.",
     },
+    // 시그니처 — 만렙 보스. 갑주를 가르는 옥좌의 빛: 매 공격이 플레이어 DEF 10 만큼 무시.
+    skill: { kind: "pierce", name: "옥좌의 결", armorPierce: 10 },
     onDefeatFlag: "endgame_apex_defeated",
   },
   // ── 해안 지선 (조수 갯벌 / 산호초 섬) ───────────────────────────────────
