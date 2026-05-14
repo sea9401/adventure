@@ -1,18 +1,22 @@
-// POST /api/hunt/collect — 자동 사냥(1시간 원정) 수령 (조기 수령 겸용).
+// POST /api/hunt/collect — 자동 사냥(타이머형 원정) 수령 (조기 수령 겸용).
 //
 // body: { playerName?: string, autoPotionRules?: AutoPotionRule[] }
 //   - playerName: 전투 로그용 (안 보내면 "모험가")
 //   - autoPotionRules: 디바이스별 자동 포션 룰 — sim 에 그대로 전달 (서버에 동기화 안 됨)
 //
-// 흐름:
-//   1) auth
-//   2) 트랜잭션 안에서 users row + 모든 save 키 잠금
-//   3) huntActive 아님 → lastClaimResult 있으면 replay, 없으면 noop("inactive")
-//   4) simMs = min(NOW - huntBaselineAt, 1시간). simMs < 10초 → noop("too_soon")
-//   5) loadStateForSim + assembleSimInput(autoPotion 룰 + maxBattles 적용) + simulateOfflineHunt(awayMs=simMs)
-//   6) 효율 후처리 (AUTO_HUNT_EFFICIENCY, 같은 rng 스트림 이어받아 결정적)
-//   7) applyResultToSaves (HP 델타 / 사망 시 0+respawn)
-//   8) huntActive=false, baseline NULL, lastClaimResult=결과 캐시 (lost-response 재시도 replay 용)
+// 흐름 (3단계 — sim 을 DB tx 밖으로 분리해 single-EC2 의 이벤트 루프/풀 점유 시간을 줄인다):
+//   tx1) SELECT users FOR UPDATE → decideClaim 으로 분기.
+//        ready 면 baseline 캡처 + state 스냅샷(잠금 없이) 읽어 COMMIT.
+//        (replay/noop/clear_baseline 은 여기서 응답 또는 baseline 정리 후 종료.)
+//   sim) 트랜잭션 밖에서 assembleSimInput + simulateOfflineHunt + 효율 후처리.
+//   tx2) SELECT users FOR UPDATE → decideWinner.
+//        winner 면 state 다시 잠금 읽기 + applyResultToSaves(델타) + baseline 해제 + lastClaimResult 박음.
+//        loser 면 lastClaimResult 로 replay 또는 noop.
+//
+// 동시 collect 두 건은 같은 baseline·같은 seed 라 같은 sim 결과가 나오고, tx2 에서 한쪽만 winner
+// 가 된다 — 두 번 적용 위험 없음. 새 dispatch 가 사이에 끼면 baseline 시각이 달라 옛 collect 가
+// 자동 폐기된다.
+//
 // 반환: { ok:true, result, hadReward, died, simMs } | { ok:true, noop:true, reason } | { ok:true, replayed:true, ... }
 
 import { eq } from "drizzle-orm";
@@ -23,10 +27,13 @@ import { checkSession } from "@/lib/server/checkSession";
 import {
   applyResultToSaves,
   assembleSimInput,
+  decideClaim,
+  decideWinner,
   hasMeaningfulResult,
   loadStateForSim,
   makeRng,
   updateBaseline,
+  type LoadedState,
 } from "@/lib/server/autoHunt";
 import {
   AUTO_HUNT_DURATION_MS,
@@ -45,8 +52,43 @@ type CollectBody = { playerName?: unknown; autoPotionRules?: unknown };
 
 type CollectResponse =
   | { ok: true; noop: true; reason: string }
-  | { ok: true; replayed: true; hadReward: boolean; result: OfflineSimResult; died: boolean; simMs: number }
-  | { ok: true; hadReward: boolean; result: OfflineSimResult; died: boolean; simMs: number };
+  | {
+      ok: true;
+      replayed: true;
+      hadReward: boolean;
+      result: OfflineSimResult;
+      died: boolean;
+      simMs: number;
+    }
+  | {
+      ok: true;
+      hadReward: boolean;
+      result: OfflineSimResult;
+      died: boolean;
+      simMs: number;
+    };
+
+type ClaimOutcome =
+  | { kind: "early"; response: CollectResponse }
+  | {
+      kind: "ready";
+      state: LoadedState;
+      baselineMs: number;
+      baselineHp: number;
+      baselineRegionId: RegionId;
+      simMs: number;
+    };
+
+function replayResponse(result: OfflineSimResult): CollectResponse {
+  return {
+    ok: true,
+    replayed: true,
+    hadReward: hasMeaningfulResult(result),
+    result,
+    died: result.died,
+    simMs: result.simulatedMs,
+  };
+}
 
 export async function POST(req: Request) {
   const userId = await ensureUser();
@@ -71,86 +113,124 @@ export async function POST(req: Request) {
     : [];
 
   try {
-    const response: CollectResponse = await db.transaction(async (tx) => {
+    // ── tx1: 클레임 결정 + (ready 면) state 스냅샷 캡처. 짧게 끝낸다. ──
+    const claim: ClaimOutcome = await db.transaction(async (tx) => {
       const uRows = await tx
         .select()
         .from(users)
         .where(eq(users.id, userId))
         .for("update");
-      if (uRows.length === 0) {
-        return { ok: true, noop: true, reason: "no_user" };
-      }
-      const u = uRows[0];
+      const u = uRows[0] ?? null;
+      const snapshot = u
+        ? {
+            huntActive: u.huntActive,
+            huntBaselineAt: u.huntBaselineAt,
+            huntBaselineHp: u.huntBaselineHp,
+            huntRegion: u.huntRegion,
+            lastClaimResult: (u.lastClaimResult as OfflineSimResult | null) ?? null,
+          }
+        : null;
+      const decision = decideClaim(snapshot, Date.now(), AUTO_HUNT_MIN_COLLECT_MS);
 
-      if (!u.huntActive || !u.huntBaselineAt) {
-        // 이미 수령했고 결과가 남아있으면 replay (응답 손실 후 재클릭 안전).
-        if (u.lastClaimResult) {
-          const cached = u.lastClaimResult as OfflineSimResult;
-          return {
-            ok: true,
-            replayed: true,
-            hadReward: hasMeaningfulResult(cached),
-            result: cached,
-            died: cached.died,
-            simMs: cached.simulatedMs,
-          };
-        }
-        return { ok: true, noop: true, reason: "inactive" };
+      if (decision.kind === "replay") {
+        return { kind: "early", response: replayResponse(decision.result) };
       }
-
-      const baselineMs = u.huntBaselineAt.getTime();
-      const now = new Date();
-      const elapsedMs = now.getTime() - baselineMs;
-      const simMs = Math.min(Math.max(0, elapsedMs), AUTO_HUNT_DURATION_MS);
-      if (simMs < AUTO_HUNT_MIN_COLLECT_MS) {
-        return { ok: true, noop: true, reason: "too_soon" };
+      if (decision.kind === "noop") {
+        return {
+          kind: "early",
+          response: { ok: true, noop: true, reason: decision.reason },
+        };
       }
-
-      const state = await loadStateForSim(tx, userId);
-      if (!state) {
-        return { ok: true, noop: true, reason: "no_state" };
-      }
-
-      const baselineHp = u.huntBaselineHp ?? state.character.hp ?? 0;
-      const baselineRegionId = (u.huntRegion ?? state.map.currentRegionId) as
-        | RegionId
-        | undefined;
-      if (!baselineRegionId) {
-        // 비정상 상태 — 위탁만 해제하고 noop.
+      if (decision.kind === "clear_baseline") {
+        // 비정상 상태 — region 비어있음. 위탁만 해제하고 noop.
         await updateBaseline(tx, userId, {
           huntActive: false,
           huntRegion: null,
           huntBaselineHp: null,
           huntBaselineAt: null,
         });
-        return { ok: true, noop: true, reason: "no_region" };
+        return {
+          kind: "early",
+          response: { ok: true, noop: true, reason: decision.reason },
+        };
       }
 
-      const rng = makeRng(userId, baselineMs);
-      const input = assembleSimInput({
+      // ready — state 를 잠금 없이 스냅샷으로 읽는다. 결과 적용은 tx2 에서 다시 잠금 읽기.
+      const state = await loadStateForSim(tx, userId, false);
+      if (!state) {
+        return {
+          kind: "early",
+          response: { ok: true, noop: true, reason: "no_state" },
+        };
+      }
+      const baselineHp = decision.baselineHp ?? state.character.hp ?? 0;
+      const elapsedMs = Date.now() - decision.baselineMs;
+      const simMs = Math.min(Math.max(0, elapsedMs), AUTO_HUNT_DURATION_MS);
+      return {
+        kind: "ready",
         state,
+        baselineMs: decision.baselineMs,
         baselineHp,
-        baselineRegionId,
-        awayMs: simMs,
-        rng,
-        // 디바이스 자동 포션 룰 — 라이브 사냥과 동일하게 위탁 sim 도 룰대로 회복.
-        // 보유량 0 인 포션은 sim 이 알아서 공격으로 폴백. 결정성: 같은 룰+seed → 같은 결과,
-        // collect 후엔 lastClaimResult 로 replay 하므로 룰 변경해도 무해.
-        autoPotionRules,
-        playerName,
-      });
-      const raw = simulateOfflineHunt(input);
-      // 같은 rng 스트림을 이어받아 효율 후처리 — replay 시에도 동일.
-      const result = applyAutoHuntEfficiency(raw, AUTO_HUNT_EFFICIENCY, rng);
+        baselineRegionId: decision.regionId as RegionId,
+        simMs,
+      };
+    });
+
+    if (claim.kind === "early") {
+      return Response.json(claim.response);
+    }
+
+    // ── tx 밖: sim 실행. DB 풀/락 점유 없음. ──
+    const rng = makeRng(userId, claim.baselineMs);
+    const input = assembleSimInput({
+      state: claim.state,
+      baselineHp: claim.baselineHp,
+      baselineRegionId: claim.baselineRegionId,
+      awayMs: claim.simMs,
+      rng,
+      autoPotionRules,
+      playerName,
+    });
+    const raw = simulateOfflineHunt(input);
+    const result = applyAutoHuntEfficiency(raw, AUTO_HUNT_EFFICIENCY, rng);
+
+    // ── tx2: winner 검사 + 적용. 다시 짧다. ──
+    const response: CollectResponse = await db.transaction(async (tx) => {
+      const uRows = await tx
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .for("update");
+      const u = uRows[0] ?? null;
+      if (!u) return { ok: true, noop: true, reason: "no_user" };
+
+      const snapshot = {
+        huntActive: u.huntActive,
+        huntBaselineAt: u.huntBaselineAt,
+        huntBaselineHp: u.huntBaselineHp,
+        huntRegion: u.huntRegion,
+        lastClaimResult: (u.lastClaimResult as OfflineSimResult | null) ?? null,
+      };
+      const winner = decideWinner(snapshot, claim.baselineMs);
+      if (winner.kind === "replay") {
+        return replayResponse(winner.result);
+      }
+      if (winner.kind === "lost") {
+        // 같은 baseline 이 아니고 lastClaimResult 도 없음 (이론상 드물다 — 새 dispatch 가 끼어든 경우).
+        return { ok: true, noop: true, reason: "stale_claim" };
+      }
+
+      // winner — state 잠금 다시 읽고 델타 적용.
+      const state2 = await loadStateForSim(tx, userId);
+      if (!state2) return { ok: true, noop: true, reason: "no_state" };
 
       await applyResultToSaves(tx, userId, {
-        state,
+        state: state2,
         result,
         died: result.died,
-        baselineHp,
+        baselineHp: claim.baselineHp,
       });
 
-      // 위탁 종료 — baseline NULL, 결과 캐시.
       await updateBaseline(tx, userId, {
         huntActive: false,
         huntRegion: null,
@@ -165,9 +245,10 @@ export async function POST(req: Request) {
         hadReward: hasMeaningfulResult(result),
         result,
         died: result.died,
-        simMs,
+        simMs: claim.simMs,
       };
     });
+
     // 위탁 사냥에서 "유실된 명품"(unique)이 나왔으면 전체 소식에 보고.
     // 조기수령 replay / noop 경로는 제외 — 새로 정산된 결과에서만.
     if (!("noop" in response) && !("replayed" in response)) {
