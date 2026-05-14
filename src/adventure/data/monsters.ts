@@ -86,7 +86,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 1,
     exp: 1,
     drops: [
-      { kind: "material", materialId: "rusty_nail", chance: 0.1 },
+      { kind: "material", materialId: "rusty_nail", chance: 0.15 },
       { kind: "recipe", recipeId: "nailed_baseball_bat", chance: 0.003 },
     ],
   },
@@ -100,8 +100,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 1,
     exp: 2,
     drops: [
-      { kind: "material", materialId: "slime_chunk", chance: 0.1 },
-      { kind: "material", materialId: "slime_core", chance: 0.01 },
+      { kind: "material", materialId: "slime_chunk", chance: 0.15 },
+      { kind: "material", materialId: "slime_core", chance: 0.015 },
     ],
   },
   들개: {
@@ -114,8 +114,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 4,
     exp: 3,
     drops: [
-      { kind: "material", materialId: "wilddog_hide", chance: 0.03 },
-      { kind: "material", materialId: "wilddog_fang", chance: 0.015 },
+      { kind: "material", materialId: "wilddog_hide", chance: 0.045 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.0225 },
       // 초반 발판 — 낡은 가죽갑옷(볼드 무료 지급) → 덧댄 가죽갑옷. Lv 한 자릿수 안에 받게 드랍률 ↑.
       { kind: "recipe", recipeId: "reinforced_leather_armor", chance: 0.04 },
     ],
@@ -143,7 +143,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 7,
     exp: 4,
     drops: [
-      { kind: "material", materialId: "bat_eye", chance: 0.02 },
+      { kind: "material", materialId: "bat_eye", chance: 0.03 },
       { kind: "recipe", recipeId: "bat_hood", chance: 0.004 },
       // 유실된 명품 — 두더지왕의 드릴과 같은 부류(unique). 잡몹이 떡상 장신구를 떨군다.
       { kind: "equip", itemId: "bat_swarm_charm", chance: 0.0002 },
@@ -161,7 +161,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 5,
     drops: [
-      { kind: "material", materialId: "hard_crystal", chance: 0.02 },
+      { kind: "material", materialId: "hard_crystal", chance: 0.03 },
       { kind: "recipe", recipeId: "crystal_dagger", chance: 0.004 },
     ],
   },
@@ -175,7 +175,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 6,
     exp: 6,
     drops: [
-      { kind: "material", materialId: "spider_silk", chance: 0.03 },
+      { kind: "material", materialId: "spider_silk", chance: 0.045 },
       { kind: "recipe", recipeId: "sticky_cloak", chance: 0.003 },
       // 유실된 명품(unique) — 행운 +7 갑옷. "운으로 성장하는" 손맛 전용.
       { kind: "equip", itemId: "spider_queen_silk_robe", chance: 0.0002 },
@@ -209,7 +209,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 10,
     drops: [
-      { kind: "material", materialId: "fairy_dust", chance: 0.02 },
+      { kind: "material", materialId: "fairy_dust", chance: 0.03 },
       { kind: "equip", itemId: "nymph_ring", chance: 0.005 },
       { kind: "recipe", recipeId: "fairy_blessing", chance: 0.002 },
       { kind: "recipe", recipeId: "nymph_blessing", chance: 0.002 },
@@ -225,7 +225,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 2,
     exp: 14,
     drops: [
-      { kind: "material", materialId: "ruin_fragment", chance: 0.05 },
+      { kind: "material", materialId: "ruin_fragment", chance: 0.075 },
       { kind: "recipe", recipeId: "golem_armor", chance: 0.02 },
       { kind: "equip", itemId: "golem_hammer", chance: 0.001 },
       { kind: "recipe", recipeId: "reforged_golem_hammer", chance: 0.015 },
@@ -242,7 +242,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 20,
     exp: 13,
     drops: [
-      { kind: "material", materialId: "soul_crystal", chance: 0.01 },
+      { kind: "material", materialId: "soul_crystal", chance: 0.015 },
       { kind: "equip", itemId: "wraith_cloak", chance: 0.002 },
       { kind: "recipe", recipeId: "wraithking_cloak", chance: 0.002 },
     ],
@@ -257,7 +257,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 3,
     exp: 9,
     drops: [
-      { kind: "material", materialId: "mana_crystal", chance: 0.001 },
+      { kind: "material", materialId: "mana_crystal", chance: 0.0015 },
     ],
   },
   // 깊은 동굴 보스 — region.boss 도전 버튼으로만 진입. 일반 인카운터 풀에선 제외.
@@ -301,7 +301,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 6,
     exp: 11,
     drops: [
-      { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.045 },
       // 유실된 명품(unique) — 폐허에 박혀 있던 옛 영웅검의 윗동강. atk +8 / def -2.
       { kind: "equip", itemId: "hero_broken_sword", chance: 0.00015 },
     ],
@@ -318,8 +318,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 6,
     exp: 13,
     drops: [
-      { kind: "material", materialId: "wilddog_hide", chance: 0.04 },
-      { kind: "material", materialId: "wilddog_fang", chance: 0.02 },
+      { kind: "material", materialId: "wilddog_hide", chance: 0.06 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
       { kind: "recipe", recipeId: "reinforced_leather_armor", chance: 0.012 },
     ],
   },
@@ -333,8 +333,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 13,
     drops: [
-      { kind: "material", materialId: "soul_crystal", chance: 0.02 },
-      { kind: "material", materialId: "hard_crystal", chance: 0.02 },
+      { kind: "material", materialId: "soul_crystal", chance: 0.03 },
+      { kind: "material", materialId: "hard_crystal", chance: 0.03 },
       { kind: "gold", amount: 1, chance: 0.08 },
     ],
   },
@@ -348,8 +348,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 3,
     exp: 16,
     drops: [
-      { kind: "material", materialId: "ruin_fragment", chance: 0.05 },
-      { kind: "material", materialId: "hard_crystal", chance: 0.03 },
+      { kind: "material", materialId: "ruin_fragment", chance: 0.075 },
+      { kind: "material", materialId: "hard_crystal", chance: 0.045 },
       { kind: "recipe", recipeId: "golem_armor", chance: 0.012 },
     ],
   },
@@ -364,8 +364,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 18,
     image: "/images/monster/mountaingoat.webp",
     drops: [
-      { kind: "material", materialId: "sancho_blossom", chance: 0.02 },
-      { kind: "material", materialId: "tough_hide", chance: 0.03 },
+      { kind: "material", materialId: "sancho_blossom", chance: 0.03 },
+      { kind: "material", materialId: "tough_hide", chance: 0.045 },
     ],
   },
   "바위 두꺼비": {
@@ -378,7 +378,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 22,
     image: "/images/monster/stonefrog.webp",
     drops: [
-      { kind: "material", materialId: "unbong_ore", chance: 0.02 },
+      { kind: "material", materialId: "unbong_ore", chance: 0.03 },
     ],
   },
   "절벽 늑대": {
@@ -391,8 +391,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 22,
     image: "/images/monster/mountainwolf.webp",
     drops: [
-      { kind: "material", materialId: "wilddog_fang", chance: 0.05 },
-      { kind: "material", materialId: "sancho_blossom", chance: 0.03 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.075 },
+      { kind: "material", materialId: "sancho_blossom", chance: 0.045 },
     ],
   },
   "돌풍 정령": {
@@ -406,8 +406,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 24,
     image: "/images/monster/icespirit.webp",
     drops: [
-      { kind: "material", materialId: "fairy_dust", chance: 0.04 },
-      { kind: "material", materialId: "wind_mana_stone", chance: 0.02 },
+      { kind: "material", materialId: "fairy_dust", chance: 0.06 },
+      { kind: "material", materialId: "wind_mana_stone", chance: 0.03 },
       { kind: "recipe", recipeId: "windmana_charm", chance: 0.004 },
     ],
   },
@@ -421,8 +421,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 32,
     image: "/images/monster/wolfchieftain.webp",
     drops: [
-      { kind: "material", materialId: "wolf_king_fang", chance: 0.005 },
-      { kind: "material", materialId: "giant_scale", chance: 0.08 },
+      { kind: "material", materialId: "wolf_king_fang", chance: 0.0075 },
+      { kind: "material", materialId: "giant_scale", chance: 0.12 },
     ],
   },
   // 운향 협곡 보스 — region.boss 도전 버튼으로만 진입. 일반 인카운터 풀에선 제외.
@@ -468,7 +468,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 4,
     exp: 30,
     drops: [
-      { kind: "material", materialId: "bison_hide", chance: 0.015 },
+      { kind: "material", materialId: "bison_hide", chance: 0.0225 },
       { kind: "equip", itemId: "bison_hide_armor", chance: 0.003 },
     ],
     skill: { kind: "heavy_blow", name: "들이받기", everyPhases: 3, multiplier: 1.5 },
@@ -484,7 +484,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 25,
     exp: 26,
     drops: [
-      { kind: "material", materialId: "hawk_feather", chance: 0.02 },
+      { kind: "material", materialId: "hawk_feather", chance: 0.03 },
       // 유실된 명품(unique) — 매의 발에 끼워져 있던 발톱 모양 쇳조각. atk +9 / dex +5.
       { kind: "equip", itemId: "sky_render_talon", chance: 0.00015 },
       // 그 발톱을 한 단계 끌어올리는 세공서 (결과도 unique·비거래).
@@ -503,7 +503,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 28,
     drops: [
       { kind: "gold", amount: 1, chance: 0.08 },
-      { kind: "material", materialId: "wilddog_fang", chance: 0.01 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.015 },
     ],
     skill: { kind: "pierce", name: "급소 노리기", armorPierce: 3 },
   },
@@ -518,8 +518,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 3,
     exp: 48,
     drops: [
-      { kind: "material", materialId: "ash_stone", chance: 0.02 },
-      { kind: "material", materialId: "ruin_fragment", chance: 0.015 },
+      { kind: "material", materialId: "ash_stone", chance: 0.03 },
+      { kind: "material", materialId: "ruin_fragment", chance: 0.0225 },
       { kind: "recipe", recipeId: "ashforged_blade", chance: 0.015 },
     ],
     skill: { kind: "brace", name: "잿가루 장막", damageReduction: 2 },
@@ -534,8 +534,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 8,
     exp: 43,
     drops: [
-      { kind: "material", materialId: "ash_stone", chance: 0.01 },
-      { kind: "material", materialId: "wilddog_fang", chance: 0.015 },
+      { kind: "material", materialId: "ash_stone", chance: 0.015 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.0225 },
     ],
     skill: { kind: "heavy_blow", name: "물어뜯기", everyPhases: 3, multiplier: 1.5 },
   },
@@ -549,8 +549,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 9,
     exp: 41,
     drops: [
-      { kind: "material", materialId: "ash_stone", chance: 0.01 },
-      { kind: "material", materialId: "flame_scale", chance: 0.005 },
+      { kind: "material", materialId: "ash_stone", chance: 0.015 },
+      { kind: "material", materialId: "flame_scale", chance: 0.0075 },
     ],
     skill: { kind: "enrage", name: "발화", hpFraction: 0.5, atkBonus: 4 },
   },
@@ -566,7 +566,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 25,
     exp: 50,
     drops: [
-      { kind: "material", materialId: "phoenix_feather", chance: 0.02 },
+      { kind: "material", materialId: "phoenix_feather", chance: 0.03 },
       { kind: "equip", itemId: "flame_eagle_cape", chance: 0.003 },
       { kind: "recipe", recipeId: "phoenix_flight_cape", chance: 0.004 },
     ],
@@ -582,7 +582,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 8,
     exp: 48,
     drops: [
-      { kind: "material", materialId: "flame_scale", chance: 0.015 },
+      { kind: "material", materialId: "flame_scale", chance: 0.0225 },
     ],
     skill: { kind: "enrage", name: "화염 비늘 폭발", hpFraction: 0.4, atkBonus: 6 },
   },
@@ -596,8 +596,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 6,
     exp: 60,
     drops: [
-      { kind: "material", materialId: "flame_scale", chance: 0.005 },
-      { kind: "material", materialId: "giant_scale", chance: 0.004 },
+      { kind: "material", materialId: "flame_scale", chance: 0.0075 },
+      { kind: "material", materialId: "giant_scale", chance: 0.006 },
     ],
     skill: { kind: "brace", name: "방패 막기", damageReduction: 3 },
   },
@@ -612,7 +612,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 4,
     exp: 69,
     drops: [
-      { kind: "material", materialId: "lava_core", chance: 0.003 },
+      { kind: "material", materialId: "lava_core", chance: 0.0045 },
       // 유실된 명품(unique) — 미처 못 녹인 거대 용암 핵. atk +11 / spd -2. 가장 희귀한 한 자루.
       { kind: "equip", itemId: "lava_core_maul", chance: 0.0001 },
       // 그 망치를 한 단계 끌어올리는 단조서 (결과도 unique·비거래).
@@ -630,7 +630,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 3,
     exp: 78,
     drops: [
-      { kind: "material", materialId: "lava_core", chance: 0.005 },
+      { kind: "material", materialId: "lava_core", chance: 0.0075 },
     ],
     skill: { kind: "enrage", name: "용암 분출", hpFraction: 0.4, atkBonus: 8 },
   },
@@ -644,8 +644,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 88,
     drops: [
-      { kind: "material", materialId: "lava_core", chance: 0.009 },
-      { kind: "material", materialId: "ruin_fragment", chance: 0.025 },
+      { kind: "material", materialId: "lava_core", chance: 0.0135 },
+      { kind: "material", materialId: "ruin_fragment", chance: 0.0375 },
     ],
     skill: { kind: "heavy_blow", name: "과열 가동", everyPhases: 3, multiplier: 1.5 },
   },
@@ -693,7 +693,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 25,
     exp: 110,
     drops: [
-      { kind: "material", materialId: "stardust", chance: 0.008 },
+      { kind: "material", materialId: "stardust", chance: 0.012 },
       // 유실된 명품(legendary) — 정찰자들이 한 자루씩 들고 다닌다는 가느다란 활. ultra-rare.
       { kind: "equip", itemId: "starlight_bow", chance: 0.0002 },
     ],
@@ -709,7 +709,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 7,
     exp: 120,
     drops: [
-      { kind: "material", materialId: "stardust", chance: 0.012 },
+      { kind: "material", materialId: "stardust", chance: 0.018 },
     ],
     skill: { kind: "heavy_blow", name: "구름 가르기", everyPhases: 3, multiplier: 1.5 },
   },
@@ -723,8 +723,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 8,
     exp: 130,
     drops: [
-      { kind: "material", materialId: "stardust", chance: 0.01 },
-      { kind: "material", materialId: "sky_alloy", chance: 0.005 },
+      { kind: "material", materialId: "stardust", chance: 0.015 },
+      { kind: "material", materialId: "sky_alloy", chance: 0.0075 },
     ],
     skill: { kind: "enrage", name: "운명의 실", hpFraction: 0.4, atkBonus: 10 },
   },
@@ -772,8 +772,8 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 20,
     exp: 135,
     drops: [
-      { kind: "material", materialId: "stardust", chance: 0.01 },
-      { kind: "material", materialId: "corridor_relic", chance: 0.02 },
+      { kind: "material", materialId: "stardust", chance: 0.015 },
+      { kind: "material", materialId: "corridor_relic", chance: 0.03 },
     ],
     skill: { kind: "pierce", name: "회랑 일섬", armorPierce: 4 },
   },
@@ -786,8 +786,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 8,
     exp: 145,
     drops: [
-      { kind: "material", materialId: "stardust", chance: 0.012 },
-      { kind: "material", materialId: "corridor_relic", chance: 0.025 },
+      { kind: "material", materialId: "stardust", chance: 0.018 },
+      { kind: "material", materialId: "corridor_relic", chance: 0.0375 },
     ],
     skill: { kind: "enrage", name: "망령의 잔영", hpFraction: 0.4, atkBonus: 9 },
   },
@@ -800,9 +800,9 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 6,
     exp: 155,
     drops: [
-      { kind: "material", materialId: "stardust", chance: 0.013 },
-      { kind: "material", materialId: "corridor_relic", chance: 0.03 },
-      { kind: "material", materialId: "stellar_essence", chance: 0.004 },
+      { kind: "material", materialId: "stardust", chance: 0.0195 },
+      { kind: "material", materialId: "corridor_relic", chance: 0.045 },
+      { kind: "material", materialId: "stellar_essence", chance: 0.006 },
     ],
     skill: { kind: "heavy_blow", name: "회랑 충격", everyPhases: 3, multiplier: 1.5 },
   },
@@ -817,7 +817,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 25,
     exp: 160,
     drops: [
-      { kind: "material", materialId: "stellar_essence", chance: 0.008 },
+      { kind: "material", materialId: "stellar_essence", chance: 0.012 },
     ],
     skill: { kind: "pierce", name: "예봉", armorPierce: 5 },
   },
@@ -830,7 +830,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 8,
     exp: 175,
     drops: [
-      { kind: "material", materialId: "stellar_essence", chance: 0.012 },
+      { kind: "material", materialId: "stellar_essence", chance: 0.018 },
       // 유실된 명품(legendary) — 전사가 폐도 끝에서 두고 떠난 옛 천공인의 칼. ultra-rare.
       { kind: "equip", itemId: "ancient_sky_blade", chance: 0.0002 },
     ],
@@ -845,8 +845,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 195,
     drops: [
-      { kind: "material", materialId: "stellar_essence", chance: 0.01 },
-      { kind: "material", materialId: "aether_alloy", chance: 0.005 },
+      { kind: "material", materialId: "stellar_essence", chance: 0.015 },
+      { kind: "material", materialId: "aether_alloy", chance: 0.0075 },
     ],
     skill: { kind: "enrage", name: "옛 가동", hpFraction: 0.4, atkBonus: 12 },
   },
@@ -893,8 +893,8 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 20,
     exp: 200,
     drops: [
-      { kind: "material", materialId: "empyrean_shard", chance: 0.01 },
-      { kind: "material", materialId: "road_relic", chance: 0.02 },
+      { kind: "material", materialId: "empyrean_shard", chance: 0.015 },
+      { kind: "material", materialId: "road_relic", chance: 0.03 },
     ],
     skill: { kind: "pierce", name: "정찰관 일섬", armorPierce: 5 },
   },
@@ -907,8 +907,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 8,
     exp: 220,
     drops: [
-      { kind: "material", materialId: "empyrean_shard", chance: 0.012 },
-      { kind: "material", materialId: "road_relic", chance: 0.025 },
+      { kind: "material", materialId: "empyrean_shard", chance: 0.018 },
+      { kind: "material", materialId: "road_relic", chance: 0.0375 },
     ],
     skill: { kind: "heavy_blow", name: "호위 일격", everyPhases: 3, multiplier: 1.55 },
   },
@@ -921,9 +921,9 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 240,
     drops: [
-      { kind: "material", materialId: "empyrean_shard", chance: 0.013 },
-      { kind: "material", materialId: "road_relic", chance: 0.03 },
-      { kind: "material", materialId: "primordial_essence", chance: 0.004 },
+      { kind: "material", materialId: "empyrean_shard", chance: 0.0195 },
+      { kind: "material", materialId: "road_relic", chance: 0.045 },
+      { kind: "material", materialId: "primordial_essence", chance: 0.006 },
     ],
     skill: { kind: "enrage", name: "파편 폭주", hpFraction: 0.4, atkBonus: 13 },
   },
@@ -939,7 +939,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 25,
     exp: 230,
     drops: [
-      { kind: "material", materialId: "empyrean_shard", chance: 0.008 },
+      { kind: "material", materialId: "empyrean_shard", chance: 0.012 },
       // 유실된 명품(legendary) — 사도들이 마지막까지 품에 두고 있었다는 작은 부적. ultra-rare.
       { kind: "equip", itemId: "starbound_charm", chance: 0.0002 },
     ],
@@ -954,7 +954,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 9,
     exp: 255,
     drops: [
-      { kind: "material", materialId: "empyrean_shard", chance: 0.012 },
+      { kind: "material", materialId: "empyrean_shard", chance: 0.018 },
     ],
     skill: { kind: "heavy_blow", name: "호위 강타", everyPhases: 3, multiplier: 1.6 },
   },
@@ -967,8 +967,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 280,
     drops: [
-      { kind: "material", materialId: "empyrean_shard", chance: 0.01 },
-      { kind: "material", materialId: "primordial_essence", chance: 0.005 },
+      { kind: "material", materialId: "empyrean_shard", chance: 0.015 },
+      { kind: "material", materialId: "primordial_essence", chance: 0.0075 },
       // 유실된 명품(legendary) — 골렘 내부에 함께 잠들어 있던 옛 호위병 갑주. ultra-rare.
       { kind: "equip", itemId: "enthrone_plate", chance: 0.00015 },
     ],
@@ -1020,7 +1020,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 11,
     skill: { kind: "pierce", name: "집게발 비집기", armorPierce: 2 },
     drops: [
-      { kind: "material", materialId: "crab_shell", chance: 0.06 },
+      { kind: "material", materialId: "crab_shell", chance: 0.09 },
       // 초반 발판 — 게딱지 손방패 제작서.
       { kind: "recipe", recipeId: "crab_shell_buckler", chance: 0.04 },
     ],
@@ -1036,7 +1036,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 20,
     exp: 11,
     drops: [
-      { kind: "material", materialId: "crab_shell", chance: 0.02 },
+      { kind: "material", materialId: "crab_shell", chance: 0.03 },
       { kind: "recipe", recipeId: "tideflats_waders", chance: 0.04 },
     ],
   },
@@ -1050,7 +1050,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 6,
     exp: 10,
     drops: [
-      { kind: "material", materialId: "crab_shell", chance: 0.03 },
+      { kind: "material", materialId: "crab_shell", chance: 0.045 },
       // 유실된 명품 — 진창 속에서 끌고 다니던 낡은 인장반지.
       { kind: "equip", itemId: "drowned_signet", chance: 0.0002 },
     ],
@@ -1066,7 +1066,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 20,
     exp: 20,
     drops: [
-      { kind: "material", materialId: "deep_scale", chance: 0.04 },
+      { kind: "material", materialId: "deep_scale", chance: 0.06 },
       { kind: "recipe", recipeId: "siren_scale_robe", chance: 0.04 },
       // 사이렌 비늘 로브 → 사이렌 노래 망토 업그레이드 세공서.
       { kind: "recipe", recipeId: "siren_song_mantle", chance: 0.015 },
@@ -1083,8 +1083,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 21,
     skill: { kind: "heavy_blow", name: "작살 던지기", everyPhases: 3, multiplier: 1.8 },
     drops: [
-      { kind: "material", materialId: "crab_shell", chance: 0.05 },
-      { kind: "material", materialId: "coral_spine", chance: 0.02 },
+      { kind: "material", materialId: "crab_shell", chance: 0.075 },
+      { kind: "material", materialId: "coral_spine", chance: 0.03 },
       { kind: "recipe", recipeId: "coral_spine_dagger", chance: 0.04 },
       // 게딱지 손방패 → 갑각 보루방패 업그레이드 제작서.
       { kind: "recipe", recipeId: "crustacean_bulwark", chance: 0.02 },
@@ -1101,7 +1101,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 22,
     skill: { kind: "brace", name: "가시 산호 껍질", damageReduction: 4 },
     drops: [
-      { kind: "material", materialId: "coral_spine", chance: 0.05 },
+      { kind: "material", materialId: "coral_spine", chance: 0.075 },
       { kind: "recipe", recipeId: "tideglass_charm", chance: 0.04 },
       // 산호 가시 단검 → 가시 산호 단검 업그레이드 제작서.
       { kind: "recipe", recipeId: "barbed_coral_dagger", chance: 0.02 },
@@ -1155,7 +1155,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 15,
     exp: 4,
     drops: [
-      { kind: "material", materialId: "raven_feather", chance: 0.06 },
+      { kind: "material", materialId: "raven_feather", chance: 0.09 },
       // 초반 발판 — 까마귀깃 두건 제작서.
       { kind: "recipe", recipeId: "crow_feather_cap", chance: 0.04 },
       // 유실된 명품 — 까마귀가 둥지에 그러모은 잡동사니로 엮인 부적. (두더지왕의 드릴급 — 아주 이른 행운)
@@ -1172,8 +1172,8 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 6,
     exp: 5,
     drops: [
-      { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
-      { kind: "material", materialId: "raven_feather", chance: 0.02 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.045 },
+      { kind: "material", materialId: "raven_feather", chance: 0.03 },
     ],
   },
   노상강도: {
@@ -1186,7 +1186,7 @@ export const MONSTERS: Record<string, Monster> = {
     spd: 5,
     exp: 6,
     drops: [
-      { kind: "material", materialId: "wilddog_fang", chance: 0.03 },
+      { kind: "material", materialId: "wilddog_fang", chance: 0.045 },
       { kind: "recipe", recipeId: "roadbandit_shortsword", chance: 0.04 },
     ],
   },
@@ -1201,7 +1201,7 @@ export const MONSTERS: Record<string, Monster> = {
     evasionPct: 20,
     exp: 13,
     drops: [
-      { kind: "material", materialId: "raven_feather", chance: 0.05 },
+      { kind: "material", materialId: "raven_feather", chance: 0.075 },
       { kind: "recipe", recipeId: "tattered_standard_cloak", chance: 0.04 },
       // 낡은 군기 망토 → 변경 군기 망토 업그레이드 직조서.
       { kind: "recipe", recipeId: "frontier_standard_cloak", chance: 0.015 },
@@ -1218,8 +1218,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 15,
     skill: { kind: "heavy_blow", name: "투창", everyPhases: 3, multiplier: 1.8 },
     drops: [
-      { kind: "material", materialId: "war_banner_scrap", chance: 0.05 },
-      { kind: "material", materialId: "scrap_iron", chance: 0.02 },
+      { kind: "material", materialId: "war_banner_scrap", chance: 0.075 },
+      { kind: "material", materialId: "scrap_iron", chance: 0.03 },
       { kind: "recipe", recipeId: "garrison_hauberk", chance: 0.04 },
       // 노상강도의 단검 → 노상강도의 활검 업그레이드 제작서.
       { kind: "recipe", recipeId: "roadbandit_falchion", chance: 0.02 },
@@ -1236,7 +1236,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 16,
     skill: { kind: "brace", name: "녹슨 장갑판", damageReduction: 4 },
     drops: [
-      { kind: "material", materialId: "scrap_iron", chance: 0.05 },
+      { kind: "material", materialId: "scrap_iron", chance: 0.075 },
       { kind: "recipe", recipeId: "geared_warpick", chance: 0.04 },
       // 수비대 사슬갑옷 → 보강한 수비대 사슬갑옷 업그레이드 제작서.
       { kind: "recipe", recipeId: "reinforced_garrison_hauberk", chance: 0.02 },
