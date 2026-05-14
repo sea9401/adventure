@@ -122,7 +122,7 @@ export const COUNTER_ATK_DEX_DIVISOR = 5;
 // 가드 — 활력 10 도달 시 획득.
 // 전투 시작 후 첫 GUARD_TURNS 적 페이즈 동안 받는 피해 -max(1, floor(VIT/10)) (최소 0).
 export const GUARD_VIT_THRESHOLD = 10;
-export const GUARD_TURNS = 3;
+export const GUARD_TURNS = 4;
 export const GUARD_REDUCTION_VIT_DIVISOR = 10;
 
 // 재생 — 활력 20 도달 시 획득.
