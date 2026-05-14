@@ -20,6 +20,13 @@ export type TowerRun = {
   currentFloor: number;
   /** 진행 중 시도 시작 시각 (epoch ms). 진단/통계용. */
   startedAt: number;
+  /**
+   * "다음 보스까지 자동" 진행 중 1회 부활할 수 있는지. 한 런(start→포기/사망) 당 1회.
+   * 자동 진행 도중 사망 시 소비 — 자동을 멈추고 같은 층에서 수동 모드로 돌아간다.
+   * 수동 fight_floor 의 사망에는 적용되지 않는다.
+   * 미존재(예: 옛 런 마이그레이션) 시 true 로 간주.
+   */
+  reviveAvailable?: boolean;
 };
 
 export type TowerDaily = {

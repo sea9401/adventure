@@ -35,10 +35,18 @@ import { useTower, type TowerApiResponse } from "./useTower";
 // 페이지 형태로 운영 — 이전엔 모달이었으나 모달 안에서 상태 갱신이 한 박자 늦어 화면이
 // 어긋나는 사례가 있어 서브뷰 페이지로 전환 (router.push ?sub=tower).
 
+type AutoSummary = NonNullable<TowerApiResponse["auto"]>;
+
 type View =
   | { kind: "entry" } // 시작 또는 이어하기 선택
   | { kind: "ready"; floor: number; enemy: Monster; isBoss: boolean }
   | { kind: "result"; outcome: "win" | "lose"; floor: number; enemy: Monster; finalState: BattleState }
+  | {
+      kind: "auto_result";
+      summary: AutoSummary;
+      lastEnemy: Monster;
+      lastBattle: BattleState;
+    }
   | { kind: "run_ended"; lastFloor: number };
 
 export function TowerPage({
@@ -95,6 +103,7 @@ export function TowerPage({
           floor={view.floor}
           enemy={view.enemy}
           isBoss={view.isBoss}
+          reviveAvailable={state.run?.reviveAvailable !== false}
           disabled={tower.pending !== null}
           onFight={async () => {
             const apiResult = await tower.fightFloor();
@@ -107,6 +116,16 @@ export function TowerPage({
               floor: view.floor,
               enemy: { ...view.enemy, name: apiResult.battle.enemyName },
               finalState: apiResult.battle.finalState,
+            });
+          }}
+          onAutoToBoss={async () => {
+            const apiResult = await tower.fightFloorsAuto();
+            if (!apiResult.ok || !apiResult.battle || !apiResult.auto) return;
+            setView({
+              kind: "auto_result",
+              summary: apiResult.auto,
+              lastEnemy: { ...view.enemy, name: apiResult.battle.enemyName },
+              lastBattle: apiResult.battle.finalState,
             });
           }}
           onForfeit={async () => {
@@ -137,6 +156,28 @@ export function TowerPage({
         />
       )}
 
+      {view.kind === "auto_result" && (
+        <AutoResultView
+          summary={view.summary}
+          lastEnemy={view.lastEnemy}
+          lastBattle={view.lastBattle}
+          playerName={playerName}
+          playerStatus={playerStatus}
+          onNext={() => {
+            if (view.summary.reason === "death") {
+              setView({
+                kind: "run_ended",
+                lastFloor: view.summary.endFloor,
+              });
+              return;
+            }
+            // next_is_boss / revive_used → 같은 currentFloor 에서 수동 모드 진입.
+            const nextFloor = state.run?.currentFloor ?? view.summary.endFloor;
+            setView(buildReady(nextFloor));
+          }}
+        />
+      )}
+
       {view.kind === "run_ended" && (
         <RunEndedView
           state={state}
@@ -145,16 +186,19 @@ export function TowerPage({
         />
       )}
 
-      {!runActive && view.kind !== "entry" && view.kind !== "run_ended" && (
-        // 안전망 — 서버 측 run 이 비었는데 화면이 ready/result 면 entry 로 복귀.
-        <button
-          type="button"
-          onClick={() => setView({ kind: "entry" })}
-          className="mt-3 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-        >
-          돌아가기
-        </button>
-      )}
+      {!runActive &&
+        view.kind !== "entry" &&
+        view.kind !== "run_ended" &&
+        view.kind !== "auto_result" && (
+          // 안전망 — 서버 측 run 이 비었는데 화면이 ready/result 면 entry 로 복귀.
+          <button
+            type="button"
+            onClick={() => setView({ kind: "entry" })}
+            className="mt-3 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+          >
+            돌아가기
+          </button>
+        )}
     </div>
   );
 }
@@ -314,15 +358,20 @@ function ReadyView({
   floor,
   enemy,
   isBoss,
+  reviveAvailable,
   disabled,
   onFight,
+  onAutoToBoss,
   onForfeit,
 }: {
   floor: number;
   enemy: Monster;
   isBoss: boolean;
+  /** 자동 진행 부활 토큰 남음 여부 — 자동 버튼 보조 라벨용. */
+  reviveAvailable: boolean;
   disabled: boolean;
   onFight: () => Promise<void>;
+  onAutoToBoss: () => Promise<void>;
   onForfeit: () => Promise<void>;
 }) {
   return (
@@ -355,6 +404,19 @@ function ReadyView({
             포기
           </button>
         </div>
+        {!isBoss && (
+          <button
+            type="button"
+            onClick={onAutoToBoss}
+            disabled={disabled}
+            className="mt-2 w-full rounded-md border border-amber-400 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+          >
+            다음 보스까지 자동 진행
+            <span className="ml-1 text-xs opacity-70">
+              ({reviveAvailable ? "부활 1회 가능" : "부활 소진"})
+            </span>
+          </button>
+        )}
       </Card>
     </div>
   );
@@ -432,6 +494,111 @@ function ResultView({
         className="w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
       >
         {outcome === "win" ? "다음 층" : "결과 보기"}
+      </button>
+    </div>
+  );
+}
+
+function AutoResultView({
+  summary,
+  lastEnemy,
+  lastBattle,
+  playerName,
+  playerStatus,
+  onNext,
+}: {
+  summary: AutoSummary;
+  lastEnemy: Monster;
+  lastBattle: BattleState;
+  playerName: string;
+  playerStatus: BattlePlayerStatus;
+  onNext: () => void;
+}) {
+  const reasonText: Record<AutoSummary["reason"], string> = {
+    next_is_boss: "다음 층이 보스 — 자동 멈춤",
+    revive_used: "사망 — 부활 1회 사용, 자동 중단",
+    death: "사망 — 시도 종료",
+  };
+  const totalGold = summary.milestones.reduce(
+    (s, m) => s + (m.reward.gold ?? 0),
+    0,
+  );
+  const totalMaterials = summary.milestones.flatMap((m) => m.reward.materials ?? []);
+  return (
+    <div className="space-y-3">
+      <Card padding="md">
+        <div
+          className={`text-xs uppercase tracking-wider ${
+            summary.reason === "death"
+              ? "text-rose-600 dark:text-rose-400"
+              : summary.reason === "revive_used"
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-emerald-600 dark:text-emerald-400"
+          }`}
+        >
+          자동 진행
+        </div>
+        <h3 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          {summary.floorsCleared}층 클리어 ({summary.startFloor}~
+          {summary.startFloor + summary.floorsCleared - 1})
+        </h3>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          {reasonText[summary.reason]}
+        </p>
+        {summary.milestones.length > 0 && (
+          <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+            <div className="font-semibold">자동 도중 첫 도달 보상</div>
+            <div className="mt-1 space-y-0.5">
+              {summary.milestones.map((m) => (
+                <div key={m.floor}>
+                  <span className="font-medium">F{m.floor}</span>
+                  {m.reward.gold ? (
+                    <span className="ml-2 inline-flex items-center gap-0.5">
+                      <Coins size={11} weight="fill" />
+                      {m.reward.gold.toLocaleString()}
+                    </span>
+                  ) : null}
+                  {m.reward.materials?.map((mat) => (
+                    <span key={mat.id} className="ml-2">
+                      {mat.id} ×{mat.count}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+            {(totalGold > 0 || totalMaterials.length > 0) &&
+              summary.milestones.length > 1 && (
+                <div className="mt-1 border-t border-amber-300/60 pt-1 text-[11px]">
+                  합계{" "}
+                  {totalGold > 0 && (
+                    <span className="inline-flex items-center gap-0.5">
+                      <Coins size={10} weight="fill" />
+                      {totalGold.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              )}
+          </div>
+        )}
+      </Card>
+
+      <Card padding="md">
+        <div className="text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          마지막 전투 — {lastEnemy.name}
+        </div>
+      </Card>
+      <BattleScene
+        state={lastBattle}
+        playerName={playerName}
+        playerStatus={playerStatus}
+      />
+
+      <button
+        type="button"
+        onClick={onNext}
+        className="w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
+      >
+        {summary.reason === "death" ? "결과 보기" : "계속하기"}
       </button>
     </div>
   );

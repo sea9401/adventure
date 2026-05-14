@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { TOWER_DAILY_ATTEMPTS, type TowerState } from "@/adventure/tower/types";
 import {
   TowerError,
+  applyAutoStep,
   computeTowerOutcome,
   todayKey,
 } from "./compute";
@@ -156,6 +157,83 @@ describe("computeTowerOutcome > forfeit", () => {
     expect(() =>
       computeTowerOutcome({ state: emptyState, today }, { kind: "forfeit" }),
     ).toThrow(/no_active_run/);
+  });
+});
+
+describe("computeTowerOutcome > start (revive)", () => {
+  it("새 run 은 reviveAvailable=true 로 시작", () => {
+    const r = computeTowerOutcome({ state: emptyState, today }, { kind: "start" });
+    expect(r.state.run?.reviveAvailable).toBe(true);
+  });
+});
+
+describe("applyAutoStep", () => {
+  // 자동 시작 가능한 시점 = 잡몹층 (F1 처럼 10 의 배수가 아닌 층).
+  const makeAutoState = (
+    floor: number,
+    reviveAvailable = true,
+    highestFloor = 0,
+    claimedMilestones: number[] = [],
+  ): TowerState => ({
+    progress: { highestFloor, claimedMilestones },
+    run: { currentFloor: floor, startedAt: 0, reviveAvailable },
+    daily: { date: today, attempts: 1 },
+  });
+
+  it("승리 — 다음 층이 잡몹이면 reason=null (루프 계속)", () => {
+    const s = makeAutoState(11); // F12 가 잡몹 (다음 보스 F20)
+    const r = applyAutoStep({ state: s, today }, "win");
+    expect(r.reason).toBe(null);
+    expect(r.state.run?.currentFloor).toBe(12);
+    expect(r.state.run?.reviveAvailable).toBe(true); // 부활 그대로
+  });
+
+  it("승리 — 다음 층이 보스(10의 배수)면 reason=next_is_boss 로 멈춤", () => {
+    const s = makeAutoState(19); // F20 이 보스
+    const r = applyAutoStep({ state: s, today }, "win");
+    expect(r.reason).toBe("next_is_boss");
+    expect(r.state.run?.currentFloor).toBe(20);
+  });
+
+  it("승리 — 보스 클리어 후 마일스톤은 step.milestone 으로 동봉", () => {
+    // F10 (보스) 에서 승리 → highestFloor=10, claimed=[10], 마일스톤 동봉.
+    const s = makeAutoState(10, true, 0, []);
+    const r = applyAutoStep({ state: s, today }, "win");
+    expect(r.milestone).toBeDefined();
+    expect(r.milestone?.floor).toBe(10);
+  });
+
+  it("패배 + reviveAvailable=true — 부활 소비, run 유지, 같은 층, reason=revive_used", () => {
+    const s = makeAutoState(13, true);
+    const r = applyAutoStep({ state: s, today }, "lose");
+    expect(r.reason).toBe("revive_used");
+    expect(r.state.run?.currentFloor).toBe(13); // 층 그대로
+    expect(r.state.run?.reviveAvailable).toBe(false); // 소비됨
+  });
+
+  it("패배 + reviveAvailable=false — run 종료(=null), reason=death", () => {
+    const s = makeAutoState(13, false);
+    const r = applyAutoStep({ state: s, today }, "lose");
+    expect(r.reason).toBe("death");
+    expect(r.state.run).toBe(null);
+  });
+
+  it("패배 + reviveAvailable 미지정(레거시 런) — true 로 간주해 부활", () => {
+    const s: TowerState = {
+      progress: { highestFloor: 0, claimedMilestones: [] },
+      // 의도적으로 reviveAvailable 누락 — 옛 클라가 저장한 런 시나리오.
+      run: { currentFloor: 13, startedAt: 0 },
+      daily: { date: today, attempts: 1 },
+    };
+    const r = applyAutoStep({ state: s, today }, "lose");
+    expect(r.reason).toBe("revive_used");
+    expect(r.state.run?.reviveAvailable).toBe(false);
+  });
+
+  it("run 없을 때 호출하면 no_active_run", () => {
+    expect(() =>
+      applyAutoStep({ state: emptyState, today }, "win"),
+    ).toThrow(TowerError);
   });
 });
 

@@ -17,7 +17,13 @@ const EMPTY_STATE: TowerState = {
 export type TowerApiAction =
   | { kind: "start" }
   | { kind: "fight_floor" }
+  | { kind: "fight_floors_auto" }
   | { kind: "forfeit" };
+
+type MilestoneReward = {
+  gold?: number;
+  materials?: { id: string; count: number }[];
+};
 
 export type TowerApiResponse = {
   ok: boolean;
@@ -31,13 +37,21 @@ export type TowerApiResponse = {
     currentFloor?: number;
     outcome?: "win" | "lose";
     newHighestFloor?: number;
-    milestone?: { floor: number; reward: { gold?: number; materials?: { id: string; count: number }[] } };
+    milestone?: { floor: number; reward: MilestoneReward };
   };
-  /** fight_floor 응답에 동봉되는 서버 측 전투 결과. */
+  /** fight_floor / fight_floors_auto 응답에 동봉되는 서버 측 전투 결과 (마지막 전투). */
   battle?: {
     finalState: BattleState;
     enemyName: string;
     isBoss: boolean;
+  };
+  /** fight_floors_auto 응답 전용 — 묶음 진행 요약. */
+  auto?: {
+    startFloor: number;
+    endFloor: number;
+    floorsCleared: number;
+    reason: "next_is_boss" | "revive_used" | "death";
+    milestones: { floor: number; reward: MilestoneReward }[];
   };
   error?: string;
 };
@@ -88,6 +102,10 @@ export function useTower(opts?: {
     error,
     start: useCallback(() => call({ kind: "start" }), [call]),
     fightFloor: useCallback(() => call({ kind: "fight_floor" }), [call]),
+    fightFloorsAuto: useCallback(
+      () => call({ kind: "fight_floors_auto" }),
+      [call],
+    ),
     forfeit: useCallback(() => call({ kind: "forfeit" }), [call]),
   };
 }
