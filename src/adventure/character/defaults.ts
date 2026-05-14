@@ -13,8 +13,8 @@ export const DEFAULT_CLASS_NAME = "무직";
 export const baseCharacter = {
   className: DEFAULT_CLASS_NAME,
   level: 1,
-  hp: 47,
-  maxHp: 47,
+  hp: 97,
+  maxHp: 97,
   mp: 30,
   maxMp: 30,
   exp: 0,
