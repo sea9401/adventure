@@ -28,12 +28,12 @@ export const OFFLINE_SIM_MAX_MS = 60 * 60 * 1000;
 // 라이브 자동 전투의 전투 사이 쿨다운 — useBattle.ts 의 computeBattleCooldown / 상수와 동일해야 함.
 // (useBattle.ts 는 React hook 이라 여기서 import 하지 않고 값을 복제 — 양쪽을 함께 고칠 것.)
 // 위탁/오프라인 sim 도 이 페이싱을 그대로 따른다: 전투 자체는 "즉시" 끝나고, 한 전투가 끝날
-// 때마다 battleCooldownMs(min(턴 수, 8)) ≈ 600~5000ms 만큼 흐른 것으로 친다. 턴 수 기준이라
+// 때마다 battleCooldownMs(min(턴 수, 9)) ≈ 1200~4200ms 만큼 흐른 것으로 친다. 턴 수 기준이라
 // 출혈/철벽/연타 같은 스킬 메시지가 많아도 페이싱은 안 흔들린다.
-const BATTLE_COOLDOWN_PER_TURN_MS = 625;
-const BATTLE_COOLDOWN_MIN_MS = 600;
-const BATTLE_COOLDOWN_MAX_MS = 5000;
-const BATTLE_TURN_CLAMP = 8;
+const BATTLE_COOLDOWN_PER_TURN_MS = 500;
+const BATTLE_COOLDOWN_MIN_MS = 1200;
+const BATTLE_COOLDOWN_MAX_MS = 4200;
+const BATTLE_TURN_CLAMP = 9;
 function battleCooldownMs(turns: number): number {
   const raw = turns * BATTLE_COOLDOWN_PER_TURN_MS;
   return Math.max(BATTLE_COOLDOWN_MIN_MS, Math.min(BATTLE_COOLDOWN_MAX_MS, raw));
