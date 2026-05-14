@@ -2356,6 +2356,21 @@ export const QUESTS: Quest[] = [
     giverNpcId: "star_haven_elder",
     requiresQuestCompleted: "star-haven-corridor-wraiths",
   },
+  // 폐도의 봉인 — 천공인의 왕 협동 보스 진입 자격 게이트.
+  // 회랑 골렘(Q3) 완수 후 노출 / 완료 시 storyFlag `skyfolk_gate_cleared` 셋.
+  {
+    id: "star-haven-skyfolk-gate",
+    regionId: "skyfolk_ruins",
+    title: "폐도의 봉인을 풀어라",
+    description:
+      "폐도 안쪽 깊은 결을 더는 잘못 굳게 둘 수 없소. 폐도 정찰병 열만 가라앉히면 — 천공인의 왕이 자네의 결을 알아볼 자격이 생기오. 그래야 결의 주인을 만날 수 있소.",
+    requiredLevel: 80,
+    target: { kind: "kill", monsterName: "폐도 정찰병", count: 10 },
+    reward: { gold: 1700, fame: 22, exp: 3800 },
+    repeatable: false,
+    giverNpcId: "star_haven_elder",
+    requiresQuestCompleted: "star-haven-corridor-golems",
+  },
   {
     id: "star-haven-throne-guards",
     regionId: "throne_road",
@@ -2372,7 +2387,22 @@ export const QUESTS: Quest[] = [
     },
     repeatable: false,
     giverNpcId: "star_haven_elder",
-    requiresQuestCompleted: "star-haven-corridor-golems",
+    requiresQuestCompleted: "star-haven-skyfolk-gate",
+  },
+  // 옥좌의 봉인 — 창공의 주재 협동 보스 진입 자격 게이트. 만렙 정점 마지막 자격.
+  // 황성 호위병(Q4 throne-guards) 완수 후 노출 / 완료 시 storyFlag `apex_gate_cleared` 셋.
+  {
+    id: "star-haven-apex-gate",
+    regionId: "apex_throne",
+    title: "옥좌의 봉인을 풀어라",
+    description:
+      "옥좌 둘레에 별빛 사도들이 마지막 결을 두르고 있소. 열만 가라앉히면 — 창공의 주재가 자네 앞에 일어설 자격이 생기오. 별빛이 그날을 기억할 것이오.",
+    requiredLevel: 90,
+    target: { kind: "kill", monsterName: "별빛 사도", count: 10 },
+    reward: { gold: 3000, fame: 36, exp: 6500 },
+    repeatable: false,
+    giverNpcId: "star_haven_elder",
+    requiresQuestCompleted: "star-haven-throne-guards",
   },
 ];
 

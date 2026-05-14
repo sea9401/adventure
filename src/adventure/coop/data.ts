@@ -17,6 +17,10 @@ export type CoopBossDef = {
   onDefeatFlag?: string;
   /** 보스에 1회 이상 attack 한 시점에 set 할 storyFlag (참여 unlock 용). */
   onAttackFlag?: string;
+  /** 진입 조건 storyFlag — 셋팅 안 됐으면 보스 카드 잠금 (게이트 의뢰 완료로 풀림). */
+  requiredFlag?: string;
+  /** 잠금 상태에서 보여줄 메시지 (어떤 의뢰가 자격을 여는지 안내). */
+  lockedMessage?: string;
 };
 
 export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
@@ -43,6 +47,10 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     respawnMs: 1 * 60 * 60 * 1000, // 1h
     onDefeatFlag: "skyfolk_king_defeated",
     onAttackFlag: "skyfolk_engaged",
+    // 진입 자격 — 별바다 노수호자 유성의 "폐도의 봉인" 의뢰 완료 시 풀림.
+    requiredFlag: "skyfolk_gate_cleared",
+    lockedMessage:
+      "별바다의 노수호자 유성에게 '폐도의 봉인' 의뢰를 받아 완료해야 한다. 폐도의 결을 먼저 풀어야 천공인의 왕이 자네를 알아본다.",
   },
   apex_throne: {
     monsterName: "창공의 주재",
@@ -52,6 +60,10 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     // 만렙 정점 — 처치 시 6번째 일반 슬롯 + 2번째 특기 슬롯 동시 해금 (SKILL_SLOT_UNLOCK 참조).
     onDefeatFlag: "endgame_apex_defeated",
     onAttackFlag: "apex_engaged",
+    // 진입 자격 — 별바다 노수호자 유성의 "옥좌의 봉인" 의뢰 완료 시 풀림.
+    requiredFlag: "apex_gate_cleared",
+    lockedMessage:
+      "별바다의 노수호자 유성에게 '옥좌의 봉인' 의뢰를 받아 완료해야 한다. 옥좌 둘레의 결을 풀어야 창공의 주재가 자네 앞에 일어선다.",
   },
 };
 

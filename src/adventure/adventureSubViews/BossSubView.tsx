@@ -1,6 +1,7 @@
 "use client";
 
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
+import { Card } from "@/components/ui/Card";
 import { BattleView } from "@/adventure/BattleView";
 import { CoopBossCard } from "@/adventure/coop/CoopBossCard";
 import { COOP_BOSSES } from "@/adventure/coop/data";
@@ -38,7 +39,24 @@ export function BossSubView() {
     "boss_attempt_bonus",
   );
 
-  if (COOP_BOSSES[currentRegion.id]) {
+  const coopBossDef = COOP_BOSSES[currentRegion.id];
+  if (coopBossDef) {
+    // 진입 자격 게이트 — requiredFlag 가 설정돼 있고 아직 안 셋되었으면 잠금 카드만.
+    if (coopBossDef.requiredFlag && !storyFlags.has(coopBossDef.requiredFlag)) {
+      return (
+        <div className="space-y-3">
+          <SubViewHeader title="보스" onBack={back} />
+          <Card padding="md">
+            <div className="text-xs uppercase tracking-wider text-rose-500/70 dark:text-rose-400/70">
+              협동 보스 — 잠금
+            </div>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+              {coopBossDef.lockedMessage ?? "아직 진입 자격을 얻지 못했다."}
+            </p>
+          </Card>
+        </div>
+      );
+    }
     return (
       <div className="space-y-3">
         <SubViewHeader title="보스" onBack={back} />

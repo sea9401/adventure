@@ -767,6 +767,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 135,
     drops: [
       { kind: "material", materialId: "stardust", chance: 0.01 },
+      { kind: "material", materialId: "corridor_relic", chance: 0.02 },
     ],
     skill: { kind: "pierce", name: "회랑 일섬", armorPierce: 4 },
   },
@@ -780,6 +781,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 145,
     drops: [
       { kind: "material", materialId: "stardust", chance: 0.012 },
+      { kind: "material", materialId: "corridor_relic", chance: 0.025 },
     ],
     skill: { kind: "enrage", name: "망령의 잔영", hpFraction: 0.4, atkBonus: 9 },
   },
@@ -793,6 +795,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 155,
     drops: [
       { kind: "material", materialId: "stardust", chance: 0.013 },
+      { kind: "material", materialId: "corridor_relic", chance: 0.03 },
       { kind: "material", materialId: "stellar_essence", chance: 0.004 },
     ],
     skill: { kind: "heavy_blow", name: "회랑 충격", everyPhases: 3, multiplier: 1.5 },
@@ -883,6 +886,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 200,
     drops: [
       { kind: "material", materialId: "empyrean_shard", chance: 0.01 },
+      { kind: "material", materialId: "road_relic", chance: 0.02 },
     ],
     skill: { kind: "pierce", name: "정찰관 일섬", armorPierce: 5 },
   },
@@ -896,6 +900,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 220,
     drops: [
       { kind: "material", materialId: "empyrean_shard", chance: 0.012 },
+      { kind: "material", materialId: "road_relic", chance: 0.025 },
     ],
     skill: { kind: "heavy_blow", name: "호위 일격", everyPhases: 3, multiplier: 1.55 },
   },
@@ -909,6 +914,7 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 240,
     drops: [
       { kind: "material", materialId: "empyrean_shard", chance: 0.013 },
+      { kind: "material", materialId: "road_relic", chance: 0.03 },
       { kind: "material", materialId: "primordial_essence", chance: 0.004 },
     ],
     skill: { kind: "enrage", name: "파편 폭주", hpFraction: 0.4, atkBonus: 13 },

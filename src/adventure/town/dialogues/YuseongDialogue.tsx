@@ -12,9 +12,9 @@ type Props = {
 };
 
 // 노수호자 유성 — 별바다(천공 라인 endgame 정거장) 의 마지막 천공인 후예. 차분한 어른 말투.
-// 회랑 정찰자 → 별빛 망령 → 회랑 골렘 → 황성 호위병 4단 라인으로 corridor 5종 + road 5종
-// 제작서를 차례로 풀어 5단 craft chain(star → corridor → aether → road → empyrean) 의
-// 중간 두 단계 출처를 한 NPC 에 모은다.
+// 회랑 정찰자 → 별빛 망령 → 회랑 골렘 → (폐도 게이트) → 황성 호위병 → (옥좌 게이트) 6단 라인.
+//   corridor 5종 + road 5종 제작서를 차례로 풀어 5단 craft chain 의 중간 두 출처를 모음.
+//   2개 게이트 의뢰가 천공인의 왕 / 창공의 주재 코옵 보스 진입 자격을 잠그고 풀어준다.
 const STEPS: QuestLineStep[] = [
   {
     id: "star-haven-corridor-scouts",
@@ -47,6 +47,16 @@ const STEPS: QuestLineStep[] = [
     acceptLabel: "봉인을 풀겠다고 한다",
   },
   {
+    id: "star-haven-skyfolk-gate",
+    offerText:
+      "폐도 깊은 곳, 정찰병들이 잘못 굳은 결을 쥐고 있소. 열만 가라앉히면 — 천공인의 왕이 자네의 결을 비로소 알아볼 것이오. 그 자격 없이 결의 주인을 마주할 수 없는 결이오.",
+    activeText: (have, need) =>
+      `폐도 정찰병은 폐도 어디서나 마주칠 수 있소. 결을 한 점씩 정리하시오. — 가라앉힌 결 ${have}/${need}`,
+    doneText:
+      "폐도의 봉인이 한 결 풀렸소. 천공인의 왕이 마침내 자네의 결을 받아들일 자격을 얻었소 — 이제 결의 주인을 마주할 수 있을 것이오.",
+    acceptLabel: "폐도의 봉인을 풀겠다고 한다",
+  },
+  {
     id: "star-haven-throne-guards",
     offerText:
       "옥좌의 길에서 황성 호위병들이 길을 막고 있소. 열다섯만 정리해 길을 열면 — 황성 무구 다섯 자루의 결을 모두 자네 손에 새겨 주리다. 별바다가 자네에게 줄 수 있는 마지막 결이오.",
@@ -55,6 +65,16 @@ const STEPS: QuestLineStep[] = [
     doneText:
       "길이 열렸소. 황성검·방패·창·너클·망토 — 다섯 자루 결을 모두 자네 손에 새겨 두었소. 옥좌가 자네를 알아보는 날이 멀지 않았소.",
     acceptLabel: "길을 열겠다고 한다",
+  },
+  {
+    id: "star-haven-apex-gate",
+    offerText:
+      "옥좌 둘레에 별빛 사도들이 마지막 결을 두르고 있소. 열만 가라앉히면 — 창공의 주재가 자네 앞에 일어설 자격이 생기오. 별빛이 그날을 기억할 것이오.",
+    activeText: (have, need) =>
+      `별빛 사도는 옥좌 둘레 어디서나 마주칠 수 있소. 마지막 결을 한 점씩 풀어주시오. — 풀어준 결 ${have}/${need}`,
+    doneText:
+      "마지막 결이 풀렸소. 창공의 주재가 자네 앞에 일어설 자격을 비로소 인정했소. 옥좌가 자네를 기억할 것이오.",
+    acceptLabel: "옥좌의 봉인을 풀겠다고 한다",
   },
 ];
 
