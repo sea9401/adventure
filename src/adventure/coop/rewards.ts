@@ -131,11 +131,49 @@ const SKY_ARBITER_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
   },
 };
 
+// 월드 보스 — 태고의 노룡. 일주일 단위 이벤트라 일반 coop 보다 보상 분량 두툼.
+// gold/epic 에서 equipRolls 로 무구 4종을 직접 굴리고, legend 에 한해 정점 액세서리
+// (태고의 비늘관) 가 5% 로 떨어진다 (창공의 옥새 1% 보다 후함 — 7일 한정).
+const PRIMORDIAL_DRAGON_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
+  bronze: {
+    materials: { dragonscale_shard: 3 },
+    recipes: [],
+  },
+  silver: {
+    materials: { bone_rune_steel: 1, scale_dust: 5 },
+    recipes: [],
+  },
+  gold: {
+    materials: { dragonscale_shard: 3, bone_rune_steel: 2 },
+    recipes: [],
+    // gold 도달자에게 3종 무구 중 한 자루씩 굴림 — 평균 ~50% 확률로 한 자루 획득.
+    equipRolls: [
+      { itemId: "primordial_blade", chance: 0.2 },
+      { itemId: "primordial_aegis", chance: 0.2 },
+      { itemId: "primordial_helm", chance: 0.2 },
+    ],
+  },
+  epic: {
+    materials: { bone_rune_steel: 2 },
+    recipes: [],
+    // epic 까지 깎은 자에게 망토 직접 굴림 — 가볍게 15%.
+    equipRolls: [{ itemId: "primordial_cloak", chance: 0.15 }],
+  },
+  legend: {
+    materials: {},
+    recipes: [],
+    titleId: "primordial_slayer",
+    // 만렙 정점 물욕 드랍 — 창공의 옥새(1%) 위. 7일 한 번 시도 가능하니 5%.
+    equipRolls: [{ itemId: "primordial_regalia", chance: 0.05 }],
+  },
+};
+
 const TIER_TABLES: Record<string, Record<CoopRewardTier, CoopReward>> = {
   "운봉의 거인": PEAK_GIANT_TIER_REWARDS,
   "별을 지키는 자": STAR_KEEPER_TIER_REWARDS,
   "천공인의 왕": SKYFOLK_KING_TIER_REWARDS,
   "창공의 주재": SKY_ARBITER_TIER_REWARDS,
+  "태고의 노룡": PRIMORDIAL_DRAGON_TIER_REWARDS,
 };
 
 const TIER_ORDER: CoopRewardTier[] = ["bronze", "silver", "gold", "epic", "legend"];

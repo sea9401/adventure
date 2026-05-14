@@ -981,6 +981,87 @@ export const ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
+  // ── 태고의 노룡 (월드 보스) 보상 — 용의 둥지에서 모든 모험가가 깎아 잡는 어미의 결. ──
+  // gold/epic 티어 도달자에게 equipRolls 로 직접 떨어지는 무구 4종 (no debuff, BiS급).
+  // legend 티어 도달자에게는 그 위 액세서리 한 자루(태고의 비늘관) — 거래 불가, 운빨.
+  primordial_blade: {
+    name: "태고의 결검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+28" },
+      { label: "힘", value: "+14" },
+      { label: "속도", value: "+5" },
+    ],
+    bonus: { atk: 28, str: 14, spd: 5 },
+    description: "태고의 노룡의 가장 안쪽 비늘을 깎아 결을 잡은 한손 대검. 들면 어깨에 옛 시대의 무게가 그대로 얹히면서, 그 결이 칼날 끝까지 흐른다.",
+    rarity: "unique",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+  primordial_aegis: {
+    name: "태고의 결갑",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+24" },
+      { label: "활력", value: "+14" },
+      { label: "힘", value: "+6" },
+    ],
+    bonus: { def: 24, vit: 14, str: 6 },
+    description: "태고의 노룡의 가슴 비늘을 그대로 뜯어 두른 두꺼운 갑주. 어떤 결도 안으로 닿지 못한다 — 어미의 무게가 가슴에 그대로 얹혀 있다.",
+    rarity: "unique",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+  primordial_helm: {
+    name: "태고의 결관",
+    slot: "accessory",
+    stats: [
+      { label: "방어력", value: "+11" },
+      { label: "활력", value: "+9" },
+      { label: "힘", value: "+6" },
+    ],
+    bonus: { def: 11, vit: 9, str: 6 },
+    description: "태고의 노룡의 머리뼈 결을 그대로 깎아 두른 투구. 한 번 쓰면 어미가 잠시 자네의 어깨에 한 결을 얹는다.",
+    rarity: "unique",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+  primordial_cloak: {
+    name: "태고의 잿빛 망토",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+10" },
+      { label: "속도", value: "+10" },
+      { label: "활력", value: "+8" },
+      { label: "방어력", value: "+5" },
+    ],
+    bonus: { dex: 10, spd: 10, vit: 8, def: 5 },
+    description: "태고의 노룡의 등에서 흘러내린 잿빛 비늘을 가는 가닥으로 풀어 짠 망토. 두르면 어깨가 가벼워지고, 동시에 어디로도 흔들리지 않는다.",
+    rarity: "unique",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+  // 태고의 비늘관 — legend 티어 5% 드랍 (월드 보스 정점 물욕템).
+  // accessory 슬롯, 창공의 옥새 위의 전스탯 — 거래 불가, 운빨로 한 자루.
+  primordial_regalia: {
+    name: "태고의 비늘관",
+    slot: "accessory",
+    stats: [
+      { label: "공격력", value: "+12" },
+      { label: "방어력", value: "+12" },
+      { label: "힘", value: "+6" },
+      { label: "민첩", value: "+6" },
+      { label: "활력", value: "+6" },
+      { label: "속도", value: "+6" },
+      { label: "행운", value: "+6" },
+    ],
+    bonus: { atk: 12, def: 12, str: 6, dex: 6, vit: 6, spd: 6, luk: 6 },
+    description: "태고의 노룡이 마지막에 떨군 가장 안쪽 비늘 한 장을 그대로 둘러 만든 관. 한 자루로는 닿을 수 없는 결 — 모든 모험가의 누적 데미지로 어미를 쓰러뜨려야만 자네의 손에 들린다.",
+    rarity: "legendary",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+
   // ── 히든 퀘스트 보상 (§11) — 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────
   // 월광검: 볼드 ↔ 만월 옛 합작 무기를 마저 완성한 것(hidden-blacksmith-duel). 운봉 무기 한 칸 위.
   moonlight_blade: {

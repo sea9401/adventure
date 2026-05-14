@@ -237,6 +237,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "창공의 주재를 홀로 절반 이상 깎아낸 자. 옥좌 위 별빛이 마침내 한 사람의 결을 알아본다.",
     condition: "창공의 주재 협동 처치에서 누적 데미지 60% 이상 (legend 티어)",
   },
+  primordial_slayer: {
+    id: "primordial_slayer",
+    name: "태고의 노룡 마지막 자",
+    description: "태고의 노룡을 홀로 절반 이상 깎아낸 자. 어미의 잿빛 비늘이 마지막에 한 사람의 결을 새긴다.",
+    condition: "태고의 노룡 월드 보스 처치에서 누적 데미지 60% 이상 (legend 티어)",
+  },
   // ── 후반 3코옵 보스 도전 칭호 (3 보스 × 3 종 = 9) — 유성 도전 의뢰 라인 보상.
   starlight_witness: {
     id: "starlight_witness",

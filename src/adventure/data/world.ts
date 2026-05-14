@@ -34,6 +34,8 @@ export type RegionId =
   // 용비늘 라인 (바람골 역참 남쪽으로 갈라지는 막다른 라인 — 서양 판타지 톤의 고룡 묘지)
   | "bone_marches"
   | "scalefall_barrows"
+  // 용비늘 묘지 너머 — 월드 보스 "태고의 노룡" 이 깨어 있는 둥지. 입장은 wyrm_warden_felled 필수.
+  | "dragon_nest"
   // 엔드컨텐츠 — 옛 변경 성채 너머에 잡몹 없이 솔로 무한 탑(고탑) 도전만 있는 지역.
   | "tower_foot";
 
@@ -573,6 +575,20 @@ export const WORLD_MAP: WorldMap = {
       boss: { monsterName: "뼈비늘 노룡", dailyEntryLimit: 3 },
       recommendedLevel: 75,
     },
+    // ── 용의 둥지 (scalefall_barrows 너머 월드 보스 맵) ───────────────────────────
+    // 뼈비늘 노룡을 한 번 잡은 자(wyrm_warden_felled) 만 들어설 수 있다. 잡몹 없이
+    // 월드 보스 "태고의 노룡" 한 마리가 깨어 있고, 모든 모험가의 누적 데미지로만
+    // 쓰러뜨릴 수 있다. 죽으면 7일 휴면 후 다시 깨어남.
+    {
+      id: "dragon_nest",
+      name: "용의 둥지",
+      description:
+        "묘지 더 안쪽, 죽은 줄 알았던 노룡의 어미가 잿빛 비늘을 한 겹 더 두른 채 깨어 있는 자리. 어미의 등에서 옛 시대의 무게가 그대로 흘러내린다 — 어느 한 자루로 잡을 수 있는 자는 없다.",
+      position: { x: 1980, y: 800 },
+      biome: "ruins",
+      enemies: [],
+      recommendedLevel: 90,
+    },
     // ── 고탑 입구 (oldwall_keep 너머) ──────────────────────────────────────────
     // 잡몹/보스 없이 솔로 무한 탑(고탑) 도전 입구만 있는 지역. 옛 성문지기를 한 번
     // 처치해야(gatekeeper_felled) 길이 열린다. 권장 Lv70+.
@@ -764,6 +780,16 @@ export const WORLD_MAP: WorldMap = {
       from: "bone_marches",
       to: "scalefall_barrows",
       requires: { kind: "trial", battles: 5, enemiesFrom: "scalefall_barrows" },
+    },
+    // 용의 둥지 — 뼈비늘 노룡을 한 번 잡은 자만 들어선다. 그 안쪽에서 어미가 깨어 있다.
+    {
+      from: "scalefall_barrows",
+      to: "dragon_nest",
+      requires: {
+        kind: "story",
+        flagId: "wyrm_warden_felled",
+        reason: "뼈비늘 노룡을 한 번 쓰러뜨려야 그 안쪽 둥지의 어미가 자네를 알아본다.",
+      },
     },
     // 고탑 입구 — 옛 성문지기를 한 번 쓰러뜨려야 열린다.
     {

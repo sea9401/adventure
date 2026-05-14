@@ -21,6 +21,14 @@ export type CoopBossDef = {
   requiredFlag?: string;
   /** 잠금 상태에서 보여줄 메시지 (어떤 의뢰가 자격을 여는지 안내). */
   lockedMessage?: string;
+  /**
+   * 분당 자연회복량 — 0/미설정 이면 회복 없음 (일반 coop 보스 default).
+   * 월드 보스용: GET/attack 시 lazy 로 elapsed × regen 만큼 hp 회복 (max_hp cap).
+   * baseline sustain — "꾸준히 깎아야 잡힌다" 를 다인 누적 데미지에 강제.
+   */
+  regenPerMin?: number;
+  /** true 면 보스 카드 UI 에 "월드 보스" 라벨/스타일 적용. lore drop 표시 톤 강화. */
+  isWorldBoss?: boolean;
 };
 
 export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
@@ -64,6 +72,23 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     requiredFlag: "apex_gate_cleared",
     lockedMessage:
       "별바다의 노수호자 유성에게 '옥좌의 봉인' 의뢰를 받아 완료해야 한다. 옥좌 둘레의 결을 풀어야 창공의 주재가 자네 앞에 일어선다.",
+  },
+  // 월드 보스 — 용비늘 묘지 너머. apex_throne 의 10배 HP + 분당 150 자연회복 + 7일
+  // 휴면. expirationMs 는 사실상 만료 없음 (1년) — 죽을 때까지 살아있다는 의미.
+  dragon_nest: {
+    monsterName: "태고의 노룡",
+    maxHp: 500_000,
+    expirationMs: 365 * 24 * 60 * 60 * 1000, // 1y (실질 무한)
+    respawnMs: 7 * 24 * 60 * 60 * 1000, // 7d 휴면
+    regenPerMin: 150,
+    isWorldBoss: true,
+    onDefeatFlag: "primordial_dragon_felled",
+    onAttackFlag: "primordial_dragon_engaged",
+    // 진입 자격 — 뼈비늘 노룡 처치 이력 (wyrm_warden_felled). 같은 flag 가 region edge
+    // 통행 조건이라 사실상 region 에 들어선 자는 곧 자격자 — 안전망으로 한 번 더 박는다.
+    requiredFlag: "wyrm_warden_felled",
+    lockedMessage:
+      "뼈비늘 노룡을 한 번 쓰러뜨려야 둥지의 어미가 자네를 알아본다. 묘지의 보스를 먼저 잡고 다시 오라.",
   },
 };
 

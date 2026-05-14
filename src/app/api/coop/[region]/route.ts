@@ -20,6 +20,7 @@ import {
   type CoopAttackBody,
 } from "@/lib/server/coop/attack";
 import { handleCoopClaim } from "@/lib/server/coop/claim";
+import { applyLazyRegen } from "@/lib/server/coop/regen";
 import type { RegionId } from "@/adventure/data/world";
 
 const VALID_REGIONS = Object.keys(COOP_BOSSES) as RegionId[];
@@ -45,7 +46,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   if (Math.random() < 0.05) await respawnCoopRegion(region);
 
   // 활성 세션 (defeatedAt IS NULL) 우선, 없으면 가장 최근 정리된 세션 (nextSpawnAt 정보 표시용).
-  const active = await db
+  let active = await db
     .select()
     .from(coopBossSessions)
     .where(
@@ -55,6 +56,17 @@ export async function GET(_req: Request, { params }: Ctx) {
       ),
     )
     .limit(1);
+
+  // 월드 보스 lazy regen — regen_per_min > 0 인 활성 세션이면 진입 시점에 분 단위로
+  // hp 회복 적용. 조건 미달이면 no-op. 적용 후 최신 hp 를 다시 읽음.
+  if (active[0]) {
+    await applyLazyRegen(active[0].id);
+    active = await db
+      .select()
+      .from(coopBossSessions)
+      .where(eq(coopBossSessions.id, active[0].id))
+      .limit(1);
+  }
 
   let session = active[0];
   const isActive = !!session;
