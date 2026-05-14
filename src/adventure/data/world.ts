@@ -113,7 +113,9 @@ export type RegionEdge = {
 };
 
 export type WorldMap = {
-  viewBox: { width: number; height: number };
+  // SVG viewBox 호환 — x/y 미지정이면 원점 (0,0). 북쪽으로 추가된 영역을 표현하기 위해
+  // 음수 y 시작도 가능(예: y=-440, height=1260 → y 범위 [-440, 820]).
+  viewBox: { x?: number; y?: number; width: number; height: number };
   regions: Region[];
   edges: RegionEdge[];
 };
@@ -123,7 +125,9 @@ export const WORLD_MAP: WorldMap = {
   // 운향(1280) 동쪽으로 운저 평원(1460)→바람골 역참(1640)→잿빛 협로(1820) 다리 구간 +
   // 봉황령(2000)→화산 지대(2180)→천공 성지(2360) 추가로 width 1400→2440 확장.
   // 운향까지의 기존 region 좌표는 그대로 유지 (봉황령 라인은 다리 삽입으로 동쪽으로 밀림).
-  // 디올라(660,80)에서 남쪽으로 갈라지는 해안 지선(조수 갯벌→소만→산호초 섬)으로 height 500→640 확장.
+  // 디올라(660,80)에서 북쪽으로 갈라지는 해안 지선(조수 갯벌→소만→산호초 섬). 디올라 바로
+  // 위에는 빈 공간이 없어 viewBox 를 음수 y 쪽으로 440 확장 — y=-440 시작 / height 820→1260.
+  // 라인 모양(zigzag dx)은 기존 남쪽 배치 그대로 두고 y 만 디올라 기준으로 미러링.
   // 시작 마을(160,380)에서 서쪽-아래로 갈라지는 서편 옛길(옛길→마른나루→옛 변경 성채)을 좌하단
   // 빈 공간에 깔면서 height 640→700 확장.
   // 천공 성지(2360, 150) 에서 남쪽으로 꺾어 starspire/star_corridor/star_haven/skyfolk_ruins/
@@ -131,7 +135,7 @@ export const WORLD_MAP: WorldMap = {
   // (직선 일렬 대신 별바다 근처에서 서쪽으로 휘었다가 옥좌로 동쪽으로 돌아온다.)
   // 바람골 역참(1640,410) 남쪽 빈 공간으로 뼈무덤 황야(Lv47) → 용비늘 묘지(Lv75) 막다른 라인
   // 추가. 서양 판타지 톤의 고룡 묘지 — 방어 중심 무구 라인.
-  viewBox: { width: 2440, height: 820 },
+  viewBox: { y: -440, width: 2440, height: 1260 },
   regions: [
     {
       id: "village",
@@ -450,13 +454,14 @@ export const WORLD_MAP: WorldMap = {
     },
     // ── 해안 지선 (diola → tideflats → saltmarsh → reef_isle) ───────────────
     // 폐허(Lv9)~산기슭(Lv18) 구간에 산으로 가는 길과 나란히 놓인 막다른 바닷길.
-    // 디올라(660,80) 남쪽 빈 공간으로 내려가며, height 를 640 으로 늘려 자리를 만든다.
+    // 디올라(660,80) 북쪽으로 올라가는 막다른 라인. y 는 디올라 기준 미러링
+    // (원래 +420/+480/+520 → -420/-480/-520), x 는 그대로 둬 라인 모양 유지.
     {
       id: "tideflats",
       name: "조수 갯벌",
       description:
         "안개 호수가 바다로 빠지는 너른 하구. 썰물이면 갯벌과 갯바위가 드러나고, 집게발 든 것들이 진흙 위를 기어다닌다.",
-      position: { x: 760, y: 500 },
+      position: { x: 760, y: -340 },
       biome: "coast",
       enemies: ["집게발 게", "갯도요", "진흙 미꾸라지"],
       encounterWeights: {
@@ -471,7 +476,7 @@ export const WORLD_MAP: WorldMap = {
       name: "소만",
       description:
         "갯벌 끝에 소금밭과 젓갈 창고가 늘어선 작은 포구. 디올라 어부들과 물자를 주고받고, 뱃사공이 난바다로 나가는 배를 댄다.",
-      position: { x: 640, y: 560 },
+      position: { x: 640, y: -400 },
       biome: "village",
       enemies: [],
       tags: ["town"],
@@ -482,7 +487,7 @@ export const WORLD_MAP: WorldMap = {
       name: "산호초 섬",
       description:
         "안개 너머에 떠 있는 작은 섬과 그 둘레를 두른 암초. 산호 가시에 긁히는 소리 사이로 사이렌의 노래가 섞여 든다.",
-      position: { x: 840, y: 600 },
+      position: { x: 840, y: -440 },
       biome: "coast",
       enemies: ["산호초 사이렌", "갑각 약탈자", "가시 산호 골렘"],
       encounterWeights: {

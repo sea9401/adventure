@@ -28,7 +28,9 @@ export function MapCanvas({
   children,
   height = "min(54vh, 460px)",
 }: {
-  world: { width: number; height: number };
+  // SVG viewBox 호환 — world.x/y 미지정 시 원점 (0,0). 북쪽으로 추가된 영역(음수 y)을
+  // 표현하려면 world.y 에 음수를 넘긴다.
+  world: { x?: number; y?: number; width: number; height: number };
   focusX: number;
   focusY: number;
   children: ReactNode;
@@ -39,9 +41,11 @@ export function MapCanvas({
     w: 0,
     h: 0,
   });
-  // viewBox 상태. 초기 0 0 W H 는 SSR / 측정 전 fallback — useLayoutEffect 로 바로 교체.
+  const originX = world.x ?? 0;
+  const originY = world.y ?? 0;
+  // viewBox 상태. 초기 originX/Y W H 는 SSR / 측정 전 fallback — useLayoutEffect 로 바로 교체.
   const [vb, setVb] = useState<{ x: number; y: number; w: number; h: number }>(
-    () => ({ x: 0, y: 0, w: world.width, h: world.height }),
+    () => ({ x: originX, y: originY, w: world.width, h: world.height }),
   );
 
   const INITIAL_ZOOM = 1.8;
@@ -112,10 +116,10 @@ export function MapCanvas({
       // 위치 클램프 — 월드 밖으로 너무 멀리 못 가게. 30% 마진 허용.
       const marginX = world.width * 0.3;
       const marginY = world.height * 0.3;
-      const minX = -marginX;
-      const maxX = world.width - w + marginX;
-      const minY = -marginY;
-      const maxY = world.height - h + marginY;
+      const minX = originX - marginX;
+      const maxX = originX + world.width - w + marginX;
+      const minY = originY - marginY;
+      const maxY = originY + world.height - h + marginY;
       return {
         x: Math.max(minX, Math.min(maxX, next.x)),
         y: Math.max(minY, Math.min(maxY, next.y)),
@@ -123,7 +127,16 @@ export function MapCanvas({
         h,
       };
     },
-    [containerSize.h, containerSize.w, maxVbW, minVbW, world.height, world.width],
+    [
+      containerSize.h,
+      containerSize.w,
+      maxVbW,
+      minVbW,
+      originX,
+      originY,
+      world.height,
+      world.width,
+    ],
   );
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -286,8 +299,8 @@ export function MapCanvas({
       vbW = vbH / containerRatio;
     }
     setVb({
-      x: world.width / 2 - vbW / 2,
-      y: world.height / 2 - vbH / 2,
+      x: originX + world.width / 2 - vbW / 2,
+      y: originY + world.height / 2 - vbH / 2,
       w: vbW,
       h: vbH,
     });
