@@ -1,16 +1,33 @@
 // 고탑 서버측 적용 — DB 트랜잭션 안에서 tower.v1 / character.v2 / inventory.v2 잠금 +
 // computeTowerOutcome 로 새 상태 산출 → 갱신.
 //
-// PR-1b 의 단순화: fight_floor 의 win/lose 판정은 클라이언트 보고를 신뢰한다.
-// 다음 단계(Phase 2 또는 별도 PR)에서 서버측 battle resolution 으로 교체 예정.
+// fight_floor 시 서버가 직접 battle simulation 을 돌린다 (anti-cheat). 클라는 의도만
+// 보내고, 서버가 derivePlayerCombatFromSaves + resolveBattle 로 outcome 을 결정한다.
 //
-// 머지 안내: 머지된 상태는 인벤토리/캐릭터 v2 와의 동시 갱신을 한 트랜잭션 안에서 처리해야
-// 마일스톤 보상 분실/이중 수령을 막을 수 있다.
+// 마일스톤 보상은 인벤토리/캐릭터 v2 와의 동시 갱신을 한 트랜잭션 안에서 처리해야
+// 분실/이중 수령을 막을 수 있다.
 
 import { and, eq } from "drizzle-orm";
 import { savesKv } from "@/db/schema";
 import { upsertSave, type DbExecutor } from "@/lib/server/savesKv";
+import { derivePlayerCombatFromSaves } from "@/lib/server/derivePlayerCombatFromSaves";
+import {
+  resolveBattle,
+  type BattleState,
+} from "@/adventure/battle/engine";
+import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
+import type { Monster } from "@/adventure/data/monsters";
+import { MONSTERS } from "@/adventure/data/monsters";
 import { TOWER_STORAGE_KEY, type TowerState } from "@/adventure/tower/types";
+import { isBossFloor, scaledStats } from "@/adventure/tower/scaling";
+import {
+  BOSS_SLOTS,
+  bossBaseMonster,
+  bossDisplayName,
+  bossSlotForFloor,
+  mobPoolForFloor,
+  pickMobFromPool,
+} from "@/adventure/tower/floorPools";
 import {
   TowerError,
   computeTowerOutcome,
@@ -51,20 +68,59 @@ export type TowerOutcome = {
   /** 마일스톤 보상으로 갱신된 inventory.v2 (없으면 미동봉). */
   inventory?: SavedInventory;
   applied: TowerApplied;
+  /** fight_floor 시 동봉 — BattleScene 이 그대로 렌더. */
+  battle?: {
+    finalState: BattleState;
+    enemyName: string;
+    isBoss: boolean;
+  };
 };
+
+/** 클라/route 가 사용하는 의도형 액션. outcome 은 서버가 결정. */
+export type TowerRequestAction =
+  | { kind: "start" }
+  | { kind: "fight_floor" }
+  | { kind: "forfeit" };
 
 /** 트랜잭션 안에서 호출. tower.v1 잠금 + (필요 시) character.v2 / inventory.v2 갱신. */
 export async function applyTowerAction(
   tx: DbExecutor,
   userId: string,
-  action: TowerAction,
+  action: TowerRequestAction,
 ): Promise<TowerOutcome> {
   const state =
     (await readKv<TowerState>(tx, userId, TOWER_STORAGE_KEY, true)) ?? EMPTY_STATE;
 
+  // fight_floor 는 서버가 직접 전투를 돌려 outcome 을 결정.
+  let battle: TowerOutcome["battle"];
+  let computeAction: TowerAction;
+  if (action.kind === "fight_floor") {
+    if (!state.run) throw new TowerError("no_active_run");
+    const floor = state.run.currentFloor;
+    const derived = await derivePlayerCombatFromSaves(userId);
+    if (!derived) throw new TowerError("character_not_found");
+    const enemy = buildFloorEnemy(floor);
+    const resolution = resolveBattle(derived.player, enemy, "player", {
+      pickAction: (s) => pickAutoAction(s, { rules: [], potions: {} }),
+      potions: {},
+      isBoss: isBossFloor(floor),
+    });
+    battle = {
+      finalState: resolution.finalState,
+      enemyName: enemy.name,
+      isBoss: isBossFloor(floor),
+    };
+    computeAction = {
+      kind: "fight_floor",
+      outcome: resolution.outcome === "win" ? "win" : "lose",
+    };
+  } else {
+    computeAction = action;
+  }
+
   const result: TowerComputeResult = computeTowerOutcome(
     { state, today: todayKey() },
-    action,
+    computeAction,
   );
 
   await upsertSave(tx, userId, TOWER_STORAGE_KEY, result.state);
@@ -94,7 +150,28 @@ export async function applyTowerAction(
     }
   }
 
-  return { tower: result.state, character, inventory, applied: result.applied };
+  return { tower: result.state, character, inventory, applied: result.applied, battle };
+}
+
+// 층 → 그 층에서 만나는 적 Monster (이름·스탯 모두 결정). 보스층은 보스 슬롯의 베이스 +
+// bossMultiplier, 잡몹층은 그 층의 풀에서 균등 무작위 선택.
+function buildFloorEnemy(floor: number): Monster {
+  const slot = bossSlotForFloor(floor);
+  if (slot) {
+    const base = bossBaseMonster(slot);
+    const s = scaledStats(base, floor, slot.bossMultiplier);
+    return { ...base, name: bossDisplayName(slot), hp: s.hp, atk: s.atk, def: s.def, spd: s.spd };
+  }
+  const pool = mobPoolForFloor(floor);
+  let baseName: string;
+  if (pool.length === 0) {
+    baseName = bossBaseMonster(BOSS_SLOTS[0]).name;
+  } else {
+    baseName = pickMobFromPool(pool);
+  }
+  const base = MONSTERS[baseName] ?? MONSTERS[pool[0]] ?? bossBaseMonster(BOSS_SLOTS[0]);
+  const s = scaledStats(base, floor);
+  return { ...base, hp: s.hp, atk: s.atk, def: s.def, spd: s.spd };
 }
 
 export { TowerError };

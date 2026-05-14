@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
+import type { BattleState } from "@/adventure/battle/engine";
 import {
   TOWER_STORAGE_KEY,
   type TowerState,
@@ -15,7 +16,7 @@ const EMPTY_STATE: TowerState = {
 
 export type TowerApiAction =
   | { kind: "start" }
-  | { kind: "fight_floor"; outcome: "win" | "lose" }
+  | { kind: "fight_floor" }
   | { kind: "forfeit" };
 
 export type TowerApiResponse = {
@@ -31,6 +32,12 @@ export type TowerApiResponse = {
     outcome?: "win" | "lose";
     newHighestFloor?: number;
     milestone?: { floor: number; reward: { gold?: number; materials?: { id: string; count: number }[] } };
+  };
+  /** fight_floor 응답에 동봉되는 서버 측 전투 결과. */
+  battle?: {
+    finalState: BattleState;
+    enemyName: string;
+    isBoss: boolean;
   };
   error?: string;
 };
@@ -80,10 +87,7 @@ export function useTower(opts?: {
     pending,
     error,
     start: useCallback(() => call({ kind: "start" }), [call]),
-    fightFloor: useCallback(
-      (outcome: "win" | "lose") => call({ kind: "fight_floor", outcome }),
-      [call],
-    ),
+    fightFloor: useCallback(() => call({ kind: "fight_floor" }), [call]),
     forfeit: useCallback(() => call({ kind: "forfeit" }), [call]),
   };
 }

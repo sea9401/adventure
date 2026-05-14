@@ -1,15 +1,15 @@
 // POST /api/tower — 고탑 서버 권위 액션 (start / fight_floor / forfeit).
 //
 // body: { kind: "start" }
-//     | { kind: "fight_floor", outcome: "win" | "lose" }
+//     | { kind: "fight_floor" }     // 서버가 outcome 결정 (anti-cheat)
 //     | { kind: "forfeit" }
 //
-// 응답: 200 { ok: true, tower, character?, inventory?, applied }
+// 응답: 200 { ok: true, tower, character?, inventory?, applied, battle? }
 //       400 { ok: false, error: <TowerError code> }
 //       401/500 standard
 //
-// PR-1b 노트: fight_floor 의 outcome 은 클라이언트 보고. 서버측 battle simulation 은
-// 추후 도입 예정 (anti-cheat 강화). 상태 무결성(시도 카운트/체크포인트/마일스톤)은 서버 권위.
+// fight_floor 는 서버가 derivePlayerCombatFromSaves + resolveBattle 로 전투를 돌려
+// 결과(승/패 + 최종 BattleState)를 응답에 동봉. 클라는 보낸 outcome 을 신뢰하지 않음.
 
 import { db } from "@/db";
 import { ensureUser } from "@/lib/server/ensureUser";
@@ -18,8 +18,8 @@ import {
   TowerError,
   applyTowerAction,
   type TowerOutcome,
+  type TowerRequestAction,
 } from "@/lib/server/tower/apply";
-import type { TowerAction } from "@/lib/server/tower/compute";
 
 export async function POST(req: Request) {
   const userId = await ensureUser();
@@ -27,23 +27,20 @@ export async function POST(req: Request) {
   const sessionFail = await checkSession(userId, req);
   if (sessionFail) return sessionFail;
 
-  let body: { kind?: unknown; outcome?: unknown };
+  let body: { kind?: unknown };
   try {
     body = (await req.json()) as typeof body;
   } catch {
     return new Response("invalid json", { status: 400 });
   }
 
-  let action: TowerAction;
+  let action: TowerRequestAction;
   if (body.kind === "start") {
     action = { kind: "start" };
   } else if (body.kind === "forfeit") {
     action = { kind: "forfeit" };
   } else if (body.kind === "fight_floor") {
-    if (body.outcome !== "win" && body.outcome !== "lose") {
-      return Response.json({ ok: false, error: "invalid_outcome" }, { status: 400 });
-    }
-    action = { kind: "fight_floor", outcome: body.outcome };
+    action = { kind: "fight_floor" };
   } else {
     return Response.json({ ok: false, error: "invalid_kind" }, { status: 400 });
   }

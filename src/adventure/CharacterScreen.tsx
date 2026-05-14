@@ -47,7 +47,6 @@ export function CharacterScreen() {
     handleWithdrawFromVault,
     quests,
     crafting,
-    playerCombat,
     playerStatus,
   } = useGame();
   const [towerOpen, setTowerOpen] = useState(false);
@@ -129,17 +128,14 @@ export function CharacterScreen() {
         {towerOpen && (
           <TowerModal
             onClose={() => setTowerOpen(false)}
-            player={playerCombat}
             playerName={character.name}
             playerStatus={playerStatus}
-            potions={inventory.state.potions ?? {}}
             onApplied={(r) => {
               // 마일스톤 보상으로 character.v2 (gold) 가 갱신됐으면 in-memory 도 동기화.
               if (r.character && typeof r.character.gold === "number") {
                 characterStateHook.replaceFromSaved(r.character);
               }
               // 재료 보상은 inventory hook 이 다음 PATCH 에서 자가 수렴(409 재시도).
-              // PR-1c 단순화: 즉시 in-memory 반영은 character.v2 만.
             }}
           />
         )}
