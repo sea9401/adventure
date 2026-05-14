@@ -33,7 +33,7 @@ export type ComposeCharacterInput = DerivePlayerCombatInput & {
 };
 
 // DerivedPlayerCombat 가 이미 characterSkills/characterFeats/effectiveSkillNames/
-// effectiveFeatName/effectiveSkillSet/layout 을 포함하므로 여기선 character + equippedSlots 만 더한다.
+// effectiveFeatNames/effectiveSkillSet/layout 을 포함하므로 여기선 character + equippedSlots 만 더한다.
 export type ComposedCharacter = DerivedPlayerCombat & {
   /** UI 렌더용 캐릭터. */
   character: Character;

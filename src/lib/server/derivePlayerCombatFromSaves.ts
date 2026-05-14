@@ -25,6 +25,9 @@ type SavedCharacterV2 = {
   level?: number;
   equipped?: SavedEquipped | null;
   equippedSkills?: string[];
+  /** 신 포맷 — 슬롯 인덱스 별 특기. */
+  equippedFeats?: (string | null)[];
+  /** 레거시 — 단일 특기 슬롯 시절 필드. 읽기 호환만. */
   equippedFeat?: string;
 };
 
@@ -76,13 +79,18 @@ export async function derivePlayerCombatFromSaves(
     accessory: rehydrateEquippedItem(savedEquipped?.accessory),
   };
 
+  // 레거시 equippedFeat (단일 string) → 배열 정규화. 클라이언트 readInitial 과 동일.
+  const equippedFeats =
+    character.equippedFeats ??
+    (character.equippedFeat ? [character.equippedFeat] : undefined);
+
   return derivePlayerCombat({
     level: character.level ?? 1,
     baseStats: baseCharacter.stats,
     allocatedStats,
     equipped,
     equippedSkills: character.equippedSkills,
-    equippedFeat: character.equippedFeat,
+    equippedFeats,
     storyFlagIds,
     hp: character.hp ?? baseCharacter.hp,
   });

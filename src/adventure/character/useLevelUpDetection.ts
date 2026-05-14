@@ -15,8 +15,8 @@ export function useLevelUpDetection(opts: {
   characterFeats: Skill[];
   /** 현재 일반 스킬 슬롯 수 (skillLayout().normalSlots). */
   normalSlots: number;
-  /** 특기 전용 슬롯이 열려 있는지 (skillLayout().hasFeatSlot). */
-  hasFeatSlot: boolean;
+  /** 현재 특기 전용 슬롯 수 (skillLayout().featSlots). 0/1/2. */
+  featSlots: number;
   addPoints: (n: number) => void;
   addNotification: (kind: "milestone", text: string) => void;
 }) {
@@ -24,7 +24,7 @@ export function useLevelUpDetection(opts: {
   const lastSeenSkillsRef = useRef<string[] | null>(null);
   const lastSeenFeatsRef = useRef<string[] | null>(null);
   const lastSeenNormalSlotsRef = useRef<number | null>(null);
-  const lastSeenFeatSlotRef = useRef<boolean | null>(null);
+  const lastSeenFeatSlotsRef = useRef<number | null>(null);
   const [levelUpTrigger, setLevelUpTrigger] = useState(0);
 
   // 레벨업 감지 — level 증가 시 스탯 포인트 지급 + 알림 + 오버레이.
@@ -85,11 +85,11 @@ export function useLevelUpDetection(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [featNamesKey]);
 
-  // 슬롯 해금 감지 — 일반 슬롯 증가 / 특기 슬롯 신규 개방 시 알림.
+  // 슬롯 해금 감지 — 일반/특기 슬롯 증가 시 알림.
   useEffect(() => {
     if (lastSeenNormalSlotsRef.current === null) {
       lastSeenNormalSlotsRef.current = opts.normalSlots;
-      lastSeenFeatSlotRef.current = opts.hasFeatSlot;
+      lastSeenFeatSlotsRef.current = opts.featSlots;
       return;
     }
     if (opts.normalSlots > lastSeenNormalSlotsRef.current) {
@@ -98,13 +98,19 @@ export function useLevelUpDetection(opts: {
         `스킬 슬롯 해금! 일반 슬롯 ${opts.normalSlots}칸`,
       );
     }
-    if (opts.hasFeatSlot && !lastSeenFeatSlotRef.current) {
-      opts.addNotification("milestone", "특기 슬롯 해금! 특기 1개를 장착할 수 있다");
+    if (
+      lastSeenFeatSlotsRef.current !== null &&
+      opts.featSlots > lastSeenFeatSlotsRef.current
+    ) {
+      opts.addNotification(
+        "milestone",
+        `특기 슬롯 해금! 특기 ${opts.featSlots}개까지 장착 가능`,
+      );
     }
     lastSeenNormalSlotsRef.current = opts.normalSlots;
-    lastSeenFeatSlotRef.current = opts.hasFeatSlot;
+    lastSeenFeatSlotsRef.current = opts.featSlots;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts.normalSlots, opts.hasFeatSlot]);
+  }, [opts.normalSlots, opts.featSlots]);
 
   return { levelUpTrigger };
 }

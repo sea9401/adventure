@@ -4,15 +4,15 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import type { Skill } from "./types";
 
 // 보유 스킬을 슬롯으로 관리. 슬롯에 들어간 스킬만 전투에서 발동.
-// 일반 슬롯(normalSlots, 3~4) + 특기 전용 슬롯(featSlotOpen 시 1칸, 특기 1개만).
+// 일반 슬롯(normalSlots, 3~5) + 특기 전용 슬롯(featSlots, 0~2).
 // onEquip/onUnequip 등 미지정 시 읽기 전용.
 export function SkillsView({
   skills,
   equippedNames,
   normalSlots,
   feats,
-  equippedFeat,
-  featSlotOpen,
+  equippedFeats,
+  featSlots,
   onEquip,
   onUnequip,
   onEquipFeat,
@@ -22,12 +22,12 @@ export function SkillsView({
   equippedNames: string[];
   normalSlots: number;
   feats: Skill[];
-  equippedFeat: string | null;
-  featSlotOpen: boolean;
+  equippedFeats: string[];
+  featSlots: number;
   onEquip?: (name: string) => void;
   onUnequip?: (name: string) => void;
   onEquipFeat?: (name: string) => void;
-  onUnequipFeat?: () => void;
+  onUnequipFeat?: (name: string) => void;
 }) {
   if (skills.length === 0 && feats.length === 0) {
     return (
@@ -47,10 +47,15 @@ export function SkillsView({
     slots.push(name ? skills.find((s) => s.name === name) ?? null : null);
   }
   const slotsFull = equippedNames.length >= normalSlots;
-  const equippedFeatSkill = equippedFeat
-    ? feats.find((f) => f.name === equippedFeat) ?? null
-    : null;
-  const unequippedFeats = feats.filter((f) => f.name !== equippedFeat);
+  const featSlotOpen = featSlots > 0;
+  const equippedFeatSet = new Set(equippedFeats);
+  const featSlotsResolved: (Skill | null)[] = [];
+  for (let i = 0; i < featSlots; i += 1) {
+    const name = equippedFeats[i];
+    featSlotsResolved.push(name ? feats.find((f) => f.name === name) ?? null : null);
+  }
+  const featSlotsFull = equippedFeats.length >= featSlots;
+  const unequippedFeats = feats.filter((f) => !equippedFeatSet.has(f.name));
 
   return (
     <div className="space-y-3">
@@ -61,7 +66,9 @@ export function SkillsView({
           </h3>
           <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
             {equippedNames.length} / {normalSlots}
-            {featSlotOpen && <> · 특기 {equippedFeat ? 1 : 0} / 1</>}
+            {featSlotOpen && (
+              <> · 특기 {equippedFeats.length} / {featSlots}</>
+            )}
           </span>
         </div>
         <ul className="space-y-2">
@@ -74,10 +81,10 @@ export function SkillsView({
               onUnequip={s && onUnequip ? () => onUnequip(s.name) : undefined}
             />
           ))}
-          {featSlotOpen && (
+          {featSlotsResolved.map((skill, i) => (
             <SlotRow
-              key="feat"
-              skill={equippedFeatSkill}
+              key={`feat${i}`}
+              skill={skill}
               accent="violet"
               emptyLabel="특기 슬롯 (빈 칸)"
               icon={
@@ -85,17 +92,17 @@ export function SkillsView({
                   size={18}
                   weight="duotone"
                   className={`mt-0.5 shrink-0 ${
-                    equippedFeatSkill
-                      ? "text-violet-500"
-                      : "text-zinc-400 dark:text-zinc-600"
+                    skill ? "text-violet-500" : "text-zinc-400 dark:text-zinc-600"
                   }`}
                 />
               }
               onUnequip={
-                equippedFeatSkill && onUnequipFeat ? onUnequipFeat : undefined
+                skill && onUnequipFeat
+                  ? () => onUnequipFeat(skill.name)
+                  : undefined
               }
             />
-          )}
+          ))}
         </ul>
       </Card>
 
@@ -121,7 +128,7 @@ export function SkillsView({
       {featSlotOpen && unequippedFeats.length > 0 && (
         <Card as="section" padding="md">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            특기 (특기 슬롯 전용 — 1개만 장착)
+            특기 (특기 슬롯 전용 — {featSlots}개까지 장착)
           </h3>
           <ul className="space-y-2">
             {unequippedFeats.map((f) => (
@@ -136,7 +143,7 @@ export function SkillsView({
                   />
                 }
                 actionLabel="장착"
-                disabled={!!equippedFeat}
+                disabled={featSlotsFull}
                 onAction={onEquipFeat ? () => onEquipFeat(f.name) : undefined}
               />
             ))}

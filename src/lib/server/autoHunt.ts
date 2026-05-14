@@ -75,6 +75,9 @@ type SavedCharacter = {
     accessory?: EquippedItem | null;
   } | null;
   equippedSkills?: string[];
+  /** 신 포맷 — 슬롯 인덱스 별 특기. */
+  equippedFeats?: (string | null)[];
+  /** 레거시 — 단일 특기 슬롯 시절 필드. 읽기 호환만. */
   equippedFeat?: string;
   [k: string]: unknown;
 };
@@ -195,13 +198,18 @@ export function assembleSimInput(opts: AssembleSimInputOpts): OfflineSimInput {
     opts;
   const character = state.character;
 
+  // 레거시 equippedFeat 호환 — readInitial 과 동일 정규화.
+  const equippedFeats =
+    character.equippedFeats ??
+    (character.equippedFeat ? [character.equippedFeat] : undefined);
+
   const derived = derivePlayerCombat({
     level: character.level ?? 1,
     baseStats: baseCharacter.stats,
     allocatedStats: allocatedFrom(state.training),
     equipped: equippedFrom(character),
     equippedSkills: character.equippedSkills,
-    equippedFeat: character.equippedFeat,
+    equippedFeats,
     storyFlagIds: new Set(state.storyFlags.flags ?? []),
     hp: baselineHp,
   });
@@ -327,13 +335,16 @@ export async function applyResultToSaves(
   // 모두 반영해 계산한다. (예전엔 maxHpForLevel + vit*2 만 직접 계산해 불굴 보너스를
   //  빼먹어서, 불굴 빌드는 위탁 사냥 후 HP 가 비보너스 최대치로 깎였다 — 무피해
   //  사이클에서도 아래 Math.min(maxHpNew, ...) 가 진짜 최대치를 끌어내렸다.)
+  const maxHpNewEquippedFeats =
+    character.equippedFeats ??
+    (character.equippedFeat ? [character.equippedFeat] : undefined);
   const maxHpNew = derivePlayerCombat({
     level: newLevelExp.level,
     baseStats: baseCharacter.stats,
     allocatedStats: allocatedFrom(state.training),
     equipped: equippedFrom(character),
     equippedSkills: character.equippedSkills,
-    equippedFeat: character.equippedFeat,
+    equippedFeats: maxHpNewEquippedFeats,
     storyFlagIds: new Set(state.storyFlags.flags ?? []),
     hp: result.finalPlayerHp,
   }).maxHp;

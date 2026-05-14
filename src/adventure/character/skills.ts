@@ -9,7 +9,8 @@ export const BASE_NORMAL_SLOTS = SKILL_SLOT_COUNT;
 // 4번째 = 특기 전용 슬롯 (Lv40 또는 운봉의 거인 처치 — 먼저 만족 시).
 // 5번째 = 일반 슬롯 (Lv65 그리고 화산의 심장 처치 — 둘 다).
 // 6번째 = 일반 슬롯 (Lv90 그리고 만렙 컨텐츠 최종 보스 처치 — 둘 다).
-//         FLAG 는 향후 신규 보스 추가 시 처치 플래그 ID 와 매칭. 그때까진 자연히 false.
+// 7번째 = 두 번째 특기 슬롯 (Lv90 그리고 만렙 컨텐츠 최종 보스 처치 — 6번째 일반과 동일).
+//         두 특기를 동시 장착해 빌드 다양성 강화. FLAG 는 PR-E 신규 보스 추가 시 셋.
 export const SKILL_SLOT_UNLOCK = {
   FEAT_SLOT_LEVEL: 40,
   FEAT_SLOT_FLAG: "peak_giant_defeated",
@@ -17,6 +18,8 @@ export const SKILL_SLOT_UNLOCK = {
   FIFTH_NORMAL_FLAG: "volcano_heart_defeated",
   SIXTH_NORMAL_LEVEL: 90,
   SIXTH_NORMAL_FLAG: "endgame_apex_defeated",
+  SECOND_FEAT_LEVEL: 90,
+  SECOND_FEAT_FLAG: "endgame_apex_defeated",
 } as const;
 
 export type SkillSlotContext = {
@@ -24,10 +27,10 @@ export type SkillSlotContext = {
   hasFlag: (id: string) => boolean;
 };
 export type SkillLayout = {
-  /** 일반 스킬 슬롯 수 (3 또는 4). */
+  /** 일반 스킬 슬롯 수 (3, 4, 또는 5). */
   normalSlots: number;
-  /** 특기 전용 슬롯이 열렸는지 (true 면 특기 1개 장착 가능). */
-  hasFeatSlot: boolean;
+  /** 특기 전용 슬롯 수 (0, 1, 또는 2). 1: 첫 번째 슬롯만 / 2: 두 번째까지 해금. */
+  featSlots: number;
 };
 
 export function skillLayout(ctx: SkillSlotContext): SkillLayout {
@@ -39,11 +42,17 @@ export function skillLayout(ctx: SkillSlotContext): SkillLayout {
     fifthNormal &&
     ctx.level >= SKILL_SLOT_UNLOCK.SIXTH_NORMAL_LEVEL &&
     ctx.hasFlag(SKILL_SLOT_UNLOCK.SIXTH_NORMAL_FLAG);
+  const firstFeat =
+    ctx.level >= SKILL_SLOT_UNLOCK.FEAT_SLOT_LEVEL ||
+    ctx.hasFlag(SKILL_SLOT_UNLOCK.FEAT_SLOT_FLAG);
+  // 두 번째 특기는 첫 번째 해금이 선행되어야 — featSlots 도 단조 증가.
+  const secondFeat =
+    firstFeat &&
+    ctx.level >= SKILL_SLOT_UNLOCK.SECOND_FEAT_LEVEL &&
+    ctx.hasFlag(SKILL_SLOT_UNLOCK.SECOND_FEAT_FLAG);
   return {
     normalSlots: BASE_NORMAL_SLOTS + (fifthNormal ? 1 : 0) + (sixthNormal ? 1 : 0),
-    hasFeatSlot:
-      ctx.level >= SKILL_SLOT_UNLOCK.FEAT_SLOT_LEVEL ||
-      ctx.hasFlag(SKILL_SLOT_UNLOCK.FEAT_SLOT_FLAG),
+    featSlots: (firstFeat ? 1 : 0) + (secondFeat ? 1 : 0),
   };
 }
 
@@ -566,14 +575,26 @@ export function deriveFeats(stats: Record<StatKey, number>): Skill[] {
   ).map((f) => ({ name: f.name, description: f.description }));
 }
 
-// 장착 특기 이름 — 특기 슬롯이 열려 있고, 보유 특기여야 effective. 아니면 null.
-export function effectiveFeatName(
+// 장착 특기 이름들 — 특기 슬롯이 열린 만큼, 보유 특기여야 effective. 미해금/미장착/미보유 슬롯은 결과에서 제외.
+// stored 의 length 가 featSlots 보다 짧거나 길어도 OK — 슬롯 수 만큼만 처리.
+// 중복 장착 방지: 같은 특기 이름이 여러 슬롯에 있으면 첫 슬롯만 적용 (이론상 UI 에서 막아도 안전망).
+export function effectiveFeatNames(
   availableFeats: Skill[],
-  stored: string | undefined,
-  hasFeatSlot: boolean,
-): string | null {
-  if (!hasFeatSlot || !stored) return null;
-  return availableFeats.some((f) => f.name === stored) ? stored : null;
+  stored: ReadonlyArray<string | null | undefined>,
+  featSlots: number,
+): string[] {
+  if (featSlots <= 0) return [];
+  const result: string[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < featSlots; i += 1) {
+    const name = stored[i];
+    if (!name) continue;
+    if (seen.has(name)) continue;
+    if (!availableFeats.some((f) => f.name === name)) continue;
+    seen.add(name);
+    result.push(name);
+  }
+  return result;
 }
 
 function featActive(
