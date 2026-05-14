@@ -338,7 +338,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
   vit: [
     {
       name: SKILL_NAMES.GUARD,
-      description: `전투 시작 후 첫 ${GUARD_TURNS}턴 동안 받는 피해 -max(1, VIT/${GUARD_REDUCTION_VIT_DIVISOR}) (VIT 35=-3)`,
+      description: `전투 시작 후 첫 ${GUARD_TURNS}턴 동안 받는 피해 -(VIT/${GUARD_REDUCTION_VIT_DIVISOR}) (최소 1) — VIT 35=-3`,
       activationThreshold: GUARD_VIT_THRESHOLD,
     },
     {
@@ -380,7 +380,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.LIGHTSPEED,
-      description: `매 턴 마지막 공격 후 min(${LIGHTSPEED_PCT_CAP}, SPD/${LIGHTSPEED_PCT_SPD_DIVISOR})% 확률로 추가 1회 공격 (SPD 50=10%)`,
+      description: `매 턴 마지막 공격 후 (SPD/${LIGHTSPEED_PCT_SPD_DIVISOR})% 확률로 추가 1회 공격 — SPD 50=12%, 100=25% (최대 ${LIGHTSPEED_PCT_CAP}%)`,
       activationThreshold: LIGHTSPEED_SPD_THRESHOLD,
     },
     {
@@ -563,7 +563,7 @@ export const FEAT_SKILL: FeatSkillInfo[] = [
   },
   {
     name: FEAT_NAMES.THORN_ARMOR,
-    description: `피격 시 받은 피해의 floor((VIT+SPD)/${THORN_ARMOR_STAT_DIVISOR})% 를 적에게 반사`,
+    description: `피격 시 받은 피해의 ((VIT+SPD)/${THORN_ARMOR_STAT_DIVISOR})% 를 적에게 반사 — VIT+SPD 50=5%`,
     req: ["vit", "spd"],
   },
 ];
