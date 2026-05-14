@@ -99,3 +99,156 @@ describe("특기 — 반사 갑주", () => {
     expect(s.damageTakenThisCombat).toBe(3);
   });
 });
+
+// ── 2티어 특기 ───────────────────────────────────────────────────────────
+
+describe("2티어 특기 — 불굴의 일격", () => {
+  it("본타에 누적 받은 피해 × 0.25 추가", () => {
+    // 시나리오: 적 공격 1회 받아 누적 피해 누적 → 다음 턴 본타에 보너스.
+    const p: PlayerCombat = { ...PLAYER, enduringStrikeMult: 0.25 };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사"); // 1턴 본타: 누적 0 → baseDmg=7 → 93. (보너스 없음 — 누적 0)
+    s = advanceTurn(s, p, "용사"); // 적 턴: 플레이어 -3 → damageTakenThisCombat=3
+    expect(s.damageTakenThisCombat).toBe(3);
+    s = advanceTurn(s, p, "용사"); // 2턴 본타: floor(3*0.25)=0 → 변화 없음 → 86
+    expect(s.enemyHp).toBe(86);
+  });
+  it("누적 피해가 4 이상 누적되면 본타에 +1 ATK 보너스", () => {
+    // 더 강한 적으로 누적 피해 키움. baseDmg 9 (10-1).
+    const strongEnemy: Monster = { name: "강적", tags: ["beast"], hp: 100, atk: 12, def: 1, spd: 5, exp: 5 };
+    const p: PlayerCombat = { ...PLAYER, enduringStrikeMult: 0.25 };
+    let s = initialBattleState(p, strongEnemy, "용사");
+    s = advanceTurn(s, p, "용사"); // 본타 9 → 91
+    s = advanceTurn(s, p, "용사"); // 적 턴 -7 (12-5) → damageTaken=7
+    expect(s.damageTakenThisCombat).toBe(7);
+    s = advanceTurn(s, p, "용사"); // 2턴 본타: floor(7*0.25)=1 추가 ATK → baseDmg(11,1)=10 → 81
+    expect(s.enemyHp).toBe(81);
+  });
+});
+
+describe("2티어 특기 — 약점 적중", () => {
+  it("크리 발동 시 DEF 무시 추가타 1회 (턴당 1회)", () => {
+    const p: PlayerCombat = {
+      ...PLAYER,
+      critChancePct: 100,
+      critMult: 2,
+      weakpointExtraAttacks: 1,
+    };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사"); // 1타: 크리 14 → 86, 약점 적중 큐 +1 추가타
+    expect(s.enemyHp).toBe(86);
+    expect(s.weakpointUsedThisTurn).toBe(true);
+    expect(s.weakpointDefIgnoreLeft).toBe(1);
+    expect(s.phase).toBe("player");
+    s = advanceTurn(s, p, "용사"); // 약점 추가타: DEF 무시, 크리 → damageBetween(10,0)=10 ×2 = 20 → 66
+    expect(s.enemyHp).toBe(66);
+    expect(s.weakpointDefIgnoreLeft).toBe(0);
+  });
+});
+
+describe("2티어 특기 — 광속 격투", () => {
+  it("기본 공격 횟수 +1 — 매 턴 2회 공격", () => {
+    // attackCount 는 derive 단계에서 +1 되므로 직접 attackCount 2 로 지정.
+    const p: PlayerCombat = { ...PLAYER, attackCount: 2, lightHandExtraAttack: 1 };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사"); // 1타: 7 → 93
+    expect(s.phase).toBe("player");
+    s = advanceTurn(s, p, "용사"); // 2타: 7 → 86 → 적 턴
+    expect(s.enemyHp).toBe(86);
+    expect(s.phase).toBe("enemy");
+  });
+});
+
+describe("2티어 특기 — 연쇄 운명", () => {
+  it("크리 발동 시 다음 공격 크리 100% 보장 (턴당 1회)", () => {
+    const p: PlayerCombat = {
+      ...PLAYER,
+      attackCount: 2,
+      critChancePct: 100,
+      critMult: 2,
+      fatedChainActive: true,
+    };
+    let s = initialBattleState(p, enemy(100), "용사");
+    // 1타: 크리 14 → 86, 연쇄 운명 큐 set
+    s = advanceTurn(s, p, "용사");
+    expect(s.enemyHp).toBe(86);
+    expect(s.fatedChainTriggeredThisTurn).toBe(true);
+    expect(s.fatedChainCritPending).toBe(true);
+    // 2타: 큐 소비 — 보장 크리 14 → 72
+    s = advanceTurn(s, p, "용사");
+    expect(s.enemyHp).toBe(72);
+    expect(s.fatedChainCritPending).toBe(false);
+  });
+});
+
+describe("2티어 특기 — 반사 회피", () => {
+  it("회피 시 받았을 피해의 50% 반사", () => {
+    const p: PlayerCombat = { ...PLAYER, evasionPct: 100, reflexEvadeMult: 0.5 };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사"); // 1턴: 7 → 93
+    s = advanceTurn(s, p, "용사"); // 적 턴 회피: 받았을 dmg=3, 반사 floor(3*0.5)=1 → 92
+    expect(s.playerHp).toBe(50);
+    expect(s.enemyHp).toBe(92);
+  });
+});
+
+describe("2티어 특기 — 그림자 보법", () => {
+  it("100% 확률로 적 턴 무피격 + 무한 가시 반사", () => {
+    const p: PlayerCombat = { ...PLAYER, shadowStepPct: 100 };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사"); // 1턴: 7 → 93
+    s = advanceTurn(s, p, "용사"); // 적 턴 그림자 보법 → 모든 적 공격 무효
+    expect(s.playerHp).toBe(50);
+    expect(s.phase).toBe("player");
+  });
+});
+
+describe("2티어 특기 — 행운의 흡혈", () => {
+  it("모든 공격 피해의 N% HP 회복 (크리 외도 포함)", () => {
+    // HP 25 / atk 10 / def 3 / luckyLifestealPct=12 (LUK 100 / 8 정도)
+    // dmg=7, heal=floor(7 * 12 / 100) = 0. 12% 너무 작음 → 더 큰 % 로.
+    const p: PlayerCombat = { ...PLAYER, hp: 25, luckyLifestealPct: 50 };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사"); // 본타 7 → 93, heal floor(7*50/100)=3 → HP 28
+    expect(s.enemyHp).toBe(93);
+    expect(s.playerHp).toBe(28);
+  });
+});
+
+describe("2티어 특기 — 무한 가시", () => {
+  it("적 공격 시 적 ATK 의 N% 를 반사 (피격 무관)", () => {
+    // 무한 가시 25%: 적 atk 8 → 반사 2 → 적 -2
+    const p: PlayerCombat = { ...PLAYER, infiniteThornsAtkPct: 25 };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사"); // 1턴: 7 → 93
+    s = advanceTurn(s, p, "용사"); // 적 턴 피격 3, 반사 floor(8*0.25)=2 → 적 91
+    expect(s.playerHp).toBe(47);
+    expect(s.enemyHp).toBe(91);
+  });
+});
+
+describe("2티어 특기 — 굳건한 의지", () => {
+  it("받은 피해 평탄 -N 감소", () => {
+    const p: PlayerCombat = { ...PLAYER, steadfastWillFlat: 2 };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사"); // 1턴: 7 → 93
+    s = advanceTurn(s, p, "용사"); // 적 턴 raw 3 → -2 → 1 → 플레이어 49
+    expect(s.playerHp).toBe(49);
+  });
+});
+
+describe("2티어 특기 — 회전 운기", () => {
+  it("매 플레이어 턴 누적 크리/회피 +N% 누적", () => {
+    // cyclingChiPerTurn 100 → 1턴부터 크리 100% 강제.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      critChancePct: 0,
+      critMult: 2,
+      cyclingChiPerTurn: 100,
+    };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사"); // 1턴 본타: cyclingChiBonus = 0 + 100 = 100 → 크리 강제 → 14 → 86
+    expect(s.enemyHp).toBe(86);
+    expect(s.cyclingChiBonus).toBe(100);
+  });
+});
