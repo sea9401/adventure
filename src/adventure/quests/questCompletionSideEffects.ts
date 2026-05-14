@@ -52,6 +52,34 @@ const ON_COMPLETE: Record<string, readonly SideEffect[]> = {
     { kind: "setFlag", flag: "skyfolk_gate_cleared" },
   ],
   "star-haven-apex-gate": [{ kind: "setFlag", flag: "apex_gate_cleared" }],
+  // 별바다 유성 — 후반 3코옵 보스 도전 의뢰 9종 (각 보스 × 3종) → 칭호 9개.
+  "star-haven-keeper-challenge-witness": [
+    { kind: "grantTitle", titleId: "starlight_witness" },
+  ],
+  "star-haven-keeper-challenge-strike": [
+    { kind: "grantTitle", titleId: "starlight_striker" },
+  ],
+  "star-haven-keeper-challenge-survive": [
+    { kind: "grantTitle", titleId: "starlight_steadfast" },
+  ],
+  "star-haven-king-challenge-witness": [
+    { kind: "grantTitle", titleId: "ruin_witness" },
+  ],
+  "star-haven-king-challenge-strike": [
+    { kind: "grantTitle", titleId: "ruin_striker" },
+  ],
+  "star-haven-king-challenge-survive": [
+    { kind: "grantTitle", titleId: "ruin_steadfast" },
+  ],
+  "star-haven-arbiter-challenge-witness": [
+    { kind: "grantTitle", titleId: "throne_witness" },
+  ],
+  "star-haven-arbiter-challenge-strike": [
+    { kind: "grantTitle", titleId: "throne_striker" },
+  ],
+  "star-haven-arbiter-challenge-survive": [
+    { kind: "grantTitle", titleId: "throne_steadfast" },
+  ],
   // 마을 간 연계 — 완료 시 양쪽 NPC 다이얼로그 갱신용 flag (+ 칭호).
   "diola-marin-mountain-trade": [
     { kind: "setFlag", flag: "diola_unhyang_trade_done" },

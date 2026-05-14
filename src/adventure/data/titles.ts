@@ -237,6 +237,61 @@ export const TITLES: Record<TitleId, Title> = {
     description: "창공의 주재를 홀로 절반 이상 깎아낸 자. 옥좌 위 별빛이 마침내 한 사람의 결을 알아본다.",
     condition: "창공의 주재 협동 처치에서 누적 데미지 60% 이상 (legend 티어)",
   },
+  // ── 후반 3코옵 보스 도전 칭호 (3 보스 × 3 종 = 9) — 유성 도전 의뢰 라인 보상.
+  starlight_witness: {
+    id: "starlight_witness",
+    name: "별빛의 증인",
+    description: "별을 지키는 자에게 깊이 결을 새긴 자. 별빛이 한 번이라도 자네를 알아봤다.",
+    condition: "별을 지키는 자 협동 보상 EPIC 이상 1회 도달",
+  },
+  starlight_striker: {
+    id: "starlight_striker",
+    name: "별빛 한 줄기",
+    description: "한 결로 별을 흔들었던 자. 한 자루의 손이 빛을 가른다.",
+    condition: "별을 지키는 자에게 단일 공격 2,000 데미지 이상 3회",
+  },
+  starlight_steadfast: {
+    id: "starlight_steadfast",
+    name: "흔들리지 않는 결",
+    description: "별을 지키는 자 앞에서도 결을 한 점도 흩지 않은 자.",
+    condition: "별을 지키는 자 협동 공격을 사망 없이 5회 완주",
+  },
+  ruin_witness: {
+    id: "ruin_witness",
+    name: "폐도의 증인",
+    description: "천공인의 왕에게 결을 깊이 새긴 자. 폐도가 처음 자네를 알아봤다.",
+    condition: "천공인의 왕 협동 보상 EPIC 이상 1회 도달",
+  },
+  ruin_striker: {
+    id: "ruin_striker",
+    name: "폐도의 일격",
+    description: "한 결로 폐도의 왕을 흔든 자. 한 자루의 손이 옛 결을 가른다.",
+    condition: "천공인의 왕에게 단일 공격 3,000 데미지 이상 3회",
+  },
+  ruin_steadfast: {
+    id: "ruin_steadfast",
+    name: "폐도를 견디는 자",
+    description: "천공인의 왕 앞에서도 단 한 점의 결도 흩지 않은 자.",
+    condition: "천공인의 왕 협동 공격을 사망 없이 5회 완주",
+  },
+  throne_witness: {
+    id: "throne_witness",
+    name: "옥좌의 증인",
+    description: "창공의 주재에게 결을 깊이 새긴 자. 옥좌가 처음 자네를 알아봤다.",
+    condition: "창공의 주재 협동 보상 EPIC 이상 1회 도달",
+  },
+  throne_striker: {
+    id: "throne_striker",
+    name: "옥좌의 일격",
+    description: "한 결로 옥좌를 흔든 자. 한 자루의 손이 별빛의 끝을 가른다.",
+    condition: "창공의 주재에게 단일 공격 4,500 데미지 이상 3회",
+  },
+  throne_steadfast: {
+    id: "throne_steadfast",
+    name: "옥좌를 견디는 자",
+    description: "창공의 주재 앞에서도 단 한 점의 결도 흩지 않은 자. 옥좌가 자네를 기억한다.",
+    condition: "창공의 주재 협동 공격을 사망 없이 5회 완주",
+  },
   level_30: {
     id: "level_30",
     name: "베테랑",

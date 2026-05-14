@@ -95,6 +95,30 @@ export function BossSubView() {
               }
             }
           }}
+          onAttackResult={(bossName, ctx) => {
+            const readyIds = quests.recordCoopAttack(bossName, ctx);
+            for (const id of readyIds) {
+              const q = getQuestById(id);
+              if (q) {
+                addNotification(
+                  "quest_ready",
+                  `의뢰 조건 달성 — ${q.title}: 길드에서 보상을 받을 수 있다.`,
+                );
+              }
+            }
+          }}
+          onClaim={(bossName, tier) => {
+            const readyIds = quests.recordCoopClaim(bossName, tier);
+            for (const id of readyIds) {
+              const q = getQuestById(id);
+              if (q) {
+                addNotification(
+                  "quest_ready",
+                  `의뢰 조건 달성 — ${q.title}: 길드에서 보상을 받을 수 있다.`,
+                );
+              }
+            }
+          }}
         />
       </div>
     );

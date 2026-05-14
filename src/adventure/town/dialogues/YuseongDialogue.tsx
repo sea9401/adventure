@@ -76,6 +76,100 @@ const STEPS: QuestLineStep[] = [
       "마지막 결이 풀렸소. 창공의 주재가 자네 앞에 일어설 자격을 비로소 인정했소. 옥좌가 자네를 기억할 것이오.",
     acceptLabel: "옥좌의 봉인을 풀겠다고 한다",
   },
+  // ── 후반 3보스 도전 의뢰 9종 (보스별 3종 묶음). 게이트 의뢰 완료 후 잠금 해제.
+  // 별을 지키는 자 (Lv70, 회랑 골렘 의뢰 완수 후)
+  {
+    id: "star-haven-keeper-challenge-witness",
+    offerText:
+      "별을 지키는 자에게 EPIC 이상의 결을 한 번이라도 새겨 보시오. 별빛이 자네의 결을 한 번이라도 깊이 알아본다면 — 그 결은 평생 가오.",
+    activeText: (have, need) =>
+      `별을 지키는 자에게 EPIC 이상의 결을 새기는 일은 단번에 닿지 않을 수 있소. 천천히 — 결을 깊이 새기시오. ${have}/${need}`,
+    doneText:
+      "별빛이 자네의 결을 깊이 알아봤소. 별빛의 증인 — 약속한 결을 자네에게 새겨 두었소.",
+    acceptLabel: "별빛의 증인 되겠다고 한다",
+  },
+  {
+    id: "star-haven-keeper-challenge-strike",
+    offerText:
+      "별을 지키는 자에게 단 한 번의 공격으로 2,000 의 결을 — 세 번 새기시오. 한 결을 한 번에 가라앉히는 자에게만 보이는 결이 있소.",
+    activeText: (have, need) =>
+      `단 한 번의 공격에 2,000 의 결을 새기는 일은 — 자네 결이 충분히 깊어야 닿소. ${have}/${need}`,
+    doneText:
+      "한 결이 별빛을 가른 순간을 — 별빛이 세 번 기억했소. 별빛 한 줄기 — 자네 결에 새겨 두었소.",
+    acceptLabel: "별빛 한 줄기 되겠다고 한다",
+  },
+  {
+    id: "star-haven-keeper-challenge-survive",
+    offerText:
+      "별을 지키는 자 앞에서 — 다섯 번을 단 한 번도 쓰러지지 않고 결을 마치시오. 흔들리지 않는 결이 별빛에 새겨질 때까지.",
+    activeText: (have, need) =>
+      `결을 한 점도 흩지 않고 별빛 앞에 서는 일은 — 매번 새로 시작이오. ${have}/${need}`,
+    doneText:
+      "다섯 번을 결 한 점 흩지 않고 마쳤소. 흔들리지 않는 결 — 자네 결의 깊이오.",
+    acceptLabel: "흔들리지 않는 결 되겠다고 한다",
+  },
+  // 천공인의 왕 (Lv80, 폐도 게이트 의뢰 완수 후)
+  {
+    id: "star-haven-king-challenge-witness",
+    offerText:
+      "천공인의 왕에게 EPIC 이상의 결을 한 번이라도 새겨 보시오. 폐도가 자네의 결을 알아보는 첫 표식이오.",
+    activeText: (have, need) =>
+      `폐도의 왕은 별빛보다 무거운 결이오. 깊이 새기시오. ${have}/${need}`,
+    doneText:
+      "폐도가 자네의 결을 처음 깊이 알아봤소. 폐도의 증인 — 자네 결에 새겨 두었소.",
+    acceptLabel: "폐도의 증인 되겠다고 한다",
+  },
+  {
+    id: "star-haven-king-challenge-strike",
+    offerText:
+      "천공인의 왕에게 단 한 번의 공격으로 3,000 의 결을 — 세 번 새기시오. 폐도가 한 자루의 결로도 흔들리는 순간이 있소.",
+    activeText: (have, need) =>
+      `폐도의 결을 한 번에 3,000 깊이로 가르는 일은 — 결이 비로소 깊어진 자만 닿소. ${have}/${need}`,
+    doneText:
+      "폐도의 왕이 자네 한 결에 세 번 흔들렸소. 폐도의 일격 — 자네 결에 새겨 두었소.",
+    acceptLabel: "폐도의 일격 되겠다고 한다",
+  },
+  {
+    id: "star-haven-king-challenge-survive",
+    offerText:
+      "천공인의 왕 앞에서 — 다섯 번을 단 한 번도 쓰러지지 않고 결을 마치시오. 폐도의 결은 견디는 자만이 풀어낼 수 있소.",
+    activeText: (have, need) =>
+      `폐도의 결을 흩지 않고 견디는 일은 — 결이 한 점도 흔들리지 않아야 하오. ${have}/${need}`,
+    doneText:
+      "폐도의 왕 앞에서 다섯 번을 결 한 점 흩지 않고 마쳤소. 폐도를 견디는 자 — 자네 결의 깊이오.",
+    acceptLabel: "폐도를 견디는 자 되겠다고 한다",
+  },
+  // 창공의 주재 (Lv90, 옥좌 게이트 의뢰 완수 후)
+  {
+    id: "star-haven-arbiter-challenge-witness",
+    offerText:
+      "창공의 주재에게 EPIC 이상의 결을 한 번이라도 새겨 보시오. 옥좌가 자네의 결을 처음으로 깊이 인정하는 표식이오.",
+    activeText: (have, need) =>
+      `옥좌의 결은 별빛 끝의 결이오. 한 점이라도 깊이 새기시오. ${have}/${need}`,
+    doneText:
+      "옥좌가 자네의 결을 깊이 인정했소. 옥좌의 증인 — 자네 결에 새겨 두었소.",
+    acceptLabel: "옥좌의 증인 되겠다고 한다",
+  },
+  {
+    id: "star-haven-arbiter-challenge-strike",
+    offerText:
+      "창공의 주재에게 단 한 번의 공격으로 4,500 의 결을 — 세 번 새기시오. 옥좌도 한 자루의 결로 흔들리는 순간이 있다 들었소.",
+    activeText: (have, need) =>
+      `옥좌의 결을 한 번에 4,500 깊이로 가르는 일은 — 결이 끝에 닿은 자만이 할 수 있소. ${have}/${need}`,
+    doneText:
+      "옥좌가 자네 한 결에 세 번 흔들렸소. 옥좌의 일격 — 자네 결에 새겨 두었소.",
+    acceptLabel: "옥좌의 일격 되겠다고 한다",
+  },
+  {
+    id: "star-haven-arbiter-challenge-survive",
+    offerText:
+      "창공의 주재 앞에서 — 다섯 번을 단 한 번도 쓰러지지 않고 결을 마치시오. 옥좌의 결을 견디는 자만이 별빛의 끝을 보오.",
+    activeText: (have, need) =>
+      `옥좌의 결을 흩지 않고 견디는 일은 — 결의 끝에 닿은 자만이 할 수 있소. ${have}/${need}`,
+    doneText:
+      "옥좌 앞에서 다섯 번을 결 한 점 흩지 않고 마쳤소. 옥좌를 견디는 자 — 자네 결의 끝이오.",
+    acceptLabel: "옥좌를 견디는 자 되겠다고 한다",
+  },
 ];
 
 export function YuseongDialogue({ npc, onClose, quests, completeQuest, inventory }: Props) {
