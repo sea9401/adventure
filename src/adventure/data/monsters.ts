@@ -684,6 +684,7 @@ export const MONSTERS: Record<string, Monster> = {
   // ── 별의 첨탑 (starspire) — 천공 성지 위 Lv70 구간. 협동 보스 별을 지키는 자. ─────
   "별빛 정찰자": {
     name: "별빛 정찰자",
+    image: "/images/monster/starlightscout.webp",
     tags: ["spirit"],
     hp: 720,
     atk: 64,
@@ -700,6 +701,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "구름 사냥꾼": {
     name: "구름 사냥꾼",
+    image: "/images/monster/cloudhunter.webp",
     tags: ["beast"],
     hp: 900,
     atk: 68,
@@ -713,6 +715,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "운명 직조자": {
     name: "운명 직조자",
+    image: "/images/monster/destinyweaver.webp",
     tags: ["spirit"],
     hp: 850,
     atk: 78,
@@ -729,6 +732,7 @@ export const MONSTERS: Record<string, Monster> = {
   // solo stat 은 시뮬·테스트 용도 (coop maxHp 는 coop/data.ts 의 20000).
   "별을 지키는 자": {
     name: "별을 지키는 자",
+    image: "/images/monster/stellarguardian.webp",
     tags: ["spirit"],
     hp: 1700,
     atk: 92,
