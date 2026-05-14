@@ -102,9 +102,9 @@ describe("applyDropQuality", () => {
       { label: "민첩", value: "+2" },
     ]);
 
-    const q2 = applyDropQuality(ITEMS.golem_armor, 2); // {def:6, atk:-1, spd:-3, luk:-1} → def 8
-    expect(q2.bonus?.def).toBe(8);
-    expect(q2.stats.find((s) => s.label === "방어력")?.value).toBe("+8");
+    const q2 = applyDropQuality(ITEMS.golem_armor, 2); // {def:8, atk:-1, spd:-3, luk:-1} → def 10
+    expect(q2.bonus?.def).toBe(10);
+    expect(q2.stats.find((s) => s.label === "방어력")?.value).toBe("+10");
     // 나머지(음수 포함)는 그대로.
     expect(q2.bonus?.atk).toBe(-1);
     expect(q2.bonus?.spd).toBe(-3);
