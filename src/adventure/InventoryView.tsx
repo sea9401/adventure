@@ -61,9 +61,9 @@ const SLOT_TABS: { key: EquipSlot; label: string }[] = [
   { key: "accessory", label: "장신구" },
 ];
 
-// 가방 목록 한 줄의 공통 외형 — 카드 대신 얇은 행으로 압축.
+// 가방 목록 한 줄의 공통 외형 — Card surface 와 동일한 불투명도로 통일.
 const ROW =
-  "rounded-md border border-zinc-200 bg-white/70 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50";
+  "rounded-md border border-zinc-200 bg-white/90 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950/90";
 
 // 같은 슬롯에 장착 중인 게 이 entry 와 동종(id + 제작 등급 + 드랍 등급 일치)인지 — 동종 여분이면 표시상 "장착중".
 function isEntryEquipped(
