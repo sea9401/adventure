@@ -50,11 +50,11 @@ export const COOP_TIER_ORDER: CoopRewardTier[] = [
 ];
 
 export const COOP_TIER_THRESHOLDS: Record<CoopRewardTier, number> = {
-  bronze: 0.02,
-  silver: 0.07,
-  gold: 0.15,
-  epic: 0.3,
-  legend: 0.5,
+  bronze: 0.03,
+  silver: 0.1,
+  gold: 0.2,
+  epic: 0.4,
+  legend: 0.6,
 };
 
 export const COOP_TIER_LABEL: Record<CoopRewardTier, string> = {

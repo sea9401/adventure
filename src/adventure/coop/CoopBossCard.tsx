@@ -306,11 +306,15 @@ export function CoopBossCard({
             {lastClaim.applied.recipes.map((r) => (
               <li key={`r-${r.id}`}>📜 {r.name}</li>
             ))}
+            {lastClaim.applied.equipment.map((e) => (
+              <li key={`e-${e.id}`} className="font-semibold">⚔️ {e.name}</li>
+            ))}
             {lastClaim.applied.title && (
               <li className="font-semibold">🏅 {lastClaim.applied.title.name}</li>
             )}
             {lastClaim.applied.materials.length === 0 &&
               lastClaim.applied.recipes.length === 0 &&
+              lastClaim.applied.equipment.length === 0 &&
               !lastClaim.applied.title && (
                 <li className="text-emerald-600/70 dark:text-emerald-400/70">
                   새로 들어온 항목 없음 (모두 보유 중이거나 굴림 실패).

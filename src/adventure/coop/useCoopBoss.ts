@@ -72,6 +72,7 @@ export type CoopClaimResponse = {
     recipes: string[];
     recipeOneOf?: string[];
     recipeRolls?: { recipeId: string; chance: number }[];
+    equipRolls?: { itemId: string; chance: number }[];
     titleId?: string;
   };
 };

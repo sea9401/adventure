@@ -1,3 +1,4 @@
+import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { getRecipeById } from "@/adventure/data/recipes";
 import { TITLES } from "@/adventure/data/titles";
@@ -7,6 +8,7 @@ type Services = {
   addMaterial: (id: MaterialId, n: number) => void;
   learnRecipe: (id: string) => void;
   knowsRecipe: (id: string) => boolean;
+  addEquipment: (id: ItemId, n: number) => void;
   markTitleObtained: (titleId: string) => void;
 };
 
@@ -14,6 +16,7 @@ type Services = {
 export type AppliedCoopReward = {
   materials: { id: MaterialId; name: string; count: number }[];
   recipes: { id: string; name: string }[];
+  equipment: { id: ItemId; name: string }[];
   title?: { id: string; name: string };
 };
 
@@ -29,6 +32,7 @@ export function applyCoopReward(
   const applied: AppliedCoopReward = {
     materials: [],
     recipes: [],
+    equipment: [],
   };
 
   // 1) 재료.
@@ -74,7 +78,22 @@ export function applyCoopReward(
     }
   }
 
-  // 5) 칭호.
+  // 5) equipRolls — chance 비율로 장비 드랍 (legend 물욕템 등).
+  if (reward.equipRolls) {
+    for (const roll of reward.equipRolls) {
+      if (Math.random() < roll.chance) {
+        const itemId = roll.itemId as ItemId;
+        s.addEquipment(itemId, 1);
+        const def = ITEMS[itemId as keyof typeof ITEMS];
+        applied.equipment.push({
+          id: itemId,
+          name: def?.name ?? roll.itemId,
+        });
+      }
+    }
+  }
+
+  // 6) 칭호.
   if (reward.titleId) {
     s.markTitleObtained(reward.titleId);
     const def = TITLES[reward.titleId];
