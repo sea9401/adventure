@@ -41,6 +41,8 @@ export async function POST(req: Request) {
     action = { kind: "forfeit" };
   } else if (body.kind === "fight_floor") {
     action = { kind: "fight_floor" };
+  } else if (body.kind === "fight_floors_auto") {
+    action = { kind: "fight_floors_auto" };
   } else {
     return Response.json({ ok: false, error: "invalid_kind" }, { status: 400 });
   }

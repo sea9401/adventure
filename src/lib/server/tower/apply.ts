@@ -18,8 +18,13 @@ import {
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import type { Monster } from "@/adventure/data/monsters";
 import { MONSTERS } from "@/adventure/data/monsters";
-import { TOWER_STORAGE_KEY, type TowerState } from "@/adventure/tower/types";
+import {
+  TOWER_BOSS_INTERVAL,
+  TOWER_STORAGE_KEY,
+  type TowerState,
+} from "@/adventure/tower/types";
 import { isBossFloor, scaledStats } from "@/adventure/tower/scaling";
+import type { TowerMilestoneReward } from "@/adventure/tower/rewards";
 import {
   BOSS_SLOTS,
   bossBaseMonster,
@@ -30,6 +35,7 @@ import {
 } from "@/adventure/tower/floorPools";
 import {
   TowerError,
+  applyAutoStep,
   computeTowerOutcome,
   todayKey,
   type TowerAction,
@@ -61,6 +67,19 @@ async function readKv<T>(
   return (rows[0]?.value as T | undefined) ?? null;
 }
 
+export type TowerAutoSummary = {
+  /** 자동 시작 시점의 층 (포함). */
+  startFloor: number;
+  /** 자동 종료 시점의 currentFloor (다음에 싸울 층 / 사망 시 사라진 마지막 시도 층). */
+  endFloor: number;
+  /** 자동 안에서 클리어된 잡몹층 수. */
+  floorsCleared: number;
+  /** 자동이 멈춘 사유. */
+  reason: "next_is_boss" | "revive_used" | "death";
+  /** 자동 안에서 첫 도달로 수령한 마일스톤 누계. */
+  milestones: { floor: number; reward: TowerMilestoneReward }[];
+};
+
 export type TowerOutcome = {
   tower: TowerState;
   /** 마일스톤 보상으로 갱신된 character.v2 (없으면 미동봉). */
@@ -68,18 +87,21 @@ export type TowerOutcome = {
   /** 마일스톤 보상으로 갱신된 inventory.v2 (없으면 미동봉). */
   inventory?: SavedInventory;
   applied: TowerApplied;
-  /** fight_floor 시 동봉 — BattleScene 이 그대로 렌더. */
+  /** fight_floor / fight_floors_auto 시 동봉 — BattleScene 이 마지막 전투를 그대로 렌더. */
   battle?: {
     finalState: BattleState;
     enemyName: string;
     isBoss: boolean;
   };
+  /** fight_floors_auto 시에만 동봉 — 묶음 진행 요약. */
+  auto?: TowerAutoSummary;
 };
 
 /** 클라/route 가 사용하는 의도형 액션. outcome 은 서버가 결정. */
 export type TowerRequestAction =
   | { kind: "start" }
   | { kind: "fight_floor" }
+  | { kind: "fight_floors_auto" }
   | { kind: "forfeit" };
 
 /** 트랜잭션 안에서 호출. tower.v1 잠금 + (필요 시) character.v2 / inventory.v2 갱신. */
@@ -88,6 +110,10 @@ export async function applyTowerAction(
   userId: string,
   action: TowerRequestAction,
 ): Promise<TowerOutcome> {
+  if (action.kind === "fight_floors_auto") {
+    return applyTowerAutoProgress(tx, userId);
+  }
+
   const state =
     (await readKv<TowerState>(tx, userId, TOWER_STORAGE_KEY, true)) ?? EMPTY_STATE;
 
@@ -151,6 +177,114 @@ export async function applyTowerAction(
   }
 
   return { tower: result.state, character, inventory, applied: result.applied, battle };
+}
+
+/**
+ * "다음 보스까지 자동" — 잡몹층을 server-side 루프로 연달아 클리어하다가 보스층 직전에서 멈춘다.
+ *   - 자동 도중 사망: run.reviveAvailable 이 true 면 1회 부활(run 유지)하고 거기서 멈춰 수동 모드로 복귀.
+ *     이미 false 면 일반 사망 처리 (run 종료).
+ *   - 자동 도중 보스층 도달: 그 직전 잡몹 승리에서 멈춤 (보스는 수동).
+ *   - 마일스톤 보상은 누적해서 한 트랜잭션 안에 character/inventory 에 합산 반영.
+ *
+ * 시작 층이 이미 보스면 at_boss 에러 — UI 는 그 경우 버튼을 노출하지 않는다.
+ */
+async function applyTowerAutoProgress(
+  tx: DbExecutor,
+  userId: string,
+): Promise<TowerOutcome> {
+  let state =
+    (await readKv<TowerState>(tx, userId, TOWER_STORAGE_KEY, true)) ?? EMPTY_STATE;
+  if (!state.run) throw new TowerError("no_active_run");
+  if (isBossFloor(state.run.currentFloor)) throw new TowerError("at_boss");
+
+  const derived = await derivePlayerCombatFromSaves(userId);
+  if (!derived) throw new TowerError("character_not_found");
+
+  const startFloor = state.run.currentFloor;
+  let lastBattle: TowerOutcome["battle"];
+  const milestones: TowerAutoSummary["milestones"] = [];
+  let floorsCleared = 0;
+  let reason: TowerAutoSummary["reason"] = "death";
+
+  // 안전 한도 — 한 보스 구간(10층)을 넘어 도는 일이 없도록 1.5배 잡음.
+  const MAX_ITERATIONS = Math.ceil(TOWER_BOSS_INTERVAL * 1.5);
+  for (let i = 0; i < MAX_ITERATIONS; i += 1) {
+    if (!state.run) break;
+    const floor = state.run.currentFloor;
+    const enemy = buildFloorEnemy(floor);
+    const resolution = resolveBattle(derived.player, enemy, "player", {
+      pickAction: (s) => pickAutoAction(s, { rules: [], potions: {} }),
+      potions: {},
+      isBoss: false, // 자동은 잡몹만 — 보스 직전에 break.
+    });
+    lastBattle = {
+      finalState: resolution.finalState,
+      enemyName: enemy.name,
+      isBoss: false,
+    };
+
+    const step = applyAutoStep(
+      { state, today: todayKey() },
+      resolution.outcome === "win" ? "win" : "lose",
+    );
+    state = step.state;
+    if (resolution.outcome === "win") floorsCleared += 1;
+    if (step.milestone) milestones.push(step.milestone);
+    if (step.reason) {
+      reason = step.reason;
+      break;
+    }
+  }
+
+  await upsertSave(tx, userId, TOWER_STORAGE_KEY, state);
+
+  // 마일스톤 누계를 한 번에 character/inventory 에 반영.
+  let character: SavedCharacter | undefined;
+  let inventory: SavedInventory | undefined;
+  const totalGold = milestones.reduce((s, m) => s + (m.reward.gold ?? 0), 0);
+  const totalMaterials: CountMap = {};
+  for (const m of milestones) {
+    for (const mat of m.reward.materials ?? []) {
+      totalMaterials[mat.id] = (totalMaterials[mat.id] ?? 0) + mat.count;
+    }
+  }
+  if (totalGold > 0) {
+    const cur = (await readKv<SavedCharacter>(tx, userId, "character.v2", true)) ?? {};
+    character = { ...cur, gold: (cur.gold ?? 0) + totalGold };
+    await upsertSave(tx, userId, "character.v2", character);
+  }
+  if (Object.keys(totalMaterials).length > 0) {
+    const cur = (await readKv<SavedInventory>(tx, userId, "inventory.v2", true)) ?? {};
+    const materials: CountMap = { ...(cur.materials ?? {}) };
+    for (const [id, n] of Object.entries(totalMaterials)) {
+      materials[id] = (materials[id] ?? 0) + n;
+    }
+    inventory = { ...cur, materials };
+    await upsertSave(tx, userId, "inventory.v2", inventory);
+  }
+
+  // 종료 시점의 currentFloor — 살아남았으면 run.currentFloor (다음 싸울 층), 죽었으면 마지막 시도 층.
+  const endFloor = state.run?.currentFloor ?? startFloor + floorsCleared;
+
+  return {
+    tower: state,
+    character,
+    inventory,
+    applied: {
+      kind: "fight_floors_auto",
+      currentFloor: state.run?.currentFloor,
+      // 마지막 outcome — next_is_boss 면 승리로 끝남, 그 외(revive/death)는 패배로 끝남.
+      outcome: reason === "next_is_boss" ? "win" : "lose",
+    },
+    battle: lastBattle,
+    auto: {
+      startFloor,
+      endFloor,
+      floorsCleared,
+      reason,
+      milestones,
+    },
+  };
 }
 
 // 층 → 그 층에서 만나는 적 Monster (이름·스탯 모두 결정). 보스층은 보스 슬롯의 베이스 +

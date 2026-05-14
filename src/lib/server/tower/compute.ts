@@ -41,7 +41,8 @@ export type TowerComputeInput = {
 };
 
 export type TowerApplied = {
-  kind: TowerAction["kind"];
+  /** 적용된 액션 종류. apply.ts 의 fight_floors_auto 묶음 결과는 같은 필드를 쓰되 별도 kind. */
+  kind: TowerAction["kind"] | "fight_floors_auto";
   /** start/fight_floor 후의 currentFloor. forfeit 후엔 미정의. */
   currentFloor?: number;
   /** fight_floor 의 결과 (win/lose). */
@@ -74,7 +75,11 @@ function computeStart(input: TowerComputeInput): TowerComputeResult {
   }
   const progress = state.progress ?? EMPTY_PROGRESS;
   const startFloor = startFloorAfterCheckpoint(progress.highestFloor);
-  const run: TowerRun = { currentFloor: startFloor, startedAt: Date.now() };
+  const run: TowerRun = {
+    currentFloor: startFloor,
+    startedAt: Date.now(),
+    reviveAvailable: true,
+  };
   return {
     state: {
       progress,
@@ -162,6 +167,54 @@ export function computeTowerOutcome(
     case "forfeit":
       return computeForfeit(input);
   }
+}
+
+/**
+ * "다음 보스까지 자동" 한 스텝의 순수 규칙.
+ *   - 승리: computeFightFloor(win) 적용 후, 다음 currentFloor 가 보스면 reason="next_is_boss" 로 종료.
+ *           그렇지 않으면 reason=null 로 루프 계속.
+ *   - 패배 + 부활 가능: run.reviveAvailable=false 로 마킹, reason="revive_used" 로 종료. run 자체는 유지.
+ *   - 패배 + 부활 없음: computeFightFloor(lose) 적용(run=null), reason="death" 로 종료.
+ *
+ * apply.ts 의 fight_floors_auto 가 매 전투 결과를 받아 이 함수를 호출하며 누적한다.
+ */
+export type AutoStepResult = {
+  state: TowerState;
+  /** 이 스텝이 보스층 첫 도달 마일스톤을 발생시켰으면 동봉. */
+  milestone?: { floor: number; reward: TowerMilestoneReward };
+  /** null 이면 루프 계속, 그 외 값이면 그 사유로 루프 종료. */
+  reason: null | "next_is_boss" | "revive_used" | "death";
+};
+
+export function applyAutoStep(
+  input: TowerComputeInput,
+  outcome: "win" | "lose",
+): AutoStepResult {
+  const { state } = input;
+  if (!state.run) {
+    throw new TowerError("no_active_run");
+  }
+
+  if (outcome === "win") {
+    const next = computeFightFloor(input, "win");
+    const nextRun = next.state.run;
+    const isNextBoss = nextRun ? isBossFloor(nextRun.currentFloor) : false;
+    return {
+      state: next.state,
+      milestone: next.applied.milestone,
+      reason: isNextBoss ? "next_is_boss" : null,
+    };
+  }
+
+  // 패배.
+  if (state.run.reviveAvailable !== false) {
+    return {
+      state: { ...state, run: { ...state.run, reviveAvailable: false } },
+      reason: "revive_used",
+    };
+  }
+  const ended = computeFightFloor(input, "lose");
+  return { state: ended.state, reason: "death" };
 }
 
 /** "YYYY-MM-DD" — KST 기준. 클라이언트 자정 표시와 일치하도록 +9h. */
