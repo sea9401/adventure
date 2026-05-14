@@ -45,16 +45,26 @@ export function useBattle({
   });
 
   // hpOverride — 직전 전투의 finalHp를 그대로 이어받을 때 사용 (setCharacterState 비동기 우회).
-  const start = useCallback((enemy: Monster, hpOverride?: number) => {
-    const base = playerRef.current;
-    const p = hpOverride !== undefined ? { ...base, hp: hpOverride } : base;
-    const r: BattleResolution = resolveBattle(p, enemy, playerNameRef.current, {
-      pickAction: pickActionRef.current,
-      potions: potionsRef.current,
-    });
-    setState(r.finalState);
-    setPotionsConsumed(r.potionsConsumed);
-  }, []);
+  // isBoss — 보스 도전 진입 시 true. BOSS_TURN_CAP(50턴) 도달 시 타임아웃 패배 처리.
+  const start = useCallback(
+    (enemy: Monster, hpOverride?: number, isBoss?: boolean) => {
+      const base = playerRef.current;
+      const p = hpOverride !== undefined ? { ...base, hp: hpOverride } : base;
+      const r: BattleResolution = resolveBattle(
+        p,
+        enemy,
+        playerNameRef.current,
+        {
+          pickAction: pickActionRef.current,
+          potions: potionsRef.current,
+          isBoss,
+        },
+      );
+      setState(r.finalState);
+      setPotionsConsumed(r.potionsConsumed);
+    },
+    [],
+  );
 
   const stop = useCallback(() => {
     setState(null);

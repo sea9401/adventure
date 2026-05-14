@@ -1131,7 +1131,13 @@ export function advanceTurn(
 export type ResolveContext = {
   pickAction: (state: BattleState) => PlayerAction;
   potions: Partial<Record<PotionId, number>>;
+  // 보스 전투면 BOSS_TURN_CAP 턴 경과 시 패배로 타임아웃. 일반 전투에는 영향 없음.
+  isBoss?: boolean;
 };
+
+// 보스 전투 타임아웃 — 플레이어 턴 기준. 정상 빌드는 10~30턴 안에 끝나므로
+// 50턴 도달은 데미지 부족 / 무한 회피 스톨로 간주, 패배 처리.
+export const BOSS_TURN_CAP = 50;
 
 export type BattleResolution = {
   outcome: BattleOutcome;
@@ -1168,6 +1174,30 @@ export function resolveBattle(
     }
     state = advanceTurn(state, player, playerName, action);
     turns += 1;
+
+    // 보스 타임아웃 — completedPlayerTurns 가 BOSS_TURN_CAP 도달하면 패배로 종료.
+    // 일반 전투는 영향 없음 (ctx.isBoss === false).
+    if (
+      ctx.isBoss &&
+      state.phase !== "ended" &&
+      state.completedPlayerTurns >= BOSS_TURN_CAP
+    ) {
+      const timeoutLog = appendLog(state.log, {
+        kind: "info",
+        text: `${BOSS_TURN_CAP}턴 경과 — 보스를 쓰러뜨리지 못했다.`,
+      });
+      return {
+        outcome: "lose",
+        finalState: {
+          ...state,
+          log: timeoutLog,
+          phase: "ended",
+          outcome: "lose",
+        },
+        potionsConsumed: consumed,
+        turns,
+      };
+    }
 
     // 무한 루프 가드 — 정상 전투는 보통 수십 턴 안에 끝난다. 만약 데미지 0/회피 100% 같은
     // 병리적 조합이면 적의 타임아웃 패배로 강제 종료.
