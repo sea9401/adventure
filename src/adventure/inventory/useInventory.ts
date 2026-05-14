@@ -71,7 +71,7 @@ export const emptyInventory = (): InventoryState => ({
   craftedEquipment: {},
   droppedEquipment: {},
   vault: {},
-  materials: { branch: 1 },
+  materials: { branch: 2 },
   consumables: {},
 });
 
