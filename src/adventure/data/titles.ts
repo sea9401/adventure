@@ -231,6 +231,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "옛 천공인의 마지막 왕을 홀로 절반 이상 깎아낸 자. 폐도에 남은 별빛이 그를 알아본다.",
     condition: "천공인의 왕 협동 처치에서 누적 데미지 60% 이상 (legend 티어)",
   },
+  apex_slayer: {
+    id: "apex_slayer",
+    name: "창공의 옥좌 마지막 자",
+    description: "창공의 주재를 홀로 절반 이상 깎아낸 자. 옥좌 위 별빛이 마침내 한 사람의 결을 알아본다.",
+    condition: "창공의 주재 협동 처치에서 누적 데미지 60% 이상 (legend 티어)",
+  },
   level_30: {
     id: "level_30",
     name: "베테랑",

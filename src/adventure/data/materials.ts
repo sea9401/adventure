@@ -251,6 +251,21 @@ export const MATERIALS = {
     price: 180,
     inShop: false,
   },
+  // ── 창공의 옥좌 재료 ─────────────────────────────────────────────────────
+  empyrean_shard: {
+    id: "empyrean_shard",
+    name: "창공 조각",
+    description: "옥좌 둘레에서 떨어져 나온 깨진 창공의 조각. 손에 쥐면 옛 천공의 무게가 그대로 실린다.",
+    price: 260,
+    inShop: false,
+  },
+  primordial_essence: {
+    id: "primordial_essence",
+    name: "태초의 정수",
+    description: "창공의 주재가 옥좌에 봉인했다 전해지는 별빛의 가장 처음 결. 마지막에 닿은 자만이 거둘 수 있다.",
+    price: 420,
+    inShop: false,
+  },
   // 통화성 재료 — 잉여 장비/재료를 대장간 분해실에서 갈아내면 가루처럼 부서지며 쌓인다.
   // 어디든 통하는 작은 마력의 결정이라, 회복약 라인의 통합 재료로 쓰인다.
   // inShop: false (상점 미취급) — 분해로만 얻고, 회복약 제작으로 소진한다.

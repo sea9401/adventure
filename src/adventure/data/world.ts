@@ -19,6 +19,7 @@ export type RegionId =
   | "skyreach"
   | "starspire"
   | "skyfolk_ruins"
+  | "apex_throne"
   // 해안 지선 (디올라에서 남쪽으로 갈라지는 막다른 라인)
   | "tideflats"
   | "saltmarsh"
@@ -370,6 +371,21 @@ export const WORLD_MAP: WorldMap = {
       },
       recommendedLevel: 80,
     },
+    {
+      id: "apex_throne",
+      name: "창공의 옥좌",
+      description:
+        "선인의 폐도 가장 깊은 곳, 옛 천공인 마지막 황제가 별빛 자체를 봉인했다는 옥좌. 마지막 시험을 통과한 자에게만 별빛이 완전히 열린다.",
+      position: { x: 2900, y: -140 },
+      biome: "mountain",
+      enemies: ["별빛 사도", "옥좌의 호위", "봉인된 황좌 골렘"],
+      encounterWeights: {
+        "별빛 사도": 30,
+        "옥좌의 호위": 40,
+        "봉인된 황좌 골렘": 30,
+      },
+      recommendedLevel: 90,
+    },
     // ── 해안 지선 (diola → tideflats → saltmarsh → reef_isle) ───────────────
     // 폐허(Lv9)~산기슭(Lv18) 구간에 산으로 가는 길과 나란히 놓인 막다른 바닷길.
     // 디올라(660,80) 남쪽 빈 공간으로 내려가며, height 를 640 으로 늘려 자리를 만든다.
@@ -573,6 +589,12 @@ export const WORLD_MAP: WorldMap = {
       from: "starspire",
       to: "skyfolk_ruins",
       requires: { kind: "trial", battles: 5, enemiesFrom: "skyfolk_ruins" },
+    },
+    // 창공의 옥좌 — 선인의 폐도 가장 깊은 곳. trial 5번. 만렙 100 라인의 마지막.
+    {
+      from: "skyfolk_ruins",
+      to: "apex_throne",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "apex_throne" },
     },
     // 해안 지선 (diola → tideflats → saltmarsh → reef_isle).
     // 산호초 섬은 뱃사공 해랑이 배를 내줘야 — 소만 원로 여울의 신임을 얻고(saltmarsh_vouched),
