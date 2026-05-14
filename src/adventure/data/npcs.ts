@@ -271,6 +271,7 @@ export const NPCS: Npc[] = [
       "천공 성지를 수백 년 지켜온 노인. 화산의 위협을 누구보다 잘 알았다.",
     greeting:
       "…드디어 왔구려. 화산의 심장이 잠든 걸 느꼈소.\n그것이 깨어 있는 한 이 성지는 닫혀 있었지. 잘 와줬소.",
+    portrait: "/images/npc/haemoo.webp",
   },
   {
     id: "skyreach_guide",
@@ -281,6 +282,7 @@ export const NPCS: Npc[] = [
       "화산 지대를 정기적으로 순찰하는 성지의 정찰대원. 대담하고 말이 빠르다.",
     greeting:
       "왔구나! 봉황령 쪽은 어떻던가?\n산악 기사들이 지난주보다 더 늘었어. 솜씨가 있다면 도움을 청할 수 있겠는데.",
+    portrait: "/images/npc/gum.webp",
   },
   {
     id: "skyreach_alchemist",
@@ -291,6 +293,7 @@ export const NPCS: Npc[] = [
       "화산 지대의 재료를 연구하는 성지 연금술사. 실험 가운이 그을려 있다.",
     greeting:
       "오, 마침 잘 왔어.\n용암 핵이 필요한데, 화산 두꺼비나 불꽃 골렘을 잡으면 가끔 나오거든. 여분이 있으면 거래할 수 있어.",
+    portrait: "/images/npc/sion.webp",
   },
   {
     id: "skyreach_acolyte",
@@ -301,6 +304,7 @@ export const NPCS: Npc[] = [
       "성지 첨탑을 오르내리며 종을 치는 어린 수행자. 구름층 위를 자주 올려다본다.",
     greeting:
       "…쉿. 종소리 끝나기 전엔 말하면 안 돼요.\n…됐다. 저기 첨탑 너머, 구름이 한 겹 더 있는 거 보여요? 해무 어른은 거기 얘기를 안 해요. 북쪽에서 온 순례자도요. 다들 뭔가 알면서 안 말하는 거예요. …당신은 알게 될 것 같아요. 왠지.",
+    portrait: "/images/npc/unha.webp",
   },
   {
     id: "skyreach_gatekeeper",
@@ -311,6 +315,7 @@ export const NPCS: Npc[] = [
       "화염 능선에서 성지로 드는 마지막 문을 지키는 정찰대원. 말수가 적다.",
     greeting:
       "…통과.\n화산 지대 쪽은 아직 시끄러워. 두꺼비도, 슬라임도. 검이 순찰 의뢰를 게시판에 걸어 뒀으니, 손 빌릴 생각 있으면 거기 봐.\n…그리고 한밤중 첨탑엔 올라가지 마. 종 치는 애가 무서워하니까.",
+    portrait: "/images/npc/chungram.webp",
   },
   // ── 별바다 (천공 라인 endgame 정거장) ─────────────────────────────────────
   {
