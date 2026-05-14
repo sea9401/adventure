@@ -48,6 +48,7 @@ export function CharacterScreen() {
     quests,
     crafting,
     playerCombat,
+    playerStatus,
   } = useGame();
   const [towerOpen, setTowerOpen] = useState(false);
 
@@ -130,6 +131,7 @@ export function CharacterScreen() {
             onClose={() => setTowerOpen(false)}
             player={playerCombat}
             playerName={character.name}
+            playerStatus={playerStatus}
             potions={inventory.state.potions ?? {}}
             onApplied={(r) => {
               // 마일스톤 보상으로 character.v2 (gold) 가 갱신됐으면 in-memory 도 동기화.

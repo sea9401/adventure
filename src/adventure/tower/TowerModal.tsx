@@ -9,6 +9,10 @@ import {
   type BattleResolution,
   type PlayerCombat,
 } from "@/adventure/battle/engine";
+import {
+  BattleScene,
+  type BattlePlayerStatus,
+} from "@/adventure/battle/BattleScene";
 import type { PotionId } from "@/adventure/data/potions";
 import type { Monster } from "@/adventure/data/monsters";
 import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
@@ -44,12 +48,15 @@ export function TowerModal({
   onClose,
   player,
   playerName,
+  playerStatus,
   potions,
   onApplied,
 }: {
   onClose: () => void;
   player: PlayerCombat;
   playerName: string;
+  /** BattleScene 의 HUD (MP/EXP 바, 캐릭터 아바타) 에 필요한 상태. */
+  playerStatus: BattlePlayerStatus;
   /** 인벤토리 포션 잔량 — 전투 중 소비. 실제 차감은 onApplied 처리부에 위임. */
   potions: Partial<Record<PotionId, number>>;
   /** 마일스톤 보상으로 character/inventory 가 갱신되면 호출 — 부모에서 state 동기화. */
@@ -62,6 +69,8 @@ export function TowerModal({
   const state = tower.state;
   const runActive = state.run !== null;
 
+  // 결과 화면에선 BattleScene 을 넣어야 해서 모달을 더 넓게 — 그 외엔 컴팩트.
+  const wide = view.kind === "result";
   return (
     <div
       role="dialog"
@@ -72,7 +81,7 @@ export function TowerModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+        className={`w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-[90vh] overflow-y-auto rounded-lg border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950`}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
@@ -155,7 +164,10 @@ export function TowerModal({
             outcome={view.outcome}
             floor={view.floor}
             enemy={view.enemy}
+            resolution={view.resolution}
             milestone={apparentMilestone(view.outcome, view.floor)}
+            playerName={playerName}
+            playerStatus={playerStatus}
             onNext={() => {
               if (view.outcome === "win") {
                 // 다음 층 — 서버 응답에 따라 currentFloor 가 이미 +1 됐을 것.
@@ -396,13 +408,19 @@ function ResultView({
   outcome,
   floor,
   enemy,
+  resolution,
   milestone,
+  playerName,
+  playerStatus,
   onNext,
 }: {
   outcome: "win" | "lose";
   floor: number;
   enemy: Monster;
+  resolution: BattleResolution;
   milestone: ReturnType<typeof milestoneFor>;
+  playerName: string;
+  playerStatus: BattlePlayerStatus;
   onNext: () => void;
 }) {
   return (
@@ -417,7 +435,7 @@ function ResultView({
         >
           {floor}층 — {outcome === "win" ? "클리어" : "패배"}
         </div>
-        <h3 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+        <h3 className="mt-1 flex items-center gap-1.5 text-base font-semibold text-zinc-900 dark:text-zinc-100">
           {outcome === "win" ? (
             <Star size={16} weight="fill" className="text-amber-500" />
           ) : (
@@ -443,14 +461,22 @@ function ResultView({
             </div>
           </div>
         )}
-        <button
-          type="button"
-          onClick={onNext}
-          className="mt-3 w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
-        >
-          {outcome === "win" ? "다음 층" : "결과 보기"}
-        </button>
       </Card>
+
+      {/* 전투 로그 + 최종 HP/MP/EXP 가 한 화면에 — 일반 BattleView 와 같은 BattleScene. */}
+      <BattleScene
+        state={resolution.finalState}
+        playerName={playerName}
+        playerStatus={playerStatus}
+      />
+
+      <button
+        type="button"
+        onClick={onNext}
+        className="w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
+      >
+        {outcome === "win" ? "다음 층" : "결과 보기"}
+      </button>
     </div>
   );
 }
