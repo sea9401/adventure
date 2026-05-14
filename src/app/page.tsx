@@ -319,8 +319,13 @@ function Home() {
     grantTitle,
   });
 
-  const { handleEquipFromInventory, handleUnequip, handleDiscardFromInventory } =
-    useEquipmentActions({ inventory, characterStateHook, addNotification });
+  const {
+    handleEquipFromInventory,
+    handleUnequip,
+    handleDiscardFromInventory,
+    handleDepositToVault,
+    handleWithdrawFromVault,
+  } = useEquipmentActions({ inventory, characterStateHook, addNotification });
 
   const { handleCraft } = useCraftAction({
     inventory,
@@ -462,6 +467,8 @@ function Home() {
     handleEquipFromInventory,
     handleUnequip,
     handleDiscardFromInventory,
+    handleDepositToVault,
+    handleWithdrawFromVault,
     handleCraft,
     handleBattleEnd,
     handleAcceptQuest,

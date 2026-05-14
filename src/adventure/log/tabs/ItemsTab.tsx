@@ -19,6 +19,7 @@ import { getRecipeById } from "@/adventure/data/recipes";
 import { dropQualityTextClass } from "@/adventure/data/dropQuality";
 import { craftTierTextClass } from "@/adventure/data/craftQuality";
 import type { DiscoveredEquipmentEntry } from "@/adventure/log/storage";
+import type { VaultState } from "@/adventure/inventory/useInventory";
 import {
   parseVariantKey,
   resolveVariant,
@@ -55,10 +56,15 @@ export function ItemsTab({
   knownRecipes,
   shareableRecipes,
   discovered,
+  vault,
+  onWithdraw,
 }: {
   knownRecipes: string[];
   shareableRecipes: string[];
   discovered: Record<string, DiscoveredEquipmentEntry>;
+  vault?: VaultState;
+  /** 도감 보관함에서 꺼내기 — vault[id][variantKey] 의 1개를 인벤으로 환원. */
+  onWithdraw?: (id: ItemId, variantKey: string) => void;
 }) {
   const [sub, setSub] = useState<ItemSubTab>("weapon");
 
@@ -77,7 +83,12 @@ export function ItemsTab({
           shareableRecipes={shareableRecipes}
         />
       ) : (
-        <EquipmentSubTab slot={sub} discovered={discovered} />
+        <EquipmentSubTab
+          slot={sub}
+          discovered={discovered}
+          vault={vault ?? {}}
+          onWithdraw={onWithdraw}
+        />
       )}
     </div>
   );
@@ -154,9 +165,13 @@ function gradeTextClass(key: string): string {
 function EquipmentSubTab({
   slot,
   discovered,
+  vault,
+  onWithdraw,
 }: {
   slot: EquipSlot;
   discovered: Record<string, DiscoveredEquipmentEntry>;
+  vault: VaultState;
+  onWithdraw?: (id: ItemId, variantKey: string) => void;
 }) {
   const rows = useMemo(() => buildRows(discovered, slot), [discovered, slot]);
   const [query, setQuery] = useState("");
@@ -202,7 +217,9 @@ function EquipmentSubTab({
                 onToggle={() => toggle(tier)}
               />
               {open &&
-                entries.map((row) => (
+                entries.map((row) => {
+                  const stored = vault[row.id]?.[row.variantKey] ?? 0;
+                  return (
                   <Card key={`${row.id}@${row.variantKey}`}>
                     <div className="flex items-baseline justify-between gap-2">
                       <span
@@ -223,8 +240,25 @@ function EquipmentSubTab({
                         {row.item.description}
                       </p>
                     )}
+                    {stored > 0 && (
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-400">
+                          보관 {stored}
+                        </span>
+                        {onWithdraw && (
+                          <button
+                            type="button"
+                            onClick={() => onWithdraw(row.id, row.variantKey)}
+                            className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                          >
+                            꺼내기
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </Card>
-                ))}
+                  );
+                })}
             </div>
           );
         })

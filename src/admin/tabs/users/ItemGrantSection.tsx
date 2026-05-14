@@ -69,6 +69,7 @@ export function ItemGrantSection({
       equipment: { ...inventory.equipment },
       craftedEquipment: { ...inventory.craftedEquipment },
       droppedEquipment: { ...inventory.droppedEquipment },
+      vault: { ...inventory.vault },
       materials: { ...inventory.materials },
       consumables: { ...inventory.consumables },
       potionCapacityBonus: inventory.potionCapacityBonus,
