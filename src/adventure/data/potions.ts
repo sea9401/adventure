@@ -49,7 +49,7 @@ export const POTION_IDS = Object.keys(POTIONS) as PotionId[];
 
 // 각 포션 종류 별 최대 보유 가능 수의 기본값.
 // 실제 최대값은 인벤토리에 누적된 보너스(potionCapacityBonus)를 더해 산출 — `potionMax()` 사용.
-export const POTION_MAX_PER_TYPE_BASE = 10;
+export const POTION_MAX_PER_TYPE_BASE = 15;
 
 export function potionMax(bonus = 0): number {
   return POTION_MAX_PER_TYPE_BASE + Math.max(0, bonus);
