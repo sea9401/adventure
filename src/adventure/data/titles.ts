@@ -225,6 +225,12 @@ export const TITLES: Record<TitleId, Title> = {
     description: "별의 첨탑 정상에 잠든 수호자를 홀로 절반 이상 깎아낸 자. 별빛이 그를 기억한다.",
     condition: "별을 지키는 자 협동 처치에서 누적 데미지 50% 이상 (legend 티어)",
   },
+  skyfolk_slayer: {
+    id: "skyfolk_slayer",
+    name: "선인의 폐도 마지막 자",
+    description: "옛 천공인의 마지막 왕을 홀로 절반 이상 깎아낸 자. 폐도에 남은 별빛이 그를 알아본다.",
+    condition: "천공인의 왕 협동 처치에서 누적 데미지 60% 이상 (legend 티어)",
+  },
   level_30: {
     id: "level_30",
     name: "베테랑",

@@ -753,6 +753,78 @@ export const MONSTERS: Record<string, Monster> = {
     },
     onDefeatFlag: "starspire_keeper_defeated",
   },
+  // ── 선인의 폐도 (skyfolk_ruins) — 별의 첨탑 위 Lv80 구간. 협동 보스 천공인의 왕. ─────
+  "폐도 정찰병": {
+    name: "폐도 정찰병",
+    tags: ["spirit"],
+    hp: 950,
+    atk: 80,
+    def: 38,
+    spd: 13,
+    evasionPct: 25,
+    exp: 160,
+    drops: [
+      { kind: "material", materialId: "stellar_essence", chance: 0.008 },
+    ],
+    skill: { kind: "pierce", name: "예봉", armorPierce: 5 },
+  },
+  "천공인 전사": {
+    name: "천공인 전사",
+    tags: ["humanoid"],
+    hp: 1200,
+    atk: 84,
+    def: 48,
+    spd: 8,
+    exp: 175,
+    drops: [
+      { kind: "material", materialId: "stellar_essence", chance: 0.012 },
+    ],
+    skill: { kind: "heavy_blow", name: "천공 강타", everyPhases: 3, multiplier: 1.5 },
+  },
+  "옛 천공의 골렘": {
+    name: "옛 천공의 골렘",
+    tags: ["golem"],
+    hp: 1400,
+    atk: 92,
+    def: 55,
+    spd: 5,
+    exp: 195,
+    drops: [
+      { kind: "material", materialId: "stellar_essence", chance: 0.01 },
+      { kind: "material", materialId: "aether_alloy", chance: 0.005 },
+    ],
+    skill: { kind: "enrage", name: "옛 가동", hpFraction: 0.4, atkBonus: 12 },
+  },
+  // 선인의 폐도 협동 보스 — coop/data.ts 의 COOP_BOSSES 로 등장.
+  // solo stat 은 시뮬·테스트 용도 (coop maxHp 는 coop/data.ts 의 30000).
+  "천공인의 왕": {
+    name: "천공인의 왕",
+    tags: ["humanoid"],
+    hp: 2400,
+    atk: 110,
+    def: 60,
+    spd: 7,
+    exp: 700,
+    drops: [
+      { kind: "material", materialId: "stellar_essence", chance: 1, amount: 8 },
+      { kind: "material", materialId: "aether_alloy", chance: 1, amount: 3 },
+      {
+        kind: "recipe_one_of",
+        recipeIds: ["aether_blade", "aether_aegis", "aether_lance", "aether_grip"],
+        chance: 1,
+      },
+      { kind: "recipe", recipeId: "aether_mantle", chance: 0.15 },
+    ],
+    dropQualityBias: 4,
+    armorVulnerable: 0.3,
+    playerDefVulnerable: 0.25,
+    phaseTrigger: {
+      hpFraction: 0.4,
+      defBonus: 10,
+      message: "천공인의 왕이 옛 별빛을 두른다.",
+    },
+    onDefeatFlag: "skyfolk_king_defeated",
+  },
   // ── 해안 지선 (조수 갯벌 / 산호초 섬) ───────────────────────────────────
   // 폐허(Lv9)~산기슭(Lv18) 사이에 놓이는 바닷길 잡몹. 갯벌 ≈ 폐허 난이도, 섬 ≈ 산기슭 난이도.
   "집게발 게": {

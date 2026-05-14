@@ -36,6 +36,14 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     onDefeatFlag: "starspire_keeper_defeated",
     onAttackFlag: "starspire_engaged",
   },
+  skyfolk_ruins: {
+    monsterName: "천공인의 왕",
+    maxHp: 30000,
+    expirationMs: 24 * 60 * 60 * 1000, // 24h
+    respawnMs: 1 * 60 * 60 * 1000, // 1h
+    onDefeatFlag: "skyfolk_king_defeated",
+    onAttackFlag: "skyfolk_engaged",
+  },
 };
 
 // 5단계 reward tier — 누적 데미지 / maxHp 비율 임계.

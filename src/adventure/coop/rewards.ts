@@ -75,9 +75,38 @@ const STAR_KEEPER_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
   },
 };
 
+const SKYFOLK_KING_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
+  bronze: {
+    materials: { stellar_essence: 2 },
+    recipes: [],
+  },
+  silver: {
+    materials: { aether_alloy: 1 },
+    recipes: [],
+  },
+  gold: {
+    materials: { stellar_essence: 2, aether_alloy: 1 },
+    recipes: [],
+    recipeOneOf: ["aether_blade", "aether_aegis", "aether_lance", "aether_grip"],
+    recipeRolls: [{ recipeId: "aether_mantle", chance: 0.15 }],
+  },
+  epic: {
+    materials: { aether_alloy: 1 },
+    recipes: [],
+  },
+  legend: {
+    materials: {},
+    recipes: [],
+    titleId: "skyfolk_slayer",
+    // 물욕 드랍 — legend 도달자 한정, 운봉령/별빛 두루마기 패턴 그대로 낮은 확률.
+    equipRolls: [{ itemId: "skyfolk_crown", chance: 0.01 }],
+  },
+};
+
 const TIER_TABLES: Record<string, Record<CoopRewardTier, CoopReward>> = {
   "운봉의 거인": PEAK_GIANT_TIER_REWARDS,
   "별을 지키는 자": STAR_KEEPER_TIER_REWARDS,
+  "천공인의 왕": SKYFOLK_KING_TIER_REWARDS,
 };
 
 const TIER_ORDER: CoopRewardTier[] = ["bronze", "silver", "gold", "epic", "legend"];
