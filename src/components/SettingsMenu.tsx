@@ -8,17 +8,20 @@ import {
   Question,
   Sun,
   SignOut,
+  User,
   UserMinus,
 } from "@phosphor-icons/react";
 import { signIn, signOut } from "next-auth/react";
 import { HelpModal } from "./HelpModal";
 import { NotificationPrefsModal } from "./NotificationPrefsModal";
 import { DeleteAccountModal } from "./DeleteAccountModal";
+import { AvatarChangeModal } from "./AvatarChangeModal";
 
 export function SettingsMenu({ gameName }: { gameName: string | null }) {
   const [open, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [notifPrefsOpen, setNotifPrefsOpen] = useState(false);
+  const [avatarChangeOpen, setAvatarChangeOpen] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [linkedProviders, setLinkedProviders] = useState<string[] | null>(null);
@@ -89,6 +92,11 @@ export function SettingsMenu({ gameName }: { gameName: string | null }) {
     setNotifPrefsOpen(true);
   };
 
+  const handleOpenAvatarChange = () => {
+    setOpen(false);
+    setAvatarChangeOpen(true);
+  };
+
   const handleOpenDeleteAccount = () => {
     setOpen(false);
     setDeleteAccountOpen(true);
@@ -125,6 +133,16 @@ export function SettingsMenu({ gameName }: { gameName: string | null }) {
                   <Moon size={18} weight="duotone" />
                 )}
                 {isDark ? "라이트 모드" : "다크 모드"}
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={handleOpenAvatarChange}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                <User size={18} weight="duotone" />
+                프로필 이미지 변경
               </button>
             </li>
             <li>
@@ -203,6 +221,9 @@ export function SettingsMenu({ gameName }: { gameName: string | null }) {
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
       {notifPrefsOpen && (
         <NotificationPrefsModal onClose={() => setNotifPrefsOpen(false)} />
+      )}
+      {avatarChangeOpen && (
+        <AvatarChangeModal onClose={() => setAvatarChangeOpen(false)} />
       )}
       {deleteAccountOpen && (
         <DeleteAccountModal
