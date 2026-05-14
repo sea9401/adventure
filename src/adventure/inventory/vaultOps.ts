@@ -16,6 +16,24 @@ export function vaultVariantKey(
   return "base";
 }
 
+// 인벤토리에서 특정 변형의 보유 수. base = equipment[], c±N = craftedEquipment, dN = droppedEquipment.
+export function inventoryCountFor(
+  inv: InventoryState,
+  id: ItemId,
+  variantKey: string,
+): number {
+  if (variantKey === "base") return inv.equipment[id] ?? 0;
+  if (variantKey[0] === "c") {
+    const tier = variantKey.slice(1);
+    return inv.craftedEquipment[id]?.[tier] ?? 0;
+  }
+  if (variantKey[0] === "d") {
+    const quality = variantKey.slice(1);
+    return inv.droppedEquipment[id]?.[quality] ?? 0;
+  }
+  return 0;
+}
+
 // 변형 키 → (tier, quality). 모르는 키는 base 취급.
 export function parseVaultVariantKey(key: string): {
   tier?: CraftTier;

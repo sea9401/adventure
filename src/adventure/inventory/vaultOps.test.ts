@@ -4,6 +4,7 @@ import {
   withdrawFromVaultPure,
   vaultVariantKey,
   parseVaultVariantKey,
+  inventoryCountFor,
 } from "./vaultOps";
 import type { InventoryState } from "./useInventory";
 
@@ -40,6 +41,36 @@ describe("vaultVariantKey", () => {
 
   it("tier 와 quality 동시면 tier 우선 (실제로는 동시 발생 X)", () => {
     expect(vaultVariantKey(1, 2)).toBe("c1");
+  });
+});
+
+describe("inventoryCountFor", () => {
+  it("base 는 equipment[] 조회", () => {
+    const inv = { ...emptyInv(), equipment: { hero_sword: 3 } };
+    expect(inventoryCountFor(inv, "hero_sword", "base")).toBe(3);
+  });
+
+  it("c1 은 craftedEquipment 의 tier 1 조회", () => {
+    const inv = {
+      ...emptyInv(),
+      craftedEquipment: { hero_sword: { "1": 2 } },
+    };
+    expect(inventoryCountFor(inv, "hero_sword", "c1")).toBe(2);
+    expect(inventoryCountFor(inv, "hero_sword", "c2")).toBe(0);
+  });
+
+  it("d2 는 droppedEquipment 의 quality 2 조회", () => {
+    const inv = {
+      ...emptyInv(),
+      droppedEquipment: { hero_sword: { "2": 5 } },
+    };
+    expect(inventoryCountFor(inv, "hero_sword", "d2")).toBe(5);
+    expect(inventoryCountFor(inv, "hero_sword", "d1")).toBe(0);
+  });
+
+  it("보유 없는 항목은 0", () => {
+    expect(inventoryCountFor(emptyInv(), "hero_sword", "base")).toBe(0);
+    expect(inventoryCountFor(emptyInv(), "hero_sword", "c1")).toBe(0);
   });
 });
 

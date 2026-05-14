@@ -6,7 +6,12 @@ import type { TitleId } from "@/adventure/data/titles";
 import type { StatKey } from "@/adventure/data/stats";
 import type { AdventureLog } from "@/adventure/log/storage";
 import type { ItemId } from "@/adventure/data/items";
-import type { VaultState } from "@/adventure/inventory/useInventory";
+import type {
+  InventoryState,
+  VaultState,
+} from "@/adventure/inventory/useInventory";
+import type { CraftTier } from "@/adventure/data/craftQuality";
+import type { DropQuality } from "@/adventure/data/dropQuality";
 import { ItemsTab } from "./tabs/ItemsTab";
 import { TownsTab } from "./tabs/TownsTab";
 import { PlacesTab } from "./tabs/PlacesTab";
@@ -34,7 +39,9 @@ export function AdventureLogView({
   titleCounters,
   knownRecipes,
   shareableRecipes,
+  inventory,
   vault,
+  onDepositToVault,
   onWithdrawFromVault,
 }: {
   log: AdventureLog;
@@ -47,9 +54,17 @@ export function AdventureLogView({
   knownRecipes?: string[];
   /** 거래/우편 공유 가능한 제작서 id 목록. 학습 시 자동 부여, 공유 시 소비. */
   shareableRecipes?: string[];
+  /** 인벤 상태 — 도감 카드의 "보유 N" 뱃지 + "보관" 버튼 산출용. */
+  inventory?: InventoryState;
   /** 도감 보관함 상태 (itemId × variantKey → 개수). */
   vault?: VaultState;
-  /** 보관함에서 꺼내기 — vault[id][variantKey] 의 1개를 인벤으로 환원. */
+  /** 인벤 → 보관함. */
+  onDepositToVault?: (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ) => void;
+  /** 보관함 → 인벤 — vault[id][variantKey] 의 1개를 인벤으로 환원. */
   onWithdrawFromVault?: (id: ItemId, variantKey: string) => void;
 }) {
   const [tab, setTab] = useState<LogTabKey>("places");
@@ -71,7 +86,9 @@ export function AdventureLogView({
           shareableRecipes={shareableRecipes ?? []}
           discovered={log.discoveredEquipment ?? {}}
           vault={vault}
+          inventory={inventory}
           onWithdraw={onWithdrawFromVault}
+          onDeposit={onDepositToVault}
         />
       )}
       {tab === "towns" && <TownsTab log={log} />}

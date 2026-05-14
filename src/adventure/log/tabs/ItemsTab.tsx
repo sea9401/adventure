@@ -19,7 +19,13 @@ import { getRecipeById } from "@/adventure/data/recipes";
 import { dropQualityTextClass } from "@/adventure/data/dropQuality";
 import { craftTierTextClass } from "@/adventure/data/craftQuality";
 import type { DiscoveredEquipmentEntry } from "@/adventure/log/storage";
-import type { VaultState } from "@/adventure/inventory/useInventory";
+import type {
+  InventoryState,
+  VaultState,
+} from "@/adventure/inventory/useInventory";
+import { inventoryCountFor } from "@/adventure/inventory/vaultOps";
+import type { CraftTier } from "@/adventure/data/craftQuality";
+import type { DropQuality } from "@/adventure/data/dropQuality";
 import {
   parseVariantKey,
   resolveVariant,
@@ -57,14 +63,20 @@ export function ItemsTab({
   shareableRecipes,
   discovered,
   vault,
+  inventory,
   onWithdraw,
+  onDeposit,
 }: {
   knownRecipes: string[];
   shareableRecipes: string[];
   discovered: Record<string, DiscoveredEquipmentEntry>;
   vault?: VaultState;
+  /** 인벤 카운트 산출용 — 인벤 보유분이 있어야 "보관" 버튼이 활성화된다. */
+  inventory?: InventoryState;
   /** 도감 보관함에서 꺼내기 — vault[id][variantKey] 의 1개를 인벤으로 환원. */
   onWithdraw?: (id: ItemId, variantKey: string) => void;
+  /** 인벤 보유분을 도감 보관함에 넣기 — 1개 차감 후 vault 에 +1. */
+  onDeposit?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
 }) {
   const [sub, setSub] = useState<ItemSubTab>("weapon");
 
@@ -87,7 +99,9 @@ export function ItemsTab({
           slot={sub}
           discovered={discovered}
           vault={vault ?? {}}
+          inventory={inventory}
           onWithdraw={onWithdraw}
+          onDeposit={onDeposit}
         />
       )}
     </div>
@@ -166,12 +180,16 @@ function EquipmentSubTab({
   slot,
   discovered,
   vault,
+  inventory,
   onWithdraw,
+  onDeposit,
 }: {
   slot: EquipSlot;
   discovered: Record<string, DiscoveredEquipmentEntry>;
   vault: VaultState;
+  inventory?: InventoryState;
   onWithdraw?: (id: ItemId, variantKey: string) => void;
+  onDeposit?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
 }) {
   const rows = useMemo(() => buildRows(discovered, slot), [discovered, slot]);
   const [query, setQuery] = useState("");
@@ -219,6 +237,15 @@ function EquipmentSubTab({
               {open &&
                 entries.map((row) => {
                   const stored = vault[row.id]?.[row.variantKey] ?? 0;
+                  const owned = inventory
+                    ? inventoryCountFor(inventory, row.id, row.variantKey)
+                    : 0;
+                  const variant = parseVariantKey(row.variantKey);
+                  const tier =
+                    variant && variant.kind === "crafted" ? variant.tier : undefined;
+                  const quality =
+                    variant && variant.kind === "dropped" ? variant.quality : undefined;
+                  const hasFooter = owned > 0 || stored > 0;
                   return (
                   <Card key={`${row.id}@${row.variantKey}`}>
                     <div className="flex items-baseline justify-between gap-2">
@@ -240,20 +267,42 @@ function EquipmentSubTab({
                         {row.item.description}
                       </p>
                     )}
-                    {stored > 0 && (
+                    {hasFooter && (
                       <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-400">
-                          보관 {stored}
-                        </span>
-                        {onWithdraw && (
-                          <button
-                            type="button"
-                            onClick={() => onWithdraw(row.id, row.variantKey)}
-                            className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                          >
-                            꺼내기
-                          </button>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {owned > 0 && (
+                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                              보유 {owned}
+                            </span>
+                          )}
+                          {stored > 0 && (
+                            <span className="rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-400">
+                              보관 {stored}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          {onDeposit && owned > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => onDeposit(row.id, tier, quality)}
+                              title="이 장비 1개를 보관함으로 옮깁니다"
+                              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            >
+                              보관
+                            </button>
+                          )}
+                          {onWithdraw && stored > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => onWithdraw(row.id, row.variantKey)}
+                              title="보관함에서 1개를 가방으로 꺼냅니다"
+                              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            >
+                              꺼내기
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </Card>
