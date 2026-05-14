@@ -33,7 +33,9 @@ export type RegionId =
   | "oldwall_keep"
   // 용비늘 라인 (바람골 역참 남쪽으로 갈라지는 막다른 라인 — 서양 판타지 톤의 고룡 묘지)
   | "bone_marches"
-  | "scalefall_barrows";
+  | "scalefall_barrows"
+  // 엔드컨텐츠 — 옛 변경 성채 너머에 잡몹 없이 솔로 무한 탑(고탑) 도전만 있는 지역.
+  | "tower_foot";
 
 export type Biome =
   | "village"
@@ -45,7 +47,9 @@ export type Biome =
   | "mountain"
   | "coast";
 
-export type RegionTag = "town";
+// "town"  — 마을(전투 풀 없음, NPC dialogue 호스트)
+// "tower" — 고탑 진입 전용 지역(전투 풀 없음, AdventureHome 에 TowerModal 진입 카드 노출)
+export type RegionTag = "town" | "tower";
 
 export type Region = {
   id: RegionId;
@@ -569,6 +573,20 @@ export const WORLD_MAP: WorldMap = {
       boss: { monsterName: "뼈비늘 노룡", dailyEntryLimit: 3 },
       recommendedLevel: 75,
     },
+    // ── 고탑 입구 (oldwall_keep 너머) ──────────────────────────────────────────
+    // 잡몹/보스 없이 솔로 무한 탑(고탑) 도전 입구만 있는 지역. 옛 성문지기를 한 번
+    // 처치해야(gatekeeper_felled) 길이 열린다. 권장 Lv70+.
+    {
+      id: "tower_foot",
+      name: "고탑의 발치",
+      description:
+        "옛 변경 성채 너머, 풍화된 평지 한가운데 천 길 첨탑이 솟아 있다. 바닥은 평평한 돌판으로 깔려 있고, 위로는 끝이 보이지 않는다. 멈춰 선 흔적 외에 다른 발자국이 없다.",
+      position: { x: 60, y: 770 },
+      biome: "ruins",
+      enemies: [],
+      tags: ["tower"],
+      recommendedLevel: 70,
+    },
   ],
   edges: [
     { from: "village", to: "plains" },
@@ -746,6 +764,16 @@ export const WORLD_MAP: WorldMap = {
       from: "bone_marches",
       to: "scalefall_barrows",
       requires: { kind: "trial", battles: 5, enemiesFrom: "scalefall_barrows" },
+    },
+    // 고탑 입구 — 옛 성문지기를 한 번 쓰러뜨려야 열린다.
+    {
+      from: "oldwall_keep",
+      to: "tower_foot",
+      requires: {
+        kind: "story",
+        flagId: "gatekeeper_felled",
+        reason: "옛 성문지기를 쓰러뜨려야 그 너머의 봉인된 길이 열린다.",
+      },
     },
     // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.
     { from: "village", to: "diola", requires: { kind: "visited", regionId: "diola" } },
