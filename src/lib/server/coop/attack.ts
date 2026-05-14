@@ -16,6 +16,7 @@ import { COOP_ATTACK_COOLDOWN_MS, COOP_BOSSES } from "@/adventure/coop/data";
 import { simulateCoopAttack } from "@/adventure/coop/simulate";
 import type { RegionId } from "@/adventure/data/world";
 import { broadcastBossKill, setStoryFlagServer } from "./bossState";
+import { applyLazyRegen } from "./regen";
 
 export type CoopAttackBody = { action: "attack"; playerName: string };
 
@@ -28,7 +29,7 @@ export async function handleCoopAttack(
   if (!def) return new Response("region has no coop boss", { status: 400 });
 
   // 활성 세션 확인.
-  const active = await db
+  let active = await db
     .select()
     .from(coopBossSessions)
     .where(
@@ -37,6 +38,16 @@ export async function handleCoopAttack(
         isNull(coopBossSessions.defeatedAt),
       ),
     )
+    .limit(1);
+  if (!active[0]) return new Response("no active boss", { status: 404 });
+
+  // 월드 보스 lazy regen — 데미지 차감 직전에 분 단위 회복을 먼저 반영.
+  // 그래야 "유저들 안 때리는 동안 보스가 풀피로 돌아왔다" 가 정확하게 모델링됨.
+  await applyLazyRegen(active[0].id);
+  active = await db
+    .select()
+    .from(coopBossSessions)
+    .where(eq(coopBossSessions.id, active[0].id))
     .limit(1);
   const session = active[0];
   if (!session) return new Response("no active boss", { status: 404 });

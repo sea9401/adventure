@@ -1454,6 +1454,34 @@ export const MONSTERS: Record<string, Monster> = {
     },
     onDefeatFlag: "wyrm_warden_felled",
   },
+  // ── 용의 둥지 (dragon_nest) — 월드 보스. coop/data.ts 의 COOP_BOSSES 로 등장. ─────
+  // 다인 누적 데미지로만 잡힐 만큼 압도적 스펙 + 분당 자연회복 + 처치 후 7일 휴면.
+  // solo stat 은 시뮬·테스트 용도 (coop maxHp 는 coop/data.ts 의 500000).
+  "태고의 노룡": {
+    name: "태고의 노룡",
+    tags: ["dragon", "undead"],
+    hp: 12000,
+    atk: 180,
+    def: 110,
+    spd: 6,
+    exp: 5000,
+    drops: [
+      { kind: "material", materialId: "dragonscale_shard", chance: 1, amount: 20 },
+      { kind: "material", materialId: "bone_rune_steel", chance: 1, amount: 10 },
+      { kind: "material", materialId: "scale_dust", chance: 1, amount: 25 },
+    ],
+    dropQualityBias: 5,
+    armorVulnerable: 0.25,
+    playerDefVulnerable: 0.3,
+    phaseTrigger: {
+      hpFraction: 0.5,
+      defBonus: 15,
+      message: "태고의 노룡이 잿빛 비늘 너머로 옛 시대의 불씨를 다시 켠다.",
+    },
+    // 시그니처 — 무게 자체로 갑주를 가른다. 매 공격이 플레이어 DEF 14 만큼 무시.
+    skill: { kind: "pierce", name: "태고의 무게", armorPierce: 14 },
+    onDefeatFlag: "primordial_dragon_felled",
+  },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).
   "훈련용 허수아비": {

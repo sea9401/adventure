@@ -136,7 +136,7 @@ export const REGEN_HP_PER_VIT = 0.5;
 // 매 BASELINE_REGEN_INTERVAL 플레이어 턴 종료 시 HP +max(1, floor(maxHp × BASELINE_REGEN_HP_PCT)).
 // 비-VIT 빌드 (글래스캐논) 의 유지력 보전 목적 — VIT 빌드는 위 재생 스킬이 별도로 누적.
 export const BASELINE_REGEN_INTERVAL = 5;
-export const BASELINE_REGEN_HP_PCT = 0.01;
+export const BASELINE_REGEN_HP_PCT = 0.02;
 
 // 연타 — 속도 10 도달 시 획득.
 // DOUBLE_STRIKE_INTERVAL 턴마다 그 턴의 마지막 공격 후 추가 1회 공격.

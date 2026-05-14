@@ -456,6 +456,9 @@ export const guildQuestInstances = pgTable(
 
 // 협동 보스 세션 — region 별 활성 인스턴스 1개 (uniqueIndex 로 enforce).
 // hp 가 0 이 되거나 expiresAt 이 지나면 비활성. nextSpawnAt 후 cron 이 새 세션 생성.
+//
+// regen_per_min > 0 인 월드 보스는 GET/attack 진입 시 lazy 로 hp 를 회복시킨다 —
+// 다인 누적 데미지 대비 baseline sustain 으로 "꾸준히 깎아야 잡힌다" 를 강제.
 export const coopBossSessions = pgTable(
   "coop_boss_sessions",
   {
@@ -468,6 +471,10 @@ export const coopBossSessions = pgTable(
     expiresAt: timestamp("expires_at").notNull(),
     defeatedAt: timestamp("defeated_at"),
     nextSpawnAt: timestamp("next_spawn_at"),
+    // 분당 자연회복량. 0(default) 면 비-월드보스 — regen 로직 자체가 스킵.
+    regenPerMin: integer("regen_per_min").notNull().default(0),
+    // 마지막으로 lazy regen 이 적용된 시각. 0 인 보스는 NULL 유지. spawn 시 now.
+    lastRegenAt: timestamp("last_regen_at"),
   },
   (t) => [
     // region 당 활성 세션은 1개만 (defeatedAt IS NULL && expiresAt > now 가 활성).

@@ -84,8 +84,9 @@ export async function respawnCoopRegion(
     if (next && next > now) return { expiredId, spawnedId };
   }
 
-  // 새 세션.
+  // 새 세션. regenPerMin 이 설정된 월드 보스는 last_regen_at 도 now 로 박아 lazy regen 의 시작점을 잡는다.
   const newId = randomUUID();
+  const regenPerMin = def.regenPerMin ?? 0;
   try {
     await db.insert(coopBossSessions).values({
       id: newId,
@@ -95,17 +96,23 @@ export async function respawnCoopRegion(
       maxHp: def.maxHp,
       spawnedAt: now,
       expiresAt: new Date(now.getTime() + def.expirationMs),
+      regenPerMin,
+      lastRegenAt: regenPerMin > 0 ? now : null,
     });
     spawnedId = newId;
     // 채팅 broadcast — 부수 효과라 실패해도 spawn 자체는 성공.
+    // 월드 보스는 만료 시간 대신 "꾸준히 깎아야 잡힌다" 톤으로 안내.
+    const broadcastText = def.isWorldBoss
+      ? `${def.monsterName}이(가) 깨어났다 — 모든 모험가의 누적 데미지로만 쓰러뜨릴 수 있다.`
+      : `${def.monsterName}이(가) 나타났다 — 24시간 안에 쓰러뜨려야 한다.`;
     try {
       await ensureSystemUser();
       await db.insert(messages).values({
         userId: SYSTEM_USER_ID,
         name: "시스템",
-        className: "협동 보스",
+        className: def.isWorldBoss ? "월드 보스" : "협동 보스",
         title: null,
-        content: `${def.monsterName}이(가) 나타났다 — 24시간 안에 쓰러뜨려야 한다.`,
+        content: broadcastText,
       });
     } catch (err) {
       console.warn("[coop] spawn broadcast failed", err);
