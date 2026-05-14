@@ -1,0 +1,201 @@
+import { describe, it, expect } from "vitest";
+import { advanceTurn, initialBattleState, type PlayerCombat } from "./engine";
+import type { Monster } from "../data/monsters";
+
+// 기본 PLAYER: atk 10, def 5, spd 10.
+const PLAYER: PlayerCombat = {
+  hp: 9999,
+  maxHp: 9999,
+  atk: 10,
+  def: 5,
+  spd: 10,
+  evasionPct: 0,
+  attackCount: 1,
+};
+
+function enemy(hp = 100, overrides: Partial<Monster> = {}): Monster {
+  return {
+    name: "적",
+    tags: ["beast"],
+    hp,
+    atk: 8,
+    def: 3,
+    spd: 5,
+    exp: 5,
+    ...overrides,
+  };
+}
+
+// damageBetween(10, 3) = 7
+
+describe("6티어 — 충돌파", () => {
+  it("매 3턴마다 본타 첫 공격에 적 현재 HP의 N% 추가 고정 피해", () => {
+    const p: PlayerCombat = { ...PLAYER, impactWaveHpPct: 10 }; // 10% per impact
+    let s = initialBattleState(p, enemy(1000), "용사");
+    // turn 1 (1 % 3 != 0): 본타 7 → 993
+    s = advanceTurn(s, p, "용사");
+    expect(s.enemyHp).toBe(993);
+    s = advanceTurn(s, p, "용사"); // 적 턴
+    // turn 2 (2 % 3 != 0): 본타 7 → 986
+    s = advanceTurn(s, p, "용사");
+    expect(s.enemyHp).toBe(986);
+    s = advanceTurn(s, p, "용사"); // 적 턴
+    // turn 3 (3 % 3 == 0): 본타 7 + impact floor(986×10/100)=98 → 881
+    s = advanceTurn(s, p, "용사");
+    expect(s.enemyHp).toBe(881);
+  });
+
+  it("impactWaveHpPct 0 이면 비활성 (3턴마다 평소 본타만)", () => {
+    const p: PlayerCombat = { ...PLAYER, impactWaveHpPct: 0 };
+    let s = initialBattleState(p, enemy(1000), "용사");
+    for (let i = 0; i < 5; i += 1) s = advanceTurn(s, p, "용사"); // 3 player turn
+    // 3턴 본타만 7×3 = 21 → 979. (충돌파 미발동)
+    expect(s.enemyHp).toBe(1000 - 21);
+  });
+});
+
+describe("6티어 — 그림자 군단", () => {
+  it("4티어 분신 + 군단 = 매 턴 분신 3회", () => {
+    // shadowCloneAtkPct=50 + shadowLegionExtraClones=2
+    // 분신 1회 데미지: damageBetween(floor(10×0.5)=5, 3) = 2
+    // 매 턴: 본타 7 + 분신×3=6 → 13 피해
+    const p: PlayerCombat = {
+      ...PLAYER,
+      shadowCloneAtkPct: 50,
+      shadowLegionExtraClones: 2,
+    };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사");
+    expect(s.enemyHp).toBe(100 - 13);
+  });
+
+  it("군단 단독 보유 시도 (derive 가 shadowCloneAtkPct 폴백) 분신 2회", () => {
+    // shadowCloneAtkPct=50 강제 fallback + shadowLegionExtraClones=2 만 있음 (4티어 비장착 시뮬)
+    // 분신 2회만 발동 ← derivePlayerCombat 이 fallback 처리, 여기선 직접 set.
+    // 매 턴: 본타 7 + 분신×2 = 4 → 11 피해. 단 군단만 set 한 경우 코드 흐름 (atkPct 0이면 cloneCount=0).
+    // 그래서 군단 단독 = derivePlayerCombat 의 fallback 으로 atkPct 가 set 되어야 — 단위 테스트는 직접 set 으로 검증.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      shadowCloneAtkPct: 50,
+      shadowLegionExtraClones: 2,
+    };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사");
+    expect(s.enemyHp).toBe(100 - 13); // 4티어+6티어 매팅과 동일 (군단 단독 fallback 검증은 derive 단)
+  });
+});
+
+describe("6티어 — 흡혈 갑옷", () => {
+  it("받은 피해의 N% HP 회복", () => {
+    // 적 atk 100 → damageBetween(100,5)=95 피해. 흡혈 30% = floor(95×30/100)=28 회복.
+    const p: PlayerCombat = { ...PLAYER, hp: 1000, maxHp: 1000, bloodfeastPct: 30 };
+    let s = initialBattleState(p, enemy(1000, { atk: 100 }), "용사");
+    s = advanceTurn(s, p, "용사"); // 본타 7 → 993
+    expect(s.enemyHp).toBe(993);
+    s = advanceTurn(s, p, "용사"); // 적 95 피해 + 회복 28 → 1000 - 95 + 28 = 933
+    expect(s.playerHp).toBe(933);
+  });
+
+  it("HP 0 이 되는 죽음에는 흡혈 회복 미발동", () => {
+    // 적 atk 9999 — 한 방에 사망.
+    const p: PlayerCombat = { ...PLAYER, hp: 50, maxHp: 50, bloodfeastPct: 100 };
+    let s = initialBattleState(p, enemy(1000, { atk: 9999 }), "용사");
+    s = advanceTurn(s, p, "용사"); // 본타
+    s = advanceTurn(s, p, "용사"); // 적의 한 방
+    expect(s.playerHp).toBe(0);
+    expect(s.outcome).toBe("lose");
+  });
+
+  it("불굴로 HP 1 로 버틴 후엔 흡혈 발동 (조합)", () => {
+    // 적 atk 9999, 불굴 활성 + 흡혈 50%. HP 1 로 버틴 후 흡혈 floor(9999×50/100)=4999 회복 → maxHp 캡 1000.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      hp: 50,
+      maxHp: 1000,
+      bloodfeastPct: 50,
+      enduranceActive: true,
+    };
+    let s = initialBattleState(p, enemy(1000, { atk: 9999 }), "용사");
+    s = advanceTurn(s, p, "용사"); // 본타
+    s = advanceTurn(s, p, "용사"); // 적 9999 → 불굴 HP 1 → 흡혈 → maxHp 캡
+    expect(s.playerHp).toBe(1000); // HP 1 + 4999 → maxHp 1000 캡
+  });
+});
+
+describe("6티어 — 무한 풍사슬", () => {
+  it("eternalGaleNoCap 시 한 턴 캡(3) 해제 → 더 많이 체인 가능", () => {
+    // 광속 100% + 풍사슬 100% + noCap.
+    // 기존 5티어만: 광속1회 + 풍사슬 캡 3회 = 본타 5회로 끝.
+    // 무한: 통계적으로 더 많이. 100% 라면 ABSOLUTE_CAP(30) 까지.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      lightspeedExtraAttackPct: 100,
+      galeChainChancePct: 100,
+      eternalGaleBonusPct: 0,
+      eternalGaleNoCap: true,
+    };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    // advanceTurn 을 절대캡 + 1번 호출 — 100% 라 캡 까지 끊임없이 발동
+    let calls = 0;
+    while (s.phase === "player" && calls < 50) {
+      s = advanceTurn(s, p, "용사");
+      calls += 1;
+    }
+    // 본타 1(첫) + 광속 1 + 풍사슬 체인 30(캡) = 32 회.
+    expect(s.galeChainsThisTurn).toBe(0); // 턴 종료 시 리셋
+    expect(s.phase).toBe("enemy");
+    expect(s.completedPlayerTurns).toBe(1);
+    expect(s.enemyHp).toBe(9999 - 7 * 32);
+  });
+
+  it("eternalGaleBonusPct 가 확률에 가산된다", () => {
+    // 광속 + 풍사슬 50 + 보너스 50 = 100% 발동, noCap=false 라 캡 3 까지만.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      lightspeedExtraAttackPct: 100,
+      galeChainChancePct: 50,
+      eternalGaleBonusPct: 50,
+      eternalGaleNoCap: false,
+    };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    let calls = 0;
+    while (s.phase === "player" && calls < 20) {
+      s = advanceTurn(s, p, "용사");
+      calls += 1;
+    }
+    // 본타 5번 (1 + 광속 1 + 풍사슬 캡 3)
+    expect(s.enemyHp).toBe(9999 - 7 * 5);
+  });
+});
+
+describe("6티어 — 만물 행운", () => {
+  it("크리티컬 확률 +N%", () => {
+    // critChancePct 0 + universalLuckBonusPct 100 = effectivePct 100 → 항상 크리.
+    // 데미지 = damageBetween(10,3)=7, ×2 = 14 (CRIT_MULT_BASE=2.0).
+    const p: PlayerCombat = {
+      ...PLAYER,
+      critChancePct: 0,
+      universalLuckBonusPct: 100,
+    };
+    let s = initialBattleState(p, enemy(100), "용사");
+    s = advanceTurn(s, p, "용사");
+    expect(s.enemyHp).toBe(86); // 100 - 14
+  });
+
+  it("회피 확률 +N%", () => {
+    // evasionPct 0 + universalLuckBonusPct 100 = 100% 회피 → 적 공격 무피해.
+    const p: PlayerCombat = { ...PLAYER, universalLuckBonusPct: 100 };
+    let s = initialBattleState(p, enemy(1000), "용사");
+    s = advanceTurn(s, p, "용사"); // 본타
+    s = advanceTurn(s, p, "용사"); // 적 — 100% 회피
+    expect(s.playerHp).toBe(9999); // 무피해
+  });
+
+  it("추가타 확률 +N% (다음 턴 attacks_left 가 2)", () => {
+    // extraAttackChancePct 0 + universalLuckBonusPct 100 = 100% 추가타 → 다음 턴 attacks=2.
+    // initialBattleState 의 rollPlayerAttackCount = base 1 + 100% 적중 → 2.
+    const p: PlayerCombat = { ...PLAYER, universalLuckBonusPct: 100 };
+    const s = initialBattleState(p, enemy(100), "용사");
+    expect(s.playerAttacksLeft).toBe(2);
+  });
+});

@@ -142,6 +142,37 @@ describe("deriveSkills — 4티어는 스탯 50 도달 시", () => {
       SKILL_NAMES.LUCKY_STAR,
     );
   });
+
+  it("STR 84 면 충돌파 미보유, 85 이면 보유 (6티어 활성 임계)", () => {
+    expect(deriveSkills({ ...ZERO, str: 84 }).map((s) => s.name)).not.toContain(
+      SKILL_NAMES.IMPACT_WAVE,
+    );
+    expect(deriveSkills({ ...ZERO, str: 85 }).map((s) => s.name)).toContain(
+      SKILL_NAMES.IMPACT_WAVE,
+    );
+  });
+
+  it("스탯 85 면 1~6티어 전부 보유 (각 스탯별 6개)", () => {
+    expect(deriveSkills({ ...ZERO, dex: 85 }).map((s) => s.name)).toEqual(
+      expect.arrayContaining([
+        SKILL_NAMES.EVADE,
+        SKILL_NAMES.COUNTER,
+        SKILL_NAMES.PRECISION,
+        SKILL_NAMES.SHADOW_CLONE,
+        SKILL_NAMES.ANALYSIS,
+        SKILL_NAMES.SHADOW_LEGION,
+      ]),
+    );
+    expect(deriveSkills({ ...ZERO, vit: 85 }).map((s) => s.name)).toContain(
+      SKILL_NAMES.BLOODFEAST_ARMOR,
+    );
+    expect(deriveSkills({ ...ZERO, spd: 85 }).map((s) => s.name)).toContain(
+      SKILL_NAMES.ETERNAL_GALE,
+    );
+    expect(deriveSkills({ ...ZERO, luk: 85 }).map((s) => s.name)).toContain(
+      SKILL_NAMES.UNIVERSAL_LUCK,
+    );
+  });
 });
 
 describe("deriveFeats — 두 요구 스탯 25 이상", () => {

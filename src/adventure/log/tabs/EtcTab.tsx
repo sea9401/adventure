@@ -11,6 +11,7 @@ import {
   STAT_TIER3_REVEAL_THRESHOLD,
   STAT_TIER4_REVEAL_THRESHOLD,
   STAT_TIER5_REVEAL_THRESHOLD,
+  STAT_TIER6_REVEAL_THRESHOLD,
   type StatKey,
 } from "@/adventure/data/stats";
 import {
@@ -31,11 +32,13 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
           const tier3 = tiers[2];
           const tier4 = tiers[3];
           const tier5 = tiers[4];
+          const tier6 = tiers[5];
           const tier1Revealed = value >= STAT_SKILL_INFO_THRESHOLD;
           const conversionRevealed = value >= STAT_REVEAL_THRESHOLD;
           const tier3Revealed = value >= STAT_TIER3_REVEAL_THRESHOLD;
           const tier4Revealed = value >= STAT_TIER4_REVEAL_THRESHOLD;
           const tier5Revealed = value >= STAT_TIER5_REVEAL_THRESHOLD;
+          const tier6Revealed = value >= STAT_TIER6_REVEAL_THRESHOLD;
           // 1차 티어 발동 임계가 정보 공개 임계보다 높을 때 발동 안내.
           const showTier1ActivationNote =
             !!tier1 &&
@@ -59,7 +62,11 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
             !!tier5 &&
             tier5Revealed &&
             tier5.activationThreshold > STAT_TIER5_REVEAL_THRESHOLD;
-          // 다음 공개 — tier1 → 환산+tier2 → tier3 → tier4 → tier5.
+          const showTier6ActivationNote =
+            !!tier6 &&
+            tier6Revealed &&
+            tier6.activationThreshold > STAT_TIER6_REVEAL_THRESHOLD;
+          // 다음 공개 — tier1 → 환산+tier2 → tier3 → tier4 → tier5 → tier6.
           const nextRevealAt = !tier1Revealed
             ? STAT_SKILL_INFO_THRESHOLD
             : !conversionRevealed
@@ -70,7 +77,9 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                   ? STAT_TIER4_REVEAL_THRESHOLD
                   : !tier5Revealed
                     ? STAT_TIER5_REVEAL_THRESHOLD
-                    : "—";
+                    : !tier6Revealed
+                      ? STAT_TIER6_REVEAL_THRESHOLD
+                      : "—";
           return (
             <Card as="li" key={k}>
               <div className="flex items-baseline justify-between gap-2">
@@ -269,6 +278,43 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                         />
                         <span className="italic text-zinc-500 dark:text-zinc-400">
                           {STAT_TIER5_REVEAL_THRESHOLD} 달성 시 5차 스킬 공개
+                        </span>
+                      </>
+                    )
+                  )}
+                </div>
+              )}
+
+              {/* 6차 스킬 — STAT_TIER6_REVEAL_THRESHOLD(80) 도달 시 공개. 만렙 확장 패키지. */}
+              {tier6 && (
+                <div className="mt-1.5 flex items-start gap-2 text-xs">
+                  {tier6Revealed ? (
+                    <>
+                      <Sparkle
+                        size={14}
+                        weight="duotone"
+                        className="shrink-0 text-amber-500 mt-0.5"
+                      />
+                      <span className="text-zinc-700 dark:text-zinc-200">
+                        <span className="font-medium">{tier6.name}</span> —{" "}
+                        {tier6.description}
+                        {showTier6ActivationNote && (
+                          <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+                            ({STAT_LABELS[k]} {tier6.activationThreshold}에서 발동)
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  ) : (
+                    tier5Revealed && (
+                      <>
+                        <Lock
+                          size={14}
+                          weight="duotone"
+                          className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
+                        />
+                        <span className="italic text-zinc-500 dark:text-zinc-400">
+                          {STAT_TIER6_REVEAL_THRESHOLD} 달성 시 6차 스킬 공개
                         </span>
                       </>
                     )
