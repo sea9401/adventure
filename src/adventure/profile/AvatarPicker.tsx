@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { User } from "@phosphor-icons/react";
 import { TabBar } from "@/components/ui/TabBar";
 import { Pagination } from "@/components/ui/Pagination";
-import { usePagination } from "@/lib/usePagination";
 import { NPCS } from "@/adventure/data/npcs";
 import {
   AVATARS,
@@ -57,7 +56,8 @@ const AVATAR_OPTIONS_BY_CATEGORY: Record<AvatarCategory, readonly string[]> = {
 };
 
 // 카테고리 3 탭 + 12개/페이지(3×4) 페이지네이션 카드 그리드 — 캐릭터 생성 폼과 설정의
-// 프로필 이미지 변경 모달이 공유한다. 탭 전환 시 1페이지로 리셋.
+// 프로필 이미지 변경 모달이 공유한다. 페이지 상태는 카테고리별로 분리해 유지 —
+// 몬스터 3페이지 보다가 캐릭터 잠깐 확인 후 돌아와도 위치가 유지된다.
 export function AvatarPicker({
   category,
   onCategoryChange,
@@ -70,20 +70,31 @@ export function AvatarPicker({
   onSelect: (id: Avatar) => void;
 }) {
   const options = AVATAR_OPTIONS_BY_CATEGORY[category];
-  const pager = usePagination(options as string[], AVATAR_PAGE_SIZE);
+  const [pageByCategory, setPageByCategory] = useState<
+    Record<AvatarCategory, number>
+  >({ character: 0, npc: 0, monster: 0 });
+  const pageCount = Math.max(1, Math.ceil(options.length / AVATAR_PAGE_SIZE));
+  const rawPage = pageByCategory[category];
+  // options 가 줄어 현재 페이지가 비면 마지막 유효 페이지로 자동 보정.
+  const page = Math.min(rawPage, pageCount - 1);
+  const pageItems = useMemo(
+    () => options.slice(page * AVATAR_PAGE_SIZE, (page + 1) * AVATAR_PAGE_SIZE),
+    [options, page],
+  );
+  const setPage = (n: number) => {
+    const clamped = Math.max(0, Math.min(pageCount - 1, n));
+    setPageByCategory((p) => ({ ...p, [category]: clamped }));
+  };
   return (
     <div className="space-y-2">
       <TabBar
         tabs={AVATAR_TABS}
         active={category}
-        onChange={(next) => {
-          onCategoryChange(next);
-          pager.setPage(0);
-        }}
+        onChange={onCategoryChange}
         ariaLabel="외형 카테고리"
       />
       <div className="grid grid-cols-3 gap-2">
-        {pager.pageItems.map((id) => (
+        {pageItems.map((id) => (
           <AvatarOption
             key={id}
             id={id}
@@ -92,11 +103,7 @@ export function AvatarPicker({
           />
         ))}
       </div>
-      <Pagination
-        page={pager.page}
-        pageCount={pager.pageCount}
-        setPage={pager.setPage}
-      />
+      <Pagination page={page} pageCount={pageCount} setPage={setPage} />
     </div>
   );
 }
