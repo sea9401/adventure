@@ -33,6 +33,7 @@ export function AdventureHome() {
     storyFlags,
     completeQuest,
     playerCombat,
+    playerStatus,
     characterStateHook,
   } = useGame();
 
@@ -178,6 +179,7 @@ export function AdventureHome() {
           onClose={() => setTowerOpen(false)}
           player={playerCombat}
           playerName={character.name}
+          playerStatus={playerStatus}
           potions={inventory.state.potions ?? {}}
           onApplied={(r) => {
             if (r.character && typeof r.character.gold === "number") {
