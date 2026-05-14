@@ -179,6 +179,7 @@ function alwaysBlocked(
       entry.kind === "droppedEquipment"
         ? { [entry.itemId]: { [String(entry.quality)]: 1 } }
         : {},
+    vault: {},
     materials: entry.kind === "material" ? { [entry.materialId]: 1 } : {},
     consumables: {},
   };

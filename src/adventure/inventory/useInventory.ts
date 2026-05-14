@@ -19,6 +19,7 @@ import {
 import type { EquippedSlots } from "../character/types";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
+import { depositToVaultPure, withdrawFromVaultPure } from "./vaultOps";
 
 // 제작산 품질 등급 인스턴스 — itemId → (등급 문자열 "-2"|"-1"|"1"|"2" → 개수).
 // 등급 0(일반)은 베이스와 동일하므로 별도로 두지 않고 equipment[] 에 합산한다.
@@ -34,6 +35,21 @@ export type DroppedEquipmentState = Partial<
 // 비-기본(0 제외) 등급. craftedEquipment 가 담는 키.
 const NON_ZERO_TIERS: readonly string[] = ["-2", "-1", "1", "2"];
 
+// 도감 보관함 — itemId → 변형 키("base"|"c±1"|"c±2"|"d1"|"d2") → 개수.
+// 인벤에서 도감으로 넣은 장비를 보관하고, 꺼내면 인벤으로 돌아온다. discovered 로그와는 별개.
+export type VaultState = Partial<Record<ItemId, Partial<Record<string, number>>>>;
+
+// vault 에 들어갈 수 있는 변형 키. discoveredEquipment 의 EquipVariantKey 와 동일.
+const VAULT_VARIANT_KEYS: readonly string[] = [
+  "base",
+  "c-2",
+  "c-1",
+  "c1",
+  "c2",
+  "d1",
+  "d2",
+];
+
 export type InventoryState = {
   potions: Partial<Record<PotionId, number>>;
   equipment: Partial<Record<ItemId, number>>;
@@ -41,6 +57,8 @@ export type InventoryState = {
   craftedEquipment: CraftedEquipmentState;
   /** 드랍 품질 등급이 0(기본)이 아닌 장비(정교한/빼어난). 항상 존재 — readInitial 에서 {} 로 채움. */
   droppedEquipment: DroppedEquipmentState;
+  /** 도감 보관함. 항상 존재 — readInitial 에서 {} 로 채움. */
+  vault: VaultState;
   materials: Partial<Record<MaterialId, number>>;
   consumables: Partial<Record<ConsumableId, number>>;
   // 종류별 포션 최대 보유 수의 추가 보너스. 보상으로 영구 누적.
@@ -52,9 +70,11 @@ export const emptyInventory = (): InventoryState => ({
   equipment: {},
   craftedEquipment: {},
   droppedEquipment: {},
+  vault: {},
   materials: { branch: 1 },
   consumables: {},
 });
+
 
 // craftedEquipment / droppedEquipment 는 같은 모양(itemId → 등급키 → 개수) — 허용 등급키만 다르다.
 function readGradedEquipment(
@@ -92,6 +112,7 @@ function readInitial(raw: unknown): InventoryState {
       parsed.droppedEquipment,
       NON_ZERO_DROP_QUALITY_KEYS,
     ),
+    vault: readGradedEquipment(parsed.vault, VAULT_VARIANT_KEYS),
     materials: parsed.materials ?? {},
     consumables: parsed.consumables ?? {},
     potionCapacityBonus: Math.max(0, parsed.potionCapacityBonus ?? 0),
@@ -284,6 +305,36 @@ export function useInventory() {
     [consumeEquipment],
   );
 
+  // 도감 보관함 ↔ 인벤토리 이동. atomic — 한 번의 setState 로 인벤 차감 + vault 증가(또는 그 반대).
+  // 실제 상태 변환은 vaultOps 의 순수 함수가 담당.
+  const depositToVault = useCallback(
+    (id: ItemId, tier?: CraftTier, quality?: DropQuality, n = 1): boolean => {
+      const next = depositToVaultPure(stateRef.current, id, tier, quality, n);
+      if (!next) return false;
+      stateRef.current = next;
+      setState(next);
+      return true;
+    },
+    [],
+  );
+
+  const withdrawFromVault = useCallback(
+    (id: ItemId, variantKey: string, n = 1): boolean => {
+      const next = withdrawFromVaultPure(stateRef.current, id, variantKey, n);
+      if (!next) return false;
+      stateRef.current = next;
+      setState(next);
+      return true;
+    },
+    [],
+  );
+
+  const vaultCount = useCallback(
+    (id: ItemId, variantKey: string): number =>
+      state.vault[id]?.[variantKey] ?? 0,
+    [state],
+  );
+
   const addMaterial = useCallback((id: MaterialId, n = 1) => {
     const cur = stateRef.current;
     const next: InventoryState = {
@@ -416,6 +467,9 @@ export function useInventory() {
     addDroppedEquipment,
     consumeDroppedEquipment,
     droppedTotalCount,
+    depositToVault,
+    withdrawFromVault,
+    vaultCount,
     addMaterial,
     consumeMaterial,
     materialCount,

@@ -139,6 +139,14 @@ export type GameCtx = {
     tier?: CraftTier,
     quality?: DropQuality,
   ) => void;
+  /** 가방 장비 1개 → 모험의 서 보관함. */
+  handleDepositToVault: (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ) => void;
+  /** 모험의 서 보관함 → 가방 (variantKey: "base"|"c±N"|"dN"). */
+  handleWithdrawFromVault: (id: ItemId, variantKey: string) => void;
   handleCraft: (recipe: Recipe, quantity?: number) => void;
   handleBattleEnd: (payload: BattleEndPayload) => void;
   handleAcceptQuest: (id: string) => void;

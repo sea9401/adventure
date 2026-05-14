@@ -40,6 +40,8 @@ export function CharacterScreen() {
     handleEquipFromInventory,
     handleUnequip,
     handleDiscardFromInventory,
+    handleDepositToVault,
+    handleWithdrawFromVault,
     quests,
     crafting,
   } = useGame();
@@ -142,6 +144,7 @@ export function CharacterScreen() {
           onEquip={handleEquipFromInventory}
           onUnequip={handleUnequip}
           onDiscard={handleDiscardFromInventory}
+          onDeposit={handleDepositToVault}
         />
       </div>
     );
@@ -209,6 +212,8 @@ export function CharacterScreen() {
           }}
           knownRecipes={crafting.state.known}
           shareableRecipes={crafting.state.shareable}
+          vault={inventory.state.vault}
+          onWithdrawFromVault={handleWithdrawFromVault}
         />
       </div>
     );

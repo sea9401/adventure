@@ -94,6 +94,7 @@ export function InventoryView({
   onEquip,
   onUnequip,
   onDiscard,
+  onDeposit,
 }: {
   inventory: InventoryState;
   equipped?: EquippedSlots;
@@ -101,6 +102,8 @@ export function InventoryView({
   onUnequip?: (slot: EquipSlot) => void;
   /** 장비 1개 폐기 — 보상 없음(2단계 확인). 미지정이면 폐기 버튼 숨김. */
   onDiscard?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
+  /** 장비 1개를 모험의 서(도감 보관함) 으로 이동. 미지정이면 보관 버튼 숨김. */
+  onDeposit?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
   const [equipSlotTab, setEquipSlotTab] = useState<EquipSlot>("weapon");
@@ -309,6 +312,17 @@ export function InventoryView({
                                     className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                                   >
                                     {isEquipped ? "장착중" : "장착"}
+                                  </button>
+                                )}
+                                {onDeposit && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onDeposit(id, craftTier, quality)}
+                                    disabled={isEquipped}
+                                    title="모험의 서 보관함에 넣기"
+                                    className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                  >
+                                    보관
                                   </button>
                                 )}
                                 {onDiscard && (

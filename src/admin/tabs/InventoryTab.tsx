@@ -18,6 +18,7 @@ const emptyInventory = (): InventoryState => ({
   equipment: {},
   craftedEquipment: {},
   droppedEquipment: {},
+  vault: {},
   materials: {},
   consumables: {},
 });

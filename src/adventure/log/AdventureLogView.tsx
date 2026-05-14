@@ -5,6 +5,8 @@ import { TabBar } from "@/components/ui/TabBar";
 import type { TitleId } from "@/adventure/data/titles";
 import type { StatKey } from "@/adventure/data/stats";
 import type { AdventureLog } from "@/adventure/log/storage";
+import type { ItemId } from "@/adventure/data/items";
+import type { VaultState } from "@/adventure/inventory/useInventory";
 import { ItemsTab } from "./tabs/ItemsTab";
 import { TownsTab } from "./tabs/TownsTab";
 import { PlacesTab } from "./tabs/PlacesTab";
@@ -32,6 +34,8 @@ export function AdventureLogView({
   titleCounters,
   knownRecipes,
   shareableRecipes,
+  vault,
+  onWithdrawFromVault,
 }: {
   log: AdventureLog;
   stats: Record<StatKey, number>;
@@ -43,6 +47,10 @@ export function AdventureLogView({
   knownRecipes?: string[];
   /** 거래/우편 공유 가능한 제작서 id 목록. 학습 시 자동 부여, 공유 시 소비. */
   shareableRecipes?: string[];
+  /** 도감 보관함 상태 (itemId × variantKey → 개수). */
+  vault?: VaultState;
+  /** 보관함에서 꺼내기 — vault[id][variantKey] 의 1개를 인벤으로 환원. */
+  onWithdrawFromVault?: (id: ItemId, variantKey: string) => void;
 }) {
   const [tab, setTab] = useState<LogTabKey>("places");
 
@@ -62,6 +70,8 @@ export function AdventureLogView({
           knownRecipes={knownRecipes ?? []}
           shareableRecipes={shareableRecipes ?? []}
           discovered={log.discoveredEquipment ?? {}}
+          vault={vault}
+          onWithdraw={onWithdrawFromVault}
         />
       )}
       {tab === "towns" && <TownsTab log={log} />}

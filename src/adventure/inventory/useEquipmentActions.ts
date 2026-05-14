@@ -136,9 +136,43 @@ export function useEquipmentActions(deps: {
     );
   };
 
+  // 가방 → 도감 보관함. inventory.depositToVault 가 atomic 으로 인벤 차감 + vault 증가.
+  const handleDepositToVault = (
+    id: ItemId,
+    tier?: CraftTier,
+    quality?: DropQuality,
+  ) => {
+    const isDropped = (tier == null || tier === 0) && (quality === 1 || quality === 2);
+    if (!inventory.depositToVault(id, tier, quality, 1)) return;
+    addNotification(
+      "item",
+      `${equipDisplayName(id, tier, isDropped ? quality : undefined)}을(를) 모험의 서에 보관했다.`,
+    );
+  };
+
+  // 도감 보관함 → 가방. variantKey 는 ItemsTab 이 알고 있는 형태("base"|"c±N"|"dN").
+  const handleWithdrawFromVault = (id: ItemId, variantKey: string) => {
+    if (!inventory.withdrawFromVault(id, variantKey, 1)) return;
+    const tier =
+      variantKey[0] === "c"
+        ? (Number(variantKey.slice(1)) as CraftTier)
+        : undefined;
+    const quality =
+      variantKey[0] === "d"
+        ? (Number(variantKey.slice(1)) as DropQuality)
+        : undefined;
+    const isDropped = quality === 1 || quality === 2;
+    addNotification(
+      "item",
+      `${equipDisplayName(id, tier, isDropped ? quality : undefined)}을(를) 가방으로 꺼냈다.`,
+    );
+  };
+
   return {
     handleEquipFromInventory,
     handleUnequip,
     handleDiscardFromInventory,
+    handleDepositToVault,
+    handleWithdrawFromVault,
   };
 }
