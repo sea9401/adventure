@@ -40,10 +40,6 @@ const CRAFT_TIER_WEIGHTS: Record<CraftTier, number> = {
   1: 22,
   2: 6,
 };
-const CRAFT_TIER_WEIGHT_TOTAL = CRAFT_TIERS.reduce<number>(
-  (sum, t) => sum + CRAFT_TIER_WEIGHTS[t],
-  0,
-);
 
 export type CraftVariance = {
   /** 스탯별 ±폭 u. 등급 t 에 대해 bonus[stat] += t × u. */
@@ -61,13 +57,28 @@ export function craftHasVariance(v: CraftVariance): boolean {
 }
 
 // 가중 추첨. rng 는 [0,1) — 테스트에서 주입.
-export function rollCraftTier(rng: () => number = Math.random): CraftTier {
-  let r = rng() * CRAFT_TIER_WEIGHT_TOTAL;
-  for (const t of CRAFT_TIERS) {
-    r -= CRAFT_TIER_WEIGHTS[t];
-    if (r < 0) return t;
-  }
-  return 0;
+// bias(기본 1): 양수 비-기본 등급(+1·+2) 가중치 배수. "고급 재료 사용" 옵션에서 1보다 큰 값을 넘긴다.
+// 음수 등급 가중치는 그대로 — 좋은 재료를 태웠는데 불량이 늘면 직관 위반이므로.
+export function rollCraftTier(
+  rng: () => number = Math.random,
+  bias = 1,
+): CraftTier {
+  const b = Number.isFinite(bias) && bias > 0 ? bias : 1;
+  const wNeg2 = CRAFT_TIER_WEIGHTS[-2];
+  const wNeg1 = CRAFT_TIER_WEIGHTS[-1];
+  const w0 = CRAFT_TIER_WEIGHTS[0];
+  const wPos1 = CRAFT_TIER_WEIGHTS[1] * b;
+  const wPos2 = CRAFT_TIER_WEIGHTS[2] * b;
+  let r = rng() * (wNeg2 + wNeg1 + w0 + wPos1 + wPos2);
+  r -= wNeg2;
+  if (r < 0) return -2;
+  r -= wNeg1;
+  if (r < 0) return -1;
+  r -= w0;
+  if (r < 0) return 0;
+  r -= wPos1;
+  if (r < 0) return 1;
+  return 2;
 }
 
 // 등급 t(−2..+2) → varianceTable 의 5칸 인덱스(0..4).

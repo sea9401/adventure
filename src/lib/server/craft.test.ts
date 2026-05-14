@@ -247,3 +247,128 @@ describe("computeCraftOutcome — 배치(quantity > 1)", () => {
     ).toThrow(/invalid_quantity/);
   });
 });
+
+describe("computeCraftOutcome — 고급 재료 사용(equipPicks)", () => {
+  it("picks 명시 — 합계 ≠ need 면 invalid_picks", () => {
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      craftedEquipment: { baseball_bat: { "2": 1 } },
+    };
+    expect(() =>
+      computeCraftOutcome(input, "nailed_baseball_bat", {
+        rng: rngMid,
+        equipPicks: { baseball_bat: { crafted: { "2": 2 } } }, // 2 ≠ 1
+      }),
+    ).toThrow(/invalid_picks/);
+  });
+
+  it("picks 명시 — 보유량 부족이면 missing_ingredient", () => {
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      // 보유는 +2 한 개뿐
+      craftedEquipment: { baseball_bat: { "2": 1 } },
+    };
+    expect(() =>
+      computeCraftOutcome(input, "nailed_baseball_bat", {
+        rng: rngMid,
+        equipPicks: { baseball_bat: { crafted: { "1": 1 } } }, // 합은 맞지만 +1 은 0
+      }),
+    ).toThrow(/missing_ingredient/);
+  });
+
+  it("picks 명시 — 정확히 그 등급에서 차감, 자동 fallback 비활성", () => {
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      equipment: { baseball_bat: 5 }, // 무등급 5개도 있지만…
+      craftedEquipment: { baseball_bat: { "2": 1 } },
+    };
+    const out = computeCraftOutcome(input, "nailed_baseball_bat", {
+      rng: rngMid,
+      equipPicks: { baseball_bat: { crafted: { "2": 1 } } },
+    });
+    // 무등급 5개는 그대로 남고, +2 1개만 빠진다.
+    expect(out.equipment.baseball_bat).toBe(5);
+    expect(out.craftedEquipment.baseball_bat).toBeUndefined();
+  });
+
+  it("picks 의 비-기본 인스턴스 → 결과 등급 bias 적용 (+2 → bias=3)", () => {
+    // rng=0.5 면 평소 일반(0), bias=3 이면 +1(rng*156=78, -6-22-44=6, -66<0 → +1)
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      craftedEquipment: { baseball_bat: { "2": 1 } },
+    };
+    const out = computeCraftOutcome(input, "nailed_baseball_bat", {
+      rng: () => 0.5,
+      equipPicks: { baseball_bat: { crafted: { "2": 1 } } },
+    });
+    expect(out.results[0].kind).toBe("equipment");
+    if (out.results[0].kind === "equipment") {
+      // bias=3, rng=0.5 → +1
+      expect(out.results[0].tier).toBe(1);
+    }
+  });
+
+  it("배치 — 회별로 강한 인스턴스부터 1개씩 배정", () => {
+    // 2회 제작, +2 인스턴스 1개 + +1 인스턴스 1개 → 회 0 = bias 3, 회 1 = bias 2.
+    // 동일 rng=0.5 → 회 0 +1(rng*156=78, -6-22-44=6, -66<0 → +1)
+    //                회 1 (bias=2, 가중치 6/22/44/44/12=128, rng*128=64, -6-22-44=-8<0 → 0)
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 56 }, // 2회 × 28
+      craftedEquipment: { baseball_bat: { "1": 1, "2": 1 } },
+    };
+    const out = computeCraftOutcome(input, "nailed_baseball_bat", {
+      quantity: 2,
+      rng: () => 0.5,
+      equipPicks: {
+        baseball_bat: { crafted: { "1": 1, "2": 1 } },
+      },
+    });
+    const tiers = out.results.map((r) =>
+      r.kind === "equipment" ? r.tier : null,
+    );
+    expect(tiers).toEqual([1, 0]);
+  });
+
+  it("base(기본 등급) pick 은 bias 없음 — 자동 fallback 과 차감만 다르게 동작", () => {
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      equipment: { baseball_bat: 1 },
+    };
+    const out = computeCraftOutcome(input, "nailed_baseball_bat", {
+      rng: () => 0.5,
+      equipPicks: { baseball_bat: { base: 1 } },
+    });
+    expect(out.equipment.baseball_bat).toBeUndefined();
+    if (out.results[0].kind === "equipment") {
+      // bias=1, rng=0.5 → 0(일반)
+      expect(out.results[0].tier).toBe(0);
+    }
+  });
+
+  it("picks 미명시 ingredient 는 기존 자동 fallback 그대로 (낮은 등급부터)", () => {
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      craftedEquipment: { baseball_bat: { "-1": 1, "2": 1 } },
+    };
+    const out = computeCraftOutcome(input, "nailed_baseball_bat", {
+      rng: rngMid,
+      // equipPicks 미지정 → 기존 동작.
+    });
+    // 낮은 등급 -1 이 먼저 빠지고 +2 만 남음.
+    expect(out.craftedEquipment.baseball_bat).toEqual({ "2": 1 });
+  });
+});

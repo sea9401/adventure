@@ -8,6 +8,7 @@ import type { Recipe } from "@/adventure/data/recipes";
 import {
   craftErrorMessage,
   type CraftResult,
+  type EquipPicks,
 } from "@/adventure/crafting/types";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useInventory } from "@/adventure/inventory/useInventory";
@@ -32,7 +33,11 @@ export function useCraftAction(deps: {
   const { inventory, crafting, addNotification, grantTitle, recordCraft } = deps;
   const remote = useRemoteSave();
 
-  const handleCraft = async (recipe: Recipe, quantity: number = 1) => {
+  const handleCraft = async (
+    recipe: Recipe,
+    quantity: number = 1,
+    equipPicks?: EquipPicks,
+  ) => {
     if (!Number.isInteger(quantity) || quantity < 1) return;
 
     // UX 용 사전 검사 — quantity 배 기준. 서버도 같은 검사를 다시 한다.
@@ -82,7 +87,13 @@ export function useCraftAction(deps: {
       res = await fetch("/api/craft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipeId: recipe.id, quantity }),
+        body: JSON.stringify({
+          recipeId: recipe.id,
+          quantity,
+          ...(equipPicks && Object.keys(equipPicks).length > 0
+            ? { equipPicks }
+            : {}),
+        }),
       });
     } catch {
       addNotification("info", "통신 오류 — 잠시 후 다시 시도해 주세요.");
