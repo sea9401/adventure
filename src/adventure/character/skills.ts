@@ -316,7 +316,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.PRECISION,
-      description: `모든 공격에 대해 적 회피 ×${PRECISION_EVASION_MULT} (비례 절반) + 적 방어력 (DEX × ${PRECISION_PIERCE_PER_DEX * 100})% 무시 — DEX 35=17.5%, 70=35% (최대 ${PRECISION_PIERCE_CAP * 100}%)`,
+      description: `모든 공격에 대해 적 회피 ×${PRECISION_EVASION_MULT} (비례 절반) + 적 방어력 (DEX × ${(PRECISION_PIERCE_PER_DEX * 100).toFixed(1)})% 무시 — DEX 35=24.5%, 70=49% (최대 ${Math.round(PRECISION_PIERCE_CAP * 100)}%)`,
       activationThreshold: PRECISION_DEX_THRESHOLD,
     },
     {
