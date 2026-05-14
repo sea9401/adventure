@@ -38,7 +38,17 @@ function readInitial(raw: unknown): QuestProgressMap {
   const remote: QuestProgressMap =
     raw && typeof raw === "object" ? (raw as QuestProgressMap) : {};
   const local = loadQuestProgress();
-  return mergeQuestProgress(remote, local);
+  const merged = mergeQuestProgress(remote, local);
+  // 과거 repeatable=true 시절 완료 후 state="available" 로 돌아간 entry 가, 이제
+  // repeatable=false 로 바뀐 의뢰라면 "completed" 로 정정 — 안 그러면 NPC 대화창이
+  // 같은 의뢰를 영구히 다시 제안한다 (PR #108 이후 잔존 세이브).
+  for (const [id, entry] of Object.entries(merged)) {
+    if (entry.state !== "available" || entry.completedCount <= 0) continue;
+    const quest = getQuestById(id);
+    if (!quest || quest.repeatable) continue;
+    merged[id] = { ...entry, state: "completed" };
+  }
+  return merged;
 }
 
 export function useQuests() {
