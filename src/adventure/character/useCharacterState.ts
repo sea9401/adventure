@@ -20,8 +20,8 @@ export type CharacterDynamicState = {
   equippedTitleId?: string | null;
   /** 장착 중인 일반 스킬 이름 목록 (최대 skillLayout().normalSlots). undefined = 자동 (보유 첫 N개). */
   equippedSkills?: string[];
-  /** 장착 중인 특기 이름 (특기 전용 슬롯). undefined = 미장착. */
-  equippedFeat?: string;
+  /** 장착 중인 특기 이름들 — 슬롯 인덱스 0..featSlots-1. null = 그 슬롯 미장착. undefined/[] = 모두 미장착. */
+  equippedFeats?: (string | null)[];
   /**
    * region 단위 일일 보스 입장 카운터.
    * date 는 클라이언트 로컬 'YYYY-MM-DD'. 다른 날짜로 보면 0 부터 새로 카운트.
@@ -60,7 +60,15 @@ function rehydrateEquipped(
 
 function readInitial(raw: unknown): CharacterDynamicState {
   if (!raw || typeof raw !== "object") return initialCharacterState;
-  const parsed = raw as Partial<CharacterDynamicState>;
+  const parsed = raw as Partial<CharacterDynamicState> & {
+    /** 레거시 — 단일 특기 슬롯 시절 저장 필드. 읽기 호환만 유지하고 즉시 배열로 정규화. */
+    equippedFeat?: string;
+  };
+  // 레거시 equippedFeat (단일 string) → equippedFeats 배열 마이그레이션.
+  let feats: (string | null)[] | undefined = parsed.equippedFeats;
+  if (!feats && parsed.equippedFeat) {
+    feats = [parsed.equippedFeat];
+  }
   return {
     hp: parsed.hp ?? initialCharacterState.hp,
     mp: parsed.mp ?? initialCharacterState.mp,
@@ -75,7 +83,7 @@ function readInitial(raw: unknown): CharacterDynamicState {
     equipped: rehydrateEquipped(parsed.equipped),
     equippedTitleId: parsed.equippedTitleId ?? null,
     equippedSkills: parsed.equippedSkills,
-    equippedFeat: parsed.equippedFeat,
+    equippedFeats: feats,
     bossAttempts: parsed.bossAttempts,
   };
 }
@@ -145,8 +153,15 @@ export function useCharacterState() {
   const setEquippedSkills = (names: string[]) =>
     setState((prev) => ({ ...prev, equippedSkills: names }));
 
-  const setEquippedFeat = (name: string | null) =>
-    setState((prev) => ({ ...prev, equippedFeat: name ?? undefined }));
+  // 슬롯 인덱스 별로 특기 장착/해제. UI 가 슬롯 번호와 함께 호출.
+  // 결과 배열 길이는 항상 max(prev.length, index+1) — null 패딩으로 슬롯 자리 유지.
+  const setEquippedFeatAt = (slotIndex: number, name: string | null) =>
+    setState((prev) => {
+      const next = (prev.equippedFeats ?? []).slice();
+      while (next.length <= slotIndex) next.push(null);
+      next[slotIndex] = name ?? null;
+      return { ...prev, equippedFeats: next };
+    });
 
   // 길드 가입/탈퇴/해체/위임 시 호출. 서버는 이미 character.v2 에 affiliation 을
   // 반영했지만 클라이언트의 in-memory state 도 같이 끌어줘야 AdventurerCard 등이
@@ -196,7 +211,7 @@ export function useCharacterState() {
     setSlot,
     setEquippedTitle,
     setEquippedSkills,
-    setEquippedFeat,
+    setEquippedFeatAt,
     setAffiliation,
     replaceFromSaved,
     getBossAttemptsToday,

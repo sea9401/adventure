@@ -30,7 +30,7 @@ import {
   deriveSkills,
   doubleLuckBonusesFor,
   doubleStrikeIntervalFor,
-  effectiveFeatName,
+  effectiveFeatNames,
   effectiveSkillNames,
   enduranceActiveFor,
   enduranceMaxHpBonusPctFor,
@@ -81,8 +81,8 @@ export type DerivePlayerCombatInput = {
   };
   /** 장착 스킬 이름 목록 (일반 슬롯). undefined 면 자동 (보유 첫 N개). */
   equippedSkills: string[] | undefined;
-  /** 장착 특기 이름 (특기 전용 슬롯). 미장착이면 undefined. */
-  equippedFeat?: string;
+  /** 장착 특기 이름들 — 슬롯 인덱스 별. null = 그 슬롯 미장착. undefined/[] = 모두 미장착. */
+  equippedFeats?: ReadonlyArray<string | null>;
   /** 보유 스토리 플래그 id 집합 — 슬롯 해금(skillLayout) 판정용. 미지정 = 빈 집합. */
   storyFlagIds?: ReadonlySet<string>;
   /** 현재 hp — 협동 공격 시 시작값. */
@@ -99,11 +99,11 @@ export type DerivedPlayerCombat = {
   characterFeats: Skill[];
   /** 현재 발동 중인 일반 스킬 이름 (슬롯 한도 반영). */
   effectiveSkillNames: string[];
-  /** 현재 발동 중인 특기 이름 (특기 슬롯 닫혀 있거나 미장착이면 null). */
-  effectiveFeatName: string | null;
+  /** 현재 발동 중인 특기 이름들 — 특기 슬롯 수 만큼, 미장착·미보유 슬롯은 결과에서 제외. */
+  effectiveFeatNames: string[];
   /** effective 일반 스킬 + 특기를 합친 Set (엔진 합성에 사용). */
   effectiveSkillSet: Set<string>;
-  /** 현재 슬롯 레이아웃 (일반 칸 수 / 특기 칸 유무). */
+  /** 현재 슬롯 레이아웃 (일반 칸 수 / 특기 칸 수). */
   layout: SkillLayout;
 };
 
@@ -156,13 +156,13 @@ export function derivePlayerCombat(
     input.equippedSkills,
     layout.normalSlots,
   );
-  const featName = effectiveFeatName(
+  const featNames = effectiveFeatNames(
     characterFeats,
-    input.equippedFeat,
-    layout.hasFeatSlot,
+    input.equippedFeats ?? [],
+    layout.featSlots,
   );
   const effectiveSkillSet = new Set(effectiveNames);
-  if (featName) effectiveSkillSet.add(featName);
+  for (const f of featNames) effectiveSkillSet.add(f);
 
   // VIT 1pt 당 maxHp +2, 불굴 장착 시 +N%.
   const enduranceHpBonusPct = enduranceMaxHpBonusPctFor(
@@ -296,7 +296,7 @@ export function derivePlayerCombat(
     characterSkills,
     characterFeats,
     effectiveSkillNames: effectiveNames,
-    effectiveFeatName: featName,
+    effectiveFeatNames: featNames,
     effectiveSkillSet,
     layout,
   };

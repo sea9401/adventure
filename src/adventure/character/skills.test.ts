@@ -4,7 +4,7 @@ import {
   deriveSkills,
   deriveFeats,
   effectiveSkillNames,
-  effectiveFeatName,
+  effectiveFeatNames,
   FEAT_NAMES,
   SKILL_NAMES,
 } from "./skills";
@@ -19,26 +19,47 @@ const ZERO: Record<StatKey, number> = {
 };
 
 describe("skillLayout — 슬롯 해금", () => {
-  it("기본: 일반 3칸, 특기 슬롯 없음", () => {
+  it("기본: 일반 3칸, 특기 슬롯 0", () => {
     expect(skillLayout({ level: 1, hasFlag: () => false })).toEqual({
       normalSlots: 3,
-      hasFeatSlot: false,
+      featSlots: 0,
     });
   });
 
-  it("Lv40 도달 → 특기 슬롯 열림", () => {
+  it("Lv40 도달 → 특기 슬롯 1", () => {
     expect(
-      skillLayout({ level: 40, hasFlag: () => false }).hasFeatSlot,
-    ).toBe(true);
+      skillLayout({ level: 40, hasFlag: () => false }).featSlots,
+    ).toBe(1);
   });
 
-  it("운봉의 거인 처치 → 레벨 무관 특기 슬롯 열림", () => {
+  it("운봉의 거인 처치 → 레벨 무관 특기 슬롯 1", () => {
     expect(
       skillLayout({
         level: 5,
         hasFlag: (id) => id === "peak_giant_defeated",
-      }).hasFeatSlot,
-    ).toBe(true);
+      }).featSlots,
+    ).toBe(1);
+  });
+
+  it("두 번째 특기 슬롯은 Lv90 + endgame_apex_defeated (첫 슬롯 해금 후)", () => {
+    // Lv90 인데 첫 슬롯 미해금 (peak_giant 도 없고 Lv40 미만의 의미는 없지만 패턴 검증)
+    // 실제론 Lv90 ≥ Lv40 이라 첫 슬롯 자동 해금 → endgame_apex 만 추가로 필요.
+    expect(
+      skillLayout({ level: 90, hasFlag: () => false }).featSlots,
+    ).toBe(1);
+    expect(
+      skillLayout({
+        level: 90,
+        hasFlag: (id) => id === "endgame_apex_defeated",
+      }).featSlots,
+    ).toBe(2);
+    // Lv89 면 둘째 슬롯 미해금
+    expect(
+      skillLayout({
+        level: 89,
+        hasFlag: (id) => id === "endgame_apex_defeated",
+      }).featSlots,
+    ).toBe(1);
   });
 
   it("5번째 일반 슬롯은 Lv65 AND 화산의 심장 처치 둘 다", () => {
@@ -206,7 +227,7 @@ describe("deriveFeats — 두 요구 스탯 25 이상", () => {
   });
 });
 
-describe("effectiveSkillNames / effectiveFeatName — 슬롯 한도", () => {
+describe("effectiveSkillNames / effectiveFeatNames — 슬롯 한도", () => {
   const skills = [
     { name: "A" },
     { name: "B" },
@@ -235,13 +256,39 @@ describe("effectiveSkillNames / effectiveFeatName — 슬롯 한도", () => {
     expect(effectiveSkillNames(skills, ["없음", "A"], 3)).toEqual(["A"]);
   });
 
-  it("특기 슬롯이 닫혀 있으면 effective feat 는 null", () => {
+  it("특기 슬롯이 0 이면 빈 배열", () => {
     const feats = [{ name: FEAT_NAMES.LIFESTEAL }];
-    expect(effectiveFeatName(feats, FEAT_NAMES.LIFESTEAL, false)).toBeNull();
-    expect(effectiveFeatName(feats, FEAT_NAMES.LIFESTEAL, true)).toBe(
+    expect(effectiveFeatNames(feats, [FEAT_NAMES.LIFESTEAL], 0)).toEqual([]);
+  });
+
+  it("슬롯 1 + 보유 특기 → 1개 반환", () => {
+    const feats = [{ name: FEAT_NAMES.LIFESTEAL }];
+    expect(effectiveFeatNames(feats, [FEAT_NAMES.LIFESTEAL], 1)).toEqual([
       FEAT_NAMES.LIFESTEAL,
-    );
-    expect(effectiveFeatName(feats, "없는특기", true)).toBeNull();
-    expect(effectiveFeatName(feats, undefined, true)).toBeNull();
+    ]);
+  });
+
+  it("슬롯 2 + 두 특기 → 둘 다 반환", () => {
+    const feats = [
+      { name: FEAT_NAMES.LIFESTEAL },
+      { name: FEAT_NAMES.BERSERKER },
+    ];
+    expect(
+      effectiveFeatNames(feats, [FEAT_NAMES.LIFESTEAL, FEAT_NAMES.BERSERKER], 2),
+    ).toEqual([FEAT_NAMES.LIFESTEAL, FEAT_NAMES.BERSERKER]);
+  });
+
+  it("미보유 / null 슬롯은 결과에서 제외", () => {
+    const feats = [{ name: FEAT_NAMES.LIFESTEAL }];
+    expect(
+      effectiveFeatNames(feats, [null, FEAT_NAMES.LIFESTEAL, "없는특기"], 3),
+    ).toEqual([FEAT_NAMES.LIFESTEAL]);
+  });
+
+  it("같은 특기가 두 슬롯에 있으면 첫 슬롯만 적용", () => {
+    const feats = [{ name: FEAT_NAMES.LIFESTEAL }];
+    expect(
+      effectiveFeatNames(feats, [FEAT_NAMES.LIFESTEAL, FEAT_NAMES.LIFESTEAL], 2),
+    ).toEqual([FEAT_NAMES.LIFESTEAL]);
   });
 });

@@ -33,7 +33,7 @@ export function CharacterScreen() {
     adventureLog,
     notifications,
     effectiveSkillNameList,
-    effectiveFeatName,
+    effectiveFeatNames,
     characterFeats,
     skillLayout,
     training,
@@ -156,8 +156,8 @@ export function CharacterScreen() {
           equippedNames={effectiveSkillNameList}
           normalSlots={skillLayout.normalSlots}
           feats={characterFeats}
-          equippedFeat={effectiveFeatName}
-          featSlotOpen={skillLayout.hasFeatSlot}
+          equippedFeats={effectiveFeatNames}
+          featSlots={skillLayout.featSlots}
           onEquip={(name) => {
             if (effectiveSkillNameList.includes(name)) return;
             if (effectiveSkillNameList.length >= skillLayout.normalSlots) return;
@@ -172,10 +172,21 @@ export function CharacterScreen() {
             );
           }}
           onEquipFeat={(name) => {
-            if (!skillLayout.hasFeatSlot) return;
-            characterStateHook.setEquippedFeat(name);
+            if (effectiveFeatNames.includes(name)) return;
+            // 빈 슬롯 인덱스를 찾아 그 자리에 장착. 모두 차 있으면 무시.
+            for (let i = 0; i < skillLayout.featSlots; i += 1) {
+              if (!effectiveFeatNames[i]) {
+                characterStateHook.setEquippedFeatAt(i, name);
+                return;
+              }
+            }
           }}
-          onUnequipFeat={() => characterStateHook.setEquippedFeat(null)}
+          onUnequipFeat={(name) => {
+            const slotIndex = effectiveFeatNames.indexOf(name);
+            if (slotIndex >= 0) {
+              characterStateHook.setEquippedFeatAt(slotIndex, null);
+            }
+          }}
         />
       </div>
     );
