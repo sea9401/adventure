@@ -35,6 +35,7 @@ import { DuruDialogue } from "./DuruDialogue";
 import { NaraeDialogue } from "./NaraeDialogue";
 import { SolgaeDialogue } from "./SolgaeDialogue";
 import { BoriDialogue } from "./BoriDialogue";
+import { YuseongDialogue } from "./YuseongDialogue";
 
 // 마을 NPC 중 커스텀 다이얼로그를 가진 NPC 들의 디스패치 테이블.
 // TownView 의 renderNpcDialogue prop 으로 넘겨 사용한다. null 이면 기본 NpcDialogue.
@@ -303,6 +304,16 @@ export function renderTownNpcDialogue(
           completeQuest={completeQuest}
           inventory={inventory}
           adventureLog={adventureLog}
+        />
+      );
+    case "star_haven_elder":
+      return (
+        <YuseongDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          inventory={inventory}
         />
       );
     case "saltmarsh_elder":
