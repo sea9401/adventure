@@ -2,7 +2,7 @@ import { Diamond, Shield, Sword, User } from "@phosphor-icons/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { StatBar } from "@/components/ui/StatBar";
-import type { Gender } from "@/adventure/profile/avatars";
+import { avatarImageSrc, type Gender } from "@/adventure/profile/avatars";
 import { rarityTextClass, type EquipSlot } from "@/adventure/data/items";
 import { craftTierSuffix, craftTierTextClass } from "@/adventure/data/craftQuality";
 import {
@@ -45,7 +45,7 @@ function CharacterPortrait({ gender }: { gender: Gender }) {
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`/images/character/${gender}.webp`}
+          src={avatarImageSrc(gender)}
           alt=""
           onError={() => setErrored(true)}
           className="h-full w-full object-contain"
