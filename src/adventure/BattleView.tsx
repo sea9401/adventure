@@ -95,7 +95,7 @@ export function BattleView({
   recentNotifications?: AppNotification[];
   huntingActive: boolean;
   onToggleHunting: (next: boolean) => void;
-  /** 타이머형 자동 사냥(1시간 원정) hook — page.tsx 에서 1회 생성해 주입. */
+  /** 타이머형 자동 사냥(4시간 원정) hook — page.tsx 에서 1회 생성해 주입. */
   autoHunt: AutoHuntHook;
   /** region.boss 가 정의된 경우 — 오늘 입장한 횟수. */
   bossAttemptsToday?: number;

@@ -5,7 +5,7 @@
 // 정확성보다 일관성/단순성을 우선:
 // - engine.ts의 advanceTurn 그대로 재사용 — 실시간 자동 전투와 결과 분포 동일
 // - 시간은 전투당 라이브 쿨다운(battleCooldownMs ≈ 600~5000ms)만 경과 — 전투 자체는 즉시
-// - 시뮬 가능 시간은 OFFLINE_SIM_MAX_MS(1시간)로 cap, 그리고 input.maxBattles 로 전투 수도 cap
+// - 시뮬 가능 시간은 OFFLINE_SIM_MAX_MS(4시간)로 cap, 그리고 input.maxBattles 로 전투 수도 cap
 //   (원샷 캐릭터가 한 묶음에 수천 킬 쏟는 것 방지 — 자동 사냥 collect 가 AUTO_HUNT_MAX_BATTLES 주입)
 
 import { pickEnemyName, type Region } from "../data/world";
@@ -23,7 +23,7 @@ import {
 } from "./engine";
 import { applyExpGain, applyNewbieBonus, XP_RATE_MULT } from "@/lib/leveling";
 
-export const OFFLINE_SIM_MAX_MS = 60 * 60 * 1000;
+export const OFFLINE_SIM_MAX_MS = 4 * 60 * 60 * 1000;
 
 // 라이브 자동 전투의 전투 사이 쿨다운 — useBattle.ts 의 computeBattleCooldown / 상수와 동일해야 함.
 // (useBattle.ts 는 React hook 이라 여기서 import 하지 않고 값을 복제 — 양쪽을 함께 고칠 것.)
