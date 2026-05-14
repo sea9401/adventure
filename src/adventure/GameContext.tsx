@@ -93,7 +93,7 @@ export type GameCtx = {
   recordTrialWin: (winCount: number) => void;
   huntingActive: boolean;
   setHuntingActive: (next: boolean) => void;
-  /** 타이머형 자동 사냥(4시간 원정) — dispatch/collect + 카운트다운 state. */
+  /** 타이머형 자동 사냥(6시간 원정) — dispatch/collect + 카운트다운 state. */
   autoHunt: AutoHuntHook;
 
   // — 길드 버프 — 전투/퀘스트 보상 곱셈 + 보스 시도 가산에 사용. 비가입/미설치는 [].
