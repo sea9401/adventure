@@ -30,7 +30,10 @@ export type RegionId =
   // 서편 옛길 (시작 마을에서 서쪽으로 갈라지는 막다른 라인 — 동쪽 모험길의 반대편)
   | "westgate"
   | "dustford"
-  | "oldwall_keep";
+  | "oldwall_keep"
+  // 용비늘 라인 (바람골 역참 남쪽으로 갈라지는 막다른 라인 — 서양 판타지 톤의 고룡 묘지)
+  | "bone_marches"
+  | "scalefall_barrows";
 
 export type Biome =
   | "village"
@@ -120,6 +123,8 @@ export const WORLD_MAP: WorldMap = {
   // 천공 성지(2360, 150) 에서 남쪽으로 꺾어 starspire/star_corridor/star_haven/skyfolk_ruins/
   // throne_road/apex_throne 까지 부드러운 S-자 곡선으로 내려가며 height 700→820 확장.
   // (직선 일렬 대신 별바다 근처에서 서쪽으로 휘었다가 옥좌로 동쪽으로 돌아온다.)
+  // 바람골 역참(1640,410) 남쪽 빈 공간으로 뼈무덤 황야(Lv47) → 용비늘 묘지(Lv75) 막다른 라인
+  // 추가. 서양 판타지 톤의 고룡 묘지 — 방어 중심 무구 라인.
   viewBox: { width: 2440, height: 820 },
   regions: [
     {
@@ -529,6 +534,41 @@ export const WORLD_MAP: WorldMap = {
       boss: { monsterName: "옛 성문지기", dailyEntryLimit: 3 },
       recommendedLevel: 13,
     },
+    // ── 용비늘 라인 (windvale → bone_marches → scalefall_barrows) ───────────
+    // 바람골 역참 남쪽으로 내려가는 막다른 두 지역. 서양 판타지 톤의 고룡 묘지 라인 — 도굴꾼과
+    // 뼈비늘 짐승이 묘를 파헤치고, 안쪽에서 옛 노룡이 다시 깨어난다. 방어 중심 무구가 떨어진다.
+    {
+      id: "bone_marches",
+      name: "뼈무덤 황야",
+      description:
+        "바람골 역참 남쪽으로 펼쳐진 메마른 황야. 옛 무덤이 풍화되어 뼛조각이 모래에 섞이고, 도굴꾼과 뼈를 핥는 짐승이 어슬렁거린다. 묘지 너머 더 깊은 곳에 무엇이 잠들어 있는지 아는 자는 드물다.",
+      position: { x: 1740, y: 540 },
+      biome: "ruins",
+      enemies: ["용골 광신도", "역병 하이에나", "묘지 그렘린"],
+      encounterWeights: {
+        "용골 광신도": 40,
+        "역병 하이에나": 35,
+        "묘지 그렘린": 25,
+      },
+      recommendedLevel: 47,
+    },
+    {
+      id: "scalefall_barrows",
+      name: "용비늘 묘지",
+      description:
+        "황야 안쪽, 오래전 죽은 용의 뼈와 비늘이 광야에 쌓인 묘. 떨어진 비늘이 햇빛에 잿빛으로 굳고, 안쪽에서 무언가가 다시 일어서 묘를 걸어 다닌다.",
+      position: { x: 1840, y: 670 },
+      biome: "ruins",
+      enemies: ["타락한 묘지기사", "잿빛 와이번", "용골 리치"],
+      encounterWeights: {
+        "타락한 묘지기사": 30,
+        "잿빛 와이번": 40,
+        "용골 리치": 30,
+      },
+      // 용비늘 묘지 보스 — 솔로 도전, 자정 기준 일일 3회.
+      boss: { monsterName: "뼈비늘 노룡", dailyEntryLimit: 3 },
+      recommendedLevel: 75,
+    },
   ],
   edges: [
     { from: "village", to: "plains" },
@@ -695,6 +735,17 @@ export const WORLD_MAP: WorldMap = {
         flagId: "oldwall_keep_unsealed",
         reason: "옛 수비대장 무진이 아직 무너진 성벽으로 가는 길을 열어주지 않았다.",
       },
+    },
+    // 용비늘 라인 (windvale → bone_marches → scalefall_barrows).
+    {
+      from: "windvale",
+      to: "bone_marches",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "bone_marches" },
+    },
+    {
+      from: "bone_marches",
+      to: "scalefall_barrows",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "scalefall_barrows" },
     },
     // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.
     { from: "village", to: "diola", requires: { kind: "visited", regionId: "diola" } },

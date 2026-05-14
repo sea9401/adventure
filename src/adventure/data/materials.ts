@@ -282,6 +282,28 @@ export const MATERIALS = {
     price: 420,
     inShop: false,
   },
+  // ── 용비늘 라인 재료 (뼈무덤 황야 / 용비늘 묘지) ────────────────────────
+  scale_dust: {
+    id: "scale_dust",
+    name: "용비늘 가루",
+    description: "황야의 모래에 섞여 부서져 가는 옛 용의 비늘 가루. 보호를 새기는 데 두루 쓰인다고 전해진다.",
+    price: 26,
+    inShop: false,
+  },
+  dragonscale_shard: {
+    id: "dragonscale_shard",
+    name: "용비늘 조각",
+    description: "용비늘 묘지에서 부서지지 않고 굳어 있는 잿빛 비늘 조각. 한 장이 강철 한 판을 막아낸다고 한다.",
+    price: 90,
+    inShop: false,
+  },
+  bone_rune_steel: {
+    id: "bone_rune_steel",
+    name: "뼈각인 강철",
+    description: "용골을 줄로 갈아 옛 보호의 결을 새겨 넣은 강철. 두드릴 때마다 옛 룬이 떨리듯 울린다.",
+    price: 140,
+    inShop: false,
+  },
   // 통화성 재료 — 잉여 장비/재료를 대장간 분해실에서 갈아내면 가루처럼 부서지며 쌓인다.
   // 어디든 통하는 작은 마력의 결정이라, 회복약 라인의 통합 재료로 쓰인다.
   // inShop: false (상점 미취급) — 분해로만 얻고, 회복약 제작으로 소진한다.
