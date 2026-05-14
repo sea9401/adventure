@@ -1,9 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { AUTO_HUNT_MIN_COLLECT_MS } from "./autoHunt";
 import type { AutoHuntHook } from "@/adventure/hunting/useAutoHunt";
+import {
+  getHuntNotifEnabled,
+  getNotifPermission,
+  requestNotifPermission,
+  setHuntNotifEnabled,
+  type NotifPermission,
+} from "@/lib/huntNotify";
+
+// 알림 토글 + 권한 안내. idle/active 양쪽에서 보임 — 사용자가 사이클 도중에도 끌 수 있게.
+function NotifyToggle() {
+  const [enabled, setEnabled] = useState(false);
+  const [perm, setPerm] = useState<NotifPermission>("default");
+  useEffect(() => {
+    setEnabled(getHuntNotifEnabled());
+    setPerm(getNotifPermission());
+  }, []);
+
+  const onToggle = async () => {
+    const next = !enabled;
+    setHuntNotifEnabled(next);
+    setEnabled(next);
+    if (next) {
+      const p = await requestNotifPermission();
+      setPerm(p);
+    }
+  };
+
+  const hint =
+    perm === "unsupported"
+      ? "이 브라우저는 알림 미지원 — 탭 제목/파비콘만 변경됩니다."
+      : perm === "denied"
+        ? "OS 알림 권한이 차단됨 — 탭 제목/파비콘만 변경됩니다."
+        : enabled && perm === "default"
+          ? "권한 요청 미응답 — OS 알림은 비활성. 탭 제목/파비콘은 OK."
+          : null;
+
+  return (
+    <label className="mt-2 flex cursor-pointer select-none items-center gap-2 text-[11px] text-zinc-600 dark:text-zinc-300">
+      <input
+        type="checkbox"
+        checked={enabled}
+        onChange={onToggle}
+        className="h-3.5 w-3.5 cursor-pointer accent-sky-600"
+      />
+      <span>완료/사망 시 알림 받기</span>
+      {hint && (
+        <span className="ml-1 text-[10px] text-zinc-500 dark:text-zinc-400">
+          ({hint})
+        </span>
+      )}
+    </label>
+  );
+}
 
 function fmtRemain(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -67,6 +120,7 @@ export function AutoHuntCard({
         >
           {busy ? "보내는 중..." : "자동 사냥 보내기 — 4시간"}
         </button>
+        <NotifyToggle />
         {err && (
           <p className="mt-1.5 text-[11px] text-rose-600 dark:text-rose-400">{err}</p>
         )}
@@ -107,6 +161,7 @@ export function AutoHuntCard({
           위탁 중 — 라이브 사냥·보스 도전·치유소 회복 불가. 지금 받기는 그때까지 진행된 만큼만 챙기고 종료.
         </p>
       )}
+      <NotifyToggle />
     </Card>
   );
 }

@@ -148,6 +148,7 @@ export async function POST(req: Request) {
           huntRegion: null,
           huntBaselineHp: null,
           huntBaselineAt: null,
+          huntPredictedDeathAt: null,
         });
         return {
           kind: "early",
@@ -236,6 +237,7 @@ export async function POST(req: Request) {
         huntRegion: null,
         huntBaselineHp: null,
         huntBaselineAt: null,
+        huntPredictedDeathAt: null,
         lastClaimId: "collected",
         lastClaimResult: result,
       });

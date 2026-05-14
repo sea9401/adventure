@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "hunt_predicted_death_at" timestamp;

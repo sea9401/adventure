@@ -7,6 +7,9 @@
 // sessionStorage 에 박고 reload (SaveProvider fresh hydrate + page.tsx 마운트 핸들러가 모달).
 // 새로고침해도 mount 시 GET /api/hunt/status 로 카운트다운 복원.
 //
+// 알림: dispatch 응답/status 응답에 huntPredictedDeathAt 동봉 — 사망 예측 시각과 완료 시각에
+// setTimeout 으로 notifyHunt 발화. 토글 OFF / 권한 없음이면 발화 안 함 (notifyHunt 가 자체 가드).
+//
 // 라이브 "사냥 시작"(BattleView 화면 안 자동 전투)과 별개 — 그쪽은 page.tsx 의 useState.
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +21,7 @@ import {
 import type { OfflineSimResult } from "@/adventure/battle/offlineSim";
 import type { AutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import { readDeviceSessionId } from "@/lib/storage/deviceSession";
+import { clearHuntNotif, notifyHunt } from "@/lib/huntNotify";
 
 // 자동 사냥 fetch 공통 헤더 — 단일 세션 enforce 토큰을 동봉해 다른 디바이스의 collect 가
 // 이 디바이스 화면에 stale 결과를 떠넘기지 않게 한다. checkSession 이 헤더 미동봉이면
@@ -30,11 +34,23 @@ function huntHeaders(): Record<string, string> {
 }
 
 type StatusResponse =
-  | { active: true; startedAt: string; regionId: string; durationMs: number }
+  | {
+      active: true;
+      startedAt: string;
+      regionId: string;
+      durationMs: number;
+      predictedDeathAt: string | null;
+    }
   | { active: false };
 
 type DispatchResponse =
-  | { ok: true; startedAt: string; regionId: string; durationMs: number }
+  | {
+      ok: true;
+      startedAt: string;
+      regionId: string;
+      durationMs: number;
+      predictedDeathAt: string | null;
+    }
   | { ok: false; reason: string };
 
 type CollectResponse =
@@ -88,6 +104,9 @@ export function useAutoHunt(opts?: {
   });
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
   const [regionId, setRegionId] = useState<string | null>(null);
+  const [predictedDeathAtMs, setPredictedDeathAtMs] = useState<number | null>(
+    null,
+  );
   const [now, setNow] = useState(() => Date.now());
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -109,6 +128,11 @@ export function useAutoHunt(opts?: {
         if (data.active) {
           setStartedAtMs(new Date(data.startedAt).getTime());
           setRegionId(data.regionId || null);
+          setPredictedDeathAtMs(
+            data.predictedDeathAt
+              ? new Date(data.predictedDeathAt).getTime()
+              : null,
+          );
           setNow(Date.now());
         }
       } catch {}
@@ -125,11 +149,31 @@ export function useAutoHunt(opts?: {
     return () => clearInterval(id);
   }, [startedAtMs]);
 
-  const elapsed = startedAtMs !== null ? Math.max(0, now - startedAtMs) : 0;
-  const remainingMs =
-    startedAtMs !== null ? Math.max(0, AUTO_HUNT_DURATION_MS - elapsed) : 0;
-  const state: AutoHuntState =
-    startedAtMs === null ? "idle" : remainingMs > 0 ? "active" : "complete";
+  // 사망 예측 시각 / 완료 시각에 알림 발화. 이미 지난 시각은 등록 안 함 (새로고침 시 폭격 방지).
+  // notifyHunt 가 토글/권한 자체 가드 — hook 은 항상 등록만 해두고 발화 시점에 결정.
+  useEffect(() => {
+    if (startedAtMs === null) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const nowMs = Date.now();
+    if (predictedDeathAtMs !== null && predictedDeathAtMs > nowMs) {
+      timers.push(
+        setTimeout(() => {
+          notifyHunt("death", "위탁 도중 캐릭터가 쓰러졌습니다 — 결과를 확인하세요.");
+        }, predictedDeathAtMs - nowMs),
+      );
+    }
+    const completeAtMs = startedAtMs + AUTO_HUNT_DURATION_MS;
+    if (completeAtMs > nowMs) {
+      timers.push(
+        setTimeout(() => {
+          notifyHunt("complete", "4시간 원정이 끝났습니다 — 보상을 수령하세요.");
+        }, completeAtMs - nowMs),
+      );
+    }
+    return () => {
+      for (const t of timers) clearTimeout(t);
+    };
+  }, [startedAtMs, predictedDeathAtMs]);
 
   const dispatch = useCallback(async (): Promise<{
     ok: boolean;
@@ -142,13 +186,21 @@ export function useAutoHunt(opts?: {
       const res = await fetch("/api/hunt/dispatch", {
         method: "POST",
         headers: huntHeaders(),
-        body: "{}",
+        body: JSON.stringify({
+          // pre-sim 정확도 위해 디바이스 자동 포션 룰을 함께 보냄.
+          autoPotionRules: getRulesRef.current?.() ?? [],
+        }),
       });
       if (!res.ok) return { ok: false, reason: "http" };
       const data = (await res.json()) as DispatchResponse;
       if (data.ok) {
         setStartedAtMs(new Date(data.startedAt).getTime());
         setRegionId(data.regionId || null);
+        setPredictedDeathAtMs(
+          data.predictedDeathAt
+            ? new Date(data.predictedDeathAt).getTime()
+            : null,
+        );
         setNow(Date.now());
         return { ok: true };
       }
@@ -199,6 +251,8 @@ export function useAutoHunt(opts?: {
         if (data.reason !== "too_soon") {
           setStartedAtMs(null);
           setRegionId(null);
+          setPredictedDeathAtMs(null);
+          clearHuntNotif();
         }
         return;
       }
@@ -214,6 +268,7 @@ export function useAutoHunt(opts?: {
           }),
         );
       } catch {}
+      clearHuntNotif();
       window.location.reload();
     } catch {
       // 네트워크 실패 — 토스트로 안내.
@@ -225,6 +280,12 @@ export function useAutoHunt(opts?: {
       setBusy(false);
     }
   }, []);
+
+  const elapsed = startedAtMs !== null ? Math.max(0, now - startedAtMs) : 0;
+  const remainingMs =
+    startedAtMs !== null ? Math.max(0, AUTO_HUNT_DURATION_MS - elapsed) : 0;
+  const state: AutoHuntState =
+    startedAtMs === null ? "idle" : remainingMs > 0 ? "active" : "complete";
 
   return {
     state,
