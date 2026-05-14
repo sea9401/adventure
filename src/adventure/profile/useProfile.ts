@@ -87,10 +87,57 @@ export function useProfile() {
     return { ok: true };
   };
 
+  // 기존 캐릭터의 아바타(외형)만 변경. 이름은 그대로 유지. 서버는 /api/profile/avatar.
+  // setup 과 동일한 자동 재시도(network/5xx) 정책. 알 수 없는 id 는 400 → invalid.
+  const submitAvatar = async (
+    nextGender: Avatar,
+    options?: SubmitOptions,
+    attempt = 0,
+  ): Promise<SubmitResult> => {
+    const RETRY_DELAY_MS = 1000;
+    const MAX_ATTEMPTS = 2;
+    if (!profile) return { ok: false, reason: "invalid" };
+
+    let res: Response;
+    try {
+      res = await fetch("/api/profile/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gender: nextGender }),
+      });
+    } catch {
+      if (attempt < MAX_ATTEMPTS - 1) {
+        options?.onRetry?.();
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        return submitAvatar(nextGender, options, attempt + 1);
+      }
+      return { ok: false, reason: "network" };
+    }
+    if (res.status === 400) return { ok: false, reason: "invalid" };
+    if (!res.ok) {
+      if (attempt < MAX_ATTEMPTS - 1) {
+        options?.onRetry?.();
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        return submitAvatar(nextGender, options, attempt + 1);
+      }
+      return { ok: false, reason: "server" };
+    }
+    setProfile({ name: profile.name, gender: nextGender });
+    return { ok: true };
+  };
+
   const name = profile?.name ?? DEFAULT_NAME;
   const gender: Gender = profile?.gender ?? DEFAULT_AVATAR;
   // SaveProvider 가 children 마운트 전에 hydrate 를 끝내므로 needsSetup 은 단순.
   const needsSetup = !profile;
 
-  return { profile, name, gender, hydrated: true, needsSetup, submit };
+  return {
+    profile,
+    name,
+    gender,
+    hydrated: true,
+    needsSetup,
+    submit,
+    submitAvatar,
+  };
 }
