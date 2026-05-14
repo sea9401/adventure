@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { PlayerProfileModal } from "@/adventure/profile/PlayerProfileModal";
 import {
   useGuildRankings,
   useRankings,
@@ -53,6 +54,7 @@ const valueFor = (
 
 export function RankingsView() {
   const [metric, setMetric] = useState<RankingMetric>("level");
+  const [profileName, setProfileName] = useState<string | null>(null);
   return (
     <div className="space-y-3">
       <Card as="section" padding="sm">
@@ -64,15 +66,31 @@ export function RankingsView() {
         />
       </Card>
 
-      {metric === "guild" ? <GuildRankingsBody /> : <UserRankingsBody metric={metric} />}
+      {metric === "guild" ? (
+        <GuildRankingsBody />
+      ) : (
+        <UserRankingsBody
+          metric={metric}
+          onSelectName={(n) => setProfileName(n)}
+        />
+      )}
+
+      {profileName && (
+        <PlayerProfileModal
+          name={profileName}
+          onClose={() => setProfileName(null)}
+        />
+      )}
     </div>
   );
 }
 
 function UserRankingsBody({
   metric,
+  onSelectName,
 }: {
   metric: Exclude<RankingMetric, "guild">;
+  onSelectName: (name: string) => void;
 }) {
   const { list, me, loading, error } = useRankings(metric);
   const meInList = !!me && !!list?.some((e) => e.mine);
@@ -108,7 +126,12 @@ function UserRankingsBody({
           <Card as="section" padding="none">
             <ol className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {pager.pageItems.map((e) => (
-                <RankingRow key={`${e.rank}-${e.name}`} entry={e} metric={metric} />
+                <RankingRow
+                  key={`${e.rank}-${e.name}`}
+                  entry={e}
+                  metric={metric}
+                  onSelectName={onSelectName}
+                />
               ))}
             </ol>
           </Card>
@@ -126,7 +149,11 @@ function UserRankingsBody({
             내 순위
           </div>
           <div className="border-t border-zinc-200 dark:border-zinc-800">
-            <RankingRow entry={{ ...me, mine: true }} metric={metric} />
+            <RankingRow
+              entry={{ ...me, mine: true }}
+              metric={metric}
+              onSelectName={onSelectName}
+            />
           </div>
         </Card>
       )}
@@ -198,13 +225,17 @@ function GuildRankingsBody() {
 function RankingRow({
   entry,
   metric,
+  onSelectName,
 }: {
   entry: RankingEntry | (RankingMe & { mine: true });
   metric: Exclude<RankingMetric, "guild">;
+  onSelectName: (name: string) => void;
 }) {
   return (
-    <div
-      className={`flex items-center justify-between gap-3 px-4 py-2 ${
+    <button
+      type="button"
+      onClick={() => onSelectName(entry.name)}
+      className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-left transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900 ${
         entry.mine ? "bg-emerald-50 dark:bg-emerald-950/40" : ""
       }`}
     >
@@ -222,7 +253,7 @@ function RankingRow({
       <span className="shrink-0 text-sm tabular-nums text-zinc-700 dark:text-zinc-200">
         {METRIC_LABEL[metric]} {valueFor(entry, metric)}
       </span>
-    </div>
+    </button>
   );
 }
 
