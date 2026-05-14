@@ -30,35 +30,35 @@ function enemy(hp = 100, overrides: Partial<Monster> = {}): Monster {
 // damageBetween(8, 5)  = 3 (적 본타)
 
 describe("5티어 — 막다른 격노", () => {
-  it("RAMPAGE_START_TURN(5) 턴 전에는 누적 0", () => {
+  it("RAMPAGE_START_TURN(3) 턴 전에는 누적 0", () => {
     const p: PlayerCombat = { ...PLAYER, rampagePerTurn: 3 };
     let s = initialBattleState(p, enemy(9999), "용사");
-    // 4 player 턴: p-e 패턴 → advanceTurn 8회
-    for (let i = 0; i < 8; i += 1) s = advanceTurn(s, p, "용사");
-    expect(s.completedPlayerTurns).toBe(4);
+    // 2 player 턴: p-e 패턴 → advanceTurn 4회
+    for (let i = 0; i < 4; i += 1) s = advanceTurn(s, p, "용사");
+    expect(s.completedPlayerTurns).toBe(2);
     expect(s.rampageAtkBonus).toBe(0);
   });
 
   it("RAMPAGE_START_TURN 도달 시점부터 매 플레이어 턴 종료마다 +N 누적", () => {
     const p: PlayerCombat = { ...PLAYER, rampagePerTurn: 3 };
     let s = initialBattleState(p, enemy(9999), "용사");
-    // 5 player 턴 진행
-    for (let i = 0; i < 10; i += 1) s = advanceTurn(s, p, "용사");
-    expect(s.completedPlayerTurns).toBe(5);
+    // 3 player 턴 진행
+    for (let i = 0; i < 6; i += 1) s = advanceTurn(s, p, "용사");
+    expect(s.completedPlayerTurns).toBe(3);
     expect(s.rampageAtkBonus).toBe(3);
-    // 한 턴 더 (6번째)
+    // 한 턴 더 (4번째)
     for (let i = 0; i < 2; i += 1) s = advanceTurn(s, p, "용사");
-    expect(s.completedPlayerTurns).toBe(6);
+    expect(s.completedPlayerTurns).toBe(4);
     expect(s.rampageAtkBonus).toBe(6);
   });
 
   it("누적된 보너스 ATK 가 다음 본타 데미지에 반영", () => {
     const p: PlayerCombat = { ...PLAYER, rampagePerTurn: 5 };
     let s = initialBattleState(p, enemy(9999), "용사");
-    // 5턴까지 = 누적 +5. 6턴째 본타는 atk 10+5=15, damageBetween(15,3)=12.
-    for (let i = 0; i < 10; i += 1) s = advanceTurn(s, p, "용사");
+    // 3턴까지 = 누적 +5. 4턴째 본타는 atk 10+5=15, damageBetween(15,3)=12.
+    for (let i = 0; i < 6; i += 1) s = advanceTurn(s, p, "용사");
     const before = s.enemyHp;
-    s = advanceTurn(s, p, "용사"); // 6번째 player 본타
+    s = advanceTurn(s, p, "용사"); // 4번째 player 본타
     expect(before - s.enemyHp).toBe(12);
   });
 });
