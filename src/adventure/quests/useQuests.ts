@@ -8,6 +8,8 @@ import type { RegionId } from "../data/world";
 import type { ItemId } from "../data/items";
 import { findItemId } from "../data/items";
 import type { EquippedSlots } from "../character/types";
+import type { CoopRewardTier } from "../coop/data";
+import { COOP_TIER_ORDER } from "../coop/data";
 import {
   defaultQuestEntry,
   loadQuestProgress,
@@ -171,6 +173,36 @@ export function useQuests() {
     [],
   );
 
+  // 협동 보스 단일 공격 종료 시 호출 — coop_high_dmg_attack / coop_survive_attack 진행.
+  const recordCoopAttack = useCallback(
+    (
+      monsterName: string,
+      ctx: { damageDealt: number; diedEarly: boolean },
+    ): string[] =>
+      bumpCounter((t) => {
+        if (t.kind === "coop_high_dmg_attack")
+          return t.monsterName === monsterName && ctx.damageDealt >= t.minDamage;
+        if (t.kind === "coop_survive_attack")
+          return t.monsterName === monsterName && !ctx.diedEarly;
+        return false;
+      }),
+    [],
+  );
+
+  // 협동 보스 claim 시 호출 — coop_tier_reached 진행. claim 한 tier 가 minTier 이상이면 +1.
+  const recordCoopClaim = useCallback(
+    (monsterName: string, tier: CoopRewardTier): string[] => {
+      const tierRank = (t: CoopRewardTier) => COOP_TIER_ORDER.indexOf(t);
+      return bumpCounter(
+        (t) =>
+          t.kind === "coop_tier_reached" &&
+          t.monsterName === monsterName &&
+          tierRank(tier) >= tierRank(t.minTier),
+      );
+    },
+    [],
+  );
+
   // 장착 슬롯이 바뀔 때마다(또는 의뢰 progress 바뀔 때) 호출 — equip_item / equip_set
   // 조건이 충족되면 active → ready 로 전환. 한 번 ready 가 되면 unequip 해도 demote 안 함
   // ("입어 본 적 있다"는 사실로 인정). 변화 없으면 setProgress 호출하지 않음 (loop 방지).
@@ -274,6 +306,8 @@ export function useQuests() {
     recordTalk,
     recordVisit,
     recordCraft,
+    recordCoopAttack,
+    recordCoopClaim,
     checkEquip,
     tryDeliver,
     claim,
