@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { AVATARS, type Avatar, type Gender } from "@/adventure/profile/avatars";
+import {
+  isValidAvatarId,
+  type Avatar,
+  type Gender,
+} from "@/adventure/profile/avatars";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 
 export const DEFAULT_NAME = "모험가";
@@ -17,9 +21,10 @@ export type SubmitOptions = {
 };
 
 // 저장된 gender 값을 정규화. 구버전("male"/"female")은 male1/female1 으로 마이그레이션.
+// npc:/monster: 접두 id 도 isValidAvatarId 가 동시에 받아낸다.
 function normalizeAvatar(raw: unknown): Avatar | null {
   if (typeof raw !== "string") return null;
-  if (AVATARS.includes(raw as Avatar)) return raw as Avatar;
+  if (isValidAvatarId(raw)) return raw;
   if (raw === "male") return "male1";
   if (raw === "female") return "female1";
   return null;

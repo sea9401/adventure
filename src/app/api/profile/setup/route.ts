@@ -4,7 +4,7 @@ import { users, savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { upsertSave } from "@/lib/server/savesKv";
 import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
-import { AVATARS } from "@/adventure/profile/avatars";
+import { isValidAvatarId } from "@/adventure/profile/avatars";
 
 const NAME_MIN = 1;
 const NAME_MAX = 16;
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid" }, { status: 400 });
   }
   const gender = typeof body.gender === "string" ? body.gender : "";
-  if (!(AVATARS as readonly string[]).includes(gender)) {
+  if (!isValidAvatarId(gender)) {
     return Response.json({ error: "invalid" }, { status: 400 });
   }
 

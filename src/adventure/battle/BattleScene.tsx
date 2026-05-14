@@ -9,7 +9,7 @@ import {
   type NotificationKind,
 } from "@/lib/notifications";
 import { Card } from "@/components/ui/Card";
-import type { Gender } from "@/adventure/profile/avatars";
+import { avatarImageSrc, type Gender } from "@/adventure/profile/avatars";
 
 export type BattlePlayerStatus = {
   gender: Gender;
@@ -135,7 +135,7 @@ function PlayerAvatar({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/images/character/${gender}.webp`}
+        src={avatarImageSrc(gender)}
         alt={name}
         onError={() => setErrored(true)}
         className="h-full w-full object-cover"
