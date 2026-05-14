@@ -1,8 +1,8 @@
 // 자동 사냥(타이머형 원정) 서버 lib — collect 트랜잭션의 핵심 로직.
 //
 // /api/hunt/{dispatch,collect,status} 가 이 모듈을 쓴다. dispatch 가 baseline(시작시각·지역·HP)
-// 을 users 컬럼에 박고, collect 가 baseline 부터 NOW(최대 1시간, 그리고 전투 수도 cap)까지의
-// 시뮬을 트랜잭션 안에서 한 번에 처리한 뒤 사냥을 종료한다.
+// 을 users 컬럼에 박고, collect 가 baseline 부터 NOW(최대 4시간, 그리고 전투 수도 cap)까지의
+// 시뮬을 트랜잭션 밖에서 한 번에 처리한 뒤 사냥을 종료한다. (tx 분리 — PR #142.)
 //
 // (옛 "오프라인 사냥/서버 권위" 모델의 offlineHunt.ts 를 복구·간소화한 것 — away/back 상태머신·
 //  outbox·claimId 풀 멱등성·deferred baseline advance 는 제거. lastClaimResult 는 lost-response

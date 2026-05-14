@@ -23,7 +23,7 @@ export function fmtHuntDuration(ms: number): string {
   return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
 }
 
-// 자동 사냥(1시간 원정) 수령 결과 — 알림(noti)은 작아서 놓치기 쉬워 모달로 가시화.
+// 자동 사냥(4시간 원정) 수령 결과 — 알림(noti)은 작아서 놓치기 쉬워 모달로 가시화.
 export function AutoHuntResultModal({
   result,
   onClose,

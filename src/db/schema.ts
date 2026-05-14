@@ -29,8 +29,8 @@ export const users = pgTable(
     // 인게임 닉네임 — profile/setup API 로 사용자가 직접 설정.
     gameName: text("game_name"),
     activeSessionId: text("active_session_id"),
-    // 자동 사냥(타이머형 1시간 원정) 상태 — POST /api/hunt/dispatch 가 박고,
-    // POST /api/hunt/collect 가 simMs=min(경과,1시간) 만큼 sim·적용 후 NULL 로 종료.
+    // 자동 사냥(타이머형 4시간 원정) 상태 — POST /api/hunt/dispatch 가 박고,
+    // POST /api/hunt/collect 가 simMs=min(경과,4시간) 만큼 sim·적용 후 NULL 로 종료.
     //   huntActive     = 위탁 진행 중 여부
     //   huntBaselineAt = 위탁 시작 시각 (서버 소유 — 클라 시계 skew·위변조 무관)
     //   huntRegion     = 위탁 사냥 지역

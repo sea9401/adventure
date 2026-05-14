@@ -1,4 +1,4 @@
-// GET /api/hunt/status — 현재 자동 사냥(1시간 원정) 상태. 새로고침 후 카운트다운 복원용.
+// GET /api/hunt/status — 현재 자동 사냥(4시간 원정) 상태. 새로고침 후 카운트다운 복원용.
 //
 // 반환: { active:true, startedAt, regionId, durationMs } | { active:false }
 

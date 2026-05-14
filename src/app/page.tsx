@@ -130,7 +130,7 @@ function Home() {
   // notifications 를 autoHunt 보다 먼저 만들어 useAutoHunt 의 onCollectError 콜백에
   // 토스트 함수를 넘긴다. (수령 실패 시 사용자에게 신호 없는 문제 방지.)
   const notifications = useNotifications();
-  // 타이머형 자동 사냥(1시간 원정) — dispatch/collect + 카운트다운. 라이브 huntingActive 와 별개.
+  // 타이머형 자동 사냥(4시간 원정) — dispatch/collect + 카운트다운. 라이브 huntingActive 와 별개.
   // collect 시 디바이스 자동 포션 룰을 서버 sim 에 전달 (서버에 동기화 안 됨).
   const autoHunt = useAutoHunt({
     getAutoPotionRules: () => autoPotion.config.rules,
