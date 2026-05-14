@@ -1,5 +1,6 @@
 import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
+import type { useInventory } from "@/adventure/inventory/useInventory";
 import type { useQuests } from "@/adventure/quests/useQuests";
 
 type Props = {
@@ -7,9 +8,16 @@ type Props = {
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
+  inventory: ReturnType<typeof useInventory>;
 };
 
-export function TrainerDialogue({ npc, onClose, quests, completeQuest }: Props) {
+export function TrainerDialogue({
+  npc,
+  onClose,
+  quests,
+  completeQuest,
+  inventory,
+}: Props) {
   const slime = quests.getEntry("village-trainer-slimes");
   const dogs = quests.getEntry("village-trainer-dogs");
   const moles = quests.getEntry("village-trainer-moles");
@@ -179,6 +187,29 @@ export function TrainerDialogue({ npc, onClose, quests, completeQuest }: Props) 
     );
   }
   if (ringQuest.state === "active") {
+    // 옛 세이브 호환 — 두더지 의뢰가 보상 없던 시절 클리어된 세이브는 활력의 반지를 받은
+    // 적이 없어 후속 equip_item 의뢰가 영구 미완으로 묶인다. 분실(판매/분해) 케이스도
+    // 같이 흡수: 인벤에 base 등급 활력의 반지가 0개면 1회 재지급. (active → 장착 시 ready 로
+    // 전환되므로 active 상태에서 ring 이 장착 중일 가능성은 없음 — 인벤만 보면 충분.)
+    const hasRing = (inventory.state.equipment["vitality_ring"] ?? 0) > 0;
+    if (!hasRing) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "어, 반지를 잃어버렸나? 이런 — 마침 하나 더 있었네. 자, 받게. 이번엔 꼭 끼고 다녀라."
+          }
+          primaryAction={{
+            label: "활력의 반지를 받는다",
+            onClick: () => {
+              inventory.addEquipment("vitality_ring");
+              onClose();
+            },
+          }}
+        />
+      );
+    }
     return (
       <NpcDialogue
         npc={npc}
