@@ -4,18 +4,12 @@ import { useState } from "react";
 import { ArrowsClockwise, Coins, Crown, Skull, Star, X } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { useEscapeKey } from "@/lib/useEscapeKey";
-import {
-  resolveBattle,
-  type BattleResolution,
-  type PlayerCombat,
-} from "@/adventure/battle/engine";
+import type { BattleState } from "@/adventure/battle/engine";
 import {
   BattleScene,
   type BattlePlayerStatus,
 } from "@/adventure/battle/BattleScene";
-import type { PotionId } from "@/adventure/data/potions";
 import type { Monster } from "@/adventure/data/monsters";
-import { pickAutoAction } from "@/adventure/battle/pickAutoAction";
 import { MONSTERS } from "@/adventure/data/monsters";
 import {
   isBossFloor,
@@ -34,31 +28,26 @@ import { milestoneFor } from "./rewards";
 import { TOWER_DAILY_ATTEMPTS, type TowerState } from "./types";
 import { useTower, type TowerApiResponse } from "./useTower";
 
-// 고탑 진입 모달 — 한 컴포넌트 안에서 entry / run / result 화면을 상태로 전환.
-// 전투 자체는 resolveBattle 으로 동기 해결하고 결과만 화면에 띄운다 (BattleScene 미사용).
-// 클라가 결과를 서버에 보고하면 서버가 상태(체크포인트/시도/마일스톤)를 갱신한다.
+// 고탑 진입 모달 — 한 컴포넌트 안에서 entry / ready / result / run_ended 화면을 전환.
+// 전투는 서버 측 resolveBattle 이 수행. 클라는 의도(fight_floor) 만 보내고 응답으로 받은
+// BattleState 를 BattleScene 에 그대로 넘긴다 (anti-cheat).
 
 type View =
   | { kind: "entry" } // 시작 또는 이어하기 선택
   | { kind: "ready"; floor: number; enemy: Monster; isBoss: boolean }
-  | { kind: "result"; outcome: "win" | "lose"; floor: number; enemy: Monster; resolution: BattleResolution }
+  | { kind: "result"; outcome: "win" | "lose"; floor: number; enemy: Monster; finalState: BattleState }
   | { kind: "run_ended"; lastFloor: number };
 
 export function TowerModal({
   onClose,
-  player,
   playerName,
   playerStatus,
-  potions,
   onApplied,
 }: {
   onClose: () => void;
-  player: PlayerCombat;
   playerName: string;
   /** BattleScene 의 HUD (MP/EXP 바, 캐릭터 아바타) 에 필요한 상태. */
   playerStatus: BattlePlayerStatus;
-  /** 인벤토리 포션 잔량 — 전투 중 소비. 실제 차감은 onApplied 처리부에 위임. */
-  potions: Partial<Record<PotionId, number>>;
   /** 마일스톤 보상으로 character/inventory 가 갱신되면 호출 — 부모에서 state 동기화. */
   onApplied?: (r: TowerApiResponse) => void;
 }) {
@@ -134,22 +123,16 @@ export function TowerModal({
             isBoss={view.isBoss}
             disabled={tower.pending !== null}
             onFight={async () => {
-              const resolution = resolveBattle(player, view.enemy, playerName, {
-                pickAction: (s) => pickAutoAction(s, { rules: [], potions }),
-                potions,
-                isBoss: view.isBoss,
-              });
-              const outcome = resolution.outcome;
-              const apiResult = await tower.fightFloor(
-                outcome === "win" ? "win" : "lose",
-              );
-              if (!apiResult.ok) return; // 에러는 entry/error 노출에 위임
+              const apiResult = await tower.fightFloor();
+              if (!apiResult.ok || !apiResult.battle) return;
+              const outcome =
+                apiResult.applied?.outcome === "lose" ? "lose" : "win";
               setView({
                 kind: "result",
-                outcome: outcome === "win" ? "win" : "lose",
+                outcome,
                 floor: view.floor,
-                enemy: view.enemy,
-                resolution,
+                enemy: { ...view.enemy, name: apiResult.battle.enemyName },
+                finalState: apiResult.battle.finalState,
               });
             }}
             onForfeit={async () => {
@@ -164,7 +147,7 @@ export function TowerModal({
             outcome={view.outcome}
             floor={view.floor}
             enemy={view.enemy}
-            resolution={view.resolution}
+            finalState={view.finalState}
             milestone={apparentMilestone(view.outcome, view.floor)}
             playerName={playerName}
             playerStatus={playerStatus}
@@ -408,7 +391,7 @@ function ResultView({
   outcome,
   floor,
   enemy,
-  resolution,
+  finalState,
   milestone,
   playerName,
   playerStatus,
@@ -417,7 +400,7 @@ function ResultView({
   outcome: "win" | "lose";
   floor: number;
   enemy: Monster;
-  resolution: BattleResolution;
+  finalState: BattleState;
   milestone: ReturnType<typeof milestoneFor>;
   playerName: string;
   playerStatus: BattlePlayerStatus;
@@ -465,7 +448,7 @@ function ResultView({
 
       {/* 전투 로그 + 최종 HP/MP/EXP 가 한 화면에 — 일반 BattleView 와 같은 BattleScene. */}
       <BattleScene
-        state={resolution.finalState}
+        state={finalState}
         playerName={playerName}
         playerStatus={playerStatus}
       />

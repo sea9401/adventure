@@ -32,7 +32,6 @@ export function AdventureHome() {
     quests,
     storyFlags,
     completeQuest,
-    playerCombat,
     playerStatus,
     characterStateHook,
   } = useGame();
@@ -177,10 +176,8 @@ export function AdventureHome() {
       {towerOpen && (
         <TowerModal
           onClose={() => setTowerOpen(false)}
-          player={playerCombat}
           playerName={character.name}
           playerStatus={playerStatus}
-          potions={inventory.state.potions ?? {}}
           onApplied={(r) => {
             if (r.character && typeof r.character.gold === "number") {
               characterStateHook.replaceFromSaved(r.character);
