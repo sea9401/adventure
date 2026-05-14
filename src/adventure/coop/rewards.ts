@@ -70,8 +70,8 @@ const STAR_KEEPER_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
     materials: {},
     recipes: [],
     titleId: "star_keeper",
-    // 물욕 드랍 — legend 확정. armor 슬롯의 전스탯 균형 unique.
-    equipRolls: [{ itemId: "star_robe", chance: 1 }],
+    // 물욕 드랍 — legend 도달자에게도 아주 낮은 확률로만 떨어지는 armor 슬롯 unique.
+    equipRolls: [{ itemId: "star_robe", chance: 0.01 }],
   },
 };
 
