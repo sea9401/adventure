@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { applyExpGain, MAX_LEVEL } from "@/lib/leveling";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import { baseCharacter, maxHpForLevel, maxMpForLevel } from "./defaults";
 import { rehydrateEquippedItem } from "./rehydrateEquip";
 import type { EquippedItem, EquippedSlots } from "./types";
+
+// PR #140 (baseCharacter.maxHp 47 → 97) 이전 캐릭터의 hp 저장값에 +50 을 일률 보정하는
+// 일회성 마이그레이션 키. derivePlayerCombat 가 maxHp 로 클램프하므로 maxHp 초과해도 안전.
+const HP_LIFT_V1 = "hpLift_v1";
 
 export type CharacterDynamicState = {
   hp: number;
@@ -27,6 +31,8 @@ export type CharacterDynamicState = {
    * date 는 클라이언트 로컬 'YYYY-MM-DD'. 다른 날짜로 보면 0 부터 새로 카운트.
    */
   bossAttempts?: Partial<Record<string, { date: string; count: number }>>;
+  /** 일회성 마이그레이션 플래그 — 키별 1회만 실행. */
+  migrations?: Partial<Record<string, boolean>>;
 };
 
 // 클라이언트 로컬 자정 기준 'YYYY-MM-DD' (sv-SE 가 ISO-like 안전한 포맷).
@@ -42,6 +48,8 @@ export const initialCharacterState: CharacterDynamicState = {
   gold: 50,
   fame: 0,
   equippedTitleId: null,
+  // 신규 유저는 이미 +50 후 베이스로 시작하므로 마이그레이션 적용된 것으로 시드.
+  migrations: { [HP_LIFT_V1]: true },
 };
 
 // 저장된 EquipItem 슬롯 매핑을 "지금" 데이터 정의로 다시 만들어 옛 인스턴스가 남지 않게.
@@ -85,6 +93,7 @@ function readInitial(raw: unknown): CharacterDynamicState {
     equippedSkills: parsed.equippedSkills,
     equippedFeats: feats,
     bossAttempts: parsed.bossAttempts,
+    migrations: parsed.migrations,
   };
 }
 
@@ -94,6 +103,21 @@ export function useCharacterState() {
     readInitial(initial),
   );
   useRemotePatch("character.v2", state);
+
+  // 일회성 hp +50 마이그레이션 (PR #140 — Lv1 베이스 maxHp 47 → 97 일률 보정).
+  // 보정 전 캐릭터는 maxHp 가 +50 되었지만 저장된 hp 는 그대로라 새 maxHp 보다 영구히
+  // 50 부족한 상태가 됨. 첫 마운트 후 한 번만 hp+=50 + 플래그 set → useRemotePatch 가
+  // 변경을 감지해 서버로 patch. derivePlayerCombat 가 maxHp 로 클램프하므로 초과 무해.
+  useEffect(() => {
+    setState((prev) => {
+      if (prev.migrations?.[HP_LIFT_V1]) return prev;
+      return {
+        ...prev,
+        hp: prev.hp + 50,
+        migrations: { ...(prev.migrations ?? {}), [HP_LIFT_V1]: true },
+      };
+    });
+  }, []);
 
   const equippedSlots = state.equipped ?? baseCharacter.equipped;
 
