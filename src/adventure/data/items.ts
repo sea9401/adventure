@@ -97,6 +97,8 @@ export const ITEMS = {
     bonus: { atk: 0 },
     description: "나뭇가지를 대충 다듬어 만든 평범한 막대.",
     tradable: false,
+    // 시작 무기 분실/판매 시 재구매용 — 공격력 +0 이라 상징적 가격(5g).
+    shopPrice: 5,
     tier: 1,
   } satisfies EquipItem,
   cloth_clothes: {
