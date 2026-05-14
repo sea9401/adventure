@@ -91,14 +91,53 @@ describe("simulateOfflineHunt", () => {
     expect(r.simulatedMs).toBeLessThanOrEqual(OFFLINE_SIM_MAX_MS);
   });
 
-  it("약한 플레이어는 도중에 사망하고 break", () => {
+  it("약한 플레이어는 사망 시 부활 시퀀스로 대체된다 (사이클이 사망으로 끝나지 않음)", () => {
+    // FRAGILE_PLAYER 는 1번 맞으면 죽음. awayMs=60s 인데 부활 페널티가 1200s 라
+    // 첫 사망 후 부활 1회만 발동되고 elapsed 가 cap 을 초과해 루프 종료.
     const r = simulateOfflineHunt(
       baseInput({ player: FRAGILE_PLAYER, awayMs: 60_000 }),
     );
-    expect(r.died).toBe(true);
-    expect(r.finalPlayerHp).toBe(0);
-    // 사망 후 더 이상 진행 안 함 — simulatedMs는 cap보다 짧아야.
-    expect(r.simulatedMs).toBeLessThan(60_000);
+    expect(r.died).toBe(false);
+    expect(r.revives).toBe(1);
+    // 부활 후 maxHp(=1) 로 회복된 상태에서 끝남.
+    expect(r.finalPlayerHp).toBe(FRAGILE_PLAYER.maxHp);
+    // 작은 회복약 보유량이 0 이었으니 15까지 충전된다.
+    expect(r.potionsGranted.potion_heal_s).toBe(15);
+  });
+
+  it("부활 보급은 보유량이 15 미만일 때만 차이만큼 지급 (이미 많으면 그대로)", () => {
+    const r = simulateOfflineHunt(
+      baseInput({
+        player: FRAGILE_PLAYER,
+        awayMs: 60_000,
+        potions: { potion_heal_s: 12 },
+      }),
+    );
+    expect(r.revives).toBe(1);
+    // 12 → 15 까지 3개만 지급.
+    expect(r.potionsGranted.potion_heal_s).toBe(3);
+  });
+
+  it("부활 보급은 이미 15 이상이면 0개", () => {
+    const r = simulateOfflineHunt(
+      baseInput({
+        player: FRAGILE_PLAYER,
+        awayMs: 60_000,
+        potions: { potion_heal_s: 20 },
+      }),
+    );
+    expect(r.revives).toBe(1);
+    expect(r.potionsGranted.potion_heal_s ?? 0).toBe(0);
+  });
+
+  it("긴 사이클에서는 약한 플레이어가 여러 번 부활 — 매 사망마다 20분 페널티", () => {
+    // 4시간 = 14400s. 부활 페널티 1200s × 12 = 14400 → 정확히 cap 직전까지 부활 가능.
+    // 슬라임이 첫 턴에 죽이므로 elapsed 는 거의 페널티만으로 흐른다.
+    const r = simulateOfflineHunt(
+      baseInput({ player: FRAGILE_PLAYER, awayMs: 4 * 60 * 60 * 1000 }),
+    );
+    expect(r.died).toBe(false);
+    expect(r.revives).toBeGreaterThanOrEqual(2);
   });
 
   it("승리 시 EXP가 누적된다", () => {
@@ -183,10 +222,10 @@ describe("summarizeOfflineResult", () => {
     expect(text).toContain("EXP");
   });
 
-  it("사망 시 '사망' 토큰 포함", () => {
+  it("부활이 발생하면 '부활 N회' 토큰 포함", () => {
     const r = simulateOfflineHunt(
       baseInput({ player: FRAGILE_PLAYER, awayMs: 60_000 }),
     );
-    expect(summarizeOfflineResult(r)).toContain("사망");
+    expect(summarizeOfflineResult(r)).toContain("부활");
   });
 });

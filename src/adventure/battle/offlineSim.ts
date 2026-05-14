@@ -21,6 +21,10 @@ import {
   type PlayerAction,
   type PlayerCombat,
 } from "./engine";
+import {
+  AUTO_HUNT_REVIVE_DELAY_MS,
+  AUTO_HUNT_REVIVE_POTION_REFILL,
+} from "./autoHunt";
 import { applyExpGain, applyNewbieBonus, XP_RATE_MULT } from "@/lib/leveling";
 
 export const OFFLINE_SIM_MAX_MS = 6 * 60 * 60 * 1000;
@@ -90,8 +94,21 @@ export type OfflineSimResult = {
   equipsGained: { itemId: ItemId; quality: DropQuality }[];
   recipesLearned: string[]; // 미보유였던 것만 — onApply 가 그대로 learn 호출.
   potionsConsumed: Partial<Record<PotionId, number>>;
+  /**
+   * 부활 시퀀스로 사이클 중 지급된 포션 수 (potionId → 지급 누계).
+   * applyResultToSaves 가 인벤토리에 더해주고, potionsConsumed 는 동일 사이클에 쓰인
+   * 만큼 깎인다 — 둘이 별개라 같은 포션이 양쪽에 동시에 잡혀도 정합성 OK.
+   */
+  potionsGranted: Partial<Record<PotionId, number>>;
+  /** 사이클 중 부활한 횟수 — 0 이면 부활 발동 없음. */
+  revives: number;
   finalPlayerHp: number;
-  died: boolean; // 도중 사망?
+  /**
+   * 마지막 전투가 패배로 끝났는지. 현재는 부활 시퀀스가 무제한이라 사이클이 사망으로
+   * 끝나는 케이스는 사실상 없음 (cap 직전 사망 후 부활 → cap 초과로 정상 종료). 응답
+   * 호환을 위해 필드만 유지하되 항상 false 를 기대해도 무방.
+   */
+  died: boolean;
   /** runBudgetMs 가 발동돼 sim 이 잘렸으면 true (observability). */
   cappedByBudget?: boolean;
 };
@@ -120,6 +137,8 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
     equipsGained: [],
     recipesLearned: [],
     potionsConsumed: {},
+    potionsGranted: {},
+    revives: 0,
     finalPlayerHp: input.player.hp,
     died: false,
   };
@@ -239,9 +258,19 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
           Math.min(state.completedPlayerTurns, BATTLE_TURN_CLAMP),
         );
       } else {
-        currentHp = 0;
-        result.died = true;
-        break;
+        // 패배 — 부활 시퀀스: 20분 페널티 + maxHp 까지 회복 + 작은 회복약 15까지 충전.
+        // sim 시계가 cap 을 넘으면 외부 while 조건이 자연히 끊는다 (cap 직전 사망의 정상 처리).
+        result.revives += 1;
+        elapsed += AUTO_HUNT_REVIVE_DELAY_MS;
+        currentHp = input.player.maxHp;
+        const have = potions["potion_heal_s"] ?? 0;
+        if (have < AUTO_HUNT_REVIVE_POTION_REFILL) {
+          const grant = AUTO_HUNT_REVIVE_POTION_REFILL - have;
+          potions["potion_heal_s"] = have + grant;
+          result.potionsGranted["potion_heal_s"] =
+            (result.potionsGranted["potion_heal_s"] ?? 0) + grant;
+        }
+        // 부활했으므로 break 하지 않고 외부 while 로 계속 — 시계가 cap 미만이면 다음 전투 시작.
       }
     }
     if (!battleFinished) break;
@@ -254,7 +283,7 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
 
 // 알림 문구로 합치기 좋은 한 줄 요약. 비어있으면 빈 문자열.
 export function summarizeOfflineResult(r: OfflineSimResult): string {
-  if (r.battles === 0 && !r.died) return "";
+  if (r.battles === 0 && !r.died && (r.revives ?? 0) === 0) return "";
   const parts: string[] = [];
   if (r.wins > 0) parts.push(`처치 ${r.wins}`);
   if (r.expGained > 0)
@@ -277,6 +306,7 @@ export function summarizeOfflineResult(r: OfflineSimResult): string {
       .join(", ");
     parts.push(`소비 ${txt}`);
   }
+  if ((r.revives ?? 0) > 0) parts.push(`부활 ${r.revives}회`);
   if (r.died) parts.push("사망");
   return parts.join(" · ");
 }

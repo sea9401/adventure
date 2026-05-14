@@ -286,6 +286,13 @@ export async function applyResultToSaves(
     if (!n) continue;
     potions[id] = Math.max(0, (potions[id] ?? 0) - n);
   }
+  // 부활 보급 — sim 내부에서 작은 회복약을 충전 목표치까지 채워준 만큼 인벤토리에도 더한다.
+  // (consumed 와 granted 는 별개로 트래킹돼 같은 사이클 안에서 충전→사용된 분은 양쪽에 잡힌다 —
+  //  순서 무관하게 합산해도 정합성 OK.)
+  for (const [id, n] of Object.entries(result.potionsGranted ?? {})) {
+    if (!n) continue;
+    potions[id] = (potions[id] ?? 0) + n;
+  }
   const materials = { ...(inv.materials ?? {}) } as Record<string, number>;
   for (const [id, n] of Object.entries(result.materialsGained)) {
     if (!n) continue;
@@ -460,9 +467,9 @@ export async function updateBaseline(
   await tx.update(users).set(set).where(eq(users.id, userId));
 }
 
-/** 보여줄 만한 결과인지 — 전투 1판 이상 또는 사망. */
+/** 보여줄 만한 결과인지 — 전투 1판 이상 / 사망 / 부활(보급) 중 하나. */
 export function hasMeaningfulResult(result: OfflineSimResult): boolean {
-  return result.battles > 0 || result.died;
+  return result.battles > 0 || result.died || (result.revives ?? 0) > 0;
 }
 
 // collect tx1 의 클레임 결정. users row 와 NOW 만 보면 정해지는 순수 함수.

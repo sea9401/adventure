@@ -24,6 +24,18 @@ export const AUTO_HUNT_EFFICIENCY = 0.9;
 export const AUTO_HUNT_MIN_COLLECT_MS = 10_000;
 
 /**
+ * 위탁 사냥 중 HP 0 — 사이클을 그냥 끝내지 않고 부활 시퀀스를 발동한다.
+ *   1) 20분의 "쉬는 시간" 을 elapsed 에 더해 사이클 시간을 까먹음 (보상 0인 무위 구간).
+ *   2) HP 를 maxHp 까지 회복.
+ *   3) 작은 회복약(potion_heal_s) 을 15까지 충전 (이미 더 있으면 그대로).
+ *   4) 같은 region 에서 전투 재개.
+ * sim 시계는 cap 까지만 흐르므로 부활 횟수도 자연히 (cap / 20분) 으로 제한된다.
+ */
+export const AUTO_HUNT_REVIVE_DELAY_MS = 20 * 60 * 1000;
+/** 부활 시 작은 회복약 충전 목표치 — 보유량이 이보다 적을 때만 차이만큼 지급. */
+export const AUTO_HUNT_REVIVE_POTION_REFILL = 15;
+
+/**
  * 서버측 sim 실행 wall-clock 예산(ms). 단일 EC2 의 이벤트 루프를 한 collect 요청이
  * 수 초 동안 점유하는 사고를 막는 안전망. 보통 사이클은 1~2초 안에 끝나므로 일반 유저는
  * 영향 없고, 극단 케이스(낮은 레벨 × 높은 HP 적 × 최대 전투 수)에서만 잘리며 그 시점까지
@@ -41,6 +53,7 @@ export const AUTO_HUNT_RESULT_KEY = "auto-hunt-result.v1";
  * - 전리품(materials unit / equip / recipe) → 각 unit 을 eff 확률로 keep.
  *   floor(count×eff) 로 깎으면 단일 드롭이 항상 사라지므로(1×0.7=0.7→0) per-unit RNG.
  * - killsByName / wins / battles / potionsConsumed / finalPlayerHp / died / simulatedMs 는 그대로.
+ * - revives / potionsGranted (부활 보급) 는 효율 적용 대상 아님 — 안전망이지 보상이 아님.
  *
  * rng 는 sim 과 같은 시드 스트림을 이어받아 호출 — 같은 baseline 으로 재시도해도 동일 결과(replay 안전).
  */
