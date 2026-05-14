@@ -127,10 +127,16 @@ export const GUARD_REDUCTION_VIT_DIVISOR = 10;
 
 // 재생 — 활력 20 도달 시 획득.
 // 효과: 매 REGEN_INTERVAL 플레이어 턴 종료 시 HP +floor(VIT × REGEN_HP_PER_VIT).
-// VIT 비례라 후반에도 유효 — VIT 20=+5 / 40=+10 / 70=+17.
+// VIT 비례라 후반에도 유효 — VIT 20=+10 / 40=+20 / 70=+35.
 export const REGEN_VIT_THRESHOLD = 20;
 export const REGEN_INTERVAL = 4;
-export const REGEN_HP_PER_VIT = 0.25;
+export const REGEN_HP_PER_VIT = 0.5;
+
+// 자연회복 — 모든 빌드에 적용되는 상시 baseline. 스킬 슬롯/스탯 불필요.
+// 매 BASELINE_REGEN_INTERVAL 플레이어 턴 종료 시 HP +max(1, floor(maxHp × BASELINE_REGEN_HP_PCT)).
+// 비-VIT 빌드 (글래스캐논) 의 유지력 보전 목적 — VIT 빌드는 위 재생 스킬이 별도로 누적.
+export const BASELINE_REGEN_INTERVAL = 5;
+export const BASELINE_REGEN_HP_PCT = 0.01;
 
 // 연타 — 속도 10 도달 시 획득.
 // DOUBLE_STRIKE_INTERVAL 턴마다 그 턴의 마지막 공격 후 추가 1회 공격.
@@ -343,7 +349,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.REGEN,
-      description: `${REGEN_INTERVAL}턴마다 HP +(VIT × ${REGEN_HP_PER_VIT}) 회복 — VIT 20=+5`,
+      description: `${REGEN_INTERVAL}턴마다 HP +(VIT × ${REGEN_HP_PER_VIT}) 회복 — VIT 20=+10`,
       activationThreshold: REGEN_VIT_THRESHOLD,
     },
     {
@@ -1069,6 +1075,14 @@ export function regenFor(
   return stats.vit >= REGEN_VIT_THRESHOLD && equipped.has(SKILL_NAMES.REGEN)
     ? { interval: REGEN_INTERVAL, amount: Math.floor(stats.vit * REGEN_HP_PER_VIT) }
     : { interval: 0, amount: 0 };
+}
+
+// 자연회복 — 모든 플레이어 공통, 스킬/스탯 임계 없음. maxHp 비율 기반.
+export function baselineRegenFor(maxHp: number): { interval: number; amount: number } {
+  return {
+    interval: BASELINE_REGEN_INTERVAL,
+    amount: Math.max(1, Math.floor(maxHp * BASELINE_REGEN_HP_PCT)),
+  };
 }
 
 // 처형 — 데미지 배수. 적 HP 비율은 엔진이 직접 검사하고 이 배수만 곱한다.
