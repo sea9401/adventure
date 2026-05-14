@@ -66,13 +66,13 @@ export function useBattle({
 
 // 한 턴(플레이어 행동 1회)당 누적되는 cooldown. 짧은 전투는 빠른 회전, 긴 전투는 사용자가 읽을 시간 확보.
 // 로그 줄 수가 아니라 턴 수 기준 — 출혈/철벽/연타 같은 스킬 메시지가 늘어나도 페이싱은 안 흔들린다.
-export const COOLDOWN_PER_TURN_MS = 625;
-export const MIN_BATTLE_COOLDOWN_MS = 600;
-export const MAX_BATTLE_COOLDOWN_MS = 5000;
+export const COOLDOWN_PER_TURN_MS = 500;
+export const MIN_BATTLE_COOLDOWN_MS = 1200;
+export const MAX_BATTLE_COOLDOWN_MS = 4200;
 
 // 자동 사냥/오프라인 sim 에서 쿨다운 계산에 쓰는 턴 수 상한.
-// 8턴 × 625ms = 5000ms → 긴 전투는 다음 전투까지 최대 5초 대기 (디메리트).
-export const BATTLE_TURN_CLAMP = 8;
+// 9턴 × 500ms = 4500ms → MAX 4200ms 로 잘림. 긴 전투는 다음 전투까지 최대 4.2초 대기 (디메리트).
+export const BATTLE_TURN_CLAMP = 9;
 
 export function computeBattleCooldown(turns: number): number {
   const raw = turns * COOLDOWN_PER_TURN_MS;

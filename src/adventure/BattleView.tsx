@@ -170,7 +170,7 @@ export function BattleView({
     // 동기 시뮬 특성상 즉시 stop() 하면 BattleScene 이 한 프레임만 보이고 사라진다.
     if (bossModeRef.current) return;
     // 쿨다운은 전투에 걸린 턴 수 기준 — BATTLE_TURN_CLAMP 턴으로 클램프해
-    // 자동 사냥 페이싱을 일정 범위(600~5000ms)로 제한한다.
+    // 자동 사냥 페이싱을 일정 범위(1200~4200ms)로 제한한다.
     const cooldown = computeBattleCooldown(
       Math.min(state.completedPlayerTurns, BATTLE_TURN_CLAMP),
     );
