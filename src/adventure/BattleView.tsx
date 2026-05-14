@@ -121,9 +121,13 @@ export function BattleView({
   // 보스 전투 모드 — 일반 자동사냥 루프와 분리. 1회 전투 후 종료, 자동 다음 적 X.
   const bossModeRef = useRef(false);
 
-  const startWithLog = (enemy: Monster, hpOverride?: number) => {
+  const startWithLog = (
+    enemy: Monster,
+    hpOverride?: number,
+    isBoss?: boolean,
+  ) => {
     onBattleStart?.(enemy.name);
-    start(enemy, hpOverride);
+    start(enemy, hpOverride, isBoss);
   };
 
   // 전투 종료 시 onBattleEnd 발화. 승리는 즉시 보상 적용 + cooldown 후 다음 적 자동 진행.
@@ -274,7 +278,7 @@ export function BattleView({
                     onBossAttempt?.();
                     bossModeRef.current = true;
                     if (huntingActive) onToggleHunting(false);
-                    startWithLog(bossMonster);
+                    startWithLog(bossMonster, undefined, true);
                   }}
                   className="mt-3 w-full rounded-md border border-rose-700 bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >

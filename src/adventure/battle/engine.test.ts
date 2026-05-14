@@ -318,6 +318,46 @@ describe("resolveBattle", () => {
     expect(r.turns).toBeGreaterThan(8); // 충분히 긴 전투
     expect(r.finalState.log.length).toBeGreaterThan(8);
   });
+
+  it("보스 타임아웃 — isBoss + 50턴 도달 시 패배 + 안내 로그", () => {
+    // 데미지가 안 박히지만 죽지도 않는 빌드 — 플레이어 atk=1, 적 def=999.
+    const stalemate: PlayerCombat = { ...PLAYER, atk: 1, hp: 9999, def: 999 };
+    vi.spyOn(Math, "random").mockReturnValue(0); // 회피·크리 등 결정성 확보
+    const r = resolveBattle(
+      stalemate,
+      makeEnemy({ hp: 99999, def: 999, atk: 1 }),
+      "P",
+      {
+        pickAction: () => ({ kind: "attack" }),
+        potions: {},
+        isBoss: true,
+      },
+    );
+    expect(r.outcome).toBe("lose");
+    expect(r.finalState.completedPlayerTurns).toBeGreaterThanOrEqual(50);
+    expect(
+      r.finalState.log.some((e) => e.text.includes("50턴 경과")),
+    ).toBe(true);
+  });
+
+  it("일반 전투(isBoss 미지정)는 50턴 캡 영향 없음 — 결과는 자연 종료", () => {
+    // 보스 캡이 일반 전투에 새지 않는지 확인. 같은 stalemate 조건이지만 isBoss 없음.
+    // 일반 안전망(turns > 500)에는 걸려도 보스 메시지는 안 나와야 한다.
+    const stalemate: PlayerCombat = { ...PLAYER, atk: 1, hp: 9999, def: 999 };
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const r = resolveBattle(
+      stalemate,
+      makeEnemy({ hp: 99999, def: 999, atk: 1 }),
+      "P",
+      {
+        pickAction: () => ({ kind: "attack" }),
+        potions: {},
+      },
+    );
+    expect(
+      r.finalState.log.some((e) => e.text.includes("50턴 경과")),
+    ).toBe(false);
+  });
 });
 
 describe("강공격 (powerAttackBonus)", () => {
