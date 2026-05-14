@@ -433,6 +433,21 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
   ],
 };
 
+// 스킬 이름 → 소속 스탯 매핑. STAT_SKILL 의 역인덱스. 표시(도감·SkillsView 그룹핑) 전용.
+// 모듈 로드 시 한 번만 빌드 — STAT_SKILL 은 immutable.
+const SKILL_NAME_TO_STAT: ReadonlyMap<string, StatKey> = (() => {
+  const m = new Map<string, StatKey>();
+  for (const k of STAT_KEYS) {
+    for (const tier of STAT_SKILL[k]) m.set(tier.name, k);
+  }
+  return m;
+})();
+
+// 스킬 이름이 어느 스탯에 속하는지. 알 수 없으면 null (FEAT 등 다른 카테고리).
+export function statOfSkill(name: string): StatKey | null {
+  return SKILL_NAME_TO_STAT.get(name) ?? null;
+}
+
 // 현재 스탯에서 보유(획득) 스킬 목록 도출. 스킬은 별도 저장 없이 스탯에서 파생.
 // "보유" ≠ "장착" — 보유한 스킬 중 일반 슬롯 수만큼만 effective.
 // 1차 → 2차 → 3차 → 4차 → 5차 → 6차 순으로 묶어 반환 — 자동 슬롯 채움 시 낮은 티어가 우선되도록.
