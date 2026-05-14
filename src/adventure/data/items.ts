@@ -936,6 +936,64 @@ export const ITEMS = {
     tradable: false,
     tier: 5,
   } satisfies EquipItem,
+  // ── 천공 라인 legendary 4종 — 신규 지역(starspire/skyfolk_ruins/apex_throne) 몹에서 ──
+  // ──   ultra-rare(0.00015~0.0002) 로 떨어지는 specialized lore drop. craftable 라인엔  ──
+  // ──   없는 stat 결합으로 빌드 다양성 부여. 모두 비거래.                                ──
+  starlight_bow: {
+    name: "별빛 명궁",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+20" },
+      { label: "민첩", value: "+12" },
+    ],
+    bonus: { atk: 20, dex: 12 },
+    description: "별의 첨탑 정찰자들이 한 자루씩 들고 있었다 전해지는 가느다란 활. 시위를 당기면 별빛이 시위 결을 따라 흐른다.",
+    rarity: "legendary",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+  ancient_sky_blade: {
+    name: "옛 천공인의 칼",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+22" },
+      { label: "힘", value: "+10" },
+      { label: "속도", value: "+5" },
+    ],
+    bonus: { atk: 22, str: 10, spd: 5 },
+    description: "옛 천공인 전사가 폐도 끝에서 부러뜨리지 못한 채 남긴 가벼우면서 잔인하게 무거운 칼. 휘둘러야 할 결을 손이 먼저 안다.",
+    rarity: "legendary",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+  enthrone_plate: {
+    name: "봉인된 황좌 갑주",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+13" },
+      { label: "활력", value: "+10" },
+      { label: "힘", value: "+4" },
+    ],
+    bonus: { def: 13, vit: 10, str: 4 },
+    description: "봉인된 황좌 골렘 내부에 함께 잠들어 있던 옛 호위병의 갑주. 두르는 자에게 옥좌의 무게가 그대로 얹힌다.",
+    rarity: "legendary",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+  starbound_charm: {
+    name: "별빛 부적",
+    slot: "accessory",
+    stats: [
+      { label: "행운", value: "+12" },
+      { label: "민첩", value: "+5" },
+      { label: "속도", value: "+5" },
+    ],
+    bonus: { luk: 12, dex: 5, spd: 5 },
+    description: "별빛 사도들이 마지막까지 품에 두고 있었다는 작은 부적. 손에 쥐면 어느 결로 떨어진 별의 자리가 어렴풋이 보인다.",
+    rarity: "legendary",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
   sky_render_talon: {
     name: "하늘가르개",
     slot: "weapon",

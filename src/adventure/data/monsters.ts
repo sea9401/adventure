@@ -693,6 +693,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 110,
     drops: [
       { kind: "material", materialId: "stardust", chance: 0.008 },
+      // 유실된 명품(legendary) — 정찰자들이 한 자루씩 들고 다닌다는 가느다란 활. ultra-rare.
+      { kind: "equip", itemId: "starlight_bow", chance: 0.0002 },
     ],
     skill: { kind: "pierce", name: "별빛 일섬", armorPierce: 4 },
   },
@@ -778,6 +780,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 175,
     drops: [
       { kind: "material", materialId: "stellar_essence", chance: 0.012 },
+      // 유실된 명품(legendary) — 전사가 폐도 끝에서 두고 떠난 옛 천공인의 칼. ultra-rare.
+      { kind: "equip", itemId: "ancient_sky_blade", chance: 0.0002 },
     ],
     skill: { kind: "heavy_blow", name: "천공 강타", everyPhases: 3, multiplier: 1.5 },
   },
@@ -838,6 +842,8 @@ export const MONSTERS: Record<string, Monster> = {
     exp: 230,
     drops: [
       { kind: "material", materialId: "empyrean_shard", chance: 0.008 },
+      // 유실된 명품(legendary) — 사도들이 마지막까지 품에 두고 있었다는 작은 부적. ultra-rare.
+      { kind: "equip", itemId: "starbound_charm", chance: 0.0002 },
     ],
     skill: { kind: "pierce", name: "사도의 일섬", armorPierce: 6 },
   },
@@ -865,6 +871,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "empyrean_shard", chance: 0.01 },
       { kind: "material", materialId: "primordial_essence", chance: 0.005 },
+      // 유실된 명품(legendary) — 골렘 내부에 함께 잠들어 있던 옛 호위병 갑주. ultra-rare.
+      { kind: "equip", itemId: "enthrone_plate", chance: 0.00015 },
     ],
     skill: { kind: "enrage", name: "봉인 해제", hpFraction: 0.4, atkBonus: 15 },
   },
