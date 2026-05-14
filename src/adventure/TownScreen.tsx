@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Barbell,
   FirstAid,
@@ -11,6 +12,8 @@ import {
   Storefront,
   UsersThree,
 } from "@phosphor-icons/react";
+import { getAcceptableQuestIds } from "@/adventure/quests/cooldown";
+import type { QuestProgressEntry } from "@/adventure/quests/storage";
 import { Card } from "@/components/ui/Card";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { StatBar } from "@/components/ui/StatBar";
@@ -32,7 +35,7 @@ import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { resolveBuffMultiplier } from "@/adventure/data/guildBuffs";
 import { TRAINING_DURATION_MS } from "@/adventure/training/useTraining";
 import { equipmentCountsAllGrades } from "@/adventure/inventory/ownership";
-import { START_REGION_ID } from "@/adventure/data/world";
+import { START_REGION_ID, type RegionId } from "@/adventure/data/world";
 import { useGame } from "@/adventure/GameContext";
 
 export function TownScreen() {
@@ -401,19 +404,15 @@ export function TownScreen() {
 
   if (subView === "guild") {
     return (
-      <div className="space-y-3">
-        <SubViewHeader
-          title={`모험가 길드 · ${currentRegion.name}`}
-          onBack={back}
-        />
-        <GuildView
-          regionId={currentRegion.id}
-          characterLevel={character.level}
-          getEntry={quests.getEntry}
-          onAccept={handleAcceptQuest}
-          onClaim={handleClaimQuest}
-        />
-      </div>
+      <GuildSubView
+        regionId={currentRegion.id}
+        regionName={currentRegion.name}
+        characterLevel={character.level}
+        getEntry={quests.getEntry}
+        handleAcceptQuest={handleAcceptQuest}
+        handleClaimQuest={handleClaimQuest}
+        back={back}
+      />
     );
   }
 
@@ -427,4 +426,68 @@ export function TownScreen() {
   }
 
   return null;
+}
+
+// 모험가 길드 게시판 — 헤더에 "전체 수락" 액션을 노출. now tick 은 쿨다운 만료에 따른
+// 카운트 갱신용 (개별 카드의 cooldown 잔여 표시는 GuildView 가 자체 tick 한다).
+function GuildSubView({
+  regionId,
+  regionName,
+  characterLevel,
+  getEntry,
+  handleAcceptQuest,
+  handleClaimQuest,
+  back,
+}: {
+  regionId: RegionId;
+  regionName: string;
+  characterLevel: number;
+  getEntry: (id: string) => QuestProgressEntry;
+  handleAcceptQuest: (id: string) => void;
+  handleClaimQuest: (id: string) => void;
+  back: () => void;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const acceptableIds = getAcceptableQuestIds(
+    regionId,
+    characterLevel,
+    getEntry,
+    now,
+  );
+  const count = acceptableIds.length;
+  const onAcceptAll = () => {
+    for (const id of acceptableIds) handleAcceptQuest(id);
+  };
+
+  return (
+    <div className="space-y-3">
+      <SubViewHeader
+        title={`모험가 길드 · ${regionName}`}
+        onBack={back}
+        right={
+          <button
+            type="button"
+            onClick={onAcceptAll}
+            disabled={count === 0}
+            className="inline-flex items-center gap-1 rounded-md border border-emerald-500 bg-emerald-500/10 px-2.5 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-transparent disabled:text-zinc-400 dark:border-emerald-400 dark:text-emerald-300 dark:disabled:border-zinc-700 dark:disabled:text-zinc-500"
+          >
+            전체 수락
+            <span className="tabular-nums">({count})</span>
+          </button>
+        }
+      />
+      <GuildView
+        regionId={regionId}
+        characterLevel={characterLevel}
+        getEntry={getEntry}
+        onAccept={handleAcceptQuest}
+        onClaim={handleClaimQuest}
+      />
+    </div>
+  );
 }
