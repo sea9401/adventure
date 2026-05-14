@@ -1,6 +1,8 @@
 // GET /api/hunt/status — 현재 자동 사냥(4시간 원정) 상태. 새로고침 후 카운트다운 복원용.
 //
-// 반환: { active:true, startedAt, regionId, durationMs } | { active:false }
+// 반환: { active:true, startedAt, regionId, durationMs, predictedDeathAt } | { active:false }
+//   - predictedDeathAt: dispatch 시 pre-sim 으로 박힌 사망 예측 시각 (생존 예측이면 null).
+//     알림 발화 시각 — 클라가 페이지 mount 마다 갱신해 setTimeout 재등록.
 
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -9,7 +11,13 @@ import { ensureUser } from "@/lib/server/ensureUser";
 import { AUTO_HUNT_DURATION_MS } from "@/adventure/battle/autoHunt";
 
 type StatusResponse =
-  | { active: true; startedAt: string; regionId: string; durationMs: number }
+  | {
+      active: true;
+      startedAt: string;
+      regionId: string;
+      durationMs: number;
+      predictedDeathAt: string | null;
+    }
   | { active: false };
 
 export async function GET() {
@@ -30,5 +38,6 @@ export async function GET() {
     startedAt: u.huntBaselineAt.toISOString(),
     regionId: u.huntRegion ?? "",
     durationMs: AUTO_HUNT_DURATION_MS,
+    predictedDeathAt: u.huntPredictedDeathAt?.toISOString() ?? null,
   } satisfies StatusResponse);
 }

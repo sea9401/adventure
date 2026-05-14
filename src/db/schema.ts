@@ -31,15 +31,18 @@ export const users = pgTable(
     activeSessionId: text("active_session_id"),
     // 자동 사냥(타이머형 4시간 원정) 상태 — POST /api/hunt/dispatch 가 박고,
     // POST /api/hunt/collect 가 simMs=min(경과,4시간) 만큼 sim·적용 후 NULL 로 종료.
-    //   huntActive     = 위탁 진행 중 여부
-    //   huntBaselineAt = 위탁 시작 시각 (서버 소유 — 클라 시계 skew·위변조 무관)
-    //   huntRegion     = 위탁 사냥 지역
-    //   huntBaselineHp = 위탁 시작 시점 HP (sim 시작 HP)
+    //   huntActive            = 위탁 진행 중 여부
+    //   huntBaselineAt        = 위탁 시작 시각 (서버 소유 — 클라 시계 skew·위변조 무관)
+    //   huntRegion            = 위탁 사냥 지역
+    //   huntBaselineHp        = 위탁 시작 시점 HP (sim 시작 HP)
+    //   huntPredictedDeathAt  = dispatch 시 pre-sim 으로 예측한 사망 시각 (사망 안 함 → NULL).
+    //                           클라 알림 발화 시각 — collect 시 다시 sim 으로 같은 결정적 결과 검증.
     // (컬럼명은 옛 "오프라인 사냥/서버 권위" 모델 잔재 — 이름 그대로 재활용.)
     huntActive: boolean("hunt_active").notNull().default(false),
     huntRegion: text("hunt_region"),
     huntBaselineHp: integer("hunt_baseline_hp"),
     huntBaselineAt: timestamp("hunt_baseline_at"),
+    huntPredictedDeathAt: timestamp("hunt_predicted_death_at"),
     // lastClaimResult — 마지막 collect 결과 캐시. 응답 손실 후 재클릭 시 그대로 replay.
     // 새 dispatch 시작 시 NULL 로 리셋. lastClaimId 는 "collected" 마커로만 사용 (옛 잔재).
     lastClaimId: text("last_claim_id"),

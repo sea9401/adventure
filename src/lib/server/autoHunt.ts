@@ -434,6 +434,7 @@ export type BaselineUpdate = {
   huntRegion?: string | null;
   huntBaselineHp?: number | null;
   huntBaselineAt?: Date | null;
+  huntPredictedDeathAt?: Date | null;
   lastClaimId?: string | null;
   lastClaimResult?: OfflineSimResult | null;
 };
@@ -450,6 +451,8 @@ export async function updateBaseline(
     set.huntBaselineHp = patch.huntBaselineHp;
   if (patch.huntBaselineAt !== undefined)
     set.huntBaselineAt = patch.huntBaselineAt;
+  if (patch.huntPredictedDeathAt !== undefined)
+    set.huntPredictedDeathAt = patch.huntPredictedDeathAt;
   if (patch.lastClaimId !== undefined) set.lastClaimId = patch.lastClaimId;
   if (patch.lastClaimResult !== undefined)
     set.lastClaimResult = patch.lastClaimResult;
