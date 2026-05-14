@@ -31,27 +31,27 @@ describe("computeShopOutcome", () => {
 
   it("buy_potion — 캡 초과분은 잘리고 잘린 만큼만 과금", () => {
     const r = computeShopOutcome(
-      { ...base(), potions: { potion_heal_s: 8 } }, // base cap 10 → room 2
+      { ...base(), potions: { potion_heal_s: 13 } }, // base cap 15 → room 2
       { kind: "buy_potion", id: "potion_heal_s", quantity: 5 },
     );
-    expect(r.potions.potion_heal_s).toBe(10);
+    expect(r.potions.potion_heal_s).toBe(15);
     expect(r.applied.quantity).toBe(2);
     expect(r.newGold).toBe(98);
   });
 
   it("buy_potion — 캡 보너스만큼 더 살 수 있음", () => {
     const r = computeShopOutcome(
-      { ...base(), potions: { potion_heal_s: 10 }, potionCapacityBonus: 3 },
+      { ...base(), potions: { potion_heal_s: 15 }, potionCapacityBonus: 3 },
       { kind: "buy_potion", id: "potion_heal_s", quantity: 10 },
     );
-    expect(r.potions.potion_heal_s).toBe(13);
+    expect(r.potions.potion_heal_s).toBe(18);
     expect(r.applied.quantity).toBe(3);
   });
 
   it("buy_potion — 캡 가득이면 full", () => {
     expect(() =>
       computeShopOutcome(
-        { ...base(), potions: { potion_heal_s: 10 } },
+        { ...base(), potions: { potion_heal_s: 15 } },
         { kind: "buy_potion", id: "potion_heal_s", quantity: 1 },
       ),
     ).toThrow(ShopError);

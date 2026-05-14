@@ -195,12 +195,12 @@ describe("computeCraftOutcome — 배치(quantity > 1)", () => {
     expect(input.materials.mana_dust).toBe(3);
   });
 
-  it("포션 누적이 한도 초과면 potion_full — 5개 만들면 11이 되어 한도(10) 초과", () => {
+  it("포션 누적이 한도 초과면 potion_full — 5개 만들면 16이 되어 한도(15) 초과", () => {
     const input = {
       ...base(),
       known: ["potion_heal_s_dust"],
       materials: { mana_dust: 99 },
-      potions: { potion_heal_s: 6 }, // 6 + 5 = 11 > 10(기본)
+      potions: { potion_heal_s: 11 }, // 11 + 5 = 16 > 15(기본)
     };
     expect(() =>
       computeCraftOutcome(input, "potion_heal_s_dust", { quantity: 5 }),
