@@ -18,7 +18,10 @@ export type RegionId =
   | "volcanic_badlands"
   | "skyreach"
   | "starspire"
+  | "star_corridor"
+  | "star_haven"
   | "skyfolk_ruins"
+  | "throne_road"
   | "apex_throne"
   // 해안 지선 (디올라에서 남쪽으로 갈라지는 막다른 라인)
   | "tideflats"
@@ -114,7 +117,9 @@ export const WORLD_MAP: WorldMap = {
   // 디올라(660,80)에서 남쪽으로 갈라지는 해안 지선(조수 갯벌→소만→산호초 섬)으로 height 500→640 확장.
   // 시작 마을(160,380)에서 서쪽-아래로 갈라지는 서편 옛길(옛길→마른나루→옛 변경 성채)을 좌하단
   // 빈 공간에 깔면서 height 640→700 확장.
-  viewBox: { width: 2440, height: 700 },
+  // 천공 성지(2360, 150) 에서 남쪽으로 꺾어 starspire/star_corridor/star_haven/skyfolk_ruins/
+  // throne_road/apex_throne 일렬로 내려가며 height 700→820 확장. 모두 x=2360 라인.
+  viewBox: { width: 2440, height: 820 },
   regions: [
     {
       id: "village",
@@ -341,12 +346,14 @@ export const WORLD_MAP: WorldMap = {
       tags: ["town"],
       recommendedLevel: 60,
     },
+    // 천공 성지 남쪽 라인 — starspire → star_corridor → star_haven(town) → skyfolk_ruins
+    //   → throne_road → apex_throne. 모두 x=2360 일렬, y 95 간격.
     {
       id: "starspire",
       name: "별의 첨탑",
       description:
         "천공 성지의 옛 문이 다시 열리며 드러난, 별빛을 떠받친다 전해지는 천공 첨탑. 구름층 너머에 떠 있는 옛 천공인의 군도와 첨탑 정상에는 봉인된 수호자가 잠들어 있다.",
-      position: { x: 2540, y: 60 },
+      position: { x: 2360, y: 245 },
       biome: "mountain",
       enemies: ["별빛 정찰자", "구름 사냥꾼", "운명 직조자"],
       encounterWeights: {
@@ -357,11 +364,37 @@ export const WORLD_MAP: WorldMap = {
       recommendedLevel: 70,
     },
     {
+      id: "star_corridor",
+      name: "별빛 회랑",
+      description:
+        "별의 첨탑 정상에서 폐도로 이어지는 별빛의 회랑. 첨탑의 별빛이 끊긴 자리에 옛 천공인의 흔적이 떠도는 사냥터.",
+      position: { x: 2360, y: 340 },
+      biome: "mountain",
+      enemies: ["회랑 정찰자", "별빛 망령", "회랑의 골렘"],
+      encounterWeights: {
+        "회랑 정찰자": 35,
+        "별빛 망령": 40,
+        "회랑의 골렘": 25,
+      },
+      recommendedLevel: 75,
+    },
+    {
+      id: "star_haven",
+      name: "별바다",
+      description:
+        "별빛 회랑 끝에 남은 마지막 천공인 정거장. 별을 보살피던 자들의 후예가 작은 등을 켜 두고 폐도로 향하는 자들을 맞이한다.",
+      position: { x: 2360, y: 435 },
+      biome: "village",
+      enemies: [],
+      tags: ["town"],
+      recommendedLevel: 80,
+    },
+    {
       id: "skyfolk_ruins",
       name: "선인의 폐도",
       description:
-        "별의 첨탑을 오른 자에게만 드러나는 옛 천공인의 폐도. 별빛으로 살아남은 마지막 잔재들이 무너진 첨탑 사이를 떠돌며 침입자의 발을 잡는다.",
-      position: { x: 2720, y: -40 },
+        "별바다 너머 옛 천공인의 폐도. 별빛으로 살아남은 마지막 잔재들이 무너진 첨탑 사이를 떠돌며 침입자의 발을 잡는다.",
+      position: { x: 2360, y: 530 },
       biome: "ruins",
       enemies: ["폐도 정찰병", "천공인 전사", "옛 천공의 골렘"],
       encounterWeights: {
@@ -372,11 +405,26 @@ export const WORLD_MAP: WorldMap = {
       recommendedLevel: 80,
     },
     {
+      id: "throne_road",
+      name: "옥좌의 길",
+      description:
+        "폐도 너머 옥좌로 이어지는 옛 황성의 길. 봉인의 파편이 굴러다니고 호위병의 잔재가 길목마다 일어선다.",
+      position: { x: 2360, y: 625 },
+      biome: "ruins",
+      enemies: ["길의 정찰관", "황성 호위병", "봉인 파편"],
+      encounterWeights: {
+        "길의 정찰관": 35,
+        "황성 호위병": 40,
+        "봉인 파편": 25,
+      },
+      recommendedLevel: 85,
+    },
+    {
       id: "apex_throne",
       name: "창공의 옥좌",
       description:
-        "선인의 폐도 가장 깊은 곳, 옛 천공인 마지막 황제가 별빛 자체를 봉인했다는 옥좌. 마지막 시험을 통과한 자에게만 별빛이 완전히 열린다.",
-      position: { x: 2900, y: -140 },
+        "옥좌의 길 끝, 옛 천공인 마지막 황제가 별빛 자체를 봉인했다는 옥좌. 마지막 시험을 통과한 자에게만 별빛이 완전히 열린다.",
+      position: { x: 2360, y: 720 },
       biome: "mountain",
       enemies: ["별빛 사도", "옥좌의 호위", "봉인된 황좌 골렘"],
       encounterWeights: {
@@ -578,21 +626,33 @@ export const WORLD_MAP: WorldMap = {
         reason: "화산의 심장을 쓰러뜨려야 성지로 가는 길이 열린다.",
       },
     },
-    // 별의 첨탑 — 천공 성지에서 첨탑으로. trial 5번으로 진입.
+    // 천공 성지 남쪽 라인 — skyreach → starspire → star_corridor → star_haven (마을)
+    //   → skyfolk_ruins → throne_road → apex_throne. 사냥터마다 trial 5, 마을 진입은 직접.
     {
       from: "skyreach",
       to: "starspire",
       requires: { kind: "trial", battles: 5, enemiesFrom: "starspire" },
     },
-    // 선인의 폐도 — 별의 첨탑 위. trial 5번.
     {
       from: "starspire",
+      to: "star_corridor",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "star_corridor" },
+    },
+    // 별빛 회랑 → 별바다 (town) — 마을 진입은 trial 없이 직접.
+    { from: "star_corridor", to: "star_haven" },
+    // 별바다 → 선인의 폐도 — 마을 출발 후 다시 trial 5.
+    {
+      from: "star_haven",
       to: "skyfolk_ruins",
       requires: { kind: "trial", battles: 5, enemiesFrom: "skyfolk_ruins" },
     },
-    // 창공의 옥좌 — 선인의 폐도 가장 깊은 곳. trial 5번. 만렙 100 라인의 마지막.
     {
       from: "skyfolk_ruins",
+      to: "throne_road",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "throne_road" },
+    },
+    {
+      from: "throne_road",
       to: "apex_throne",
       requires: { kind: "trial", battles: 5, enemiesFrom: "apex_throne" },
     },
@@ -678,6 +738,21 @@ export const WORLD_MAP: WorldMap = {
     { from: "dustford", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
     { from: "skyreach", to: "dustford", requires: { kind: "visited", regionId: "dustford" } },
     { from: "dustford", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
+    // 별바다 — 다른 마을들과 직통 이동 (천공 라인의 endgame 허브).
+    { from: "village", to: "star_haven", requires: { kind: "visited", regionId: "star_haven" } },
+    { from: "star_haven", to: "village", requires: { kind: "visited", regionId: "village" } },
+    { from: "diola", to: "star_haven", requires: { kind: "visited", regionId: "star_haven" } },
+    { from: "star_haven", to: "diola", requires: { kind: "visited", regionId: "diola" } },
+    { from: "unhyang", to: "star_haven", requires: { kind: "visited", regionId: "star_haven" } },
+    { from: "star_haven", to: "unhyang", requires: { kind: "visited", regionId: "unhyang" } },
+    { from: "windvale", to: "star_haven", requires: { kind: "visited", regionId: "star_haven" } },
+    { from: "star_haven", to: "windvale", requires: { kind: "visited", regionId: "windvale" } },
+    { from: "saltmarsh", to: "star_haven", requires: { kind: "visited", regionId: "star_haven" } },
+    { from: "star_haven", to: "saltmarsh", requires: { kind: "visited", regionId: "saltmarsh" } },
+    { from: "dustford", to: "star_haven", requires: { kind: "visited", regionId: "star_haven" } },
+    { from: "star_haven", to: "dustford", requires: { kind: "visited", regionId: "dustford" } },
+    { from: "skyreach", to: "star_haven", requires: { kind: "visited", regionId: "star_haven" } },
+    { from: "star_haven", to: "skyreach", requires: { kind: "visited", regionId: "skyreach" } },
   ],
 };
 
