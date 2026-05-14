@@ -236,6 +236,21 @@ export const MATERIALS = {
     price: 80,
     inShop: false,
   },
+  // ── 선인의 폐도 재료 ─────────────────────────────────────────────────────
+  stellar_essence: {
+    id: "stellar_essence",
+    name: "별의 정수",
+    description: "옛 천공인이 별빛을 한 점에 가둬 둔 정수. 손에 쥐면 별 한 자루의 무게가 그대로 실린다.",
+    price: 110,
+    inShop: false,
+  },
+  aether_alloy: {
+    id: "aether_alloy",
+    name: "에테르 합금",
+    description: "선인의 폐도 골렘 안쪽에서만 꺼낼 수 있는, 별빛과 에테르를 함께 두드려 짠 단단하면서 가벼운 합금.",
+    price: 180,
+    inShop: false,
+  },
   // 통화성 재료 — 잉여 장비/재료를 대장간 분해실에서 갈아내면 가루처럼 부서지며 쌓인다.
   // 어디든 통하는 작은 마력의 결정이라, 회복약 라인의 통합 재료로 쓰인다.
   // inShop: false (상점 미취급) — 분해로만 얻고, 회복약 제작으로 소진한다.

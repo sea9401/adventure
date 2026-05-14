@@ -18,6 +18,7 @@ export type RegionId =
   | "volcanic_badlands"
   | "skyreach"
   | "starspire"
+  | "skyfolk_ruins"
   // 해안 지선 (디올라에서 남쪽으로 갈라지는 막다른 라인)
   | "tideflats"
   | "saltmarsh"
@@ -354,6 +355,21 @@ export const WORLD_MAP: WorldMap = {
       },
       recommendedLevel: 70,
     },
+    {
+      id: "skyfolk_ruins",
+      name: "선인의 폐도",
+      description:
+        "별의 첨탑을 오른 자에게만 드러나는 옛 천공인의 폐도. 별빛으로 살아남은 마지막 잔재들이 무너진 첨탑 사이를 떠돌며 침입자의 발을 잡는다.",
+      position: { x: 2720, y: -40 },
+      biome: "ruins",
+      enemies: ["폐도 정찰병", "천공인 전사", "옛 천공의 골렘"],
+      encounterWeights: {
+        "폐도 정찰병": 30,
+        "천공인 전사": 40,
+        "옛 천공의 골렘": 30,
+      },
+      recommendedLevel: 80,
+    },
     // ── 해안 지선 (diola → tideflats → saltmarsh → reef_isle) ───────────────
     // 폐허(Lv9)~산기슭(Lv18) 구간에 산으로 가는 길과 나란히 놓인 막다른 바닷길.
     // 디올라(660,80) 남쪽 빈 공간으로 내려가며, height 를 640 으로 늘려 자리를 만든다.
@@ -551,6 +567,12 @@ export const WORLD_MAP: WorldMap = {
       from: "skyreach",
       to: "starspire",
       requires: { kind: "trial", battles: 5, enemiesFrom: "starspire" },
+    },
+    // 선인의 폐도 — 별의 첨탑 위. trial 5번.
+    {
+      from: "starspire",
+      to: "skyfolk_ruins",
+      requires: { kind: "trial", battles: 5, enemiesFrom: "skyfolk_ruins" },
     },
     // 해안 지선 (diola → tideflats → saltmarsh → reef_isle).
     // 산호초 섬은 뱃사공 해랑이 배를 내줘야 — 소만 원로 여울의 신임을 얻고(saltmarsh_vouched),

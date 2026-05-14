@@ -679,6 +679,90 @@ export const ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
+  // ── 선인의 폐도 무구 5종 — 천공인의 왕 협동 처치 보상 (별 라인의 한 단계 위). ──
+  // 무기 atk +16(검/방패) / +18(창/너클) 공통(제작 `일반` 기준) + 보조 스탯.
+  aether_blade: {
+    name: "에테르검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+16" },
+      { label: "힘", value: "+8" },
+    ],
+    bonus: { atk: 16, str: 8 },
+    description: "에테르 합금을 별의 정수에 담갔다 단조한 한손 대검. 칼날을 휘두를 때마다 옛 별빛이 결을 따라 흐른다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  aether_aegis: {
+    name: "에테르 방패",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+16" },
+      { label: "활력", value: "+9" },
+    ],
+    bonus: { atk: 16, vit: 9 },
+    description: "에테르 합금을 겹쳐 별의 정수로 결을 잡은 방패형 무기. 막아낼 때마다 별빛의 결이 적의 충격을 흩는다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  aether_lance: {
+    name: "에테르창",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+18" },
+      { label: "민첩", value: "+9" },
+    ],
+    bonus: { atk: 18, dex: 9 },
+    description: "별의 정수로 균형을 잡고 에테르 합금 창끝을 깎아 박은 긴 창. 끝에서 별빛이 옛 천공인의 마지막 노래처럼 떨린다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  aether_grip: {
+    name: "에테르 너클",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+18" },
+      { label: "행운", value: "+9" },
+    ],
+    bonus: { atk: 18, luk: 9 },
+    description: "에테르 합금을 깎아 손등에 채운 너클. 한 방 한 방이 옛 천공인이 별을 떨궜다는 어느 순간을 닮았다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  aether_mantle: {
+    name: "에테르 망토",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+7" },
+      { label: "속도", value: "+7" },
+      { label: "활력", value: "+3" },
+    ],
+    bonus: { dex: 7, spd: 7, vit: 3 },
+    description: "별의 정수를 짜낸 실로 짠 망토. 두르면 발걸음이 가벼워지고 어깨가 든든해진다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  // 천공인의 관 — 천공인의 왕 협동 legend 티어 1% 드랍 (물욕템).
+  // accessory 슬롯, 운봉령/별빛 두루마기 위의 분포 — 거래 불가.
+  skyfolk_crown: {
+    name: "천공인의 관",
+    slot: "accessory",
+    stats: [
+      { label: "공격력", value: "+6" },
+      { label: "방어력", value: "+6" },
+      { label: "힘", value: "+3" },
+      { label: "민첩", value: "+3" },
+      { label: "활력", value: "+3" },
+      { label: "속도", value: "+3" },
+      { label: "행운", value: "+3" },
+    ],
+    bonus: { atk: 6, def: 6, str: 3, dex: 3, vit: 3, spd: 3, luk: 3 },
+    description: "옛 천공인의 마지막 왕이 별빛에 두고 떠난 관. 닿은 자는 어느 결로도 꺾이지 않는다.",
+    rarity: "unique",
+    tradable: false,
+    tier: 5,
+  } satisfies EquipItem,
+
   // ── 히든 퀘스트 보상 (§11) — 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────
   // 월광검: 볼드 ↔ 만월 옛 합작 무기를 마저 완성한 것(hidden-blacksmith-duel). 운봉 무기 한 칸 위.
   moonlight_blade: {
