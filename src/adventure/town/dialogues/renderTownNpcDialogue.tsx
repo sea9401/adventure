@@ -89,6 +89,7 @@ export function renderTownNpcDialogue(
           onClose={close}
           quests={quests}
           completeQuest={completeQuest}
+          inventory={inventory}
         />
       );
     case "village_woodcutter_jimmy":
