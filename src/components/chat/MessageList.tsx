@@ -81,7 +81,7 @@ export function MessageList({
                 <button
                   type="button"
                   onClick={() => onSelectName(m.name)}
-                  title="쪽지 보내기"
+                  title="프로필 보기"
                   className="rounded font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
                 >
                   {m.name}

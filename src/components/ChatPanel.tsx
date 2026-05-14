@@ -13,7 +13,7 @@ import {
   type ChatItemRef,
 } from "@/lib/chat-item-link";
 import { useGame } from "@/adventure/GameContext";
-import { SendMessageModal } from "@/adventure/marketplace/SendMessageModal";
+import { PlayerProfileModal } from "@/adventure/profile/PlayerProfileModal";
 import { ChatItemPicker } from "./ChatItemPicker";
 import { postMessage, translateChatError } from "./chat/chatApi";
 import { usePresencePoll } from "./chat/usePresencePoll";
@@ -60,7 +60,7 @@ export function ChatPanel({
   const [presenceOpen, setPresenceOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pmTarget, setPmTarget] = useState<string | null>(null);
+  const [profileTarget, setProfileTarget] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   // 채팅 / 알림(협동 보스 등 시스템 메시지) 탭 분리.
   const [tab, setTab] = useState<"chat" | "notice">("chat");
@@ -234,8 +234,8 @@ export function ChatPanel({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => setPmTarget(u.name)}
-                        title="쪽지 보내기"
+                        onClick={() => setProfileTarget(u.name)}
+                        title="프로필 보기"
                         className="rounded font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
                       >
                         {u.name}
@@ -283,7 +283,7 @@ export function ChatPanel({
           open={open}
           tab={tab}
           messages={shownMessages}
-          onSelectName={setPmTarget}
+          onSelectName={setProfileTarget}
         />
 
         {error && (
@@ -306,10 +306,10 @@ export function ChatPanel({
         )}
       </div>
 
-      {pmTarget && (
-        <SendMessageModal
-          initialRecipient={pmTarget}
-          onClose={() => setPmTarget(null)}
+      {profileTarget && (
+        <PlayerProfileModal
+          name={profileTarget}
+          onClose={() => setProfileTarget(null)}
         />
       )}
 
