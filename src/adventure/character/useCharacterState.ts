@@ -35,7 +35,7 @@ function todayLocalDateKey(): string {
 }
 
 export const initialCharacterState: CharacterDynamicState = {
-  hp: 47,
+  hp: 97,
   mp: 30,
   level: 1,
   exp: 0,
