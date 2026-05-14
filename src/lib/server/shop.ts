@@ -20,6 +20,7 @@ import {
   getPotionSellPrice,
 } from "@/adventure/data/sellPrices";
 import {
+  SHOP_PURCHASE_QTY_MAX,
   SHOP_UNLOCK_STORAGE_KEY,
   SHOP_UNLOCK_THRESHOLD,
 } from "@/adventure/shop/constants";
@@ -100,6 +101,10 @@ export function computeShopOutcome(
 ): ShopComputeResult {
   const qty = action.quantity;
   if (!Number.isInteger(qty) || qty < 1) throw new ShopError("invalid_quantity");
+  // 구매는 한 번에 최대 SHOP_PURCHASE_QTY_MAX 개. 판매는 인벤 보유 한도가 곧 상한이라 별도 제한 없음.
+  if (action.kind.startsWith("buy_") && qty > SHOP_PURCHASE_QTY_MAX) {
+    throw new ShopError("invalid_quantity");
+  }
   if (!Number.isFinite(input.gold)) throw new ShopError("corrupt_gold");
 
   const potions = { ...input.potions };

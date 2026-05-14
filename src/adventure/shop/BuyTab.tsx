@@ -14,6 +14,7 @@ import type { InventoryState } from "../inventory/useInventory";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { QtyStepper } from "./QtyStepper";
+import { SHOP_PURCHASE_QTY_MAX } from "./constants";
 
 // 상점에서 살 수 있는 장비 — EquipItem.shopPrice 가 지정된 것 (현재 초반 발판용 싸구려 한두 종).
 const SHOP_EQUIPMENT_IDS = (Object.keys(ITEMS) as ItemId[]).filter(
@@ -186,7 +187,9 @@ function BuyRow({
   const [qty, setQty] = useState(1);
   const room = cap !== undefined ? Math.max(0, cap - owned) : Infinity;
   const isFull = cap !== undefined && owned >= cap;
-  const effectiveQty = Math.min(qty, room);
+  // 1회 구매 상한 = min(상점 한도 99, 인벤 여유분). 둘 다 정수.
+  const qtyMax = Math.min(SHOP_PURCHASE_QTY_MAX, room);
+  const effectiveQty = Math.min(qty, qtyMax);
   const totalCost = price * effectiveQty;
   const canAfford = gold >= totalCost;
   const canPurchase = !isFull && effectiveQty > 0 && canAfford;
@@ -216,7 +219,7 @@ function BuyRow({
             qty={qty}
             setQty={setQty}
             min={1}
-            max={cap !== undefined ? room || 1 : undefined}
+            max={qtyMax || 1}
             disabled={isFull}
           />
           <button
