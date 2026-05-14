@@ -99,6 +99,42 @@ describe("computeShopOutcome", () => {
     expect(r.newGold).toBe(6); // price 1 × 4
   });
 
+  it("buy_material — qty 99 은 통과", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 100 },
+      { kind: "buy_material", id: "branch", quantity: 99 },
+    );
+    expect(r.materials.branch).toBe(99);
+    expect(r.newGold).toBe(1); // price 1 × 99
+  });
+
+  it("buy_material — qty 100 은 invalid_quantity (상점 1회 구매 상한)", () => {
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), gold: 1000 },
+        { kind: "buy_material", id: "branch", quantity: 100 },
+      ),
+    ).toThrow(/invalid_quantity/);
+  });
+
+  it("buy_consumable — qty 100 은 invalid_quantity", () => {
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), gold: 100000 },
+        { kind: "buy_consumable", id: "scroll_town_return", quantity: 100 },
+      ),
+    ).toThrow(/invalid_quantity/);
+  });
+
+  it("sell_material — qty 100 도 허용 (상점 상한은 buy 만)", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 0, materials: { slime_core: 100 } },
+      { kind: "sell_material", id: "slime_core", quantity: 100 },
+    );
+    expect(r.materials.slime_core).toBe(0);
+    expect(r.newGold).toBeGreaterThan(0);
+  });
+
   it("buy_consumable — 골드 차감 + 소모품 증가", () => {
     const r = computeShopOutcome(
       { ...base(), gold: 10 },
