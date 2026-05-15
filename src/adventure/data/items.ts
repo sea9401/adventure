@@ -2245,6 +2245,78 @@ export const ITEMS = {
     rarity: "uncommon",
     tier: 5,
   } satisfies EquipItem,
+
+  // ── MP+INT 패키지 PR-2 (마법 라인 dormant) ────────────────────────────
+  // 정의만 존재. 상점·드랍·제작 어디서도 노출되지 않음. PR-3 마법 스킬 출시 시점에 노출
+  // 경로 (shopPrice / 드랍 / 레시피) 를 wire 한다. INT 효과 자체는 PR-3 까지 dormant —
+  // 끼면 INT 가 올라가지만 마법 스킬이 없어 magicAtk 가 데미지로 환산되지 않는다.
+  wisdom_amulet: {
+    name: "지혜의 부적",
+    slot: "accessory",
+    stats: [{ label: "지능", value: "+2" }],
+    bonus: { int: 2 },
+    description: "오래된 책장 사이에서 발견된 작은 부적. 손에 쥐면 머리가 맑아진다.",
+    tier: 1,
+  } satisfies EquipItem,
+  sage_seal: {
+    name: "현자의 인장",
+    slot: "accessory",
+    stats: [
+      { label: "지능", value: "+3" },
+      { label: "마법 공격력", value: "+2" },
+    ],
+    bonus: { int: 3, magicAtk: 2 },
+    description: "현자의 서명이 새겨진 작은 인장. 손가락에 끼우면 마력의 갈래가 또렷이 느껴진다.",
+    tier: 2,
+  } satisfies EquipItem,
+  arcane_crystal: {
+    name: "마력의 결정",
+    slot: "accessory",
+    stats: [
+      { label: "지능", value: "+5" },
+      { label: "마법 공격력", value: "+3" },
+      { label: "마법 방어력", value: "+2" },
+    ],
+    bonus: { int: 5, magicAtk: 3, magicDef: 2 },
+    description: "마력이 응축되어 굳은 보랏빛 결정. 지니면 마력의 흐름을 직접 다룰 수 있다.",
+    rarity: "uncommon",
+    tier: 3,
+  } satisfies EquipItem,
+  apprentice_robe: {
+    name: "견습 마법사 로브",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+1" },
+      { label: "지능", value: "+2" },
+    ],
+    bonus: { def: 1, int: 2 },
+    description: "마법 견습생용으로 만들어진 헐렁한 로브. 천 옷보다 마력 친화적이다.",
+    tier: 1,
+  } satisfies EquipItem,
+  mage_robe: {
+    name: "마법사 로브",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+3" },
+      { label: "지능", value: "+4" },
+    ],
+    bonus: { def: 3, int: 4 },
+    description: "마력실로 짠 정식 마법사 로브. 걸치면 주문의 갈래가 또렷해진다.",
+    tier: 2,
+  } satisfies EquipItem,
+  sage_vestments: {
+    name: "현자의 의복",
+    slot: "armor",
+    stats: [
+      { label: "방어력", value: "+5" },
+      { label: "지능", value: "+6" },
+      { label: "마법 방어력", value: "+3" },
+    ],
+    bonus: { def: 5, int: 6, magicDef: 3 },
+    description: "여러 세대의 현자가 물려 입던 의복. 마법의 충격을 부드럽게 흘려보낸다.",
+    rarity: "uncommon",
+    tier: 3,
+  } satisfies EquipItem,
 } as const;
 
 export type ItemId = keyof typeof ITEMS;
