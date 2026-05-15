@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Trophy, UsersThree } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
@@ -8,7 +9,6 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
-import { PlayerProfileModal } from "@/adventure/profile/PlayerProfileModal";
 import {
   useGuildRankings,
   useRankings,
@@ -61,8 +61,8 @@ const valueFor = (
 };
 
 export function RankingsView() {
+  const router = useRouter();
   const [metric, setMetric] = useState<RankingMetric>("level");
-  const [profileName, setProfileName] = useState<string | null>(null);
   return (
     <div className="space-y-3">
       <Card as="section" padding="sm">
@@ -79,14 +79,7 @@ export function RankingsView() {
       ) : (
         <UserRankingsBody
           metric={metric}
-          onSelectName={(n) => setProfileName(n)}
-        />
-      )}
-
-      {profileName && (
-        <PlayerProfileModal
-          name={profileName}
-          onClose={() => setProfileName(null)}
+          onSelectName={(n) => router.push(`/profile/${encodeURIComponent(n)}`)}
         />
       )}
     </div>
