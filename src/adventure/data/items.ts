@@ -108,6 +108,8 @@ export const ITEMS = {
     bonus: { def: 0 },
     description: "평범한 천으로 만든 옷.",
     tradable: false,
+    // 시작 방어구 분실/판매 시 재구매용 — 방어력 +0 이라 상징적 가격(5g). 도감 등록 길도 열어준다.
+    shopPrice: 5,
     tier: 1,
   } satisfies EquipItem,
   mom_amulet: {
@@ -117,6 +119,9 @@ export const ITEMS = {
     bonus: { luk: 2 },
     description: "어머니의 사랑이 깃든 작은 부적.",
     tradable: false,
+    // 시작 액세서리 분실 시 재구매 + 도감 등록 길. 같은 +2 액세서리 활력의 반지(30g) 와
+    // 일관 — 정상 진행 시엔 처음부터 갖고 있고, 분실 시에만 재구매 인센티브.
+    shopPrice: 30,
     tier: 1,
   } satisfies EquipItem,
 
