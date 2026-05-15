@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CaretDown,
   ChatCircle,
@@ -13,7 +14,6 @@ import {
   type ChatItemRef,
 } from "@/lib/chat-item-link";
 import { useGame } from "@/adventure/GameContext";
-import { PlayerProfileModal } from "@/adventure/profile/PlayerProfileModal";
 import { ChatItemPicker } from "./ChatItemPicker";
 import { postMessage, translateChatError } from "./chat/chatApi";
 import { usePresencePoll } from "./chat/usePresencePoll";
@@ -56,11 +56,11 @@ export function ChatPanel({
   onSeen?: (kind: "chat" | "notice", lastId: number) => void;
 }) {
   const game = useGame();
+  const router = useRouter();
   const presence = usePresencePoll(open);
   const [presenceOpen, setPresenceOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [profileTarget, setProfileTarget] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   // 채팅 / 알림(협동 보스 등 시스템 메시지) 탭 분리.
   const [tab, setTab] = useState<"chat" | "notice">("chat");
@@ -234,7 +234,9 @@ export function ChatPanel({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => setProfileTarget(u.name)}
+                        onClick={() =>
+                          router.push(`/profile/${encodeURIComponent(u.name)}`)
+                        }
                         title="프로필 보기"
                         className="rounded font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
                       >
@@ -283,7 +285,9 @@ export function ChatPanel({
           open={open}
           tab={tab}
           messages={shownMessages}
-          onSelectName={setProfileTarget}
+          onSelectName={(n) =>
+            router.push(`/profile/${encodeURIComponent(n)}`)
+          }
         />
 
         {error && (
@@ -305,13 +309,6 @@ export function ChatPanel({
           />
         )}
       </div>
-
-      {profileTarget && (
-        <PlayerProfileModal
-          name={profileTarget}
-          onClose={() => setProfileTarget(null)}
-        />
-      )}
 
       {pickerOpen && (
         <ChatItemPicker
