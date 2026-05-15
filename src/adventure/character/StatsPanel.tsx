@@ -29,13 +29,14 @@ export function StatsPanel({
 
       <div>
         <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          능력치{totalStats ? " (기본 + 장비)" : ""}
+          능력치{totalStats ? " (기본 · 장비)" : ""}
         </div>
         <div className="mt-2 grid grid-cols-5 gap-2">
           {STAT_KEYS.map((k) => {
             const base = stats[k];
             const finalValue = total[k];
             const equipBonus = finalValue - base;
+            const hasBonus = totalStats !== undefined && equipBonus !== 0;
             return (
               <div
                 key={k}
@@ -44,20 +45,26 @@ export function StatsPanel({
                 <div className="text-xs text-zinc-500 dark:text-zinc-400">
                   {STAT_LABELS[k]}
                 </div>
+                {/* 큰 글자 = 기본(베이스 + 분배). 장비 보너스가 있어야만 그 아래로 갈라진다. */}
                 <div className="mt-0.5 text-base font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
-                  {finalValue}
+                  {base}
                 </div>
-                {equipBonus !== 0 && (
-                  <div
-                    className={`text-[10px] tabular-nums ${
-                      equipBonus > 0
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-rose-500 dark:text-rose-400"
-                    }`}
-                  >
-                    {equipBonus > 0 ? "+" : ""}
-                    {equipBonus}
-                  </div>
+                {hasBonus && (
+                  <>
+                    <div
+                      className={`text-[10px] tabular-nums ${
+                        equipBonus > 0
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-rose-500 dark:text-rose-400"
+                      }`}
+                    >
+                      장비 {equipBonus > 0 ? "+" : ""}
+                      {equipBonus}
+                    </div>
+                    <div className="text-[10px] tabular-nums text-zinc-500 dark:text-zinc-400">
+                      = {finalValue}
+                    </div>
+                  </>
                 )}
               </div>
             );
