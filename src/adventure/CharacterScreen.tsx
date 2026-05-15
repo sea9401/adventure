@@ -17,6 +17,7 @@ import { CharacterMini } from "@/adventure/character/CharacterMini";
 import { SkillsView } from "@/adventure/character/SkillsView";
 import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { AdventureLogView } from "@/adventure/log/AdventureLogView";
+import { computeCompendiumReward } from "@/adventure/log/compendiumReward";
 import { InventoryView } from "@/adventure/InventoryView";
 import { RecentLogView } from "@/adventure/RecentLogView";
 import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
@@ -39,6 +40,7 @@ export function CharacterScreen() {
     characterFeats,
     skillLayout,
     training,
+    addNotification,
     handleEquipFromInventory,
     handleUnequip,
     handleDiscardFromInventory,
@@ -207,9 +209,39 @@ export function CharacterScreen() {
   }
 
   if (subView === "adventure-log") {
+    const reward = computeCompendiumReward(adventureLog.log);
+    const handleClaimCompendium = () => {
+      if (reward.available <= 0) return;
+      const n = reward.available;
+      training.addPoints(n);
+      adventureLog.addCompendiumClaimed(n);
+      addNotification(
+        "info",
+        `도감 마일스톤으로 단련 포인트 +${n} 수령했다.`,
+      );
+    };
     return (
       <div className="space-y-3">
-        <SubViewHeader title="모험의 서" onBack={back} />
+        <SubViewHeader
+          title="모험의 서"
+          onBack={back}
+          right={
+            reward.available > 0 ? (
+              <button
+                type="button"
+                onClick={handleClaimCompendium}
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-amber-50 px-2.5 py-1.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-500/60 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60"
+              >
+                <Sparkle size={14} weight="duotone" />
+                단련 +{reward.available} 수령
+              </button>
+            ) : undefined
+          }
+        />
+        <p className="px-1 text-xs text-zinc-500 dark:text-zinc-400">
+          도감 등록 {reward.counts.total}개 · 다음 단련 +1까지{" "}
+          {reward.toNext}개
+        </p>
         <AdventureLogView
           log={adventureLog.log}
           stats={character.stats}

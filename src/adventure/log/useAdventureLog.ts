@@ -24,6 +24,7 @@ function readInitial(raw: unknown): AdventureLog {
     battleLosses: parsed.battleLosses ?? 0,
     chatCount: parsed.chatCount ?? 0,
     healingCount: parsed.healingCount ?? 0,
+    compendiumPointsClaimed: parsed.compendiumPointsClaimed ?? 0,
   };
 }
 
@@ -155,6 +156,24 @@ export function useAdventureLog() {
     }));
   }, []);
 
+  // 모험의 서 등록 마일스톤(20개당 단련 +1) 보상 수령 — claimed += n.
+  // n 만큼 단련 포인트를 실제로 더하는 건 호출부(training.addPoints) 책임.
+  const addCompendiumClaimed = useCallback((n: number) => {
+    if (n <= 0) return;
+    setLog((prev) => ({
+      ...prev,
+      compendiumPointsClaimed: (prev.compendiumPointsClaimed ?? 0) + n,
+    }));
+  }, []);
+
+  // 관리자용 — claimed 값을 직접 덮어쓴다. 음수 방어.
+  const setCompendiumClaimed = useCallback((n: number) => {
+    setLog((prev) => ({
+      ...prev,
+      compendiumPointsClaimed: Math.max(0, Math.floor(n)),
+    }));
+  }, []);
+
   // 장비 도감 동기화 — 현재 인벤토리/장착 중인 모든 (장비, 변형)을 도감에 등록(있으면 그대로).
   // 폐기/판매로 빠진 항목은 절대 제거하지 않는다. 인벤토리 변경/장착 변경 때마다 호출(idempotent).
   const syncDiscoveredEquipment = useCallback(
@@ -218,5 +237,7 @@ export function useAdventureLog() {
     incrementBattleLosses,
     incrementChatCount,
     incrementHealingCount,
+    addCompendiumClaimed,
+    setCompendiumClaimed,
   };
 }

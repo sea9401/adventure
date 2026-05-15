@@ -12,6 +12,10 @@ import {
   emptyAdventureLog,
   type AdventureLog,
 } from "@/adventure/log/storage";
+import {
+  COMPENDIUM_ENTRIES_PER_POINT,
+  computeCompendiumReward,
+} from "@/adventure/log/compendiumReward";
 
 export function LogTab() {
   const { readOnly, bump, bumpVersion, showToast } = useAdmin();
@@ -74,6 +78,8 @@ export function LogTab() {
     persist(next);
   };
 
+  const reward = computeCompendiumReward(log);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -93,6 +99,50 @@ export function LogTab() {
           onConfirm={() => persist(emptyAdventureLog())}
         />
       </div>
+
+      <section className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800">
+        <h2 className="text-sm font-semibold">도감 마일스톤 보상</h2>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          등록 {COMPENDIUM_ENTRIES_PER_POINT}개당 단련 포인트 +1. 몬스터는
+          300킬(공개 단계 3) 이상만 카운트.
+        </p>
+        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3 md:grid-cols-6">
+          <RewardStat label="장소" value={reward.counts.places} />
+          <RewardStat label="몬스터(300킬+)" value={reward.counts.monsters} />
+          <RewardStat label="NPC" value={reward.counts.npcs} />
+          <RewardStat label="아이템" value={reward.counts.items} />
+          <RewardStat label="칭호" value={reward.counts.titles} />
+          <RewardStat label="합계" value={reward.counts.total} bold />
+        </div>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="text-xs">
+            <div className="text-zinc-500 dark:text-zinc-400">누적 지급가능</div>
+            <div className="font-mono text-base">{reward.earnedTotal}</div>
+          </div>
+          <div className="text-xs">
+            <div className="text-zinc-500 dark:text-zinc-400">수령 가능</div>
+            <div className="font-mono text-base text-amber-600 dark:text-amber-400">
+              {reward.available}
+            </div>
+          </div>
+          <div className="w-28">
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">
+              수령 누적값
+            </div>
+            <NumberInput
+              value={log.compendiumPointsClaimed ?? 0}
+              min={0}
+              disabled={readOnly}
+              onChange={(n) =>
+                persist({
+                  ...log,
+                  compendiumPointsClaimed: Math.max(0, Math.floor(n)),
+                })
+              }
+            />
+          </div>
+        </div>
+      </section>
 
       <section>
         <h2 className="text-sm font-semibold">몬스터</h2>
@@ -315,6 +365,25 @@ export function LogTab() {
           </table>
         </div>
       </section>
+    </div>
+  );
+}
+
+function RewardStat({
+  label,
+  value,
+  bold,
+}: {
+  label: string;
+  value: number;
+  bold?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-zinc-500 dark:text-zinc-400">{label}</span>
+      <span className={`font-mono ${bold ? "font-semibold" : ""}`}>
+        {value}
+      </span>
     </div>
   );
 }
