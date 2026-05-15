@@ -11,6 +11,12 @@ import {
 } from "@/adventure/character/derivePlayerCombat";
 import { rehydrateEquippedItem } from "@/adventure/character/rehydrateEquip";
 import type { EquippedItem } from "@/adventure/character/types";
+import {
+  isRuneGrade,
+  isRuneId,
+  RUNE_SLOT_COUNT,
+  type EquippedRune,
+} from "@/adventure/data/runes";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { STORY_FLAGS_STORAGE_KEY } from "@/adventure/storyFlags/storage";
 
@@ -29,6 +35,8 @@ type SavedCharacterV2 = {
   equippedFeats?: (string | null)[];
   /** 레거시 — 단일 특기 슬롯 시절 필드. 읽기 호환만. */
   equippedFeat?: string;
+  /** 장착 룬 — 슬롯 인덱스 별. null = 비움. */
+  equippedRunes?: ({ id: string; grade: number } | null)[];
 };
 
 type SavedTrainingV2 = {
@@ -84,6 +92,8 @@ export async function derivePlayerCombatFromSaves(
     character.equippedFeats ??
     (character.equippedFeat ? [character.equippedFeat] : undefined);
 
+  const equippedRunes = rehydrateEquippedRunes(character.equippedRunes);
+
   return derivePlayerCombat({
     level: character.level ?? 1,
     baseStats: baseCharacter.stats,
@@ -91,7 +101,33 @@ export async function derivePlayerCombatFromSaves(
     equipped,
     equippedSkills: character.equippedSkills,
     equippedFeats,
+    equippedRunes,
     storyFlagIds,
     hp: character.hp ?? baseCharacter.hp,
   });
+}
+
+// 서버측 룬 슬롯 정규화 — 클라이언트의 rehydrateEquippedRunes 와 동일 규칙.
+// 부정확하거나 정의 안 된 룬은 null 처리.
+function rehydrateEquippedRunes(
+  saved: unknown,
+): (EquippedRune | null)[] | undefined {
+  if (!Array.isArray(saved)) return undefined;
+  const out: (EquippedRune | null)[] = [];
+  for (let i = 0; i < Math.min(saved.length, RUNE_SLOT_COUNT); i += 1) {
+    const v = saved[i] as { id?: unknown; grade?: unknown } | null | undefined;
+    if (
+      v &&
+      typeof v === "object" &&
+      typeof v.id === "string" &&
+      isRuneId(v.id) &&
+      typeof v.grade === "number" &&
+      isRuneGrade(v.grade)
+    ) {
+      out.push({ id: v.id, grade: v.grade });
+    } else {
+      out.push(null);
+    }
+  }
+  return out;
 }

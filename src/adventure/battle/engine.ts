@@ -86,6 +86,8 @@ export type BattleState = {
   shadowStepActiveThisEnemyTurn: boolean;
   // 회전 운기 (2티어 특기) — 그 전투 누적 회피/크리 보너스(%). 매 플레이어 턴 시작 시 +cyclingChiPerTurn.
   cyclingChiBonus: number;
+  // 연단의 룬 합산 — 포션 회복량 +% (initialBattleState 에서 player.potionHealPct 로 시드).
+  potionHealPct: number;
 };
 
 export type PlayerCombat = {
@@ -188,6 +190,8 @@ export type PlayerCombat = {
   steadfastWillFlat?: number;
   // 회전 운기 — 매 플레이어 턴 시작 시 회피/크리 +N% 누적 (전투 종료까지). 0/undefined = 미장착.
   cyclingChiPerTurn?: number;
+  // 연단의 룬 합산 — 포션 회복량 +%. 0/undefined = 미장착.
+  potionHealPct?: number;
   // ── 5티어 (각 스탯 65 도달) — 만렙 확장 패키지 ────────────────────────
   // 막다른 격노 — 전투 RAMPAGE_START_TURN 턴 경과 후, 매 플레이어 턴 종료 시 ATK 영구 +N 누적. 0/undefined = 미보유.
   rampagePerTurn?: number;
@@ -535,6 +539,7 @@ export function initialBattleState(
     fatedChainCritPending: false,
     shadowStepActiveThisEnemyTurn: false,
     cyclingChiBonus: 0,
+    potionHealPct: player.potionHealPct ?? 0,
   };
 }
 
@@ -1518,7 +1523,8 @@ export function applyPotionEffect(
   playerName: string,
 ): BattleState {
   if (potion.effect.kind === "heal_hp") {
-    const heal = computeHealAmount(potion, state.playerMaxHp);
+    const baseHeal = computeHealAmount(potion, state.playerMaxHp);
+    const heal = Math.floor(baseHeal * (1 + (state.potionHealPct ?? 0) / 100));
     const newHp = Math.min(state.playerMaxHp, state.playerHp + heal);
     const actual = newHp - state.playerHp;
     return {

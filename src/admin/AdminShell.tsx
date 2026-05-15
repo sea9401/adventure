@@ -9,6 +9,7 @@ import { QuestsTab } from "./tabs/QuestsTab";
 import { CraftingTab } from "./tabs/CraftingTab";
 import { LogTab } from "./tabs/LogTab";
 import { MapTab } from "./tabs/MapTab";
+import { RunesTab } from "./tabs/RunesTab";
 import { DataTab } from "./tabs/DataTab";
 import { UsersTab } from "./tabs/UsersTab";
 import { StatsTab } from "./tabs/StatsTab";
@@ -28,6 +29,7 @@ type TabKey =
   | "crafting"
   | "log"
   | "map"
+  | "runes"
   | "data";
 
 type TabGroup = "system" | "edit" | "data";
@@ -44,6 +46,7 @@ const TABS: { key: TabKey; label: string; group: TabGroup }[] = [
   { key: "crafting", label: "제작", group: "edit" },
   { key: "log", label: "모험의 서", group: "edit" },
   { key: "map", label: "지도", group: "edit" },
+  { key: "runes", label: "룬", group: "edit" },
   { key: "data", label: "데이터", group: "data" },
 ];
 
@@ -167,6 +170,7 @@ function ShellInner() {
           {tab === "crafting" && <CraftingTab />}
           {tab === "log" && <LogTab />}
           {tab === "map" && <MapTab />}
+          {tab === "runes" && <RunesTab />}
           {tab === "data" && <DataTab />}
         </main>
       </div>
