@@ -55,6 +55,15 @@ export const ADVENTURE_LOG_KEY = "adventure-log.v2";
 export const MONSTER_RENAMES: Record<string, string> = {
   "호수 정령": "호수 님프",
   두더쥐: "두더지",
+  // 천공 라인 잡몹 — "정찰병/골렘" 어휘 일원화 해소.
+  "별빛 정찰자": "별점술사 잔영",
+  "회랑 정찰자": "떠도는 시녀",
+  "회랑의 골렘": "별궤도 자율기",
+  "폐도 정찰병": "천공인 사관",
+  "옛 천공의 골렘": "폐허의 운기",
+  "길의 정찰관": "황성 의장기수",
+  "옥좌의 호위": "옥좌의 검신",
+  "봉인된 황좌 골렘": "잠든 황좌 거인",
 };
 
 function mergeMonsterEntries(
