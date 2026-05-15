@@ -684,7 +684,7 @@ export const MONSTERS: Record<string, Monster> = {
   // ── 별의 첨탑 (starspire) — 천공 성지 위 Lv70 구간. 협동 보스 별을 지키는 자. ─────
   "별점술사 잔영": {
     name: "별점술사 잔영",
-    image: "/images/monster/starlightscout.webp",
+    image: "/images/monster/starseer_shade.webp",
     tags: ["spirit"],
     hp: 785,
     atk: 70,
@@ -770,7 +770,7 @@ export const MONSTERS: Record<string, Monster> = {
   // ── 별빛 회랑 (star_corridor) — 별의 첨탑 → 선인의 폐도 사이 Lv75 사냥터. 보스 없음. ───
   "떠도는 시녀": {
     name: "떠도는 시녀",
-    image: "/images/monster/cloisterscout.webp",
+    image: "/images/monster/wandering_maid.webp",
     tags: ["spirit"],
     hp: 895,
     atk: 78,
@@ -807,7 +807,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "별궤도 자율기": {
     name: "별궤도 자율기",
-    image: "/images/monster/cloistergolem.webp",
+    image: "/images/monster/orbital_automaton.webp",
     tags: ["golem"],
     hp: 1175,
     atk: 85,
