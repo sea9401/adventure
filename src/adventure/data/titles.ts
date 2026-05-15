@@ -454,6 +454,38 @@ export const TITLES: Record<TitleId, Title> = {
     description: "레벨은 낮은데 지갑만 두툼하다. 운이 좋았거나, 안 자고 했거나.",
     condition: "레벨 10 미만 + 보유 골드 100,000 도달",
   },
+  // 고탑 주간 백분위 — 매주 마감 시 cron 이 batch 부여. F30 이상 자격.
+  tower_weekly_top_1: {
+    id: "tower_weekly_top_1",
+    name: "고탑의 최상위",
+    description:
+      "한 주의 고탑 정상에 발을 디딘 자. 다른 모험가들이 올려다보는 자리에 섰다.",
+    condition: "주간 고탑 최고층 상위 1% (F30 이상 자격)",
+  },
+  tower_weekly_top_5: {
+    id: "tower_weekly_top_5",
+    name: "고탑의 정상권",
+    description: "한 주의 고탑 상위 5% — 끝까지 올라가 본 자만 아는 풍경.",
+    condition: "주간 고탑 최고층 상위 5% (F30 이상 자격)",
+  },
+  tower_weekly_top_10: {
+    id: "tower_weekly_top_10",
+    name: "고탑의 상위",
+    description: "한 주의 고탑 상위 10% — 꾸준히 위를 본 자.",
+    condition: "주간 고탑 최고층 상위 10% (F30 이상 자격)",
+  },
+  tower_weekly_top_25: {
+    id: "tower_weekly_top_25",
+    name: "고탑의 도전자",
+    description: "한 주의 고탑 상위 25% — 몸을 사리지 않은 도전.",
+    condition: "주간 고탑 최고층 상위 25% (F30 이상 자격)",
+  },
+  tower_weekly_top_50: {
+    id: "tower_weekly_top_50",
+    name: "고탑의 등반가",
+    description: "한 주의 고탑 상위 절반 — 그 주의 절반보다는 앞에 섰다.",
+    condition: "주간 고탑 최고층 상위 50% (F30 이상 자격)",
+  },
 };
 
 // 카운터 기반 칭호 — 진행도 source 와 임계값을 한 곳에 정리.

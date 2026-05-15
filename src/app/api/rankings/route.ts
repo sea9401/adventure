@@ -1,8 +1,9 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { kstWeekStartKey } from "@/adventure/tower/weeklyTypes";
 
-const VALID_METRICS = ["level", "fame", "battleCount"] as const;
+const VALID_METRICS = ["level", "fame", "battleCount", "towerWeek"] as const;
 type Metric = (typeof VALID_METRICS)[number];
 const isMetric = (v: string): v is Metric =>
   (VALID_METRICS as readonly string[]).includes(v);
@@ -20,6 +21,8 @@ type RankRow = {
   level: number;
   fame: number;
   battleCount: number;
+  /** towerWeek 한정 — 이번 주 최고층. 다른 metric 에서는 0. */
+  weekHighest: number;
   rank: number;
 };
 
@@ -32,6 +35,7 @@ type CacheEntry = {
 const cache: Map<Metric, CacheEntry> = new Map();
 
 async function fetchRows(metric: Metric): Promise<RankRow[]> {
+  if (metric === "towerWeek") return fetchTowerWeekRows();
   // metric 은 isMetric 으로 검증된 닫힌 enum — sql 템플릿에 안전하게 합성.
   const orderBy =
     metric === "level"
@@ -86,6 +90,55 @@ async function fetchRows(metric: Metric): Promise<RankRow[]> {
     level: Number(r.level),
     fame: Number(r.fame),
     battleCount: Number(r.battle_count),
+    weekHighest: 0,
+    rank: Number(r.rank),
+  }));
+}
+
+// 주간 최고층 랭킹 — tower-weekly.v1 의 weekStartedAt 가 현재 KST 주와 같은 행만 노출.
+// 이전 주 잔여 기록(아직 새 주에 참여 안 한 유저)은 자연 제외 → 리스트는 항상 "이번 주" 만.
+async function fetchTowerWeekRows(): Promise<RankRow[]> {
+  const thisWeek = kstWeekStartKey();
+  const result = await db.execute(sql`
+    WITH stats AS (
+      SELECT
+        u.id AS user_id,
+        COALESCE(u.game_name, p.value->>'name') AS name,
+        COALESCE((c.value->>'level')::int, 1) AS level,
+        COALESCE((c.value->>'fame')::int, 0) AS fame,
+        COALESCE((w.value->>'weekHighest')::int, 0) AS week_highest,
+        COALESCE(w.updated_at, u.created_at) AS updated_at
+      FROM users u
+      INNER JOIN saves_kv w ON w.user_id = u.id AND w.key = 'tower-weekly.v1'
+      LEFT JOIN saves_kv c ON c.user_id = u.id AND c.key = 'character.v2'
+      LEFT JOIN saves_kv p ON p.user_id = u.id AND p.key = 'character-profile.v2'
+      WHERE w.value->>'weekStartedAt' = ${thisWeek}
+        AND COALESCE((w.value->>'weekHighest')::int, 0) > 0
+        AND COALESCE(u.game_name, p.value->>'name') IS NOT NULL
+    ),
+    ranked AS (
+      SELECT *, ROW_NUMBER() OVER (ORDER BY week_highest DESC, updated_at ASC)::int AS rank
+      FROM stats
+    )
+    SELECT user_id, name, level, fame, week_highest, rank
+    FROM ranked
+    ORDER BY rank
+  `);
+  type DbRow = {
+    user_id: string;
+    name: string;
+    level: number;
+    fame: number;
+    week_highest: number;
+    rank: number;
+  };
+  return (result.rows as unknown as DbRow[]).map((r) => ({
+    userId: String(r.user_id),
+    name: String(r.name),
+    level: Number(r.level),
+    fame: Number(r.fame),
+    battleCount: 0,
+    weekHighest: Number(r.week_highest),
     rank: Number(r.rank),
   }));
 }
@@ -142,6 +195,7 @@ export async function GET(req: Request) {
     level: r.level,
     fame: r.fame,
     battleCount: r.battleCount,
+    weekHighest: r.weekHighest,
     mine: r.userId === userId,
   }));
 
@@ -153,6 +207,7 @@ export async function GET(req: Request) {
         level: myRow.level,
         fame: myRow.fame,
         battleCount: myRow.battleCount,
+        weekHighest: myRow.weekHighest,
       }
     : null;
 
