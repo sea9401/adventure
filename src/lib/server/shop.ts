@@ -15,6 +15,13 @@ import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { CONSUMABLES, type ConsumableId } from "@/adventure/data/consumables";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import {
+  getRuneTokenPrice,
+  isRuneGrade,
+  isRuneId,
+  type RuneGrade,
+  type RuneId,
+} from "@/adventure/data/runes";
+import {
   getItemSellPrice,
   getMaterialSellPrice,
   getPotionSellPrice,
@@ -38,6 +45,7 @@ const ACTION_KINDS: readonly ShopActionKind[] = [
   "buy_material",
   "buy_consumable",
   "buy_equipment",
+  "buy_rune",
   "sell_potion",
   "sell_material",
   "sell_equipment",
@@ -59,12 +67,22 @@ type CountMap = Record<string, number>;
 // 제작산 등급 인스턴스 — itemId → (등급 문자열 "-2"|"-1"|"1"|"2" → 개수). 등급 0 은 equipment[] 에 합산.
 // 드랍산 등급 인스턴스도 같은 모양 — 키는 "1"|"2"(정교한/빼어난).
 type GradedMap = Record<string, Record<string, number>>;
+// 룬 — runeId → (등급 "1"~"5" → 개수). cloneGraded 와 동일 모양.
+type RuneMap = Partial<Record<RuneId, Partial<Record<RuneGrade, number>>>>;
 const NON_ZERO_TIERS = new Set(["-2", "-1", "1", "2"]);
 const NON_ZERO_DROP_QUALITIES = new Set(["1", "2"]);
 
 function cloneGraded(src: GradedMap | undefined): GradedMap {
   const out: GradedMap = {};
   for (const [k, v] of Object.entries(src ?? {})) out[k] = { ...v };
+  return out;
+}
+
+function cloneRunes(src: RuneMap | undefined): RuneMap {
+  const out: RuneMap = {};
+  for (const [k, v] of Object.entries(src ?? {})) {
+    out[k as RuneId] = { ...(v ?? {}) };
+  }
   return out;
 }
 
@@ -81,6 +99,8 @@ export type ShopComputeInput = {
   potionCapacityBonus: number;
   // material-buy 잠금 검증용 (inShop=false 인 재료). 미동봉이면 빈 맵 취급.
   soldCounts?: CountMap;
+  // 룬 가방 (buy_rune 결과 가산). 미동봉이면 빈 맵.
+  runes?: RuneMap;
 };
 
 export type ShopComputeResult = {
@@ -91,6 +111,7 @@ export type ShopComputeResult = {
   craftedEquipment: GradedMap;
   droppedEquipment: GradedMap;
   consumables: CountMap;
+  runes: RuneMap;
   applied: ShopApplied;
 };
 
@@ -113,6 +134,7 @@ export function computeShopOutcome(
   const craftedEquipment = cloneGraded(input.craftedEquipment);
   const droppedEquipment = cloneGraded(input.droppedEquipment);
   const consumables = { ...input.consumables };
+  const runes = cloneRunes(input.runes);
   const gold = input.gold;
 
   let appliedQty = qty;
@@ -120,6 +142,9 @@ export function computeShopOutcome(
   // sell_equipment 가 제작/드랍 등급 인스턴스를 팔았을 때만 채워짐 (둘 다 차면 안 됨 — 상호 배타).
   let appliedCraftTier: number | undefined;
   let appliedDropQuality: number | undefined;
+  // buy_rune 한정 — 구매한 룬 등급 + tower_token 변화량.
+  let appliedRuneGrade: number | undefined;
+  let tokenDelta: number | undefined;
 
   switch (action.kind) {
     case "buy_potion": {
@@ -173,6 +198,26 @@ export function computeShopOutcome(
       // 무등급(기본) 인스턴스로 들어간다 — equipment[] 맵.
       equipment[action.id] = (equipment[action.id] ?? 0) + qty;
       goldDelta = -cost;
+      break;
+    }
+    case "buy_rune": {
+      // 가격은 tower_token (재료) 으로 지불 — 골드 불변. 룬 종류 무관 등급 가격 동일.
+      if (!isRuneId(action.id)) throw new ShopError("unknown_item");
+      const rawGrade = action.grade;
+      if (rawGrade == null || !isRuneGrade(Number(rawGrade))) {
+        throw new ShopError("invalid_grade");
+      }
+      const grade = Number(rawGrade) as RuneGrade;
+      const price = getRuneTokenPrice(grade);
+      const cost = price * qty;
+      const haveTokens = materials["tower_token"] ?? 0;
+      if (haveTokens < cost) throw new ShopError("insufficient_tokens");
+      materials["tower_token"] = haveTokens - cost;
+      const idMap = { ...(runes[action.id] ?? {}) };
+      idMap[grade] = (idMap[grade] ?? 0) + qty;
+      runes[action.id] = idMap;
+      appliedRuneGrade = grade;
+      tokenDelta = -cost;
       break;
     }
     case "sell_potion": {
@@ -242,6 +287,7 @@ export function computeShopOutcome(
     craftedEquipment,
     droppedEquipment,
     consumables,
+    runes,
     applied: {
       kind: action.kind,
       id: action.id,
@@ -249,6 +295,8 @@ export function computeShopOutcome(
       goldDelta,
       ...(appliedCraftTier != null ? { craftTier: appliedCraftTier } : {}),
       ...(appliedDropQuality != null ? { dropQuality: appliedDropQuality } : {}),
+      ...(appliedRuneGrade != null ? { grade: appliedRuneGrade } : {}),
+      ...(tokenDelta != null ? { tokenDelta } : {}),
     },
   };
 }
@@ -264,6 +312,7 @@ type SavedInventory = {
   droppedEquipment?: GradedMap;
   consumables?: CountMap;
   potionCapacityBonus?: number;
+  runes?: RuneMap;
   [k: string]: unknown;
 };
 type SavedShopUnlocks = { sold?: CountMap };
@@ -315,6 +364,7 @@ export async function applyShopAction(
       consumables: { ...(inv.consumables ?? {}) },
       potionCapacityBonus: inv.potionCapacityBonus ?? 0,
       soldCounts,
+      runes: inv.runes ?? {},
     },
     action,
   );
@@ -328,6 +378,7 @@ export async function applyShopAction(
     craftedEquipment: out.craftedEquipment,
     droppedEquipment: out.droppedEquipment,
     consumables: out.consumables,
+    runes: out.runes,
   };
 
   await upsertSave(tx, userId, "character.v2", newCharacter);

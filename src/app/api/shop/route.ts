@@ -32,6 +32,7 @@ export async function POST(req: Request) {
     quantity?: unknown;
     craftTier?: unknown;
     dropQuality?: unknown;
+    grade?: unknown;
   };
   try {
     body = (await req.json()) as typeof body;
@@ -60,8 +61,21 @@ export async function POST(req: Request) {
     const q = Number(body.dropQuality);
     if ([1, 2].includes(q)) dropQuality = q;
   }
+  // buy_rune 한정 — 룬 등급(1~5). 그 외 값/타입은 미동봉 → 서버 computeShopOutcome 가 invalid_grade.
+  let grade: number | undefined;
+  if (body.grade != null) {
+    const g = Number(body.grade);
+    if ([1, 2, 3, 4, 5].includes(g)) grade = g;
+  }
 
-  const action = { kind: body.kind, id: body.id, quantity, craftTier, dropQuality };
+  const action = {
+    kind: body.kind,
+    id: body.id,
+    quantity,
+    craftTier,
+    dropQuality,
+    grade,
+  };
 
   try {
     const outcome: ShopOutcome = await db.transaction((tx) =>

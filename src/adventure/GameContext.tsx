@@ -26,6 +26,7 @@ import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import type { useTraining } from "@/adventure/training/useTraining";
 import type { TrialEdge } from "@/adventure/TrialView";
 import type { ConsumableId } from "@/adventure/data/consumables";
+import type { RuneGrade, RuneId } from "@/adventure/data/runes";
 import type { ItemId, EquipSlot } from "@/adventure/data/items";
 import type { CraftTier } from "@/adventure/data/craftQuality";
 import type { DropQuality } from "@/adventure/data/dropQuality";
@@ -118,6 +119,8 @@ export type GameCtx = {
   handlePurchaseMaterial: (id: MaterialId, quantity: number) => void;
   handlePurchaseConsumable: (id: ConsumableId, quantity: number) => void;
   handlePurchaseEquipment: (id: ItemId, quantity: number) => void;
+  /** 룬 상점 구매 — tower_token 으로 가격 차감, inventory.runes 에 가산. */
+  handlePurchaseRune: (id: RuneId, grade: RuneGrade, quantity?: number) => void;
   /** 마을 귀환 주문서 사용. 성공 시 true, 조건 미달/소비 실패 시 false. */
   handleUseTownReturn: (townId: RegionId) => boolean;
   /** 보스/고탑 등 비-마을 지역으로 빠른이동. 무조건 주문서 1개 소비. */

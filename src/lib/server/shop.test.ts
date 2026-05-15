@@ -317,4 +317,69 @@ describe("computeShopOutcome", () => {
       ),
     ).toThrow(/corrupt_gold/);
   });
+
+  describe("buy_rune", () => {
+    it("토큰 차감 + 룬 가산, 골드 불변", () => {
+      const r = computeShopOutcome(
+        { ...base(), gold: 999, materials: { tower_token: 50 } },
+        { kind: "buy_rune", id: "rune_attack", quantity: 1, grade: 1 },
+      );
+      expect(r.newGold).toBe(999);
+      expect(r.materials.tower_token).toBe(45); // 50 - 5(g1 가격)
+      expect(r.runes.rune_attack?.[1]).toBe(1);
+      expect(r.applied.kind).toBe("buy_rune");
+      expect(r.applied.grade).toBe(1);
+      expect(r.applied.tokenDelta).toBe(-5);
+      expect(r.applied.goldDelta).toBe(0);
+    });
+
+    it("5등급 = 500토큰", () => {
+      const r = computeShopOutcome(
+        { ...base(), materials: { tower_token: 500 } },
+        { kind: "buy_rune", id: "rune_crit", quantity: 1, grade: 5 },
+      );
+      expect(r.materials.tower_token).toBe(0);
+      expect(r.runes.rune_crit?.[5]).toBe(1);
+    });
+
+    it("토큰 부족 시 insufficient_tokens", () => {
+      expect(() =>
+        computeShopOutcome(
+          { ...base(), materials: { tower_token: 3 } },
+          { kind: "buy_rune", id: "rune_attack", quantity: 1, grade: 1 },
+        ),
+      ).toThrow(/insufficient_tokens/);
+    });
+
+    it("미정의 룬 id → unknown_item", () => {
+      expect(() =>
+        computeShopOutcome(
+          { ...base(), materials: { tower_token: 999 } },
+          { kind: "buy_rune", id: "rune_fake", quantity: 1, grade: 1 },
+        ),
+      ).toThrow(/unknown_item/);
+    });
+
+    it("등급 미지정 → invalid_grade", () => {
+      expect(() =>
+        computeShopOutcome(
+          { ...base(), materials: { tower_token: 999 } },
+          { kind: "buy_rune", id: "rune_attack", quantity: 1 },
+        ),
+      ).toThrow(/invalid_grade/);
+    });
+
+    it("같은 (id, grade) 누적 구매 시 count 합산", () => {
+      const r = computeShopOutcome(
+        {
+          ...base(),
+          materials: { tower_token: 50 },
+          runes: { rune_attack: { 1: 2 } },
+        },
+        { kind: "buy_rune", id: "rune_attack", quantity: 3, grade: 1 },
+      );
+      expect(r.materials.tower_token).toBe(35);
+      expect(r.runes.rune_attack?.[1]).toBe(5);
+    });
+  });
 });
