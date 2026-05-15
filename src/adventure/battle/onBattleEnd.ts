@@ -109,7 +109,26 @@ export function onBattleEnd(
       potionsUsed: potionTotal,
     });
     deps.reportGuildKill?.(payload.enemyName);
-    deps.characterState.setHp(payload.finalPlayerHp);
+    // 재생의 룬 — 승리 직후 maxHp × regen_pct/100 회복. 자동 사냥 패배 휴식 시스템은 영향 X (승리만).
+    const runeRegenPct = deps.runeBonus?.regen_pct ?? 0;
+    const runeRegenHeal =
+      runeRegenPct > 0 && payload.playerMaxHp > 0
+        ? Math.floor((payload.playerMaxHp * runeRegenPct) / 100)
+        : 0;
+    const hpAfterRegen =
+      runeRegenHeal > 0
+        ? Math.min(
+            payload.playerMaxHp,
+            payload.finalPlayerHp + runeRegenHeal,
+          )
+        : payload.finalPlayerHp;
+    deps.characterState.setHp(hpAfterRegen);
+    if (runeRegenHeal > 0 && hpAfterRegen > payload.finalPlayerHp) {
+      deps.addNotification(
+        "info",
+        `재생의 룬 — HP +${hpAfterRegen - payload.finalPlayerHp}`,
+      );
+    }
     // 길드 버프 — 비어 있으면 모든 곱셈 ×1.0 (no-op).
     // 룬 EXP/드롭 % 도 길드 버프와 같은 자리에서 곱셈으로 합류.
     const buffs = deps.guildBuffs ?? [];

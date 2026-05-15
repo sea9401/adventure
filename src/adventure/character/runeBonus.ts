@@ -19,6 +19,9 @@ const EMPTY_BONUS: RuneBonusMap = {
   exp_pct: 0,
   drop_pct: 0,
   potion_pct: 0,
+  counter_pct: 0,
+  lifesteal_pct: 0,
+  regen_pct: 0,
 };
 
 export function emptyRuneBonus(): RuneBonusMap {

@@ -336,6 +336,8 @@ export function derivePlayerCombat(
     steadfastWillFlat: steadfastWillFlatFor(totalStats, effectiveSkillSet),
     cyclingChiPerTurn: cyclingChiPerTurnFor(totalStats, effectiveSkillSet),
     potionHealPct: runeBonus.potion_pct,
+    runeCounterChancePct: runeBonus.counter_pct,
+    runeLifestealPct: runeBonus.lifesteal_pct,
   };
 
   return {

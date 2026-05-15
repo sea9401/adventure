@@ -42,6 +42,34 @@ describe("computeRuneBonus", () => {
     ]);
     expect(b.exp_pct).toBe(30);
   });
+
+  it("proc 룬 5등급 — 반격/흡혈 15%", () => {
+    const b = computeRuneBonus([
+      { id: "rune_counter", grade: 5 },
+      { id: "rune_lifesteal", grade: 5 },
+      null,
+    ]);
+    expect(b.counter_pct).toBe(15);
+    expect(b.lifesteal_pct).toBe(15);
+  });
+
+  it("재생 룬 5등급 = 5%", () => {
+    const b = computeRuneBonus([
+      { id: "rune_regen", grade: 5 },
+      null,
+      null,
+    ]);
+    expect(b.regen_pct).toBe(5);
+  });
+
+  it("같은 proc 룬 5등급 ×3 = 45% (cap 없음 — 호출부 책임)", () => {
+    const b = computeRuneBonus([
+      { id: "rune_counter", grade: 5 },
+      { id: "rune_counter", grade: 5 },
+      { id: "rune_counter", grade: 5 },
+    ]);
+    expect(b.counter_pct).toBe(45);
+  });
 });
 
 describe("pctToMultiplier", () => {

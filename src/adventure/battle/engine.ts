@@ -192,6 +192,10 @@ export type PlayerCombat = {
   cyclingChiPerTurn?: number;
   // 연단의 룬 합산 — 포션 회복량 +%. 0/undefined = 미장착.
   potionHealPct?: number;
+  // 반격의 룬 합산 — 피격 시 ATK 데미지로 반격 발동 확률 %. 0/undefined = 미장착.
+  runeCounterChancePct?: number;
+  // 흡혈의 룬 합산 — 명중 시 가한 피해의 % 만큼 HP 회복. 0/undefined = 미장착.
+  runeLifestealPct?: number;
   // ── 5티어 (각 스탯 65 도달) — 만렙 확장 패키지 ────────────────────────
   // 막다른 격노 — 전투 RAMPAGE_START_TURN 턴 경과 후, 매 플레이어 턴 종료 시 ATK 영구 +N 누적. 0/undefined = 미보유.
   rampagePerTurn?: number;
@@ -770,7 +774,13 @@ export function advanceTurn(
       (player.luckyLifestealPct ?? 0) > 0
         ? Math.floor((dmg * player.luckyLifestealPct!) / 100)
         : 0;
-    const totalLifestealHeal = lifestealHeal + luckyLifestealHeal;
+    // 흡혈의 룬 — 명중 시 가한 피해의 N% HP 회복 (luckyLifesteal 과 같은 trigger, 별도 가산).
+    const runeLifestealHeal =
+      (player.runeLifestealPct ?? 0) > 0
+        ? Math.floor((dmg * player.runeLifestealPct!) / 100)
+        : 0;
+    const totalLifestealHeal =
+      lifestealHeal + luckyLifestealHeal + runeLifestealHeal;
     const newPlayerHp =
       totalLifestealHeal > 0
         ? Math.min(state.playerMaxHp, state.playerHp + totalLifestealHeal)
@@ -780,6 +790,7 @@ export function advanceTurn(
       const lifestealLabels: string[] = [];
       if (lifestealHeal > 0) lifestealLabels.push("흡혈");
       if (luckyLifestealHeal > 0) lifestealLabels.push("행운의 흡혈");
+      if (runeLifestealHeal > 0) lifestealLabels.push("흡혈의 룬");
       log = appendLog(log, {
         kind: "info",
         text: `[${lifestealLabels.join(" + ")}] ${playerName}의 HP +${actualLifesteal}`,
@@ -1366,6 +1377,26 @@ export function advanceTurn(
       text: `[${reflectLabels.join(" + ")}] ${state.enemy.name}에게 ${reflectDmg} 반사 피해.`,
     });
   }
+  // 반격의 룬 — 피격 시 일정 확률로 적에게 ATK 데미지로 반격. 살아남았을 때만 발동.
+  // 확률은 합산값. 100% 초과는 자연스럽게 항상 발동.
+  const runeCounterPct = player.runeCounterChancePct ?? 0;
+  let enemyHpAfterRuneCounter = enemyHpAfterThorns;
+  if (
+    runeCounterPct > 0 &&
+    playerHp > 0 &&
+    enemyHpAfterThorns > 0 &&
+    Math.random() * 100 < runeCounterPct
+  ) {
+    const counterDmg = damageBetween(
+      player.atk,
+      playerFacingEnemyDef(state, player),
+    );
+    enemyHpAfterRuneCounter = Math.max(0, enemyHpAfterThorns - counterDmg);
+    log = appendLog(log, {
+      kind: "player_attack",
+      text: `[반격의 룬] ${state.enemy.name}에게 ${counterDmg} 반격 피해.`,
+    });
+  }
   if (playerHp <= 0) {
     return {
       ...state,
@@ -1375,7 +1406,7 @@ export function advanceTurn(
       enduranceTriggered,
       enemyAtkBonus,
       enrageTriggered,
-      enemyHp: enemyHpAfterThorns,
+      enemyHp: enemyHpAfterRuneCounter,
       enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
       log: appendLog(log, {
         kind: "info",
@@ -1385,8 +1416,8 @@ export function advanceTurn(
       outcome: "lose",
     };
   }
-  if (enemyHpAfterThorns <= 0) {
-    // 반사 피해로 적이 쓰러짐 — 플레이어는 생존.
+  if (enemyHpAfterRuneCounter <= 0) {
+    // 반사 / 반격 피해로 적이 쓰러짐 — 플레이어는 생존.
     return {
       ...state,
       playerHp,
