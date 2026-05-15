@@ -770,6 +770,7 @@ export const MONSTERS: Record<string, Monster> = {
   // ── 별빛 회랑 (star_corridor) — 별의 첨탑 → 선인의 폐도 사이 Lv75 사냥터. 보스 없음. ───
   "회랑 정찰자": {
     name: "회랑 정찰자",
+    image: "/images/monster/cloisterscout.webp",
     tags: ["spirit"],
     hp: 895,
     atk: 78,
@@ -787,6 +788,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "별빛 망령": {
     name: "별빛 망령",
+    image: "/images/monster/starlightshade.webp",
     tags: ["spirit"],
     hp: 1035,
     atk: 83,
@@ -805,6 +807,7 @@ export const MONSTERS: Record<string, Monster> = {
   },
   "회랑의 골렘": {
     name: "회랑의 골렘",
+    image: "/images/monster/cloistergolem.webp",
     tags: ["golem"],
     hp: 1175,
     atk: 85,

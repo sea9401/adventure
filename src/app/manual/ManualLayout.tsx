@@ -49,6 +49,17 @@ export function ManualLayout({
         </div>
       </div>
 
+      {/* 배너 */}
+      <div className="relative h-32 w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 md:h-44">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/ui/manual.webp"
+          alt=""
+          aria-hidden
+          className="h-full w-full object-cover"
+        />
+      </div>
+
       {/* 모바일 — 섹션 선택 select */}
       <div className="md:hidden">
         <label className="sr-only" htmlFor="manual-section-select">
