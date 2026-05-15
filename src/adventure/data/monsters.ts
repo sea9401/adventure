@@ -1455,7 +1455,7 @@ export const MONSTERS: Record<string, Monster> = {
     onDefeatFlag: "wyrm_warden_felled",
   },
   // ── 용의 둥지 (dragon_nest) — 월드 보스. coop/data.ts 의 COOP_BOSSES 로 등장. ─────
-  // 다인 누적 데미지로만 잡힐 만큼 압도적 스펙 + 분당 자연회복 + 처치 후 7일 휴면.
+  // 다인 누적 데미지로만 잡힐 만큼 압도적 스펙 + 처치 후 7일 휴면.
   // solo stat 은 시뮬·테스트 용도 (coop maxHp 는 coop/data.ts 의 500000).
   "태고의 노룡": {
     name: "태고의 노룡",

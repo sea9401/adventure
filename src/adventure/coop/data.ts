@@ -73,16 +73,14 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     lockedMessage:
       "별바다의 노수호자 유성에게 '옥좌의 봉인' 의뢰를 받아 완료해야 한다. 옥좌 둘레의 결을 풀어야 창공의 주재가 자네 앞에 일어선다.",
   },
-  // 월드 보스 — 용비늘 묘지 너머. apex_throne 의 10배 HP + 분당 maxHp 0.01% 자연
-  // 회복 + 7일 휴면. expirationMs 는 사실상 만료 없음 (1년) — 죽을 때까지 살아있다는 의미.
-  // 50/min = 3k/h = 72k/day (maxHp 대비 14.4%) — 꾸준히 다같이 때리면 며칠 안에 잡히고,
-  // 며칠 비우면 회복 누적이 따라잡아 진척이 사실상 0 으로 수렴.
+  // 월드 보스 — 용비늘 묘지 너머. apex_throne 의 10배 HP + 7일 휴면.
+  // expirationMs 는 사실상 만료 없음 (1년) — 죽을 때까지 살아있다는 의미.
+  // 자연회복 없음: 누적 데미지만 유효, 며칠 비웠다 와도 진척이 보존된다.
   dragon_nest: {
     monsterName: "태고의 노룡",
     maxHp: 500_000,
     expirationMs: 365 * 24 * 60 * 60 * 1000, // 1y (실질 무한)
     respawnMs: 7 * 24 * 60 * 60 * 1000, // 7d 휴면
-    regenPerMin: 50,
     isWorldBoss: true,
     onDefeatFlag: "primordial_dragon_felled",
     onAttackFlag: "primordial_dragon_engaged",
