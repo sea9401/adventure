@@ -1,24 +1,36 @@
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { users, savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { upsertSave } from "@/lib/server/savesKv";
 import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
-import { isValidAvatarId } from "@/adventure/profile/avatars";
+import { isValidAvatarId, type Avatar } from "@/adventure/profile/avatars";
 
 const NAME_MIN = 1;
 const NAME_MAX = 16;
 
+// 트랜잭션 안에서 "이름 중복" 신호용 — Postgres 23505 또는 legacy hit 양쪽을 한곳에서 처리.
+class TakenError extends Error {
+  constructor() {
+    super("taken");
+  }
+}
+
 // POST /api/profile/setup
 // 본문: { name: string, gender: Avatar }
-// 1) 닉네임 검증·중복 체크 (case-insensitive)
-// 2) users.name 등록 (UNIQUE 제약이 race condition 도 방어)
-// 3) savesKv 프로필 upsert
+//
+// 멱등 + 원자성:
+// 1) users.gameName 이 이미 박혀 있으면(권위 컬럼) 절대 덮어쓰지 않음.
+//    savesKv 프로필이 비어있거나 name 이 어긋났으면 동기화(자가 치유)만 수행.
+//    "다른 디바이스 첫 진입 시 모달이 잘못 떠서 다시 이름을 제출한" 경로 보호.
+// 2) 신규(gameName NULL)면 중복 검사 후 users.gameName + savesKv 를 한 트랜잭션에서
+//    함께 쓴다 — 한쪽만 성공한 partial state(부분 쓰기) 차단.
 //
 // 응답:
-// 200 { ok: true } — 성공
-// 400 { error: "invalid" | "missing" } — 유효성 실패
-// 409 { error: "taken" } — 중복 (낙관적 검증 또는 unique 제약 위반)
+// 200 { ok: true, profile: { name, gender } } — 성공(신규) 또는 자가 치유. 클라가 이 값으로
+//      React state 갱신해야 모달 사라짐 (사용자 입력이 아니라 권위 닉네임을 채택).
+// 400 { error: "invalid" } — 유효성 실패
+// 409 { error: "taken" } — 다른 유저가 이미 사용 중
 export async function POST(req: Request) {
   let userId: string | null;
   try {
@@ -33,6 +45,7 @@ export async function POST(req: Request) {
     return new Response("server error (auth)", { status: 500 });
   }
   if (!userId) return new Response("unauthorized", { status: 401 });
+  const uid = userId;
 
   let body: { name?: unknown; gender?: unknown };
   try {
@@ -49,46 +62,89 @@ export async function POST(req: Request) {
   if (!isValidAvatarId(gender)) {
     return Response.json({ error: "invalid" }, { status: 400 });
   }
+  const submittedGender = gender as Avatar;
 
   try {
-    // 사전 중복 검사 (UX 용 — race 는 unique 제약이 잡음).
-    // legacy 프로필도 함께 검사.
-    const legacyHit = await db
-      .select({ userId: savesKv.userId })
-      .from(savesKv)
-      .where(
-        sql`${savesKv.key} = ${PROFILE_STORAGE_KEY} and ${savesKv.userId} <> ${userId} and lower(${savesKv.value}->>'name') = lower(${name})`,
-      )
-      .limit(1);
-    if (legacyHit.length > 0) {
+    const finalProfile = await db.transaction(async (tx) => {
+      // 권위 컬럼(users.gameName)과 savesKv 프로필을 한 트랜잭션 안에서 조회.
+      const userRows = await tx
+        .select({ gameName: users.gameName })
+        .from(users)
+        .where(eq(users.id, uid))
+        .limit(1);
+      const existingGameName = userRows[0]?.gameName ?? null;
+
+      const profileRows = await tx
+        .select({ value: savesKv.value })
+        .from(savesKv)
+        .where(
+          and(eq(savesKv.userId, uid), eq(savesKv.key, PROFILE_STORAGE_KEY)),
+        )
+        .limit(1);
+      const existingProfile = (profileRows[0]?.value ?? null) as
+        | { name?: string; gender?: string }
+        | null;
+
+      // ── 멱등 경로 — gameName 이 이미 박혀 있다 = 신규가 아님. 절대 덮어쓰지 않음.
+      // savesKv 가 비었거나 name 이 어긋났으면 권위값으로 동기화(자가 치유).
+      if (existingGameName) {
+        const healedGender = isValidAvatarId(existingProfile?.gender ?? "")
+          ? (existingProfile!.gender as Avatar)
+          : submittedGender;
+        const healedProfile = {
+          name: existingGameName,
+          gender: healedGender,
+        };
+        const needsHeal =
+          !existingProfile || existingProfile.name !== existingGameName;
+        if (needsHeal) {
+          console.warn("[/api/profile/setup] heal savesKv", {
+            userId: uid,
+            gameName: existingGameName,
+            hadSavesKv: !!existingProfile,
+          });
+          await upsertSave(tx, uid, PROFILE_STORAGE_KEY, healedProfile);
+        }
+        return healedProfile;
+      }
+
+      // ── 신규 경로 — 중복 검사 후 둘 다 쓰기. 트랜잭션 안에서 진행돼 한쪽만 박히는 일 없음.
+      const legacyHit = await tx
+        .select({ userId: savesKv.userId })
+        .from(savesKv)
+        .where(
+          sql`${savesKv.key} = ${PROFILE_STORAGE_KEY} and ${savesKv.userId} <> ${uid} and lower(${savesKv.value}->>'name') = lower(${name})`,
+        )
+        .limit(1);
+      if (legacyHit.length > 0) {
+        throw new TakenError();
+      }
+
+      // users.gameName UNIQUE 위반(23505) → TakenError 로 변환. 트랜잭션은 자동 롤백.
+      try {
+        await tx
+          .update(users)
+          .set({ gameName: name, updatedAt: new Date() })
+          .where(eq(users.id, uid));
+      } catch (e) {
+        const code = (e as { code?: string }).code;
+        if (code === "23505") throw new TakenError();
+        throw e;
+      }
+
+      const profile = { name, gender: submittedGender };
+      await upsertSave(tx, uid, PROFILE_STORAGE_KEY, profile);
+      return profile;
+    });
+
+    return Response.json({ ok: true, profile: finalProfile });
+  } catch (e) {
+    if (e instanceof TakenError) {
       return Response.json({ error: "taken" }, { status: 409 });
     }
-
-    // users.name unique upsert. 다른 유저가 같은 이름 가지면 unique 제약 위반.
-    try {
-      await db
-        .update(users)
-        .set({ gameName: name, updatedAt: new Date() })
-        .where(sql`${users.id} = ${userId}`);
-    } catch (e) {
-      // Postgres unique violation: code 23505
-      const code = (e as { code?: string }).code;
-      if (code === "23505") {
-        return Response.json({ error: "taken" }, { status: 409 });
-      }
-      throw e;
-    }
-
-    const profile = { name, gender };
-    await upsertSave(db, userId, PROFILE_STORAGE_KEY, profile);
-
-    return Response.json({ ok: true, profile });
-  } catch (e) {
-    // 진단용 — 5xx 가 빈번한 경우 Vercel 로그에서 패턴 확인.
-    // userId 는 추적용으로 남기되 name 은 잠재적 PII 가 적어도 한 번 더 확인 후 추가.
     const err = e as { code?: string; message?: string; name?: string };
     console.error("[/api/profile/setup] db failure", {
-      userId,
+      userId: uid,
       code: err.code,
       name: err.name,
       message: err.message,

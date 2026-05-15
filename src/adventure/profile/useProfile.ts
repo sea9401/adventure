@@ -47,7 +47,8 @@ export function useProfile() {
   );
 
   // 서버 /api/profile/setup 호출 — 중복 닉네임 검증·users.name 등록·savesKv 갱신.
-  // 성공 시 로컬 state 도 갱신.
+  // 성공 시 로컬 state 도 갱신. 서버가 권위 — 이미 gameName 이 박힌 사용자는 서버가
+  // 기존 프로필을 돌려주므로(자가 치유 경로) 사용자 입력값(next) 대신 응답 profile 을 채택.
   // Neon DB 콜드스타트 등으로 첫 호출이 실패하는 경우가 잦아 1회 자동 재시도(1초 backoff).
   // 결정적 실패(400/409)는 재시도하지 않음.
   const submit = async (
@@ -83,7 +84,15 @@ export function useProfile() {
       }
       return { ok: false, reason: "server" };
     }
-    setProfile(next);
+    let serverProfile: Profile = next;
+    try {
+      const body = (await res.json()) as { profile?: unknown };
+      const parsed = readInitial(body?.profile);
+      if (parsed) serverProfile = parsed;
+    } catch {
+      // body 파싱 실패 — 사용자 입력 그대로 사용 (이전 동작).
+    }
+    setProfile(serverProfile);
     return { ok: true };
   };
 
