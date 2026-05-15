@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 type TabSize = "sm" | "md";
 
 const SIZE: Record<TabSize, string> = {
@@ -8,7 +10,7 @@ const SIZE: Record<TabSize, string> = {
 };
 
 export type TabBarProps<K extends string> = {
-  tabs: ReadonlyArray<{ key: K; label: string }>;
+  tabs: ReadonlyArray<{ key: K; label: string; icon?: ReactNode }>;
   active: K;
   onChange: (next: K) => void;
   ariaLabel: string;
@@ -53,7 +55,16 @@ export function TabBar<K extends string>({
                 : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
             }`}
           >
-            {t.label}
+            {t.icon ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="inline-flex shrink-0">
+                  {t.icon}
+                </span>
+                {t.label}
+              </span>
+            ) : (
+              t.label
+            )}
           </button>
         );
       })}

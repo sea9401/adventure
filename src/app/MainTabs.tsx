@@ -1,12 +1,20 @@
+import { Lightning } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 import { TabBar } from "@/components/ui/TabBar";
 import { type TabKey } from "@/lib/useNavTabs";
 
-const TABS: { key: TabKey; label: string }[] = [
+const TABS: { key: TabKey; label: string; icon?: ReactNode }[] = [
   { key: "adventure", label: "모험" },
   { key: "town", label: "마을" },
   { key: "character", label: "캐릭터" },
   { key: "plaza", label: "광장" },
-  { key: "quickTravel", label: "빠른이동" },
+  {
+    key: "quickTravel",
+    label: "빠른이동",
+    icon: (
+      <Lightning size={16} weight="fill" className="text-amber-500" />
+    ),
+  },
 ];
 
 export function MainTabs({
