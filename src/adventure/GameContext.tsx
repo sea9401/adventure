@@ -33,6 +33,7 @@ import type { DropQuality } from "@/adventure/data/dropQuality";
 import type { MaterialId } from "@/adventure/data/materials";
 import type { PotionId } from "@/adventure/data/potions";
 import type { Recipe } from "@/adventure/data/recipes";
+import type { StatKey } from "@/adventure/data/stats";
 import type { Region, RegionId } from "@/adventure/data/world";
 import type { MapProgress } from "@/lib/map-progress";
 import type {
@@ -80,6 +81,8 @@ export type GameCtx = {
   trainingDescription: string;
   playerCombat: PlayerCombat;
   playerStatus: PlayerStatus;
+  /** 베이스 + 분배 + 장비 보너스가 합산된 최종 스탯. character.stats(베이스+분배)와의 차이가 장비 보너스. */
+  totalStats: Record<StatKey, number>;
 
   // — 지도 / 모험 임시 상태 —
   mapProgress: MapProgress;

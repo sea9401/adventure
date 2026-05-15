@@ -442,6 +442,7 @@ function Home() {
     trainingDescription,
     playerCombat,
     playerStatus,
+    totalStats,
     mapProgress,
     setMapProgress,
     pendingTownNpcId,
