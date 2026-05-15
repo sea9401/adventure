@@ -12,6 +12,8 @@ import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { renderHighlightedText } from "@/components/NotificationToast";
+import { BattleLogList } from "@/adventure/battle/BattleLogList";
+import type { BattleLogEntry } from "@/adventure/battle/engine";
 
 const KIND_COLOR: Record<NotificationKind, string> = {
   battle_win: "text-emerald-600 dark:text-emerald-400",
@@ -25,13 +27,6 @@ const KIND_COLOR: Record<NotificationKind, string> = {
   item: "text-blue-700 dark:text-blue-400",
   info: "text-zinc-600 dark:text-zinc-400",
 };
-
-// BattleScene과 동일한 줄별 색상 매핑.
-function logLineColor(kind: string): string {
-  if (kind === "player_attack") return "text-emerald-700 dark:text-emerald-400";
-  if (kind === "enemy_attack") return "text-rose-700 dark:text-rose-400";
-  return "text-zinc-600 dark:text-zinc-400";
-}
 
 function formatAbsolute(ts: number): string {
   const d = new Date(ts);
@@ -81,12 +76,9 @@ function NotificationRow({ n }: { n: AppNotification }) {
         </span>
       </button>
       {expandable && open && (
-        <div className="mt-2 ml-5 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
-          {battleLog.map((entry, i) => (
-            <div key={i} className={logLineColor(entry.kind)}>
-              {entry.text}
-            </div>
-          ))}
+        <div className="mt-2 ml-5 rounded-md border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-800 dark:bg-zinc-900/50">
+          {/* meta.battleLog 의 kind 는 lib 레이어 한정으로 string — 실제 값은 엔진이 작성한 BattleLogEntry. */}
+          <BattleLogList entries={battleLog as BattleLogEntry[]} compact />
         </div>
       )}
     </li>

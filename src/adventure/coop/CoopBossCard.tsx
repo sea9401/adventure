@@ -14,6 +14,7 @@ import { useCoopBoss, type CoopClaimResponse } from "./useCoopBoss";
 import type { AppliedCoopReward } from "./applyReward";
 import type { RegionId } from "@/adventure/data/world";
 import type { BattleLogEntry } from "@/adventure/battle/engine";
+import { BattleLogList } from "@/adventure/battle/BattleLogList";
 import { MONSTERS } from "@/adventure/data/monsters";
 
 type Props = {
@@ -392,24 +393,9 @@ export function CoopBossCard({
                     </span>
                   </summary>
                   {row.log.length > 0 && (
-                    <ul className="space-y-0.5 border-t border-zinc-200 px-1.5 py-1 pl-3.5 text-[11px] dark:border-zinc-800">
-                      {row.log.map((entry, i) => (
-                        <li
-                          key={i}
-                          className={
-                            entry.kind === "phase_trigger"
-                              ? "text-amber-700 dark:text-amber-400"
-                              : entry.kind === "player_attack"
-                                ? "text-zinc-700 dark:text-zinc-300"
-                                : entry.kind === "enemy_attack"
-                                  ? "text-rose-600/80 dark:text-rose-400/80"
-                                  : "text-zinc-500 dark:text-zinc-400"
-                          }
-                        >
-                          {entry.text}
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="border-t border-zinc-200 px-1.5 py-1.5 dark:border-zinc-800">
+                      <BattleLogList entries={row.log} compact />
+                    </div>
                   )}
                 </details>
               </li>
