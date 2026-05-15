@@ -12,6 +12,7 @@ import {
   type TowerState,
 } from "@/adventure/tower/types";
 import {
+  availableStartFloors,
   isBossFloor,
   startFloorAfterCheckpoint,
 } from "@/adventure/tower/scaling";
@@ -19,7 +20,14 @@ import { milestoneFor, type TowerMilestoneReward } from "@/adventure/tower/rewar
 import type { BossClearReward } from "@/adventure/tower/runeDrops";
 
 export type TowerAction =
-  | { kind: "start" }
+  | {
+      kind: "start";
+      /**
+       * 선택한 시작층. 미동봉이면 기존 동작(체크포인트 직후부터).
+       * 검증: availableStartFloors(highestFloor) 안에 있어야 함. 아니면 invalid_start_floor.
+       */
+      startFloor?: number;
+    }
   | {
       kind: "fight_floor";
       /** 전투 시뮬레이션 결과 — apply 단계에서 server-derived. */
@@ -72,7 +80,10 @@ function todayDaily(today: string, prev: TowerDaily | null): TowerDaily {
 }
 
 /** start — 일일 캡 검증 + 시도 차감 + run 생성. 이미 진행 중인 run 있으면 in_progress. */
-function computeStart(input: TowerComputeInput): TowerComputeResult {
+function computeStart(
+  input: TowerComputeInput,
+  action: Extract<TowerAction, { kind: "start" }>,
+): TowerComputeResult {
   const { state, today } = input;
   if (state.run) throw new TowerError("run_in_progress");
   const daily = todayDaily(today, state.daily);
@@ -80,7 +91,17 @@ function computeStart(input: TowerComputeInput): TowerComputeResult {
     throw new TowerError("daily_cap_reached");
   }
   const progress = state.progress ?? EMPTY_PROGRESS;
-  const startFloor = startFloorAfterCheckpoint(progress.highestFloor);
+  const allowed = availableStartFloors(progress.highestFloor);
+  let startFloor: number;
+  if (action.startFloor === undefined) {
+    // 미지정 — 기존 동작(가장 높은 체크포인트) 유지. 첫 시도면 F1.
+    startFloor = startFloorAfterCheckpoint(progress.highestFloor);
+  } else {
+    if (!allowed.includes(action.startFloor)) {
+      throw new TowerError("invalid_start_floor");
+    }
+    startFloor = action.startFloor;
+  }
   const run: TowerRun = {
     currentFloor: startFloor,
     startedAt: Date.now(),
@@ -167,7 +188,7 @@ export function computeTowerOutcome(
 ): TowerComputeResult {
   switch (action.kind) {
     case "start":
-      return computeStart(input);
+      return computeStart(input, action);
     case "fight_floor":
       return computeFightFloor(input, action.outcome);
     case "forfeit":

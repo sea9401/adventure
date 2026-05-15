@@ -114,7 +114,7 @@ export type TowerOutcome = {
 
 /** 클라/route 가 사용하는 의도형 액션. outcome 은 서버가 결정. */
 export type TowerRequestAction =
-  | { kind: "start" }
+  | { kind: "start"; startFloor?: number }
   | { kind: "fight_floor" }
   | { kind: "fight_floors_auto" }
   | { kind: "forfeit" };

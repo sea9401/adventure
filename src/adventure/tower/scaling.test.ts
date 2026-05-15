@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  availableStartFloors,
   bossSlotForFloor,
   isBossFloor,
   lastBossFloorAtOrBelow,
@@ -53,6 +54,26 @@ describe("startFloorAfterCheckpoint", () => {
     expect(startFloorAfterCheckpoint(9)).toBe(1);
     expect(startFloorAfterCheckpoint(20)).toBe(21);
     expect(startFloorAfterCheckpoint(35)).toBe(31);
+  });
+});
+
+describe("availableStartFloors", () => {
+  it("highest=0 → [1] (첫 시도)", () => {
+    expect(availableStartFloors(0)).toEqual([1]);
+  });
+  it("highest=9 → [1] (F10 보스 못 깸)", () => {
+    expect(availableStartFloors(9)).toEqual([1]);
+  });
+  it("highest=10 → [1, 11] (F10 클리어, 11부터 시작 가능)", () => {
+    expect(availableStartFloors(10)).toEqual([1, 11]);
+  });
+  it("highest=35 → [1, 11, 21, 31] (F10/20/30 클리어)", () => {
+    expect(availableStartFloors(35)).toEqual([1, 11, 21, 31]);
+  });
+  it("highest=100 → [1, 11, …, 101]", () => {
+    expect(availableStartFloors(100)).toEqual([
+      1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 101,
+    ]);
   });
 });
 

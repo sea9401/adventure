@@ -60,6 +60,52 @@ describe("computeTowerOutcome > start", () => {
     const r = computeTowerOutcome({ state: s, today }, { kind: "start" });
     expect(r.state.daily).toEqual({ date: today, attempts: 1 });
   });
+
+  describe("startFloor 선택제", () => {
+    const s: TowerState = {
+      ...emptyState,
+      progress: { highestFloor: 35, claimedMilestones: [10, 20, 30] },
+    };
+
+    it("startFloor=1 — 처음부터 다시 (낮은 보스 파밍용)", () => {
+      const r = computeTowerOutcome(
+        { state: s, today },
+        { kind: "start", startFloor: 1 },
+      );
+      expect(r.state.run?.currentFloor).toBe(1);
+    });
+
+    it("startFloor=11 — 중간 체크포인트", () => {
+      const r = computeTowerOutcome(
+        { state: s, today },
+        { kind: "start", startFloor: 11 },
+      );
+      expect(r.state.run?.currentFloor).toBe(11);
+    });
+
+    it("startFloor 미동봉 — 기존 동작(가장 높은 체크포인트)", () => {
+      const r = computeTowerOutcome({ state: s, today }, { kind: "start" });
+      expect(r.state.run?.currentFloor).toBe(31);
+    });
+
+    it("허용 목록 밖 (안 깬 보스 이후) → invalid_start_floor", () => {
+      expect(() =>
+        computeTowerOutcome(
+          { state: s, today },
+          { kind: "start", startFloor: 41 }, // F40 안 깸
+        ),
+      ).toThrow(/invalid_start_floor/);
+    });
+
+    it("잡몹층 (1, 11, 21, … 이 아님) → invalid_start_floor", () => {
+      expect(() =>
+        computeTowerOutcome(
+          { state: s, today },
+          { kind: "start", startFloor: 5 },
+        ),
+      ).toThrow(/invalid_start_floor/);
+    });
+  });
 });
 
 describe("computeTowerOutcome > fight_floor (win)", () => {
