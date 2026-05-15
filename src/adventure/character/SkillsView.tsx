@@ -161,7 +161,6 @@ function UnequippedSkillsTabs({
     vit: [],
     spd: [],
     luk: [],
-    int: [],
   };
   for (const s of unequippedSkills) {
     const stat = statOfSkill(s.name);

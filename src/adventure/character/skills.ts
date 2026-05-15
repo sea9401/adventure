@@ -437,8 +437,6 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
       activationThreshold: UNIVERSAL_LUCK_LUK_THRESHOLD,
     },
   ],
-  // INT 스킬은 PR-3 마법 패키지에서 추가. PR-1 시점엔 빈 배열 — 도감에 INT 항목은 보이되 스킬 풀은 비어있음.
-  int: [],
 };
 
 // 스킬 이름 → 소속 스탯 매핑. STAT_SKILL 의 역인덱스. 표시(도감·SkillsView 그룹핑) 전용.

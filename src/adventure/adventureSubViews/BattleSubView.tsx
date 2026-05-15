@@ -47,10 +47,7 @@ export function BattleSubView() {
         playerLevel={character.level}
         playerName={character.name}
         playerStatus={playerStatus}
-        onBattleStart={(name) => {
-          adventureLog.markEncountered(name);
-          characterStateHook.restoreMpFull();
-        }}
+        onBattleStart={adventureLog.markEncountered}
         onBattleEnd={handleBattleEnd}
         pickAutoAction={(state) =>
           pickAutoAction(state, {
