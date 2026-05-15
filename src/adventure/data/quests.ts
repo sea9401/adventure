@@ -2326,16 +2326,16 @@ export const QUESTS: Quest[] = [
     requiresQuestCompleted: "hidden-pilgrim-trail-2",
   },
   // ── 별바다 — 노수호자 유성의 사냥 의뢰 라인 (4단). ────────────────────────
-  // 1차 출처: 회랑 정찰자(Lv75) → 별빛 망령(Lv75) → 회랑 골렘(Lv75) → 황성 호위병(Lv85).
+  // 1차 출처: 떠도는 시녀(Lv75) → 별빛 망령(Lv75) → 별궤도 자율기(Lv75) → 황성 호위병(Lv85).
   // 보상: 4단으로 corridor 5종 + road 5종 제작서 전부 풀린다 (5단 craft chain 의 중간 출처).
   {
     id: "star-haven-corridor-scouts",
     regionId: "star_corridor",
     title: "회랑의 흩어진 별빛",
     description:
-      "별바다 노수호자 유성의 첫 부탁이오. 별빛 회랑에 흩어진 정찰자 잔재가 회랑의 결을 거꾸로 흩어 놓고 있소. 열둘만 가라앉히면 — 회랑검과 회랑 방패의 결을 자네 손에 새겨 주리다.",
+      "별바다 노수호자 유성의 첫 부탁이오. 별빛 회랑에 떠도는 시녀들의 잔영이 회랑의 결을 거꾸로 흩어 놓고 있소. 열둘만 가라앉히면 — 회랑검과 회랑 방패의 결을 자네 손에 새겨 주리다.",
     requiredLevel: 75,
-    target: { kind: "kill", monsterName: "회랑 정찰자", count: 12 },
+    target: { kind: "kill", monsterName: "떠도는 시녀", count: 12 },
     reward: { gold: 1200, fame: 18, exp: 2800, recipes: ["corridor_blade", "corridor_aegis"] },
     repeatable: false,
     giverNpcId: "star_haven_elder",
@@ -2358,9 +2358,9 @@ export const QUESTS: Quest[] = [
     regionId: "star_corridor",
     title: "회랑의 봉인",
     description:
-      "회랑의 골렘이 옛 회랑의 봉인 결을 쥐고 있소. 열만 가라앉히면 — 회랑 망토의 결을 자네 어깨에 얹어 주리다. 별의 정수도 자네 몫이오.",
+      "별궤도 자율기들이 옛 회랑의 봉인 결을 쥐고 있소. 열만 가라앉히면 — 회랑 망토의 결을 자네 어깨에 얹어 주리다. 별의 정수도 자네 몫이오.",
     requiredLevel: 78,
-    target: { kind: "kill", monsterName: "회랑의 골렘", count: 10 },
+    target: { kind: "kill", monsterName: "별궤도 자율기", count: 10 },
     reward: {
       gold: 1900,
       fame: 24,
@@ -2379,9 +2379,9 @@ export const QUESTS: Quest[] = [
     regionId: "skyfolk_ruins",
     title: "폐도의 봉인을 풀어라",
     description:
-      "폐도 안쪽 깊은 결을 더는 잘못 굳게 둘 수 없소. 폐도 정찰병 열만 가라앉히면 — 천공인의 왕이 자네의 결을 알아볼 자격이 생기오. 그래야 결의 주인을 만날 수 있소.",
+      "폐도 안쪽 깊은 결을 더는 잘못 굳게 둘 수 없소. 천공인 사관의 잔재 열만 가라앉히면 — 천공인의 왕이 자네의 결을 알아볼 자격이 생기오. 그래야 결의 주인을 만날 수 있소.",
     requiredLevel: 80,
-    target: { kind: "kill", monsterName: "폐도 정찰병", count: 10 },
+    target: { kind: "kill", monsterName: "천공인 사관", count: 10 },
     reward: { gold: 1700, fame: 22, exp: 3800 },
     repeatable: false,
     giverNpcId: "star_haven_elder",

@@ -682,8 +682,8 @@ export const MONSTERS: Record<string, Monster> = {
     onDefeatFlag: "volcano_heart_defeated",
   },
   // ── 별의 첨탑 (starspire) — 천공 성지 위 Lv70 구간. 협동 보스 별을 지키는 자. ─────
-  "별빛 정찰자": {
-    name: "별빛 정찰자",
+  "별점술사 잔영": {
+    name: "별점술사 잔영",
     image: "/images/monster/starlightscout.webp",
     tags: ["spirit"],
     hp: 785,
@@ -768,8 +768,8 @@ export const MONSTERS: Record<string, Monster> = {
     onDefeatFlag: "starspire_keeper_defeated",
   },
   // ── 별빛 회랑 (star_corridor) — 별의 첨탑 → 선인의 폐도 사이 Lv75 사냥터. 보스 없음. ───
-  "회랑 정찰자": {
-    name: "회랑 정찰자",
+  "떠도는 시녀": {
+    name: "떠도는 시녀",
     image: "/images/monster/cloisterscout.webp",
     tags: ["spirit"],
     hp: 895,
@@ -805,8 +805,8 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "enrage", name: "망령의 잔영", hpFraction: 0.4, atkBonus: 9 },
   },
-  "회랑의 골렘": {
-    name: "회랑의 골렘",
+  "별궤도 자율기": {
+    name: "별궤도 자율기",
     image: "/images/monster/cloistergolem.webp",
     tags: ["golem"],
     hp: 1175,
@@ -824,8 +824,8 @@ export const MONSTERS: Record<string, Monster> = {
     skill: { kind: "heavy_blow", name: "회랑 충격", everyPhases: 3, multiplier: 1.5 },
   },
   // ── 선인의 폐도 (skyfolk_ruins) — 별의 첨탑 위 Lv80 구간. 협동 보스 천공인의 왕. ─────
-  "폐도 정찰병": {
-    name: "폐도 정찰병",
+  "천공인 사관": {
+    name: "천공인 사관",
     tags: ["spirit"],
     hp: 1035,
     atk: 87,
@@ -859,8 +859,8 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "heavy_blow", name: "천공 강타", everyPhases: 3, multiplier: 1.5 },
   },
-  "옛 천공의 골렘": {
-    name: "옛 천공의 골렘",
+  "폐허의 운기": {
+    name: "폐허의 운기",
     tags: ["golem"],
     hp: 1525,
     atk: 100,
@@ -908,8 +908,8 @@ export const MONSTERS: Record<string, Monster> = {
     onDefeatFlag: "skyfolk_king_defeated",
   },
   // ── 옥좌의 길 (throne_road) — 선인의 폐도 → 창공의 옥좌 사이 Lv85 사냥터. 보스 없음. ───
-  "길의 정찰관": {
-    name: "길의 정찰관",
+  "황성 의장기수": {
+    name: "황성 의장기수",
     tags: ["humanoid"],
     hp: 1415,
     atk: 109,
@@ -980,8 +980,8 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "pierce", name: "사도의 일섬", armorPierce: 6 },
   },
-  "옥좌의 호위": {
-    name: "옥좌의 호위",
+  "옥좌의 검신": {
+    name: "옥좌의 검신",
     tags: ["humanoid"],
     hp: 1795,
     atk: 125,
@@ -995,8 +995,8 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "heavy_blow", name: "호위 강타", everyPhases: 3, multiplier: 1.6 },
   },
-  "봉인된 황좌 골렘": {
-    name: "봉인된 황좌 골렘",
+  "잠든 황좌 거인": {
+    name: "잠든 황좌 거인",
     tags: ["golem"],
     hp: 2070,
     atk: 136,
