@@ -20,6 +20,7 @@ type Entry = {
   region: Region;
   label: string;
   cost: number; // 소비할 스크롤 개수
+  isCurrent?: boolean; // 현재 위치 — 선택지에 유지하되 비활성 + "지금 여기" 표시
 };
 
 function TravelRow({
@@ -31,38 +32,58 @@ function TravelRow({
   scrollCount: number;
   onTravel: () => void;
 }) {
-  const insufficient = entry.cost > 0 && scrollCount < entry.cost;
+  const isCurrent = !!entry.isCurrent;
+  const insufficient = !isCurrent && entry.cost > 0 && scrollCount < entry.cost;
   return (
     <button
       type="button"
-      onClick={onTravel}
-      disabled={insufficient}
-      className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/90 px-4 py-3 text-left transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/90 dark:hover:bg-zinc-900/80 dark:disabled:hover:bg-zinc-950/90"
+      onClick={isCurrent ? undefined : onTravel}
+      disabled={isCurrent || insufficient}
+      aria-current={isCurrent ? "location" : undefined}
+      className={
+        isCurrent
+          ? "flex w-full cursor-default items-center gap-3 rounded-lg border border-emerald-300 bg-emerald-50/80 px-4 py-3 text-left dark:border-emerald-800/70 dark:bg-emerald-950/40"
+          : "flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/90 px-4 py-3 text-left transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/90 dark:hover:bg-zinc-900/80 dark:disabled:hover:bg-zinc-950/90"
+      }
     >
       <MapPin
         size={24}
-        weight="duotone"
-        className="shrink-0 text-emerald-500"
+        weight={isCurrent ? "fill" : "duotone"}
+        className={
+          isCurrent
+            ? "shrink-0 text-emerald-600 dark:text-emerald-400"
+            : "shrink-0 text-emerald-500"
+        }
         aria-hidden
       />
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">
           {entry.label}
         </span>
-        <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-          {entry.cost === 0
-            ? "이동 무료"
-            : insufficient
-              ? `주문서 ×${entry.cost} (부족)`
-              : `주문서 ×${entry.cost}`}
+        <span
+          className={
+            isCurrent
+              ? "block text-xs font-medium text-emerald-700 dark:text-emerald-300"
+              : "block text-xs text-zinc-500 dark:text-zinc-400"
+          }
+        >
+          {isCurrent
+            ? "지금 여기"
+            : entry.cost === 0
+              ? "이동 무료"
+              : insufficient
+                ? `주문서 ×${entry.cost} (부족)`
+                : `주문서 ×${entry.cost}`}
         </span>
       </span>
-      <CaretRight
-        size={16}
-        weight="bold"
-        aria-hidden
-        className="shrink-0 text-zinc-400 dark:text-zinc-500"
-      />
+      {!isCurrent && (
+        <CaretRight
+          size={16}
+          weight="bold"
+          aria-hidden
+          className="shrink-0 text-zinc-400 dark:text-zinc-500"
+        />
+      )}
     </button>
   );
 }
@@ -88,8 +109,8 @@ export function QuickTravelScreen() {
   const towerEntries: Entry[] = [];
 
   for (const region of WORLD_MAP.regions) {
-    if (region.id === currentId) continue;
     if (!visited.has(region.id)) continue;
+    const isCurrent = region.id === currentId;
     const isTown = region.tags?.includes("town") ?? false;
     const isTower = region.tags?.includes("tower") ?? false;
     const coopBoss = COOP_BOSSES[region.id];
@@ -99,23 +120,36 @@ export function QuickTravelScreen() {
         region,
         label: region.name,
         cost: fromIsTown ? 0 : 1,
+        isCurrent,
       });
     } else if (isTower) {
-      towerEntries.push({ region, label: region.name, cost: 1 });
+      towerEntries.push({ region, label: region.name, cost: 1, isCurrent });
     } else if (coopBoss) {
       coopBossEntries.push({
         region,
         label: coopBoss.monsterName,
         cost: 1,
+        isCurrent,
       });
     } else if (isSoloBoss && region.boss) {
       soloBossEntries.push({
         region,
         label: region.boss.monsterName,
         cost: 1,
+        isCurrent,
       });
     }
   }
+
+  // 현재 위치 entry 를 카테고리 안에서 최상단으로 — 메뉴 위치 안정성 + 시각적 앵커.
+  const pinCurrentFirst = (entries: Entry[]) =>
+    entries.sort(
+      (a, b) => Number(b.isCurrent ?? false) - Number(a.isCurrent ?? false),
+    );
+  pinCurrentFirst(townEntries);
+  pinCurrentFirst(towerEntries);
+  pinCurrentFirst(coopBossEntries);
+  pinCurrentFirst(soloBossEntries);
 
   const onTravelTown = (region: Region, cost: number) => {
     if (cost > 0 && scrollCount < cost) {
