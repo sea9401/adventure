@@ -314,6 +314,15 @@ export const MATERIALS = {
     price: 4,
     inShop: false,
   },
+  // 고탑 보스층 클리어 시 획득. PR-C2 의 룬 상점 환전 통화로 쓰인다.
+  // 판매가 0 — 상점에 팔리지 않는 통화. inShop: false.
+  tower_token: {
+    id: "tower_token",
+    name: "고탑의 인장",
+    description: "고탑의 보스를 쓰러뜨릴 때마다 떨어지는 옛 인장. 룬 상점에서 교환에 쓰인다.",
+    price: 0,
+    inShop: false,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;

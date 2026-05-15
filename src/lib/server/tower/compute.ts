@@ -16,6 +16,7 @@ import {
   startFloorAfterCheckpoint,
 } from "@/adventure/tower/scaling";
 import { milestoneFor, type TowerMilestoneReward } from "@/adventure/tower/rewards";
+import type { BossClearReward } from "@/adventure/tower/runeDrops";
 
 export type TowerAction =
   | { kind: "start" }
@@ -51,6 +52,11 @@ export type TowerApplied = {
   newHighestFloor?: number;
   /** 보스층 첫 도달로 수령한 마일스톤 보상. 없으면 미정의. */
   milestone?: { floor: number; reward: TowerMilestoneReward };
+  /**
+   * 보스층 클리어 시 매번 굴리는 룬·토큰 드롭. 마일스톤(첫 도달 한정)과 별개.
+   * apply.ts 가 rollBossClearReward 로 채우고, 인벤 적용도 apply 단계.
+   */
+  bossDrops?: { floor: number; reward: BossClearReward };
 };
 
 export type TowerComputeResult = {
