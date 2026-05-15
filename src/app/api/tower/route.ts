@@ -1,7 +1,7 @@
 // POST /api/tower — 고탑 서버 권위 액션 (start / fight_floor / forfeit).
 //
-// body: { kind: "start" }
-//     | { kind: "fight_floor" }     // 서버가 outcome 결정 (anti-cheat)
+// body: { kind: "start", startFloor?: number }  // startFloor 는 availableStartFloors 안의 값
+//     | { kind: "fight_floor" }                 // 서버가 outcome 결정 (anti-cheat)
 //     | { kind: "forfeit" }
 //
 // 응답: 200 { ok: true, tower, character?, inventory?, applied, battle? }
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   const sessionFail = await checkSession(userId, req);
   if (sessionFail) return sessionFail;
 
-  let body: { kind?: unknown };
+  let body: { kind?: unknown; startFloor?: unknown };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -36,7 +36,12 @@ export async function POST(req: Request) {
 
   let action: TowerRequestAction;
   if (body.kind === "start") {
-    action = { kind: "start" };
+    // startFloor 는 양의 정수만 허용 — 그 외 모두 미동봉 처리 → compute 가 기본 동작(체크포인트).
+    // 허용 목록 검증은 compute 단계 (invalid_start_floor).
+    const sf = body.startFloor;
+    const startFloor =
+      typeof sf === "number" && Number.isInteger(sf) && sf > 0 ? sf : undefined;
+    action = { kind: "start", startFloor };
   } else if (body.kind === "forfeit") {
     action = { kind: "forfeit" };
   } else if (body.kind === "fight_floor") {

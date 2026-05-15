@@ -17,7 +17,7 @@ const EMPTY_STATE: TowerState = {
 };
 
 export type TowerApiAction =
-  | { kind: "start" }
+  | { kind: "start"; startFloor?: number }
   | { kind: "fight_floor" }
   | { kind: "fight_floors_auto" }
   | { kind: "forfeit" };
@@ -108,7 +108,10 @@ export function useTower(opts?: {
     state,
     pending,
     error,
-    start: useCallback(() => call({ kind: "start" }), [call]),
+    start: useCallback(
+      (startFloor?: number) => call({ kind: "start", startFloor }),
+      [call],
+    ),
     fightFloor: useCallback(() => call({ kind: "fight_floor" }), [call]),
     fightFloorsAuto: useCallback(
       () => call({ kind: "fight_floors_auto" }),

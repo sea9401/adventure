@@ -12,6 +12,7 @@ import {
 import type { Monster } from "@/adventure/data/monsters";
 import { MONSTERS } from "@/adventure/data/monsters";
 import {
+  availableStartFloors,
   isBossFloor,
   scaledStats,
   startFloorAfterCheckpoint,
@@ -91,8 +92,8 @@ export function TowerPage({
           state={state}
           pending={tower.pending}
           error={tower.error}
-          onStart={async () => {
-            const r = await tower.start();
+          onStart={async (startFloor) => {
+            const r = await tower.start(startFloor);
             if (r.ok && r.tower?.run) {
               const floor = r.tower.run.currentFloor;
               setView(buildReady(floor));
@@ -272,13 +273,21 @@ function EntryView({
   state: TowerState;
   pending: string | null;
   error: string | null;
-  onStart: () => Promise<void>;
+  onStart: (startFloor: number) => Promise<void>;
   onResume: () => void;
   onForfeit: () => Promise<void>;
 }) {
   const runActive = state.run !== null;
   const attemptsUsed = state.daily?.attempts ?? 0;
   const attemptsLeft = Math.max(0, TOWER_DAILY_ATTEMPTS - attemptsUsed);
+  const startOptions = availableStartFloors(state.progress.highestFloor);
+  const defaultStart = startFloorAfterCheckpoint(state.progress.highestFloor);
+  const [selectedStart, setSelectedStart] = useState<number>(defaultStart);
+  // highestFloor 가 바뀌어 옵션이 늘어났으면 selected 가 더 이상 유효하지 않을 수 있음.
+  // 단순화 위해 옵션 안에 있으면 그대로, 아니면 defaultStart 로.
+  const effectiveStart = startOptions.includes(selectedStart)
+    ? selectedStart
+    : defaultStart;
   return (
     <div className="space-y-3">
       <Card padding="md">
@@ -329,12 +338,38 @@ function EntryView({
       ) : (
         <Card padding="md">
           <p className="text-sm text-zinc-700 dark:text-zinc-300">
-            새 시도. 다음 시작 층:{" "}
-            <b>{startFloorAfterCheckpoint(state.progress.highestFloor)}</b>층.
+            새 시도. 시작 층: <b>{effectiveStart}</b>층.
           </p>
+          {startOptions.length > 1 && (
+            <div className="mt-2 space-y-1">
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                낮은 보스 다시 잡아 인장 모으려면 아래에서 골라 시작.
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {startOptions.map((f) => {
+                  const active = f === effectiveStart;
+                  return (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setSelectedStart(f)}
+                      className={
+                        "rounded-md border px-2 py-1 text-xs font-medium transition-colors " +
+                        (active
+                          ? "border-amber-500 bg-amber-100 text-amber-900 dark:border-amber-500 dark:bg-amber-950/60 dark:text-amber-200"
+                          : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900")
+                      }
+                    >
+                      F{f}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <button
             type="button"
-            onClick={onStart}
+            onClick={() => onStart(effectiveStart)}
             disabled={attemptsLeft <= 0 || pending !== null}
             className="mt-3 w-full rounded-md bg-amber-600 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >

@@ -37,6 +37,29 @@ export function startFloorAfterCheckpoint(highestFloor: number): number {
   return lastBossFloorAtOrBelow(highestFloor) + 1;
 }
 
+/**
+ * 선택 가능한 시작층 목록 — 체크포인트 선택제.
+ * F1 은 항상 가능. 그리고 클리어한 각 보스층 다음 (F11, F21, …) 도 가능.
+ *
+ * 예:
+ *  - highestFloor=0 → [1]
+ *  - highestFloor=9 → [1] (보스 한 번도 못 깸)
+ *  - highestFloor=10 → [1, 11]
+ *  - highestFloor=35 → [1, 11, 21, 31]
+ *  - highestFloor=100 → [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 101]
+ *
+ * 의도: 한계 보스를 못 깰 때 낮은 보스 다시 잡아 인장 파밍 가능하게 — PR-C1 의 "매 보스 클리어
+ * 마다 토큰" 약속이 한계 정체 플레이어에게도 적용되도록.
+ */
+export function availableStartFloors(highestFloor: number): number[] {
+  const lastBoss = lastBossFloorAtOrBelow(highestFloor);
+  const floors: number[] = [1];
+  for (let b = TOWER_BOSS_INTERVAL; b <= lastBoss; b += TOWER_BOSS_INTERVAL) {
+    floors.push(b + 1);
+  }
+  return floors;
+}
+
 export type ScaledStats = {
   hp: number;
   atk: number;
