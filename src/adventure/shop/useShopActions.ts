@@ -7,6 +7,11 @@ import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { POTIONS, type PotionId } from "@/adventure/data/potions";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { type ConsumableId } from "@/adventure/data/consumables";
+import {
+  RUNES,
+  type RuneGrade,
+  type RuneId,
+} from "@/adventure/data/runes";
 import { craftTierSuffix, type CraftTier } from "@/adventure/data/craftQuality";
 import {
   dropQualityPrefix,
@@ -24,12 +29,16 @@ function shopErrorMessage(code: string): string {
   switch (code) {
     case "insufficient_gold":
       return "골드가 부족하다.";
+    case "insufficient_tokens":
+      return "고탑의 인장이 부족하다.";
     case "full":
       return "더 들 수 없다.";
     case "insufficient_items":
       return "보유량이 부족하다.";
     case "locked":
       return "아직 상점에서 취급하지 않는 재료다.";
+    case "invalid_grade":
+      return "잘못된 룬 등급이다.";
     default:
       return "상점 처리에 실패했다.";
   }
@@ -68,6 +77,7 @@ export function useShopActions(deps: {
     quantity: number;
     craftTier?: number;
     dropQuality?: number;
+    grade?: number;
   }): Promise<{ applied: ShopOutcome["applied"] } | null> => {
     if (!Number.isInteger(body.quantity) || body.quantity < 1) return null;
     // 서버가 character.v2 / inventory.v2 를 read-modify-write 하므로, 디바운스 큐에
@@ -133,6 +143,20 @@ export function useShopActions(deps: {
     addNotification(
       "info",
       `${ITEMS[id].name}${quantity > 1 ? ` ×${quantity}` : ""}을(를) 샀다.`,
+    );
+  };
+
+  // 룬 상점 구매 — 가격은 tower_token (고탑의 인장) 으로 차감.
+  const handlePurchaseRune = async (
+    id: RuneId,
+    grade: RuneGrade,
+    quantity = 1,
+  ) => {
+    const r = await runShopAction({ kind: "buy_rune", id, quantity, grade });
+    if (!r) return;
+    addNotification(
+      "info",
+      `${RUNES[id].name} ${grade}등급${quantity > 1 ? ` ×${quantity}` : ""}을(를) 샀다.`,
     );
   };
 
@@ -244,6 +268,7 @@ export function useShopActions(deps: {
     handlePurchaseMaterial,
     handlePurchaseConsumable,
     handlePurchaseEquipment,
+    handlePurchaseRune,
     handleUseTownReturn,
     handleUseTravelScroll,
     handleSellPotion,

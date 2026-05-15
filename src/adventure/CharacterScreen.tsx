@@ -53,6 +53,7 @@ export function CharacterScreen() {
     handleDiscardFromInventory,
     handleDepositToVault,
     handleWithdrawFromVault,
+    handlePurchaseRune,
     quests,
     crafting,
   } = useGame();
@@ -142,6 +143,7 @@ export function CharacterScreen() {
   }
 
   if (subView === "runes") {
+    const tokenCount = inventory.materialCount("tower_token");
     const handleFuseRune = (id: RuneId, grade: RuneGrade) => {
       const have = inventory.runeCount(id, grade);
       const plan = planRuneFusion(id, grade, have);
@@ -169,10 +171,12 @@ export function CharacterScreen() {
         <RuneView
           equippedRunes={characterStateHook.state.equippedRunes ?? []}
           runeInventory={inventory.state.runes ?? {}}
+          tokenCount={tokenCount}
           onEquip={(slotIndex, rune) =>
             characterStateHook.setEquippedRuneAt(slotIndex, rune)
           }
           onFuse={handleFuseRune}
+          onBuy={(id, grade) => handlePurchaseRune(id, grade, 1)}
         />
       </div>
     );

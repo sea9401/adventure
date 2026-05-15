@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowsClockwise, Diamond, X } from "@phosphor-icons/react";
+import { ArrowsClockwise, Coins, Diamond, X } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import {
   RUNES,
   RUNE_GRADES,
   RUNE_IDS,
   RUNE_SLOT_COUNT,
+  RUNE_TOKEN_PRICES,
   getRuneMagnitude,
   type EquippedRune,
   type RuneGrade,
@@ -84,14 +85,20 @@ function alreadyEquippedCount(
 export function RuneView({
   equippedRunes,
   runeInventory,
+  tokenCount,
   onEquip,
   onFuse,
+  onBuy,
 }: {
   equippedRunes: ReadonlyArray<EquippedRune | null>;
   runeInventory: RuneInventory;
+  /** 보유 고탑의 인장 개수 — 룬 상점 가격 차감 통화. */
+  tokenCount: number;
   onEquip: (slotIndex: number, rune: EquippedRune | null) => void;
   /** 합성 — id × grade ×3 → 같은 id 의 grade+1 ×1. 호출부가 인벤에서 직접 차감/증가. */
   onFuse: (id: RuneId, fromGrade: RuneGrade) => void;
+  /** 상점 구매 — tower_token 으로 결제. 서버 권위 (useShopActions). */
+  onBuy: (id: RuneId, grade: RuneGrade) => void;
 }) {
   // 현재 활성 슬롯 — 클릭하면 인벤에서 룬을 선택해 채운다.
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
@@ -245,6 +252,59 @@ export function RuneView({
             })}
           </ul>
         )}
+      </Card>
+
+      <Card as="section" padding="md">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+            룬 상점
+          </div>
+          <div className="inline-flex items-center gap-1 text-xs text-zinc-700 dark:text-zinc-300">
+            <Coins size={14} weight="duotone" className="text-amber-500" />
+            <span className="font-mono tabular-nums">{tokenCount}</span>
+            <span className="text-zinc-500 dark:text-zinc-400">고탑의 인장</span>
+          </div>
+        </div>
+        <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
+          고탑 보스 처치로 모은 인장으로 룬을 교환한다. 등급마다 가격 동일 —
+          종류는 빌드에 맞춰 자유.
+        </p>
+        <div className="space-y-1.5">
+          {RUNE_IDS.map((id) => {
+            const def = RUNES[id];
+            return (
+              <div
+                key={id}
+                className="flex flex-wrap items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950"
+              >
+                <span className="min-w-[5.5rem] text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  {def.name}
+                </span>
+                {RUNE_GRADES.map((g) => {
+                  const price = RUNE_TOKEN_PRICES[g];
+                  const insufficient = tokenCount < price;
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => onBuy(id, g)}
+                      disabled={insufficient}
+                      title={`${def.name} ${g}등급 — ${effectLine(id, g)}`}
+                      className={`inline-flex items-center gap-0.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                        insufficient
+                          ? "border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-500"
+                          : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60"
+                      }`}
+                    >
+                      <span className={gradeColor(g)}>{g}등</span>
+                      <span className="ml-1 tabular-nums">{price}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </Card>
     </div>
   );

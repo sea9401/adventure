@@ -157,6 +157,21 @@ export function getRuneMagnitude(id: RuneId, grade: RuneGrade): number {
   return RUNES[id].magnitudeByGrade[grade];
 }
 
+// 룬 상점 (PR-C2) — 등급별 고탑 토큰 가격. 합성 비용(×3)과 정합하도록 각 등급 ×3 근사.
+// g1=5, g2=15(=5×3), g3=50(=15×3+5), g4=150(=50×3), g5=500(=150×3+50). 같은 등급의
+// 룬 종류 7가지 모두 동일 가격 — 유저가 빌드에 맞춰 자유롭게 선택하게 한다.
+export const RUNE_TOKEN_PRICES: Record<RuneGrade, number> = {
+  1: 5,
+  2: 15,
+  3: 50,
+  4: 150,
+  5: 500,
+};
+
+export function getRuneTokenPrice(grade: RuneGrade): number {
+  return RUNE_TOKEN_PRICES[grade];
+}
+
 export function isRuneId(v: string): v is RuneId {
   return v in RUNES;
 }
