@@ -48,13 +48,13 @@ const POWER_MULTS = (process.env.POWER_MULTS ?? "1,1.25")
   .map((s) => Number(s.trim()))
   .filter((n) => n > 0);
 
-const BASE_STATS: Record<StatKey, number> = { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 };
+const BASE_STATS: Record<StatKey, number> = { str: 3, dex: 3, vit: 3, spd: 3, luk: 3, int: 0 };
 type Archetype = "STR" | "DEX" | "SPD" | "BAL";
 
 // ── 플레이어 빌드 ─────────────────────────────────────────────────────
 function allocate(arch: Archetype, level: number): Record<StatKey, number> {
   const points = Math.round(Math.max(0, level - 1) * PT_MULT);
-  const a: Record<StatKey, number> = { str: 0, dex: 0, vit: 0, spd: 0, luk: 0 };
+  const a: Record<StatKey, number> = { str: 0, dex: 0, vit: 0, spd: 0, luk: 0, int: 0 };
   let left = points;
   const give = (k: StatKey, n: number) => {
     const v = Math.max(0, Math.min(left, n));
