@@ -42,6 +42,11 @@ export type AdventureLog = {
   chatCount?: number;
   /** 누적 치료소 이용 횟수 — '환자' 칭호용. */
   healingCount?: number;
+  /**
+   * 모험의 서 등록 마일스톤으로 지금까지 수령한 단련 포인트 수.
+   * 가용 = floor(eligible entries / 20) - claimed. (compendiumReward.ts 참조)
+   */
+  compendiumPointsClaimed?: number;
 };
 
 export const ADVENTURE_LOG_KEY = "adventure-log.v2";
@@ -95,6 +100,7 @@ export const emptyAdventureLog = (): AdventureLog => ({
   battleLosses: 0,
   chatCount: 0,
   healingCount: 0,
+  compendiumPointsClaimed: 0,
 });
 
 export function loadAdventureLog(): AdventureLog {
@@ -112,6 +118,7 @@ export function loadAdventureLog(): AdventureLog {
       battleLosses: parsed?.battleLosses ?? 0,
       chatCount: parsed?.chatCount ?? 0,
       healingCount: parsed?.healingCount ?? 0,
+      compendiumPointsClaimed: parsed?.compendiumPointsClaimed ?? 0,
     };
   } catch {
     return emptyAdventureLog();
