@@ -142,9 +142,9 @@ describe("6티어 — 무한 풍사슬", () => {
       calls += 1;
     }
     // 본타 1(첫) + 광속 1 + 풍사슬 체인 30(캡) = 32 회.
-    expect(s.galeChainsThisTurn).toBe(0); // 턴 종료 시 리셋
+    expect(s.turn.galeChainsThisTurn).toBe(0); // 턴 종료 시 리셋
     expect(s.phase).toBe("enemy");
-    expect(s.completedPlayerTurns).toBe(1);
+    expect(s.turn.completedPlayerTurns).toBe(1);
     expect(s.enemyHp).toBe(9999 - 7 * 32);
   });
 

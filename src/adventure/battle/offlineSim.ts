@@ -255,7 +255,7 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
         currentHp = state.playerHp;
         // 시간은 라이브 자동 전투와 동일하게 — 전투 자체는 즉시, 전투당 쿨다운만 경과.
         elapsed += battleCooldownMs(
-          Math.min(state.completedPlayerTurns, BATTLE_TURN_CLAMP),
+          Math.min(state.turn.completedPlayerTurns, BATTLE_TURN_CLAMP),
         );
       } else {
         // 패배 — 부활 시퀀스: 20분 페널티 + maxHp 까지 회복 + 작은 회복약 15까지 충전.

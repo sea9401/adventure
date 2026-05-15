@@ -140,7 +140,7 @@ export function TrialView({
       const id = setTimeout(() => onTrialEndRef.current("win"), 800);
       return () => clearTimeout(id);
     }
-    const cooldown = computeBattleCooldown(state.completedPlayerTurns);
+    const cooldown = computeBattleCooldown(state.turn.completedPlayerTurns);
     const finalHp = state.playerHp;
     const id = setTimeout(() => {
       const next = pickEnemyFor(trial.enemiesFrom);

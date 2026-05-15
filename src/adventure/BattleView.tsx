@@ -176,7 +176,7 @@ export function BattleView({
     // 쿨다운은 전투에 걸린 턴 수 기준 — BATTLE_TURN_CLAMP 턴으로 클램프해
     // 자동 사냥 페이싱을 일정 범위(1200~4200ms)로 제한한다.
     const cooldown = computeBattleCooldown(
-      Math.min(state.completedPlayerTurns, BATTLE_TURN_CLAMP),
+      Math.min(state.turn.completedPlayerTurns, BATTLE_TURN_CLAMP),
     );
     const finalHp = state.playerHp;
     // 이 전투 종료 시각·쿨다운을 모듈 스코프에 기록 — unmount 후 재진입 시 이어받는다.

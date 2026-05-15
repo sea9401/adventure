@@ -35,8 +35,8 @@ describe("5티어 — 막다른 격노", () => {
     let s = initialBattleState(p, enemy(9999), "용사");
     // 2 player 턴: p-e 패턴 → advanceTurn 4회
     for (let i = 0; i < 4; i += 1) s = advanceTurn(s, p, "용사");
-    expect(s.completedPlayerTurns).toBe(2);
-    expect(s.rampageAtkBonus).toBe(0);
+    expect(s.turn.completedPlayerTurns).toBe(2);
+    expect(s.buffs.rampageAtkBonus).toBe(0);
   });
 
   it("RAMPAGE_START_TURN 도달 시점부터 매 플레이어 턴 종료마다 +N 누적", () => {
@@ -44,12 +44,12 @@ describe("5티어 — 막다른 격노", () => {
     let s = initialBattleState(p, enemy(9999), "용사");
     // 3 player 턴 진행
     for (let i = 0; i < 6; i += 1) s = advanceTurn(s, p, "용사");
-    expect(s.completedPlayerTurns).toBe(3);
-    expect(s.rampageAtkBonus).toBe(3);
+    expect(s.turn.completedPlayerTurns).toBe(3);
+    expect(s.buffs.rampageAtkBonus).toBe(3);
     // 한 턴 더 (4번째)
     for (let i = 0; i < 2; i += 1) s = advanceTurn(s, p, "용사");
-    expect(s.completedPlayerTurns).toBe(4);
-    expect(s.rampageAtkBonus).toBe(6);
+    expect(s.turn.completedPlayerTurns).toBe(4);
+    expect(s.buffs.rampageAtkBonus).toBe(6);
   });
 
   it("누적된 보너스 ATK 가 다음 본타 데미지에 반영", () => {
@@ -68,12 +68,12 @@ describe("5티어 — 약점 분석", () => {
     const p: PlayerCombat = { ...PLAYER, analysisPerTurn: 2 };
     let s = initialBattleState(p, enemy(9999), "용사");
     s = advanceTurn(s, p, "용사"); // 본타 후 finishPlayerTurn → 페널티 +2
-    expect(s.enemyAtkPenalty).toBe(2);
-    expect(s.enemyDefPenalty).toBe(2);
+    expect(s.buffs.enemyAtkPenalty).toBe(2);
+    expect(s.buffs.enemyDefPenalty).toBe(2);
     s = advanceTurn(s, p, "용사"); // 적 턴
     s = advanceTurn(s, p, "용사"); // 본타 → 페널티 +2
-    expect(s.enemyAtkPenalty).toBe(4);
-    expect(s.enemyDefPenalty).toBe(4);
+    expect(s.buffs.enemyAtkPenalty).toBe(4);
+    expect(s.buffs.enemyDefPenalty).toBe(4);
   });
 
   it("DEF 페널티가 플레이어 데미지에 반영 — 적 DEF 가 0 으로 클램프", () => {
@@ -122,13 +122,13 @@ describe("5티어 — 풍사슬", () => {
     // turn 1: 본타1(7) → 광속 발동 → 본타2(7) → 풍사슬1 → 본타3(7) → 풍사슬2 → 본타4(7) → 풍사슬3 → 본타5(7) → cap → 턴 종료
     s = advanceTurn(s, p, "용사"); // 본타1 + 광속 발동
     expect(s.phase).toBe("player");
-    expect(s.lightspeedUsedThisTurn).toBe(true);
+    expect(s.turn.lightspeedUsedThisTurn).toBe(true);
     s = advanceTurn(s, p, "용사"); // 본타2 + 풍사슬1
-    expect(s.galeChainsThisTurn).toBe(1);
+    expect(s.turn.galeChainsThisTurn).toBe(1);
     s = advanceTurn(s, p, "용사"); // 본타3 + 풍사슬2
-    expect(s.galeChainsThisTurn).toBe(2);
+    expect(s.turn.galeChainsThisTurn).toBe(2);
     s = advanceTurn(s, p, "용사"); // 본타4 + 풍사슬3
-    expect(s.galeChainsThisTurn).toBe(3);
+    expect(s.turn.galeChainsThisTurn).toBe(3);
     s = advanceTurn(s, p, "용사"); // 본타5, cap 도달 → 풍사슬 X → phase=enemy
     expect(s.phase).toBe("enemy");
     expect(s.enemyHp).toBe(9999 - 7 * 5);
@@ -140,7 +140,7 @@ describe("5티어 — 풍사슬", () => {
     let s = initialBattleState(p, enemy(9999), "용사");
     s = advanceTurn(s, p, "용사"); // 본타 7, 광속/연타 X → 풍사슬도 X → phase=enemy
     expect(s.phase).toBe("enemy");
-    expect(s.galeChainsThisTurn).toBe(0);
+    expect(s.turn.galeChainsThisTurn).toBe(0);
     expect(s.enemyHp).toBe(9999 - 7);
   });
 
@@ -153,15 +153,15 @@ describe("5티어 — 풍사슬", () => {
     let s = initialBattleState(p, enemy(9999), "용사");
     // turn 1: 풍사슬 3회 발동
     for (let i = 0; i < 5; i += 1) s = advanceTurn(s, p, "용사"); // 본타 5번
-    expect(s.galeChainsThisTurn).toBe(0); // turn 종료 시 리셋
+    expect(s.turn.galeChainsThisTurn).toBe(0); // turn 종료 시 리셋
     expect(s.phase).toBe("enemy");
     s = advanceTurn(s, p, "용사"); // 적 턴
     expect(s.phase).toBe("player");
     // turn 2: 풍사슬 재발동 가능
     s = advanceTurn(s, p, "용사"); // 본타 + 광속
-    expect(s.lightspeedUsedThisTurn).toBe(true);
+    expect(s.turn.lightspeedUsedThisTurn).toBe(true);
     s = advanceTurn(s, p, "용사"); // 본타 + 풍사슬1
-    expect(s.galeChainsThisTurn).toBe(1);
+    expect(s.turn.galeChainsThisTurn).toBe(1);
   });
 });
 
