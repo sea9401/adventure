@@ -141,15 +141,10 @@ export function QuickTravelScreen() {
     }
   }
 
-  // 현재 위치 entry 를 카테고리 안에서 최상단으로 — 메뉴 위치 안정성 + 시각적 앵커.
-  const pinCurrentFirst = (entries: Entry[]) =>
-    entries.sort(
-      (a, b) => Number(b.isCurrent ?? false) - Number(a.isCurrent ?? false),
-    );
-  pinCurrentFirst(townEntries);
-  pinCurrentFirst(towerEntries);
-  pinCurrentFirst(coopBossEntries);
-  pinCurrentFirst(soloBossEntries);
+  // 정렬은 의도적으로 하지 않는다 — 현재 위치를 최상단으로 옮기면 다른 항목 자리가
+  // 함께 흔들려, "메뉴 위치가 바뀌는 게 불편" 이라는 원래 피드백과 정면으로 어긋난다.
+  // world.ts 정의 순서 (방문 순서에 가까움) 를 그대로 유지하고, 현재 위치는 그 자리에서
+  // isCurrent 표시 + 비활성으로만 구분한다.
 
   const onTravelTown = (region: Region, cost: number) => {
     if (cost > 0 && scrollCount < cost) {
