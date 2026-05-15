@@ -142,7 +142,6 @@ export function derivePlayerCombat(
     vit: 0,
     spd: 0,
     luk: 0,
-    int: 0,
   };
   const items: (EquipItem | null)[] = [
     input.equipped.weapon,
@@ -164,7 +163,7 @@ export function derivePlayerCombat(
         equipStatBonuses[k];
       return acc;
     },
-    { str: 0, dex: 0, vit: 0, spd: 0, luk: 0, int: 0 } as Record<StatKey, number>,
+    { str: 0, dex: 0, vit: 0, spd: 0, luk: 0 } as Record<StatKey, number>,
   );
 
   const layout = skillLayout({
@@ -208,12 +207,6 @@ export function derivePlayerCombat(
     0,
   );
   const playerDef = totalStats.vit + equipDef;
-  // PR-1 dormant scaffolding — INT + 장비 magicAtk 합산. PR-3 마법 스킬에서 소비.
-  const equipMagicAtk = items.reduce(
-    (sum, item) => sum + (item?.bonus?.magicAtk ?? 0),
-    0,
-  );
-  const playerMagicAtk = totalStats.int + equipMagicAtk;
 
   // 광속 격투 (2티어 특기) — 기본 공격 횟수 +1. derive 단계에서 attackCount 에 미리 합산.
   const lightHandExtra = lightHandExtraAttackFor(totalStats, effectiveSkillSet);
@@ -232,7 +225,6 @@ export function derivePlayerCombat(
     maxHp,
     atk: Math.floor(rawAtk * pctToMultiplier(runeBonus.atk_pct)),
     def: Math.floor(playerDef * pctToMultiplier(runeBonus.def_pct)),
-    magicAtk: playerMagicAtk,
     spd: totalStats.spd,
     evasionPct:
       totalStats.dex * 0.5 + evadeBonusPctFor(totalStats, effectiveSkillSet),

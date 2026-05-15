@@ -24,7 +24,7 @@ export const baseCharacter = {
   battleCount: 0,
   fame: 0,
   skills: [] as Skill[],
-  stats: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3, int: 0 } as Record<StatKey, number>,
+  stats: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 } as Record<StatKey, number>,
   equipped: {
     weapon: ITEMS.branch_stick as EquippedItem | null,
     armor: ITEMS.cloth_clothes as EquippedItem | null,

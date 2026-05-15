@@ -1,5 +1,4 @@
 import {
-  Brain,
   HandFist,
   HeartStraight,
   Lightning,
@@ -15,7 +14,6 @@ export const STAT_ICONS: Record<StatKey, PhosphorIcon> = {
   vit: HeartStraight,
   spd: Wind,
   luk: Star,
-  int: Brain,
 };
 
 export const STAT_ICON_COLORS: Record<StatKey, string> = {
@@ -24,7 +22,6 @@ export const STAT_ICON_COLORS: Record<StatKey, string> = {
   vit: "text-emerald-500",
   spd: "text-sky-500",
   luk: "text-yellow-500",
-  int: "text-purple-500",
 };
 
 export const ZERO_ALLOCATED: Record<StatKey, number> = {
@@ -33,5 +30,4 @@ export const ZERO_ALLOCATED: Record<StatKey, number> = {
   vit: 0,
   spd: 0,
   luk: 0,
-  int: 0,
 };

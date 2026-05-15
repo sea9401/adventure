@@ -169,12 +169,6 @@ export function useCharacterState() {
   const restoreHpFull = (maxHp?: number) =>
     setState((prev) => ({ ...prev, hp: maxHp ?? maxHpForLevel(prev.level) }));
 
-  // MP 회복 모델 = 전투 시작 시 풀충전 (MP+INT 패키지 PR-1 안전 경로). 각 전투 진입 시
-  // BattleSubView/BossSubView/TowerSubView 의 onBattleStart 가 호출. PR-1 시점엔 MP
-  // 소비자가 없어 사실상 dormant — PR-3 마법 스킬이 들어와 MP 가 줄어들기 시작하면 의미가 생긴다.
-  const restoreMpFull = () =>
-    setState((prev) => ({ ...prev, mp: maxMpForLevel(prev.level) }));
-
   const setHp = (hp: number) => setState((prev) => ({ ...prev, hp }));
 
   const addGoldFame = (gold: number, fame: number) =>
@@ -282,7 +276,6 @@ export function useCharacterState() {
     equippedTitleId: state.equippedTitleId ?? null,
     heal,
     restoreHpFull,
-    restoreMpFull,
     setHp,
     addGold,
     addGoldFame,

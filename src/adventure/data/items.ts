@@ -15,9 +15,6 @@ export type EquipBonus = {
   vit?: number;
   spd?: number;
   luk?: number;
-  int?: number;
-  magicAtk?: number;
-  magicDef?: number;
 };
 
 // 보너스 키 ↔ 한글 라벨. EquipItem.stats 의 label 과 일치 — 제작 등급 stats 재생성·
@@ -30,9 +27,6 @@ export const BONUS_LABELS: Record<keyof EquipBonus, string> = {
   vit: "활력",
   spd: "속도",
   luk: "행운",
-  int: "지능",
-  magicAtk: "마법 공격력",
-  magicDef: "마법 방어력",
 };
 
 export const BONUS_KEYS = Object.keys(BONUS_LABELS) as (keyof EquipBonus)[];
