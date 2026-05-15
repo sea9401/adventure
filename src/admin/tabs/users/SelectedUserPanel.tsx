@@ -15,6 +15,7 @@ import {
 } from "./types";
 import { GuildCooldownSection } from "./GuildCooldownSection";
 import { ItemGrantSection } from "./ItemGrantSection";
+import { TowerSection } from "./TowerSection";
 
 export function SelectedUserPanel({
   user,
@@ -26,6 +27,7 @@ export function SelectedUserPanel({
   onUpdateCharacter,
   onUpdateTraining,
   onUpdateInventory,
+  onResetTowerDailyAttempts,
   onReload,
 }: {
   user: AdminUserRow;
@@ -37,6 +39,7 @@ export function SelectedUserPanel({
   onUpdateCharacter: (next: CharacterDynamicState) => void;
   onUpdateTraining: (next: TrainingPersisted) => void;
   onUpdateInventory: (next: InventoryState) => void;
+  onResetTowerDailyAttempts: () => void;
   onReload: () => void;
 }) {
   const character = saves?.["character.v2"] ?? initialCharacterState;
@@ -273,6 +276,13 @@ export function SelectedUserPanel({
         inventory={inventory}
         readOnly={readOnly || loading}
         onUpdateInventory={onUpdateInventory}
+      />
+
+      <TowerSection
+        tower={saves?.["tower.v1"]}
+        readOnly={readOnly}
+        loading={loading}
+        onResetDailyAttempts={onResetTowerDailyAttempts}
       />
     </>
   );

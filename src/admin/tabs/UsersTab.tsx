@@ -6,6 +6,7 @@ import { Button, TextInput } from "../ui/Field";
 import type { CharacterDynamicState } from "@/adventure/character/useCharacterState";
 import type { Profile } from "@/adventure/profile/useProfile";
 import type { InventoryState } from "@/adventure/inventory/useInventory";
+import type { TowerState } from "@/adventure/tower/types";
 import type { AdminUserRow, SavesMap, TrainingPersisted } from "./users/types";
 import { SelectedUserPanel } from "./users/SelectedUserPanel";
 
@@ -130,6 +131,25 @@ export function UsersTab() {
     }
   };
 
+  const resetTowerDailyAttempts = async () => {
+    if (!selected) return;
+    // daily 를 null 로 비우면 서버 측 todayDaily 가 다음 start 때 0 으로 재초기화.
+    // progress / run 은 보존.
+    const current: TowerState = saves?.["tower.v1"] ?? {
+      progress: { highestFloor: 0, claimedMilestones: [] },
+      run: null,
+      daily: null,
+    };
+    const next: TowerState = { ...current, daily: null };
+    try {
+      await patchKey(selected.id, "tower.v1", next);
+      setSaves((s) => ({ ...(s ?? {}), "tower.v1": next }));
+      showToast("고탑 일일 입장 횟수 초기화됨. 대상 유저는 새로고침 필요.");
+    } catch (e) {
+      showToast(`실패: ${e instanceof Error ? e.message : "오류"}`);
+    }
+  };
+
   return (
     <div className="grid gap-4 md:grid-cols-[320px_1fr]">
       <section className="rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
@@ -211,6 +231,7 @@ export function UsersTab() {
             onUpdateCharacter={updateCharacter}
             onUpdateTraining={updateTraining}
             onUpdateInventory={updateInventory}
+            onResetTowerDailyAttempts={resetTowerDailyAttempts}
             onReload={() => loadSaves(selected.id)}
           />
         )}
