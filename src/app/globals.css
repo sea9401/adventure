@@ -29,9 +29,15 @@
 
 html {
   background: var(--background);
+  /* 모바일 새로고침 시 가로 오버플로우가 페이지 폭을 넘기면 iOS Safari 가
+     자동으로 페이지를 축소했다가 복귀하며 "확대/축소·옆 밀림" 형태로 흔들린다.
+     어떤 자식 요소가 폭을 넘기더라도 페이지 전체를 가로 스크롤시키지 않도록 클립. */
+  overflow-x: clip;
 }
 
 body {
   background: transparent;
   color: var(--foreground);
+  /* iOS 의 가로 바운스(상하좌우 rubber-band) 중 좌우 방향만 차단 — 세로 스크롤은 유지. */
+  overscroll-behavior-x: none;
 }
