@@ -4,6 +4,18 @@ import { savesKv, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/server/isAdmin";
 import { upsertSave } from "@/lib/server/savesKv";
 import { isSyncedKey, type SyncedKey } from "@/lib/storage/synced-keys";
+import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
+
+// 닉네임 길이 — profile/setup 과 동일.
+const NAME_MIN = 1;
+const NAME_MAX = 16;
+
+// "이름 중복" 신호 — 트랜잭션 안에서 throw 해서 깔끔하게 롤백.
+class TakenError extends Error {
+  constructor() {
+    super("taken");
+  }
+}
 
 async function userExists(userId: string): Promise<boolean> {
   const rows = await db
@@ -41,6 +53,11 @@ export async function GET(req: Request) {
 
 // PATCH /api/admin/saves?userId=<id>&key=<synced-key>
 // 본문: { value: <jsonb> } — 단일 키 upsert.
+//
+// 특수 케이스 — key === character-profile.v2 일 때는 users.gameName (권위 컬럼) 도
+// 같은 트랜잭션에서 동기화한다. 안 그러면 admin 이 이름을 바꿔도 랭킹/채팅/프로필 조회
+// 등 users.gameName 을 읽는 경로는 옛 이름을 그대로 표시한다 (profile/setup 과 동일 정책).
+//
 // 주의: 대상 유저의 게임 라우트는 새로고침해야 반영된다.
 export async function PATCH(req: Request) {
   const gate = await requireAdmin();
@@ -67,7 +84,39 @@ export async function PATCH(req: Request) {
     return new Response("missing value", { status: 400 });
   }
 
-  await upsertSave(db, userId, key, body.value);
+  try {
+    await db.transaction(async (tx) => {
+      await upsertSave(tx, userId, key, body.value);
+
+      if (key === PROFILE_STORAGE_KEY) {
+        // character-profile.v2 의 name 을 users.gameName 으로 미러. 잘못된 값 (비문자열·
+        // 길이 위반) 은 gameName 업데이트를 생략 — savesKv 자체는 admin 신뢰로 통과시킨다.
+        const value =
+          body.value && typeof body.value === "object"
+            ? (body.value as { name?: unknown })
+            : null;
+        const rawName = value && typeof value.name === "string" ? value.name.trim() : null;
+        if (rawName && rawName.length >= NAME_MIN && rawName.length <= NAME_MAX) {
+          // 다른 유저와 충돌(23505) 이면 TakenError 로 변환 → 트랜잭션 롤백 + 409.
+          try {
+            await tx
+              .update(users)
+              .set({ gameName: rawName, updatedAt: new Date() })
+              .where(eq(users.id, userId));
+          } catch (e) {
+            const code = (e as { code?: string }).code;
+            if (code === "23505") throw new TakenError();
+            throw e;
+          }
+        }
+      }
+    });
+  } catch (e) {
+    if (e instanceof TakenError) {
+      return Response.json({ error: "taken" }, { status: 409 });
+    }
+    throw e;
+  }
 
   return Response.json({ ok: true, updatedAt: Date.now() });
 }

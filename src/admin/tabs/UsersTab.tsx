@@ -84,7 +84,16 @@ export function UsersTab() {
         body: JSON.stringify({ value }),
       },
     );
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) {
+      // 닉네임 중복 등 알려진 실패는 본문에 error 코드가 동봉됨 — 사람 보기 좋게 변환.
+      let detail = "";
+      try {
+        const body = (await r.json()) as { error?: string };
+        if (body.error === "taken") detail = " (다른 유저가 사용 중인 닉네임)";
+        else if (body.error) detail = ` (${body.error})`;
+      } catch {}
+      throw new Error(`HTTP ${r.status}${detail}`);
+    }
   };
 
   const updateCharacter = async (next: CharacterDynamicState) => {
@@ -103,7 +112,11 @@ export function UsersTab() {
     try {
       await patchKey(selected.id, "character-profile.v2", next);
       setSaves((s) => ({ ...(s ?? {}), "character-profile.v2": next }));
-      showToast("저장됨.");
+      // 검색 결과 리스트의 gameName 도 같이 갱신해 두면 목록에서도 새 이름이 보임.
+      setUsers((list) =>
+        list.map((u) => (u.id === selected.id ? { ...u, gameName: next.name } : u)),
+      );
+      showToast("저장됨. 대상 유저는 새로고침해야 반영됩니다.");
     } catch (e) {
       showToast(`실패: ${e instanceof Error ? e.message : "오류"}`);
     }
