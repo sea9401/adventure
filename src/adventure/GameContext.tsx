@@ -120,6 +120,8 @@ export type GameCtx = {
   handlePurchaseEquipment: (id: ItemId, quantity: number) => void;
   /** 마을 귀환 주문서 사용. 성공 시 true, 조건 미달/소비 실패 시 false. */
   handleUseTownReturn: (townId: RegionId) => boolean;
+  /** 보스/고탑 등 비-마을 지역으로 빠른이동. 무조건 주문서 1개 소비. */
+  handleUseTravelScroll: (regionId: RegionId) => boolean;
   handleSellPotion: (id: PotionId, quantity: number) => void;
   handleSellMaterial: (id: MaterialId, quantity: number) => void;
   handleSellEquipment: (
