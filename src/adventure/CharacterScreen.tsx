@@ -49,6 +49,7 @@ export function CharacterScreen() {
     training,
     playerCombat,
     totalStats,
+    baseAllocatedStats,
     addNotification,
     handleEquipFromInventory,
     handleUnequip,
@@ -198,7 +199,7 @@ export function CharacterScreen() {
             <AdventurerCard character={character} />
             <div className="border-t border-zinc-200 dark:border-zinc-800" />
             <StatsPanel
-              stats={character.stats}
+              stats={baseAllocatedStats}
               totalStats={totalStats}
               combat={{ atk: playerCombat.atk, def: playerCombat.def }}
             />
