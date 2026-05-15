@@ -20,6 +20,11 @@ import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { AdventureLogView } from "@/adventure/log/AdventureLogView";
 import { computeCompendiumReward } from "@/adventure/log/compendiumReward";
 import { RuneView } from "@/adventure/RuneView";
+import {
+  isFusionError,
+  planRuneFusion,
+} from "@/adventure/character/runeFusion";
+import type { RuneGrade, RuneId } from "@/adventure/data/runes";
 import { InventoryView } from "@/adventure/InventoryView";
 import { RecentLogView } from "@/adventure/RecentLogView";
 import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
@@ -137,6 +142,27 @@ export function CharacterScreen() {
   }
 
   if (subView === "runes") {
+    const handleFuseRune = (id: RuneId, grade: RuneGrade) => {
+      const have = inventory.runeCount(id, grade);
+      const plan = planRuneFusion(id, grade, have);
+      if (isFusionError(plan)) {
+        if (plan === "max_grade") {
+          addNotification("info", "5등급 룬은 합성할 수 없다.");
+        } else {
+          addNotification(
+            "info",
+            "합성에 필요한 룬이 부족하다 (동일 등급 3개 필요).",
+          );
+        }
+        return;
+      }
+      if (!inventory.consumeRune(id, grade, plan.consumed)) return;
+      inventory.addRune(id, plan.toGrade, plan.produced);
+      addNotification(
+        "info",
+        `${grade}등급 × ${plan.consumed} → ${plan.toGrade}등급 ×1 합성.`,
+      );
+    };
     return (
       <div className="space-y-3">
         <SubViewHeader title="룬" onBack={back} />
@@ -146,6 +172,7 @@ export function CharacterScreen() {
           onEquip={(slotIndex, rune) =>
             characterStateHook.setEquippedRuneAt(slotIndex, rune)
           }
+          onFuse={handleFuseRune}
         />
       </div>
     );
