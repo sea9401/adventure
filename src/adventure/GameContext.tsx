@@ -81,8 +81,10 @@ export type GameCtx = {
   trainingDescription: string;
   playerCombat: PlayerCombat;
   playerStatus: PlayerStatus;
-  /** 베이스 + 분배 + 장비 보너스가 합산된 최종 스탯. character.stats(베이스+분배)와의 차이가 장비 보너스. */
+  /** 베이스 + 분배 + 장비 보너스가 합산된 최종 스탯. character.stats 와 동일한 값. */
   totalStats: Record<StatKey, number>;
+  /** 베이스 + 분배 만 합산 (장비 보너스 제외). 두 값의 차이가 UI 의 "장비 +N" 표시. */
+  baseAllocatedStats: Record<StatKey, number>;
 
   // — 지도 / 모험 임시 상태 —
   mapProgress: MapProgress;

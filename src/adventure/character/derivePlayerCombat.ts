@@ -111,6 +111,9 @@ export type DerivePlayerCombatInput = {
 export type DerivedPlayerCombat = {
   player: PlayerCombat;
   totalStats: Record<StatKey, number>;
+  /** base + 분배 만 합산 (장비 보너스 제외). character.stats 는 totalStats 와 같으므로,
+   * UI 에서 "기본 vs 장비" 분리 표시가 필요할 때 이 값을 사용한다. */
+  baseAllocatedStats: Record<StatKey, number>;
   maxHp: number;
   /** 장착 룬에서 합산된 효과 보너스 — UI 표시 + onBattleEnd 의 EXP/드롭 적용에 사용. */
   runeBonus: RuneBonusMap;
@@ -155,12 +158,16 @@ export function derivePlayerCombat(
     }
   }
 
+  const baseAllocatedStats: Record<StatKey, number> = STAT_KEYS.reduce(
+    (acc, k) => {
+      acc[k] = (input.baseStats[k] ?? 0) + (input.allocatedStats[k] ?? 0);
+      return acc;
+    },
+    { str: 0, dex: 0, vit: 0, spd: 0, luk: 0 } as Record<StatKey, number>,
+  );
   const totalStats: Record<StatKey, number> = STAT_KEYS.reduce(
     (acc, k) => {
-      acc[k] =
-        (input.baseStats[k] ?? 0) +
-        (input.allocatedStats[k] ?? 0) +
-        equipStatBonuses[k];
+      acc[k] = baseAllocatedStats[k] + equipStatBonuses[k];
       return acc;
     },
     { str: 0, dex: 0, vit: 0, spd: 0, luk: 0 } as Record<StatKey, number>,
@@ -343,6 +350,7 @@ export function derivePlayerCombat(
   return {
     player,
     totalStats,
+    baseAllocatedStats,
     maxHp,
     runeBonus,
     characterSkills,
