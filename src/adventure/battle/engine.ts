@@ -98,6 +98,8 @@ export type PlayerCombat = {
   spd: number; // 선공 판정에 사용
   evasionPct: number; // 0~100, 적 공격 회피 확률
   attackCount: number; // 한 턴에 가하는 공격 횟수 (>=1)
+  // PR-3 마법 스킬용 dormant scaffolding — INT + 장비 magicAtk 합산값. PR-1 시점엔 엔진 미사용.
+  magicAtk?: number;
   // 매 턴 시작 시 이 확률(0~100)로 추가 공격 1회. SPD 의 기본 환산.
   extraAttackChancePct?: number;
   // 강공격 보너스 — POWER_ATTACK_TURN_INTERVAL 턴마다 첫 공격에 추가 피해. 0/undefined = 스킬 미보유.

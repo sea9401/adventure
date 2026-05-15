@@ -136,7 +136,10 @@ export function BossSubView() {
           playerLevel={character.level}
           playerName={character.name}
           playerStatus={playerStatus}
-          onBattleStart={adventureLog.markEncountered}
+          onBattleStart={(name) => {
+            adventureLog.markEncountered(name);
+            characterStateHook.restoreMpFull();
+          }}
           onBattleEnd={handleBattleEnd}
           pickAutoAction={(state) =>
             pickAutoAction(state, {
