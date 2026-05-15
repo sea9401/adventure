@@ -27,8 +27,15 @@ export function PlacesTab({ log }: { log: AdventureLog }) {
         (b.recommendedLevel ?? Number.POSITIVE_INFINITY),
     );
 
-  // 어떤 지역의 enemies 목록에도 없는 조우 몬스터 (특수 보스·이벤트 등) → '기타' 카드로.
-  const placedNames = new Set(WORLD_MAP.regions.flatMap((r) => r.enemies));
+  // 어떤 (사냥터) 지역의 enemies 목록에도 없는 조우 몬스터 (마을 의뢰·이벤트 등) → '기타' 카드로.
+  // town region 은 PlaceCard 로 렌더되지 않으니 (위 places 필터에서 제외) placedNames 에서도
+  // 빼야 한다. 그렇지 않으면 마을 enemies 에만 등록된 몬스터 (예: 시작 마을의 "주정뱅이")가
+  // 어디에도 표시되지 않는 사각지대에 빠진다.
+  const placedNames = new Set(
+    WORLD_MAP.regions
+      .filter((r) => !r.tags?.includes("town"))
+      .flatMap((r) => r.enemies),
+  );
   const orphans = Object.entries(log.monsters).filter(
     ([name, e]) => e.encountered && !placedNames.has(name),
   );
