@@ -27,11 +27,11 @@ describe("4티어 — 출혈", () => {
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // 플레이어 턴: 7 피해 → 93, 출혈 1스택
     expect(s.enemyHp).toBe(93);
-    expect(s.bleedStacks).toBe(1);
+    expect(s.stacks.bleedStacks).toBe(1);
     s = advanceTurn(s, p, "용사"); // 적 턴: 출혈 1×3 → 90, 그 뒤 적 공격 3 → 플레이어 47
     expect(s.enemyHp).toBe(90);
     expect(s.playerHp).toBe(47);
-    expect(s.damageTakenThisCombat).toBe(3);
+    expect(s.stacks.damageTakenThisCombat).toBe(3);
   });
 });
 
@@ -39,12 +39,12 @@ describe("4티어 — 철벽", () => {
   it("보호막이 피해를 먼저 흡수, 소진까지 HP 와 누적피해 0", () => {
     const p: PlayerCombat = { ...PLAYER, bulwarkShield: 10 };
     let s = initialBattleState(p, enemy(100), "용사");
-    expect(s.playerShield).toBe(10);
+    expect(s.stacks.playerShield).toBe(10);
     s = advanceTurn(s, p, "용사"); // 플레이어 타격
     s = advanceTurn(s, p, "용사"); // 적 타격 3 → 보호막 10→7, HP 그대로
-    expect(s.playerShield).toBe(7);
+    expect(s.stacks.playerShield).toBe(7);
     expect(s.playerHp).toBe(50);
-    expect(s.damageTakenThisCombat).toBe(0);
+    expect(s.stacks.damageTakenThisCombat).toBe(0);
   });
 });
 
@@ -72,7 +72,7 @@ describe("4티어 — 무피해 난무", () => {
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // 7(본체) + 7 + 7 (난무 2회) → 79
     expect(s.enemyHp).toBe(79);
-    expect(s.damageTakenThisCombat).toBe(0);
+    expect(s.stacks.damageTakenThisCombat).toBe(0);
   });
 
   it("피해를 받은 뒤에는 난무가 안 나간다", () => {
@@ -80,7 +80,7 @@ describe("4티어 — 무피해 난무", () => {
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // 1턴: 본체7 + 난무14 → 79
     s = advanceTurn(s, p, "용사"); // 적 턴: 3 피해 → damageTaken 3
-    expect(s.damageTakenThisCombat).toBe(3);
+    expect(s.stacks.damageTakenThisCombat).toBe(3);
     const before = s.enemyHp; // 79
     s = advanceTurn(s, p, "용사"); // 2턴: 본체7만 (난무 X) → 72
     expect(s.enemyHp).toBe(before - 7);

@@ -27,6 +27,79 @@ export type BattleOutcome = "win" | "lose";
 
 export type BattlePhase = "player" | "enemy" | "ended";
 
+// 진행 카운터 + 턴마다 리셋되는 1회용 게이트들.
+export type BattleTurnState = {
+  // 완료된 플레이어 턴 수 — 강공격(N턴마다 발동) 트리거에 사용. 진행 중인 턴은 미포함.
+  completedPlayerTurns: number;
+  // 종료된 적 페이즈 수 — 가드("첫 N턴" 의미) 가 선공자에 무관하게 N번 발동하도록
+  // 적 페이즈 시작 직전에 비교하고 페이즈 종료 시 +1.
+  enemyPhasesCompleted: number;
+  // 그 턴의 첫 공격이 아직 안 나갔는지 — 강공격(첫 공격에만 보너스) 트리거에 사용.
+  // 새 턴 시작 시 true, 첫 공격 후 false. 연타(같은 턴 연장)에는 영향 없음.
+  firstAttackPending: boolean;
+  // 연타가 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋.
+  doubleStrikeUsedThisTurn: boolean;
+  // 광속이 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋. 연타와 별개.
+  lightspeedUsedThisTurn: boolean;
+  // 풍사슬 (5티어) — 이번 턴 풍사슬 체인 발동 횟수. 턴 종료 시 0 으로 리셋. 캡 GALE_CHAIN_MAX_PER_TURN.
+  galeChainsThisTurn: number;
+  // 연참 (특기) — 이번 턴에 크리티컬이 한 번이라도 났는지. 턴 종료 시 false 로 리셋.
+  critThisTurn: boolean;
+  // 연참 (특기) — 이번 턴에 연참 추가타가 이미 발동했는지 (턴당 1회). 턴 종료 시 false 로 리셋.
+  riposteUsedThisTurn: boolean;
+  // 약점 적중 (2티어 특기) — 이번 턴에 약점 적중 추가타가 이미 발동했는지. 턴 종료 시 리셋. 턴당 1회.
+  weakpointUsedThisTurn: boolean;
+  // 연쇄 운명 (2티어 특기) — 이번 턴에 연쇄 운명 트리거가 이미 발동했는지. 턴 종료 시 리셋. 턴당 1회.
+  fatedChainTriggeredThisTurn: boolean;
+};
+
+// 전투당 1회성 토글 — 한 번 켜지면 그 전투 동안 유지.
+export type BattleFlags = {
+  // 페이즈 트리거 1회성 가드. 트리거 발동 후 true 로 전환되어 같은 전투에서 중복 발동 방지.
+  phaseTriggered: boolean;
+  // "격노" 1회성 가드 — 발동 후 true 로 전환되어 같은 전투에서 중복 발동 방지.
+  enrageTriggered: boolean;
+  // 불굴 1회성 가드. 발동 후 true — 같은 전투에서 두 번째 치명 피해에는 정상 사망.
+  enduranceTriggered: boolean;
+  // 암살 (특기) — 전투 첫 공격에 1회 발동 후 true. 같은 전투에서 재발동 안 함.
+  assassinateUsed: boolean;
+  // 이중 행운 — 첫 크리티컬 발동 시 true 로 전환, 전투 종료까지 유지. 회피/크리티컬 보너스 적용 게이트.
+  luckyBuffActive: boolean;
+  // 연쇄 운명 — 다음 공격 1회 크리 100% 보장 큐. 트리거 발동 후 true, 다음 공격에서 소비되며 false.
+  fatedChainCritPending: boolean;
+};
+
+// 누적 +/- 보너스/페널티 (수치, 0 기준으로 더해짐).
+export type BattleBuffs = {
+  // 적 페이즈 트리거로 누적된 DEF 보너스. 기본 0, 트리거 발동 시 enemy.phaseTrigger.defBonus 만큼 증가.
+  enemyDefBonus: number;
+  // 잡몹 스킬 "격노"로 누적된 적 ATK 보너스. 기본 0, 발동 시 enemy.skill.atkBonus 만큼 증가.
+  enemyAtkBonus: number;
+  // 막다른 격노 (5티어) — 그 전투 동안 누적된 ATK 보너스. 매 플레이어 턴 종료 시(RAMPAGE_START_TURN 후) +rampagePerTurn.
+  rampageAtkBonus: number;
+  // 약점 분석 (5티어) — 매 플레이어 턴 종료 시 누적된 적 ATK·DEF 페널티 (각각 clamp to 0).
+  enemyAtkPenalty: number;
+  enemyDefPenalty: number;
+  // 회전 운기 (2티어 특기) — 그 전투 누적 회피/크리 보너스(%). 매 플레이어 턴 시작 시 +cyclingChiPerTurn.
+  cyclingChiBonus: number;
+  // 연단의 룬 합산 — 포션 회복량 +% (initialBattleState 에서 player.potionHealPct 로 시드).
+  potionHealPct: number;
+};
+
+// 가변 자원 스택 / 잔량 카운트.
+export type BattleStacks = {
+  // 출혈 (4티어) — 누적 스택. 매 적 턴 시작 시 스택당 bleedDmgPerStack 만큼 적 HP 감소 (DEF 무시).
+  bleedStacks: number;
+  // 철벽 (4티어) — 남은 보호막. 받는 피해를 먼저 흡수. 회복 안 됨.
+  playerShield: number;
+  // 회피 강화로 적립된 보장 회피 잔량 — enemy phase 에서 % 회피 판정 전에 우선 소모.
+  evadesRemaining: number;
+  // 무피해 난무 (4티어) — 이 전투에서 플레이어가 실제로 받은 누적 HP 피해 (보호막 흡수분 제외). 0 = 무피해.
+  damageTakenThisCombat: number;
+  // 약점 적중 — DEF 무시 큐 남은 카운트. 트리거 시 weakpointExtraAttacks 만큼 누적, 공격당 1 감산.
+  weakpointDefIgnoreLeft: number;
+};
+
 export type BattleState = {
   enemy: Monster;
   enemyHp: number;
@@ -36,65 +109,10 @@ export type BattleState = {
   phase: BattlePhase;
   outcome: BattleOutcome | null;
   playerAttacksLeft: number;
-  // 완료된 플레이어 턴 수 — 강공격(N턴마다 발동) 트리거에 사용. 진행 중인 턴은 미포함.
-  completedPlayerTurns: number;
-  // 종료된 적 페이즈 수 — 가드("첫 N턴" 의미) 가 선공자에 무관하게 N번 발동하도록
-  // 적 페이즈 시작 직전에 비교하고 페이즈 종료 시 +1.
-  enemyPhasesCompleted: number;
-  // 회피 강화로 적립된 보장 회피 잔량 — enemy phase 에서 % 회피 판정 전에 우선 소모.
-  evadesRemaining: number;
-  // 연타가 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋.
-  doubleStrikeUsedThisTurn: boolean;
-  // 이중 행운 — 첫 크리티컬 발동 시 true 로 전환, 전투 종료까지 유지. 회피/크리티컬 보너스 적용 게이트.
-  luckyBuffActive: boolean;
-  // 그 턴의 첫 공격이 아직 안 나갔는지 — 강공격(첫 공격에만 보너스) 트리거에 사용.
-  // 새 턴 시작 시 true, 첫 공격 후 false. 연타(같은 턴 연장)에는 영향 없음.
-  firstAttackPending: boolean;
-  // 적 페이즈 트리거로 누적된 DEF 보너스. 기본 0, 트리거 발동 시 enemy.phaseTrigger.defBonus 만큼 증가.
-  enemyDefBonus: number;
-  // 페이즈 트리거 1회성 가드. 트리거 발동 후 true 로 전환되어 같은 전투에서 중복 발동 방지.
-  phaseTriggered: boolean;
-  // 잡몹 스킬 "격노"로 누적된 적 ATK 보너스. 기본 0, 발동 시 enemy.skill.atkBonus 만큼 증가.
-  enemyAtkBonus: number;
-  // "격노" 1회성 가드 — 발동 후 true 로 전환되어 같은 전투에서 중복 발동 방지.
-  enrageTriggered: boolean;
-  // 광속이 한 턴에 한 번만 발동하도록 막는 게이트 — 새 턴 시작 시 false 로 리셋. 연타와 별개.
-  lightspeedUsedThisTurn: boolean;
-  // 불굴 1회성 가드. 발동 후 true — 같은 전투에서 두 번째 치명 피해에는 정상 사망.
-  enduranceTriggered: boolean;
-  // 출혈 (4티어) — 누적 스택. 매 적 턴 시작 시 스택당 bleedDmgPerStack 만큼 적 HP 감소 (DEF 무시).
-  bleedStacks: number;
-  // 철벽 (4티어) — 남은 보호막. 받는 피해를 먼저 흡수. 회복 안 됨.
-  playerShield: number;
-  // 무피해 난무 (4티어) — 이 전투에서 플레이어가 실제로 받은 누적 HP 피해 (보호막 흡수분 제외). 0 = 무피해.
-  damageTakenThisCombat: number;
-  // 암살 (특기) — 전투 첫 공격에 1회 발동 후 true. 같은 전투에서 재발동 안 함.
-  assassinateUsed: boolean;
-  // 연참 (특기) — 이번 턴에 크리티컬이 한 번이라도 났는지. 턴 종료 시 false 로 리셋.
-  critThisTurn: boolean;
-  // 연참 (특기) — 이번 턴에 연참 추가타가 이미 발동했는지 (턴당 1회). 턴 종료 시 false 로 리셋.
-  riposteUsedThisTurn: boolean;
-  // 막다른 격노 (5티어) — 그 전투 동안 누적된 ATK 보너스. 매 플레이어 턴 종료 시(RAMPAGE_START_TURN 후) +rampagePerTurn.
-  rampageAtkBonus: number;
-  // 약점 분석 (5티어) — 매 플레이어 턴 종료 시 누적된 적 ATK·DEF 페널티 (각각 clamp to 0).
-  enemyAtkPenalty: number;
-  enemyDefPenalty: number;
-  // 풍사슬 (5티어) — 이번 턴 풍사슬 체인 발동 횟수. 턴 종료 시 0 으로 리셋. 캡 GALE_CHAIN_MAX_PER_TURN.
-  galeChainsThisTurn: number;
-  // 약점 적중 (2티어 특기) — 이번 턴에 약점 적중 추가타가 이미 발동했는지. 턴 종료 시 리셋. 턴당 1회.
-  weakpointUsedThisTurn: boolean;
-  // 약점 적중 — DEF 무시 큐 남은 카운트. 트리거 시 weakpointExtraAttacks 만큼 누적, 공격당 1 감산.
-  weakpointDefIgnoreLeft: number;
-  // 연쇄 운명 (2티어 특기) — 이번 턴에 연쇄 운명 트리거가 이미 발동했는지. 턴 종료 시 리셋. 턴당 1회.
-  fatedChainTriggeredThisTurn: boolean;
-  // 연쇄 운명 — 다음 공격 1회 크리 100% 보장 큐. 트리거 발동 후 true, 다음 공격에서 소비되며 false.
-  fatedChainCritPending: boolean;
-  // 그림자 보법 (2티어 특기) — 이번 적 턴이 무피격 턴인지. 각 적 턴 시작 시 갱신.
-  shadowStepActiveThisEnemyTurn: boolean;
-  // 회전 운기 (2티어 특기) — 그 전투 누적 회피/크리 보너스(%). 매 플레이어 턴 시작 시 +cyclingChiPerTurn.
-  cyclingChiBonus: number;
-  // 연단의 룬 합산 — 포션 회복량 +% (initialBattleState 에서 player.potionHealPct 로 시드).
-  potionHealPct: number;
+  turn: BattleTurnState;
+  flags: BattleFlags;
+  buffs: BattleBuffs;
+  stacks: BattleStacks;
 };
 
 export type PlayerCombat = {
@@ -260,7 +278,7 @@ function playerFacingEnemyDef(state: BattleState, player: PlayerCombat): number 
   // 약점 분석(5티어)의 누적 페널티는 raw def 에 직접 적용 → 음수 클램프.
   const raw = Math.max(
     0,
-    state.enemy.def + state.enemyDefBonus - state.enemyDefPenalty,
+    state.enemy.def + state.buffs.enemyDefBonus - state.buffs.enemyDefPenalty,
   );
   const afterVuln = Math.round(raw * (1 - (state.enemy.armorVulnerable ?? 0)));
   const frac = player.armorPierceFraction ?? 0;
@@ -282,14 +300,17 @@ function rollPlayerAttackCount(player: PlayerCombat): number {
 // 갱신된 state 를 넘겨야 한다.
 function applyPhaseTriggerIfAny(state: BattleState): BattleState {
   const trigger = state.enemy.phaseTrigger;
-  if (!trigger || state.phaseTriggered) return state;
+  if (!trigger || state.flags.phaseTriggered) return state;
   if (state.enemyHp <= 0) return state;
   const threshold = state.enemy.hp * trigger.hpFraction;
   if (state.enemyHp >= threshold) return state;
   return {
     ...state,
-    phaseTriggered: true,
-    enemyDefBonus: state.enemyDefBonus + trigger.defBonus,
+    flags: { ...state.flags, phaseTriggered: true },
+    buffs: {
+      ...state.buffs,
+      enemyDefBonus: state.buffs.enemyDefBonus + trigger.defBonus,
+    },
     log: appendLog(state.log, { kind: "phase_trigger", text: trigger.message }),
   };
 }
@@ -342,8 +363,8 @@ function applyRegenIfAny(
 ): BattleState {
   const regen = player.regen;
   if (!regen || regen.interval <= 0 || regen.amount <= 0) return state;
-  if (state.completedPlayerTurns === 0) return state;
-  if (state.completedPlayerTurns % regen.interval !== 0) return state;
+  if (state.turn.completedPlayerTurns === 0) return state;
+  if (state.turn.completedPlayerTurns % regen.interval !== 0) return state;
   if (state.playerHp >= state.playerMaxHp) return state;
   const newHp = Math.min(state.playerMaxHp, state.playerHp + regen.amount);
   const actual = newHp - state.playerHp;
@@ -365,8 +386,8 @@ function applyBaselineRegenIfAny(
 ): BattleState {
   const r = player.baselineRegen;
   if (!r || r.interval <= 0 || r.amount <= 0) return state;
-  if (state.completedPlayerTurns === 0) return state;
-  if (state.completedPlayerTurns % r.interval !== 0) return state;
+  if (state.turn.completedPlayerTurns === 0) return state;
+  if (state.turn.completedPlayerTurns % r.interval !== 0) return state;
   if (state.playerHp >= state.playerMaxHp) return state;
   const newHp = Math.min(state.playerMaxHp, state.playerHp + r.amount);
   const actual = newHp - state.playerHp;
@@ -437,7 +458,7 @@ function finishPlayerTurn(
   }
   // 무피해 난무 — 이 전투에서 받은 피해가 0이면 추가 공격 N회.
   const flurry = player.flurryAttacks ?? 0;
-  if (st.phase !== "ended" && flurry > 0 && st.damageTakenThisCombat === 0) {
+  if (st.phase !== "ended" && flurry > 0 && st.stacks.damageTakenThisCombat === 0) {
     for (let i = 0; i < flurry; i += 1) {
       if (st.phase === "ended") break;
       const fd = damageBetween(player.atk, playerFacingEnemyDef(st, player));
@@ -448,11 +469,11 @@ function finishPlayerTurn(
   // 막다른 격노 (5티어) — RAMPAGE_START_TURN 턴 후부터 매 플레이어 턴 종료 시 ATK 영구 누적.
   // completedPlayerTurns 는 이 시점에 막 +1 된 상태 (ended state 진입 후) — 1턴 종료 시 1.
   const rampage = player.rampagePerTurn ?? 0;
-  if (rampage > 0 && st.completedPlayerTurns >= RAMPAGE_START_TURN) {
-    const nextBonus = st.rampageAtkBonus + rampage;
+  if (rampage > 0 && st.turn.completedPlayerTurns >= RAMPAGE_START_TURN) {
+    const nextBonus = st.buffs.rampageAtkBonus + rampage;
     st = {
       ...st,
-      rampageAtkBonus: nextBonus,
+      buffs: { ...st.buffs, rampageAtkBonus: nextBonus },
       log: appendLog(st.log, {
         kind: "info",
         text: `[막다른 격노] ATK +${rampage} (누적 +${nextBonus})`,
@@ -462,12 +483,15 @@ function finishPlayerTurn(
   // 약점 분석 (5티어) — 매 플레이어 턴 종료 시 적 ATK·DEF 누적 페널티 +N.
   const analysis = player.analysisPerTurn ?? 0;
   if (analysis > 0) {
-    const nextAtkPen = st.enemyAtkPenalty + analysis;
-    const nextDefPen = st.enemyDefPenalty + analysis;
+    const nextAtkPen = st.buffs.enemyAtkPenalty + analysis;
+    const nextDefPen = st.buffs.enemyDefPenalty + analysis;
     st = {
       ...st,
-      enemyAtkPenalty: nextAtkPen,
-      enemyDefPenalty: nextDefPen,
+      buffs: {
+        ...st.buffs,
+        enemyAtkPenalty: nextAtkPen,
+        enemyDefPenalty: nextDefPen,
+      },
       log: appendLog(st.log, {
         kind: "info",
         text: `[약점 분석] ${st.enemy.name} ATK·DEF -${analysis} (누적 -${nextAtkPen}/-${nextDefPen})`,
@@ -522,35 +546,42 @@ export function initialBattleState(
     phase: playerFirst ? "player" : "enemy",
     outcome: null,
     playerAttacksLeft: rollPlayerAttackCount(player) + vanguardBonus,
-    completedPlayerTurns: 0,
-    enemyPhasesCompleted: 0,
-    evadesRemaining: player.guaranteedEvades ?? 0,
-    doubleStrikeUsedThisTurn: false,
-    luckyBuffActive: false,
-    firstAttackPending: true,
-    enemyDefBonus: 0,
-    phaseTriggered: false,
-    enemyAtkBonus: 0,
-    enrageTriggered: false,
-    lightspeedUsedThisTurn: false,
-    enduranceTriggered: false,
-    bleedStacks: 0,
-    playerShield: startShield,
-    damageTakenThisCombat: 0,
-    assassinateUsed: false,
-    critThisTurn: false,
-    riposteUsedThisTurn: false,
-    rampageAtkBonus: 0,
-    enemyAtkPenalty: 0,
-    enemyDefPenalty: 0,
-    galeChainsThisTurn: 0,
-    weakpointUsedThisTurn: false,
-    weakpointDefIgnoreLeft: 0,
-    fatedChainTriggeredThisTurn: false,
-    fatedChainCritPending: false,
-    shadowStepActiveThisEnemyTurn: false,
-    cyclingChiBonus: 0,
-    potionHealPct: player.potionHealPct ?? 0,
+    turn: {
+      completedPlayerTurns: 0,
+      enemyPhasesCompleted: 0,
+      firstAttackPending: true,
+      doubleStrikeUsedThisTurn: false,
+      lightspeedUsedThisTurn: false,
+      galeChainsThisTurn: 0,
+      critThisTurn: false,
+      riposteUsedThisTurn: false,
+      weakpointUsedThisTurn: false,
+      fatedChainTriggeredThisTurn: false,
+    },
+    flags: {
+      phaseTriggered: false,
+      enrageTriggered: false,
+      enduranceTriggered: false,
+      assassinateUsed: false,
+      luckyBuffActive: false,
+      fatedChainCritPending: false,
+    },
+    buffs: {
+      enemyDefBonus: 0,
+      enemyAtkBonus: 0,
+      rampageAtkBonus: 0,
+      enemyAtkPenalty: 0,
+      enemyDefPenalty: 0,
+      cyclingChiBonus: 0,
+      potionHealPct: player.potionHealPct ?? 0,
+    },
+    stacks: {
+      bleedStacks: 0,
+      playerShield: startShield,
+      evadesRemaining: player.guaranteedEvades ?? 0,
+      damageTakenThisCombat: 0,
+      weakpointDefIgnoreLeft: 0,
+    },
   };
 }
 
@@ -572,15 +603,15 @@ export function advanceTurn(
         ...next,
         phase: "enemy",
         playerAttacksLeft: rollPlayerAttackCount(player),
-        firstAttackPending: true,
+        turn: { ...next.turn, firstAttackPending: true },
       };
     }
 
     // 강공격 발동 — POWER_ATTACK_TURN_INTERVAL 턴마다 그 턴의 첫 공격이 ATK + bonus.
     // 진행 중인 턴 번호 = completedPlayerTurns + 1. 첫 공격 여부는 firstAttackPending 으로 판단
     // (확률 기반 추가 공격 / 기습 보너스로 attackCount 비교가 신뢰할 수 없음).
-    const turnNumber = state.completedPlayerTurns + 1;
-    const isFirstAttackOfTurn = state.firstAttackPending;
+    const turnNumber = state.turn.completedPlayerTurns + 1;
+    const isFirstAttackOfTurn = state.turn.firstAttackPending;
     const bonus =
       isFirstAttackOfTurn &&
       turnNumber % POWER_ATTACK_TURN_INTERVAL === 0 &&
@@ -603,7 +634,7 @@ export function advanceTurn(
           ...state,
           log,
           playerAttacksLeft: attacksLeft,
-          firstAttackPending: false,
+          turn: { ...state.turn, firstAttackPending: false },
         };
       }
       const ended: BattleState = {
@@ -611,16 +642,19 @@ export function advanceTurn(
         log,
         phase: "enemy",
         playerAttacksLeft: rollPlayerAttackCount(player),
-        completedPlayerTurns: state.completedPlayerTurns + 1,
-        doubleStrikeUsedThisTurn: false,
-        lightspeedUsedThisTurn: false,
-        critThisTurn: false,
-        riposteUsedThisTurn: false,
-        firstAttackPending: true,
-        galeChainsThisTurn: 0,
-        weakpointUsedThisTurn: false,
-        fatedChainTriggeredThisTurn: false,
-        // fatedChainCritPending 은 "다음 공격" 까지 살아 있어야 하므로 턴 경계에서 리셋 안 함.
+        turn: {
+          ...state.turn,
+          completedPlayerTurns: state.turn.completedPlayerTurns + 1,
+          doubleStrikeUsedThisTurn: false,
+          lightspeedUsedThisTurn: false,
+          critThisTurn: false,
+          riposteUsedThisTurn: false,
+          firstAttackPending: true,
+          galeChainsThisTurn: 0,
+          weakpointUsedThisTurn: false,
+          fatedChainTriggeredThisTurn: false,
+          // fatedChainCritPending 은 "다음 공격" 까지 살아 있어야 하므로 턴 경계에서 리셋 안 함.
+        },
       };
       return finishPlayerTurn(ended, player, playerName);
     }
@@ -628,11 +662,11 @@ export function advanceTurn(
     // 암살 (특기) — 전투 첫 공격이면 발동: 적 DEF 무시 + 데미지 배수 (배수는 아래에서 적용).
     const assassinFires =
       (player.assassinateDmgMult ?? 0) > 1 &&
-      !state.assassinateUsed &&
-      state.completedPlayerTurns === 0 &&
+      !state.flags.assassinateUsed &&
+      state.turn.completedPlayerTurns === 0 &&
       isFirstAttackOfTurn;
     // 약점 적중 (2티어 특기) — 큐가 있으면 이 공격은 DEF 무시. 트리거 자체는 아래 크리 처리 후.
-    const weakpointDefIgnore = state.weakpointDefIgnoreLeft > 0;
+    const weakpointDefIgnore = state.stacks.weakpointDefIgnoreLeft > 0;
     // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF -crushDefReduction. 암살/약점 적중이면 DEF 0.
     // baseDef 는 보스 취약(armorVulnerable) + 정확(armorPierceFraction) 비례 관통이 이미 반영된 값 —
     // 분쇄는 그 위에 추가 고정 감산.
@@ -660,15 +694,15 @@ export function advanceTurn(
     // 불굴의 일격 (2티어 특기) — 본타(턴 첫 공격) 에만 (이번 전투 누적 받은 피해 × N) 추가.
     const enduringStrikeBonus =
       (player.enduringStrikeMult ?? 0) > 0 && isFirstAttackOfTurn
-        ? Math.floor(state.damageTakenThisCombat * player.enduringStrikeMult!)
+        ? Math.floor(state.stacks.damageTakenThisCombat * player.enduringStrikeMult!)
         : 0;
     // 회전 운기 (2티어 특기) — 매 플레이어 턴 시작 시 +cyclingChiPerTurn(%) 누적. 그 턴 즉시 적용.
     const cyclingChiThisTurn =
-      state.cyclingChiBonus +
+      state.buffs.cyclingChiBonus +
       (isFirstAttackOfTurn ? player.cyclingChiPerTurn ?? 0 : 0);
     // 크리티컬 — 매 공격마다 critChancePct 확률로 발동. 이중 행운 발동 후엔 +crit 보너스.
     const baseCritPct = player.critChancePct ?? 0;
-    const luckCritBonus = state.luckyBuffActive
+    const luckCritBonus = state.flags.luckyBuffActive
       ? player.doubleLuck?.crit ?? 0
       : 0;
     // 천칭 — 내 SPD 가 적보다 빠른 만큼 크리티컬 확률 가산.
@@ -684,7 +718,7 @@ export function advanceTurn(
     const effectiveCritPct =
       baseCritPct + luckCritBonus + balanceCritBonus + universalLuckBonus + cyclingChiThisTurn;
     // 연쇄 운명 (2티어 특기) — 큐가 있으면 이 공격 크리 강제. 큐는 아래에서 소비.
-    const fatedChainConsumed = state.fatedChainCritPending;
+    const fatedChainConsumed = state.flags.fatedChainCritPending;
     const critRoll =
       fatedChainConsumed
         ? true
@@ -692,7 +726,7 @@ export function advanceTurn(
           ? Math.random() * 100 < effectiveCritPct
           : false;
     const baseDmg = damageBetween(
-      player.atk + state.rampageAtkBonus + bonus + berserkBonus + gustBonus + enduringStrikeBonus,
+      player.atk + state.buffs.rampageAtkBonus + bonus + berserkBonus + gustBonus + enduringStrikeBonus,
       targetDef,
     );
     // 처형 — 적 HP 비율 < executionHpFraction 일 때 데미지 ×executionDamageMult.
@@ -762,7 +796,7 @@ export function advanceTurn(
     // 이중 행운 — 첫 크리티컬 발동 순간 활성화, 후속 공격/회피 부터 보너스 적용.
     const shouldActivateLucky =
       critRoll &&
-      !state.luckyBuffActive &&
+      !state.flags.luckyBuffActive &&
       (player.doubleLuck?.crit ?? 0) > 0;
     if (shouldActivateLucky) {
       log = appendLog(log, {
@@ -770,7 +804,7 @@ export function advanceTurn(
         text: `[이중 행운] 회피/크리티컬 +${player.doubleLuck!.crit}% 발동!`,
       });
     }
-    const luckyBuffActive = state.luckyBuffActive || shouldActivateLucky;
+    const luckyBuffActive = state.flags.luckyBuffActive || shouldActivateLucky;
     // 흡혈 (특기) — 크리티컬로 준 피해의 % 만큼 HP 회복.
     const lifestealHeal =
       critRoll && (player.lifestealCritHealPct ?? 0) > 0
@@ -807,13 +841,13 @@ export function advanceTurn(
     // 출혈 (4티어) — 적중하면 출혈 1스택 누적 (다음 적 턴부터 도트).
     const bleedStacks =
       (player.bleedDmgPerStack ?? 0) > 0
-        ? state.bleedStacks + 1
-        : state.bleedStacks;
+        ? state.stacks.bleedStacks + 1
+        : state.stacks.bleedStacks;
     // 약점 적중 (2티어 특기) — 크리 발동 시 그 턴 1회, DEF 무시 큐 + 추가타 1회.
     const weakpointFires =
       critRoll &&
       (player.weakpointExtraAttacks ?? 0) > 0 &&
-      !state.weakpointUsedThisTurn;
+      !state.turn.weakpointUsedThisTurn;
     const weakpointAdd = weakpointFires ? player.weakpointExtraAttacks! : 0;
     if (weakpointFires) {
       log = appendLog(log, {
@@ -825,7 +859,7 @@ export function advanceTurn(
     const fatedChainFires =
       critRoll &&
       !!player.fatedChainActive &&
-      !state.fatedChainTriggeredThisTurn;
+      !state.turn.fatedChainTriggeredThisTurn;
     if (fatedChainFires) {
       log = appendLog(log, {
         kind: "info",
@@ -834,7 +868,7 @@ export function advanceTurn(
     }
     // 약점 큐 카운터: 이 공격에 사용된 경우 -1, 트리거 발화 시 +weakpointAdd.
     const newWeakpointDefIgnoreLeft =
-      Math.max(0, state.weakpointDefIgnoreLeft - (weakpointDefIgnore ? 1 : 0)) +
+      Math.max(0, state.stacks.weakpointDefIgnoreLeft - (weakpointDefIgnore ? 1 : 0)) +
       weakpointAdd;
     // 페이즈 트리거 검사 — 데미지 적용 직후, 사망 분기 전에 처리해야 트리거된 def 가
     // 같은 턴 후속 공격(다중공격/연타)에 즉시 반영된다.
@@ -842,22 +876,34 @@ export function advanceTurn(
       ...state,
       enemyHp,
       playerHp: newPlayerHp,
-      bleedStacks,
-      assassinateUsed: state.assassinateUsed || assassinFires,
-      critThisTurn: state.critThisTurn || critRoll,
       log,
-      luckyBuffActive,
-      // 2티어 특기 상태 갱신.
-      cyclingChiBonus: cyclingChiThisTurn,
-      fatedChainCritPending: fatedChainFires
-        ? true
-        : fatedChainConsumed
-          ? false
-          : state.fatedChainCritPending,
-      fatedChainTriggeredThisTurn:
-        state.fatedChainTriggeredThisTurn || fatedChainFires,
-      weakpointUsedThisTurn: state.weakpointUsedThisTurn || weakpointFires,
-      weakpointDefIgnoreLeft: newWeakpointDefIgnoreLeft,
+      flags: {
+        ...state.flags,
+        assassinateUsed: state.flags.assassinateUsed || assassinFires,
+        luckyBuffActive,
+        fatedChainCritPending: fatedChainFires
+          ? true
+          : fatedChainConsumed
+            ? false
+            : state.flags.fatedChainCritPending,
+      },
+      buffs: {
+        ...state.buffs,
+        // 2티어 특기 상태 갱신.
+        cyclingChiBonus: cyclingChiThisTurn,
+      },
+      stacks: {
+        ...state.stacks,
+        bleedStacks,
+        weakpointDefIgnoreLeft: newWeakpointDefIgnoreLeft,
+      },
+      turn: {
+        ...state.turn,
+        critThisTurn: state.turn.critThisTurn || critRoll,
+        fatedChainTriggeredThisTurn:
+          state.turn.fatedChainTriggeredThisTurn || fatedChainFires,
+        weakpointUsedThisTurn: state.turn.weakpointUsedThisTurn || weakpointFires,
+      },
     });
     if (enemyHp <= 0) {
       return {
@@ -868,7 +914,10 @@ export function advanceTurn(
         }),
         phase: "ended",
         outcome: "win",
-        completedPlayerTurns: state.completedPlayerTurns + 1,
+        turn: {
+          ...afterDamage.turn,
+          completedPlayerTurns: state.turn.completedPlayerTurns + 1,
+        },
       };
     }
     const attacksLeft = state.playerAttacksLeft - 1 + weakpointAdd;
@@ -876,7 +925,7 @@ export function advanceTurn(
       return {
         ...afterDamage,
         playerAttacksLeft: attacksLeft,
-        firstAttackPending: false,
+        turn: { ...afterDamage.turn, firstAttackPending: false },
       };
     }
     // 마지막 공격이 끝난 시점 — 연타 발동 가능 여부 검사.
@@ -885,15 +934,18 @@ export function advanceTurn(
       !!interval &&
       interval > 0 &&
       turnNumber % interval === 0 &&
-      !state.doubleStrikeUsedThisTurn;
+      !state.turn.doubleStrikeUsedThisTurn;
     if (canDoubleStrike) {
       return {
         ...afterDamage,
         log: appendLog(afterDamage.log, { kind: "info", text: "[연타] 한 번 더!" }),
         phase: "player",
         playerAttacksLeft: 1,
-        doubleStrikeUsedThisTurn: true,
-        firstAttackPending: false,
+        turn: {
+          ...afterDamage.turn,
+          doubleStrikeUsedThisTurn: true,
+          firstAttackPending: false,
+        },
       };
     }
     // 광속 — 마지막 공격 후 일정 확률로 추가 1회. 연타와 별개라 둘 다 슬롯 시
@@ -901,7 +953,7 @@ export function advanceTurn(
     const lightspeedPct = player.lightspeedExtraAttackPct ?? 0;
     const canLightspeed =
       lightspeedPct > 0 &&
-      !state.lightspeedUsedThisTurn &&
+      !state.turn.lightspeedUsedThisTurn &&
       Math.random() * 100 < lightspeedPct;
     if (canLightspeed) {
       return {
@@ -912,8 +964,11 @@ export function advanceTurn(
         }),
         phase: "player",
         playerAttacksLeft: 1,
-        lightspeedUsedThisTurn: true,
-        firstAttackPending: false,
+        turn: {
+          ...afterDamage.turn,
+          lightspeedUsedThisTurn: true,
+          firstAttackPending: false,
+        },
       };
     }
     // 풍사슬 (5티어) — 추가 공격(연타·광속·이전 풍사슬) 발동 후 확률로 1회 더. 캡: GALE_CHAIN_MAX_PER_TURN.
@@ -922,9 +977,9 @@ export function advanceTurn(
     const eternalBonusPct = player.eternalGaleBonusPct ?? 0;
     const effectiveGalePct = baseGalePct + eternalBonusPct;
     const galeChainReady =
-      state.doubleStrikeUsedThisTurn ||
-      state.lightspeedUsedThisTurn ||
-      state.galeChainsThisTurn > 0;
+      state.turn.doubleStrikeUsedThisTurn ||
+      state.turn.lightspeedUsedThisTurn ||
+      state.turn.galeChainsThisTurn > 0;
     // 무한 풍사슬 시 절대 캡 (ETERNAL_GALE_ABSOLUTE_CAP) 까지만 — 정상 확률엔 도달 불가, cheese 방지용.
     const galeCap = player.eternalGaleNoCap
       ? ETERNAL_GALE_ABSOLUTE_CAP
@@ -932,7 +987,7 @@ export function advanceTurn(
     const canGaleChain =
       effectiveGalePct > 0 &&
       galeChainReady &&
-      state.galeChainsThisTurn < galeCap &&
+      state.turn.galeChainsThisTurn < galeCap &&
       Math.random() * 100 < effectiveGalePct;
     if (canGaleChain) {
       return {
@@ -943,15 +998,18 @@ export function advanceTurn(
         }),
         phase: "player",
         playerAttacksLeft: 1,
-        galeChainsThisTurn: state.galeChainsThisTurn + 1,
-        firstAttackPending: false,
+        turn: {
+          ...afterDamage.turn,
+          galeChainsThisTurn: state.turn.galeChainsThisTurn + 1,
+          firstAttackPending: false,
+        },
       };
     }
     // 연참 (특기) — 이번 턴에 크리티컬이 났으면 추가 공격 N회 (턴당 1회).
     const canRiposte =
       (player.riposteExtra ?? 0) > 0 &&
-      !state.riposteUsedThisTurn &&
-      afterDamage.critThisTurn;
+      !state.turn.riposteUsedThisTurn &&
+      afterDamage.turn.critThisTurn;
     if (canRiposte) {
       return {
         ...afterDamage,
@@ -961,37 +1019,43 @@ export function advanceTurn(
         }),
         phase: "player",
         playerAttacksLeft: player.riposteExtra!,
-        riposteUsedThisTurn: true,
-        firstAttackPending: false,
+        turn: {
+          ...afterDamage.turn,
+          riposteUsedThisTurn: true,
+          firstAttackPending: false,
+        },
       };
     }
     const ended: BattleState = {
       ...afterDamage,
       phase: "enemy",
       playerAttacksLeft: rollPlayerAttackCount(player),
-      completedPlayerTurns: state.completedPlayerTurns + 1,
-      doubleStrikeUsedThisTurn: false,
-      lightspeedUsedThisTurn: false,
-      critThisTurn: false,
-      riposteUsedThisTurn: false,
-      firstAttackPending: true,
-      galeChainsThisTurn: 0,
-      weakpointUsedThisTurn: false,
-      fatedChainTriggeredThisTurn: false,
+      turn: {
+        ...afterDamage.turn,
+        completedPlayerTurns: state.turn.completedPlayerTurns + 1,
+        doubleStrikeUsedThisTurn: false,
+        lightspeedUsedThisTurn: false,
+        critThisTurn: false,
+        riposteUsedThisTurn: false,
+        firstAttackPending: true,
+        galeChainsThisTurn: 0,
+        weakpointUsedThisTurn: false,
+        fatedChainTriggeredThisTurn: false,
+      },
     };
     return finishPlayerTurn(ended, player, playerName);
   }
 
   // ── 출혈 (4티어) — 적 턴 시작 시 출혈 스택당 고정 피해 (DEF 무시) ──────────
-  if (state.bleedStacks > 0 && (player.bleedDmgPerStack ?? 0) > 0) {
-    const bleedDmg = state.bleedStacks * player.bleedDmgPerStack!;
+  if (state.stacks.bleedStacks > 0 && (player.bleedDmgPerStack ?? 0) > 0) {
+    const bleedDmg = state.stacks.bleedStacks * player.bleedDmgPerStack!;
     const afterBleedHp = Math.max(0, state.enemyHp - bleedDmg);
     const bled = applyPhaseTriggerIfAny({
       ...state,
       enemyHp: afterBleedHp,
       log: appendLog(state.log, {
         kind: "info",
-        text: `[출혈] ${state.enemy.name}이(가) 출혈로 ${bleedDmg} 피해 (스택 ${state.bleedStacks})`,
+        text: `[출혈] ${state.enemy.name}이(가) 출혈로 ${bleedDmg} 피해 (스택 ${state.stacks.bleedStacks})`,
       }),
     });
     if (afterBleedHp <= 0) {
@@ -1034,7 +1098,7 @@ export function advanceTurn(
       playerDefVuln > 0 ? Math.round(pierced * (1 - playerDefVuln)) : pierced;
     const effAtk = Math.max(
       0,
-      state.enemy.atk + state.enemyAtkBonus - state.enemyAtkPenalty,
+      state.enemy.atk + state.buffs.enemyAtkBonus - state.buffs.enemyAtkPenalty,
     );
     return damageBetween(effAtk, effDef);
   })();
@@ -1081,7 +1145,10 @@ export function advanceTurn(
         ...state,
         playerHp: healedHp,
         enemyHp: 0,
-        enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+        turn: {
+          ...state.turn,
+          enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+        },
         log: appendLog(reflect.log, {
           kind: "info",
           text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
@@ -1094,7 +1161,10 @@ export function advanceTurn(
       ...state,
       playerHp: healedHp,
       enemyHp: reflect.enemyHp,
-      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      turn: {
+        ...state.turn,
+        enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+      },
       playerAttacksLeft:
         state.playerAttacksLeft + (player.skirmishNextTurnBonus ?? 0),
       log: reflect.log,
@@ -1104,7 +1174,7 @@ export function advanceTurn(
     next = counter.state;
     return { ...next, phase: "player" };
   }
-  if (state.evadesRemaining > 0) {
+  if (state.stacks.evadesRemaining > 0) {
     const healedHp = healOnDodge(state.playerHp);
     let log = appendLog(state.log, {
       kind: "info",
@@ -1121,9 +1191,15 @@ export function advanceTurn(
       return {
         ...state,
         playerHp: healedHp,
-        evadesRemaining: state.evadesRemaining - 1,
         enemyHp: 0,
-        enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+        stacks: {
+          ...state.stacks,
+          evadesRemaining: state.stacks.evadesRemaining - 1,
+        },
+        turn: {
+          ...state.turn,
+          enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+        },
         log: appendLog(reflect.log, {
           kind: "info",
           text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
@@ -1136,8 +1212,14 @@ export function advanceTurn(
       ...state,
       playerHp: healedHp,
       enemyHp: reflect.enemyHp,
-      evadesRemaining: state.evadesRemaining - 1,
-      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      stacks: {
+        ...state.stacks,
+        evadesRemaining: state.stacks.evadesRemaining - 1,
+      },
+      turn: {
+        ...state.turn,
+        enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+      },
       // 유격 (특기) — 회피 성공 시 다음 플레이어 턴 공격 횟수 +N (현재 playerAttacksLeft 는 다음 턴 선롤분).
       playerAttacksLeft:
         state.playerAttacksLeft + (player.skirmishNextTurnBonus ?? 0),
@@ -1149,7 +1231,7 @@ export function advanceTurn(
     return { ...next, phase: "player" };
   }
   // 이중 행운 — 활성 시 회피 확률 +bonus%.
-  const luckEvadeBonus = state.luckyBuffActive
+  const luckEvadeBonus = state.flags.luckyBuffActive
     ? player.doubleLuck?.evade ?? 0
     : 0;
   // 만물 행운 (6티어) — 회피 확률에도 +N%.
@@ -1159,7 +1241,7 @@ export function advanceTurn(
     player.evasionPct +
     luckEvadeBonus +
     universalLuckEvadeBonus +
-    state.cyclingChiBonus;
+    state.buffs.cyclingChiBonus;
   if (Math.random() * 100 < effectiveEvadePct) {
     const healedHp = healOnDodge(state.playerHp);
     let log = appendLog(state.log, {
@@ -1178,7 +1260,10 @@ export function advanceTurn(
         ...state,
         playerHp: healedHp,
         enemyHp: 0,
-        enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+        turn: {
+          ...state.turn,
+          enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+        },
         log: appendLog(reflect.log, {
           kind: "info",
           text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
@@ -1191,7 +1276,10 @@ export function advanceTurn(
       ...state,
       playerHp: healedHp,
       enemyHp: reflect.enemyHp,
-      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      turn: {
+        ...state.turn,
+        enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+      },
       // 유격 (특기) — 회피 성공 시 다음 플레이어 턴 공격 횟수 +N (현재 playerAttacksLeft 는 다음 턴 선롤분).
       playerAttacksLeft:
         state.playerAttacksLeft + (player.skirmishNextTurnBonus ?? 0),
@@ -1222,7 +1310,10 @@ export function advanceTurn(
         ...state,
         playerHp: healedHp,
         enemyHp: 0,
-        enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+        turn: {
+          ...state.turn,
+          enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+        },
         log: appendLog(reflect.log, {
           kind: "info",
           text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
@@ -1235,7 +1326,10 @@ export function advanceTurn(
       ...state,
       playerHp: healedHp,
       enemyHp: reflect.enemyHp,
-      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      turn: {
+        ...state.turn,
+        enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+      },
       // 유격 (특기) — 회피 성공 시 다음 플레이어 턴 공격 횟수 +N (현재 playerAttacksLeft 는 다음 턴 선롤분).
       playerAttacksLeft:
         state.playerAttacksLeft + (player.skirmishNextTurnBonus ?? 0),
@@ -1252,14 +1346,14 @@ export function advanceTurn(
   // 격노 — 적 HP 가 maxHp×hpFraction 미만으로 떨어지는 순간 1회 발동, ATK +atkBonus (전투 종료까지 유지).
   const enrageReady =
     skill?.kind === "enrage" &&
-    !state.enrageTriggered &&
+    !state.flags.enrageTriggered &&
     state.enemyHp > 0 &&
     state.enemyHp < state.enemy.hp * skill.hpFraction;
   const enemyAtkBonus =
     enrageReady && skill?.kind === "enrage"
-      ? state.enemyAtkBonus + skill.atkBonus
-      : state.enemyAtkBonus;
-  const enrageTriggered = state.enrageTriggered || enrageReady;
+      ? state.buffs.enemyAtkBonus + skill.atkBonus
+      : state.buffs.enemyAtkBonus;
+  const enrageTriggered = state.flags.enrageTriggered || enrageReady;
   // 관통 — 잡몹 pierce 스킬의 고정 관통 먼저, 그 위에 보스 playerDefVulnerable 비례 관통.
   const pierced =
     skill?.kind === "pierce" ? Math.max(0, player.def - skill.armorPierce) : player.def;
@@ -1271,14 +1365,14 @@ export function advanceTurn(
   const heavyBlowMult =
     skill?.kind === "heavy_blow" &&
     skill.everyPhases > 0 &&
-    (state.enemyPhasesCompleted + 1) % skill.everyPhases === 0
+    (state.turn.enemyPhasesCompleted + 1) % skill.everyPhases === 0
       ? skill.multiplier
       : 1;
   const heavyBlowFired = heavyBlowMult > 1;
   // 약점 분석(5티어)의 적 ATK 페널티는 raw atk 에 적용 → 0 클램프.
   const effectiveEnemyAtk = Math.max(
     0,
-    state.enemy.atk + enemyAtkBonus - state.enemyAtkPenalty,
+    state.enemy.atk + enemyAtkBonus - state.buffs.enemyAtkPenalty,
   );
   const baseEnemyDmg = damageBetween(effectiveEnemyAtk, effectivePlayerDef);
   const rawDmg = heavyBlowFired
@@ -1288,7 +1382,7 @@ export function advanceTurn(
   // enemyPhasesCompleted 가 N 미만이면 이번 페이즈가 그 N 중 하나.
   const guard = player.guard;
   const guarded =
-    guard && guard.turns > 0 && state.enemyPhasesCompleted < guard.turns
+    guard && guard.turns > 0 && state.turn.enemyPhasesCompleted < guard.turns
       ? Math.max(0, rawDmg - guard.reduction)
       : rawDmg;
   // 굳건한 의지 (2티어 특기) — 받은 피해 평탄 -(N) 감소. 가드 뒤에 적용.
@@ -1297,13 +1391,13 @@ export function advanceTurn(
   const guardApplied = guarded < rawDmg;
   const steadfastApplied = dmg < guarded;
   // 철벽 (4티어) — 보호막이 데미지를 먼저 흡수, 남은 만큼만 HP 에 적용. 무피해 난무는 dmgToHp 로 누적.
-  const shieldAbsorbed = Math.min(state.playerShield, dmg);
+  const shieldAbsorbed = Math.min(state.stacks.playerShield, dmg);
   const dmgToHp = dmg - shieldAbsorbed;
-  const newShield = state.playerShield - shieldAbsorbed;
+  const newShield = state.stacks.playerShield - shieldAbsorbed;
   // 불굴 — HP 0 이 되는 데미지를 HP 1 로 막는다. 전투당 1회 (enduranceTriggered).
   const wouldKill = state.playerHp - dmgToHp <= 0;
   const enduranceFires =
-    wouldKill && !!player.enduranceActive && !state.enduranceTriggered;
+    wouldKill && !!player.enduranceActive && !state.flags.enduranceTriggered;
   const playerHpAfterDmg = enduranceFires
     ? 1
     : Math.max(0, state.playerHp - dmgToHp);
@@ -1317,7 +1411,7 @@ export function advanceTurn(
     bloodfeastHeal > 0
       ? Math.min(state.playerMaxHp, playerHpAfterDmg + bloodfeastHeal)
       : playerHpAfterDmg;
-  const enduranceTriggered = state.enduranceTriggered || enduranceFires;
+  const enduranceTriggered = state.flags.enduranceTriggered || enduranceFires;
   // 로그 — 격노 발동 → 가드 → (강타 라벨 포함) 공격 → 불굴 순.
   let log = state.log;
   if (enrageReady && skill?.kind === "enrage") {
@@ -1408,13 +1502,25 @@ export function advanceTurn(
     return {
       ...state,
       playerHp,
-      playerShield: newShield,
-      damageTakenThisCombat: state.damageTakenThisCombat + dmgToHp,
-      enduranceTriggered,
-      enemyAtkBonus,
-      enrageTriggered,
       enemyHp: enemyHpAfterRuneCounter,
-      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      flags: {
+        ...state.flags,
+        enduranceTriggered,
+        enrageTriggered,
+      },
+      buffs: {
+        ...state.buffs,
+        enemyAtkBonus,
+      },
+      stacks: {
+        ...state.stacks,
+        playerShield: newShield,
+        damageTakenThisCombat: state.stacks.damageTakenThisCombat + dmgToHp,
+      },
+      turn: {
+        ...state.turn,
+        enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+      },
       log: appendLog(log, {
         kind: "info",
         text: `${playerName}이(가) 쓰러졌다...`,
@@ -1428,13 +1534,25 @@ export function advanceTurn(
     return {
       ...state,
       playerHp,
-      playerShield: newShield,
-      damageTakenThisCombat: state.damageTakenThisCombat + dmgToHp,
-      enduranceTriggered,
-      enemyAtkBonus,
-      enrageTriggered,
       enemyHp: 0,
-      enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+      flags: {
+        ...state.flags,
+        enduranceTriggered,
+        enrageTriggered,
+      },
+      buffs: {
+        ...state.buffs,
+        enemyAtkBonus,
+      },
+      stacks: {
+        ...state.stacks,
+        playerShield: newShield,
+        damageTakenThisCombat: state.stacks.damageTakenThisCombat + dmgToHp,
+      },
+      turn: {
+        ...state.turn,
+        enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+      },
       log: appendLog(log, {
         kind: "info",
         text: `${state.enemy.name}을(를) 쓰러뜨렸다!`,
@@ -1446,13 +1564,25 @@ export function advanceTurn(
   return {
     ...state,
     playerHp,
-    playerShield: newShield,
-    damageTakenThisCombat: state.damageTakenThisCombat + dmgToHp,
-    enduranceTriggered,
-    enemyAtkBonus,
-    enrageTriggered,
     enemyHp: enemyHpAfterThorns,
-    enemyPhasesCompleted: state.enemyPhasesCompleted + 1,
+    flags: {
+      ...state.flags,
+      enduranceTriggered,
+      enrageTriggered,
+    },
+    buffs: {
+      ...state.buffs,
+      enemyAtkBonus,
+    },
+    stacks: {
+      ...state.stacks,
+      playerShield: newShield,
+      damageTakenThisCombat: state.stacks.damageTakenThisCombat + dmgToHp,
+    },
+    turn: {
+      ...state.turn,
+      enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+    },
     log,
     phase: "player",
   };
@@ -1531,7 +1661,7 @@ export function resolveBattle(
     }
     // enemy → player 전환 시 새 턴 marker 박기 (다음 턴이 시작됨을 시각화).
     if (prevPhase === "enemy" && state.phase === "player") {
-      const turnNo = state.completedPlayerTurns + 1;
+      const turnNo = state.turn.completedPlayerTurns + 1;
       state = {
         ...state,
         log: appendLog(state.log, {
@@ -1548,7 +1678,7 @@ export function resolveBattle(
     if (
       ctx.isBoss &&
       state.phase !== "ended" &&
-      state.completedPlayerTurns >= BOSS_TURN_CAP
+      state.turn.completedPlayerTurns >= BOSS_TURN_CAP
     ) {
       const timeoutLog = appendLog(state.log, {
         kind: "info",
@@ -1595,7 +1725,7 @@ export function applyPotionEffect(
 ): BattleState {
   if (potion.effect.kind === "heal_hp") {
     const baseHeal = computeHealAmount(potion, state.playerMaxHp);
-    const heal = Math.floor(baseHeal * (1 + (state.potionHealPct ?? 0) / 100));
+    const heal = Math.floor(baseHeal * (1 + (state.buffs.potionHealPct ?? 0) / 100));
     const newHp = Math.min(state.playerMaxHp, state.playerHp + heal);
     const actual = newHp - state.playerHp;
     return {

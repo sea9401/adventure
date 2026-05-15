@@ -38,7 +38,7 @@ describe("특기 — 암살", () => {
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // DEF무시 baseDmg=10, ×2 → 20 → 80
     expect(s.enemyHp).toBe(80);
-    expect(s.assassinateUsed).toBe(true);
+    expect(s.flags.assassinateUsed).toBe(true);
     s = advanceTurn(s, p, "용사"); // 적 턴
     s = advanceTurn(s, p, "용사"); // 2턴: 암살 소진 → damageBetween(10,3)=7 → 73
     expect(s.enemyHp).toBe(73);
@@ -68,7 +68,7 @@ describe("특기 — 연참", () => {
     s = advanceTurn(s, p, "용사"); // 크리 14 → 86, 연참 발동 → 다시 player phase
     expect(s.enemyHp).toBe(86);
     expect(s.phase).toBe("player");
-    expect(s.riposteUsedThisTurn).toBe(true);
+    expect(s.turn.riposteUsedThisTurn).toBe(true);
     s = advanceTurn(s, p, "용사"); // 연참 추가타: 크리 14 → 72, 더 이상 연참 X → 적 턴으로
     expect(s.enemyHp).toBe(72);
     expect(s.phase).toBe("enemy");
@@ -96,7 +96,7 @@ describe("특기 — 반사 갑주", () => {
     s = advanceTurn(s, p, "용사"); // 적 턴: 적 공격 3 → 플레이어 47, 반사 floor(3×0.5)=1 → 적 92
     expect(s.playerHp).toBe(47);
     expect(s.enemyHp).toBe(92);
-    expect(s.damageTakenThisCombat).toBe(3);
+    expect(s.stacks.damageTakenThisCombat).toBe(3);
   });
 });
 
@@ -109,7 +109,7 @@ describe("2티어 특기 — 불굴의 일격", () => {
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // 1턴 본타: 누적 0 → baseDmg=7 → 93. (보너스 없음 — 누적 0)
     s = advanceTurn(s, p, "용사"); // 적 턴: 플레이어 -3 → damageTakenThisCombat=3
-    expect(s.damageTakenThisCombat).toBe(3);
+    expect(s.stacks.damageTakenThisCombat).toBe(3);
     s = advanceTurn(s, p, "용사"); // 2턴 본타: floor(3*0.25)=0 → 변화 없음 → 86
     expect(s.enemyHp).toBe(86);
   });
@@ -120,7 +120,7 @@ describe("2티어 특기 — 불굴의 일격", () => {
     let s = initialBattleState(p, strongEnemy, "용사");
     s = advanceTurn(s, p, "용사"); // 본타 9 → 91
     s = advanceTurn(s, p, "용사"); // 적 턴 -7 (12-5) → damageTaken=7
-    expect(s.damageTakenThisCombat).toBe(7);
+    expect(s.stacks.damageTakenThisCombat).toBe(7);
     s = advanceTurn(s, p, "용사"); // 2턴 본타: floor(7*0.25)=1 추가 ATK → baseDmg(11,1)=10 → 81
     expect(s.enemyHp).toBe(81);
   });
@@ -137,12 +137,12 @@ describe("2티어 특기 — 약점 적중", () => {
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // 1타: 크리 14 → 86, 약점 적중 큐 +1 추가타
     expect(s.enemyHp).toBe(86);
-    expect(s.weakpointUsedThisTurn).toBe(true);
-    expect(s.weakpointDefIgnoreLeft).toBe(1);
+    expect(s.turn.weakpointUsedThisTurn).toBe(true);
+    expect(s.stacks.weakpointDefIgnoreLeft).toBe(1);
     expect(s.phase).toBe("player");
     s = advanceTurn(s, p, "용사"); // 약점 추가타: DEF 무시, 크리 → damageBetween(10,0)=10 ×2 = 20 → 66
     expect(s.enemyHp).toBe(66);
-    expect(s.weakpointDefIgnoreLeft).toBe(0);
+    expect(s.stacks.weakpointDefIgnoreLeft).toBe(0);
   });
 });
 
@@ -172,12 +172,12 @@ describe("2티어 특기 — 연쇄 운명", () => {
     // 1타: 크리 14 → 86, 연쇄 운명 큐 set
     s = advanceTurn(s, p, "용사");
     expect(s.enemyHp).toBe(86);
-    expect(s.fatedChainTriggeredThisTurn).toBe(true);
-    expect(s.fatedChainCritPending).toBe(true);
+    expect(s.turn.fatedChainTriggeredThisTurn).toBe(true);
+    expect(s.flags.fatedChainCritPending).toBe(true);
     // 2타: 큐 소비 — 보장 크리 14 → 72
     s = advanceTurn(s, p, "용사");
     expect(s.enemyHp).toBe(72);
-    expect(s.fatedChainCritPending).toBe(false);
+    expect(s.flags.fatedChainCritPending).toBe(false);
   });
 });
 
@@ -249,6 +249,6 @@ describe("2티어 특기 — 회전 운기", () => {
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // 1턴 본타: cyclingChiBonus = 0 + 100 = 100 → 크리 강제 → 14 → 86
     expect(s.enemyHp).toBe(86);
-    expect(s.cyclingChiBonus).toBe(100);
+    expect(s.buffs.cyclingChiBonus).toBe(100);
   });
 });

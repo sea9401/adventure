@@ -68,8 +68,11 @@ export function simulateCoopAttack(input: CoopAttackInput): CoopAttackResult {
   state = {
     ...state,
     enemyHp: input.bossCurrentHp,
-    phaseTriggered: alreadyTriggered,
-    enemyDefBonus: alreadyTriggered ? trigger.defBonus : 0,
+    flags: { ...state.flags, phaseTriggered: alreadyTriggered },
+    buffs: {
+      ...state.buffs,
+      enemyDefBonus: alreadyTriggered ? trigger.defBonus : 0,
+    },
   };
 
   const log: BattleLogEntry[] = [];

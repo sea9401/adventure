@@ -154,8 +154,8 @@ describe("페이즈 트리거", () => {
     const s0 = { ...initialBattleState(big, enemy, "P"), enemyHp: 50 };
     const s1 = advanceTurn(s0, big, "P");
     expect(s1.enemyHp).toBe(25);
-    expect(s1.phaseTriggered).toBe(true);
-    expect(s1.enemyDefBonus).toBe(5);
+    expect(s1.flags.phaseTriggered).toBe(true);
+    expect(s1.buffs.enemyDefBonus).toBe(5);
     expect(s1.log.some((e) => e.text.includes("단단해진다."))).toBe(true);
   });
 
@@ -170,7 +170,7 @@ describe("페이즈 트리거", () => {
     const s0 = { ...initialBattleState(big, enemy, "P"), enemyHp: 31 };
     const s1 = advanceTurn(s0, big, "P"); // 1st: dmg 10 (def 0) → enemyHp 21, 트리거 발동
     expect(s1.enemyHp).toBe(21);
-    expect(s1.phaseTriggered).toBe(true);
+    expect(s1.flags.phaseTriggered).toBe(true);
     expect(s1.phase).toBe("player");
     const s2 = advanceTurn(s1, big, "P"); // 2nd: dmg 10-5=5 → enemyHp 16
     expect(s2.enemyHp).toBe(16);
@@ -187,7 +187,7 @@ describe("페이즈 트리거", () => {
     const s1 = advanceTurn(s0, big, "P");
     expect(s1.enemyHp).toBe(0);
     expect(s1.outcome).toBe("win");
-    expect(s1.phaseTriggered).toBe(false);
+    expect(s1.flags.phaseTriggered).toBe(false);
   });
 
   it("같은 전투에서 중복 발동 안 함", () => {
@@ -199,10 +199,10 @@ describe("페이즈 트리거", () => {
     const big: PlayerCombat = { ...PLAYER, atk: 5 };
     let s = { ...initialBattleState(big, enemy, "P"), enemyHp: 28 };
     s = advanceTurn(s, big, "P"); // dmg 5, 23 → 트리거
-    expect(s.enemyDefBonus).toBe(5);
+    expect(s.buffs.enemyDefBonus).toBe(5);
     s = { ...s, phase: "player", enemyHp: 20 };
     s = advanceTurn(s, big, "P"); // dmg 1 (atk5 - def5, 최소 1)
-    expect(s.enemyDefBonus).toBe(5); // 누적되지 않음
+    expect(s.buffs.enemyDefBonus).toBe(5); // 누적되지 않음
   });
 });
 
@@ -334,7 +334,7 @@ describe("resolveBattle", () => {
       },
     );
     expect(r.outcome).toBe("lose");
-    expect(r.finalState.completedPlayerTurns).toBeGreaterThanOrEqual(50);
+    expect(r.finalState.turn.completedPlayerTurns).toBeGreaterThanOrEqual(50);
     expect(
       r.finalState.log.some((e) => e.text.includes("50턴 경과")),
     ).toBe(true);
@@ -446,10 +446,10 @@ describe("회피 강화 (guaranteedEvades)", () => {
     const guarded: PlayerCombat = { ...PLAYER, guaranteedEvades: 1 };
     const enemy = makeEnemy({ spd: 99, atk: 100 });
     const s0 = initialBattleState(guarded, enemy, "P");
-    expect(s0.evadesRemaining).toBe(1);
+    expect(s0.stacks.evadesRemaining).toBe(1);
     const s1 = advanceTurn(s0, guarded, "P");
     expect(s1.playerHp).toBe(PLAYER.hp); // 그대로
-    expect(s1.evadesRemaining).toBe(0);
+    expect(s1.stacks.evadesRemaining).toBe(0);
     expect(s1.log.some((e) => e.text.includes("[회피 강화]"))).toBe(true);
   });
 });
@@ -470,7 +470,7 @@ describe("연타 (extraAttackEveryNTurns)", () => {
     // 연타 발동: phase 가 player 로 유지되고 추가 공격 1회 예정
     expect(s.phase).toBe("player");
     expect(s.playerAttacksLeft).toBe(1);
-    expect(s.doubleStrikeUsedThisTurn).toBe(true);
+    expect(s.turn.doubleStrikeUsedThisTurn).toBe(true);
     expect(s.log.some((e) => e.text.includes("[연타]"))).toBe(true);
   });
 });
@@ -632,7 +632,7 @@ describe("불굴 (enduranceActive)", () => {
     s = advanceTurn(s, tough, "P"); // enemy phase
     expect(s.playerHp).toBe(1);
     expect(s.phase).not.toBe("ended");
-    expect(s.enduranceTriggered).toBe(true);
+    expect(s.flags.enduranceTriggered).toBe(true);
     expect(s.log.some((l) => l.text.includes("불굴"))).toBe(true);
   });
   it("두 번째 치명 피해에서는 사망 — 전투당 1회만 발동", () => {
@@ -670,7 +670,7 @@ describe("광속 (lightspeedExtraAttackPct)", () => {
     let s = initialBattleState(swift, enemy, "P");
     s = advanceTurn(s, swift, "P"); // 일반 1회 공격 → 광속 발동 → player phase 1회 추가
     expect(s.phase).toBe("player");
-    expect(s.lightspeedUsedThisTurn).toBe(true);
+    expect(s.turn.lightspeedUsedThisTurn).toBe(true);
     expect(s.playerAttacksLeft).toBe(1);
   });
   it("같은 턴에 두 번 발동 X — 한 번 사용 후 게이트 차단", () => {
@@ -684,7 +684,7 @@ describe("광속 (lightspeedExtraAttackPct)", () => {
     let s = initialBattleState(swift, enemy, "P");
     s = advanceTurn(s, swift, "P"); // 일반 + 광속 트리거 → player phase 1회 추가
     expect(s.phase).toBe("player");
-    expect(s.lightspeedUsedThisTurn).toBe(true);
+    expect(s.turn.lightspeedUsedThisTurn).toBe(true);
     s = advanceTurn(s, swift, "P"); // 광속으로 추가된 1회 공격 → 광속 게이트 차단 → enemy phase
     expect(s.phase).toBe("enemy");
   });
@@ -777,11 +777,11 @@ describe("잡몹 스킬", () => {
     s = advanceTurn(s, strong, "P"); // 플레이어 — 적 30→18 (≥ 15, 격노 X)
     s = advanceTurn(s, strong, "P"); // 적 페이즈 — 평타 8-5 = 3
     expect(strong.hp - s.playerHp).toBe(3);
-    expect(s.enemyAtkBonus).toBe(0);
+    expect(s.buffs.enemyAtkBonus).toBe(0);
     s = advanceTurn(s, strong, "P"); // 플레이어 — 적 18→6 (< 15)
     s = advanceTurn(s, strong, "P"); // 적 페이즈 — 격노 발동, atk 18 → 18-5 = 13 피해
-    expect(s.enemyAtkBonus).toBe(10);
-    expect(s.enrageTriggered).toBe(true);
+    expect(s.buffs.enemyAtkBonus).toBe(10);
+    expect(s.flags.enrageTriggered).toBe(true);
     expect(strong.hp - s.playerHp).toBe(3 + 13);
     expect(s.log.filter((e) => e.text.startsWith("[격노]")).length).toBe(1);
   });
