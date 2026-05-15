@@ -143,7 +143,7 @@ function AttackBubble({
   return (
     <div className={`flex ${isPlayer ? "justify-start" : "justify-end"}`}>
       <div
-        className={`max-w-[85%] rounded-lg border px-2.5 py-1.5 text-sm leading-snug shadow-sm ${bubbleColor} ${
+        className={`max-w-[88%] rounded-lg border px-3 py-2 text-base leading-snug shadow-sm ${bubbleColor} ${
           isCrit ? "ring-1 ring-amber-400/70" : ""
         }`}
       >
@@ -157,7 +157,7 @@ function AttackBubble({
             {labels.map((l, idx) => (
               <span
                 key={idx}
-                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${labelColor}`}
+                className={`rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}
               >
                 {l}
               </span>
@@ -175,7 +175,7 @@ function InfoLine({ text }: { text: string }) {
   const climax = isClimaxInfo(text);
   return (
     <div
-      className={`flex items-center justify-center gap-1.5 px-1 text-center text-xs ${
+      className={`flex items-center justify-center gap-1.5 px-1 text-center text-sm ${
         climax
           ? "py-1 font-medium text-zinc-700 dark:text-zinc-200"
           : "text-zinc-500 dark:text-zinc-400"
@@ -184,7 +184,7 @@ function InfoLine({ text }: { text: string }) {
       {labels.map((l, idx) => (
         <span
           key={idx}
-          className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+          className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
         >
           {l}
         </span>
@@ -330,7 +330,7 @@ export function BattleScene({
             return (
               <div
                 key={i}
-                className="my-1 rounded border border-amber-400/60 bg-amber-100/70 px-2 py-1 text-sm text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-900/30 dark:text-amber-200"
+                className="my-1 rounded border border-amber-400/60 bg-amber-100/70 px-2.5 py-1.5 text-base text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-900/30 dark:text-amber-200"
               >
                 <span className="mr-1">⚠</span>
                 <span className="font-semibold">{entry.text}</span>
