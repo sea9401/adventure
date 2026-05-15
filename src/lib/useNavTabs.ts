@@ -13,7 +13,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 //   SPA 밖으로 나가거나 엉뚱한 위치로 가는 사고가 있어 history 가 아닌 명시적
 //   "상위로 이동" 으로 정의.
 
-const TAB_KEYS = ["adventure", "town", "character", "plaza"] as const;
+const TAB_KEYS = ["adventure", "town", "character", "plaza", "quickTravel"] as const;
 export type TabKey = (typeof TAB_KEYS)[number];
 const DEFAULT_TAB: TabKey = "adventure";
 

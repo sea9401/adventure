@@ -10,6 +10,7 @@ import { TownScreen } from "@/adventure/TownScreen";
 import { CharacterScreen } from "@/adventure/CharacterScreen";
 import { AdventureScreen } from "@/adventure/AdventureScreen";
 import { PlazaScreen } from "./PlazaScreen";
+import { QuickTravelScreen } from "./QuickTravelScreen";
 import { GameProvider, type GameCtx } from "@/adventure/GameContext";
 import { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { WORLD_MAP } from "@/adventure/data/world";
@@ -307,6 +308,7 @@ function Home() {
     handlePurchaseConsumable,
     handlePurchaseEquipment,
     handleUseTownReturn,
+    handleUseTravelScroll,
     handleSellPotion,
     handleSellMaterial,
     handleSellEquipment,
@@ -462,6 +464,7 @@ function Home() {
     handlePurchaseConsumable,
     handlePurchaseEquipment,
     handleUseTownReturn,
+    handleUseTravelScroll,
     handleSellPotion,
     handleSellMaterial,
     handleSellEquipment,
@@ -547,6 +550,7 @@ function Home() {
           {tab === "town" && <TownScreen />}
           {tab === "character" && <CharacterScreen />}
           {tab === "plaza" && <PlazaScreen />}
+          {tab === "quickTravel" && <QuickTravelScreen />}
         </main>
       </div>
       <NotificationToast notifications={notifications.list} />

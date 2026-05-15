@@ -6,6 +6,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "town", label: "마을" },
   { key: "character", label: "캐릭터" },
   { key: "plaza", label: "광장" },
+  { key: "quickTravel", label: "빠른이동" },
 ];
 
 export function MainTabs({
