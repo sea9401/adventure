@@ -37,7 +37,6 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
           const tier5 = tiers[4];
           const tier6 = tiers[5];
           const tier1Revealed = value >= STAT_SKILL_INFO_THRESHOLD;
-          const conversionRevealed = value >= STAT_REVEAL_THRESHOLD;
           const tier3Revealed = value >= STAT_TIER3_REVEAL_THRESHOLD;
           const tier4Revealed = value >= STAT_TIER4_REVEAL_THRESHOLD;
           const tier5Revealed = value >= STAT_TIER5_REVEAL_THRESHOLD;
@@ -47,8 +46,8 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
             !!tier1 &&
             tier1Revealed &&
             tier1.activationThreshold > STAT_SKILL_INFO_THRESHOLD;
-          // 2차 티어는 환산 공개와 동시 (15) 에 노출.
-          const tier2Revealed = !!tier2 && conversionRevealed;
+          // 2차 티어는 STAT_REVEAL_THRESHOLD(15) 도달 시 공개. (환산 정보는 항상 공개.)
+          const tier2Revealed = !!tier2 && value >= STAT_REVEAL_THRESHOLD;
           const showTier2ActivationNote =
             !!tier2 &&
             tier2Revealed &&
@@ -69,10 +68,10 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
             !!tier6 &&
             tier6Revealed &&
             tier6.activationThreshold > STAT_TIER6_REVEAL_THRESHOLD;
-          // 다음 공개 — tier1 → 환산+tier2 → tier3 → tier4 → tier5 → tier6.
+          // 다음 공개 — tier1 → tier2 → tier3 → tier4 → tier5 → tier6. (환산 정보는 항상 공개.)
           const nextRevealAt = !tier1Revealed
             ? STAT_SKILL_INFO_THRESHOLD
-            : !conversionRevealed
+            : !tier2Revealed
               ? STAT_REVEAL_THRESHOLD
               : !tier3Revealed
                 ? STAT_TIER3_REVEAL_THRESHOLD
@@ -130,34 +129,19 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                 </div>
               )}
 
-              {/* 환산 효과 + 2차 스킬 — STAT_REVEAL_THRESHOLD(15) 도달 시 공개. */}
+              {/* 환산 효과 — 항상 공개. */}
               <div className="mt-1.5 flex items-start gap-2 text-xs">
-                {conversionRevealed ? (
-                  <>
-                    <Sparkle
-                      size={14}
-                      weight="duotone"
-                      className="shrink-0 text-amber-500 mt-0.5"
-                    />
-                    <span className="text-zinc-700 dark:text-zinc-200">
-                      {STAT_CONVERSIONS[k]}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Lock
-                      size={14}
-                      weight="duotone"
-                      className="shrink-0 text-zinc-400 dark:text-zinc-500 mt-0.5"
-                    />
-                    <span className="italic text-zinc-500 dark:text-zinc-400">
-                      {STAT_REVEAL_THRESHOLD} 달성 시 효과 정보 공개
-                    </span>
-                  </>
-                )}
+                <Sparkle
+                  size={14}
+                  weight="duotone"
+                  className="shrink-0 text-amber-500 mt-0.5"
+                />
+                <span className="text-zinc-700 dark:text-zinc-200">
+                  {STAT_CONVERSIONS[k]}
+                </span>
               </div>
 
-              {/* 2차 스킬 — 환산과 같은 타이밍에 공개. */}
+              {/* 2차 스킬 — STAT_REVEAL_THRESHOLD(15) 도달 시 공개. */}
               {tier2 && tier2Revealed && (
                 <div className="mt-1.5 flex items-start gap-2 text-xs">
                   <Sparkle
@@ -198,7 +182,7 @@ export function EtcTab({ stats }: { stats: Record<StatKey, number> }) {
                       </span>
                     </>
                   ) : (
-                    conversionRevealed && (
+                    tier2Revealed && (
                       <>
                         <Lock
                           size={14}
