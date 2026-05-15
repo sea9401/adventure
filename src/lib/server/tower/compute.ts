@@ -247,8 +247,5 @@ export function applyAutoStep(
   return { state: ended.state, reason: "death" };
 }
 
-/** "YYYY-MM-DD" — KST 기준. 클라이언트 자정 표시와 일치하도록 +9h. */
-export function todayKey(now: Date = new Date()): string {
-  const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
-  return new Date(now.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
-}
+// 자정 리셋 키 — adventure/tower/dailyKey.ts 가 단일 정의. 서버/클라 동일 동작 보장.
+export { todayKey } from "@/adventure/tower/dailyKey";

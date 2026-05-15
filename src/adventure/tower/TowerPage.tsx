@@ -28,6 +28,7 @@ import {
 import { milestoneFor } from "./rewards";
 import { RUNES } from "@/adventure/data/runes";
 import { TOWER_DAILY_ATTEMPTS, type TowerState } from "./types";
+import { todayKey } from "./dailyKey";
 import { useTower, type TowerApiResponse } from "./useTower";
 
 // 고탑 진입 페이지 — 한 컴포넌트 안에서 entry / ready / result / run_ended 화면을 전환.
@@ -286,7 +287,12 @@ function EntryView({
   onForfeit: () => Promise<void>;
 }) {
   const runActive = state.run !== null;
-  const attemptsUsed = state.daily?.attempts ?? 0;
+  // state.daily 는 마지막 서버 응답 시점의 값 — date 가 오늘 KST 와 다르면 자정이
+  // 지났다는 뜻이라 이미 0/3 으로 봐야 한다. (서버 측 lazy reset 은 다음 액션에
+  // 일어나지만, 그 액션을 일으키려면 버튼이 활성화돼야 하므로 표시는 클라가 먼저
+  // 0 으로 보여 진입을 허용해야 한다.)
+  const dailyIsToday = state.daily?.date === todayKey();
+  const attemptsUsed = dailyIsToday ? (state.daily?.attempts ?? 0) : 0;
   const attemptsLeft = Math.max(0, TOWER_DAILY_ATTEMPTS - attemptsUsed);
   const startOptions = availableStartFloors(state.progress.highestFloor);
   const defaultStart = startFloorAfterCheckpoint(state.progress.highestFloor);
