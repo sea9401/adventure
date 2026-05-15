@@ -27,7 +27,7 @@ import { rehydrateEquippedItem } from "@/adventure/character/rehydrateEquip";
 import type { EquippedItem } from "@/adventure/character/types";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
 import { WORLD_MAP, START_REGION_ID, type RegionId } from "@/adventure/data/world";
-import type { PotionId } from "@/adventure/data/potions";
+import { potionMax, type PotionId } from "@/adventure/data/potions";
 import { STORY_FLAGS_STORAGE_KEY } from "@/adventure/storyFlags/storage";
 // type-only — useAutoPotionConfig 자체는 "use client" 지만 type 임포트는 erase 됨.
 import type { AutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
@@ -100,6 +100,8 @@ type SavedInventory = {
   equipment?: Record<string, number>;
   /** 드랍 고품질 인스턴스 — itemId → ("1"|"2" → 개수). 기본 등급은 equipment[] 에 합산. */
   droppedEquipment?: Record<string, Record<string, number>>;
+  /** 종류 별 포션 상한 추가분 (퀘스트 보상). potionMax(bonus) 가 실제 cap. */
+  potionCapacityBonus?: number;
   [k: string]: unknown;
 };
 
@@ -287,11 +289,13 @@ export async function applyResultToSaves(
     potions[id] = Math.max(0, (potions[id] ?? 0) - n);
   }
   // 부활 보급 — sim 내부에서 작은 회복약을 충전 목표치까지 채워준 만큼 인벤토리에도 더한다.
-  // (consumed 와 granted 는 별개로 트래킹돼 같은 사이클 안에서 충전→사용된 분은 양쪽에 잡힌다 —
-  //  순서 무관하게 합산해도 정합성 OK.)
+  // tx1(스냅샷) 과 tx2(잠금) 사이에 클라가 상점·퀘스트 등으로 인벤을 패치해 보유량이
+  // 늘면 그대로 더할 때 cap(potionMax) 을 넘을 수 있어 — potionCapacityBonus 기반 상한으로
+  // 클램프. (cap 초과분은 silently 잘림, 클라 add() 와 동일 정책.)
+  const potionCap = potionMax(inv.potionCapacityBonus ?? 0);
   for (const [id, n] of Object.entries(result.potionsGranted ?? {})) {
     if (!n) continue;
-    potions[id] = (potions[id] ?? 0) + n;
+    potions[id] = Math.min(potionCap, (potions[id] ?? 0) + n);
   }
   const materials = { ...(inv.materials ?? {}) } as Record<string, number>;
   for (const [id, n] of Object.entries(result.materialsGained)) {
