@@ -83,6 +83,117 @@ function useDamageFlash(hp: number): boolean {
 const FLASH_CLASS =
   "ring-2 ring-rose-500 ring-offset-1 ring-offset-white animate-pulse dark:ring-offset-zinc-950";
 
+// 텍스트 안의 데미지·회복 수치(예: "35 피해", "HP +12", "ATK +3") 를 굵게 강조한다.
+// 시각적 우선순위 — 한 줄에서 가장 중요한 숫자가 먼저 눈에 들어와야 한다.
+function emphasizeNumbers(text: string): React.ReactNode[] {
+  const re = /(\d+)\s*피해|HP\s*[+-]\s*\d+|MP\s*[+-]\s*\d+|ATK\s*[+-]\s*\d+|DEF\s*[+-]\s*\d+|SPD\s*[+-]\s*\d+|[+-]\s*\d+%?/g;
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    parts.push(
+      <strong key={m.index} className="font-semibold">
+        {m[0]}
+      </strong>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts.length > 0 ? parts : [text];
+}
+
+// "[라벨1 + 라벨2] 본문" → { labels: ["라벨1", "라벨2"], body: "본문" }
+function parseLabel(text: string): { labels: string[]; body: string } {
+  const m = text.match(/^\[([^\]]+)\]\s*(.*)$/);
+  if (!m) return { labels: [], body: text };
+  const labels = m[1].split(/\s*\+\s*/).filter(Boolean);
+  return { labels, body: m[2] };
+}
+
+// 결정적 이벤트 — 처치/사망/등장 — 인포 라인 안에서도 가운데에 살짝 강조.
+function isClimaxInfo(text: string): boolean {
+  return (
+    text.includes("쓰러뜨렸다") ||
+    text.includes("쓰러졌다") ||
+    text.includes("나타났다") ||
+    text.includes("선공") ||
+    text.includes("능력 [")
+  );
+}
+
+function AttackBubble({
+  side,
+  text,
+}: {
+  side: "left" | "right";
+  text: string;
+}) {
+  const isPlayer = side === "left";
+  const { labels, body } = parseLabel(text);
+  const isCrit = labels.some((l) => l === "크리" || l === "크리티컬");
+  // 빈 본문은 라벨만으로 의미가 있는 경우 (드물지만 안전망).
+  const displayBody = body || labels.join(" + ");
+  const bubbleColor = isPlayer
+    ? "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-950/40 dark:text-emerald-200"
+    : "border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-700/50 dark:bg-rose-950/40 dark:text-rose-200";
+  const labelColor = isPlayer
+    ? "bg-emerald-200/70 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-200"
+    : "bg-rose-200/70 text-rose-900 dark:bg-rose-900/60 dark:text-rose-200";
+  return (
+    <div className={`flex ${isPlayer ? "justify-start" : "justify-end"}`}>
+      <div
+        className={`max-w-[85%] rounded-lg border px-2.5 py-1.5 text-sm leading-snug shadow-sm ${bubbleColor} ${
+          isCrit ? "ring-1 ring-amber-400/70" : ""
+        }`}
+      >
+        {(labels.length > 0 || isCrit) && (
+          <div className="mb-0.5 flex flex-wrap gap-1">
+            {isCrit && (
+              <span className="text-xs leading-none text-amber-500 dark:text-amber-400">
+                ★
+              </span>
+            )}
+            {labels.map((l, idx) => (
+              <span
+                key={idx}
+                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${labelColor}`}
+              >
+                {l}
+              </span>
+            ))}
+          </div>
+        )}
+        <div>{body ? emphasizeNumbers(displayBody) : displayBody}</div>
+      </div>
+    </div>
+  );
+}
+
+function InfoLine({ text }: { text: string }) {
+  const { labels, body } = parseLabel(text);
+  const climax = isClimaxInfo(text);
+  return (
+    <div
+      className={`flex items-center justify-center gap-1.5 px-1 text-center text-xs ${
+        climax
+          ? "py-1 font-medium text-zinc-700 dark:text-zinc-200"
+          : "text-zinc-500 dark:text-zinc-400"
+      }`}
+    >
+      {labels.map((l, idx) => (
+        <span
+          key={idx}
+          className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+        >
+          {l}
+        </span>
+      ))}
+      <span className={climax ? "" : "italic"}>{body ? emphasizeNumbers(body) : body}</span>
+    </div>
+  );
+}
+
 function EnemyAvatar({ name, hp }: { name: string; hp: number }) {
   const image = MONSTERS[name]?.image;
   const flash = useDamageFlash(hp);
@@ -212,35 +323,30 @@ export function BattleScene({
 
       <div
         ref={logRef}
-        className="no-scrollbar max-h-72 space-y-0.5 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-4 text-[15px] leading-6 dark:border-zinc-800 dark:bg-zinc-950/90"
+        className="no-scrollbar max-h-80 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
       >
         {state.log.map((entry, i) => {
           if (entry.kind === "phase_trigger") {
             return (
               <div
                 key={i}
-                className="my-1 rounded border border-amber-400/60 bg-amber-100/70 px-2 py-1 text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-900/30 dark:text-amber-200"
+                className="my-1 rounded border border-amber-400/60 bg-amber-100/70 px-2 py-1 text-sm text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-900/30 dark:text-amber-200"
               >
                 <span className="mr-1">⚠</span>
                 <span className="font-semibold">{entry.text}</span>
               </div>
             );
           }
-          // 크리/강공격/연타 등 [라벨] 시작은 미세 강조 — 일반 공격과 구분.
-          const hasLabel = entry.text.startsWith("[");
+          if (entry.kind === "info") {
+            return <InfoLine key={i} text={entry.text} />;
+          }
+          // player_attack — 왼쪽 초록 버블 / enemy_attack — 오른쪽 빨강 버블.
           return (
-            <div
+            <AttackBubble
               key={i}
-              className={
-                entry.kind === "player_attack"
-                  ? `text-emerald-700 dark:text-emerald-400${hasLabel ? " font-semibold" : ""}`
-                  : entry.kind === "enemy_attack"
-                    ? `text-rose-700 dark:text-rose-400${hasLabel ? " font-semibold" : ""}`
-                    : "text-zinc-600 dark:text-zinc-400"
-              }
-            >
-              {entry.text}
-            </div>
+              side={entry.kind === "player_attack" ? "left" : "right"}
+              text={entry.text}
+            />
           );
         })}
       </div>
