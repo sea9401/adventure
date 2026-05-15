@@ -23,6 +23,7 @@ export function MainTabs({
       onChange={onChange}
       ariaLabel="메인 탭"
       size="md"
+      scrollable
       className="mx-auto w-full max-w-2xl px-4 sm:px-6"
     />
   );
