@@ -2,8 +2,13 @@
 
 import { useAsyncData } from "@/lib/useAsyncData";
 
-// 개인 metric 3종 + 길드 누적 명성 1종.
-export type RankingMetric = "level" | "fame" | "battleCount" | "guild";
+// 개인 metric 4종(레벨/명성/전투/이번주 고탑) + 길드 누적 명성 1종.
+export type RankingMetric =
+  | "level"
+  | "fame"
+  | "battleCount"
+  | "towerWeek"
+  | "guild";
 
 export type RankingEntry = {
   rank: number;
@@ -11,6 +16,7 @@ export type RankingEntry = {
   level: number;
   fame: number;
   battleCount: number;
+  weekHighest: number;
   mine: boolean;
 };
 
@@ -20,6 +26,7 @@ export type RankingMe = {
   level: number;
   fame: number;
   battleCount: number;
+  weekHighest: number;
 };
 
 export type GuildRankingEntry = {

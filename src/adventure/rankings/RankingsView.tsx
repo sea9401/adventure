@@ -23,6 +23,7 @@ const TABS: { key: RankingMetric; label: string }[] = [
   { key: "level", label: "레벨" },
   { key: "fame", label: "명성" },
   { key: "battleCount", label: "전투 횟수" },
+  { key: "towerWeek", label: "고탑 (주간)" },
   { key: "guild", label: "길드 랭킹" },
 ];
 
@@ -30,6 +31,7 @@ const METRIC_LABEL: Record<Exclude<RankingMetric, "guild">, string> = {
   level: "Lv.",
   fame: "명성",
   battleCount: "전투",
+  towerWeek: "F.",
 };
 
 const GRADE_COLOR: Record<string, string> = {
@@ -44,11 +46,17 @@ const GRADE_COLOR: Record<string, string> = {
 };
 
 const valueFor = (
-  e: { level: number; fame: number; battleCount: number },
+  e: {
+    level: number;
+    fame: number;
+    battleCount: number;
+    weekHighest: number;
+  },
   metric: Exclude<RankingMetric, "guild">,
 ): number => {
   if (metric === "level") return e.level;
   if (metric === "fame") return e.fame;
+  if (metric === "towerWeek") return e.weekHighest;
   return e.battleCount;
 };
 

@@ -29,6 +29,11 @@ import {
   rollBossClearReward,
   type BossClearReward,
 } from "@/adventure/tower/runeDrops";
+import {
+  TOWER_WEEKLY_STORAGE_KEY,
+  updateTowerWeekly,
+  type TowerWeekly,
+} from "@/adventure/tower/weeklyTypes";
 import type { RuneGrade, RuneId } from "@/adventure/data/runes";
 import {
   BOSS_SLOTS,
@@ -173,6 +178,21 @@ export async function applyTowerAction(
 
   await upsertSave(tx, userId, TOWER_STORAGE_KEY, result.state);
 
+  // 주간 최고층 갱신 — fight_floor 승리 시점에 lazy reset 포함. start/forfeit 무관.
+  if (
+    computeAction.kind === "fight_floor" &&
+    computeAction.outcome === "win"
+  ) {
+    const clearedFloor = state.run!.currentFloor;
+    const prev =
+      (await readKv<TowerWeekly>(tx, userId, TOWER_WEEKLY_STORAGE_KEY, true)) ??
+      null;
+    const nextWeekly = updateTowerWeekly(prev, clearedFloor);
+    if (nextWeekly) {
+      await upsertSave(tx, userId, TOWER_WEEKLY_STORAGE_KEY, nextWeekly);
+    }
+  }
+
   // 마일스톤 보상 + 보스 드롭 — gold/material/rune 을 한 번에 모아 character/inventory 갱신.
   let character: SavedCharacter | undefined;
   let inventory: SavedInventory | undefined;
@@ -278,6 +298,19 @@ async function applyTowerAutoProgress(
   }
 
   await upsertSave(tx, userId, TOWER_STORAGE_KEY, state);
+
+  // 주간 최고층 갱신 — 자동 진행 동안 가장 높이 클리어한 층 기준.
+  // 자동은 잡몹만 — boss floor 가 currentFloor 가 되어 break 한 시점에 (그 직전 잡몹층) 까지 클리어.
+  if (floorsCleared > 0) {
+    const lastClearedFloor = startFloor + floorsCleared - 1;
+    const prev =
+      (await readKv<TowerWeekly>(tx, userId, TOWER_WEEKLY_STORAGE_KEY, true)) ??
+      null;
+    const nextWeekly = updateTowerWeekly(prev, lastClearedFloor);
+    if (nextWeekly) {
+      await upsertSave(tx, userId, TOWER_WEEKLY_STORAGE_KEY, nextWeekly);
+    }
+  }
 
   // 마일스톤 누계를 한 번에 character/inventory 에 반영.
   let character: SavedCharacter | undefined;
