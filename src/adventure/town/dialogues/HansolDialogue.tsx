@@ -21,13 +21,6 @@ const STEPS: QuestLineStep[] = [
     doneText: "길목이 트였군. 잿빛 협로 너머 봉황령으로 가는 길, 이제 알려줄게 — 자, 사례다.",
   },
   {
-    id: "windvale-pathfinder-salamander",
-    offerText:
-      "잿빛 협로에 불씨 도롱뇽이 들끓어. 열다섯만 꺼 주면 잿가루 사이로 길이 보일 거야.",
-    activeText: (have, need) => `도롱뇽은 잿더미 속에서 불씨를 키워. 밟히지 마. — 진행 ${have}/${need}`,
-    doneText: "불씨가 잦았어. 협로 다니기가 한결 낫겠다 — 받아.",
-  },
-  {
     id: "windvale-volcano-boss",
     offerText:
       "잿빛 협로를 지나 봉황령을 넘으면 화산 지대가 나와. 거기 깊은 곳에 — 사람들이 화산의 심장이라 부르는 게 깨어났어. 그놈을 잠재워야 그 너머 천공 성지로 가는 길이 열려. 부탁 좀 할게.",

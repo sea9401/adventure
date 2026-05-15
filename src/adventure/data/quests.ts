@@ -625,19 +625,6 @@ export const QUESTS: Quest[] = [
     giverNpcId: "dustford_hunter",
   },
   {
-    id: "dustford-solgae-wall-ravens",
-    regionId: "dustford",
-    title: "솔개의 사냥 — 폐성벽 까마귀",
-    description:
-      "옛 성채 흉벽에 폐성벽 까마귀가 둥지를 텄어요. 15마리만 정리해 주면 흉벽 다니기가 한결 낫겠어요.",
-    requiredLevel: 13,
-    target: { kind: "kill", monsterName: "폐성벽 까마귀", count: 15 },
-    reward: { gold: 340, fame: 16, exp: 580 },
-    repeatable: false,
-    giverNpcId: "dustford_hunter",
-    requiresQuestCompleted: "dustford-mujin-clear-road",
-  },
-  {
     id: "dustford-mujin-clear-road",
     regionId: "dustford",
     title: "옛길 트기",
@@ -875,34 +862,10 @@ export const QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "갈매의 통발 — 집게발 게",
     description:
-      "갯벌에 집게발 게가 너무 불어 통발이며 그물이 남아나질 않아요. 집게발 게 20마리를 솎아 주세요. (게딱지 다루는 법을 알려줍니다)",
+      "갯벌에 집게발 게가 너무 불어 통발이며 그물이 남아나질 않아요. 집게발 게 20마리를 솎아 주세요. (게딱지 손방패와 갯벌 각반 짜는 법을 알려줍니다)",
     requiredLevel: 10,
     target: { kind: "kill", monsterName: "집게발 게", count: 20 },
-    reward: { gold: 170, fame: 11, exp: 360, recipes: ["crab_shell_buckler"] },
-    repeatable: false,
-    giverNpcId: "saltmarsh_salter",
-  },
-  {
-    id: "saltmarsh-galmae-mudfish",
-    regionId: "saltmarsh",
-    title: "갈매의 통발 — 진흙 미꾸라지",
-    description:
-      "진흙 미꾸라지가 통발 미끼를 죄다 파먹어요. 18마리만 정리해 주면 갯벌 각반 짜는 법을 알려드릴게요.",
-    requiredLevel: 10,
-    target: { kind: "kill", monsterName: "진흙 미꾸라지", count: 18 },
-    reward: { gold: 190, fame: 12, exp: 380, recipes: ["tideflats_waders"] },
-    repeatable: false,
-    giverNpcId: "saltmarsh_salter",
-  },
-  {
-    id: "saltmarsh-galmae-shore-birds",
-    regionId: "saltmarsh",
-    title: "갈매의 통발 — 갯도요",
-    description:
-      "갯도요 떼가 말리던 생선을 다 물어가요. 18마리만 쫓아내 주세요.",
-    requiredLevel: 10,
-    target: { kind: "kill", monsterName: "갯도요", count: 18 },
-    reward: { gold: 200, fame: 12, exp: 380 },
+    reward: { gold: 200, fame: 12, exp: 380, recipes: ["crab_shell_buckler", "tideflats_waders"] },
     repeatable: false,
     giverNpcId: "saltmarsh_salter",
   },
@@ -1295,18 +1258,6 @@ export const QUESTS: Quest[] = [
   },
   // ── 운향 — 사이드 의뢰 (도연 / 산하) ────────────────────────────────────
   {
-    id: "unhyang-doyeon-wolves",
-    regionId: "unhyang",
-    title: "협곡의 무리",
-    description:
-      "협곡의 절벽 늑대가 너무 늘었어. 10마리만 정리해 주면 산이 좀 조용해질 거야. — 무리장 늑대를 잡으면 가끔 굵은 송곳니가 나오는데, 그걸로 단검 만드는 법도 알려줄게.",
-    requiredLevel: 20,
-    target: { kind: "kill", monsterName: "절벽 늑대", count: 10 },
-    reward: { gold: 360, fame: 18, exp: 600, recipes: ["wolfking_fang_dagger"] },
-    repeatable: false,
-    giverNpcId: "unhyang_guide",
-  },
-  {
     id: "unhyang-sanha-herbs",
     regionId: "unhyang",
     title: "산초꽃 채집",
@@ -1340,22 +1291,10 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "산기슭의 바위 두꺼비",
     description:
-      "산기슭 바위 두꺼비, 그놈들 등껍데기가 길을 막아. 열다섯 마리만 치워 주면 짐꾼들 발이 좀 편해질 거야.",
+      "산기슭 바위 두꺼비, 그놈들 등껍데기가 길을 막아. 열다섯 마리만 치워 주면 짐꾼들 발이 좀 편해질 거야. — 가는 김에 협곡 무리장 늑대도 한 마리 봐 두면 굵은 송곳니가 나올 거야. 그게 나오면 단검 만드는 법도 함께 알려줄게.",
     requiredLevel: 18,
     target: { kind: "kill", monsterName: "바위 두꺼비", count: 15 },
-    reward: { gold: 320, fame: 16, exp: 500 },
-    repeatable: false,
-    giverNpcId: "unhyang_guide",
-  },
-  {
-    id: "unhyang-doyeon-windspirits",
-    regionId: "unhyang",
-    title: "협곡의 돌풍 정령",
-    description:
-      "협곡 돌풍 정령은 발 디딜 데를 못 잡게 만들어. 열둘만 흩어 주면 한동안 바람이 좀 잦을 거야.",
-    requiredLevel: 20,
-    target: { kind: "kill", monsterName: "돌풍 정령", count: 12 },
-    reward: { gold: 380, fame: 18, exp: 600 },
+    reward: { gold: 360, fame: 18, exp: 600, recipes: ["wolfking_fang_dagger"] },
     repeatable: false,
     giverNpcId: "unhyang_guide",
   },
@@ -1829,19 +1768,6 @@ export const QUESTS: Quest[] = [
 
   // ── 바람골 역참 — NPC 전속 사이드 (마로 / 노을 / 한솔) ───────────────────
   {
-    id: "windvale-keeper-bison-king",
-    regionId: "windvale",
-    title: "들소 떼 — 다시, 더 크게",
-    description:
-      "솎아냈더니 더 큰 떼가 내려오는구려. 마흔 마리만 더 정리해 주시오 — 이번엔 울타리가 버텨야 할 텐데.",
-    requiredLevel: 28,
-    target: { kind: "kill", monsterName: "들소", count: 40 },
-    reward: { gold: 700, fame: 26, exp: 1100 },
-    repeatable: false,
-    giverNpcId: "windvale_keeper",
-    requiresQuestCompleted: "windvale-keeper-bison",
-  },
-  {
     id: "windvale-merchant-escort-raiders",
     regionId: "windvale",
     title: "짐수레를 노리는 자들",
@@ -1876,18 +1802,6 @@ export const QUESTS: Quest[] = [
     reward: { gold: 550, exp: 700 },
     repeatable: false,
     giverNpcId: "windvale_merchant",
-  },
-  {
-    id: "windvale-pathfinder-salamander",
-    regionId: "windvale",
-    title: "잿빛 협로의 불씨",
-    description:
-      "잿빛 협로에 불씨 도롱뇽이 들끓어. 열다섯만 꺼 주면 잿가루 사이로 길이 보일 거야.",
-    requiredLevel: 34,
-    target: { kind: "kill", monsterName: "불씨 도롱뇽", count: 15 },
-    reward: { gold: 600, fame: 22, exp: 900 },
-    repeatable: false,
-    giverNpcId: "windvale_pathfinder",
   },
   {
     id: "windvale-pathfinder-ridge-scout",
@@ -2101,30 +2015,6 @@ export const QUESTS: Quest[] = [
   },
 
   // ── 화산 지대 — 사이드 의뢰 (천공 검/시온 출처) ─────────────────────────
-  {
-    id: "skyreach-guide-volcano-toads",
-    regionId: "skyreach",
-    title: "화산 지대 — 화산 두꺼비",
-    description:
-      "화산 지대 용암 웅덩이 가에 화산 두꺼비가 들끓어. 15마리만 정리해 줘.",
-    requiredLevel: 52,
-    target: { kind: "kill", monsterName: "화산 두꺼비", count: 15 },
-    reward: { gold: 900, fame: 26, exp: 2300 },
-    repeatable: false,
-    giverNpcId: "skyreach_guide",
-  },
-  {
-    id: "skyreach-guide-flame-golems",
-    regionId: "skyreach",
-    title: "화산 지대 — 불꽃 골렘",
-    description:
-      "화산 지대 깊은 곳에 불꽃 골렘이 어슬렁거려. 12체만 부숴 줘 — 광물째 녹아내리는 놈들이니 조심하고.",
-    requiredLevel: 55,
-    target: { kind: "kill", monsterName: "불꽃 골렘", count: 12 },
-    reward: { gold: 1000, fame: 28, exp: 2600 },
-    repeatable: false,
-    giverNpcId: "skyreach_guide",
-  },
   {
     id: "skyreach-alchemist-flame-scale",
     regionId: "skyreach",

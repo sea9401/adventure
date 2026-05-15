@@ -20,13 +20,6 @@ const STEPS: QuestLineStep[] = [
     activeText: (have, need) => `들소는 떼로 몰아붙이오. 한 놈씩 떼어내시오. — 진행 ${have}/${need}`,
     doneText: "스무 마리라… 울타리가 한시름 놓겠구려. 자, 약속한 사례요.",
   },
-  {
-    id: "windvale-keeper-bison-king",
-    offerText:
-      "솎아냈더니 더 큰 떼가 내려오는구려. 마흔 마리만 더 정리해 주시오 — 이번엔 울타리가 버텨야 할 텐데.",
-    activeText: (have, need) => `이번 떼는 머릿수가 많소. 무리하지 마시오. — 진행 ${have}/${need}`,
-    doneText: "마흔이나… 이제 역참이 좀 조용하겠소. 받으시오.",
-  },
 ];
 
 export function MaroDialogue({ npc, onClose, quests, completeQuest, inventory }: Props) {

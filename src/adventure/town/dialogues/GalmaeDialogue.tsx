@@ -17,24 +17,10 @@ const STEPS: QuestLineStep[] = [
   {
     id: "saltmarsh-galmae-crabs",
     offerText:
-      "갯벌에 집게발 게가 너무 불어 통발이 남아나질 않아. 20마리만 솎아 주면 사례하지 — 게딱지 다루는 법도 알려줄게.",
+      "갯벌에 집게발 게가 너무 불어 통발이 남아나질 않아. 20마리만 솎아 주면 사례하지 — 게딱지 다루는 법도 알려줄게. 손방패 짜는 법도, 갯벌 각반 누비는 법도 함께.",
     activeText: (have, need) =>
       `집게발 게는 썰물 때 갯바위 그늘에 모여. 집게에 물리지 말고. — 진행 ${have}/${need}`,
-    doneText: "스무 마리 다 정리했나? 통발 좀 살겠어.\n자, 약속한 사례다. 게딱지 손방패 만드는 법도 함께 가져가.",
-  },
-  {
-    id: "saltmarsh-galmae-mudfish",
-    offerText:
-      "진흙 미꾸라지가 통발 미끼를 죄다 파먹어. 열여덟만 정리해 주면 갯벌 각반 짜는 법을 알려줄게 — 진창에 발 안 빠지게 해 주는 거야.",
-    activeText: (have, need) => `미꾸라지는 진창 깊은 데로 파고들어. 끈질기게 쫓아. — 진행 ${have}/${need}`,
-    doneText: "미끼가 좀 남아나겠군. 자 — 갯벌 각반 짜는 법이다. 진창 다닐 일 많을 테니 챙겨 둬.",
-  },
-  {
-    id: "saltmarsh-galmae-shore-birds",
-    offerText:
-      "갯도요 떼가 말리던 생선을 다 물어가. 열여덟만 쫓아내 주면 어판장이 한결 조용해질 거야.",
-    activeText: (have, need) => `갯도요는 빨라. 한 마리 떨어뜨릴 때마다 떼가 흩어졌다 다시 모여. — 진행 ${have}/${need}`,
-    doneText: "생선이 좀 남아나겠어. 어판장 사람들이 고마워하겠군 — 받아.",
+    doneText: "스무 마리 다 정리했나? 통발 좀 살겠어.\n자, 약속한 사례다. 게딱지 손방패와 갯벌 각반 짜는 법, 둘 다 함께 가져가.",
   },
   {
     id: "saltmarsh-galmae-reef-coral",

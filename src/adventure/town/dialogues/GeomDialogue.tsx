@@ -29,20 +29,6 @@ const STEPS: QuestLineStep[] = [
     doneText: "능선이 좀 조용해졌어. 순찰 돌기가 편해졌다 — 받아.",
   },
   {
-    id: "skyreach-guide-volcano-toads",
-    offerText:
-      "화산 지대 용암 웅덩이 가에 화산 두꺼비가 들끓어. 15마리만 정리해 줘.",
-    activeText: (have, need) => `두꺼비는 웅덩이 가에 모여 있어. 발밑 조심하고. — 진행 ${have}/${need}`,
-    doneText: "웅덩이 가가 좀 트였어. 자, 받아.",
-  },
-  {
-    id: "skyreach-guide-flame-golems",
-    offerText:
-      "화산 지대 깊은 곳에 불꽃 골렘이 어슬렁거려. 12체만 부숴 줘 — 광물째 녹아내리는 놈들이니 조심하고.",
-    activeText: (have, need) => `골렘은 느려도 한 방이 무거워. 거리 두고 쳐. — 진행 ${have}/${need}`,
-    doneText: "골렘들 정리됐군. 화산 지대 깊은 곳도 좀 다닐 만하겠어 — 받아.",
-  },
-  {
     id: "volcano-heart-hunter",
     offerText:
       "그것을 열 번이나 잠재운 자가 있었다는 옛 기록이 성지에 남아 있어. 솜씨가 있다면 — 자네가 그 기록을 다시 써 보겠어?",
