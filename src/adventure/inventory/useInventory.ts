@@ -11,6 +11,13 @@ import {
 import type { MaterialId } from "../data/materials";
 import { potionMax, type PotionId } from "../data/potions";
 import {
+  isRuneGrade,
+  isRuneId,
+  RUNE_GRADES,
+  type RuneGrade,
+  type RuneId,
+} from "../data/runes";
+import {
   applyDisassemble,
   planDisassemble,
   type DisassemblePlan,
@@ -63,6 +70,11 @@ export type InventoryState = {
   consumables: Partial<Record<ConsumableId, number>>;
   // 종류별 포션 최대 보유 수의 추가 보너스. 보상으로 영구 누적.
   potionCapacityBonus?: number;
+  /**
+   * 룬 보유 — 룬 id × 등급(1~5) → 개수. 장착은 별도(CharacterDynamicState.equippedRunes),
+   * 여기는 가방. 폐기/판매 개념은 없고 합성·장착 시 소비.
+   */
+  runes?: Partial<Record<RuneId, Partial<Record<RuneGrade, number>>>>;
 };
 
 export const emptyInventory = (): InventoryState => ({
@@ -73,7 +85,32 @@ export const emptyInventory = (): InventoryState => ({
   vault: {},
   materials: { branch: 2 },
   consumables: {},
+  runes: {},
 });
+
+function readRunes(
+  raw: unknown,
+): Partial<Record<RuneId, Partial<Record<RuneGrade, number>>>> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Partial<Record<RuneId, Partial<Record<RuneGrade, number>>>> = {};
+  for (const [rid, grades] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isRuneId(rid) || !grades || typeof grades !== "object") continue;
+    const map: Partial<Record<RuneGrade, number>> = {};
+    for (const [g, n] of Object.entries(grades as Record<string, unknown>)) {
+      const gradeNum = Number(g);
+      if (
+        isRuneGrade(gradeNum) &&
+        typeof n === "number" &&
+        Number.isInteger(n) &&
+        n > 0
+      ) {
+        map[gradeNum] = n;
+      }
+    }
+    if (Object.keys(map).length) out[rid] = map;
+  }
+  return out;
+}
 
 
 // craftedEquipment / droppedEquipment 는 같은 모양(itemId → 등급키 → 개수) — 허용 등급키만 다르다.
@@ -116,6 +153,7 @@ function readInitial(raw: unknown): InventoryState {
     materials: parsed.materials ?? {},
     consumables: parsed.consumables ?? {},
     potionCapacityBonus: Math.max(0, parsed.potionCapacityBonus ?? 0),
+    runes: readRunes(parsed.runes),
   };
 }
 
@@ -425,6 +463,64 @@ export function useInventory() {
     [state],
   );
 
+  // 룬 보유량 +n.
+  const addRune = useCallback(
+    (id: RuneId, grade: RuneGrade, n = 1) => {
+      if (n <= 0) return;
+      const cur = stateRef.current;
+      const runes = cur.runes ?? {};
+      const idMap = runes[id] ?? {};
+      const next: InventoryState = {
+        ...cur,
+        runes: {
+          ...runes,
+          [id]: { ...idMap, [grade]: (idMap[grade] ?? 0) + n },
+        },
+      };
+      stateRef.current = next;
+      setState(next);
+    },
+    [],
+  );
+
+  // 룬 보유량 −n. 잔량 부족 시 false 반환(소비 안 함).
+  const consumeRune = useCallback(
+    (id: RuneId, grade: RuneGrade, n = 1): boolean => {
+      const cur = stateRef.current;
+      const have = cur.runes?.[id]?.[grade] ?? 0;
+      if (have < n) return false;
+      const runes = cur.runes ?? {};
+      const idMap = { ...(runes[id] ?? {}) };
+      const remaining = have - n;
+      if (remaining > 0) idMap[grade] = remaining;
+      else delete idMap[grade];
+      const nextRunes = { ...runes };
+      if (Object.keys(idMap).length > 0) nextRunes[id] = idMap;
+      else delete nextRunes[id];
+      const next: InventoryState = { ...cur, runes: nextRunes };
+      stateRef.current = next;
+      setState(next);
+      return true;
+    },
+    [],
+  );
+
+  const runeCount = useCallback(
+    (id: RuneId, grade: RuneGrade): number =>
+      state.runes?.[id]?.[grade] ?? 0,
+    [state],
+  );
+
+  const runeTotalCount = useCallback((): number => {
+    let total = 0;
+    for (const id of Object.keys(state.runes ?? {}) as RuneId[]) {
+      const idMap = state.runes?.[id];
+      if (!idMap) continue;
+      for (const g of RUNE_GRADES) total += idMap[g] ?? 0;
+    }
+    return total;
+  }, [state]);
+
   // 분해 — 대장간 분해실(PR E)의 진입점. 잉여 장비/재료를 갈아 마력가루로 환산한다.
   // 엔진은 crafting/disassemble.ts (순수 함수). 여기서는 현 state + 장착 슬롯을 받아
   // 계획을 세우고, 차단된 항목은 호출자에게 그대로 돌려준다 (UI 가 사유 표시).
@@ -476,6 +572,10 @@ export function useInventory() {
     addConsumable,
     consumeConsumable,
     consumableCount,
+    addRune,
+    consumeRune,
+    runeCount,
+    runeTotalCount,
     addPotionCapacity,
     disassemble,
     replaceFromSaved,

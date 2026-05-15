@@ -5,6 +5,7 @@ import {
   BookOpen,
   ClipboardText,
   Crown,
+  Diamond,
   Scroll,
   Sparkle,
   User,
@@ -18,6 +19,7 @@ import { SkillsView } from "@/adventure/character/SkillsView";
 import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { AdventureLogView } from "@/adventure/log/AdventureLogView";
 import { computeCompendiumReward } from "@/adventure/log/compendiumReward";
+import { RuneView } from "@/adventure/RuneView";
 import { InventoryView } from "@/adventure/InventoryView";
 import { RecentLogView } from "@/adventure/RecentLogView";
 import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
@@ -123,6 +125,27 @@ export function CharacterScreen() {
           title="고탑"
           description="영원히 끝나지 않는 수직 미궁. 일일 3회 도전."
           onClick={() => setSubView("tower")}
+        />
+        <EntryCard
+          icon={<Diamond size={28} weight="duotone" className="text-violet-500" />}
+          title="룬"
+          description="3개의 슬롯에 룬을 장착해 영구 능력치를 더한다."
+          onClick={() => setSubView("runes")}
+        />
+      </div>
+    );
+  }
+
+  if (subView === "runes") {
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="룬" onBack={back} />
+        <RuneView
+          equippedRunes={characterStateHook.state.equippedRunes ?? []}
+          runeInventory={inventory.state.runes ?? {}}
+          onEquip={(slotIndex, rune) =>
+            characterStateHook.setEquippedRuneAt(slotIndex, rune)
+          }
         />
       </div>
     );

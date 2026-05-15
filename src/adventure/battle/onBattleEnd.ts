@@ -19,6 +19,7 @@ import {
   resolveBuffMultiplier,
   type GuildBuffSlot,
 } from "@/adventure/data/guildBuffs";
+import type { RuneBonusMap } from "@/adventure/character/runeBonus";
 import { XP_RATE_MULT } from "@/lib/leveling";
 import type { MapProgress } from "@/lib/map-progress";
 import type {
@@ -71,6 +72,8 @@ export type BattleEndDeps = {
   reportGuildKill?: (enemyName: string) => void;
   /** 길드 버프 슬롯 — EXP/골드/명성/드랍 배율 곱셈에 사용. 비어있으면 모두 ×1. */
   guildBuffs?: GuildBuffSlot[];
+  /** 장착 룬 합산 보너스 — EXP%/드롭% 가산에 사용. 비어있으면 ×1. */
+  runeBonus?: RuneBonusMap;
 };
 
 // BattleView 의 onBattleEnd 콜백 본체. 의존성을 명시적으로 주입받는 형태로
@@ -108,9 +111,12 @@ export function onBattleEnd(
     deps.reportGuildKill?.(payload.enemyName);
     deps.characterState.setHp(payload.finalPlayerHp);
     // 길드 버프 — 비어 있으면 모든 곱셈 ×1.0 (no-op).
+    // 룬 EXP/드롭 % 도 길드 버프와 같은 자리에서 곱셈으로 합류.
     const buffs = deps.guildBuffs ?? [];
-    const expMult = resolveBuffMultiplier(buffs, "exp_mult");
-    const dropMult = resolveBuffMultiplier(buffs, "drop_mult");
+    const runeExpMult = 1 + (deps.runeBonus?.exp_pct ?? 0) / 100;
+    const runeDropMult = 1 + (deps.runeBonus?.drop_pct ?? 0) / 100;
+    const expMult = resolveBuffMultiplier(buffs, "exp_mult") * runeExpMult;
+    const dropMult = resolveBuffMultiplier(buffs, "drop_mult") * runeDropMult;
     const boostedExp = Math.floor(payload.rewards.exp * expMult * XP_RATE_MULT);
     deps.characterState.addExp(boostedExp, deps.vit);
     // 보스 처치 시 storyFlag 발급 (data-driven, monster.onDefeatFlag).

@@ -13,6 +13,12 @@ import {
 import { maxHpForLevel } from "./defaults";
 import type { Skill } from "./types";
 import {
+  computeRuneBonus,
+  pctToMultiplier,
+  type RuneBonusMap,
+} from "./runeBonus";
+import type { EquippedRune } from "@/adventure/data/runes";
+import {
   acrobatEvadeHealFor,
   analysisPerTurnFor,
   assassinateDmgMultFor,
@@ -94,6 +100,8 @@ export type DerivePlayerCombatInput = {
   equippedSkills: string[] | undefined;
   /** 장착 특기 이름들 — 슬롯 인덱스 별. null = 그 슬롯 미장착. undefined/[] = 모두 미장착. */
   equippedFeats?: ReadonlyArray<string | null>;
+  /** 장착 룬 슬롯 — 인덱스 별. null = 비움. undefined/[] = 모두 미장착. */
+  equippedRunes?: ReadonlyArray<EquippedRune | null>;
   /** 보유 스토리 플래그 id 집합 — 슬롯 해금(skillLayout) 판정용. 미지정 = 빈 집합. */
   storyFlagIds?: ReadonlySet<string>;
   /** 현재 hp — 협동 공격 시 시작값. */
@@ -104,6 +112,8 @@ export type DerivedPlayerCombat = {
   player: PlayerCombat;
   totalStats: Record<StatKey, number>;
   maxHp: number;
+  /** 장착 룬에서 합산된 효과 보너스 — UI 표시 + onBattleEnd 의 EXP/드롭 적용에 사용. */
+  runeBonus: RuneBonusMap;
   /** 도감/표시용 보유 스탯 스킬. */
   characterSkills: Skill[];
   /** 도감/표시용 보유 특기. */
@@ -175,14 +185,16 @@ export function derivePlayerCombat(
   const effectiveSkillSet = new Set(effectiveNames);
   for (const f of featNames) effectiveSkillSet.add(f);
 
-  // VIT 1pt 당 maxHp +2, 불굴 장착 시 +N%.
+  // VIT 1pt 당 maxHp +2, 불굴 장착 시 +N%, 생명의 룬 합산 +N%.
   const enduranceHpBonusPct = enduranceMaxHpBonusPctFor(
     totalStats,
     effectiveSkillSet,
   );
+  const runeBonus = computeRuneBonus(input.equippedRunes);
   const maxHp = Math.floor(
     (maxHpForLevel(input.level) + totalStats.vit * 2) *
-      (1 + enduranceHpBonusPct / 100),
+      (1 + enduranceHpBonusPct / 100) *
+      pctToMultiplier(runeBonus.hp_pct),
   );
 
   // 장비 atk/def 합산.
@@ -198,17 +210,21 @@ export function derivePlayerCombat(
 
   // 광속 격투 (2티어 특기) — 기본 공격 횟수 +1. derive 단계에서 attackCount 에 미리 합산.
   const lightHandExtra = lightHandExtraAttackFor(totalStats, effectiveSkillSet);
+  // 룬 atk/def % — atk 공식의 중간값(playerDef/5) 에 def% 를 끼우면 def 룬이 atk 도 미세하게
+  // 올려버리는 cross-bleed 가 생긴다. 그래서 def% 는 최종 def 필드에만 적용, atk 공식의
+  // playerDef 는 원본 유지. atk% 는 최종 atk 합산값에 곱한다.
+  const rawAtk =
+    totalStats.str +
+    Math.floor(totalStats.dex / 5) +
+    Math.floor(playerDef / 5) +
+    Math.floor(totalStats.luk / 5) +
+    Math.floor(totalStats.spd / 5) +
+    equipAtk;
   const player: PlayerCombat = {
     hp: Math.max(0, Math.min(input.hp, maxHp)),
     maxHp,
-    atk:
-      totalStats.str +
-      Math.floor(totalStats.dex / 5) +
-      Math.floor(playerDef / 5) +
-      Math.floor(totalStats.luk / 5) +
-      Math.floor(totalStats.spd / 5) +
-      equipAtk,
-    def: playerDef,
+    atk: Math.floor(rawAtk * pctToMultiplier(runeBonus.atk_pct)),
+    def: Math.floor(playerDef * pctToMultiplier(runeBonus.def_pct)),
     spd: totalStats.spd,
     evasionPct:
       totalStats.dex * 0.5 + evadeBonusPctFor(totalStats, effectiveSkillSet),
@@ -233,7 +249,8 @@ export function derivePlayerCombat(
       totalStats,
       effectiveSkillSet,
     ),
-    critChancePct: critChancePctFor(totalStats, effectiveSkillSet),
+    critChancePct:
+      critChancePctFor(totalStats, effectiveSkillSet) + runeBonus.crit_pct,
     critMult: critMultFor(totalStats, effectiveSkillSet),
     doubleLuck: doubleLuckBonusesFor(totalStats, effectiveSkillSet),
     guard: guardFor(totalStats, effectiveSkillSet),
@@ -318,12 +335,14 @@ export function derivePlayerCombat(
     ),
     steadfastWillFlat: steadfastWillFlatFor(totalStats, effectiveSkillSet),
     cyclingChiPerTurn: cyclingChiPerTurnFor(totalStats, effectiveSkillSet),
+    potionHealPct: runeBonus.potion_pct,
   };
 
   return {
     player,
     totalStats,
     maxHp,
+    runeBonus,
     characterSkills,
     characterFeats,
     effectiveSkillNames: effectiveNames,

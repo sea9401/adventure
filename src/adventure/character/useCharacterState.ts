@@ -5,6 +5,12 @@ import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import { baseCharacter, maxHpForLevel, maxMpForLevel } from "./defaults";
 import { rehydrateEquippedItem } from "./rehydrateEquip";
 import type { EquippedItem, EquippedSlots } from "./types";
+import {
+  isRuneGrade,
+  isRuneId,
+  RUNE_SLOT_COUNT,
+  type EquippedRune,
+} from "@/adventure/data/runes";
 
 // PR #140 (baseCharacter.maxHp 47 → 97) 이전 캐릭터의 hp 저장값에 +50 을 일률 보정하는
 // 일회성 마이그레이션 키. derivePlayerCombat 가 maxHp 로 클램프하므로 maxHp 초과해도 안전.
@@ -26,6 +32,11 @@ export type CharacterDynamicState = {
   equippedSkills?: string[];
   /** 장착 중인 특기 이름들 — 슬롯 인덱스 0..featSlots-1. null = 그 슬롯 미장착. undefined/[] = 모두 미장착. */
   equippedFeats?: (string | null)[];
+  /**
+   * 장착 중인 룬 — 슬롯 인덱스 0..RUNE_SLOT_COUNT-1. null = 슬롯 비움.
+   * undefined/[] = 모두 미장착. 효과는 derivePlayerCombat / onBattleEnd / engine 에서 합산 적용.
+   */
+  equippedRunes?: (EquippedRune | null)[];
   /**
    * region 단위 일일 보스 입장 카운터.
    * date 는 클라이언트 로컬 'YYYY-MM-DD'. 다른 날짜로 보면 0 부터 새로 카운트.
@@ -92,9 +103,33 @@ function readInitial(raw: unknown): CharacterDynamicState {
     equippedTitleId: parsed.equippedTitleId ?? null,
     equippedSkills: parsed.equippedSkills,
     equippedFeats: feats,
+    equippedRunes: rehydrateEquippedRunes(parsed.equippedRunes),
     bossAttempts: parsed.bossAttempts,
     migrations: parsed.migrations,
   };
+}
+
+function rehydrateEquippedRunes(
+  saved: unknown,
+): (EquippedRune | null)[] | undefined {
+  if (!Array.isArray(saved)) return undefined;
+  const out: (EquippedRune | null)[] = [];
+  for (let i = 0; i < Math.min(saved.length, RUNE_SLOT_COUNT); i += 1) {
+    const v = saved[i] as { id?: unknown; grade?: unknown } | null | undefined;
+    if (
+      v &&
+      typeof v === "object" &&
+      typeof v.id === "string" &&
+      isRuneId(v.id) &&
+      typeof v.grade === "number" &&
+      isRuneGrade(v.grade)
+    ) {
+      out.push({ id: v.id, grade: v.grade });
+    } else {
+      out.push(null);
+    }
+  }
+  return out;
 }
 
 export function useCharacterState() {
@@ -187,6 +222,19 @@ export function useCharacterState() {
       return { ...prev, equippedFeats: next };
     });
 
+  // 룬 슬롯 장착/해제. RUNE_SLOT_COUNT 자리만큼 null 로 패딩 유지.
+  // 장착/해제 자체는 인벤에서 소비/반환하지 않고 "참조" 만 한다.
+  // 인벤 가방의 보유량은 그대로 — 다른 슬롯에도 끼울 수 있고, 합성·소비 시점에 한꺼번에 빼는 식.
+  // (UX 가 단순; 동일 룬을 두 슬롯에 끼우는 건 RuneView 에서 막는다.)
+  const setEquippedRuneAt = (slotIndex: number, rune: EquippedRune | null) =>
+    setState((prev) => {
+      if (slotIndex < 0 || slotIndex >= RUNE_SLOT_COUNT) return prev;
+      const next = (prev.equippedRunes ?? []).slice();
+      while (next.length < RUNE_SLOT_COUNT) next.push(null);
+      next[slotIndex] = rune;
+      return { ...prev, equippedRunes: next };
+    });
+
   // 길드 가입/탈퇴/해체/위임 시 호출. 서버는 이미 character.v2 에 affiliation 을
   // 반영했지만 클라이언트의 in-memory state 도 같이 끌어줘야 AdventurerCard 등이
   // 즉시 새 값을 표시.
@@ -236,6 +284,7 @@ export function useCharacterState() {
     setEquippedTitle,
     setEquippedSkills,
     setEquippedFeatAt,
+    setEquippedRuneAt,
     setAffiliation,
     replaceFromSaved,
     getBossAttemptsToday,
