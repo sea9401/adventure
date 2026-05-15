@@ -18,14 +18,9 @@ const SCROLL_ID = "scroll_town_return" as const;
 
 type Entry = {
   region: Region;
+  label: string;
   cost: number; // 소비할 스크롤 개수
 };
-
-function regionLabel(region: Region): string {
-  return region.recommendedLevel
-    ? `${region.name} · 권장 Lv ${region.recommendedLevel}`
-    : region.name;
-}
 
 function TravelRow({
   entry,
@@ -52,7 +47,7 @@ function TravelRow({
       />
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          {regionLabel(entry.region)}
+          {entry.label}
         </span>
         <span className="block text-xs text-zinc-500 dark:text-zinc-400">
           {entry.cost === 0
@@ -97,16 +92,28 @@ export function QuickTravelScreen() {
     if (!visited.has(region.id)) continue;
     const isTown = region.tags?.includes("town") ?? false;
     const isTower = region.tags?.includes("tower") ?? false;
-    const isCoopBoss = !!COOP_BOSSES[region.id];
-    const isSoloBoss = !!region.boss && !isCoopBoss;
+    const coopBoss = COOP_BOSSES[region.id];
+    const isSoloBoss = !!region.boss && !coopBoss;
     if (isTown) {
-      townEntries.push({ region, cost: fromIsTown ? 0 : 1 });
+      townEntries.push({
+        region,
+        label: region.name,
+        cost: fromIsTown ? 0 : 1,
+      });
     } else if (isTower) {
-      towerEntries.push({ region, cost: 1 });
-    } else if (isCoopBoss) {
-      coopBossEntries.push({ region, cost: 1 });
-    } else if (isSoloBoss) {
-      soloBossEntries.push({ region, cost: 1 });
+      towerEntries.push({ region, label: region.name, cost: 1 });
+    } else if (coopBoss) {
+      coopBossEntries.push({
+        region,
+        label: coopBoss.monsterName,
+        cost: 1,
+      });
+    } else if (isSoloBoss && region.boss) {
+      soloBossEntries.push({
+        region,
+        label: region.boss.monsterName,
+        cost: 1,
+      });
     }
   }
 
