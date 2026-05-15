@@ -117,16 +117,18 @@ export function MonsterAvatarMini({
 }
 
 // 몬스터 세부 정보 블록 — 처치 수에 따라 단계적으로 스탯/드랍 공개.
-// 장소 탭의 몬스터 행 펼침 등에서 재사용.
+// 장소 탭의 몬스터 행 펼침 등에서 재사용. isBoss=true 일 때 보스 전용 낮은 임계(1/5/10) 적용.
 export function MonsterStatBlock({
   name,
   kills,
+  isBoss,
 }: {
   name: string;
   kills: number;
+  isBoss?: boolean;
 }) {
   const monster = MONSTERS[name];
-  const stage = getRevealStage(kills);
+  const stage = getRevealStage(kills, isBoss ?? false);
   if (!monster) return null;
   return (
     <div>

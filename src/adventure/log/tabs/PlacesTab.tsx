@@ -8,6 +8,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { MONSTERS } from "@/adventure/data/monsters";
 import { WORLD_MAP } from "@/adventure/data/world";
+import { isBossMonster } from "@/adventure/data/bosses";
 import type { AdventureLog, MonsterLogEntry } from "@/adventure/log/storage";
 import { MonsterAvatarMini, MonsterStatBlock, relativeTime } from "./shared";
 
@@ -239,7 +240,11 @@ function MonsterRow({
       </button>
       {open && canExpand && (
         <div className="ml-7 mt-1 mb-1 rounded-md bg-zinc-50 px-2 py-1.5 dark:bg-zinc-800/40">
-          <MonsterStatBlock name={name} kills={kills} />
+          <MonsterStatBlock
+            name={name}
+            kills={kills}
+            isBoss={isBossMonster(name)}
+          />
         </div>
       )}
     </li>

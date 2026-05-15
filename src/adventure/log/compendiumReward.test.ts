@@ -39,9 +39,18 @@ describe("countCompendiumEntries", () => {
     expect(countCompendiumEntries(emptyAdventureLog()).total).toBe(0);
   });
 
-  it("몬스터는 300킬 이상만 카운트", () => {
+  it("일반 몬스터는 300킬 이상만 카운트", () => {
     const log = makeLog({ monstersKills: [299, 300, 1000, 5, 0] });
     expect(countCompendiumEntries(log).monsters).toBe(2); // 300, 1000
+  });
+
+  it("보스는 5킬 이상이면 카운트 (낮은 임계)", () => {
+    const log = emptyAdventureLog();
+    // 광맥의 수호자 = ruins region.boss.monsterName, isBossMonster=true
+    log.monsters["광맥의 수호자"] = { encountered: true, kills: 5 };
+    log.monsters["화산의 심장"] = { encountered: true, kills: 4 }; // 미달
+    log.monsters["슬라임"] = { encountered: true, kills: 5 }; // 일반 임계 미달
+    expect(countCompendiumEntries(log).monsters).toBe(1); // 광맥의 수호자만
   });
 
   it("방문하지 않은 town 엔트리는 제외", () => {
