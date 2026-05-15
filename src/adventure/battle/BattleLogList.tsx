@@ -56,19 +56,21 @@ export function BattleLogList({
         if (entry.kind === "turn_marker") {
           return <TurnMarker key={i} text={entry.text} sizes={s} />;
         }
-        if (entry.kind === "info") {
-          const side =
-            entry.turn === "enemy" ? "right" : entry.turn === "player" ? "left" : null;
-          return <InfoLine key={i} text={entry.text} side={side} sizes={s} />;
+        if (entry.kind === "player_attack" || entry.kind === "enemy_attack") {
+          return (
+            <AttackBubble
+              key={i}
+              side={entry.kind === "player_attack" ? "left" : "right"}
+              text={entry.text}
+              sizes={s}
+            />
+          );
         }
-        return (
-          <AttackBubble
-            key={i}
-            side={entry.kind === "player_attack" ? "left" : "right"}
-            text={entry.text}
-            sizes={s}
-          />
-        );
+        // info — entry.turn 이 있으면 좌/우, 없으면 가운데. 미래에 추가될 미지 kind 도
+        // 같은 경로로 폴백해 빨강 버블로 오해석되지 않게.
+        const side =
+          entry.turn === "enemy" ? "right" : entry.turn === "player" ? "left" : null;
+        return <InfoLine key={i} text={entry.text} side={side} sizes={s} />;
       })}
     </div>
   );
