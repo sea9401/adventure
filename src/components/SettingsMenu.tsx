@@ -1,25 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   Bell,
+  BookOpen,
   Gear,
   Moon,
-  Question,
   Sun,
   SignOut,
   User,
   UserMinus,
 } from "@phosphor-icons/react";
 import { signIn, signOut } from "next-auth/react";
-import { HelpModal } from "./HelpModal";
 import { NotificationPrefsModal } from "./NotificationPrefsModal";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { AvatarChangeModal } from "./AvatarChangeModal";
 
 export function SettingsMenu({ gameName }: { gameName: string | null }) {
   const [open, setOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const [notifPrefsOpen, setNotifPrefsOpen] = useState(false);
   const [avatarChangeOpen, setAvatarChangeOpen] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
@@ -80,11 +79,6 @@ export function SettingsMenu({ gameName }: { gameName: string | null }) {
       body: JSON.stringify({ provider }),
     });
     signIn(provider, { callbackUrl: "/" });
-  };
-
-  const handleOpenHelp = () => {
-    setOpen(false);
-    setHelpOpen(true);
   };
 
   const handleOpenNotifPrefs = () => {
@@ -156,14 +150,14 @@ export function SettingsMenu({ gameName }: { gameName: string | null }) {
               </button>
             </li>
             <li>
-              <button
-                type="button"
-                onClick={handleOpenHelp}
+              <Link
+                href="/manual"
+                onClick={() => setOpen(false)}
                 className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
-                <Question size={18} weight="duotone" />
-                도움말
-              </button>
+                <BookOpen size={18} weight="duotone" />
+                메뉴얼
+              </Link>
             </li>
           </ul>
           <div className="border-t border-zinc-200 px-3 py-2 text-xs uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
@@ -218,7 +212,6 @@ export function SettingsMenu({ gameName }: { gameName: string | null }) {
           </ul>
         </div>
       )}
-      {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
       {notifPrefsOpen && (
         <NotificationPrefsModal onClose={() => setNotifPrefsOpen(false)} />
       )}
