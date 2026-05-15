@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useSavedValue } from "@/lib/storage/SaveProvider";
+import { useRemoteSave, useSavedValue } from "@/lib/storage/SaveProvider";
 import type { BattleState } from "@/adventure/battle/engine";
 import {
   TOWER_STORAGE_KEY,
@@ -74,12 +74,19 @@ export function useTower(opts?: {
   const [state, setState] = useState<TowerState>(initial ?? EMPTY_STATE);
   const [pending, setPending] = useState<TowerApiAction["kind"] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const remote = useRemoteSave();
 
   const call = useCallback(
     async (action: TowerApiAction): Promise<TowerApiResponse> => {
       setPending(action.kind);
       setError(null);
       try {
+        // 서버가 character.v2 / inventory.v2 를 read-modify-write 하므로, 디바운스 큐에
+        // 쌓인 로컬 PATCH (방금 주운 드랍 / 분배한 스탯 등) 를 먼저 flush 해 서버가
+        // 최신 값을 보게 한다. 안 하면 서버가 stale 값으로 적용 → onApplied 의
+        // replaceFromSaved 가 그 값을 덮어쓰고 → 뒤늦은 PATCH 가 409→재시도로 그 값을
+        // 다시 올려 보상이 영구 유실 (상점 useShopActions 와 동일 패턴).
+        await remote.flush();
         const res = await fetch("/api/tower", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -101,7 +108,7 @@ export function useTower(opts?: {
         setPending(null);
       }
     },
-    [opts],
+    [opts, remote],
   );
 
   return {

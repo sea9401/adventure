@@ -140,7 +140,9 @@ export async function applyTowerAction(
     const floor = state.run.currentFloor;
     const derived = await derivePlayerCombatFromSaves(userId);
     if (!derived) throw new TowerError("character_not_found");
-    const enemy = buildFloorEnemy(floor);
+    // 클라 ready 화면과 동일한 적과 싸우도록 upcomingEnemy 가 있으면 사용.
+    // 옛 런(upcomingEnemy 없음) 은 즉시 픽 — 그 한 번은 mismatch 가능.
+    const enemy = buildFloorEnemy(floor, state.run.upcomingEnemy);
     const resolution = resolveBattle(derived.player, enemy, "player", {
       pickAction: (s) => pickAutoAction(s, { rules: [], potions: {} }),
       potions: {},
@@ -159,7 +161,7 @@ export async function applyTowerAction(
     computeAction = action;
   }
 
-  const result: TowerComputeResult = computeTowerOutcome(
+  const computed: TowerComputeResult = computeTowerOutcome(
     { state, today: todayKey() },
     computeAction,
   );
@@ -175,6 +177,13 @@ export async function applyTowerAction(
     const clearedFloor = state.run!.currentFloor;
     bossDrops = { floor: clearedFloor, reward: rollBossClearReward(clearedFloor) };
   }
+
+  // 새로 진입한 currentFloor 에 대한 upcomingEnemy 채우기 — start / fight_floor(win)
+  // 모두 새 층 진입이므로 클라 ready 화면용 픽이 필요. forfeit/lose 는 run=null 이라 no-op.
+  const result: TowerComputeResult = {
+    ...computed,
+    state: withUpcomingEnemy(computed.state),
+  };
 
   await upsertSave(tx, userId, TOWER_STORAGE_KEY, result.state);
 
@@ -272,7 +281,10 @@ async function applyTowerAutoProgress(
   for (let i = 0; i < MAX_ITERATIONS; i += 1) {
     if (!state.run) break;
     const floor = state.run.currentFloor;
-    const enemy = buildFloorEnemy(floor);
+    // 첫 iteration 은 클라가 봤던 upcomingEnemy 와 일치시키고, 이후엔 매 iteration
+    // 마다 새 currentFloor 라 자연스럽게 random 픽. (computeFightFloor 가 upcomingEnemy
+    // 를 비워 다음 iteration 진입 시 없음 상태.)
+    const enemy = buildFloorEnemy(floor, state.run.upcomingEnemy);
     const resolution = resolveBattle(derived.player, enemy, "player", {
       pickAction: (s) => pickAutoAction(s, { rules: [], potions: {} }),
       potions: {},
@@ -296,6 +308,11 @@ async function applyTowerAutoProgress(
       break;
     }
   }
+
+  // 자동 종료 시점에 state.run 이 살아 있고 잡몹층 위에 있으면 클라 다음 ready 화면용
+  // upcomingEnemy 를 채워둔다. (next_is_boss: 보스층이라 미저장 / death: run=null / revive_used:
+  // 그 자리 잡몹층에서 멈춤.)
+  state = withUpcomingEnemy(state);
 
   await upsertSave(tx, userId, TOWER_STORAGE_KEY, state);
 
@@ -362,8 +379,12 @@ async function applyTowerAutoProgress(
 }
 
 // 층 → 그 층에서 만나는 적 Monster (이름·스탯 모두 결정). 보스층은 보스 슬롯의 베이스 +
-// bossMultiplier, 잡몹층은 그 층의 풀에서 균등 무작위 선택.
-function buildFloorEnemy(floor: number): Monster {
+// bossMultiplier, 잡몹층은 upcomingEnemy 가 있으면 그걸 사용 (클라 ready 화면과 일치),
+// 없으면 풀에서 균등 무작위 선택.
+function buildFloorEnemy(
+  floor: number,
+  upcoming?: { name: string },
+): Monster {
   const slot = bossSlotForFloor(floor);
   if (slot) {
     const base = bossBaseMonster(slot);
@@ -372,7 +393,9 @@ function buildFloorEnemy(floor: number): Monster {
   }
   const pool = mobPoolForFloor(floor);
   let baseName: string;
-  if (pool.length === 0) {
+  if (upcoming?.name && MONSTERS[upcoming.name]) {
+    baseName = upcoming.name;
+  } else if (pool.length === 0) {
     baseName = bossBaseMonster(BOSS_SLOTS[0]).name;
   } else {
     baseName = pickMobFromPool(pool);
@@ -380,6 +403,28 @@ function buildFloorEnemy(floor: number): Monster {
   const base = MONSTERS[baseName] ?? MONSTERS[pool[0]] ?? bossBaseMonster(BOSS_SLOTS[0]);
   const s = scaledStats(base, floor);
   return { ...base, hp: s.hp, atk: s.atk, def: s.def, spd: s.spd };
+}
+
+/**
+ * state.run 이 활성이고 currentFloor 가 잡몹층인데 upcomingEnemy 가 비어 있으면
+ * 풀에서 균등 무작위로 픽해 채운다. 클라 ready 화면이 그걸 그대로 표시 →
+ * 다음 fight_floor 가 같은 적과 싸우게 된다 (mismatch 차단).
+ *
+ * 보스층은 결정적이라 미저장. 풀이 비어 있어도 미저장 (그 경우 buildFloorEnemy 가 폴백).
+ */
+function withUpcomingEnemy(state: TowerState): TowerState {
+  if (!state.run) return state;
+  const floor = state.run.currentFloor;
+  if (isBossFloor(floor)) {
+    // 보스층 — 잔여 값 정리.
+    if (state.run.upcomingEnemy == null) return state;
+    return { ...state, run: { ...state.run, upcomingEnemy: undefined } };
+  }
+  if (state.run.upcomingEnemy) return state;
+  const pool = mobPoolForFloor(floor);
+  if (pool.length === 0) return state;
+  const name = pickMobFromPool(pool);
+  return { ...state, run: { ...state.run, upcomingEnemy: { name } } };
 }
 
 export { TowerError };

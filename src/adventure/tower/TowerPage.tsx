@@ -95,12 +95,14 @@ export function TowerPage({
           onStart={async (startFloor) => {
             const r = await tower.start(startFloor);
             if (r.ok && r.tower?.run) {
-              const floor = r.tower.run.currentFloor;
-              setView(buildReady(floor));
+              setView(
+                buildReady(r.tower.run.currentFloor, r.tower.run.upcomingEnemy),
+              );
             }
           }}
           onResume={() => {
-            if (state.run) setView(buildReady(state.run.currentFloor));
+            if (state.run)
+              setView(buildReady(state.run.currentFloor, state.run.upcomingEnemy));
           }}
           onForfeit={async () => {
             await tower.forfeit();
@@ -158,9 +160,9 @@ export function TowerPage({
           playerStatus={playerStatus}
           onNext={() => {
             if (view.outcome === "win") {
-              // 다음 층 — 서버 응답에 따라 currentFloor 가 이미 +1 됐을 것.
+              // 다음 층 — 서버 응답에 따라 currentFloor 가 이미 +1, upcomingEnemy 도 새 층용.
               const nextFloor = state.run?.currentFloor ?? view.floor + 1;
-              setView(buildReady(nextFloor));
+              setView(buildReady(nextFloor, state.run?.upcomingEnemy));
             } else {
               setView({ kind: "run_ended", lastFloor: view.floor - 1 });
             }
@@ -185,7 +187,7 @@ export function TowerPage({
             }
             // next_is_boss / revive_used → 같은 currentFloor 에서 수동 모드 진입.
             const nextFloor = state.run?.currentFloor ?? view.summary.endFloor;
-            setView(buildReady(nextFloor));
+            setView(buildReady(nextFloor, state.run?.upcomingEnemy));
           }}
         />
       )}
@@ -221,7 +223,10 @@ function apparentMilestone(outcome: "win" | "lose", floor: number) {
   return milestoneFor(floor);
 }
 
-function buildReady(floor: number): View {
+// upcoming: 서버가 픽해 state.run.upcomingEnemy 에 저장해둔 잡몹 이름. 있으면 그걸 그대로
+// 표시해 다음 fight_floor 결과와 이름·이미지·스탯이 일치한다. 없으면(옛 런/풀 비어 있음)
+// 종전 동작 — 클라가 자체적으로 풀에서 한 번 픽 (서버 fight 와 mismatch 가능, 한 번 뒤 회복).
+function buildReady(floor: number, upcoming?: { name: string }): View {
   const slot = bossSlotForFloor(floor);
   if (slot) {
     const base = bossBaseMonster(slot);
@@ -249,8 +254,11 @@ function buildReady(floor: number): View {
       isBoss: false,
     };
   }
-  const name = pickMobFromPool(pool);
-  // 풀에 있는 이름은 MONSTERS 키여야 함. 없으면 풀 첫 항목 또는 baseline 폴백.
+  // 서버 픽 우선 — 없거나 알 수 없는 이름이면 풀에서 즉시 픽 (폴백).
+  const name =
+    upcoming?.name && MONSTERS[upcoming.name]
+      ? upcoming.name
+      : pickMobFromPool(pool);
   const base =
     MONSTERS[name] ?? MONSTERS[pool[0]] ?? bossBaseMonster(BOSS_SLOTS[0]);
   const scaled = scaledStats(base, floor);

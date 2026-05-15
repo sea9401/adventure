@@ -27,6 +27,13 @@ export type TowerRun = {
    * 미존재(예: 옛 런 마이그레이션) 시 true 로 간주.
    */
   reviveAvailable?: boolean;
+  /**
+   * 잡몹층 한정 — 다음 전투할 적의 MONSTERS 키. 서버가 currentFloor 전환 직후 한 번 픽해
+   * 저장하고, 클라이언트 ready 화면이 그대로 표시한다. 보스층은 결정적이라 미저장.
+   * 미존재(옛 런 마이그레이션 또는 풀 비어 있음) 시 서버는 fight 시점에 즉시 픽한다 —
+   * 한 번의 mismatch 후 다음 진입부터는 일치.
+   */
+  upcomingEnemy?: { name: string };
 };
 
 export type TowerDaily = {

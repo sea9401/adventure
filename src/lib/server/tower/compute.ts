@@ -155,6 +155,9 @@ function computeFightFloor(
   const nextRun: TowerRun = {
     ...state.run,
     currentFloor: cleared + 1,
+    // 새 층으로 넘어가므로 이전 층의 upcomingEnemy 는 무효 — 비운다. apply.ts 의
+    // withUpcomingEnemy 가 새 floor 에 맞는 잡몹을 픽해 다시 채워준다.
+    upcomingEnemy: undefined,
   };
 
   return {
