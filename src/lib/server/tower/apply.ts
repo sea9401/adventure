@@ -26,6 +26,11 @@ import {
 import { isBossFloor, scaledStats } from "@/adventure/tower/scaling";
 import type { TowerMilestoneReward } from "@/adventure/tower/rewards";
 import {
+  rollBossClearReward,
+  type BossClearReward,
+} from "@/adventure/tower/runeDrops";
+import type { RuneGrade, RuneId } from "@/adventure/data/runes";
+import {
   BOSS_SLOTS,
   bossBaseMonster,
   bossDisplayName,
@@ -45,7 +50,12 @@ import {
 
 type SavedCharacter = { gold?: number; [k: string]: unknown };
 type CountMap = Record<string, number>;
-type SavedInventory = { materials?: CountMap; [k: string]: unknown };
+type RuneInventoryMap = Partial<Record<RuneId, Partial<Record<RuneGrade, number>>>>;
+type SavedInventory = {
+  materials?: CountMap;
+  runes?: RuneInventoryMap;
+  [k: string]: unknown;
+};
 
 const EMPTY_STATE: TowerState = {
   progress: { highestFloor: 0, claimedMilestones: [] },
@@ -149,34 +159,65 @@ export async function applyTowerAction(
     computeAction,
   );
 
+  // 보스층 클리어 시 매번 굴리는 룬·토큰 드롭. 마일스톤과 무관하게 매 클리어 적용.
+  // computeAction 이 fight_floor 이고 win 인 케이스에만 — 그 외엔 빈 보상.
+  let bossDrops: { floor: number; reward: BossClearReward } | undefined;
+  if (
+    computeAction.kind === "fight_floor" &&
+    computeAction.outcome === "win" &&
+    isBossFloor(state.run!.currentFloor)
+  ) {
+    const clearedFloor = state.run!.currentFloor;
+    bossDrops = { floor: clearedFloor, reward: rollBossClearReward(clearedFloor) };
+  }
+
   await upsertSave(tx, userId, TOWER_STORAGE_KEY, result.state);
 
-  // 마일스톤 보상 적용 — gold 가 있으면 character.v2 갱신, materials 가 있으면 inventory.v2 갱신.
+  // 마일스톤 보상 + 보스 드롭 — gold/material/rune 을 한 번에 모아 character/inventory 갱신.
   let character: SavedCharacter | undefined;
   let inventory: SavedInventory | undefined;
 
   const milestone = result.applied.milestone;
-  if (milestone) {
-    const reward = milestone.reward;
-
-    if ((reward.gold ?? 0) > 0) {
-      const cur = (await readKv<SavedCharacter>(tx, userId, "character.v2", true)) ?? {};
-      character = { ...cur, gold: (cur.gold ?? 0) + (reward.gold ?? 0) };
-      await upsertSave(tx, userId, "character.v2", character);
-    }
-
-    if (reward.materials && reward.materials.length > 0) {
-      const cur = (await readKv<SavedInventory>(tx, userId, "inventory.v2", true)) ?? {};
-      const materials: CountMap = { ...(cur.materials ?? {}) };
-      for (const m of reward.materials) {
-        materials[m.id] = (materials[m.id] ?? 0) + m.count;
-      }
-      inventory = { ...cur, materials };
-      await upsertSave(tx, userId, "inventory.v2", inventory);
+  const totalGold = milestone?.reward.gold ?? 0;
+  const totalMaterials: CountMap = {};
+  for (const m of milestone?.reward.materials ?? []) {
+    totalMaterials[m.id] = (totalMaterials[m.id] ?? 0) + m.count;
+  }
+  if (bossDrops) {
+    if (bossDrops.reward.tokens > 0) {
+      totalMaterials["tower_token"] =
+        (totalMaterials["tower_token"] ?? 0) + bossDrops.reward.tokens;
     }
   }
 
-  return { tower: result.state, character, inventory, applied: result.applied, battle };
+  if (totalGold > 0) {
+    const cur = (await readKv<SavedCharacter>(tx, userId, "character.v2", true)) ?? {};
+    character = { ...cur, gold: (cur.gold ?? 0) + totalGold };
+    await upsertSave(tx, userId, "character.v2", character);
+  }
+
+  const runeDrops = bossDrops?.reward.runes ?? [];
+  if (Object.keys(totalMaterials).length > 0 || runeDrops.length > 0) {
+    const cur = (await readKv<SavedInventory>(tx, userId, "inventory.v2", true)) ?? {};
+    const materials: CountMap = { ...(cur.materials ?? {}) };
+    for (const [id, n] of Object.entries(totalMaterials)) {
+      materials[id] = (materials[id] ?? 0) + n;
+    }
+    const runes: RuneInventoryMap = { ...(cur.runes ?? {}) };
+    for (const d of runeDrops) {
+      const idMap = { ...(runes[d.id] ?? {}) };
+      idMap[d.grade] = (idMap[d.grade] ?? 0) + d.count;
+      runes[d.id] = idMap;
+    }
+    inventory = { ...cur, materials, runes };
+    await upsertSave(tx, userId, "inventory.v2", inventory);
+  }
+
+  const applied = bossDrops
+    ? { ...result.applied, bossDrops }
+    : result.applied;
+
+  return { tower: result.state, character, inventory, applied, battle };
 }
 
 /**

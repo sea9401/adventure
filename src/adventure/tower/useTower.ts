@@ -7,6 +7,8 @@ import {
   TOWER_STORAGE_KEY,
   type TowerState,
 } from "./types";
+import type { BossClearReward } from "./runeDrops";
+import type { RuneGrade, RuneId } from "@/adventure/data/runes";
 
 const EMPTY_STATE: TowerState = {
   progress: { highestFloor: 0, claimedMilestones: [] },
@@ -30,14 +32,20 @@ export type TowerApiResponse = {
   tower?: TowerState;
   /** 마일스톤 보상으로 갱신된 character.v2. */
   character?: { gold?: number; [k: string]: unknown };
-  /** 마일스톤 보상으로 갱신된 inventory.v2. */
-  inventory?: { materials?: Record<string, number>; [k: string]: unknown };
+  /** 마일스톤·드롭으로 갱신된 inventory.v2. runes 도 포함. */
+  inventory?: {
+    materials?: Record<string, number>;
+    runes?: Partial<Record<RuneId, Partial<Record<RuneGrade, number>>>>;
+    [k: string]: unknown;
+  };
   applied?: {
     kind: string;
     currentFloor?: number;
     outcome?: "win" | "lose";
     newHighestFloor?: number;
     milestone?: { floor: number; reward: MilestoneReward };
+    /** 보스층 클리어 시 굴려진 룬·토큰 드롭. */
+    bossDrops?: { floor: number; reward: BossClearReward };
   };
   /** fight_floor / fight_floors_auto 응답에 동봉되는 서버 측 전투 결과 (마지막 전투). */
   battle?: {

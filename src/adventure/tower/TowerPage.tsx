@@ -25,6 +25,7 @@ import {
   pickMobFromPool,
 } from "./floorPools";
 import { milestoneFor } from "./rewards";
+import { RUNES } from "@/adventure/data/runes";
 import { TOWER_DAILY_ATTEMPTS, type TowerState } from "./types";
 import { useTower, type TowerApiResponse } from "./useTower";
 
@@ -40,7 +41,15 @@ type AutoSummary = NonNullable<TowerApiResponse["auto"]>;
 type View =
   | { kind: "entry" } // 시작 또는 이어하기 선택
   | { kind: "ready"; floor: number; enemy: Monster; isBoss: boolean }
-  | { kind: "result"; outcome: "win" | "lose"; floor: number; enemy: Monster; finalState: BattleState }
+  | {
+      kind: "result";
+      outcome: "win" | "lose";
+      floor: number;
+      enemy: Monster;
+      finalState: BattleState;
+      /** 보스층 클리어 시 서버가 굴린 룬·토큰 드롭. 미보스/패배 시 undefined. */
+      bossDrops?: NonNullable<TowerApiResponse["applied"]>["bossDrops"];
+    }
   | {
       kind: "auto_result";
       summary: AutoSummary;
@@ -116,6 +125,7 @@ export function TowerPage({
               floor: view.floor,
               enemy: { ...view.enemy, name: apiResult.battle.enemyName },
               finalState: apiResult.battle.finalState,
+              bossDrops: apiResult.applied?.bossDrops,
             });
           }}
           onAutoToBoss={async () => {
@@ -142,6 +152,7 @@ export function TowerPage({
           enemy={view.enemy}
           finalState={view.finalState}
           milestone={apparentMilestone(view.outcome, view.floor)}
+          bossDrops={view.bossDrops}
           playerName={playerName}
           playerStatus={playerStatus}
           onNext={() => {
@@ -428,6 +439,7 @@ function ResultView({
   enemy,
   finalState,
   milestone,
+  bossDrops,
   playerName,
   playerStatus,
   onNext,
@@ -437,6 +449,7 @@ function ResultView({
   enemy: Monster;
   finalState: BattleState;
   milestone: ReturnType<typeof milestoneFor>;
+  bossDrops?: NonNullable<TowerApiResponse["applied"]>["bossDrops"];
   playerName: string;
   playerStatus: BattlePlayerStatus;
   onNext: () => void;
@@ -476,6 +489,23 @@ function ResultView({
                   {m.id} ×{m.count}
                 </span>
               ))}
+            </div>
+          </div>
+        )}
+        {bossDrops && (
+          <div className="mt-2 rounded-md border border-violet-300 bg-violet-50 p-2 text-xs text-violet-800 dark:border-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+            <div className="font-semibold">보스 처치 보상</div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-2">
+              {bossDrops.reward.tokens > 0 && (
+                <span>고탑의 인장 ×{bossDrops.reward.tokens}</span>
+              )}
+              {bossDrops.reward.runes.map((r) => (
+                <span key={`${r.id}_${r.grade}`}>
+                  {RUNES[r.id].name} {r.grade}등급 ×{r.count}
+                </span>
+              ))}
+              {bossDrops.reward.runes.length === 0 &&
+                bossDrops.reward.tokens === 0 && <span>없음</span>}
             </div>
           </div>
         )}
