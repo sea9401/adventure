@@ -1,13 +1,15 @@
-import { MONSTER_THRESHOLDS } from "./thresholds";
+import { BOSS_MONSTER_THRESHOLDS, MONSTER_THRESHOLDS } from "./thresholds";
+import { isBossMonster } from "@/adventure/data/bosses";
 import type { AdventureLog } from "./storage";
 
 // 모험의 서 등록 항목 N개당 단련 포인트 1을 보상한다.
 export const COMPENDIUM_ENTRIES_PER_POINT = 20;
 
 // 몬스터는 "도감 완전 공개" 단계에 도달한 종만 1개로 카운트.
-// thresholds.ts 의 단계 3 = kills >= 300 (스탯/드랍 종류 공개).
-// 단계 4(1000킬) 보다 한 단계 낮춰 일반 적도 도달 가능하게 한다.
+// thresholds.ts 의 단계 3 = 일반 300킬 / 보스 5킬 (스탯/드랍 종류 공개).
+// 보스도 도감 완료 카운트에 들어갈 수 있게 보스 임계로 분기.
 export const COMPENDIUM_MONSTER_COMPLETE_KILLS = MONSTER_THRESHOLDS[1];
+export const COMPENDIUM_BOSS_COMPLETE_KILLS = BOSS_MONSTER_THRESHOLDS[1];
 
 export type CompendiumCounts = {
   places: number; // 방문한 지역(마을·사냥터 모두)
@@ -20,9 +22,12 @@ export type CompendiumCounts = {
 
 export function countCompendiumEntries(log: AdventureLog): CompendiumCounts {
   const places = Object.values(log.towns).filter((t) => t.visited).length;
-  const monsters = Object.values(log.monsters).filter(
-    (m) => m.kills >= COMPENDIUM_MONSTER_COMPLETE_KILLS,
-  ).length;
+  const monsters = Object.entries(log.monsters).filter(([name, m]) => {
+    const threshold = isBossMonster(name)
+      ? COMPENDIUM_BOSS_COMPLETE_KILLS
+      : COMPENDIUM_MONSTER_COMPLETE_KILLS;
+    return m.kills >= threshold;
+  }).length;
   const npcs = Object.values(log.npcs).filter((n) => n.talkCount > 0).length;
   const items = Object.keys(log.discoveredEquipment ?? {}).length;
   const titles = Object.keys(log.titles).length;
