@@ -12,8 +12,15 @@ import {
 } from "../character/skills";
 
 export type BattleLogEntry = {
-  kind: "player_attack" | "enemy_attack" | "info" | "phase_trigger";
+  kind: "player_attack" | "enemy_attack" | "info" | "phase_trigger" | "turn_marker";
   text: string;
+  /**
+   * 이 entry 가 발생한 페이즈. UI 가 좌/우 레인 분할에 사용 — info entry 의 사이드를
+   * 결정. attack kind 는 그대로 좌(player)/우(enemy) 라 turn 보조 없이도 동작.
+   * resolveBattle 이 advanceTurn 전후의 phase 차이를 보고 사후 태깅한다 (engine
+   * 호출부 변경 최소화). 옛 로그 (서버 캐시 / DB) 는 미동봉 — 클라 폴백.
+   */
+  turn?: "player" | "enemy";
 };
 
 export type BattleOutcome = "win" | "lose";
@@ -1483,6 +1490,14 @@ export function resolveBattle(
   const potions: Partial<Record<PotionId, number>> = { ...ctx.potions };
   const consumed: Partial<Record<PotionId, number>> = {};
   let state = initialBattleState(player, enemy, playerName);
+  // 초기 entry (적 등장 / 선공 / 능력 안내 등) 는 player 턴으로 태깅. 첫 턴 marker 도 박는다.
+  state = {
+    ...state,
+    log: [
+      ...state.log.map((e) => ({ ...e, turn: "player" as const })),
+      { kind: "turn_marker", text: "1턴", turn: "player" as const },
+    ],
+  };
   let turns = 0;
 
   while (state.phase !== "ended") {
@@ -1500,7 +1515,32 @@ export function resolveBattle(
         action = picked;
       }
     }
+    // advanceTurn 호출 직전의 phase 가 이번 step 의 turn — 호출 안에서 phase 가 다음으로
+    // 전환되더라도, 그 사이 push 된 entry 들은 모두 이 turn 의 것이다.
+    const turnContext: "player" | "enemy" = state.phase;
+    const prevLogLen = state.log.length;
+    const prevPhase = state.phase;
     state = advanceTurn(state, player, playerName, action);
+    // 새로 추가된 entry 에만 turn 을 부여. (이미 turn 이 있는 entry — 만약 직접 박은
+    // 곳이 있어도 — 는 보존.)
+    if (state.log.length > prevLogLen) {
+      const tagged = state.log.map((e, idx) =>
+        idx < prevLogLen || e.turn ? e : { ...e, turn: turnContext },
+      );
+      state = { ...state, log: tagged };
+    }
+    // enemy → player 전환 시 새 턴 marker 박기 (다음 턴이 시작됨을 시각화).
+    if (prevPhase === "enemy" && state.phase === "player") {
+      const turnNo = state.completedPlayerTurns + 1;
+      state = {
+        ...state,
+        log: appendLog(state.log, {
+          kind: "turn_marker",
+          text: `${turnNo}턴`,
+          turn: "player",
+        }),
+      };
+    }
     turns += 1;
 
     // 보스 타임아웃 — completedPlayerTurns 가 BOSS_TURN_CAP 도달하면 패배로 종료.
