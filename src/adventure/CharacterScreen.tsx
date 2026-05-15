@@ -4,7 +4,6 @@ import {
   Backpack,
   BookOpen,
   ClipboardText,
-  Crown,
   Diamond,
   Scroll,
   Sparkle,
@@ -28,7 +27,6 @@ import type { RuneGrade, RuneId } from "@/adventure/data/runes";
 import { InventoryView } from "@/adventure/InventoryView";
 import { RecentLogView } from "@/adventure/RecentLogView";
 import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
-import { TowerSubView } from "@/adventure/adventureSubViews/TowerSubView";
 import { QUESTS } from "@/adventure/data/quests";
 import { useGame } from "@/adventure/GameContext";
 
@@ -130,12 +128,6 @@ export function CharacterScreen() {
           onClick={() => setSubView("recent-log")}
         />
         <EntryCard
-          icon={<Crown size={28} weight="duotone" className="text-amber-500" />}
-          title="고탑"
-          description="영원히 끝나지 않는 수직 미궁. 일일 3회 도전."
-          onClick={() => setSubView("tower")}
-        />
-        <EntryCard
           icon={<Diamond size={28} weight="duotone" className="text-violet-500" />}
           title="룬"
           description="3개의 슬롯에 룬을 장착해 영구 능력치를 더한다."
@@ -183,10 +175,6 @@ export function CharacterScreen() {
         />
       </div>
     );
-  }
-
-  if (subView === "tower") {
-    return <TowerSubView />;
   }
 
   if (subView === "info") {
