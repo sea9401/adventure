@@ -143,7 +143,7 @@ function AttackBubble({
   return (
     <div className={`flex ${isPlayer ? "justify-start" : "justify-end"}`}>
       <div
-        className={`max-w-[88%] rounded-lg border px-3 py-2 text-base leading-snug shadow-sm ${bubbleColor} ${
+        className={`max-w-[85%] rounded-lg border px-2.5 py-1.5 text-sm leading-snug shadow-sm ${bubbleColor} ${
           isCrit ? "ring-1 ring-amber-400/70" : ""
         }`}
       >
@@ -157,7 +157,7 @@ function AttackBubble({
             {labels.map((l, idx) => (
               <span
                 key={idx}
-                className={`rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${labelColor}`}
+                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${labelColor}`}
               >
                 {l}
               </span>
@@ -170,26 +170,47 @@ function AttackBubble({
   );
 }
 
-function InfoLine({ text }: { text: string }) {
+function InfoLine({ text, side }: { text: string; side: "left" | "right" | null }) {
   const { labels, body } = parseLabel(text);
   const climax = isClimaxInfo(text);
+  // 진영 컬러 — 발화자 턴에 따라 왼쪽(나) / 오른쪽(적) 으로 살짝 띈다.
+  // climax (처치/등장/선공) 는 좌/우 무관하게 가운데 강조.
+  const align =
+    climax || side === null
+      ? "justify-center"
+      : side === "left"
+        ? "justify-start"
+        : "justify-end";
   return (
     <div
-      className={`flex items-center justify-center gap-1.5 px-1 text-center text-sm ${
+      className={`flex items-center gap-1.5 px-1 text-xs ${align} ${
         climax
-          ? "py-1 font-medium text-zinc-700 dark:text-zinc-200"
+          ? "py-1 text-center font-medium text-zinc-700 dark:text-zinc-200"
           : "text-zinc-500 dark:text-zinc-400"
       }`}
     >
       {labels.map((l, idx) => (
         <span
           key={idx}
-          className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+          className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
         >
           {l}
         </span>
       ))}
       <span className={climax ? "" : "italic"}>{body ? emphasizeNumbers(body) : body}</span>
+    </div>
+  );
+}
+
+// 턴 시작 구분선. 가운데 라벨 + 양 옆 선.
+function TurnMarker({ text }: { text: string }) {
+  return (
+    <div className="my-2 flex items-center gap-2 text-zinc-400 dark:text-zinc-600">
+      <div className="h-px flex-1 bg-zinc-300 dark:bg-zinc-700" />
+      <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+        {text}
+      </span>
+      <div className="h-px flex-1 bg-zinc-300 dark:bg-zinc-700" />
     </div>
   );
 }
@@ -323,22 +344,27 @@ export function BattleScene({
 
       <div
         ref={logRef}
-        className="no-scrollbar max-h-80 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
+        className="no-scrollbar h-[28rem] space-y-1 overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
       >
         {state.log.map((entry, i) => {
           if (entry.kind === "phase_trigger") {
             return (
               <div
                 key={i}
-                className="my-1 rounded border border-amber-400/60 bg-amber-100/70 px-2.5 py-1.5 text-base text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-900/30 dark:text-amber-200"
+                className="my-1 rounded border border-amber-400/60 bg-amber-100/70 px-2 py-1 text-sm text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-900/30 dark:text-amber-200"
               >
                 <span className="mr-1">⚠</span>
                 <span className="font-semibold">{entry.text}</span>
               </div>
             );
           }
+          if (entry.kind === "turn_marker") {
+            return <TurnMarker key={i} text={entry.text} />;
+          }
           if (entry.kind === "info") {
-            return <InfoLine key={i} text={entry.text} />;
+            // info 의 좌/우 — entry.turn 우선 (서버가 태그). 옛 로그 (turn 미동봉) 는 가운데.
+            const side = entry.turn === "enemy" ? "right" : entry.turn === "player" ? "left" : null;
+            return <InfoLine key={i} text={entry.text} side={side} />;
           }
           // player_attack — 왼쪽 초록 버블 / enemy_attack — 오른쪽 빨강 버블.
           return (
