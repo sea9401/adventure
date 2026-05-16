@@ -14,6 +14,7 @@ import {
 import { WORLD_MAP, type RegionId } from "@/adventure/data/world";
 import { getQuestById } from "@/adventure/data/quests";
 import { getRecipeById } from "@/adventure/data/recipes";
+import { SKILL_BOOKS, type SkillBookId } from "@/adventure/data/skillBooks";
 import { reportUniqueDrop } from "@/lib/clientFeed";
 import {
   resolveBuffMultiplier,
@@ -35,6 +36,8 @@ export type BattleEndDeps = {
     addEquipment: (id: ItemId) => void;
     /** 드랍 고품질(정교한/빼어난) 장비 1개 추가 — q 0(기본)은 addEquipment 로 간다. */
     addDroppedEquipment: (id: ItemId, q: DropQuality) => void;
+    /** 스킬북 1권 추가 — AP 스킬 학습용 아이템. */
+    addSkillBook: (id: SkillBookId, n?: number) => void;
   };
   adventureLog: {
     addKill: (name: string) => void;
@@ -56,7 +59,9 @@ export type BattleEndDeps = {
     addExp: (exp: number, vit: number) => void;
     addGoldFame: (gold: number, fame: number) => void;
   };
-  storyFlags: { set: (id: string) => void };
+  storyFlags: { set: (id: string) => void; has: (id: string) => boolean };
+  /** 누적 보스 처치 수 (이번 처치 전 기준) — 보스 50회 업적 보상 발급용. */
+  bossKillsTotal: number;
   vit: number;
   luk: number;
   /** 신참 드롭 ×2 판정용. Lv 30 미만이면 ×2. */
@@ -149,6 +154,19 @@ export function onBattleEnd(
     if (monster?.onDefeatFlag) {
       deps.storyFlags.set(monster.onDefeatFlag);
     }
+    // 보스 누적 50회 업적 — 깊은 상처 스킬북 1회 지급. phaseTrigger 보유 = 보스.
+    if (
+      monster?.phaseTrigger &&
+      deps.bossKillsTotal + 1 >= 50 &&
+      !deps.storyFlags.has("deep_wound_book_granted")
+    ) {
+      deps.storyFlags.set("deep_wound_book_granted");
+      deps.inventory.addSkillBook("book_deep_wound", 1);
+      deps.addNotification(
+        "milestone",
+        "✨ 보스 50회 처치 — '스킬북 — 깊은 상처' 를 손에 넣었다!",
+      );
+    }
     // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
     // kind 별로 인벤/골드/장비에 분배.
     if (monster?.drops) {
@@ -203,6 +221,13 @@ export function onBattleEnd(
           deps.addNotification(
             "loot",
             `${recipe?.name ?? drop.recipeId}을(를) 손에 넣었다!`,
+          );
+        } else if (drop.kind === "skill_book") {
+          deps.inventory.addSkillBook(drop.bookId, 1);
+          const book = SKILL_BOOKS[drop.bookId];
+          deps.addNotification(
+            "milestone",
+            `✨ ${book.name}을(를) 손에 넣었다!`,
           );
         } else if (drop.kind === "recipe_one_of") {
           // 풀에서 1개 학습 시도. 미보유 항목이 있으면 그중에서만 균등 추첨 — 사용자가

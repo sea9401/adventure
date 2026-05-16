@@ -136,7 +136,11 @@ export type ClaimResult = {
   ok: true;
   claimed: number[];
   goldAdded: number;
-  itemsAdded: { kind: "equip" | "material"; id: string; quantity: number }[];
+  itemsAdded: {
+    kind: "equip" | "material" | "skill_book";
+    id: string;
+    quantity: number;
+  }[];
   recipesAdded: string[];
   recipesSkipped: string[];
   newGold: number | null;

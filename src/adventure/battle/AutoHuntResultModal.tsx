@@ -11,6 +11,7 @@ import {
   type DropQuality,
 } from "../data/dropQuality";
 import { getRecipeById } from "../data/recipes";
+import { SKILL_BOOKS } from "../data/skillBooks";
 import { type OfflineSimResult } from "./offlineSim";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
@@ -76,7 +77,8 @@ export function AutoHuntResultModal({
     result.goldGained > 0 ||
     materials.length > 0 ||
     equipCounts.size > 0 ||
-    result.recipesLearned.length > 0;
+    result.recipesLearned.length > 0 ||
+    (result.skillBooksGained?.length ?? 0) > 0;
 
   return (
     <div
@@ -183,7 +185,8 @@ export function AutoHuntResultModal({
           {hasAnyDrop &&
             (materials.length > 0 ||
               equipCounts.size > 0 ||
-              result.recipesLearned.length > 0) && (
+              result.recipesLearned.length > 0 ||
+              (result.skillBooksGained?.length ?? 0) > 0) && (
               <div className="border-t border-zinc-200 pt-3 dark:border-zinc-800">
                 <div className="mb-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
                   획득 아이템
@@ -239,6 +242,22 @@ export function AutoHuntResultModal({
                         </span>
                         <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
                           학습
+                        </span>
+                      </li>
+                    );
+                  })}
+                  {(result.skillBooksGained ?? []).map((id, idx) => {
+                    const book = SKILL_BOOKS[id];
+                    return (
+                      <li
+                        key={`sb-${id}-${idx}`}
+                        className="flex items-center justify-between gap-2"
+                      >
+                        <span className="truncate text-violet-700 dark:text-violet-300">
+                          ✨ {book?.name ?? id}
+                        </span>
+                        <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+                          획득
                         </span>
                       </li>
                     );

@@ -2,6 +2,7 @@ import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import type { useInventory } from "@/adventure/inventory/useInventory";
 
 type Props = {
   npc: Npc;
@@ -9,6 +10,7 @@ type Props = {
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
   storyFlags: ReturnType<typeof useStoryFlags>;
+  inventory: ReturnType<typeof useInventory>;
 };
 
 const CANYON = "unhyang-baekun-canyon-survey";
@@ -17,6 +19,8 @@ const CLIFF = "unhyang-baekun-cliff-wolves";
 const GOATS = "unhyang-baekun-highland-goats";
 const ESCORT = "unhyang-baekun-pilgrim-escort";
 const HUNTER = "peak-giant-hunter"; // 운봉의 거인 누적 ×10 (보스 사냥꾼 칭호 일부)
+const HEAVEN = "unhyang-baekun-heaven-slay"; // 히든 — HUNTER 완료 후 노출. 봉황 깃털 ×5 → 천살 스킬북.
+const HEAVEN_NEED = 5;
 
 // 백운 — 운향 메인 라인 "잠들지 않는 산".
 // A 협곡 정찰 → B 운봉의 거인 → C 교역로 정리(절벽 늑대 ×30 + 산양 ×40) → D 교역로 개통.
@@ -27,6 +31,7 @@ export function BaekunDialogue({
   quests,
   completeQuest,
   storyFlags,
+  inventory,
 }: Props) {
   // 운향 진입 조건 자체가 거인과 한 번 맞붙는 것(peak_giant_engaged)이라 보통은 켜져 있다.
   if (!storyFlags.has("peak_giant_engaged")) {
@@ -292,6 +297,65 @@ export function BaekunDialogue({
         />
       );
     }
+
+    // 히든 — 거인 10회 처치 완료 후 풀리는 검결 라인. 봉황 깃털 ×5 deliver → 천살 스킬북.
+    if (hunter.state === "completed") {
+      const heaven = quests.getEntry(HEAVEN);
+      if (heaven.state === "available") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "…자네 이름이 산정의 노래에 새겨졌으니, 한 가지 더 일러두지.\n옛 산정엔 '천살'이라 불리던 검결이 있었네. 한 번 휘두르면 회피도, 갑주도 소용없는 결이지. 잔편 한 권이 내 손에 남아 있어. 봉황 깃털 다섯이면 — 진짜 불을 머금은 깃이라야 — 그 결을 새길 수 있네. 가져와 보겠나?"
+            }
+            primaryAction={{
+              label: "받아들인다",
+              onClick: () => {
+                quests.accept(HEAVEN);
+                onClose();
+              },
+            }}
+          />
+        );
+      }
+      if (heaven.state === "active") {
+        const have = inventory.materialCount("phoenix_feather");
+        if (have >= HEAVEN_NEED) {
+          return (
+            <NpcDialogue
+              npc={npc}
+              onClose={onClose}
+              text={
+                "다섯 장 — 결이 살아 있군. 잔편의 결도 이걸로 깨어나겠어.\n자, 천살 — 가져가게. 함부로 휘두르진 말고."
+              }
+              primaryAction={{
+                label: "건네준다",
+                onClick: () => {
+                  const r = quests.tryDeliver(
+                    HEAVEN,
+                    inventory.materialCount,
+                    inventory.consumeMaterial,
+                  );
+                  if (r.ok) {
+                    completeQuest(HEAVEN);
+                    onClose();
+                  }
+                },
+              }}
+            />
+          );
+        }
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={`봉황 깃털은 봉황령 능선 — 불꽃 독수리한테서 나오지. — 진행 ${have}/${HEAVEN_NEED}`}
+          />
+        );
+      }
+    }
+
     return (
       <NpcDialogue
         npc={npc}

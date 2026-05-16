@@ -75,6 +75,9 @@ export function applyAutoHuntEfficiency(
 
   const equipsGained = result.equipsGained.filter(() => rng() < efficiency);
   const recipesLearned = result.recipesLearned.filter(() => rng() < efficiency);
+  const skillBooksGained = result.skillBooksGained.filter(
+    () => rng() < efficiency,
+  );
 
   return {
     ...result,
@@ -84,5 +87,6 @@ export function applyAutoHuntEfficiency(
       materialsGained as OfflineSimResult["materialsGained"],
     equipsGained,
     recipesLearned,
+    skillBooksGained,
   };
 }

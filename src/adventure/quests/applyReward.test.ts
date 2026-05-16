@@ -10,6 +10,7 @@ function makeServices() {
     addGoldFame: vi.fn(),
     addExp: vi.fn(),
     addPotionCapacity: vi.fn(),
+    addSkillBook: vi.fn(),
   } satisfies RewardServices;
 }
 

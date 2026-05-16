@@ -14,6 +14,7 @@ import { POTIONS, type PotionId } from "../data/potions";
 import { type MaterialId } from "../data/materials";
 import { type ItemId } from "../data/items";
 import { rollDropQuality, type DropQuality } from "../data/dropQuality";
+import { type SkillBookId } from "../data/skillBooks";
 import {
   advanceTurn,
   initialBattleState,
@@ -98,6 +99,8 @@ export type OfflineSimResult = {
   // 드랍된 장비 + 그 품질 등급(0=기본/1=정교한/2=빼어난). 같은 아이템/등급이라도 1개씩 push.
   equipsGained: { itemId: ItemId; quality: DropQuality }[];
   recipesLearned: string[]; // 미보유였던 것만 — onApply 가 그대로 learn 호출.
+  /** 드랍된 스킬북 — 같은 책 여러 권이면 같은 횟수만큼 push. */
+  skillBooksGained: SkillBookId[];
   potionsConsumed: Partial<Record<PotionId, number>>;
   /**
    * 부활 시퀀스로 사이클 중 지급된 포션 수 (potionId → 지급 누계).
@@ -141,6 +144,7 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
     materialsGained: {},
     equipsGained: [],
     recipesLearned: [],
+    skillBooksGained: [],
     potionsConsumed: {},
     potionsGranted: {},
     revives: 0,
@@ -249,6 +253,8 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
                 continue;
               learnedThisSim.add(drop.recipeId);
               result.recipesLearned.push(drop.recipeId);
+            } else if (drop.kind === "skill_book") {
+              result.skillBooksGained.push(drop.bookId);
             } else if (drop.kind === "recipe_one_of") {
               if (drop.recipeIds.length === 0) continue;
               // 풀에서 미보유만 추리고 그 안에서 균등 추첨 — 이미 아는 항목으로 뽑혀
