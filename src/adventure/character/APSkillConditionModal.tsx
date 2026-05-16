@@ -4,29 +4,49 @@ import { useState } from "react";
 import { X } from "@phosphor-icons/react";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 import {
+  AP_SKILL_CONDITION_KINDS,
   AP_SKILL_CONDITION_PRESETS,
   type APSkillCondition,
+  type ValuedAPSkillConditionKind,
 } from "@/adventure/character/apSkills";
 
 // AP 스킬 슬롯 발동 조건 편집 모달.
-//   - 트리거 라디오 (always / AP≥ / HP< / 적HP<)
-//   - 임계값 입력: 프리셋 버튼 ↔ 슬라이더 토글
+//   - 트리거 라디오 — apSkills.ts 의 AP_SKILL_CONDITION_KINDS 순서 그대로 노출.
+//   - 임계값 입력 (valued kinds 전용): 프리셋 버튼 ↔ 슬라이더 토글
 //   - 저장 시 onSave(condition) — 닫기는 호출 측이 담당.
-
-type KindWithValue = Exclude<APSkillCondition["kind"], "always">;
 
 const KIND_LABEL: Record<APSkillCondition["kind"], string> = {
   always: "항상",
   ap_at_least: "AP ≥ X",
+  ap_at_most: "AP ≤ X",
   hp_below_pct: "HP < X%",
+  hp_above_pct: "HP ≥ X%",
   enemy_hp_below_pct: "적HP < X%",
+  enemy_hp_above_pct: "적HP ≥ X%",
+  every_n_turns: "X턴마다",
+  enemy_max_hp_at_least: "적maxHP ≥ X",
+  no_self_effect_active: "효과 없을 때",
 };
 
-const VALUE_SUFFIX: Record<KindWithValue, string> = {
+const VALUE_SUFFIX: Record<ValuedAPSkillConditionKind, string> = {
   ap_at_least: "",
+  ap_at_most: "",
   hp_below_pct: "%",
+  hp_above_pct: "%",
   enemy_hp_below_pct: "%",
+  enemy_hp_above_pct: "%",
+  every_n_turns: "턴",
+  enemy_max_hp_at_least: "",
 };
+
+const VALUELESS_KINDS = new Set<APSkillCondition["kind"]>([
+  "always",
+  "no_self_effect_active",
+]);
+
+function isValuedKind(k: APSkillCondition["kind"]): k is ValuedAPSkillConditionKind {
+  return !VALUELESS_KINDS.has(k);
+}
 
 export function APSkillConditionModal({
   skillName,
@@ -41,22 +61,33 @@ export function APSkillConditionModal({
 }) {
   useEscapeKey(onClose);
   const [kind, setKind] = useState<APSkillCondition["kind"]>(initial.kind);
-  const [values, setValues] = useState<Record<KindWithValue, number>>(() => {
-    // 트리거별 입력값을 따로 보관 — 사용자가 라디오를 바꿔도 직전 값 유지.
-    const base = {
+  const [values, setValues] = useState<Record<ValuedAPSkillConditionKind, number>>(() => {
+    // 트리거별 입력값을 따로 보관 — 사용자가 라디오를 바꿔도 직전 값 유지. 기본값은 프리셋
+    // 첫번째 (간결: 가장 흔한 값 선택). initial 이 valued kind 면 그 값으로 덮어쓴다.
+    const base: Record<ValuedAPSkillConditionKind, number> = {
       ap_at_least: AP_SKILL_CONDITION_PRESETS.ap_at_least.presets[1],
+      ap_at_most: AP_SKILL_CONDITION_PRESETS.ap_at_most.presets[1],
       hp_below_pct: AP_SKILL_CONDITION_PRESETS.hp_below_pct.presets[1],
-      enemy_hp_below_pct:
-        AP_SKILL_CONDITION_PRESETS.enemy_hp_below_pct.presets[0],
+      hp_above_pct: AP_SKILL_CONDITION_PRESETS.hp_above_pct.presets[1],
+      enemy_hp_below_pct: AP_SKILL_CONDITION_PRESETS.enemy_hp_below_pct.presets[0],
+      enemy_hp_above_pct: AP_SKILL_CONDITION_PRESETS.enemy_hp_above_pct.presets[1],
+      every_n_turns: AP_SKILL_CONDITION_PRESETS.every_n_turns.presets[1],
+      enemy_max_hp_at_least: AP_SKILL_CONDITION_PRESETS.enemy_max_hp_at_least.presets[1],
     };
-    if (initial.kind !== "always") base[initial.kind] = initial.value;
+    if (isValuedKind(initial.kind)) {
+      // initial 이 valued kind 면 value 가 보장됨 (isAPSkillCondition 통과한 입력).
+      base[initial.kind] = (initial as { value: number }).value;
+    }
     return base;
   });
   const [sliderMode, setSliderMode] = useState(false);
 
   const handleSave = () => {
-    if (kind === "always") onSave({ kind: "always" });
-    else onSave({ kind, value: values[kind] });
+    if (isValuedKind(kind)) {
+      onSave({ kind, value: values[kind] } as APSkillCondition);
+    } else {
+      onSave({ kind } as APSkillCondition);
+    }
     onClose();
   };
 
@@ -94,14 +125,12 @@ export function APSkillConditionModal({
           </button>
         </div>
 
-        <fieldset className="mt-4 space-y-1">
+        <fieldset className="mt-4 grid grid-cols-2 gap-x-2 gap-y-1">
           <legend className="sr-only">트리거 종류</legend>
-          {(
-            Object.keys(KIND_LABEL) as Array<APSkillCondition["kind"]>
-          ).map((k) => (
+          {AP_SKILL_CONDITION_KINDS.map((k) => (
             <label
               key={k}
-              className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900"
             >
               <input
                 type="radio"
@@ -121,7 +150,7 @@ export function APSkillConditionModal({
           임계값 X 는 아래 프리셋/슬라이더에서 설정.
         </p>
 
-        {kind !== "always" && (
+        {isValuedKind(kind) && (
           <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/40">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -176,7 +205,7 @@ function ThresholdInput({
   onChange,
   slider,
 }: {
-  kind: KindWithValue;
+  kind: ValuedAPSkillConditionKind;
   value: number;
   onChange: (v: number) => void;
   slider: boolean;
@@ -194,7 +223,7 @@ function ThresholdInput({
           onChange={(e) => onChange(Number(e.target.value))}
           className="flex-1 accent-emerald-500"
         />
-        <span className="w-12 text-right text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+        <span className="w-16 text-right text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
           {value}
           {VALUE_SUFFIX[kind]}
         </span>
@@ -203,7 +232,7 @@ function ThresholdInput({
   }
   return (
     <div className="flex flex-wrap gap-2">
-      {cfg.presets.map((p) => (
+      {cfg.presets.map((p: number) => (
         <button
           key={p}
           type="button"
