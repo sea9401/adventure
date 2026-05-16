@@ -198,7 +198,7 @@ export function ChatPanel({
               type="button"
               onClick={onClose}
               aria-label="채팅 닫기"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
               <X size={18} />
             </button>

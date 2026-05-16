@@ -445,7 +445,7 @@ export function DisassemblePanel({
                         type="button"
                         onClick={() => setRowCount(r.key, sel - 1, r.have)}
                         disabled={sel <= 0}
-                        className="h-7 w-7 rounded-md border border-zinc-300 bg-white text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                        className="h-10 w-10 rounded-md border border-zinc-300 bg-white text-base font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                       >
                         −
                       </button>
@@ -464,7 +464,7 @@ export function DisassemblePanel({
                         type="button"
                         onClick={() => setRowCount(r.key, sel + 1, r.have)}
                         disabled={sel >= r.have}
-                        className="h-7 w-7 rounded-md border border-zinc-300 bg-white text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                        className="h-10 w-10 rounded-md border border-zinc-300 bg-white text-base font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                       >
                         +
                       </button>
