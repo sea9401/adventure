@@ -15,6 +15,8 @@ export function npcHasAcceptableQuest(
 ): boolean {
   return QUESTS.some((q) => {
     if (q.giverNpcId !== npcId) return false;
+    // 발견형 의뢰는 뱃지로 스포일하지 않음 — 다이얼로그가 인벤/플래그/특수 조건을 직접 판정.
+    if (q.hidden) return false;
     const entry = getEntry(q.id);
     if (entry.state !== "available") return false;
     if (characterLevel < q.requiredLevel) return false;
