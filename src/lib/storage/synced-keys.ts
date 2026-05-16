@@ -2,10 +2,9 @@
 // 디바이스별 설정(theme, auto-potion-rules, battle-settings, notifications)은
 // 일부러 제외 — 디바이스마다 다를 수 있는 항목.
 //
-// ⚠️ 새 키를 이 배열에 추가할 때는 SaveProvider 의 MIGRATION_MARKER_KEY
-//    ("migrated.v2") 도 함께 버전을 올려야(예: "migrated.v3") 기존 유저의
-//    localStorage 값이 한 번 더 서버로 push 된다. 마커가 이미 박힌 디바이스는
-//    마이그레이션 블록을 건너뛰어 새 키가 영영 동기화되지 않는다.
+// 노트 — 옛 localStorage→서버 마이그레이션 로직은 2026-05-16 RDS 컷오버 때 제거됨.
+// 이제 키 추가 시 별도 마이그레이션 버전 관리 불필요. 서버가 단일 진실 출처.
+// (SaveProvider 가 부트스트랩에서 잔존 localStorage 값을 정리한다.)
 export const SYNCED_KEYS = [
   "character-profile.v2",
   "character.v2",
