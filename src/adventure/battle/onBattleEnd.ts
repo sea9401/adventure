@@ -336,11 +336,25 @@ export function onBattleEnd(
     return;
   }
 
-  // 패배 — HP 0 + 복귀 마을 강제 이동 + 마을 탭 치료소 sub 로 점프 + 자동 사냥 해제.
-  // replace 로 history 에 남기지 않음 (사망 직후로 back 되돌아갈 일 없음).
   deps.adventureLog.incrementBattleLosses();
-  deps.characterState.setHp(0);
   deps.setHuntingActive(false);
+
+  // 보스 패배 (개인 region.boss 도전) — 마을 강제 이동 X, HP 는 maxHP 로 풀회.
+  // 의도: 사용자가 BattleScene 의 전투 로그를 그대로 보면서 다음 도전을 결정. 패배 페널티는
+  // 보스 일일 도전 횟수 차감(이미 도전 시 차감됨) 으로 충분.
+  if (payload.isBoss) {
+    deps.characterState.setHp(payload.playerMaxHp);
+    deps.addNotification(
+      "battle_lose",
+      `${payload.enemyName}에게 쓰러졌다... HP 가 회복됐다.`,
+      { battleLog: payload.log },
+    );
+    return;
+  }
+
+  // 일반 전투 패배 — HP 0 + 복귀 마을 강제 이동 + 마을 탭 치료소 sub 로 점프.
+  // replace 로 history 에 남기지 않음 (사망 직후로 back 되돌아갈 일 없음).
+  deps.characterState.setHp(0);
   deps.replaceLocation("town", "healing");
   const respawnId = deps.respawnRegionId;
   deps.setMapProgress((prev) => ({

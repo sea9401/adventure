@@ -63,7 +63,11 @@ export function BossSubView() {
         <CoopBossCard
           regionId={currentRegion.id}
           playerName={character.name}
-          onPlayerHpChange={characterStateHook.setHp}
+          // 협동 보스 사망 시에도 마을 강제 이동 X (CoopBossCard 자체가 이미 그렇다) +
+          // HP 풀회 — 전투 로그를 그대로 보면서 다음 행동을 결정할 수 있게.
+          onPlayerHpChange={(hp) =>
+            characterStateHook.setHp(hp <= 0 ? character.maxHp : hp)
+          }
           applyReward={(reward) =>
             applyCoopReward(reward, {
               addMaterial: inventory.addMaterial,

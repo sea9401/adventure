@@ -43,6 +43,8 @@ export type BattleEndPayload = {
   rewards: { exp: number; expBonusApplied: boolean };
   potionsConsumed: Partial<Record<PotionId, number>>;
   log: BattleLogEntry[];
+  /** 보스 도전 여부 — onBattleEnd lose 분기에서 마을 강제 이동/HP 0 대신 HP 풀회 + 현장 유지. */
+  isBoss?: boolean;
 };
 
 function pickEnemy(region: Region): Monster | null {
@@ -380,6 +382,9 @@ export function BattleView({
     state.outcome === "win" &&
     !!region.boss &&
     state.enemy.name === region.boss.monsterName;
+  // 보스 패배 — 보스 도전 진입(bossModeRef) 시점에 set 되었으므로 그대로 신뢰.
+  // 사용자가 BattleScene 로그를 그대로 보면서 다음 행동을 결정할 수 있게 모달 대신 인라인 카드.
+  const isBossLoss = isLoss && bossModeRef.current;
   return (
     <>
       <BattleScene
@@ -402,7 +407,7 @@ export function BattleView({
           </span>
         </button>
       )}
-      {isLoss && (
+      {isLoss && !isBossLoss && (
         <BattleResult
           outcome="lose"
           exp={0}
@@ -429,6 +434,50 @@ export function BattleView({
             stop();
           }}
         />
+      )}
+      {isBossLoss && (
+        // 보스 패배 — 모달 X. BattleScene 로그를 그대로 보여주고 인라인 카드로
+        // 마무리. onBattleEnd 에 isBoss:true 전달 → 마을 이동 스킵 + HP 풀회.
+        <Card padding="md">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-base font-semibold text-rose-600 dark:text-rose-400">
+                패배...
+              </div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                HP 가 회복됐다. 위 로그에서 결을 확인하고 다시 도전.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (firedForStateRef.current === state) return;
+                firedForStateRef.current = state;
+                try {
+                  onBattleEndRef.current({
+                    outcome: "lose",
+                    enemyName: state.enemy.name,
+                    finalPlayerHp: 0,
+                    playerMaxHp: state.playerMaxHp,
+                    damageTakenThisCombat: state.stacks.damageTakenThisCombat,
+                    rewards: { exp: 0, expBonusApplied: false },
+                    potionsConsumed,
+                    log: state.log,
+                    isBoss: true,
+                  });
+                } catch (err) {
+                  firedForStateRef.current = null;
+                  console.error("onBattleEnd failed:", err);
+                }
+                bossModeRef.current = false;
+                stop();
+              }}
+              className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              돌아가기
+            </button>
+          </div>
+        </Card>
       )}
       {isBossWin && (() => {
         const expBonus = applyNewbieBonus(state.enemy.exp, playerLevel);
