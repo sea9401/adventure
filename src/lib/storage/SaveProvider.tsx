@@ -17,6 +17,8 @@ import { MultiTabOverlay } from "./MultiTabGuard";
 import { SYNCED_KEYS, type SyncedKey } from "./synced-keys";
 import { getOrCreateDeviceSessionId } from "./deviceSession";
 
+// 옛 localStorage→서버 마이그레이션 마커 — 더 이상 사용하지 않지만 정의는 남겨 두어
+// 이전 코드가 박은 흔적을 정리하는 데 활용한다 (bootstrap 에서 keys 함께 제거).
 const MIGRATION_MARKER_KEY = "migrated.v2";
 
 type SaveData = Partial<Record<SyncedKey, unknown>>;
@@ -77,39 +79,32 @@ export function SaveProvider({
         if (cancelled) return;
         remote.seedVersions(versions);
 
-        // 부트스트랩 시드 — 서버에 없는 키 채우기. 두 출처:
-        //  (1) localStorage 마이그레이션 — 디바이스에 남은 옛 로컬 값. MIGRATION_MARKER_KEY
-        //      로 1회만 시도.
-        //  (2) starter defaults — 신규 유저용 클라 기본값 (character.v2 의 gold 10 등).
-        //      useRemotePatch 가 첫 마운트 patch 를 skip 하기 때문에 서버에 영영 안 박히던
-        //      걸 여기서 한 번 박는다. 매 마운트 idempotent — 서버에 이미 있으면 skip.
-        // 마이그레이션 마커는 모든 시도가 성공한 경우에만 박음. 부분 실패면 다음 진입에서
-        // 누락 키만 재시도. starter 도 마찬가지로 미전송 키는 다음 진입 때 다시 시도된다.
-        let final: SaveData = serverData;
-        const alreadyMigrated =
-          typeof window !== "undefined" &&
-          localStorage.getItem(MIGRATION_MARKER_KEY) === "1";
-        const toSeed: SaveData = {};
-
-        if (!alreadyMigrated) {
+        // 부트스트랩 시드 — 서버에 없는 키에 starter defaults 만 박는다.
+        // 옛 localStorage→서버 마이그레이션 로직은 2026-05-16 Neon→RDS 컷오버 이후
+        // 제거 — 빈 DB 에 잔존 localStorage 가 다시 push 되어 유저별 형평성이 깨지는
+        // 문제 방지. 동시에 디바이스에 남아 있는 옛 synced 키도 정리 (가벼운 cleanup
+        // — 다른 코드 경로가 직접 읽지는 않지만 잠재적 누수 차단).
+        if (typeof window !== "undefined") {
           for (const key of SYNCED_KEYS) {
-            // 서버에 이미 있는 키는 건너뛰기 — 로컬이 더 옛날일 수 있어 덮으면 안 됨.
-            if (serverData[key] !== undefined) continue;
-            const raw = localStorage.getItem(key);
-            if (raw) {
-              try {
-                toSeed[key] = JSON.parse(raw);
-              } catch {}
-            }
+            try {
+              localStorage.removeItem(key);
+            } catch {}
           }
+          try {
+            localStorage.removeItem(MIGRATION_MARKER_KEY);
+          } catch {}
         }
 
-        // starter — 서버에도 없고 localStorage 도 안 채운 키만. localStorage 가 우선.
+        let final: SaveData = serverData;
+        const toSeed: SaveData = {};
+
+        // starter — 서버에 없는 키만. 신규 유저의 클라 default (character.v2 의 gold 10 등)
+        // 가 useRemotePatch 의 first-mount skip 으로 영영 안 박히던 문제 차단용.
+        // 매 마운트 idempotent — 서버에 이미 있으면 skip.
         const starterMap = startersAtMountRef.current ?? {};
         for (const [key, value] of Object.entries(starterMap)) {
           const k = key as SyncedKey;
           if (serverData[k] !== undefined) continue;
-          if (toSeed[k] !== undefined) continue;
           toSeed[k] = value;
         }
 
@@ -119,19 +114,10 @@ export function SaveProvider({
           }
           try {
             await remote.flush();
-            // 모두 성공 — marker 박음(있다면) + 메모리 final 에 합침.
-            if (!alreadyMigrated) {
-              localStorage.setItem(MIGRATION_MARKER_KEY, "1");
-            }
             final = { ...serverData, ...toSeed };
           } catch {
-            // 부분 실패 — marker 안 박음. 다음 진입에서 server 에 아직 없는 키만 재시도.
-            // (이번에 성공한 키는 다음 mount 의 serverData 에 포함돼 자연스레 skip 됨.)
-            // pending 큐에 남은 starter patch 는 이후 사용자 액션 시 자연스레 함께 발사.
+            // 부분 실패 — 미전송 키는 이후 사용자 액션 시 자연스레 재시도된다.
           }
-        } else if (!alreadyMigrated) {
-          // 옮길 것도 박을 starter 도 없음 — 마이그레이션 완료로 본다.
-          localStorage.setItem(MIGRATION_MARKER_KEY, "1");
         }
 
         setState({ status: "ready", data: final, remote });
