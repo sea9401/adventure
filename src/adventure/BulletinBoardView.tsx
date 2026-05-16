@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ArrowLeft,
   CaretDown,
   CaretRight,
   ChatCircle,
@@ -11,7 +12,6 @@ import {
   Note,
   PaperPlaneTilt,
   Trash,
-  X,
 } from "@phosphor-icons/react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
@@ -156,7 +156,9 @@ export function BulletinBoardView() {
   const [debouncedQ, setDebouncedQ] = useState("");
   const [posts, setPosts] = useState<BulletinPost[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [composerOpen, setComposerOpen] = useState(false);
+  // "list" = 목록 화면, "compose" = 글쓰기 페이지. 별도 라우트 대신 같은 view 안에서 모드 전환.
+  // 글쓰기는 모바일에서 모달이 답답해 별개 페이지로 전환 (textarea 풀화면 가능).
+  const [mode, setMode] = useState<"list" | "compose">("list");
   const [pmTarget, setPmTarget] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -203,7 +205,7 @@ export function BulletinBoardView() {
       } else {
         setCategory(created.category);
       }
-      setComposerOpen(false);
+      setMode("list");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "작성 실패";
       if (msg === "rate limited") {
@@ -237,6 +239,17 @@ export function BulletinBoardView() {
     [],
   );
 
+  if (mode === "compose") {
+    return (
+      <ComposePage
+        initialCategory={category === "notice" && !isAdmin ? "free" : category}
+        isAdmin={isAdmin}
+        onCancel={() => setMode("list")}
+        onSubmit={handleSubmit}
+      />
+    );
+  }
+
   return (
     <div className="space-y-3">
       <TabBar
@@ -269,7 +282,7 @@ export function BulletinBoardView() {
         </div>
         <button
           type="button"
-          onClick={() => setComposerOpen(true)}
+          onClick={() => setMode("compose")}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
         >
           <PaperPlaneTilt size={14} weight="fill" />
@@ -345,15 +358,6 @@ export function BulletinBoardView() {
             setPage={pager.setPage}
           />
         </>
-      )}
-
-      {composerOpen && (
-        <Composer
-          initialCategory={category === "notice" && !isAdmin ? "free" : category}
-          isAdmin={isAdmin}
-          onClose={() => setComposerOpen(false)}
-          onSubmit={handleSubmit}
-        />
       )}
 
       {pmTarget && (
@@ -675,15 +679,17 @@ function CommentsPanel({
   );
 }
 
-function Composer({
+// 글쓰기 페이지 — 모달이 아니라 인라인 화면. PlazaScreen 의 "게시판" 헤더 아래 영역을
+// 통째로 차지한다. 모바일에서 textarea 가 화면 가로폭 전부를 쓸 수 있어 긴 글 작성에 유리.
+function ComposePage({
   initialCategory,
   isAdmin,
-  onClose,
+  onCancel,
   onSubmit,
 }: {
   initialCategory: BulletinCategory;
   isAdmin: boolean;
-  onClose: () => void;
+  onCancel: () => void;
   onSubmit: (input: {
     category: BulletinCategory;
     title: string | null;
@@ -722,102 +728,93 @@ function Composer({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
-      >
-        <div className="flex items-start justify-between">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-            새 글 쓰기
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="닫기"
-            className="rounded-md p-1 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
-          >
-            <X size={18} weight="bold" />
-          </button>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {selectableCategories.map((c) => {
-            const active = c === category;
-            return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                disabled={submitting}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  active
-                    ? "border-emerald-600 bg-emerald-600 text-white"
-                    : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {BULLETIN_CATEGORY_LABELS[c].name}
-              </button>
-            );
-          })}
-        </div>
-
-        <input
-          type="text"
-          value={titleDraft}
-          onChange={(e) => setTitleDraft(e.target.value)}
-          maxLength={BULLETIN_TITLE_MAX_LENGTH + 10}
-          placeholder={`제목 (선택, 최대 ${BULLETIN_TITLE_MAX_LENGTH}자)`}
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
           disabled={submitting}
-          className="mt-3 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-zinc-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-400"
-        />
+          aria-label="목록으로"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+        >
+          <ArrowLeft size={18} weight="bold" />
+        </button>
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          새 글 쓰기
+        </h2>
+      </div>
 
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          rows={6}
-          autoFocus
-          maxLength={BULLETIN_MAX_LENGTH + 100}
-          placeholder="게시판에 남길 글을 입력하세요"
+      <div className="flex flex-wrap gap-1.5">
+        {selectableCategories.map((c) => {
+          const active = c === category;
+          return (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategory(c)}
+              disabled={submitting}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                active
+                  ? "border-emerald-600 bg-emerald-600 text-white"
+                  : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              }`}
+            >
+              {BULLETIN_CATEGORY_LABELS[c].name}
+            </button>
+          );
+        })}
+      </div>
+
+      <input
+        type="text"
+        value={titleDraft}
+        onChange={(e) => setTitleDraft(e.target.value)}
+        maxLength={BULLETIN_TITLE_MAX_LENGTH + 10}
+        placeholder={`제목 (선택, 최대 ${BULLETIN_TITLE_MAX_LENGTH}자)`}
+        disabled={submitting}
+        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-zinc-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-400"
+      />
+
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        rows={14}
+        autoFocus
+        maxLength={BULLETIN_MAX_LENGTH + 100}
+        placeholder="게시판에 남길 글을 입력하세요"
+        disabled={submitting}
+        className="w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-zinc-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-400"
+      />
+      <div className="flex items-center justify-between text-xs">
+        <span
+          className={
+            trimmed.length > BULLETIN_MAX_LENGTH
+              ? "text-rose-600"
+              : "text-zinc-500 dark:text-zinc-400"
+          }
+        >
+          {trimmed.length} / {BULLETIN_MAX_LENGTH}
+        </span>
+        {err && <span className="text-rose-600">{err}</span>}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
           disabled={submitting}
-          className="mt-2 w-full resize-none rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-zinc-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-400"
-        />
-        <div className="mt-1 flex items-center justify-between text-xs">
-          <span
-            className={
-              trimmed.length > BULLETIN_MAX_LENGTH
-                ? "text-rose-600"
-                : "text-zinc-500 dark:text-zinc-400"
-            }
-          >
-            {trimmed.length} / {BULLETIN_MAX_LENGTH}
-          </span>
-          {err && <span className="text-rose-600">{err}</span>}
-        </div>
-
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!canSubmit}
-            className="rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {submitting ? "등록 중…" : "등록"}
-          </button>
-        </div>
+          className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        >
+          취소
+        </button>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!canSubmit}
+          className="rounded-md border border-emerald-700 bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {submitting ? "등록 중…" : "등록"}
+        </button>
       </div>
     </div>
   );
