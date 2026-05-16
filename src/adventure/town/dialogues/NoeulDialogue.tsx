@@ -16,9 +16,9 @@ const STEPS: QuestLineStep[] = [
   {
     id: "windvale-merchant-hawk-feathers",
     offerText:
-      "초원 매 깃털이 세공에 그만이거든. 10장만 모아다 주면 길에서 주운 좋은 걸 나눠 드리지. 깃털로 가벼운 망토 짜는 법도 알려 줌세.",
+      "초원 매 깃털이 세공에 그만이거든. 5장만 모아다 주면 길에서 주운 좋은 걸 나눠 드리지. 깃털로 가벼운 망토 짜는 법도 알려 줌세.",
     activeText: (have, need) => `깃털은 초원 매에게서 나와. 떨어뜨릴 때를 노려. — 진행 ${have}/${need}`,
-    doneText: "열 장 다 모았군. 약속한 거 — 좋은 물건이랑, 망토 짜는 법도 함께. 받아.",
+    doneText: "다섯 장 다 모았군. 약속한 거 — 좋은 물건이랑, 망토 짜는 법도 함께. 받아.",
   },
   {
     id: "windvale-merchant-escort-raiders",
