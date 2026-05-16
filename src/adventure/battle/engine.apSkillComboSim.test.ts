@@ -27,6 +27,7 @@ const PLAYER_BASE: PlayerCombat = {
 const SHADOW_CUT = getAPSkillByName("그림자 베기")!;
 const HEAVEN_SLAY = getAPSkillByName("천살")!;
 const MENDING = getAPSkillByName("회복술")!;
+const MADNESS = getAPSkillByName("광기")!;
 
 function eq(skill: APSkill, condition: APSkillCondition = { kind: "always" }): EquippedAPSkill {
   return { skill, condition };
@@ -82,11 +83,15 @@ function runBatch(
         const m = e.text.match(/^\[([^\]]+)\]/);
         if (m) {
           for (const lbl of m[1].split(/\s*\+\s*/)) {
-            if (lbl === "그림자 베기" || lbl === "천살") {
+            if (lbl === "그림자 베기" || lbl === "천살" || lbl === "광기") {
               out.fires[lbl] = (out.fires[lbl] ?? 0) + 1;
             }
           }
         }
+      }
+      // 광기는 atk_multiplier 가 아니라 buff 라서 별도 info 로 기록되는 경우도 있다.
+      if (e.kind === "info" && e.text.startsWith("[광기]")) {
+        out.fires["광기"] = (out.fires["광기"] ?? 0) + 1;
       }
     }
   }
@@ -130,16 +135,18 @@ describe("AP 조건 빌드 시뮬 — 통계", () => {
     expect(a2.fires["그림자 베기"] ?? 0).toBeGreaterThan(a1.fires["그림자 베기"] ?? 0);
   });
 
-  it("저축형 큰 한 방: slot1 HS(always) + slot2 SC(HP<50%) — SC 가 AP 안 빨고 HS 발동 가능", () => {
+  it("저축형 큰 한 방 (HP<50%): slot1 HS(always) + slot2 SC(HP<50%) — SC 가 AP 안 빨고 HS 발동 가능", () => {
     // B1: 둘 다 always (slot1 HS, slot2 SC). SC(cost 3) 가 slot2 에서 매 AP=3 마다 발동
     //     → HS 가 AP=5 까지 못 모음. HS=0.
+    // 주: ap_at_most 로는 이 패턴을 표현 못 함 — SC ap_at_most:4 라도 AP=3 에서 fires,
+    //     AP=4 에서 fires → AP 가 5 에 못 닿음 (cost 3 ≤ AP 3 인 순간 곧장 발동).
+    //     실제로 저축이 되려면 SC 가 발동 안 하는 시나리오 (HP 안전한 평소엔 미발동) 가 필요.
     const b1 = runBatch(
       N,
       [eq(HEAVEN_SLAY), eq(SHADOW_CUT)],
       ENEMY_HP,
     );
     // B2: slot1 HS always, slot2 SC(HP<50%). 풀피일 땐 slot2 미발동 → AP 가 5 까지 모인다 → HS 발동.
-    //     wounded 일 땐 SC 가 filler 로 딜.
     const b2 = runBatch(
       N,
       [eq(HEAVEN_SLAY), eq(SHADOW_CUT, { kind: "hp_below_pct", value: 50 })],
@@ -150,12 +157,91 @@ describe("AP 조건 빌드 시뮬 — 통계", () => {
     console.log(`  B1 (둘 다 always)            : ${fmt(b1)}`);
     console.log(`  B2 (HS always + SC HP<50%)  : ${fmt(b2)}`);
 
-    // 검증: B1 에선 HS 가 거의 안 나오지만 B2 에선 자주 나온다.
     const b1HS = b1.fires["천살"] ?? 0;
     const b2HS = b2.fires["천살"] ?? 0;
     expect(b2HS).toBeGreaterThan(b1HS);
-    // 그리고 B2 가 클리어 (HS 큰 한 방 + 필요 시 SC filler).
     expect(b2.wins).toBeGreaterThan(b1.wins);
+  });
+
+  it("지속 버프 일찍 (enemy_hp_above_pct): 광기 가 적 풀피 구간에만 발동 — 막판 낭비 X", () => {
+    // 광기 (3턴 ATK+30%) 는 적이 곧 죽을 때 걸면 의미 없음. 적HP ≥ 50% 조건으로 초반에만.
+    // 적HP 50% 미만 구간엔 광기 가 안 걸리고, slot2 SC 가 발동해 막판 딜이 더 들어간다.
+    const d1 = runBatch(
+      N,
+      [eq(MADNESS), eq(SHADOW_CUT)],
+      ENEMY_HP,
+    );
+    const d2 = runBatch(
+      N,
+      [
+        eq(MADNESS, { kind: "enemy_hp_above_pct", value: 50 }),
+        eq(SHADOW_CUT),
+      ],
+      ENEMY_HP,
+    );
+
+    console.log(`[지속 버프 일찍]`);
+    console.log(`  D1 (광기 always)             : ${fmt(d1)}`);
+    console.log(`  D2 (광기 적HP≥50%)           : ${fmt(d2)}`);
+
+    // D2 의 광기 발동이 D1 보다 적음 (적 50% 미만 구간에선 미발동).
+    expect(d2.fires["광기"] ?? 0).toBeLessThan(d1.fires["광기"] ?? 0);
+    // 적 50% 미만 구간엔 slot2 SC 가 발동 → D2 의 SC 가 D1 보다 많음.
+    expect(d2.fires["그림자 베기"] ?? 0).toBeGreaterThan(d1.fires["그림자 베기"] ?? 0);
+  });
+
+  it("보스 게이트 (enemy_max_hp_at_least): HS 가 잡몹엔 발동 X, 보스에만 — cost 5 낭비 방지", () => {
+    // HS 단독 슬롯으로 단순화 — 잡몹/보스에서 발동 여부만 비교.
+    const smallEnemy = 200;
+    const bossEnemy = 5000;
+    const gated: ReadonlyArray<EquippedAPSkill> = [
+      eq(HEAVEN_SLAY, { kind: "enemy_max_hp_at_least", value: 1000 }),
+    ];
+    const always: ReadonlyArray<EquippedAPSkill> = [eq(HEAVEN_SLAY)];
+
+    const eSmallAlways = runBatch(N, always, smallEnemy);
+    const eSmallGated = runBatch(N, gated, smallEnemy);
+    const eBossGated = runBatch(N, gated, bossEnemy);
+
+    console.log(`[보스 게이트]`);
+    console.log(`  잡몹 ${smallEnemy} HP, HS always         : ${fmt(eSmallAlways)}`);
+    console.log(`  잡몹 ${smallEnemy} HP, HS 적maxHP≥1000   : ${fmt(eSmallGated)}`);
+    console.log(`  보스 ${bossEnemy} HP, HS 적maxHP≥1000   : ${fmt(eBossGated)}`);
+
+    // 잡몹: always 면 HS 발동 (낭비), gated 면 HS 미발동.
+    expect(eSmallAlways.fires["천살"] ?? 0).toBeGreaterThan(0);
+    expect(eSmallGated.fires["천살"] ?? 0).toBe(0);
+    // 보스: gated 라도 maxHP 가 임계 넘으면 발동.
+    expect(eBossGated.fires["천살"] ?? 0).toBeGreaterThan(0);
+  });
+
+  it("주기 발동 (every_n_turns): 광기 가 X턴마다 정확히 — 자기 갱신 빈도 제어", () => {
+    // 광기 always 면 매 AP=3 마다 발동 (cycle 3턴, 버프 3턴 — 사실상 항상 활성). cycle 정렬되어
+    // no_self_effect_active 와 동일 결과.
+    // every_n_turns:5 걸면 광기 가 5턴마다만 발동 → 버프 활성 (3턴) + 비활성 (2턴) 패턴.
+    // AP 가 5턴마다만 빠지므로 slot2 SC 가 나머지 4턴에 발동할 기회.
+    const f1 = runBatch(
+      N,
+      [eq(MADNESS), eq(SHADOW_CUT)],
+      ENEMY_HP,
+    );
+    const f2 = runBatch(
+      N,
+      [
+        eq(MADNESS, { kind: "every_n_turns", value: 5 }),
+        eq(SHADOW_CUT),
+      ],
+      ENEMY_HP,
+    );
+
+    console.log(`[주기 발동]`);
+    console.log(`  F1 (광기 always)             : ${fmt(f1)}`);
+    console.log(`  F2 (광기 5턴마다)            : ${fmt(f2)}`);
+
+    // 광기 발동 수 F2 < F1 (5턴마다라 빈도 ↓).
+    expect(f2.fires["광기"] ?? 0).toBeLessThan(f1.fires["광기"] ?? 0);
+    // F2 에선 slot2 SC 에 AP 흘러서 SC 발동 늘어남.
+    expect(f2.fires["그림자 베기"] ?? 0).toBeGreaterThan(f1.fires["그림자 베기"] ?? 0);
   });
 
   it("AP 저축: heaven_slay 가 단독 슬롯이면 always 만으로도 발동", () => {
