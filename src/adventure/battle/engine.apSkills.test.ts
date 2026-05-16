@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { advanceTurn, initialBattleState, type PlayerCombat } from "./engine";
+import {
+  advanceTurn,
+  initialBattleState,
+  resolveBattle,
+  type PlayerCombat,
+} from "./engine";
 import type { Monster } from "../data/monsters";
 import { AP_CAP, getAPSkillByName } from "../character/apSkills";
 
@@ -96,6 +101,32 @@ describe("AP 스킬 시스템 — 그림자 베기", () => {
     expect(s.enemyHp).toBe(986 - 15);
     s = advanceTurn(s, p, "용사"); // 2nd of turn 2 — 평타
     expect(s.enemyHp).toBe(986 - 15 - 7);
+  });
+
+  describe("턴 마커에 AP 표기 (장착 여부 무관 — 시스템 발견용)", () => {
+    it("미장착도 '${N}턴 · AP 0' 표기", () => {
+      const r = resolveBattle(PLAYER, enemy(50), "용사", {
+        pickAction: () => ({ kind: "attack" }),
+        potions: {},
+      });
+      const markers = r.finalState.log.filter((e) => e.kind === "turn_marker");
+      expect(markers.length).toBeGreaterThan(0);
+      expect(markers[0].text).toBe("1턴 · AP 0");
+      for (const m of markers) {
+        expect(m.text).toMatch(/^\d+턴 · AP \d+$/);
+      }
+    });
+
+    it("AP 장착 시 첫 턴 마커가 시작값 2", () => {
+      const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [SHADOW_CUT] };
+      const r = resolveBattle(p, enemy(50), "용사", {
+        pickAction: () => ({ kind: "attack" }),
+        potions: {},
+      });
+      const markers = r.finalState.log.filter((e) => e.kind === "turn_marker");
+      expect(markers.length).toBeGreaterThan(0);
+      expect(markers[0].text).toBe("1턴 · AP 2");
+    });
   });
 
   it("새 전투 시작 시 AP 가 시작값 2 로 리셋", () => {
