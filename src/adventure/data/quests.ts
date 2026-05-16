@@ -1592,11 +1592,11 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-merchant-hawk-feathers",
     regionId: "windvale",
-    title: "초원 매 깃털 열 장",
+    title: "초원 매 깃털 다섯 장",
     description:
-      "초원 매 깃털이 세공에 그만이거든. 10장만 모아다 주면 길에서 주운 좋은 걸 나눠 드리지. 깃털로 가벼운 망토를 짜는 법도 함께 알려 줌세.",
+      "초원 매 깃털이 세공에 그만이거든. 5장만 모아다 주면 길에서 주운 좋은 걸 나눠 드리지. 깃털로 가벼운 망토를 짜는 법도 함께 알려 줌세.",
     requiredLevel: 28,
-    target: { kind: "deliver", materialId: "hawk_feather", count: 10 },
+    target: { kind: "deliver", materialId: "hawk_feather", count: 5 },
     reward: { gold: 500, exp: 600, potionCapacityBonus: 1, recipes: ["hawkfeather_cloak"] },
     repeatable: false,
     giverNpcId: "windvale_merchant",

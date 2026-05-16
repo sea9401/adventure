@@ -873,7 +873,7 @@ export const RECIPES: Recipe[] = [
     description: `${ITEMS.azure_talon.name}을(를) 만든다. ${ITEMS.sky_render_talon.name}에 초원 매 깃털을 겹겹이 둘러 균형을 잡는다.`,
     ingredients: [
       { kind: "equip", itemId: "sky_render_talon", count: 1 },
-      { kind: "material", materialId: "hawk_feather", count: 16 },
+      { kind: "material", materialId: "hawk_feather", count: 8 },
     ],
     result: { kind: "equipment", itemId: "azure_talon", slot: "weapon" },
     variance: { atk: 1 },
