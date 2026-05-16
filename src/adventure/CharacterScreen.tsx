@@ -25,6 +25,11 @@ import {
 } from "@/adventure/character/runeFusion";
 import type { RuneGrade, RuneId } from "@/adventure/data/runes";
 import { InventoryView } from "@/adventure/InventoryView";
+import { SKILL_BOOKS, type SkillBookId } from "@/adventure/data/skillBooks";
+import {
+  AP_SKILLS,
+  getAPSkillById,
+} from "@/adventure/character/apSkills";
 import { RecentLogView } from "@/adventure/RecentLogView";
 import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
 import { QUESTS } from "@/adventure/data/quests";
@@ -224,9 +229,32 @@ export function CharacterScreen() {
         <InventoryView
           inventory={inventory.state}
           equipped={character.equipped}
+          learnedAPSkillNames={characterStateHook.state.learnedAPSkills}
           onEquip={handleEquipFromInventory}
           onUnequip={handleUnequip}
           onDiscard={handleDiscardFromInventory}
+          onUseSkillBook={(id: SkillBookId) => {
+            const book = SKILL_BOOKS[id];
+            const apSkill = getAPSkillById(book.learnsSkillId);
+            if (!apSkill) {
+              addNotification("info", "알 수 없는 스킬북입니다.");
+              return;
+            }
+            // 이미 학습한 경우 — 책 소비 막고 알림.
+            if (characterStateHook.state.learnedAPSkills?.includes(apSkill.name)) {
+              addNotification("info", `${apSkill.name}: 이미 학습한 스킬입니다.`);
+              return;
+            }
+            if (!inventory.consumeSkillBook(id, 1)) {
+              addNotification("info", "스킬북이 부족합니다.");
+              return;
+            }
+            characterStateHook.learnAPSkill(apSkill.name);
+            addNotification(
+              "milestone",
+              `${apSkill.name} 학습 — 슬롯에 장착하면 발동합니다.`,
+            );
+          }}
         />
       </div>
     );
@@ -238,6 +266,9 @@ export function CharacterScreen() {
         <SubViewHeader title="스킬" onBack={back} />
         <SkillsView
           skills={character.skills}
+          apSkills={AP_SKILLS.filter((s) =>
+            characterStateHook.state.learnedAPSkills?.includes(s.name),
+          ).map((s) => ({ name: s.name, description: s.description }))}
           equippedNames={effectiveSkillNameList}
           normalSlots={skillLayout.normalSlots}
           feats={characterFeats}

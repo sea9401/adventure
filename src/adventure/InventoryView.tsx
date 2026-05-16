@@ -29,6 +29,8 @@ import {
 import { MATERIALS, type MaterialId } from "./data/materials";
 import { POTIONS, POTION_IDS, potionMax } from "./data/potions";
 import { CONSUMABLES, CONSUMABLE_IDS } from "./data/consumables";
+import { SKILL_BOOKS, SKILL_BOOK_IDS, type SkillBookId } from "./data/skillBooks";
+import { getAPSkillById } from "./character/apSkills";
 import type { InventoryState } from "./inventory/useInventory";
 import type { EquippedItem, EquippedSlots } from "./character/types";
 import { EquippedGrid } from "./character/CharacterMini";
@@ -46,13 +48,19 @@ import {
 import { EquipmentSearchInput } from "@/adventure/equipment/EquipmentSearchInput";
 import { TierSectionHeader } from "@/adventure/equipment/TierSectionHeader";
 
-type InvTabKey = "equipment" | "materials" | "potions" | "consumables";
+type InvTabKey =
+  | "equipment"
+  | "materials"
+  | "potions"
+  | "consumables"
+  | "skillBooks";
 
 const TABS: { key: InvTabKey; label: string }[] = [
   { key: "equipment", label: "장비" },
   { key: "materials", label: "재료" },
   { key: "potions", label: "포션" },
   { key: "consumables", label: "소모품" },
+  { key: "skillBooks", label: "스킬북" },
 ];
 
 const SLOT_TABS: { key: EquipSlot; label: string }[] = [
@@ -91,16 +99,22 @@ function computeDiff(
 export function InventoryView({
   inventory,
   equipped,
+  learnedAPSkillNames,
   onEquip,
   onUnequip,
   onDiscard,
+  onUseSkillBook,
 }: {
   inventory: InventoryState;
   equipped?: EquippedSlots;
+  /** 학습한 AP 스킬 이름 (소문자 비교용 X — 그대로 매칭). 스킬북 사용 버튼 비활성화 판단용. */
+  learnedAPSkillNames?: ReadonlyArray<string>;
   onEquip?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
   onUnequip?: (slot: EquipSlot) => void;
   /** 장비 1개 폐기 — 보상 없음(2단계 확인). 미지정이면 폐기 버튼 숨김. */
   onDiscard?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
+  /** 스킬북 사용 — 호출 측이 인벤 소비 + 학습 + 알림 처리. 미지정이면 버튼 숨김. */
+  onUseSkillBook?: (id: SkillBookId) => void;
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
   const [equipSlotTab, setEquipSlotTab] = useState<EquipSlot>("weapon");
@@ -126,6 +140,12 @@ export function InventoryView({
     consumable: CONSUMABLES[id],
     count: inventory.consumables[id] ?? 0,
   })).filter((e) => e.count > 0);
+  const ownedSkillBooks = SKILL_BOOK_IDS.map((id) => ({
+    id,
+    book: SKILL_BOOKS[id],
+    count: (inventory.skillBooks ?? {})[id] ?? 0,
+  })).filter((e) => e.count > 0);
+  const learnedSet = new Set(learnedAPSkillNames ?? []);
   const potionCap = potionMax(inventory.potionCapacityBonus ?? 0);
 
   // 슬롯 탭 + 이름 검색으로 필터, 진행 티어로 그룹화 — 페이저 대신 티어 헤더가 자연 분할.
@@ -158,6 +178,7 @@ export function InventoryView({
   const materialsPager = usePagination(ownedMaterials, 12);
   const potionsPager = usePagination(ownedPotions, 12);
   const consumablesPager = usePagination(ownedConsumables, 12);
+  const skillBooksPager = usePagination(ownedSkillBooks, 12);
 
   return (
     <div className="space-y-3">
@@ -455,6 +476,58 @@ export function InventoryView({
               page={consumablesPager.page}
               pageCount={consumablesPager.pageCount}
               setPage={consumablesPager.setPage}
+            />
+          </section>
+        ))}
+      {tab === "skillBooks" &&
+        (ownedSkillBooks.length === 0 ? (
+          <EmptyState
+            icon={<Scroll size={40} weight="duotone" />}
+            title="보유한 스킬북이 없습니다"
+            message="모험으로 발견하거나 NPC 에게 구매할 수 있습니다."
+          />
+        ) : (
+          <section className="space-y-2">
+            <p className="px-1 text-xs text-zinc-500 dark:text-zinc-400">
+              사용하면 1권이 소비되며 AP 스킬을 영구 학습합니다.
+            </p>
+            <ul className="space-y-1.5">
+              {skillBooksPager.pageItems.map(({ id, book, count }) => {
+                const apSkill = getAPSkillById(book.learnsSkillId);
+                const alreadyLearned = apSkill
+                  ? learnedSet.has(apSkill.name)
+                  : false;
+                return (
+                  <li key={id} className={ROW}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                        {book.name}
+                      </span>
+                      <span className="shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+                        ×{count}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                      {book.description}
+                    </p>
+                    {onUseSkillBook && (
+                      <button
+                        type="button"
+                        disabled={alreadyLearned}
+                        onClick={() => onUseSkillBook(id)}
+                        className="mt-2 inline-flex items-center rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-800 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-900"
+                      >
+                        {alreadyLearned ? "이미 학습됨" : "사용 (학습)"}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            <Pagination
+              page={skillBooksPager.page}
+              pageCount={skillBooksPager.pageCount}
+              setPage={skillBooksPager.setPage}
             />
           </section>
         ))}
