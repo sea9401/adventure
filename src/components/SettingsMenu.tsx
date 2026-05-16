@@ -5,6 +5,8 @@ import Link from "next/link";
 import {
   Bell,
   BookOpen,
+  Eye,
+  EyeSlash,
   Gear,
   GraduationCap,
   Moon,
@@ -20,10 +22,14 @@ import { AvatarChangeModal } from "./AvatarChangeModal";
 
 export function SettingsMenu({
   gameName,
+  tutorialEnabled,
   onReplayTutorial,
+  onToggleTutorial,
 }: {
   gameName: string | null;
+  tutorialEnabled: boolean;
   onReplayTutorial: () => void;
+  onToggleTutorial: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [notifPrefsOpen, setNotifPrefsOpen] = useState(false);
@@ -108,6 +114,11 @@ export function SettingsMenu({
     onReplayTutorial();
   };
 
+  const handleToggleTutorial = () => {
+    setOpen(false);
+    onToggleTutorial();
+  };
+
   const isDark = theme === "dark";
 
   return (
@@ -179,6 +190,20 @@ export function SettingsMenu({
               >
                 <GraduationCap size={18} weight="duotone" />
                 튜토리얼 다시 보기
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={handleToggleTutorial}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                {tutorialEnabled ? (
+                  <EyeSlash size={18} weight="duotone" />
+                ) : (
+                  <Eye size={18} weight="duotone" />
+                )}
+                {tutorialEnabled ? "튜토리얼 끄기" : "튜토리얼 켜기"}
               </button>
             </li>
           </ul>
