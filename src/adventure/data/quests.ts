@@ -373,9 +373,9 @@ export const QUESTS: Quest[] = [
     regionId: "diola",
     title: "보로의 거미줄",
     description:
-      "거미줄 재고가 자꾸 모자랍니다. 30개만 모아 주시면, 답례로 골드와 명성을 두둑이 드리지요.",
+      "거미줄 재고가 자꾸 모자랍니다. 10개만 모아 주시면, 답례로 골드와 명성을 두둑이 드리지요.",
     requiredLevel: 5,
-    target: { kind: "deliver", materialId: "spider_silk", count: 30 },
+    target: { kind: "deliver", materialId: "spider_silk", count: 10 },
     reward: { gold: 180, fame: 15, exp: 300 },
     repeatable: false,
     giverNpcId: "diola_merchant",
