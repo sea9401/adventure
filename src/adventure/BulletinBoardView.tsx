@@ -99,7 +99,10 @@ export function BulletinBoardView() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  // PostCard 가 React.memo 라 콜백 4개는 useCallback 으로 안정화 — 안 그러면 매 렌더
+  // 새 함수가 prop 으로 들어가 memo 가 무력화된다. setPosts/setError/setPmTarget 은
+  // React 가 보장하는 안정 setter 라 deps 는 비어 있어도 됨.
+  const handleDelete = useCallback(async (id: number) => {
     if (!confirm("이 글을 삭제할까요?")) return;
     try {
       await deletePost(id);
@@ -107,7 +110,35 @@ export function BulletinBoardView() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "삭제 실패");
     }
-  };
+  }, []);
+
+  const handleLikeUpdate = useCallback(
+    (postId: number, liked: boolean, count: number) => {
+      setPosts(
+        (prev) =>
+          prev?.map((p) =>
+            p.id === postId ? { ...p, likedByMe: liked, likeCount: count } : p,
+          ) ?? null,
+      );
+    },
+    [],
+  );
+
+  const handleCommentCountChange = useCallback(
+    (postId: number, count: number) => {
+      setPosts(
+        (prev) =>
+          prev?.map((p) =>
+            p.id === postId ? { ...p, commentCount: count } : p,
+          ) ?? null,
+      );
+    },
+    [],
+  );
+
+  const handleRequestSendMessage = useCallback((name: string) => {
+    setPmTarget(name);
+  }, []);
 
   const pager = usePagination(posts ?? [], 10);
 
@@ -222,14 +253,9 @@ export function BulletinBoardView() {
                 key={p.id}
                 post={p}
                 onDelete={handleDelete}
-                onSendMessage={p.mine ? undefined : () => setPmTarget(p.name)}
-                onPostChange={(next) =>
-                  setPosts(
-                    (prev) =>
-                      prev?.map((x) => (x.id === next.id ? next : x)) ?? null,
-                  )
-                }
-                onCommentTargetMessage={(name) => setPmTarget(name)}
+                onLikeUpdate={handleLikeUpdate}
+                onCommentCountChange={handleCommentCountChange}
+                onRequestSendMessage={handleRequestSendMessage}
               />
             ))}
           </ul>

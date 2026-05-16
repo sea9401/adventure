@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import {
   CaretDown,
   CaretRight,
@@ -23,19 +23,24 @@ import { CATEGORY_BADGE, type BulletinComment, type BulletinPost } from "./types
 // 게시판 글 카드 — 글 헤더(카테고리/제목/작성자/시간) + 본문 + 좋아요·댓글 풋터.
 // 좋아요는 optimistic toggle 후 서버 응답으로 확정. 실패 시 rollback.
 // 댓글 패널은 펼침 시점에 lazy fetch — 50개 글 카드를 한 번에 펼치지 않는 가정.
-export function PostCard({
-  post,
-  onDelete,
-  onSendMessage,
-  onPostChange,
-  onCommentTargetMessage,
-}: {
+//
+// memo + 좁힌 prop 시그니처 — 부모가 콜백을 useCallback 으로 안정화하면 같은 post 인
+// 카드는 재렌더 skip. 좋아요·댓글 카운트 갱신은 (postId, ...) 좁은 콜백으로 부모가 자체 머지.
+type PostCardProps = {
   post: BulletinPost;
   onDelete: (id: number) => void;
-  onSendMessage?: () => void;
-  onPostChange: (next: BulletinPost) => void;
-  onCommentTargetMessage: (name: string) => void;
-}) {
+  onLikeUpdate: (postId: number, liked: boolean, count: number) => void;
+  onCommentCountChange: (postId: number, count: number) => void;
+  onRequestSendMessage: (name: string) => void;
+};
+
+function PostCardImpl({
+  post,
+  onDelete,
+  onLikeUpdate,
+  onCommentCountChange,
+  onRequestSendMessage,
+}: PostCardProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [likeBusy, setLikeBusy] = useState(false);
 
@@ -43,26 +48,18 @@ export function PostCard({
     if (likeBusy) return;
     setLikeBusy(true);
     // optimistic — 응답이 와도 카운트는 서버 값으로 덮어씀.
-    const before = { liked: post.likedByMe, count: post.likeCount };
-    onPostChange({
-      ...post,
-      likedByMe: !post.likedByMe,
-      likeCount: post.likeCount + (post.likedByMe ? -1 : 1),
-    });
+    const beforeLiked = post.likedByMe;
+    const beforeCount = post.likeCount;
+    onLikeUpdate(
+      post.id,
+      !beforeLiked,
+      beforeCount + (beforeLiked ? -1 : 1),
+    );
     try {
       const next = await toggleLike(post.id);
-      onPostChange({
-        ...post,
-        likedByMe: next.liked,
-        likeCount: next.count,
-      });
+      onLikeUpdate(post.id, next.liked, next.count);
     } catch {
-      // rollback
-      onPostChange({
-        ...post,
-        likedByMe: before.liked,
-        likeCount: before.count,
-      });
+      onLikeUpdate(post.id, beforeLiked, beforeCount);
     } finally {
       setLikeBusy(false);
     }
@@ -83,19 +80,19 @@ export function PostCard({
                 {post.title}
               </span>
             )}
-            {onSendMessage ? (
+            {post.mine ? (
+              <span className="font-semibold text-zinc-700 dark:text-zinc-200">
+                {post.name}
+              </span>
+            ) : (
               <button
                 type="button"
-                onClick={onSendMessage}
+                onClick={() => onRequestSendMessage(post.name)}
                 title="쪽지 보내기"
                 className="rounded font-semibold text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-200"
               >
                 {post.name}
               </button>
-            ) : (
-              <span className="font-semibold text-zinc-700 dark:text-zinc-200">
-                {post.name}
-              </span>
             )}
             <span>{formatRelative(post.createdAt)}</span>
           </div>
@@ -152,10 +149,8 @@ export function PostCard({
         {commentsOpen && (
           <CommentsPanel
             postId={post.id}
-            onCountChange={(count) =>
-              onPostChange({ ...post, commentCount: count })
-            }
-            onTargetMessage={onCommentTargetMessage}
+            onCountChange={onCommentCountChange}
+            onTargetMessage={onRequestSendMessage}
           />
         )}
       </Card>
@@ -163,13 +158,17 @@ export function PostCard({
   );
 }
 
+// memo — 부모가 useCallback 으로 콜백을 안정화하고 같은 post 인 카드면 렌더 skip.
+// post 는 BulletinBoardView 의 setPosts.map 결과라 좋아요/댓글 카운트 갱신 시 해당 글만 새 객체.
+export const PostCard = memo(PostCardImpl);
+
 function CommentsPanel({
   postId,
   onCountChange,
   onTargetMessage,
 }: {
   postId: number;
-  onCountChange: (count: number) => void;
+  onCountChange: (postId: number, count: number) => void;
   onTargetMessage: (name: string) => void;
 }) {
   const [comments, setComments] = useState<BulletinComment[] | null>(null);
@@ -188,7 +187,7 @@ function CommentsPanel({
       .then((rows) => {
         if (cancelled) return;
         setComments(rows);
-        onCountChange(rows.length);
+        onCountChange(postId, rows.length);
       })
       .catch((e) => {
         if (cancelled) return;
@@ -209,7 +208,7 @@ function CommentsPanel({
       const created = await postComment(postId, trimmed);
       setComments((prev) => {
         const next = prev ? [...prev, created] : [created];
-        onCountChange(next.length);
+        onCountChange(postId, next.length);
         return next;
       });
       setDraft("");
@@ -231,7 +230,7 @@ function CommentsPanel({
       await deleteComment(postId, commentId);
       setComments((prev) => {
         const next = prev?.filter((c) => c.id !== commentId) ?? null;
-        if (next) onCountChange(next.length);
+        if (next) onCountChange(postId, next.length);
         return next;
       });
     } catch (e) {
