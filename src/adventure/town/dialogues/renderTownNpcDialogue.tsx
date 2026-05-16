@@ -81,6 +81,7 @@ export function renderTownNpcDialogue(
           completeQuest={completeQuest}
           storyFlags={storyFlags}
           addNotification={addNotification}
+          characterStateHook={characterStateHook}
         />
       );
     case "village_trainer_smith":
