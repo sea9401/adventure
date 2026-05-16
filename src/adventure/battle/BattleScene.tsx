@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { BattleState } from "./engine";
 import { BattleLogList } from "./BattleLogList";
 import { MONSTERS } from "../data/monsters";
+import { AP_CAP } from "../character/apSkills";
 import {
   formatRelative,
   type AppNotification,
@@ -14,10 +15,6 @@ import { avatarImageSrc, type Gender } from "@/adventure/profile/avatars";
 
 export type BattlePlayerStatus = {
   gender: Gender;
-  mp: number;
-  maxMp: number;
-  exp: number;
-  maxExp: number;
 };
 
 const RECENT_KIND_COLOR: Record<NotificationKind, string> = {
@@ -57,6 +54,34 @@ function HpBar({
           className={`h-full ${color} transition-all`}
           style={{ width: `${pct * 100}%` }}
         />
+      </div>
+      <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">
+        {value}/{max}
+      </span>
+    </div>
+  );
+}
+
+// AP 게이지 — 디스크리트 핍 N개 (cap=5). cost 임계값(3·5) 가 한눈에 보이도록 막대 대신 핍.
+// 발동 cost 도달한 핍은 살짝 강조 (ring) — "지금 발동 가능" 시각 신호.
+function APGauge({ value, max }: { value: number; max: number }) {
+  return (
+    <div className="flex items-center gap-3 text-[15px]">
+      <span className="w-20 shrink-0 truncate text-zinc-700 dark:text-zinc-300">
+        AP
+      </span>
+      <div className="flex flex-1 items-center gap-1.5">
+        {Array.from({ length: max }, (_, i) => (
+          <span
+            key={i}
+            aria-hidden
+            className={
+              i < value
+                ? "h-3 w-3 rounded-full border border-violet-600 bg-violet-500 dark:border-violet-400 dark:bg-violet-400"
+                : "h-3 w-3 rounded-full border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800"
+            }
+          />
+        ))}
       </div>
       <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">
         {value}/{max}
@@ -197,18 +222,7 @@ export function BattleScene({
               max={state.playerMaxHp}
               color="bg-emerald-500"
             />
-            <HpBar
-              label="MP"
-              value={playerStatus.mp}
-              max={playerStatus.maxMp}
-              color="bg-sky-500"
-            />
-            <HpBar
-              label="EXP"
-              value={playerStatus.exp}
-              max={playerStatus.maxExp}
-              color="bg-amber-400"
-            />
+            <APGauge value={state.ap} max={AP_CAP} />
           </div>
         </div>
       </Card>

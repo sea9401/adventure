@@ -268,10 +268,6 @@ function Home() {
 
   const playerStatus = {
     gender: character.gender,
-    mp: character.mp,
-    maxMp: character.maxMp,
-    exp: character.exp,
-    maxExp: character.maxExp,
   };
 
   const addNotification = (
