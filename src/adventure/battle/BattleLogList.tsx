@@ -67,6 +67,8 @@ export function BattleLogList({
               playerMaxHp={entry.playerMaxHp}
               enemyHp={entry.enemyHp}
               enemyMaxHp={entry.enemyMaxHp}
+              ap={entry.ap}
+              apMax={entry.apMax}
               sizes={s}
             />
           );
@@ -241,12 +243,16 @@ function HpBar({
   playerMaxHp,
   enemyHp,
   enemyMaxHp,
+  ap,
+  apMax,
   sizes,
 }: {
   playerHp: number;
   playerMaxHp: number;
   enemyHp: number;
   enemyMaxHp: number;
+  ap: number;
+  apMax: number;
   sizes: Sizes;
 }) {
   const BAR_LEN = 10;
@@ -257,25 +263,46 @@ function HpBar({
   };
   return (
     <div
-      className={`flex items-center justify-between gap-2 rounded border border-zinc-200 bg-zinc-50/70 px-2 py-1 font-mono ${sizes.hpBar} text-zinc-700 dark:border-zinc-700/60 dark:bg-zinc-900/40 dark:text-zinc-300`}
+      className={`rounded border border-zinc-200 bg-zinc-50/70 px-2 py-1 font-mono ${sizes.hpBar} text-zinc-700 dark:border-zinc-700/60 dark:bg-zinc-900/40 dark:text-zinc-300`}
     >
-      <span className="flex-1 truncate">
-        <span className="text-emerald-700 dark:text-emerald-300">
-          {renderBar(playerHp, playerMaxHp)}
+      {apMax > 0 && (
+        // AP 핍 — 플레이어 HP 막대 바로 위. 미장착(apMax=0)은 그리지 않아 라인 공간 절약.
+        <div className="mb-0.5 flex items-center gap-1">
+          {Array.from({ length: apMax }, (_, i) => (
+            <span
+              key={i}
+              aria-hidden
+              className={
+                i < ap
+                  ? "h-2 w-2 rounded-full border border-violet-600 bg-violet-500 dark:border-violet-400 dark:bg-violet-400"
+                  : "h-2 w-2 rounded-full border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800"
+              }
+            />
+          ))}
+          <span className="ml-1 text-zinc-500 dark:text-zinc-400">
+            AP {ap}/{apMax}
+          </span>
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex-1 truncate">
+          <span className="text-emerald-700 dark:text-emerald-300">
+            {renderBar(playerHp, playerMaxHp)}
+          </span>
+          <span className="ml-1 text-zinc-600 dark:text-zinc-400">
+            {playerHp}/{playerMaxHp}
+          </span>
         </span>
-        <span className="ml-1 text-zinc-600 dark:text-zinc-400">
-          {playerHp}/{playerMaxHp}
+        <span className="text-zinc-300 dark:text-zinc-600">│</span>
+        <span className="flex-1 truncate text-right">
+          <span className="mr-1 text-zinc-600 dark:text-zinc-400">
+            {enemyHp}/{enemyMaxHp}
+          </span>
+          <span className="text-rose-700 dark:text-rose-300">
+            {renderBar(enemyHp, enemyMaxHp)}
+          </span>
         </span>
-      </span>
-      <span className="text-zinc-300 dark:text-zinc-600">│</span>
-      <span className="flex-1 truncate text-right">
-        <span className="mr-1 text-zinc-600 dark:text-zinc-400">
-          {enemyHp}/{enemyMaxHp}
-        </span>
-        <span className="text-rose-700 dark:text-rose-300">
-          {renderBar(enemyHp, enemyMaxHp)}
-        </span>
-      </span>
+      </div>
     </div>
   );
 }
