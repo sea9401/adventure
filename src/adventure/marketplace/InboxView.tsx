@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Envelope, PaperPlaneTilt } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -19,7 +19,7 @@ import {
 } from "@/adventure/guild/api";
 import { claimInbox, fetchInbox, type InboxItem } from "./api";
 import { SendMessageModal } from "./SendMessageModal";
-import { InboxRow } from "./InboxRow";
+import { InboxRow, type InboxAction } from "./InboxRow";
 
 export function InboxView() {
   const {
@@ -183,6 +183,36 @@ export function InboxView() {
 
   const pager = usePagination(items, 10);
 
+  // InboxRow 가 React.memo 라 onAction prop 은 안정해야 한다.
+  // claim/respondToGuildInvite/setComposer 가 GameContext value 변경 등으로 매 렌더
+  // 새 함수가 될 수 있어, ref 로 최신 핸들러를 잡고 onAction 은 mount-stable.
+  const handlersRef = useRef({ claim, respondToGuildInvite, setComposer });
+  // deps 없이 매 렌더 ref 만 갱신 — onAction 자체는 mount-stable. claim/respondToGuildInvite
+  // 가 GameContext 변화 등으로 매 렌더 새 함수가 돼도 effect 가 그걸 ref 에 동기화한다.
+  // lint 가 setState 함수 참조 저장을 "호출" 로 오인해 경고를 띄우므로 명시적으로 끈다.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    handlersRef.current = { claim, respondToGuildInvite, setComposer };
+  });
+  const onAction = useCallback((action: InboxAction) => {
+    const h = handlersRef.current;
+    switch (action.type) {
+      case "claim":
+        void h.claim([action.id]);
+        return;
+      case "reply":
+        h.setComposer({ recipient: action.fromName });
+        return;
+      case "guild_invite_respond":
+        void h.respondToGuildInvite(
+          action.inviteId,
+          action.inboxRowId,
+          action.accept,
+        );
+        return;
+    }
+  }, []);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -242,35 +272,14 @@ export function InboxView() {
         />
       ) : (
         <div className="space-y-2">
-          {pager.pageItems.map((it) => {
-            const inviteId =
-              it.kind === "guild_invite"
-                ? Number((it.payload as { invite_id?: unknown }).invite_id)
-                : null;
-            return (
-              <InboxRow
-                key={it.id}
-                item={it}
-                busy={busyIds.has(it.id)}
-                onClaim={() => claim([it.id])}
-                onReply={
-                  it.kind === "user_message" && it.fromName
-                    ? () => setComposer({ recipient: it.fromName as string })
-                    : undefined
-                }
-                onAccept={
-                  inviteId !== null && Number.isInteger(inviteId)
-                    ? () => respondToGuildInvite(inviteId, it.id, true)
-                    : undefined
-                }
-                onDecline={
-                  inviteId !== null && Number.isInteger(inviteId)
-                    ? () => respondToGuildInvite(inviteId, it.id, false)
-                    : undefined
-                }
-              />
-            );
-          })}
+          {pager.pageItems.map((it) => (
+            <InboxRow
+              key={it.id}
+              item={it}
+              busy={busyIds.has(it.id)}
+              onAction={onAction}
+            />
+          ))}
           <Pagination
             page={pager.page}
             pageCount={pager.pageCount}
