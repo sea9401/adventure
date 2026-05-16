@@ -21,6 +21,17 @@ const SHOP_EQUIPMENT_IDS = (Object.keys(ITEMS) as ItemId[]).filter(
   (id) => typeof (ITEMS[id] as { shopPrice?: number }).shopPrice === "number",
 );
 
+// crafting flag 별 게이트 — items.ts EquipItem.shopGate 와 짝.
+type CraftingShopGates = {
+  boldQuestComplete: boolean;
+};
+
+function isEquipmentGated(id: ItemId, gates: CraftingShopGates): boolean {
+  const gate = (ITEMS[id] as { shopGate?: keyof CraftingShopGates }).shopGate;
+  if (!gate) return false;
+  return !gates[gate];
+}
+
 type BuyCategoryKey = "equipment" | "materials" | "consumables";
 
 // 카테고리 순서는 SellTab 과 동일하게 — 장비 → 재료 → 소모품. 포션은 소모품 탭에서 같이 노출.
@@ -34,6 +45,7 @@ export function BuyTab({
   gold,
   inventory,
   isMaterialBuyable,
+  craftingGates,
   onPurchasePotion,
   onPurchaseMaterial,
   onPurchaseConsumable,
@@ -42,12 +54,16 @@ export function BuyTab({
   gold: number;
   inventory: InventoryState;
   isMaterialBuyable: (id: MaterialId) => boolean;
+  craftingGates: CraftingShopGates;
   onPurchasePotion: (id: PotionId, quantity: number) => void;
   onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
   onPurchaseConsumable: (id: ConsumableId, quantity: number) => void;
   onPurchaseEquipment: (id: ItemId, quantity: number) => void;
 }) {
   const [category, setCategory] = useState<BuyCategoryKey>("equipment");
+  const equipmentIds = SHOP_EQUIPMENT_IDS.filter(
+    (id) => !isEquipmentGated(id, craftingGates),
+  );
 
   // 구매 가능 재료 = 항상 취급(`inShop`) 또는 누적 100개 이상 판매로 잠금 해제된 것.
   const materialIds = (Object.keys(MATERIALS) as MaterialId[]).filter(
@@ -66,9 +82,9 @@ export function BuyTab({
       />
 
       {category === "equipment" &&
-        (SHOP_EQUIPMENT_IDS.length > 0 ? (
+        (equipmentIds.length > 0 ? (
           <div className="space-y-2">
-            {SHOP_EQUIPMENT_IDS.map((id) => {
+            {equipmentIds.map((id) => {
               const item = ITEMS[id];
               const price = (item as { shopPrice: number }).shopPrice;
               const statSummary = item.stats
