@@ -22,6 +22,10 @@ import {
 } from "@/adventure/battle/autoHunt";
 import { baseCharacter } from "@/adventure/character/defaults";
 import { derivePlayerCombat } from "@/adventure/character/derivePlayerCombat";
+import {
+  isAPSkillCondition,
+  type APSkillCondition,
+} from "@/adventure/character/apSkills";
 import { applyExpGain } from "@/lib/leveling";
 import { rehydrateEquippedItem } from "@/adventure/character/rehydrateEquip";
 import type { EquippedItem } from "@/adventure/character/types";
@@ -81,6 +85,8 @@ type SavedCharacter = {
   equippedFeat?: string;
   /** 학습한 AP 스킬 이름 — equippedSkills 와 교집합이 실제 장착 AP 스킬. */
   learnedAPSkills?: string[];
+  /** AP 스킬 슬롯의 발동 조건 맵 — skillName 키. 미지정 = always. */
+  apSkillConditions?: Record<string, unknown>;
   [k: string]: unknown;
 };
 
@@ -140,6 +146,20 @@ function equippedFrom(character: SavedCharacter) {
     armor: rehydrateEquippedItem(character.equipped?.armor),
     accessory: rehydrateEquippedItem(character.equipped?.accessory),
   };
+}
+
+// 서버측 raw → typed APSkillCondition 변환. 클라 parseAPSkillConditions 와 동일.
+function parseAPSkillConditionsSaved(
+  raw: unknown,
+): Partial<Record<string, APSkillCondition>> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: Partial<Record<string, APSkillCondition>> = {};
+  for (const [name, cond] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof name === "string" && isAPSkillCondition(cond)) {
+      out[name] = cond;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 async function readKv<T>(
@@ -220,6 +240,7 @@ export function assembleSimInput(opts: AssembleSimInputOpts): OfflineSimInput {
     equippedSkills: character.equippedSkills,
     equippedFeats,
     learnedAPSkills: character.learnedAPSkills,
+    apSkillConditions: parseAPSkillConditionsSaved(character.apSkillConditions),
     storyFlagIds: new Set(state.storyFlags.flags ?? []),
     hp: baselineHp,
   });

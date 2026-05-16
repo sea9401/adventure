@@ -178,7 +178,7 @@ describe("assembleSimInput — AP 스킬 plumbing", () => {
       autoPotionRules: [],
       playerName: "tester",
     });
-    expect(input.player.equippedAPSkills?.map((s) => s.name)).toContain("회복술");
+    expect(input.player.equippedAPSkills?.map((s) => s.skill.name)).toContain("회복술");
   });
 
   it("learnedAPSkills 미설정 → equippedAPSkills 비어있음", () => {

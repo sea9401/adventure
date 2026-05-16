@@ -13,7 +13,9 @@ import {
 import {
   AP_BATTLE_START,
   AP_CAP,
+  DEFAULT_AP_SKILL_CONDITION,
   type APSkill,
+  type APSkillCondition,
   type APSkillId,
 } from "../character/apSkills";
 
@@ -272,9 +274,38 @@ export type PlayerCombat = {
   // 만물 행운 — 회피·크리·추가타 모든 확률에 더할 보너스(%). 0/undefined = 미보유.
   universalLuckBonusPct?: number;
   // AP 스킬 — 학습 + 슬롯 장착 된 것만. 슬롯 순서 보존. 빈 배열/undefined = 미장착.
-  // 매 플레이어 턴 첫 공격 시 슬롯 순서로 첫 발동 가능(cost<=AP) 한 1개 발동. 한 턴 최대 1개.
-  equippedAPSkills?: ReadonlyArray<APSkill>;
+  // 매 플레이어 턴 첫 공격 시 슬롯 순서로 condition 만족 + cost<=AP 인 첫 1개 발동.
+  // 한 턴 최대 1개. condition 미지정 슬롯은 always 로 해석.
+  equippedAPSkills?: ReadonlyArray<EquippedAPSkill>;
 };
+
+// 장착된 AP 스킬 + 사용자가 슬롯에 건 발동 조건.
+export type EquippedAPSkill = {
+  skill: APSkill;
+  condition: APSkillCondition;
+};
+
+// 슬롯 발동 조건 평가 — state 가 현재 시점에 조건을 만족하면 true.
+// AP affordable 체크와는 별개; 호출자가 둘 다 확인 후 발동.
+export function evaluateAPSkillCondition(
+  condition: APSkillCondition,
+  state: BattleState,
+): boolean {
+  switch (condition.kind) {
+    case "always":
+      return true;
+    case "ap_at_least":
+      return state.ap >= condition.value;
+    case "hp_below_pct":
+      return state.playerMaxHp > 0
+        ? (state.playerHp / state.playerMaxHp) * 100 < condition.value
+        : false;
+    case "enemy_hp_below_pct":
+      return state.enemy.hp > 0
+        ? (state.enemyHp / state.enemy.hp) * 100 < condition.value
+        : false;
+  }
+}
 
 export type PlayerAction =
   | { kind: "attack" }
@@ -651,13 +682,17 @@ export function advanceTurn(
         ? player.powerAttackBonus!
         : 0;
 
-    // AP 스킬 — 그 턴 첫 공격일 때만 슬롯 순서로 cost<=AP 인 첫 1개 발동.
+    // AP 스킬 — 그 턴 첫 공격일 때만 슬롯 순서로 condition 만족 + cost<=AP 인 첫 1개 발동.
     // 한 턴 1개 정책 (apSkillFiredThisTurn null 체크). 강공격과 동시 발동 가능 (별개 트리거).
     const apSkillFires =
       isFirstAttackOfTurn &&
       state.turn.apSkillFiredThisTurn === null &&
       (player.equippedAPSkills?.length ?? 0) > 0
-        ? player.equippedAPSkills!.find((s) => s.apCost <= state.ap) ?? null
+        ? player.equippedAPSkills!.find(
+            (e) =>
+              e.skill.apCost <= state.ap &&
+              evaluateAPSkillCondition(e.condition, state),
+          )?.skill ?? null
         : null;
     const apAtkMult =
       apSkillFires?.effect.kind === "atk_multiplier"

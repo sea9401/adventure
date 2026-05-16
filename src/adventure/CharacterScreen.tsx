@@ -273,6 +273,8 @@ export function CharacterScreen() {
             name: s.name,
             description: formatAPSkillDescription(s),
           }))}
+          apSkillConditions={characterStateHook.state.apSkillConditions}
+          onSetAPSkillCondition={characterStateHook.setAPSkillCondition}
           equippedNames={effectiveSkillNameList}
           normalSlots={skillLayout.normalSlots}
           feats={characterFeats}
