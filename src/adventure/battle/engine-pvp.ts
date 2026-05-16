@@ -95,6 +95,10 @@ export type PvPSide = {
   hp: number;
   maxHp: number;
   attacksLeft: number;
+  // 유격 (skirmishNextTurnBonus) — 이 사이드가 회피 성공 시 누적, 다음 자기 공격 페이즈
+  // 시작 시 attacksLeft 에 더해지고 0 으로 리셋. PvE 의 enemy phase 내 직접 가산을
+  // PvP 에선 페이즈 분리 때문에 별도 슬롯이 필요.
+  nextTurnAttackBonus: number;
   turn: BattleTurnState;
   flags: PvPSideFlags;
   buffs: PvPSideBuffs;
@@ -167,6 +171,7 @@ function buildSide(player: PlayerCombat, name: string): PvPSide {
     hp: player.hp,
     maxHp: player.maxHp,
     attacksLeft: 0, // initialBattleStatePvP 에서 선공 측만 채움
+    nextTurnAttackBonus: 0,
     turn: {
       completedPlayerTurns: 0,
       enemyPhasesCompleted: 0,
@@ -333,6 +338,264 @@ function dealExtraDamage(
   return next;
 }
 
+// ── 방어자 측 dodge 헬퍼 ────────────────────────────────────────────────────
+
+// dodge 한 번에 발생하는 효과들 — 곡예(힐) → 보장 회피 소비(옵션) → 무한 가시 + 반사 회피
+// → 반격(counterAtkBonus) → 유격(skirmishNextTurnBonus 누적). 어느 단계에서 공격자가 죽으면
+// phase=ended 로 종료. 호출 측은 ended 여부 확인 후 attacksLeft 차감 또는 phase 종료를 결정.
+function applyDodgeEffects(
+  state: PvPBattleState,
+  atkKey: "p1" | "p2",
+  defKey: "p1" | "p2",
+  dodgeLogText: string,
+  consumeEvade: boolean,
+): PvPBattleState {
+  let st: PvPBattleState = {
+    ...state,
+    log: appendLog(state.log, { kind: "info", text: dodgeLogText }),
+  };
+  if (st.phase === "ended") return st;
+  // 곡예 — 회피 성공 시 HP +amount.
+  const defForHeal = st[defKey];
+  const evadeHeal = defForHeal.player.evadeHealAmount ?? 0;
+  if (evadeHeal > 0 && defForHeal.hp < defForHeal.maxHp) {
+    const newHp = Math.min(defForHeal.maxHp, defForHeal.hp + evadeHeal);
+    const actual = newHp - defForHeal.hp;
+    st = setSide(st, defKey, { ...defForHeal, hp: newHp });
+    st = {
+      ...st,
+      log: appendLog(st.log, {
+        kind: "info",
+        text: `[곡예] ${defForHeal.name}의 HP +${actual}`,
+      }),
+    };
+  }
+  // 보장 회피 소비 (회피 강화 분기에서만).
+  if (consumeEvade) {
+    const d = st[defKey];
+    if (d.stacks.evadesRemaining > 0) {
+      st = setSide(st, defKey, {
+        ...d,
+        stacks: {
+          ...d.stacks,
+          evadesRemaining: d.stacks.evadesRemaining - 1,
+        },
+      });
+    }
+  }
+  // 무한 가시 + 반사 회피 — 적 ATK 기반 / 추정 raw 데미지 기반 반사.
+  const attackerNow = st[atkKey];
+  const defenderNow = st[defKey];
+  const infiniteThornsPct = defenderNow.player.infiniteThornsAtkPct ?? 0;
+  const infiniteThornsDmg =
+    infiniteThornsPct > 0
+      ? Math.floor((attackerNow.player.atk * infiniteThornsPct) / 100)
+      : 0;
+  const reflexEvadeMult = defenderNow.player.reflexEvadeMult ?? 0;
+  const estimatedRawDmg =
+    reflexEvadeMult > 0
+      ? damageBetween(
+          effectiveAttackerAtk(attackerNow, defenderNow),
+          defenderNow.player.def,
+        )
+      : 0;
+  const reflexEvadeDmg =
+    reflexEvadeMult > 0 ? Math.floor(estimatedRawDmg * reflexEvadeMult) : 0;
+  const totalReflect = infiniteThornsDmg + reflexEvadeDmg;
+  if (totalReflect > 0) {
+    const newAtkHp = Math.max(0, attackerNow.hp - totalReflect);
+    st = setSide(st, atkKey, { ...attackerNow, hp: newAtkHp });
+    const labels: string[] = [];
+    if (infiniteThornsDmg > 0) labels.push("무한 가시");
+    if (reflexEvadeDmg > 0) labels.push("반사 회피");
+    st = {
+      ...st,
+      log: appendLog(st.log, {
+        kind: "player_attack",
+        text: `[${labels.join(" + ")}] ${attackerNow.name}에게 ${totalReflect} 반사 피해.`,
+      }),
+    };
+    if (newAtkHp <= 0) {
+      return {
+        ...st,
+        log: appendLog(st.log, {
+          kind: "info",
+          text: `${attackerNow.name}이(가) 쓰러졌다.`,
+        }),
+        phase: "ended",
+        outcome: defKey === "p1" ? "p1_win" : "p2_win",
+      };
+    }
+  }
+  // 반격 (counterAtkBonus) — 회피 성공 시 ATK + bonus 데미지로 카운터 1회.
+  const attackerAfterReflect = st[atkKey];
+  const counterBonus = defenderNow.player.counterAtkBonus ?? 0;
+  if (counterBonus > 0) {
+    const counterDmg = damageBetween(
+      defenderNow.player.atk + counterBonus,
+      attackerAfterReflect.player.def,
+    );
+    const newAtkHp = Math.max(0, attackerAfterReflect.hp - counterDmg);
+    st = setSide(st, atkKey, { ...attackerAfterReflect, hp: newAtkHp });
+    st = {
+      ...st,
+      log: appendLog(st.log, {
+        kind: "player_attack",
+        text: `[반격] ${attackerAfterReflect.name}에게 ${counterDmg} 피해.`,
+      }),
+    };
+    if (newAtkHp <= 0) {
+      return {
+        ...st,
+        log: appendLog(st.log, {
+          kind: "info",
+          text: `${attackerAfterReflect.name}이(가) 쓰러졌다.`,
+        }),
+        phase: "ended",
+        outcome: defKey === "p1" ? "p1_win" : "p2_win",
+      };
+    }
+  }
+  // 유격 — 회피 성공 시 다음 자기 페이즈 공격 횟수 +N (nextTurnAttackBonus 에 누적).
+  const skirmishBonus = defenderNow.player.skirmishNextTurnBonus ?? 0;
+  if (skirmishBonus > 0) {
+    const d = st[defKey];
+    st = setSide(st, defKey, {
+      ...d,
+      nextTurnAttackBonus: d.nextTurnAttackBonus + skirmishBonus,
+    });
+  }
+  return st;
+}
+
+// shadowStep dodge — 한 페이즈 통째로 회피 + dodge 효과 + 페이즈 종료.
+function applyShadowStepDodge(
+  state: PvPBattleState,
+  atkKey: "p1" | "p2",
+  defKey: "p1" | "p2",
+): PvPBattleState {
+  const defender = state[defKey];
+  const dodged = applyDodgeEffects(
+    state,
+    atkKey,
+    defKey,
+    `[그림자 보법] ${defender.name}이(가) 모든 공격을 그림자처럼 흘려보냈다!`,
+    false,
+  );
+  if (dodged.phase === "ended") return dodged;
+  return endAttackerPhase(dodged, atkKey, defKey);
+}
+
+// per-attack dodge — dodge 효과 + 공격 횟수 1 차감. attacksLeft 0 이면 페이즈 종료.
+function applyPerAttackDodge(
+  state: PvPBattleState,
+  atkKey: "p1" | "p2",
+  defKey: "p1" | "p2",
+  logText: string,
+  consumeEvade: boolean,
+): PvPBattleState {
+  const dodged = applyDodgeEffects(state, atkKey, defKey, logText, consumeEvade);
+  if (dodged.phase === "ended") return dodged;
+  const attacker = dodged[atkKey];
+  const newAttacksLeft = attacker.attacksLeft - 1;
+  if (newAttacksLeft > 0) {
+    return setSide(dodged, atkKey, {
+      ...attacker,
+      attacksLeft: newAttacksLeft,
+      turn: { ...attacker.turn, firstAttackPending: false },
+    });
+  }
+  return endAttackerPhase(dodged, atkKey, defKey);
+}
+
+// 데미지 적중 시 반사 (반사 갑주 + 가시 갑옷 + 무한 가시). 공격자가 죽으면 attackerKilled=true.
+function applyOnHitReflect(
+  state: PvPBattleState,
+  atkKey: "p1" | "p2",
+  defKey: "p1" | "p2",
+  damageTakenToHp: number,
+): { state: PvPBattleState; attackerKilled: boolean } {
+  const attacker = state[atkKey];
+  const defender = state[defKey];
+  const thornsPct = defender.player.thornsPct ?? 0;
+  const thornsDmg =
+    thornsPct > 0 ? Math.floor((damageTakenToHp * thornsPct) / 100) : 0;
+  const bramblePct = defender.player.bramblePct ?? 0;
+  const brambleDmg =
+    bramblePct > 0 ? Math.floor((damageTakenToHp * bramblePct) / 100) : 0;
+  const infinitePct = defender.player.infiniteThornsAtkPct ?? 0;
+  const infiniteDmg =
+    infinitePct > 0 ? Math.floor((attacker.player.atk * infinitePct) / 100) : 0;
+  const total = thornsDmg + brambleDmg + infiniteDmg;
+  if (total <= 0) return { state, attackerKilled: false };
+  const newAtkHp = Math.max(0, attacker.hp - total);
+  let st = setSide(state, atkKey, { ...attacker, hp: newAtkHp });
+  const labels: string[] = [];
+  if (thornsDmg > 0) labels.push("반사 갑주");
+  if (brambleDmg > 0) labels.push("가시 갑옷");
+  if (infiniteDmg > 0) labels.push("무한 가시");
+  st = {
+    ...st,
+    log: appendLog(st.log, {
+      kind: "player_attack",
+      text: `[${labels.join(" + ")}] ${attacker.name}에게 ${total} 반사 피해.`,
+    }),
+  };
+  if (newAtkHp <= 0) {
+    st = {
+      ...st,
+      log: appendLog(st.log, {
+        kind: "info",
+        text: `${attacker.name}이(가) 쓰러졌다.`,
+      }),
+      phase: "ended",
+      outcome: defKey === "p1" ? "p1_win" : "p2_win",
+    };
+    return { state: st, attackerKilled: true };
+  }
+  return { state: st, attackerKilled: false };
+}
+
+// 반격의 룬 — 피격 후 일정 확률로 카운터 1회 (ATK 데미지). 공격자가 죽으면 attackerKilled=true.
+function maybeApplyRuneCounter(
+  state: PvPBattleState,
+  atkKey: "p1" | "p2",
+  defKey: "p1" | "p2",
+): { state: PvPBattleState; attackerKilled: boolean } {
+  const defender = state[defKey];
+  const attacker = state[atkKey];
+  const pct = defender.player.runeCounterChancePct ?? 0;
+  if (pct <= 0 || Math.random() * 100 >= pct) {
+    return { state, attackerKilled: false };
+  }
+  const dmg = damageBetween(
+    effectiveAttackerAtk(defender, attacker),
+    attackerFacingDef(defender, attacker),
+  );
+  const newAtkHp = Math.max(0, attacker.hp - dmg);
+  let st = setSide(state, atkKey, { ...attacker, hp: newAtkHp });
+  st = {
+    ...st,
+    log: appendLog(st.log, {
+      kind: "player_attack",
+      text: `[반격의 룬] ${attacker.name}에게 ${dmg} 반격 피해.`,
+    }),
+  };
+  if (newAtkHp <= 0) {
+    st = {
+      ...st,
+      log: appendLog(st.log, {
+        kind: "info",
+        text: `${attacker.name}이(가) 쓰러졌다.`,
+      }),
+      phase: "ended",
+      outcome: defKey === "p1" ? "p1_win" : "p2_win",
+    };
+    return { state: st, attackerKilled: true };
+  }
+  return { state: st, attackerKilled: false };
+}
+
 // 공격 턴 종료 후 처리 — 그림자 분신 → 무피해 난무 → 막다른 격노 → 약점 분석 → 재생/자연회복.
 // PvE 의 finishPlayerTurn 미러.
 function finishAttackerTurn(
@@ -465,25 +728,57 @@ export function advanceTurnPvP(
       ? attacker.player.powerAttackBonus!
       : 0;
 
-  // 방어자 회피 — 1차 판정 (% 회피).
-  const precisionMult = attacker.player.precisionEvasionMult ?? 1;
-  const baseDefEvasion = defender.player.evasionPct;
-  const enemyEvasionPct = baseDefEvasion * precisionMult;
-  if (enemyEvasionPct > 0 && Math.random() * 100 < enemyEvasionPct) {
-    // 회피 시 — 데미지 패스, 공격 횟수 1 차감.
-    const logAfter = appendLog(state.log, {
-      kind: "player_attack",
-      text: `${defender.name}이(가) 공격을 피했다.`,
-    });
-    const newAttacksLeft = attacker.attacksLeft - 1;
-    if (newAttacksLeft > 0) {
-      return setSide({ ...state, log: logAfter }, atkKey, {
-        ...attacker,
-        attacksLeft: newAttacksLeft,
-        turn: { ...attacker.turn, firstAttackPending: false },
-      });
+  // ── 방어자 dodge cascade ──────────────────────────────────────────────────
+  // 1. 그림자 보법 — 페이즈 첫 공격(firstAttackPending) 시 한 번만 굴려, 발동하면 페이즈 통째 회피.
+  // 2. 회피 강화 (evadesRemaining) — 잔량 > 0 이면 우선 1 소비, 이 공격 회피.
+  // 3. % 회피 (evasionPct × precisionMult) — 표준 회피 굴림.
+  // 4. 행운의 방패 (luckyShieldBlockPct) — 위 모두 실패 시 마지막 확률 굴림.
+  // 어느 단계든 회피 시 dodge effects(곡예/무한 가시/반사 회피/반격/유격) 적용.
+
+  if (isFirstAttackOfTurn) {
+    const shadowStepPct = defender.player.shadowStepPct ?? 0;
+    if (shadowStepPct > 0 && Math.random() * 100 < shadowStepPct) {
+      return applyShadowStepDodge(state, atkKey, defKey);
     }
-    return endAttackerPhase({ ...state, log: logAfter }, atkKey, defKey);
+  }
+  if (defender.stacks.evadesRemaining > 0) {
+    return applyPerAttackDodge(
+      state,
+      atkKey,
+      defKey,
+      `[회피 강화] ${defender.name}이(가) 공격을 회피했다.`,
+      true,
+    );
+  }
+  const precisionMult = attacker.player.precisionEvasionMult ?? 1;
+  // 이중 행운 — 방어자 활성 시 회피 +bonus%. 만물 행운 / 회전 운기도 회피에 합산.
+  const luckEvadeBonus = defender.flags.luckyBuffActive
+    ? defender.player.doubleLuck?.evade ?? 0
+    : 0;
+  const universalLuckEvadeBonus = defender.player.universalLuckBonusPct ?? 0;
+  const effectiveEvadePct =
+    defender.player.evasionPct * precisionMult +
+    luckEvadeBonus +
+    universalLuckEvadeBonus +
+    defender.buffs.cyclingChiBonus;
+  if (effectiveEvadePct > 0 && Math.random() * 100 < effectiveEvadePct) {
+    return applyPerAttackDodge(
+      state,
+      atkKey,
+      defKey,
+      `${defender.name}이(가) ${attacker.name}의 공격을 회피했다.`,
+      false,
+    );
+  }
+  const luckyShieldPct = defender.player.luckyShieldBlockPct ?? 0;
+  if (luckyShieldPct > 0 && Math.random() * 100 < luckyShieldPct) {
+    return applyPerAttackDodge(
+      state,
+      atkKey,
+      defKey,
+      `[행운의 방패] ${defender.name}이(가) 공격을 흘려보냈다.`,
+      false,
+    );
   }
 
   // 암살 (특기) — 전투 첫 공격 시 1회, DEF 무시 + 데미지 배수.
@@ -625,10 +920,75 @@ export function advanceTurnPvP(
   if (weakpointDefIgnore) labels.push("약점 적중");
   if (fatedChainConsumed) labels.push("연쇄 운명");
   const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
-  let log = appendLog(state.log, {
+  // ── 방어자 측 데미지 감산 (가드 → 굳건한 의지 → 철벽 → 불굴 → 흡혈 갑옷) ──
+  const guard = defender.player.guard;
+  const guarded =
+    guard && guard.turns > 0 && defender.turn.enemyPhasesCompleted < guard.turns
+      ? Math.max(0, totalDmg - guard.reduction)
+      : totalDmg;
+  const guardApplied = guarded < totalDmg;
+  const steadfastFlat = defender.player.steadfastWillFlat ?? 0;
+  const afterSteadfast =
+    steadfastFlat > 0 ? Math.max(0, guarded - steadfastFlat) : guarded;
+  const steadfastApplied = afterSteadfast < guarded;
+  const shieldAbsorbed = Math.min(defender.stacks.playerShield, afterSteadfast);
+  const dmgToHp = afterSteadfast - shieldAbsorbed;
+  const newShield = defender.stacks.playerShield - shieldAbsorbed;
+  // 불굴 — HP 0 직전 1 로 막아준다 (전투당 1회).
+  const wouldKill = defender.hp - dmgToHp <= 0;
+  const enduranceFires =
+    wouldKill &&
+    !!defender.player.enduranceActive &&
+    !defender.flags.enduranceTriggered;
+  const defenderHpAfterDmg = enduranceFires
+    ? 1
+    : Math.max(0, defender.hp - dmgToHp);
+  // 흡혈 갑옷 — 받은 HP 피해의 N% HP 회복 (생존 시).
+  const bloodfeastPct = defender.player.bloodfeastPct ?? 0;
+  const bloodfeastHeal =
+    bloodfeastPct > 0 && dmgToHp > 0 && defenderHpAfterDmg > 0
+      ? Math.floor((dmgToHp * bloodfeastPct) / 100)
+      : 0;
+  const newDefenderHp =
+    bloodfeastHeal > 0
+      ? Math.min(defender.maxHp, defenderHpAfterDmg + bloodfeastHeal)
+      : defenderHpAfterDmg;
+  // ── 로그 — 가드 → 굳건한 의지 → 철벽 → 본타 → 불굴 → 흡혈 갑옷 → 이중 행운 → 흡혈 ──
+  let log = state.log;
+  if (guardApplied) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[가드] ${defender.name} 피해 -${totalDmg - guarded}`,
+    });
+  }
+  if (steadfastApplied) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[굳건한 의지] ${defender.name} 피해 -${guarded - afterSteadfast}`,
+    });
+  }
+  if (shieldAbsorbed > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[철벽] ${defender.name} 보호막이 ${shieldAbsorbed} 흡수 (남은 ${newShield})`,
+    });
+  }
+  log = appendLog(log, {
     kind: "player_attack",
-    text: `${prefix}${defender.name}에게 ${totalDmg} 피해를 입혔다.`,
+    text: `${prefix}${defender.name}에게 ${dmgToHp} 피해를 입혔다.`,
   });
+  if (enduranceFires) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[불굴] ${defender.name} 마지막 한 숨 — HP 1 로 버텼다!`,
+    });
+  }
+  if (bloodfeastHeal > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[흡혈 갑옷] ${defender.name}의 HP +${bloodfeastHeal}`,
+    });
+  }
   // 이중 행운 — 첫 크리 발동 순간 활성화.
   const shouldActivateLucky =
     critRoll &&
@@ -640,7 +1000,7 @@ export function advanceTurnPvP(
       text: `[이중 행운] ${attacker.name} 회피/크리티컬 +${attacker.player.doubleLuck!.crit}% 발동!`,
     });
   }
-  // 흡혈 / 행운의 흡혈 / 흡혈의 룬 — 가한 dmg 의 N% HP 회복.
+  // 흡혈 / 행운의 흡혈 / 흡혈의 룬 — 가한 dmg (본타) 의 N% HP 회복.
   const lifestealHeal =
     critRoll && (attacker.player.lifestealCritHealPct ?? 0) > 0
       ? Math.floor((dmg * attacker.player.lifestealCritHealPct!) / 100)
@@ -670,7 +1030,6 @@ export function advanceTurnPvP(
       text: `[${lsLabels.join(" + ")}] ${attacker.name}의 HP +${actualLifesteal}`,
     });
   }
-  const newDefenderHp = Math.max(0, defender.hp - totalDmg);
   // 출혈 — 적중하면 attacker.stacks.bleedStacksOnOpponent +1 (이 사이드가 상대에게 누적).
   const newBleedOnOpponent =
     (attacker.player.bleedDmgPerStack ?? 0) > 0
@@ -706,7 +1065,7 @@ export function advanceTurnPvP(
       0,
       attacker.stacks.weakpointDefIgnoreLeft - (weakpointDefIgnore ? 1 : 0),
     ) + weakpointAdd;
-  // 사이드 갱신.
+  // 사이드 갱신 — 공격자 + 방어자 (방어자엔 shield/endurance/damageTakenThisCombat 반영).
   const newAttacker: PvPSide = {
     ...attacker,
     hp: newAttackerHp,
@@ -738,7 +1097,19 @@ export function advanceTurnPvP(
         attacker.turn.weakpointUsedThisTurn || weakpointFires,
     },
   };
-  const newDefender: PvPSide = { ...defender, hp: newDefenderHp };
+  const newDefender: PvPSide = {
+    ...defender,
+    hp: newDefenderHp,
+    flags: {
+      ...defender.flags,
+      enduranceTriggered: defender.flags.enduranceTriggered || enduranceFires,
+    },
+    stacks: {
+      ...defender.stacks,
+      playerShield: newShield,
+      damageTakenThisCombat: defender.stacks.damageTakenThisCombat + dmgToHp,
+    },
+  };
   let next: PvPBattleState = setSide(
     setSide({ ...state, log }, atkKey, newAttacker),
     defKey,
@@ -755,6 +1126,14 @@ export function advanceTurnPvP(
       outcome: atkKey === "p1" ? "p1_win" : "p2_win",
     };
   }
+  // ── on-hit reflect (반사 갑주 + 가시 갑옷 + 무한 가시) — 공격자에게 반사 피해 ──
+  const reflectResult = applyOnHitReflect(next, atkKey, defKey, dmgToHp);
+  next = reflectResult.state;
+  if (reflectResult.attackerKilled) return next;
+  // ── 반격의 룬 — 피격 후 일정 확률로 ATK 카운터 ──
+  const runeCounterResult = maybeApplyRuneCounter(next, atkKey, defKey);
+  next = runeCounterResult.state;
+  if (runeCounterResult.attackerKilled) return next;
   // 남은 공격 횟수.
   const attacksLeft = attacker.attacksLeft - 1 + weakpointAdd;
   if (attacksLeft > 0) {
@@ -927,11 +1306,23 @@ function endAttackerPhase(
       };
     }
   }
-  // 새 방어자(다음 공격자) 의 attacksLeft 세팅.
+  // 방어자(다음 공격자) 의 enemyPhasesCompleted +1 — 이번 라운드에서 방어를 1회 마침 (가드 카운터에 사용).
+  const defenderAfterBleed = next[defKey];
+  next = setSide(next, defKey, {
+    ...defenderAfterBleed,
+    turn: {
+      ...defenderAfterBleed.turn,
+      enemyPhasesCompleted: defenderAfterBleed.turn.enemyPhasesCompleted + 1,
+    },
+  });
+  // 새 방어자(다음 공격자) 의 attacksLeft 세팅. nextTurnAttackBonus(유격 누적) 소비.
   const newNextAttacker = next[defKey];
   next = setSide(next, defKey, {
     ...newNextAttacker,
-    attacksLeft: rollAttackCount(newNextAttacker.player),
+    attacksLeft:
+      rollAttackCount(newNextAttacker.player) +
+      newNextAttacker.nextTurnAttackBonus,
+    nextTurnAttackBonus: 0,
     turn: { ...newNextAttacker.turn, firstAttackPending: true },
   });
   // 페이즈 토글.
