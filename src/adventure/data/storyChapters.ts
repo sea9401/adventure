@@ -174,6 +174,8 @@ export const STORY_CHAPTERS: readonly StoryChapter[] = [
     title: "바람골의 음유시",
     summary:
       "잿빛 협로 너머로 가기 전 바람골 역참. 길잡이 한솔의 봉황령 첫 발 의뢰.",
+    memory:
+      "바람골의 술집에는 별을 잃은 노래꾼들이 모여 있었다. 그들이 부르는 노래는 모두 옛 노래였다 — 새 노래를 만들지 않는 마을. 새로 떠오를 별이 없으니까.\n한솔이 봉황령으로 향하는 길을 가리키며 말했다: \"여기서부터는 옛 노래만 길잡이가 된다. 새 노래는 — 네가 가져와라. 살아 돌아온다면.\"",
     rule: { kind: "questCompleted", questId: "windvale-pathfinder-ridge-scout" },
   },
   {
@@ -182,6 +184,8 @@ export const STORY_CHAPTERS: readonly StoryChapter[] = [
     title: "용비늘 묘지",
     summary:
       "용비늘 묘지의 뼈비늘 노룡을 처치한다. 비문에 황제의 이름이 새겨져 있다.",
+    memory:
+      "뼈비늘 노룡은 죽기 전에 갑주 안쪽에 단 한 단어를 새겨두었다. 옛 글자로 — *돌아오마.*\n그 글자가 누구를 향한 것인지는 묻지 않아도 알 수 있었다. 디올라 폐허의 비문, 바람골 옛 군기, 그리고 이제 노룡의 갑주 — 같은 손, 같은 이름.",
     rule: { kind: "storyFlag", flagId: "wyrm_warden_felled" },
   },
   {
@@ -190,6 +194,8 @@ export const STORY_CHAPTERS: readonly StoryChapter[] = [
     title: "태고의 노룡 — 유언",
     summary:
       "어미 노룡과의 협동전. 마지막 유언: \"황제가… 부른다\".",
+    memory:
+      "어미 노룡이 마지막 숨을 내뱉으며 말했다 — *황제가… 부른다.*\n노룡은 두려워서가 아니라 슬퍼서 그렇게 말한 듯했다. 한 시대를 살아남은 자가 마지막으로 듣고 싶지 않았던 부름. 그 부름이 자기 차례임을 안 자의 음성.",
     rule: { kind: "storyFlag", flagId: "primordial_dragon_felled" },
   },
   {
@@ -198,6 +204,8 @@ export const STORY_CHAPTERS: readonly StoryChapter[] = [
     title: "화산의 심장",
     summary:
       "잿빛 협로 → 봉황령 → 화산 지대. 화산의 심장을 잠재워야 천공 성지가 열린다.",
+    memory:
+      "화산의 심장은 박동하지 않았다. 그것은 *기다리고* 있었다. 무엇을? 위에서 내려올 손을. 자기를 다시 거두어갈 누군가의 손을.\n잠재운 자리에서 김이 한 갈래로만 위로 빠져나갔다. 향한 곳은 — 구름 너머. 천공 성지의 봉인이 풀려야 할 자리.",
     rule: { kind: "storyFlag", flagId: "volcano_heart_defeated" },
   },
   {
@@ -206,6 +214,8 @@ export const STORY_CHAPTERS: readonly StoryChapter[] = [
     title: "천공인 멸망의 진실",
     summary:
       "원로 해무와 사미승 운하 — 천공인 문명은 황제 한 사람이 모든 별빛을 삼키며 멸망했다.",
+    memory:
+      "해무는 잔을 끝까지 비우지 못했다. 그가 말끝마다 멈춘 자리에 옛 음절이 떨어졌다 — *주재.* 사람이 한때 부르던 그 이름.\n\"천공인을 멸망시킨 것은 외적이 아니었소. 한 사람이었지. 모든 별빛을 한 손에 모으고, 자기 자리에 앉기 위해 — 자기 백성을 봉인한 자.\" 운하 사미승이 옆에서 조용히 향을 피웠다. 향이 곧게 위로만 올라갔다. 바람이 없는 자리.",
     rule: { kind: "storyFlag", flagId: "skyreach_main_cleared" },
   },
   {
@@ -214,8 +224,9 @@ export const STORY_CHAPTERS: readonly StoryChapter[] = [
     title: "순례자의 정체",
     summary:
       "순례자 미상은 옛 황제의 분신이었다. 플레이어가 푼 봉인은 모두 황제로 회수된 것.",
-    // PR-3c 에서 폭로 컷씬 + 새 storyFlag 추가 시 교체.
-    rule: { kind: "tbd" },
+    memory:
+      "순례자가 후드를 벗었다 — 그 안에 얼굴은 없었다. 빛만 있었다. 별빛도 햇빛도 아닌, *모아온 빛*.\n그가 마지막으로 말했다: \"고맙다. 네 손이 곧 그분의 손이었다.\" 그러고는 사라졌다.\n내가 풀어준 봉인 — 거인, 수심의 것, 성문지기, 노룡 — 그 모두가 한 사람의 조각이었다. 나는 영웅이 아니었다. 나는 *돌려준* 사람이었다.\n순례자가 앉아 있던 자리에 짧은 글자가 남아 있었다 — *옥좌가 너를 부른다.* 새긴 자가 떨었기 때문인지, 글자가 살아 있어서인지, 끝의 획이 떨고 있었다.",
+    rule: { kind: "storyFlag", flagId: "pilgrim_revealed" },
   },
   // ── 4막 — 옥좌의 길 (Ch 19~25) ───────────────────────────────────────────
   {
