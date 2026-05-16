@@ -11,6 +11,8 @@ export const BASE_NORMAL_SLOTS = SKILL_SLOT_COUNT;
 // 6번째 = 일반 슬롯 (Lv90 그리고 만렙 컨텐츠 최종 보스 처치 — 둘 다).
 // 7번째 = 두 번째 특기 슬롯 (Lv90 그리고 만렙 컨텐츠 최종 보스 처치 — 6번째 일반과 동일).
 //         두 특기를 동시 장착해 빌드 다양성 강화. FLAG 는 PR-E 신규 보스 추가 시 셋.
+// "처치" 플래그(*_defeated) 는 협동 보스의 경우 킬샷 친 1명 + silver+ 기여자 전원에게
+// 서버가 부여한다 (src/lib/server/coop/attack.ts) — 킬샷 운에 좌우되지 않게.
 export const SKILL_SLOT_UNLOCK = {
   FEAT_SLOT_LEVEL: 40,
   FEAT_SLOT_FLAG: "peak_giant_defeated",
