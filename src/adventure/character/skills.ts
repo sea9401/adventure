@@ -475,17 +475,23 @@ export function deriveSkills(stats: Record<StatKey, number>): Skill[] {
 // stored 가 undefined 면 첫 slots 개 자동 장착 (신규/마이그레이션).
 // stored 가 설정돼 있으면 그 값 그대로 (보유 안 한 스킬은 필터). 빈 슬롯은 빈 채로.
 // slots 미지정 시 기본 슬롯 수 — 해금 반영하려면 skillLayout().normalSlots 전달.
+//
+// AP 스킬 인지: learnedAPSkillNames 가 주어지면 그 안의 이름도 "보유" 로 간주해 슬롯 자리를
+// 차지한다. 호출 측이 별도로 stat / AP 분리 추출 필요 (engine 의 fire 로직 분기 때문).
 export function effectiveSkillNames(
   available: Skill[],
   stored: string[] | undefined,
   slots: number = BASE_NORMAL_SLOTS,
+  learnedAPSkillNames?: ReadonlySet<string>,
 ): string[] {
   const availableNames = available.map((s) => s.name);
   if (stored === undefined) {
     return availableNames.slice(0, slots);
   }
   const availableSet = new Set(availableNames);
-  return stored.filter((n) => availableSet.has(n)).slice(0, slots);
+  return stored
+    .filter((n) => availableSet.has(n) || learnedAPSkillNames?.has(n) === true)
+    .slice(0, slots);
 }
 
 // ── 특기 (두 스탯 동시 요구) ─────────────────────────────────────────────
