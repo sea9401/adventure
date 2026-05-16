@@ -37,6 +37,8 @@ type SavedCharacterV2 = {
   equippedFeat?: string;
   /** 장착 룬 — 슬롯 인덱스 별. null = 비움. */
   equippedRunes?: ({ id: string; grade: number } | null)[];
+  /** 학습한 AP 스킬 이름 — equippedSkills 와 교집합이 실제 장착 AP 스킬. */
+  learnedAPSkills?: string[];
 };
 
 type SavedTrainingV2 = {
@@ -94,6 +96,10 @@ export async function derivePlayerCombatFromSaves(
 
   const equippedRunes = rehydrateEquippedRunes(character.equippedRunes);
 
+  const learnedAPSkills = Array.isArray(character.learnedAPSkills)
+    ? character.learnedAPSkills.filter((x): x is string => typeof x === "string")
+    : undefined;
+
   return derivePlayerCombat({
     level: character.level ?? 1,
     baseStats: baseCharacter.stats,
@@ -102,6 +108,7 @@ export async function derivePlayerCombatFromSaves(
     equippedSkills: character.equippedSkills,
     equippedFeats,
     equippedRunes,
+    learnedAPSkills,
     storyFlagIds,
     hp: character.hp ?? baseCharacter.hp,
   });
