@@ -221,6 +221,25 @@ export function CharacterScreen() {
   if (subView === "inventory") {
     return (
       <div className="space-y-3">
+        <TutorialOverlay
+          stepId="tutorial.inventory.intro"
+          title="가방 사용법"
+          body={
+            <>
+              <p>
+                장비를 <b>착용</b> 하면 능력치가 오른다. 같은 부위에 더 좋은
+                장비를 끼면 자동으로 교체된다.
+              </p>
+              <p>
+                더 이상 안 쓰는 장비는 <b>버려서</b> 가방 공간을 비울 수 있다.
+              </p>
+              <p>
+                모은 <b>재료</b> 는 마을 <b>대장간</b> 에서 장비 제작·분해에
+                쓰인다.
+              </p>
+            </>
+          }
+        />
         <SubViewHeader title="가방" onBack={back} />
         <InventoryView
           inventory={inventory.state}

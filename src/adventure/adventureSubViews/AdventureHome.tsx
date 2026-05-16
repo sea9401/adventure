@@ -19,6 +19,7 @@ import {
   pilgrimMarkStep,
 } from "@/adventure/town/dialogues/PilgrimMarkDialogue";
 import { useGame } from "@/adventure/GameContext";
+import { TutorialOverlay } from "@/adventure/tutorial";
 
 export function AdventureHome() {
   const {
@@ -40,6 +41,26 @@ export function AdventureHome() {
 
   return (
     <>
+      <TutorialOverlay
+        stepId="tutorial.adventure.intro"
+        title="모험을 시작하자"
+        body={
+          <>
+            <p>
+              <b>전투</b> 로 현재 지역의 적과 싸우고, <b>지도</b> 에서 다른
+              지역으로 이동한다.
+            </p>
+            <p>
+              지역마다 난이도가 다르다. <b>강한 적은 일단 피하고</b> 약한
+              곳에서 경험과 장비를 쌓자.
+            </p>
+            <p>
+              HP 가 위태로워지면 <b>마을</b> 로 돌아와 치료소에서 회복. 한 번에
+              끝낼 필요는 없다.
+            </p>
+          </>
+        }
+      />
       <CharacterMini character={character} />
       {(() => {
         if (currentRegion.id !== "village") return null;
