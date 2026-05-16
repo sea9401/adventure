@@ -10,8 +10,7 @@ import { RankingsView } from "@/adventure/rankings/RankingsView";
 import { useGame } from "@/adventure/GameContext";
 
 export function PlazaScreen() {
-  const { subView, setSubView, back, inbox, character } = useGame();
-  const titleName = character.titleName ?? null;
+  const { subView, setSubView, back, inbox } = useGame();
 
   if (subView === null) {
     return (
@@ -66,11 +65,7 @@ export function PlazaScreen() {
     return (
       <div className="space-y-3">
         <SubViewHeader title="게시판" onBack={back} />
-        <BulletinBoardView
-          name={character.name}
-          className={character.className}
-          title={titleName}
-        />
+        <BulletinBoardView />
       </div>
     );
   }
