@@ -314,6 +314,8 @@ export function renderTownNpcDialogue(
           quests={quests}
           completeQuest={completeQuest}
           inventory={inventory}
+          storyFlags={storyFlags}
+          adventureLog={adventureLog}
         />
       );
     case "saltmarsh_elder":

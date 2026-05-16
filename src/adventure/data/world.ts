@@ -426,7 +426,7 @@ export const WORLD_MAP: WorldMap = {
       id: "throne_road",
       name: "옥좌의 길",
       description:
-        "폐도 너머 옥좌로 이어지는 옛 황성의 길. 봉인의 파편이 굴러다니고 호위병의 잔재가 길목마다 일어선다.",
+        "폐도 너머 옥좌로 이어지는 옛 황성의 길. 봉인의 파편이 굴러다니고 호위병의 잔재가 길목마다 일어선다. 길 끝 — 후드의 자취가 검을 들고 기다린다.",
       position: { x: 2240, y: 630 },
       biome: "ruins",
       enemies: ["황성 의장기수", "황성 호위병", "봉인 파편"],
@@ -435,6 +435,7 @@ export const WORLD_MAP: WorldMap = {
         "황성 호위병": 40,
         "봉인 파편": 25,
       },
+      boss: { monsterName: "순례자의 분신", dailyEntryLimit: 3 },
       recommendedLevel: 85,
     },
     {

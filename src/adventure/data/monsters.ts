@@ -960,6 +960,35 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "enrage", name: "파편 폭주", hpFraction: 0.4, atkBonus: 13 },
   },
+  // 옥좌의 길(throne_road) 솔로 보스 — 순례자 미상의 분신. Ch.23 — 옥좌의 길.
+  // 후드를 벗자 그 안에 얼굴이 없다(빛만). 검을 든 손만 남은, 본체로 돌아가기 전의 마지막 시험.
+  "순례자의 분신": {
+    name: "순례자의 분신",
+    tags: ["humanoid", "spirit"],
+    image: "/images/npc/pilgrim.webp",
+    hp: 3800,
+    atk: 138,
+    def: 78,
+    spd: 11,
+    exp: 720,
+    drops: [
+      { kind: "material", materialId: "empyrean_shard", chance: 1, amount: 5 },
+      { kind: "material", materialId: "primordial_essence", chance: 1, amount: 3 },
+      { kind: "material", materialId: "road_relic", chance: 1, amount: 4 },
+      { kind: "equip", itemId: "starbound_charm", chance: 0.05 },
+      { kind: "equip", itemId: "apostle_shard_blade", chance: 0.05 },
+    ],
+    dropQualityBias: 4,
+    armorVulnerable: 0.3,
+    playerDefVulnerable: 0.25,
+    phaseTrigger: {
+      hpFraction: 0.35,
+      defBonus: 8,
+      message: "후드가 흘러내리자, 그 안의 빛이 형태를 거두기 시작한다.",
+    },
+    skill: { kind: "heavy_blow", name: "모아온 빛 일섬", everyPhases: 3, multiplier: 1.8 },
+    onDefeatFlag: "pilgrim_avatar_defeated",
+  },
   // ── 창공의 옥좌 (apex_throne) — 선인의 폐도 깊은 곳 Lv90 마지막 구간. 협동 보스 창공의 주재.
   // 처치 시 endgame_apex_defeated flag → 6번째 일반 슬롯 + 2번째 특기 슬롯 해금.
   "별빛 사도": {
