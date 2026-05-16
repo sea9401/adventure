@@ -264,7 +264,7 @@ export function onBattleEnd(
           // 유실된 명품 — 전체 소식(서버 피드)에도 한 줄 보고 (fire-and-forget).
           if (lucky) reportUniqueDrop(drop.itemId);
           deps.addNotification(
-            lucky ? "milestone" : "loot",
+            lucky ? "milestone" : "equip_drop",
             `${lucky ? "✨ 굉장한 발견! " : ""}${name}을(를) 손에 넣었다!`,
             {
               highlight: {
@@ -278,7 +278,7 @@ export function onBattleEnd(
           deps.crafting.learnRecipe(drop.recipeId);
           const recipe = getRecipeById(drop.recipeId);
           deps.addNotification(
-            "loot",
+            "equip_drop",
             `${recipe?.name ?? drop.recipeId}을(를) 손에 넣었다!`,
           );
         } else if (drop.kind === "skill_book") {
@@ -298,7 +298,7 @@ export function onBattleEnd(
           );
           if (unknown.length === 0) {
             deps.addNotification(
-              "loot",
+              "info",
               "제작서 보상 — 이미 모든 종류를 알고 있다.",
             );
             continue;
@@ -307,7 +307,7 @@ export function onBattleEnd(
           deps.crafting.learnRecipe(pick);
           const recipe = getRecipeById(pick);
           deps.addNotification(
-            "loot",
+            "equip_drop",
             `${recipe?.name ?? pick}을(를) 손에 넣었다!`,
           );
         }

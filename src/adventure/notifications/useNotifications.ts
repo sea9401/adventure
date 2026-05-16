@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   genNotificationId,
-  isBattleNotification,
   loadNotifications,
   pruneNotifications,
   saveNotifications,
@@ -9,18 +8,13 @@ import {
   type NotificationKind,
   type NotificationMeta,
 } from "@/lib/notifications";
-
-// 우하단 토스트로 즉시 보여주는, 잦은 알림 — 벨 unread 배지 집계에서 제외.
-const NOISY_KINDS: ReadonlySet<NotificationKind> = new Set([
-  "loot",
-  "item",
-  "info",
-]);
+import { useToastPrefs } from "@/lib/notification-prefs";
 
 export function useNotifications() {
   const [list, setList] = useState<AppNotification[]>([]);
   const [lastReadAt, setLastReadAt] = useState<number>(0);
   const [hydrated, setHydrated] = useState(false);
+  const { prefs } = useToastPrefs();
 
   useEffect(() => {
     const stored = loadNotifications();
@@ -58,16 +52,12 @@ export function useNotifications() {
     setLastReadAt(Date.now());
   };
 
-  // 벨 드롭다운에 노출되는 목록 — 전투 승/패는 '최근 기록 → 전투 로그' 탭 전용이라
-  // 벨에선 제외 (시스템 알림만). 최근 기록·토스트에는 영향 없음.
-  const bellList = list.filter((n) => !isBattleNotification(n.kind));
+  // 벨 드롭다운 / unread 카운트 — 토스트 prefs 가 OFF 인 종류는 벨에도 노출하지
+  // 않는다. 사용자가 잡음으로 느껴 토스트를 끈 알림은 벨에서도 보고 싶지 않다는
+  // 정책 (최근 기록 화면에는 모든 알림이 그대로 누적되어 검색 가능).
+  const bellList = list.filter((n) => prefs[n.kind]);
 
-  // 벨 unread 카운트 — bellList 는 이미 전투 승/패를 뺀 상태. 거기서 또 NOISY_KINDS
-  // (loot·item·info) 를 빼야 배지가 의미 있는 이벤트(성취·의뢰·원정 등)에만 반응한다.
-  // 토스트 노출 여부는 별도로 useToastPrefs 의 사용자 설정이 단일 source-of-truth.
-  const unreadCount = bellList
-    .filter((n) => !NOISY_KINDS.has(n.kind))
-    .filter((n) => n.timestamp > lastReadAt).length;
+  const unreadCount = bellList.filter((n) => n.timestamp > lastReadAt).length;
 
   return { list, bellList, unreadCount, add, markRead, clear };
 }

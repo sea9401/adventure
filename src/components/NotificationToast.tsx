@@ -7,6 +7,7 @@ import {
   Coins,
   Hammer,
   Info,
+  Package,
   Scroll,
   Skull,
   Sparkle,
@@ -60,6 +61,7 @@ const TOAST_ACCENT: Record<NotificationKind, string> = {
   milestone: "bg-fuchsia-500",
   expedition: "bg-teal-500",
   loot: "bg-lime-500",
+  equip_drop: "bg-orange-500",
   item: "bg-blue-500",
   info: "bg-sky-500",
 };
@@ -73,6 +75,7 @@ const TOAST_ICON: Record<NotificationKind, React.ComponentType<{ size?: number; 
   milestone: Sparkle,
   expedition: Tent,
   loot: Coins,
+  equip_drop: Package,
   item: Hammer,
   info: Info,
 };
@@ -86,6 +89,7 @@ const TOAST_ICON_COLOR: Record<NotificationKind, string> = {
   milestone: "text-fuchsia-600 dark:text-fuchsia-400",
   expedition: "text-teal-600 dark:text-teal-400",
   loot: "text-lime-600 dark:text-lime-400",
+  equip_drop: "text-orange-600 dark:text-orange-400",
   item: "text-blue-600 dark:text-blue-400",
   info: "text-sky-600 dark:text-sky-400",
 };

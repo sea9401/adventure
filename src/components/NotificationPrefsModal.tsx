@@ -33,7 +33,9 @@ export function NotificationPrefsModal({ onClose }: { onClose: () => void }) {
               알림 설정
             </h2>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              화면 우상단 토스트 알림을 종류별로 켜고 끌 수 있어요. 종류별 설정과 무관하게 최근 기록에는 모든 알림이 항상 남습니다.
+              우하단 토스트와 좌상단 벨에 표시할 종류를 켜고 끌 수 있어요. 끈
+              종류는 토스트·벨 양쪽에서 빠지며, &ldquo;최근 기록&rdquo; 화면에는
+              항상 누적됩니다.
             </p>
           </div>
           <button
