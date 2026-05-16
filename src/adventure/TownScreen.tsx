@@ -437,6 +437,7 @@ export function TownScreen() {
           gold={character.gold}
           inventory={inventory.state}
           isMaterialBuyable={shopUnlocks.isUnlocked}
+          craftingGates={{ boldQuestComplete: crafting.state.boldQuestComplete }}
           onPurchasePotion={handlePurchasePotion}
           onPurchaseMaterial={handlePurchaseMaterial}
           onPurchaseConsumable={handlePurchaseConsumable}

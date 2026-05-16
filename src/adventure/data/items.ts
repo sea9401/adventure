@@ -52,6 +52,9 @@ export type EquipItem = {
   tradable?: boolean;
   // 상점(BuyTab '장비' 칸)에서 이 가격에 구매 가능. 미지정이면 상점 미취급 — 현재는 초반 발판용 싸구려 장비 한두 종.
   shopPrice?: number;
+  // 상점 노출 게이트. 미지정이면 항상 노출. 지정 시 해당 crafting flag 가 true 일 때만 노출.
+  // 의뢰 보상으로 받는 장비를 분실 시에만 재구매 가능하게 하면서 보상 자체는 스포일러 안 되게.
+  shopGate?: "boldQuestComplete";
   rarity?: ItemRarity;
   // 드랍 품질 등급(정교한/빼어난) variance override. 미지정이면 "주력 양수 스탯 +q×1" 기본 규칙.
   // 드랍 경로(dropQuality.ts)에서만 참조 — 적용 대상이 아닌 장비(퀘 보상 등)에 둬도 무해.
@@ -176,6 +179,11 @@ export const ITEMS = {
     stats: [{ label: "방어력", value: "+2" }],
     bonus: { def: 2 },
     description: "오랜 세월 입던 흔적이 남아있지만 천 옷보단 든든하다.",
+    // 볼드의 야구방망이 의뢰(bold_blacksmith_intro) 보상으로 받는 게 정상 진행.
+    // 분실(판매/분해) 시 재구매할 길을 열어주되, 의뢰 완료 전엔 노출하지 않는다 —
+    // 보상 스포일러 방지. 가격은 vitality_ring(+2) 30g 과 동일 룰.
+    shopPrice: 30,
+    shopGate: "boldQuestComplete",
     tier: 1,
   } satisfies EquipItem,
   vitality_ring: {
