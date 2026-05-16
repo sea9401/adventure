@@ -59,26 +59,27 @@ export function GrowthShrineView({
   const remainingRevert = revertPoints - draftMinus;
   const hasDraft = draftPlus > 0 || draftMinus > 0;
 
-  const onPlus = (k: StatKey) => {
+  // step 은 1 또는 10. 잔여 단련/되돌리기 포인트로 자연 클램프 — 5만 가능한데
+  // +10 누르면 5만 들어가고 끝, 별도 메시지는 없음.
+  const onPlus = (k: StatKey, step: number) => {
     const cur = draft[k] ?? 0;
-    // cur < 0 이면 "되돌리기 취소" — 하지만 환불됐던 단련 포인트가 이미 다른
-    // 스탯에 분배돼 있으면(remainingUnspent <= 0) 취소할 재원이 없다. 그대로
-    // 풀어주면 remainingUnspent 가 음수로 새서 확정 시 단련 포인트가 깨진다.
     if (remainingUnspent <= 0) return;
-    setDraft((prev) => ({ ...prev, [k]: cur + 1 }));
+    const add = Math.min(step, remainingUnspent);
+    setDraft((prev) => ({ ...prev, [k]: cur + add }));
   };
 
-  const onMinus = (k: StatKey) => {
+  const onMinus = (k: StatKey, step: number) => {
     const cur = draft[k] ?? 0;
-    if (cur > 0) {
-      // 새 분배 취소 — 예산 부담 없음.
-      setDraft((prev) => ({ ...prev, [k]: cur - 1 }));
-      return;
-    }
     const allocated = allocatedStats[k] ?? 0;
-    if (allocated + cur <= 0) return;
-    if (remainingRevert <= 0) return;
-    setDraft((prev) => ({ ...prev, [k]: cur - 1 }));
+    // 1) 새 분배(cur>0) 부터 취소 — 예산 부담 없음.
+    const cancel = Math.min(step, Math.max(0, cur));
+    // 2) 남은 step 은 기존 적립을 되돌리기 — allocated 잔량과 되돌리기 포인트 둘 다로 클램프.
+    const rest = step - cancel;
+    const revertableAllocated = Math.max(0, allocated + cur - cancel);
+    const revert = Math.min(rest, revertableAllocated, remainingRevert);
+    const total = cancel + revert;
+    if (total <= 0) return;
+    setDraft((prev) => ({ ...prev, [k]: cur - total }));
   };
 
   // 음수 잔량은 정상 흐름에선 나올 수 없지만, 혹시라도 새면 확정에서 막는다
@@ -193,21 +194,39 @@ export function GrowthShrineView({
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => onMinus(k)}
+                    onClick={() => onMinus(k, 10)}
                     disabled={!canSub}
-                    aria-label={`${STAT_LABELS[k]} 차감`}
+                    aria-label={`${STAT_LABELS[k]} -10`}
+                    className="inline-flex h-10 min-w-[2.5rem] items-center justify-center rounded-md border border-zinc-300 bg-white px-1.5 text-xs font-semibold tabular-nums text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  >
+                    -10
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMinus(k, 1)}
+                    disabled={!canSub}
+                    aria-label={`${STAT_LABELS[k]} -1`}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                   >
                     <Minus size={14} weight="bold" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => onPlus(k)}
+                    onClick={() => onPlus(k, 1)}
                     disabled={!canAdd}
-                    aria-label={`${STAT_LABELS[k]} 단련`}
+                    aria-label={`${STAT_LABELS[k]} +1`}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-emerald-700 bg-emerald-600 text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Plus size={14} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onPlus(k, 10)}
+                    disabled={!canAdd}
+                    aria-label={`${STAT_LABELS[k]} +10`}
+                    className="inline-flex h-10 min-w-[2.5rem] items-center justify-center rounded-md border border-emerald-700 bg-emerald-600 px-1.5 text-xs font-semibold tabular-nums text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    +10
                   </button>
                 </div>
               </div>
