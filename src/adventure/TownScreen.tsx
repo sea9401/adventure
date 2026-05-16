@@ -37,6 +37,7 @@ import { TRAINING_DURATION_MS } from "@/adventure/training/useTraining";
 import { equipmentCountsAllGrades } from "@/adventure/inventory/ownership";
 import { START_REGION_ID, type RegionId } from "@/adventure/data/world";
 import { useGame } from "@/adventure/GameContext";
+import { TutorialOverlay } from "@/adventure/tutorial";
 
 export function TownScreen() {
   const {
@@ -95,6 +96,29 @@ export function TownScreen() {
   if (subView === null) {
     return (
       <div className="space-y-2">
+        <TutorialOverlay
+          stepId="tutorial.town.intro"
+          title="마을에 오신 걸 환영합니다"
+          body={
+            <>
+              <p>
+                <b>치료소</b> — 전투로 줄어든 HP·MP 를 회복한다.
+              </p>
+              <p>
+                <b>상점</b> — 포션·재료를 사고 판다.
+              </p>
+              <p>
+                <b>대장간</b> — 장비를 강화하거나 새로 만든다.
+              </p>
+              <p>
+                <b>훈련소·길드</b> — 의뢰를 받아 기초를 다지고 보상을 얻는다.
+              </p>
+              <p>
+                지역의 <b>NPC 와 대화</b> 하면 1회성 이야기 의뢰를 받을 수 있다.
+              </p>
+            </>
+          }
+        />
         <EntryCard
           icon={
             <FirstAid size={28} weight="duotone" className="text-rose-500" />
@@ -344,6 +368,26 @@ export function TownScreen() {
   if (subView === "crafting") {
     return (
       <div className="space-y-3">
+        <TutorialOverlay
+          stepId="tutorial.smithy.intro"
+          title="대장간"
+          body={
+            <>
+              <p>
+                모은 재료로 새 장비를 <b>제작</b> 한다. 제작에는{" "}
+                <b>도면(레시피)</b> 가 필요하다 — NPC 의뢰나 책으로 얻을 수
+                있다.
+              </p>
+              <p>
+                안 쓰는 장비는 <b>분해실</b> 에서 분해해 재료로 되돌릴 수 있다.
+              </p>
+              <p>
+                대장간에서 도와줄 일이 있다면 <b>볼드</b> 가 직접 말을 걸어줄
+                것이다.
+              </p>
+            </>
+          }
+        />
         <SubViewHeader title="대장간" onBack={back} />
         {/* 대장간 옆 분해실 진입 — 같은 SubView 안에 두지 않고 별도 패널로 띄운다. */}
         <div className="flex justify-end">
@@ -393,6 +437,7 @@ export function TownScreen() {
           gold={character.gold}
           inventory={inventory.state}
           isMaterialBuyable={shopUnlocks.isUnlocked}
+          craftingGates={{ boldQuestComplete: crafting.state.boldQuestComplete }}
           onPurchasePotion={handlePurchasePotion}
           onPurchaseMaterial={handlePurchaseMaterial}
           onPurchaseConsumable={handlePurchaseConsumable}

@@ -5,10 +5,15 @@ import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import type { useCharacterState } from "@/adventure/character/useCharacterState";
 import type { NotificationKind } from "@/lib/notifications";
+import { SKILL_BOOKS } from "@/adventure/data/skillBooks";
 
 const MANA_QUEST = "village-bold-mana-crystal";
 const MANA_NEED = 5;
+
+// 그림자 베기 스킬북 — 볼드가 챙겨둔 1권. 이미 학습/소지 중이면 자동으로 숨어 중복 판매 X.
+const SHADOW_CUT_BOOK_ID = "book_shadow_cut" as const;
 
 type Props = {
   npc: Npc;
@@ -19,6 +24,7 @@ type Props = {
   completeQuest: (id: string) => boolean;
   storyFlags: ReturnType<typeof useStoryFlags>;
   addNotification: (kind: NotificationKind, text: string) => void;
+  characterStateHook: ReturnType<typeof useCharacterState>;
 };
 
 export function BlacksmithDialogue({
@@ -30,6 +36,7 @@ export function BlacksmithDialogue({
   completeQuest,
   storyFlags,
   addNotification,
+  characterStateHook,
 }: Props) {
   const knowsBat = crafting.knows("baseball_bat");
   const craftedBat = crafting.hasCrafted("baseball_bat");
@@ -341,13 +348,44 @@ export function BlacksmithDialogue({
   });
   if (duelNode) return duelNode;
 
-  // Stage E — 끝. 일상 대화.
+  // Stage E — 끝. 일상 대화 + 그림자 베기 스킬북 판매.
+  // 학습·소지 중이면 판매 옵션 자체를 숨겨 중복 구매 방지.
+  const shadowCutBook = SKILL_BOOKS[SHADOW_CUT_BOOK_ID];
+  const shadowCutPrice = shadowCutBook.price ?? 0;
+  const shadowCutKnown = (
+    characterStateHook.state.learnedAPSkills ?? []
+  ).includes("그림자 베기");
+  const shadowCutOwned =
+    inventory.skillBookCount(SHADOW_CUT_BOOK_ID) > 0;
+  const offerShadowCut = !shadowCutKnown && !shadowCutOwned;
   return (
     <NpcDialogue
       npc={npc}
       onClose={onClose}
       text={
-        "왔구나.\n잘 지내고 있나? 무기 손볼 일 있으면 또 들르게."
+        offerShadowCut
+          ? `왔구나.\n잘 지내고 있나? 무기 손볼 일 있으면 또 들르게.\n\n…그리고, "${shadowCutBook.name}" 가 하나 있는데. ${shadowCutPrice}G 면 자네 거다.`
+          : "왔구나.\n잘 지내고 있나? 무기 손볼 일 있으면 또 들르게."
+      }
+      primaryAction={
+        offerShadowCut
+          ? {
+              label: `${shadowCutBook.name} 구매 (${shadowCutPrice}G)`,
+              onClick: () => {
+                if (characterStateHook.state.gold < shadowCutPrice) {
+                  addNotification("info", "골드가 부족합니다.");
+                  return;
+                }
+                characterStateHook.addGold(-shadowCutPrice);
+                inventory.addSkillBook(SHADOW_CUT_BOOK_ID, 1);
+                addNotification(
+                  "item",
+                  `${shadowCutBook.name} 을(를) 구매했습니다. 가방에서 사용하세요.`,
+                );
+                onClose();
+              },
+            }
+          : undefined
       }
     />
   );

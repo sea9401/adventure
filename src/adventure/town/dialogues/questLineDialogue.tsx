@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Npc } from "@/adventure/data/npcs";
-import { NpcDialogue } from "@/adventure/NpcDialogue";
+import { NpcDialogue, type NpcDialogueAction } from "@/adventure/NpcDialogue";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import { getQuestById, questTargetTotal, type Quest } from "@/adventure/data/quests";
@@ -36,6 +36,8 @@ type Props = {
   steps: QuestLineStep[];
   /** 보여줄 의뢰가 하나도 없을 때(전부 완료/쿨다운/잠금) 일상 대화. */
   idleText: string;
+  /** 일상 대화에 곁들이는 액션 — 스킬북 판매·재화 환전 등. 비우면 평범한 인사. */
+  idleAction?: NpcDialogueAction;
 };
 
 export function QuestLineDialogue({
@@ -46,6 +48,7 @@ export function QuestLineDialogue({
   inventory,
   steps,
   idleText,
+  idleAction,
 }: Props) {
   // 다이얼로그 열린 시각을 한 번 캡처 — 짧은 모달이라 stale 우려 없음.
   // (Date.now() 를 render 본문에서 직접 부르면 react-hooks/purity 룰에 걸린다.)
@@ -163,5 +166,12 @@ export function QuestLineDialogue({
     );
   }
 
-  return <NpcDialogue npc={npc} onClose={onClose} text={idleText} />;
+  return (
+    <NpcDialogue
+      npc={npc}
+      onClose={onClose}
+      text={idleText}
+      primaryAction={idleAction}
+    />
+  );
 }

@@ -42,6 +42,11 @@ export type CharacterDynamicState = {
    * date 는 클라이언트 로컬 'YYYY-MM-DD'. 다른 날짜로 보면 0 부터 새로 카운트.
    */
   bossAttempts?: Partial<Record<string, { date: string; count: number }>>;
+  /**
+   * 학습한 AP 스킬 이름 목록. 스킬북 사용 시 추가됨. 슬롯 장착(equippedSkills)해야 발동.
+   * 스탯 스킬과 같은 슬롯 풀 공유 — equippedSkills 의 이름이 STAT_SKILL 에 없으면 여기에서 lookup.
+   */
+  learnedAPSkills?: string[];
   /** 일회성 마이그레이션 플래그 — 키별 1회만 실행. */
   migrations?: Partial<Record<string, boolean>>;
 };
@@ -105,6 +110,9 @@ function readInitial(raw: unknown): CharacterDynamicState {
     equippedFeats: feats,
     equippedRunes: rehydrateEquippedRunes(parsed.equippedRunes),
     bossAttempts: parsed.bossAttempts,
+    learnedAPSkills: Array.isArray(parsed.learnedAPSkills)
+      ? parsed.learnedAPSkills.filter((x): x is string => typeof x === "string")
+      : undefined,
     migrations: parsed.migrations,
   };
 }
@@ -253,6 +261,17 @@ export function useCharacterState() {
     return entry.count;
   };
 
+  // 스킬북 사용 시 호출 — 이미 학습한 스킬이면 false (인벤 측이 책 소비 막아야 함).
+  const learnAPSkill = (skillName: string): boolean => {
+    const learned = state.learnedAPSkills ?? [];
+    if (learned.includes(skillName)) return false;
+    setState((prev) => ({
+      ...prev,
+      learnedAPSkills: [...(prev.learnedAPSkills ?? []), skillName],
+    }));
+    return true;
+  };
+
   // 입장 1회 소비 — 날짜가 바뀌었으면 0 부터 1 로 리셋. 호출자가 한도 검사를 했다고 가정.
   const consumeBossAttempt = (regionId: string) => {
     const today = todayLocalDateKey();
@@ -289,5 +308,6 @@ export function useCharacterState() {
     replaceFromSaved,
     getBossAttemptsToday,
     consumeBossAttempt,
+    learnAPSkill,
   };
 }

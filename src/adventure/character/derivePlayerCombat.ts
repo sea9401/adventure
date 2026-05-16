@@ -18,6 +18,7 @@ import {
   type RuneBonusMap,
 } from "./runeBonus";
 import type { EquippedRune } from "@/adventure/data/runes";
+import { AP_SKILLS, type APSkill } from "./apSkills";
 import {
   acrobatEvadeHealFor,
   analysisPerTurnFor,
@@ -98,6 +99,8 @@ export type DerivePlayerCombatInput = {
   };
   /** 장착 스킬 이름 목록 (일반 슬롯). undefined 면 자동 (보유 첫 N개). */
   equippedSkills: string[] | undefined;
+  /** 학습한 AP 스킬 이름 목록. equippedSkills 에 들어간 이름이 여기에도 있으면 AP 스킬로 인식. */
+  learnedAPSkills?: ReadonlyArray<string>;
   /** 장착 특기 이름들 — 슬롯 인덱스 별. null = 그 슬롯 미장착. undefined/[] = 모두 미장착. */
   equippedFeats?: ReadonlyArray<string | null>;
   /** 장착 룬 슬롯 — 인덱스 별. null = 비움. undefined/[] = 모두 미장착. */
@@ -179,17 +182,33 @@ export function derivePlayerCombat(
   });
   const characterSkills = deriveSkills(totalStats);
   const characterFeats = deriveFeats(totalStats);
+  // AP 스킬 — 학습 + equippedSkills 에 슬롯 자리 차지 한 것만 발동 대상. 슬롯 순서 보존.
+  const learnedAPNameSet = new Set(input.learnedAPSkills ?? []);
+  const apByName = new Map(AP_SKILLS.map((s) => [s.name, s]));
   const effectiveNames = effectiveSkillNames(
     characterSkills,
     input.equippedSkills,
     layout.normalSlots,
+    learnedAPNameSet,
   );
+  // effectiveNames 안에 AP 스킬 이름이 섞여 있으면 분리 — engine 발동 로직은 APSkill 객체 필요.
+  const equippedAPSkills: APSkill[] = [];
+  const statEffectiveNames: string[] = [];
+  for (const name of effectiveNames) {
+    const ap = apByName.get(name);
+    if (ap && learnedAPNameSet.has(name)) {
+      equippedAPSkills.push(ap);
+    } else {
+      statEffectiveNames.push(name);
+    }
+  }
   const featNames = effectiveFeatNames(
     characterFeats,
     input.equippedFeats ?? [],
     layout.featSlots,
   );
-  const effectiveSkillSet = new Set(effectiveNames);
+  // 스탯 스킬 효과 합성용 set — AP 스킬은 제외 (별도 발동 경로).
+  const effectiveSkillSet = new Set(statEffectiveNames);
   for (const f of featNames) effectiveSkillSet.add(f);
 
   // VIT 1pt 당 maxHp +2, 불굴 장착 시 +N%, 생명의 룬 합산 +N%.
@@ -345,6 +364,7 @@ export function derivePlayerCombat(
     potionHealPct: runeBonus.potion_pct,
     runeCounterChancePct: runeBonus.counter_pct,
     runeLifestealPct: runeBonus.lifesteal_pct,
+    equippedAPSkills: equippedAPSkills.length > 0 ? equippedAPSkills : undefined,
   };
 
   return {

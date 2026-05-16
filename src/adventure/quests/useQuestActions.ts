@@ -56,6 +56,7 @@ export function useQuestActions(deps: {
     // 퀘스트 보상으로 레벨업 시에도 VIT 보너스만큼 maxHp 까지 풀회복.
     addExp: (n) => characterStateHook.addExp(n, character.stats.vit),
     addPotionCapacity: (n) => inventory.addPotionCapacity(n),
+    addSkillBook: (id, n) => inventory.addSkillBook(id, n),
   };
 
   // 퀘스트 보상 지급 + 알림 한 줄로 합성. NPC 다이얼로그/길드 게시판 공용.

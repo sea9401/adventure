@@ -25,10 +25,17 @@ import {
 } from "@/adventure/character/runeFusion";
 import type { RuneGrade, RuneId } from "@/adventure/data/runes";
 import { InventoryView } from "@/adventure/InventoryView";
+import { SKILL_BOOKS, type SkillBookId } from "@/adventure/data/skillBooks";
+import {
+  AP_SKILLS,
+  formatAPSkillDescription,
+  getAPSkillById,
+} from "@/adventure/character/apSkills";
 import { RecentLogView } from "@/adventure/RecentLogView";
 import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
 import { QUESTS } from "@/adventure/data/quests";
 import { useGame } from "@/adventure/GameContext";
+import { TutorialOverlay } from "@/adventure/tutorial";
 
 export function CharacterScreen() {
   const {
@@ -200,13 +207,55 @@ export function CharacterScreen() {
   if (subView === "inventory") {
     return (
       <div className="space-y-3">
+        <TutorialOverlay
+          stepId="tutorial.inventory.intro"
+          title="가방 사용법"
+          body={
+            <>
+              <p>
+                장비를 <b>착용</b> 하면 능력치가 오른다. 같은 부위에 더 좋은
+                장비를 끼면 자동으로 교체된다.
+              </p>
+              <p>
+                더 이상 안 쓰는 장비는 <b>버려서</b> 가방 공간을 비울 수 있다.
+              </p>
+              <p>
+                모은 <b>재료</b> 는 마을 <b>대장간</b> 에서 장비 제작·분해에
+                쓰인다.
+              </p>
+            </>
+          }
+        />
         <SubViewHeader title="가방" onBack={back} />
         <InventoryView
           inventory={inventory.state}
           equipped={character.equipped}
+          learnedAPSkillNames={characterStateHook.state.learnedAPSkills}
           onEquip={handleEquipFromInventory}
           onUnequip={handleUnequip}
           onDiscard={handleDiscardFromInventory}
+          onUseSkillBook={(id: SkillBookId) => {
+            const book = SKILL_BOOKS[id];
+            const apSkill = getAPSkillById(book.learnsSkillId);
+            if (!apSkill) {
+              addNotification("info", "알 수 없는 스킬북입니다.");
+              return;
+            }
+            // 이미 학습한 경우 — 책 소비 막고 알림.
+            if (characterStateHook.state.learnedAPSkills?.includes(apSkill.name)) {
+              addNotification("info", `${apSkill.name}: 이미 학습한 스킬입니다.`);
+              return;
+            }
+            if (!inventory.consumeSkillBook(id, 1)) {
+              addNotification("info", "스킬북이 부족합니다.");
+              return;
+            }
+            characterStateHook.learnAPSkill(apSkill.name);
+            addNotification(
+              "milestone",
+              `${apSkill.name} 학습 — 슬롯에 장착하면 발동합니다.`,
+            );
+          }}
         />
       </div>
     );
@@ -218,6 +267,12 @@ export function CharacterScreen() {
         <SubViewHeader title="스킬" onBack={back} />
         <SkillsView
           skills={character.skills}
+          apSkills={AP_SKILLS.filter((s) =>
+            characterStateHook.state.learnedAPSkills?.includes(s.name),
+          ).map((s) => ({
+            name: s.name,
+            description: formatAPSkillDescription(s),
+          }))}
           equippedNames={effectiveSkillNameList}
           normalSlots={skillLayout.normalSlots}
           feats={characterFeats}
@@ -316,6 +371,23 @@ export function CharacterScreen() {
   if (subView === "quests") {
     return (
       <div className="space-y-3">
+        <TutorialOverlay
+          stepId="tutorial.quest.intro"
+          title="의뢰 수첩"
+          body={
+            <>
+              <p>받은 의뢰의 진행도가 여기 모인다.</p>
+              <p>
+                조건을 모두 채우면 <b>완료 가능</b> 표시가 뜬다.
+              </p>
+              <p>의뢰를 준 NPC 에게 돌아가 대화로 보상을 수령한다.</p>
+              <p>
+                NPC 의 이야기 의뢰는 <b>1회성</b>. 반복 농사가 필요하면{" "}
+                <b>길드 게시판</b> 을 이용한다.
+              </p>
+            </>
+          }
+        />
         <SubViewHeader title="의뢰 수첩" onBack={back} />
         <QuestJournalView getEntry={quests.getEntry} />
       </div>

@@ -255,8 +255,13 @@ export async function POST(req: Request) {
   ) {
     return new Response("invalid price", { status: 400 });
   }
-  // 장비/제작서는 1개만 등록 가능 (스택 개념 없음).
-  if ((itemKind === "equip" || itemKind === "recipe") && quantity !== 1) {
+  // 장비/제작서/스킬북은 1개만 등록 가능 (스택 개념 없음).
+  if (
+    (itemKind === "equip" ||
+      itemKind === "recipe" ||
+      itemKind === "skill_book") &&
+    quantity !== 1
+  ) {
     return new Response(`${itemKind} quantity must be 1`, { status: 400 });
   }
 
@@ -308,7 +313,7 @@ export async function POST(req: Request) {
         const nextCraft = { ...craft, known: knownArr, shareable: nextShareable };
         await upsertSave(tx, userId, SAVES_CRAFTING, nextCraft);
       } else {
-        // ── equip / material 분기 ── 기존 인벤 차감 흐름.
+        // ── equip / material / skill_book 분기 ── 기존 인벤 차감 흐름.
         const invRows = await tx
           .select()
           .from(savesKv)
@@ -319,7 +324,12 @@ export async function POST(req: Request) {
 
         // inventory.equipment 는 미장착 사본만 카운트 — 동일 ID 가 슬롯에 장착돼 있어도
         // 인벤 스택과 무관하다. 차감은 deductFromCategory 가 보유 수량 미달 시 차단.
-        const categoryKey = itemKind === "equip" ? "equipment" : "materials";
+        const categoryKey =
+          itemKind === "equip"
+            ? "equipment"
+            : itemKind === "skill_book"
+              ? "skillBooks"
+              : "materials";
         const next = deductFromCategory(inv[categoryKey], itemId, quantity);
         if (next === null) {
           return { error: "insufficient", status: 400 as const };

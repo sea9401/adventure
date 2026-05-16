@@ -29,9 +29,9 @@ export function Pagination({
         onClick={() => setPage(page - 1)}
         disabled={!hasPrev}
         aria-label="이전 페이지"
-        className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-600 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-600 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
-        <CaretLeft size={14} weight="bold" />
+        <CaretLeft size={16} weight="bold" />
       </button>
       <span className="min-w-[3.5rem] text-center font-medium tabular-nums text-zinc-600 dark:text-zinc-400">
         {page + 1} / {pageCount}
@@ -41,9 +41,9 @@ export function Pagination({
         onClick={() => setPage(page + 1)}
         disabled={!hasNext}
         aria-label="다음 페이지"
-        className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-600 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-600 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
-        <CaretRight size={14} weight="bold" />
+        <CaretRight size={16} weight="bold" />
       </button>
     </div>
   );

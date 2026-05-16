@@ -11,6 +11,8 @@ export const BASE_NORMAL_SLOTS = SKILL_SLOT_COUNT;
 // 6번째 = 일반 슬롯 (Lv90 그리고 만렙 컨텐츠 최종 보스 처치 — 둘 다).
 // 7번째 = 두 번째 특기 슬롯 (Lv90 그리고 만렙 컨텐츠 최종 보스 처치 — 6번째 일반과 동일).
 //         두 특기를 동시 장착해 빌드 다양성 강화. FLAG 는 PR-E 신규 보스 추가 시 셋.
+// "처치" 플래그(*_defeated) 는 협동 보스의 경우 킬샷 친 1명 + silver+ 기여자 전원에게
+// 서버가 부여한다 (src/lib/server/coop/attack.ts) — 킬샷 운에 좌우되지 않게.
 export const SKILL_SLOT_UNLOCK = {
   FEAT_SLOT_LEVEL: 40,
   FEAT_SLOT_FLAG: "peak_giant_defeated",
@@ -475,17 +477,23 @@ export function deriveSkills(stats: Record<StatKey, number>): Skill[] {
 // stored 가 undefined 면 첫 slots 개 자동 장착 (신규/마이그레이션).
 // stored 가 설정돼 있으면 그 값 그대로 (보유 안 한 스킬은 필터). 빈 슬롯은 빈 채로.
 // slots 미지정 시 기본 슬롯 수 — 해금 반영하려면 skillLayout().normalSlots 전달.
+//
+// AP 스킬 인지: learnedAPSkillNames 가 주어지면 그 안의 이름도 "보유" 로 간주해 슬롯 자리를
+// 차지한다. 호출 측이 별도로 stat / AP 분리 추출 필요 (engine 의 fire 로직 분기 때문).
 export function effectiveSkillNames(
   available: Skill[],
   stored: string[] | undefined,
   slots: number = BASE_NORMAL_SLOTS,
+  learnedAPSkillNames?: ReadonlySet<string>,
 ): string[] {
   const availableNames = available.map((s) => s.name);
   if (stored === undefined) {
     return availableNames.slice(0, slots);
   }
   const availableSet = new Set(availableNames);
-  return stored.filter((n) => availableSet.has(n)).slice(0, slots);
+  return stored
+    .filter((n) => availableSet.has(n) || learnedAPSkillNames?.has(n) === true)
+    .slice(0, slots);
 }
 
 // ── 특기 (두 스탯 동시 요구) ─────────────────────────────────────────────

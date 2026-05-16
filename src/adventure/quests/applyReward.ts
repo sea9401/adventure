@@ -2,6 +2,7 @@ import { ITEMS, type ItemId } from "../data/items";
 import { MATERIALS, type MaterialId } from "../data/materials";
 import { POTIONS, type PotionId } from "../data/potions";
 import { RECIPES } from "../data/recipes";
+import { SKILL_BOOKS, type SkillBookId } from "../data/skillBooks";
 import type { QuestReward } from "../data/quests";
 import {
   resolveBuffMultiplier,
@@ -20,6 +21,7 @@ export type RewardServices = {
   // EXP는 applyExpGain을 거쳐 레벨업까지 자동 처리되어야 한다.
   addExp: (amount: number) => void;
   addPotionCapacity: (n: number) => void;
+  addSkillBook: (id: SkillBookId, n?: number) => void;
 };
 
 export type RewardContext = {
@@ -111,6 +113,11 @@ export function applyQuestReward(
   if (capBonus > 0) {
     services.addPotionCapacity(capBonus);
     summary.push(`포션 최대 보유량 +${capBonus}`);
+  }
+
+  for (const id of reward.skillBooks ?? []) {
+    services.addSkillBook(id, 1);
+    summary.push(SKILL_BOOKS[id]?.name ?? id);
   }
 
   return summary;

@@ -9,6 +9,11 @@ import {
   type MaterialId,
 } from "@/adventure/data/materials";
 import { RECIPES, type Recipe } from "@/adventure/data/recipes";
+import {
+  SKILL_BOOKS,
+  type SkillBook,
+  type SkillBookId,
+} from "@/adventure/data/skillBooks";
 import type { InventoryState } from "@/adventure/inventory/useInventory";
 import type { RemoteSave } from "@/lib/storage/remote";
 import { createListing } from "./api";
@@ -26,7 +31,8 @@ type Selection =
       def: (typeof MATERIALS)[MaterialId];
       have: number;
     }
-  | { kind: "recipe"; itemId: string; def: Recipe };
+  | { kind: "recipe"; itemId: string; def: Recipe }
+  | { kind: "skill_book"; itemId: SkillBookId; def: SkillBook; have: number };
 
 export function ListingCreateModal({
   inventory,
@@ -88,10 +94,27 @@ export function ListingCreateModal({
     return out.sort((a, b) => a.def.name.localeCompare(b.def.name));
   }, [shareableRecipes]);
 
+  const skillBookOptions = useMemo<Selection[]>(() => {
+    const out: Selection[] = [];
+    for (const [id, count] of Object.entries(inventory.skillBooks ?? {})) {
+      if (!count) continue;
+      const def = SKILL_BOOKS[id as SkillBookId];
+      if (!def || !def.tradable) continue;
+      out.push({
+        kind: "skill_book",
+        itemId: id as SkillBookId,
+        def,
+        have: count,
+      });
+    }
+    return out.sort((a, b) => a.def.name.localeCompare(b.def.name));
+  }, [inventory.skillBooks]);
+
   const noItems =
     equipOptions.length === 0 &&
     materialOptions.length === 0 &&
-    recipeOptions.length === 0;
+    recipeOptions.length === 0 &&
+    skillBookOptions.length === 0;
 
   const priceNum = Math.floor(Number(price)) || 0;
   const fee = Math.floor(priceNum * FEE_RATE);
@@ -158,11 +181,16 @@ export function ListingCreateModal({
             equipOptions={equipOptions}
             materialOptions={materialOptions}
             recipeOptions={recipeOptions}
+            skillBookOptions={skillBookOptions}
             onPick={(s) => {
               setSelection(s);
               setQuantity("1");
               setPrice(
-                s.kind === "material" ? String(Math.max(1, s.def.price)) : "1",
+                s.kind === "material"
+                  ? String(Math.max(1, s.def.price))
+                  : s.kind === "skill_book"
+                    ? String(Math.max(1, s.def.price ?? 1))
+                    : "1",
               );
             }}
           />
@@ -203,17 +231,19 @@ export function ListingCreateModal({
   );
 }
 
-type PickerTab = "equip" | "material" | "recipe";
+type PickerTab = "equip" | "material" | "recipe" | "skill_book";
 
 function ItemPicker({
   equipOptions,
   materialOptions,
   recipeOptions,
+  skillBookOptions,
   onPick,
 }: {
   equipOptions: Selection[];
   materialOptions: Selection[];
   recipeOptions: Selection[];
+  skillBookOptions: Selection[];
   onPick: (s: Selection) => void;
 }) {
   // 보유 0 인 카테고리는 탭에서 제외 — 클릭해도 빈 화면 보이는 경우 방지.
@@ -225,8 +255,18 @@ function ItemPicker({
       out.push({ key: "material", label: `재료 ${materialOptions.length}` });
     if (recipeOptions.length > 0)
       out.push({ key: "recipe", label: `제작서 ${recipeOptions.length}` });
+    if (skillBookOptions.length > 0)
+      out.push({
+        key: "skill_book",
+        label: `스킬북 ${skillBookOptions.length}`,
+      });
     return out;
-  }, [equipOptions.length, materialOptions.length, recipeOptions.length]);
+  }, [
+    equipOptions.length,
+    materialOptions.length,
+    recipeOptions.length,
+    skillBookOptions.length,
+  ]);
 
   const [tab, setTab] = useState<PickerTab>(() => tabs[0]?.key ?? "equip");
   // tabs 가 바뀌어 현재 tab 이 무효화되면 첫 탭으로 폴백 (state 는 안 건드림 — 다음 렌더에서 정합).
@@ -237,7 +277,9 @@ function ItemPicker({
       ? equipOptions
       : activeTab === "material"
         ? materialOptions
-        : recipeOptions;
+        : activeTab === "skill_book"
+          ? skillBookOptions
+          : recipeOptions;
 
   return (
     <div className="mt-3 space-y-3">
@@ -259,13 +301,23 @@ function ItemPicker({
               className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
             >
               <span
-                className={o.kind === "equip" ? rarityTextClass(o.def) : undefined}
+                className={
+                  o.kind === "equip"
+                    ? rarityTextClass(o.def)
+                    : o.kind === "skill_book"
+                      ? "text-violet-700 dark:text-violet-300"
+                      : undefined
+                }
               >
-                {o.kind === "recipe" ? "📜 " : ""}
+                {o.kind === "recipe" ? "📜 " : o.kind === "skill_book" ? "📖 " : ""}
                 {o.def.name}
               </span>
               <span className="text-xs text-zinc-500">
-                {o.kind === "recipe" ? "제작서" : `${o.have}개 보유`}
+                {o.kind === "recipe"
+                  ? "제작서"
+                  : o.kind === "skill_book"
+                    ? `${o.have}권 보유`
+                    : `${o.have}개 보유`}
               </span>
             </button>
           </li>
@@ -298,8 +350,20 @@ function PriceForm({
     <div className="mt-3 space-y-3">
       <Card padding="sm">
         <div className="flex items-center justify-between">
-          <span className={`text-sm font-medium ${selection.kind === "equip" ? rarityTextClass(selection.def) : ""}`}>
-            {selection.kind === "recipe" ? "📜 " : ""}
+          <span
+            className={`text-sm font-medium ${
+              selection.kind === "equip"
+                ? rarityTextClass(selection.def)
+                : selection.kind === "skill_book"
+                  ? "text-violet-700 dark:text-violet-300"
+                  : ""
+            }`}
+          >
+            {selection.kind === "recipe"
+              ? "📜 "
+              : selection.kind === "skill_book"
+                ? "📖 "
+                : ""}
             {selection.def.name}
           </span>
           <button
@@ -315,7 +379,9 @@ function PriceForm({
             ? `장비 · 보유 ${selection.have}개`
             : selection.kind === "material"
               ? `재료 · 보유 ${selection.have}개`
-              : "제작서 · 학습된 지식"}
+              : selection.kind === "skill_book"
+                ? `스킬북 · 보유 ${selection.have}권`
+                : "제작서 · 학습된 지식"}
         </div>
       </Card>
 

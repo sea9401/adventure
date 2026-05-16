@@ -102,6 +102,8 @@ type SavedInventory = {
   droppedEquipment?: Record<string, Record<string, number>>;
   /** 종류 별 포션 상한 추가분 (퀘스트 보상). potionMax(bonus) 가 실제 cap. */
   potionCapacityBonus?: number;
+  /** 학습 전 스킬북 — bookId → 개수. */
+  skillBooks?: Record<string, number>;
   [k: string]: unknown;
 };
 
@@ -317,12 +319,17 @@ export async function applyResultToSaves(
       droppedEquipment[itemId] = map;
     }
   }
+  const skillBooks = { ...(inv.skillBooks ?? {}) } as Record<string, number>;
+  for (const id of result.skillBooksGained ?? []) {
+    skillBooks[id] = (skillBooks[id] ?? 0) + 1;
+  }
   const newInventory: SavedInventory = {
     ...inv,
     potions,
     materials,
     equipment,
     droppedEquipment,
+    skillBooks,
   };
 
   // 2) 제작서 학습 — sim 단계에서 미보유만 골라낸 상태라 중복 가드 1번 더 (안전망).

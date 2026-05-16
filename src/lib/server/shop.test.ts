@@ -173,6 +173,25 @@ describe("computeShopOutcome", () => {
     ).toThrow(ShopError);
   });
 
+  it("buy_equipment — shopGate 걸린 장비는 flag 미충족이면 locked", () => {
+    // 낡은 가죽갑옷: shopGate=boldQuestComplete. 의뢰 미완 상태에선 구매 불가.
+    expect(() =>
+      computeShopOutcome(
+        { ...base(), gold: 100 },
+        { kind: "buy_equipment", id: "old_leather_armor", quantity: 1 },
+      ),
+    ).toThrow(/locked/);
+  });
+
+  it("buy_equipment — shopGate 걸린 장비도 flag 충족이면 구매 가능", () => {
+    const r = computeShopOutcome(
+      { ...base(), gold: 100, craftingGates: { boldQuestComplete: true } },
+      { kind: "buy_equipment", id: "old_leather_armor", quantity: 1 },
+    );
+    expect(r.equipment.old_leather_armor).toBe(1);
+    expect(r.newGold).toBe(70); // shopPrice 30
+  });
+
   it("sell_material — 보유분 차감 + 골드 지급", () => {
     const r = computeShopOutcome(
       { ...base(), gold: 0, materials: { slime_core: 5 } },

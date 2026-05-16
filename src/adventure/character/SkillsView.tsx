@@ -7,16 +7,17 @@ import { STAT_LABELS, type StatKey } from "@/adventure/data/stats";
 import { statOfSkill } from "./skills";
 import type { Skill } from "./types";
 
-// 미장착 스킬 목록의 탭 키 — "feat" 은 특기, 나머지는 STAT_LABELS 와 동일한 stat key.
-// 순서: 특기 / 힘 / 활력 / 민첩 / 속도 / 행운 (STAT_KEYS 기본 순서와 다름 — 사용자 요청).
-type SkillTabKey = "feat" | StatKey;
-const SKILL_TAB_ORDER: SkillTabKey[] = ["feat", "str", "vit", "dex", "spd", "luk"];
+// 미장착 스킬 목록의 탭 키 — "feat" 은 특기, "ap" 은 학습한 AP 스킬, 나머지는 STAT_LABELS.
+// 순서: AP / 특기 / 힘 / 활력 / 민첩 / 속도 / 행운.
+type SkillTabKey = "ap" | "feat" | StatKey;
+const SKILL_TAB_ORDER: SkillTabKey[] = ["ap", "feat", "str", "vit", "dex", "spd", "luk"];
 
 // 보유 스킬을 슬롯으로 관리. 슬롯에 들어간 스킬만 전투에서 발동.
 // 일반 슬롯(normalSlots, 3~5) + 특기 전용 슬롯(featSlots, 0~2).
 // onEquip/onUnequip 등 미지정 시 읽기 전용.
 export function SkillsView({
   skills,
+  apSkills,
   equippedNames,
   normalSlots,
   feats,
@@ -28,6 +29,8 @@ export function SkillsView({
   onUnequipFeat,
 }: {
   skills: Skill[];
+  /** 학습한 AP 스킬 — 일반 슬롯에 stat 스킬과 같이 장착. 미지정/[] = 미보유. */
+  apSkills?: Skill[];
   equippedNames: string[];
   normalSlots: number;
   feats: Skill[];
@@ -38,7 +41,8 @@ export function SkillsView({
   onEquipFeat?: (name: string) => void;
   onUnequipFeat?: (name: string) => void;
 }) {
-  if (skills.length === 0 && feats.length === 0) {
+  const apList = apSkills ?? [];
+  if (skills.length === 0 && feats.length === 0 && apList.length === 0) {
     return (
       <EmptyState
         icon={<Sparkle size={40} weight="duotone" />}
@@ -50,10 +54,16 @@ export function SkillsView({
 
   const equippedSet = new Set(equippedNames);
   const unequippedSkills = skills.filter((s) => !equippedSet.has(s.name));
+  const unequippedAPSkills = apList.filter((s) => !equippedSet.has(s.name));
+  // 장착 슬롯 lookup — stat skill 우선, 없으면 AP skill.
+  const findSkillByName = (name: string): Skill | null =>
+    skills.find((s) => s.name === name) ??
+    apList.find((s) => s.name === name) ??
+    null;
   const slots: (Skill | null)[] = [];
   for (let i = 0; i < normalSlots; i += 1) {
     const name = equippedNames[i];
-    slots.push(name ? skills.find((s) => s.name === name) ?? null : null);
+    slots.push(name ? findSkillByName(name) : null);
   }
   const slotsFull = equippedNames.length >= normalSlots;
   const featSlotOpen = featSlots > 0;
@@ -116,9 +126,11 @@ export function SkillsView({
       </Card>
 
       {(unequippedSkills.length > 0 ||
-        (featSlotOpen && unequippedFeats.length > 0)) && (
+        (featSlotOpen && unequippedFeats.length > 0) ||
+        unequippedAPSkills.length > 0) && (
         <UnequippedSkillsTabs
           unequippedSkills={unequippedSkills}
+          unequippedAPSkills={unequippedAPSkills}
           unequippedFeats={unequippedFeats}
           featSlotOpen={featSlotOpen}
           featSlots={featSlots}
@@ -137,6 +149,7 @@ export function SkillsView({
 // 각 탭에 해당 카테고리의 개수를 라벨에 함께 표시.
 function UnequippedSkillsTabs({
   unequippedSkills,
+  unequippedAPSkills,
   unequippedFeats,
   featSlotOpen,
   featSlots,
@@ -146,6 +159,7 @@ function UnequippedSkillsTabs({
   onEquipFeat,
 }: {
   unequippedSkills: Skill[];
+  unequippedAPSkills: Skill[];
   unequippedFeats: Skill[];
   featSlotOpen: boolean;
   featSlots: number;
@@ -168,16 +182,24 @@ function UnequippedSkillsTabs({
   }
 
   const countOf = (key: SkillTabKey): number =>
-    key === "feat" ? unequippedFeats.length : byStat[key].length;
+    key === "feat"
+      ? unequippedFeats.length
+      : key === "ap"
+        ? unequippedAPSkills.length
+        : byStat[key].length;
   const labelOf = (key: SkillTabKey): string => {
-    const base = key === "feat" ? "특기" : STAT_LABELS[key];
+    const base =
+      key === "feat" ? "특기" : key === "ap" ? "AP" : STAT_LABELS[key];
     return `${base} ${countOf(key)}`;
   };
 
   // 특기 슬롯이 닫혀 있으면 특기 탭은 노출하지 않음.
-  const visibleTabs = SKILL_TAB_ORDER.filter(
-    (k) => k !== "feat" || featSlotOpen,
-  );
+  // AP 탭은 보유한 AP 스킬이 있을 때만 노출.
+  const visibleTabs = SKILL_TAB_ORDER.filter((k) => {
+    if (k === "feat") return featSlotOpen;
+    if (k === "ap") return unequippedAPSkills.length > 0;
+    return true;
+  });
   const tabs = visibleTabs.map((key) => ({ key, label: labelOf(key) }));
 
   // 기본 활성 탭 = 노출 탭 중 항목이 있는 첫 탭 (없으면 첫 탭). 빈 탭으로 시작해서
@@ -229,6 +251,27 @@ function UnequippedSkillsTabs({
                   onAction={
                     onEquipFeat ? () => onEquipFeat(f.name) : undefined
                   }
+                />
+              ))}
+            </ul>
+          </>
+        )
+      ) : active === "ap" ? (
+        unequippedAPSkills.length === 0 ? (
+          <EmptyTabHint>학습한 AP 스킬이 없습니다.</EmptyTabHint>
+        ) : (
+          <>
+            <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
+              스킬북으로 학습한 AP 스킬 — 일반 슬롯에 장착하면 전투 중 AP 소비해 발동
+            </p>
+            <ul className="space-y-2">
+              {unequippedAPSkills.map((s) => (
+                <ListRow
+                  key={s.name}
+                  skill={s}
+                  actionLabel="장착"
+                  disabled={slotsFull}
+                  onAction={onEquip ? () => onEquip(s.name) : undefined}
                 />
               ))}
             </ul>

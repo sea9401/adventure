@@ -101,6 +101,9 @@ export type ShopComputeInput = {
   soldCounts?: CountMap;
   // 룬 가방 (buy_rune 결과 가산). 미동봉이면 빈 맵.
   runes?: RuneMap;
+  // 장비 구매 게이트 — EquipItem.shopGate 가 가리키는 crafting flag. 미동봉이면 모두 false 취급
+  // → shopGate 가 설정된 장비는 구매 불가(locked).
+  craftingGates?: { boldQuestComplete?: boolean };
 };
 
 export type ShopComputeResult = {
@@ -192,6 +195,11 @@ export function computeShopOutcome(
       const price = (e as { shopPrice?: number }).shopPrice;
       if (typeof price !== "number" || !Number.isFinite(price) || price < 0) {
         throw new ShopError("not_for_sale");
+      }
+      // shopGate 가 설정된 장비는 해당 crafting flag 가 true 일 때만 구매 허용 — 클라 BuyTab 와 동일.
+      const gate = (e as { shopGate?: "boldQuestComplete" }).shopGate;
+      if (gate && !input.craftingGates?.[gate]) {
+        throw new ShopError("locked");
       }
       const cost = price * qty;
       if (gold < cost) throw new ShopError("insufficient_gold");
@@ -316,6 +324,7 @@ type SavedInventory = {
   [k: string]: unknown;
 };
 type SavedShopUnlocks = { sold?: CountMap };
+type SavedCrafting = { boldQuestComplete?: boolean };
 
 async function readKv<T>(
   tx: DbExecutor,
@@ -353,6 +362,16 @@ export async function applyShopAction(
     }
   }
 
+  // shopGate 가 걸린 장비를 살 때만 crafting.v2 를 읽는다 — 나머지 케이스는 I/O 한 번 절약.
+  let craftingGates: { boldQuestComplete?: boolean } | undefined;
+  if (action.kind === "buy_equipment") {
+    const e = ITEMS[action.id as ItemId];
+    if (e && (e as { shopGate?: string }).shopGate) {
+      const c = (await readKv<SavedCrafting>(tx, userId, "crafting.v2", false)) ?? {};
+      craftingGates = { boldQuestComplete: !!c.boldQuestComplete };
+    }
+  }
+
   const out = computeShopOutcome(
     {
       gold: character.gold ?? 0,
@@ -365,6 +384,7 @@ export async function applyShopAction(
       potionCapacityBonus: inv.potionCapacityBonus ?? 0,
       soldCounts,
       runes: inv.runes ?? {},
+      craftingGates,
     },
     action,
   );

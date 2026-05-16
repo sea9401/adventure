@@ -5,7 +5,10 @@ import Link from "next/link";
 import {
   Bell,
   BookOpen,
+  Eye,
+  EyeSlash,
   Gear,
+  GraduationCap,
   Moon,
   Sun,
   SignOut,
@@ -17,7 +20,17 @@ import { NotificationPrefsModal } from "./NotificationPrefsModal";
 import { DeleteAccountModal } from "./DeleteAccountModal";
 import { AvatarChangeModal } from "./AvatarChangeModal";
 
-export function SettingsMenu({ gameName }: { gameName: string | null }) {
+export function SettingsMenu({
+  gameName,
+  tutorialEnabled,
+  onReplayTutorial,
+  onToggleTutorial,
+}: {
+  gameName: string | null;
+  tutorialEnabled: boolean;
+  onReplayTutorial: () => void;
+  onToggleTutorial: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [notifPrefsOpen, setNotifPrefsOpen] = useState(false);
   const [avatarChangeOpen, setAvatarChangeOpen] = useState(false);
@@ -96,6 +109,16 @@ export function SettingsMenu({ gameName }: { gameName: string | null }) {
     setDeleteAccountOpen(true);
   };
 
+  const handleReplayTutorial = () => {
+    setOpen(false);
+    onReplayTutorial();
+  };
+
+  const handleToggleTutorial = () => {
+    setOpen(false);
+    onToggleTutorial();
+  };
+
   const isDark = theme === "dark";
 
   return (
@@ -158,6 +181,30 @@ export function SettingsMenu({ gameName }: { gameName: string | null }) {
                 <BookOpen size={18} weight="duotone" />
                 메뉴얼
               </Link>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={handleReplayTutorial}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                <GraduationCap size={18} weight="duotone" />
+                튜토리얼 다시 보기
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={handleToggleTutorial}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                {tutorialEnabled ? (
+                  <EyeSlash size={18} weight="duotone" />
+                ) : (
+                  <Eye size={18} weight="duotone" />
+                )}
+                {tutorialEnabled ? "튜토리얼 끄기" : "튜토리얼 켜기"}
+              </button>
             </li>
           </ul>
           <div className="border-t border-zinc-200 px-3 py-2 text-xs uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">

@@ -18,7 +18,7 @@ export function ChatComposer({
   return (
     <form
       onSubmit={onSubmit}
-      className="flex items-center gap-2 border-t border-zinc-200 px-3 py-2 dark:border-zinc-800"
+      className="flex items-center gap-2 border-t border-zinc-200 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] dark:border-zinc-800"
     >
       <button
         type="button"
@@ -35,7 +35,7 @@ export function ChatComposer({
         onChange={(e) => onDraftChange(e.target.value)}
         maxLength={CHAT_MAX_LENGTH}
         placeholder="메시지를 입력하세요"
-        className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none transition-colors focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-blue-400"
+        className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-blue-400"
       />
       <button
         type="submit"

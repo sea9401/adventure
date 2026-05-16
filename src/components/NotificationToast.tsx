@@ -150,7 +150,7 @@ export function NotificationToast({
   if (toasts.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 sm:bottom-6 sm:right-6">
+    <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-50 flex flex-col items-end gap-2 sm:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:right-6">
       {toasts.map((t) => {
         const Icon = TOAST_ICON[t.kind];
         return (
@@ -172,7 +172,7 @@ export function NotificationToast({
             type="button"
             aria-label="알림 닫기"
             onClick={() => dismiss(t.id)}
-            className="-mr-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+            className="-mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
           >
             <X size={14} weight="bold" />
           </button>

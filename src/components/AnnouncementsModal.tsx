@@ -61,7 +61,7 @@ export function AnnouncementsModal({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="-mr-2 -mt-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            className="-mr-2 -mt-1 inline-flex h-10 w-10 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           >
             <X size={18} weight="bold" />
           </button>

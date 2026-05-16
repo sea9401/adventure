@@ -1,5 +1,6 @@
 import type { MaterialId } from "./materials";
 import type { ItemId } from "./items";
+import type { SkillBookId } from "./skillBooks";
 
 export type MonsterTag =
   | "humanoid"
@@ -10,15 +11,17 @@ export type MonsterTag =
   | "undead"
   | "dragon";
 
-// 드롭은 다섯 가지 — 재료 / 골드 / 장비 / 제작서 / 제작서 풀(랜덤 1). chance 는 0~1.
+// 드롭은 여섯 가지 — 재료 / 골드 / 장비 / 제작서 / 제작서 풀(랜덤 1) / 스킬북. chance 는 0~1.
 // "recipe" 드롭은 해당 제작법을 학습 (이미 알고 있으면 무시).
 // "recipe_one_of" 는 chance 가 통과하면 recipeIds 중 하나를 균등 추첨해 학습 시도.
+// "skill_book" 은 책 그 자체가 인벤에 들어간다 — 학습은 사용 시점.
 export type MonsterDrop =
   | { kind: "material"; materialId: MaterialId; chance: number; amount?: number }
   | { kind: "gold"; amount: number; chance: number }
   | { kind: "equip"; itemId: ItemId; chance: number }
   | { kind: "recipe"; recipeId: string; chance: number }
-  | { kind: "recipe_one_of"; recipeIds: string[]; chance: number };
+  | { kind: "recipe_one_of"; recipeIds: string[]; chance: number }
+  | { kind: "skill_book"; bookId: SkillBookId; chance: number };
 
 // 몬스터 페이즈 트리거 — HP가 hpFraction(0~1) 미만으로 떨어지면 1회 발동.
 // defBonus 만큼 적의 DEF 가 영구 증가, 로그에 message 가 출력된다. 보스용.
@@ -197,6 +200,8 @@ export const MONSTERS: Record<string, Monster> = {
       // 초반 발판 — 산적의 단검 → 두목의 단검 체인. 베이스/제작서 둘 다 드랍률 ↑.
       { kind: "equip", itemId: "bandit_dagger", chance: 0.015 },
       { kind: "recipe", recipeId: "bandit_chief_dagger", chance: 0.04 },
+      // 너덜너덜한 보법서 — 산적이 회피 보법을 익혔던 흔적. 한 번만 학습되면 충분하므로 낮은 확률.
+      { kind: "skill_book", bookId: "book_extra_evade", chance: 0.003 },
     ],
   },
   "호수 님프": {

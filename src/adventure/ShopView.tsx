@@ -24,6 +24,7 @@ export function ShopView({
   gold,
   inventory,
   isMaterialBuyable,
+  craftingGates,
   onPurchasePotion,
   onPurchaseMaterial,
   onPurchaseConsumable,
@@ -35,6 +36,7 @@ export function ShopView({
   gold: number;
   inventory: InventoryState;
   isMaterialBuyable: (id: MaterialId) => boolean;
+  craftingGates: { boldQuestComplete: boolean };
   onPurchasePotion: (id: PotionId, quantity: number) => void;
   onPurchaseMaterial: (id: MaterialId, quantity: number) => void;
   onPurchaseConsumable: (id: ConsumableId, quantity: number) => void;
@@ -63,6 +65,7 @@ export function ShopView({
           gold={gold}
           inventory={inventory}
           isMaterialBuyable={isMaterialBuyable}
+          craftingGates={craftingGates}
           onPurchasePotion={onPurchasePotion}
           onPurchaseMaterial={onPurchaseMaterial}
           onPurchaseConsumable={onPurchaseConsumable}

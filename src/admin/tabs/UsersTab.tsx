@@ -163,6 +163,24 @@ export function UsersTab() {
     }
   };
 
+  const resetBossAttempts = async () => {
+    if (!selected) return;
+    const current = saves?.["character.v2"];
+    if (!current) {
+      showToast("캐릭터 데이터 없음 — 초기화할 카운터가 없습니다.");
+      return;
+    }
+    // bossAttempts 를 빈 객체로 비우면 getBossAttemptsToday 가 모든 region 에 0 반환.
+    const next: CharacterDynamicState = { ...current, bossAttempts: {} };
+    try {
+      await patchKey(selected.id, "character.v2", next);
+      setSaves((s) => ({ ...(s ?? {}), "character.v2": next }));
+      showToast("싱글 보스 일일 카운터 초기화됨. 대상 유저는 새로고침 필요.");
+    } catch (e) {
+      showToast(`실패: ${e instanceof Error ? e.message : "오류"}`);
+    }
+  };
+
   return (
     <div className="grid gap-4 md:grid-cols-[320px_1fr]">
       <section className="rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
@@ -245,6 +263,7 @@ export function UsersTab() {
             onUpdateTraining={updateTraining}
             onUpdateInventory={updateInventory}
             onResetTowerDailyAttempts={resetTowerDailyAttempts}
+            onResetBossAttempts={resetBossAttempts}
             onReload={() => loadSaves(selected.id)}
           />
         )}

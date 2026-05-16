@@ -18,6 +18,7 @@ const KIND_TABS: { key: KindFilter; label: string }[] = [
   { key: "equip", label: "장비" },
   { key: "material", label: "재료" },
   { key: "recipe", label: "제작서" },
+  { key: "skill_book", label: "스킬북" },
 ];
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [

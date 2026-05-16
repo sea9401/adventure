@@ -43,6 +43,7 @@ import { useTitleGrants } from "@/adventure/character/useTitleGrants";
 import { useLevelUpDetection } from "@/adventure/character/useLevelUpDetection";
 import { useRespawnSafetyNet } from "@/adventure/character/useRespawnSafetyNet";
 import { getTitle } from "@/adventure/data/titles";
+import { MONSTERS } from "@/adventure/data/monsters";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { useAutoHunt } from "@/adventure/hunting/useAutoHunt";
 import { AutoHuntResultModal } from "@/adventure/battle/AutoHuntResultModal";
@@ -56,6 +57,10 @@ import { useShopActions } from "@/adventure/shop/useShopActions";
 import { useEquipmentActions } from "@/adventure/inventory/useEquipmentActions";
 import { useCraftAction } from "@/adventure/crafting/useCraftAction";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import {
+  TUTORIAL_ENABLED_FLAG,
+  TUTORIAL_FLAG_PREFIX,
+} from "@/adventure/tutorial";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { STARTER_SAVES } from "@/adventure/starterSaves";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
@@ -175,6 +180,13 @@ function Home() {
   const battleCount =
     totalMonsterKills + (adventureLog.log.battleLosses ?? 0);
 
+  // 보스 누적 처치 — phaseTrigger 보유 몬스터의 kills 합산. 깊은 상처 업적 트리거용.
+  const bossKillsTotal = Object.entries(adventureLog.log.monsters).reduce(
+    (sum, [name, m]) =>
+      sum + (MONSTERS[name]?.phaseTrigger ? (m.kills ?? 0) : 0),
+    0,
+  );
+
   const equippedTitle = getTitle(characterStateHook.equippedTitleId);
 
   // 스탯/장비/스킬/HP 합산 → PlayerCombat + Character 단일 source-of-truth.
@@ -186,6 +198,7 @@ function Home() {
     allocatedStats: training.allocatedStats ?? ZERO_ALLOCATED,
     equipped: characterStateHook.equippedSlots,
     equippedSkills: characterState.equippedSkills,
+    learnedAPSkills: characterState.learnedAPSkills,
     equippedFeats: characterState.equippedFeats,
     equippedRunes: characterState.equippedRunes,
     storyFlagIds: new Set(storyFlags.state.flags),
@@ -255,10 +268,6 @@ function Home() {
 
   const playerStatus = {
     gender: character.gender,
-    mp: character.mp,
-    maxMp: character.maxMp,
-    exp: character.exp,
-    maxExp: character.maxExp,
   };
 
   const addNotification = (
@@ -374,6 +383,7 @@ function Home() {
         addMaterial: inventory.addMaterial,
         addEquipment: inventory.addEquipment,
         addDroppedEquipment: (id, q) => inventory.addDroppedEquipment(id, q, 1),
+        addSkillBook: inventory.addSkillBook,
       },
       adventureLog: {
         addKill: adventureLog.addKill,
@@ -390,7 +400,8 @@ function Home() {
         addExp: characterStateHook.addExp,
         addGoldFame: characterStateHook.addGoldFame,
       },
-      storyFlags: { set: storyFlags.set },
+      storyFlags: { set: storyFlags.set, has: storyFlags.has },
+      bossKillsTotal,
       vit: character.stats.vit,
       luk: character.stats.luk,
       playerLevel: character.level,
@@ -547,7 +558,24 @@ function Home() {
               title={character.titleName ?? null}
               onSent={adventureLog.incrementChatCount}
             />
-            <SettingsMenu gameName={character.name} />
+            <SettingsMenu
+              gameName={character.name}
+              tutorialEnabled={storyFlags.has(TUTORIAL_ENABLED_FLAG)}
+              onReplayTutorial={() => {
+                storyFlags.removeWithPrefix(TUTORIAL_FLAG_PREFIX);
+                storyFlags.set(TUTORIAL_ENABLED_FLAG);
+                addNotification("info", "튜토리얼을 다시 표시합니다.");
+              }}
+              onToggleTutorial={() => {
+                if (storyFlags.has(TUTORIAL_ENABLED_FLAG)) {
+                  storyFlags.remove(TUTORIAL_ENABLED_FLAG);
+                  addNotification("info", "튜토리얼을 껐어요.");
+                } else {
+                  storyFlags.set(TUTORIAL_ENABLED_FLAG);
+                  addNotification("info", "튜토리얼을 켰어요.");
+                }
+              }}
+            />
           </div>
         </header>
 
