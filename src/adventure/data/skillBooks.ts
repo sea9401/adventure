@@ -5,7 +5,12 @@
 
 import type { APSkillId } from "@/adventure/character/apSkills";
 
-export type SkillBookId = "book_shadow_cut";
+export type SkillBookId =
+  | "book_shadow_cut"
+  | "book_extra_evade"
+  | "book_mending"
+  | "book_heaven_slay"
+  | "book_deep_wound";
 
 export type SkillBook = {
   id: SkillBookId;
@@ -26,8 +31,41 @@ export const SKILL_BOOKS: Record<SkillBookId, SkillBook> = {
     description:
       "검광이 그림자처럼 미끄러져 적의 갑옷을 비껴간다. 사용하면 '그림자 베기' (AP 3) 를 학습한다.",
     learnsSkillId: "shadow_cut",
-    price: 1, // PR-0 테스트용 1G. PR-1 에서 정식 가격으로 조정.
+    price: 1500,
     tradable: true,
+  },
+  book_extra_evade: {
+    id: "book_extra_evade",
+    name: "스킬북 — 추가 회피",
+    description:
+      "산적이 흘리고 간 너덜너덜한 보법서. 사용하면 '추가 회피' (AP 1) 를 학습한다.",
+    learnsSkillId: "extra_evade",
+    tradable: true,
+  },
+  book_mending: {
+    id: "book_mending",
+    name: "스킬북 — 회복술",
+    description:
+      "낡은 약초학 필사본. 사용하면 '회복술' (AP 3) 을 학습한다.",
+    learnsSkillId: "mending",
+    price: 800,
+    tradable: true,
+  },
+  book_heaven_slay: {
+    id: "book_heaven_slay",
+    name: "스킬북 — 천살",
+    description:
+      "구름 위에서 내려온 검결의 잔편. 사용하면 '천살' (AP 5) 을 학습한다. 귀속.",
+    learnsSkillId: "heaven_slay",
+    tradable: false,
+  },
+  book_deep_wound: {
+    id: "book_deep_wound",
+    name: "스킬북 — 깊은 상처",
+    description:
+      "수많은 보스를 베어 넘긴 자에게만 보이는 핏빛 비전서. 사용하면 '깊은 상처' (AP 3) 를 학습한다. 귀속.",
+    learnsSkillId: "deep_wound",
+    tradable: false,
   },
 };
 

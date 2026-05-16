@@ -43,6 +43,7 @@ import { useTitleGrants } from "@/adventure/character/useTitleGrants";
 import { useLevelUpDetection } from "@/adventure/character/useLevelUpDetection";
 import { useRespawnSafetyNet } from "@/adventure/character/useRespawnSafetyNet";
 import { getTitle } from "@/adventure/data/titles";
+import { MONSTERS } from "@/adventure/data/monsters";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { useAutoHunt } from "@/adventure/hunting/useAutoHunt";
 import { AutoHuntResultModal } from "@/adventure/battle/AutoHuntResultModal";
@@ -178,6 +179,13 @@ function Home() {
   );
   const battleCount =
     totalMonsterKills + (adventureLog.log.battleLosses ?? 0);
+
+  // 보스 누적 처치 — phaseTrigger 보유 몬스터의 kills 합산. 깊은 상처 업적 트리거용.
+  const bossKillsTotal = Object.entries(adventureLog.log.monsters).reduce(
+    (sum, [name, m]) =>
+      sum + (MONSTERS[name]?.phaseTrigger ? (m.kills ?? 0) : 0),
+    0,
+  );
 
   const equippedTitle = getTitle(characterStateHook.equippedTitleId);
 
@@ -379,6 +387,7 @@ function Home() {
         addMaterial: inventory.addMaterial,
         addEquipment: inventory.addEquipment,
         addDroppedEquipment: (id, q) => inventory.addDroppedEquipment(id, q, 1),
+        addSkillBook: inventory.addSkillBook,
       },
       adventureLog: {
         addKill: adventureLog.addKill,
@@ -395,7 +404,8 @@ function Home() {
         addExp: characterStateHook.addExp,
         addGoldFame: characterStateHook.addGoldFame,
       },
-      storyFlags: { set: storyFlags.set },
+      storyFlags: { set: storyFlags.set, has: storyFlags.has },
+      bossKillsTotal,
       vit: character.stats.vit,
       luk: character.stats.luk,
       playerLevel: character.level,

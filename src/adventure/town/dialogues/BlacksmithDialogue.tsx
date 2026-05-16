@@ -12,8 +12,8 @@ import { SKILL_BOOKS } from "@/adventure/data/skillBooks";
 const MANA_QUEST = "village-bold-mana-crystal";
 const MANA_NEED = 5;
 
-// PR-0 검증용 — 그림자 베기 스킬북 1G 판매. PR-1 에서 정식 NPC·가격으로 이전 후 제거.
-const TEST_BOOK_ID = "book_shadow_cut" as const;
+// 그림자 베기 스킬북 — 볼드가 챙겨둔 1권. 이미 학습/소지 중이면 자동으로 숨어 중복 판매 X.
+const SHADOW_CUT_BOOK_ID = "book_shadow_cut" as const;
 
 type Props = {
   npc: Npc;
@@ -348,31 +348,45 @@ export function BlacksmithDialogue({
   });
   if (duelNode) return duelNode;
 
-  // Stage E — 끝. 일상 대화 + PR-0 테스트용 스킬북 판매 (1G).
-  // 정식 풀-인은 PR-1 에서 다른 NPC·가격으로 이전 후 이 블록 제거.
-  const testBook = SKILL_BOOKS[TEST_BOOK_ID];
-  const price = testBook.price ?? 0;
+  // Stage E — 끝. 일상 대화 + 그림자 베기 스킬북 판매.
+  // 학습·소지 중이면 판매 옵션 자체를 숨겨 중복 구매 방지.
+  const shadowCutBook = SKILL_BOOKS[SHADOW_CUT_BOOK_ID];
+  const shadowCutPrice = shadowCutBook.price ?? 0;
+  const shadowCutKnown = (
+    characterStateHook.state.learnedAPSkills ?? []
+  ).includes("그림자 베기");
+  const shadowCutOwned =
+    inventory.skillBookCount(SHADOW_CUT_BOOK_ID) > 0;
+  const offerShadowCut = !shadowCutKnown && !shadowCutOwned;
   return (
     <NpcDialogue
       npc={npc}
       onClose={onClose}
-      text={`왔구나.\n잘 지내고 있나? 무기 손볼 일 있으면 또 들르게.\n\n…그리고, "${testBook.name}" 가 하나 있는데. ${price}G 면 자네 거다.`}
-      primaryAction={{
-        label: `${testBook.name} 구매 (${price}G)`,
-        onClick: () => {
-          if (characterStateHook.state.gold < price) {
-            addNotification("info", "골드가 부족합니다.");
-            return;
-          }
-          characterStateHook.addGold(-price);
-          inventory.addSkillBook(TEST_BOOK_ID, 1);
-          addNotification(
-            "item",
-            `${testBook.name} 을(를) 구매했습니다. 가방에서 사용하세요.`,
-          );
-          onClose();
-        },
-      }}
+      text={
+        offerShadowCut
+          ? `왔구나.\n잘 지내고 있나? 무기 손볼 일 있으면 또 들르게.\n\n…그리고, "${shadowCutBook.name}" 가 하나 있는데. ${shadowCutPrice}G 면 자네 거다.`
+          : "왔구나.\n잘 지내고 있나? 무기 손볼 일 있으면 또 들르게."
+      }
+      primaryAction={
+        offerShadowCut
+          ? {
+              label: `${shadowCutBook.name} 구매 (${shadowCutPrice}G)`,
+              onClick: () => {
+                if (characterStateHook.state.gold < shadowCutPrice) {
+                  addNotification("info", "골드가 부족합니다.");
+                  return;
+                }
+                characterStateHook.addGold(-shadowCutPrice);
+                inventory.addSkillBook(SHADOW_CUT_BOOK_ID, 1);
+                addNotification(
+                  "item",
+                  `${shadowCutBook.name} 을(를) 구매했습니다. 가방에서 사용하세요.`,
+                );
+                onClose();
+              },
+            }
+          : undefined
+      }
     />
   );
 }

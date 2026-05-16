@@ -142,3 +142,98 @@ describe("AP 스킬 시스템 — 그림자 베기", () => {
     expect(s2.turn.apSkillFiredThisTurn).toBeNull();
   });
 });
+
+// ── PR-1 신규 효과 ──
+const MENDING = getAPSkillByName("회복술")!;
+const DEEP_WOUND = getAPSkillByName("깊은 상처")!;
+const EXTRA_EVADE = getAPSkillByName("추가 회피")!;
+const HEAVEN_SLAY = getAPSkillByName("천살")!;
+
+describe("AP 스킬 — 회복술 (heal_pct)", () => {
+  it("발동 시 maxHP × 25% 즉시 회복, 평타 데미지는 그대로", () => {
+    const wounded: PlayerCombat = {
+      ...PLAYER,
+      hp: 1000,
+      maxHp: 4000,
+      equippedAPSkills: [MENDING],
+    };
+    let s = initialBattleState(wounded, enemy(9999), "용사");
+    expect(s.playerHp).toBe(1000);
+    s = advanceTurn(s, wounded, "용사"); // turn 1: AP 2 < 3 → 미발동, 평타.
+    expect(s.playerHp).toBe(1000); // 미발동 — 회복 X
+    s = advanceTurn(s, wounded, "용사"); // 적 턴.
+    s = advanceTurn(s, wounded, "용사"); // turn 2: AP 3 → 발동, +1000 회복.
+    // 적 공격으로 일부 깎인 상태에서 +1000. 회복분이 적용된 게 보이면 OK.
+    expect(s.playerHp).toBeGreaterThanOrEqual(1000);
+  });
+
+  it("maxHP 클램프 — 풀피에서 발동해도 maxHP 초과 X", () => {
+    const full: PlayerCombat = {
+      ...PLAYER,
+      hp: 100,
+      maxHp: 100,
+      equippedAPSkills: [MENDING],
+    };
+    let s = initialBattleState(full, enemy(9999), "용사");
+    s = advanceTurn(s, full, "용사");
+    s = advanceTurn(s, full, "용사");
+    s = advanceTurn(s, full, "용사"); // 발동 턴 — 데미지 받지 않았다면 풀피 유지.
+    expect(s.playerHp).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("AP 스킬 — 깊은 상처 (apply_bleed)", () => {
+  it("발동 시 적에게 출혈 5스택 즉시 부여 (기존 스택과 누적)", () => {
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [DEEP_WOUND] };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    expect(s.stacks.bleedStacks).toBe(0);
+    s = advanceTurn(s, p, "용사"); // AP 2 < 3 → 미발동.
+    expect(s.stacks.bleedStacks).toBe(0);
+    s = advanceTurn(s, p, "용사"); // 적 턴.
+    s = advanceTurn(s, p, "용사"); // AP 3 → 발동.
+    expect(s.stacks.bleedStacks).toBe(5);
+  });
+});
+
+describe("AP 스킬 — 추가 회피 (add_guaranteed_evades)", () => {
+  it("발동 시 보장 회피 잔량 +1", () => {
+    const p: PlayerCombat = {
+      ...PLAYER,
+      equippedAPSkills: [EXTRA_EVADE],
+      guaranteedEvades: 0,
+    };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    expect(s.stacks.evadesRemaining).toBe(0);
+    // AP 1 cost — 첫 턴부터 발동 가능 (시작 AP 2).
+    s = advanceTurn(s, p, "용사");
+    expect(s.stacks.evadesRemaining).toBe(1);
+  });
+});
+
+describe("AP 스킬 — 천살 (ignoresEvasion + ignoresDef)", () => {
+  it("회피 100% 적 상대로도 큰 한 방 — ATK ×3 + DEF 무시", () => {
+    const p: PlayerCombat = {
+      ...PLAYER,
+      atk: 10,
+      equippedAPSkills: [HEAVEN_SLAY],
+    };
+    // 회피 100% 적 — 천살이 발동하기 전까진 데미지 0, 발동 시 30 데미지.
+    let s = initialBattleState(
+      p,
+      { ...enemy(9999), evasionPct: 100, def: 50 },
+      "용사",
+    );
+    const startHp = s.enemyHp;
+    let biggestHit = 0;
+    let prevEnemyHp = startHp;
+    // 20턴 충분 — turn 4 즈음에 천살 발동.
+    for (let i = 0; i < 40; i++) {
+      s = advanceTurn(s, p, "용사");
+      const delta = prevEnemyHp - s.enemyHp;
+      if (delta > biggestHit) biggestHit = delta;
+      prevEnemyHp = s.enemyHp;
+    }
+    // ATK 10 × 3.0 = 30, DEF 무시. damageBetween variance → 25 이상.
+    expect(biggestHit).toBeGreaterThanOrEqual(25);
+  });
+});

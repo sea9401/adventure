@@ -663,12 +663,21 @@ export function advanceTurn(
     const apIgnoresDef =
       apSkillFires?.effect.kind === "atk_multiplier" &&
       apSkillFires.effect.ignoresDef === true;
+    // ignoresEvasion = true 면 적 회피 굴림 자체 스킵 — 천살 등이 사용.
+    const apIgnoresEvasion =
+      apSkillFires?.effect.kind === "atk_multiplier" &&
+      apSkillFires.effect.ignoresEvasion === true;
 
     // 적 회피 — 데미지 굴리기 전에 1차 판정. 회피하면 공격 1회가 그대로 빗나간다.
     // 정확 슬롯 시 적 evasion 에 배수(<1) 가 곱해져 부분 무력화.
+    // AP 스킬의 ignoresEvasion = true 면 회피 판정 자체 스킵.
     const precisionMult = player.precisionEvasionMult ?? 1;
     const enemyEvasionPct = (state.enemy.evasionPct ?? 0) * precisionMult;
-    if (enemyEvasionPct > 0 && Math.random() * 100 < enemyEvasionPct) {
+    if (
+      !apIgnoresEvasion &&
+      enemyEvasionPct > 0 &&
+      Math.random() * 100 < enemyEvasionPct
+    ) {
       const log = appendLog(state.log, {
         kind: "player_attack",
         text: `${state.enemy.name}이(가) 공격을 피했다.`,
@@ -931,12 +940,48 @@ export function advanceTurn(
       0,
       Math.min(AP_CAP, state.ap + 1) - (apSkillFires?.apCost ?? 0),
     );
+    // 비-atk_multiplier AP 효과 처리 — 본타와 같이 발동되는 부가 효과.
+    const apHealAmount =
+      apSkillFires?.effect.kind === "heal_pct"
+        ? Math.floor((state.playerMaxHp * apSkillFires.effect.pct) / 100)
+        : 0;
+    const apBleedAdd =
+      apSkillFires?.effect.kind === "apply_bleed"
+        ? apSkillFires.effect.stacks
+        : 0;
+    const apEvadesAdd =
+      apSkillFires?.effect.kind === "add_guaranteed_evades"
+        ? apSkillFires.effect.count
+        : 0;
+    const playerHpAfterAPHeal =
+      apHealAmount > 0
+        ? Math.min(state.playerMaxHp, newPlayerHp + apHealAmount)
+        : newPlayerHp;
+    const apHealActual = playerHpAfterAPHeal - newPlayerHp;
+    if (apHealActual > 0) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires!.name}] ${playerName}의 HP +${apHealActual}`,
+      });
+    }
+    if (apBleedAdd > 0) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires!.name}] ${state.enemy.name}에게 출혈 +${apBleedAdd}스택`,
+      });
+    }
+    if (apEvadesAdd > 0) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires!.name}] 보장 회피 +${apEvadesAdd}`,
+      });
+    }
     // 페이즈 트리거 검사 — 데미지 적용 직후, 사망 분기 전에 처리해야 트리거된 def 가
     // 같은 턴 후속 공격(다중공격/연타)에 즉시 반영된다.
     const afterDamage = applyPhaseTriggerIfAny({
       ...state,
       enemyHp,
-      playerHp: newPlayerHp,
+      playerHp: playerHpAfterAPHeal,
       log,
       ap: nextApAfter,
       flags: {
@@ -956,7 +1001,8 @@ export function advanceTurn(
       },
       stacks: {
         ...state.stacks,
-        bleedStacks,
+        bleedStacks: bleedStacks + apBleedAdd,
+        evadesRemaining: state.stacks.evadesRemaining + apEvadesAdd,
         weakpointDefIgnoreLeft: newWeakpointDefIgnoreLeft,
       },
       turn: {

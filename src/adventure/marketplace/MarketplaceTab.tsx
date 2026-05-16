@@ -31,8 +31,10 @@ export function MarketplaceTab() {
   } = useGame();
   const consumeEquipment = inventory.consumeEquipment;
   const consumeMaterial = inventory.consumeMaterial;
+  const consumeSkillBook = inventory.consumeSkillBook;
   const addEquipment = inventory.addEquipment;
   const addMaterial = inventory.addMaterial;
+  const addSkillBook = inventory.addSkillBook;
   const addGold = characterStateHook.addGold;
   const currentGold = character.gold;
   const inboxCount = inbox.count;
@@ -97,6 +99,8 @@ export function MarketplaceTab() {
         } else if (listing.itemKind === "recipe") {
           // learnRecipe 는 known no-op + shareable 충전 효과.
           learnRecipe(listing.itemId);
+        } else if (listing.itemKind === "skill_book") {
+          addSkillBook(listing.itemId as never, 1);
         }
         pushToast(`${listing.itemName} 매물을 취소했습니다.`);
         setRefresh((v) => v + 1);
@@ -106,7 +110,7 @@ export function MarketplaceTab() {
         pushToast(msg);
       }
     },
-    [remote, pushToast, addEquipment, addMaterial, learnRecipe],
+    [remote, pushToast, addEquipment, addMaterial, learnRecipe, addSkillBook],
   );
 
   return (
@@ -183,6 +187,8 @@ export function MarketplaceTab() {
             } else if (s.kind === "recipe") {
               // 지식 자체는 보유, 공유 토큰만 1 소비 (서버와 동기화).
               consumeShare(s.itemId);
+            } else if (s.kind === "skill_book") {
+              consumeSkillBook(s.itemId, 1);
             }
           }}
           showError={(msg) => {

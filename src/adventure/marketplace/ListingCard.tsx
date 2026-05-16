@@ -26,12 +26,15 @@ export function ListingCard({
     typeof currentGold === "number" && currentGold < item.price;
   const blocked = alreadyKnown === true;
   const isRecipe = item.itemKind === "recipe";
-  // 장비 매물이면 등급색으로 강조 — 다른 종류는 기본 zinc 톤.
+  const isSkillBook = item.itemKind === "skill_book";
+  // 장비 매물이면 등급색으로 강조 — 다른 종류는 기본 zinc 톤. 스킬북은 보라색 강조.
   const equipDef =
     item.itemKind === "equip" && hasOwn(ITEMS, item.itemId)
       ? ITEMS[item.itemId as ItemId]
       : null;
-  const nameClass = rarityTextClass(equipDef, "text-zinc-900 dark:text-zinc-100");
+  const nameClass = isSkillBook
+    ? "text-violet-700 dark:text-violet-300"
+    : rarityTextClass(equipDef, "text-zinc-900 dark:text-zinc-100");
   const detail = listingDetail(item);
   return (
     <Card padding="sm">
@@ -58,7 +61,7 @@ export function ListingCard({
                 : undefined
             }
           >
-            {isRecipe ? "📜 " : ""}
+            {isRecipe ? "📜 " : isSkillBook ? "📖 " : ""}
             {item.itemName}
             {item.itemKind === "material" && item.quantity > 1 ? (
               <span className="ml-1 text-zinc-500">×{item.quantity}</span>

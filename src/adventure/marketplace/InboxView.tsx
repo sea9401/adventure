@@ -10,6 +10,7 @@ import { usePagination } from "@/lib/usePagination";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { getRecipeById } from "@/adventure/data/recipes";
+import { SKILL_BOOKS, type SkillBookId } from "@/adventure/data/skillBooks";
 import { useGame } from "@/adventure/GameContext";
 import {
   acceptGuildInvite,
@@ -32,6 +33,7 @@ export function InboxView() {
   } = useGame();
   const addEquipment = inventory.addEquipment;
   const addMaterial = inventory.addMaterial;
+  const addSkillBook = inventory.addSkillBook;
   const addGold = characterStateHook.addGold;
   // 거래/우편으로 받은 제작서는 공유 토큰 없이 학습.
   const learnRecipeFromTrade = crafting.learnRecipeFromTrade;
@@ -121,6 +123,10 @@ export function InboxView() {
           if (Object.prototype.hasOwnProperty.call(ITEMS, it.id)) {
             addEquipment(it.id as ItemId, it.quantity);
           }
+        } else if (it.kind === "skill_book") {
+          if (Object.prototype.hasOwnProperty.call(SKILL_BOOKS, it.id)) {
+            addSkillBook(it.id as SkillBookId, it.quantity);
+          }
         } else {
           if (Object.prototype.hasOwnProperty.call(MATERIALS, it.id)) {
             addMaterial(it.id as MaterialId, it.quantity);
@@ -139,7 +145,9 @@ export function InboxView() {
         const name =
           it.kind === "equip"
             ? ITEMS[it.id as ItemId]?.name
-            : MATERIALS[it.id as MaterialId]?.name;
+            : it.kind === "skill_book"
+              ? SKILL_BOOKS[it.id as SkillBookId]?.name
+              : MATERIALS[it.id as MaterialId]?.name;
         const label = name ?? it.id;
         grouped.set(label, (grouped.get(label) ?? 0) + it.quantity);
       }

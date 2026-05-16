@@ -4,6 +4,7 @@ import { MONSTERS, type MonsterSkill } from "@/adventure/data/monsters";
 import { MATERIALS } from "@/adventure/data/materials";
 import { ITEMS } from "@/adventure/data/items";
 import { getRecipeById } from "@/adventure/data/recipes";
+import { SKILL_BOOKS } from "@/adventure/data/skillBooks";
 import type { NpcRole } from "@/adventure/data/npcs";
 import { getRevealStage, type MonsterRevealStage } from "@/adventure/log/thresholds";
 import type { TitleCounterKey } from "@/adventure/data/titles";
@@ -40,6 +41,7 @@ export function describeDrop(
   if (d.kind === "gold") return `골드 +${d.amount}`;
   if (d.kind === "equip") return ITEMS[d.itemId]?.name ?? d.itemId;
   if (d.kind === "recipe") return getRecipeById(d.recipeId)?.name ?? d.recipeId;
+  if (d.kind === "skill_book") return SKILL_BOOKS[d.bookId]?.name ?? d.bookId;
   // recipe_one_of
   return `${d.recipeIds.length}종 중 1`;
 }

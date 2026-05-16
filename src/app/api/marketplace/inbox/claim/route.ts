@@ -15,7 +15,7 @@ const SAVES_INVENTORY = "inventory.v2";
 const SAVES_CRAFTING = "crafting.v2";
 
 type AddItem = {
-  kind: "equip" | "material";
+  kind: "equip" | "material" | "skill_book";
   id: string;
   quantity: number;
 };
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
               recipesToAdd.push({ id });
             }
           } else if (
-            (k === "equip" || k === "material") &&
+            (k === "equip" || k === "material" || k === "skill_book") &&
             typeof id === "string" &&
             Number.isFinite(q) &&
             q > 0
@@ -171,7 +171,12 @@ export async function POST(req: Request) {
         const inv = (invRows[0]?.value ?? {}) as InventoryShape;
         let next: InventoryShape = { ...inv };
         for (const it of itemsToAdd) {
-          const categoryKey = it.kind === "equip" ? "equipment" : "materials";
+          const categoryKey =
+            it.kind === "equip"
+              ? "equipment"
+              : it.kind === "skill_book"
+                ? "skillBooks"
+                : "materials";
           next = {
             ...next,
             [categoryKey]: addToCategory(next[categoryKey], it.id, it.quantity),

@@ -4,6 +4,7 @@ import type { NpcId } from "./npcs";
 import type { PotionId } from "./potions";
 import type { RegionId } from "./world";
 import type { CoopRewardTier } from "@/adventure/coop/data";
+import type { SkillBookId } from "./skillBooks";
 
 export type QuestRewardItem = { id: ItemId; count: number };
 export type QuestRewardPotion = { id: PotionId; count: number };
@@ -19,6 +20,8 @@ export type QuestReward = {
   recipes?: string[];
   // 종류별 포션 최대 보유 수의 영구 보너스(+n).
   potionCapacityBonus?: number;
+  // 학습 전 AP 스킬북 — 보상 회수 시 인벤토리에 1권씩 들어간다.
+  skillBooks?: SkillBookId[];
 };
 
 // 의뢰 목표 — 8 종류:
@@ -2114,6 +2117,22 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "unhyang_elder",
     requiresQuestCompleted: "unhyang-baekun-peak-giant",
+  },
+  // 백운 — 거인 10회 처치 후 풀리는 히든 검결 라인. "산정 검결의 잔편" — 봉황 깃털 ×5 deliver.
+  // 보상은 book_heaven_slay (귀속). 다이얼로그 게이트: peak-giant-hunter 완료 여부로 노출.
+  {
+    id: "unhyang-baekun-heaven-slay",
+    regionId: "unhyang",
+    title: "산정 검결의 잔편",
+    description:
+      "산정의 노래에 자네 이름이 새겨졌으니, 이제 옛 검결의 잔편을 자네에게 넘길 때가 됐어. 봉황 깃털 다섯 — 진짜 불을 머금은 깃이라야 검결을 새길 수 있어. 가져와 주게.",
+    requiredLevel: 30,
+    target: { kind: "deliver", materialId: "phoenix_feather", count: 5 },
+    reward: { fame: 50, skillBooks: ["book_heaven_slay"] },
+    repeatable: false,
+    giverNpcId: "unhyang_elder",
+    requiresQuestCompleted: "peak-giant-hunter",
+    hidden: true,
   },
   {
     id: "volcano-heart-hunter",

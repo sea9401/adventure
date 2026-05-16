@@ -1,7 +1,12 @@
 import type { Npc } from "@/adventure/data/npcs";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { useCharacterState } from "@/adventure/character/useCharacterState";
+import type { NotificationKind } from "@/lib/notifications";
+import { SKILL_BOOKS } from "@/adventure/data/skillBooks";
 import { QuestLineDialogue, type QuestLineStep } from "./questLineDialogue";
+
+const MENDING_BOOK_ID = "book_mending" as const;
 
 type Props = {
   npc: Npc;
@@ -9,6 +14,8 @@ type Props = {
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
   inventory: ReturnType<typeof useInventory>;
+  characterStateHook: ReturnType<typeof useCharacterState>;
+  addNotification: (kind: NotificationKind, text: string) => void;
 };
 
 // 산하 — 약초꾼. 전부 deliver 의뢰. 산초꽃·거인 비늘 → 다리 구간 재료 → 봉황령 화염 비늘.
@@ -82,7 +89,19 @@ export function SanhaDialogue({
   quests,
   completeQuest,
   inventory,
+  characterStateHook,
+  addNotification,
 }: Props) {
+  // 회복술 스킬북 — 약초꾼 답게 약식 처방서 1권 판매. 학습 후 인벤에서 사용.
+  // 이미 학습/소지했으면 판매 옵션 자체를 숨겨 중복 구매 방지.
+  const book = SKILL_BOOKS[MENDING_BOOK_ID];
+  const price = book.price ?? 0;
+  const alreadyKnown = (characterStateHook.state.learnedAPSkills ?? []).includes(
+    "회복술",
+  );
+  const alreadyHas = inventory.skillBookCount(MENDING_BOOK_ID) > 0;
+  const shouldOfferBook = !alreadyKnown && !alreadyHas;
+
   return (
     <QuestLineDialogue
       npc={npc}
@@ -91,7 +110,31 @@ export function SanhaDialogue({
       completeQuest={completeQuest}
       inventory={inventory}
       steps={STEPS}
-      idleText="약초는 여유가 있을 때마다 채워두려고 해요. 또 필요한 게 생기면 말씀드릴게요."
+      idleText={
+        shouldOfferBook
+          ? `약초는 여유가 있을 때마다 채워두려고 해요.\n\n…그리고, 손님이 다친 채로 산을 헤매는 게 안쓰러워 — 약식 처방서 한 권을 묶어 뒀어요. "${book.name}" — ${price}G 면 가져가세요.`
+          : "약초는 여유가 있을 때마다 채워두려고 해요. 또 필요한 게 생기면 말씀드릴게요."
+      }
+      idleAction={
+        shouldOfferBook
+          ? {
+              label: `${book.name} 구매 (${price}G)`,
+              onClick: () => {
+                if (characterStateHook.state.gold < price) {
+                  addNotification("info", "골드가 부족합니다.");
+                  return;
+                }
+                characterStateHook.addGold(-price);
+                inventory.addSkillBook(MENDING_BOOK_ID, 1);
+                addNotification(
+                  "item",
+                  `${book.name} 을(를) 구매했습니다. 가방에서 사용하세요.`,
+                );
+                onClose();
+              },
+            }
+          : undefined
+      }
     />
   );
 }

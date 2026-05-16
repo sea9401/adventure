@@ -190,6 +190,7 @@ export function renderTownNpcDialogue(
           quests={quests}
           completeQuest={completeQuest}
           storyFlags={storyFlags}
+          inventory={inventory}
         />
       );
     case "unhyang_smith":
@@ -223,6 +224,8 @@ export function renderTownNpcDialogue(
           quests={quests}
           completeQuest={completeQuest}
           inventory={inventory}
+          characterStateHook={characterStateHook}
+          addNotification={addNotification}
         />
       );
     case "unhyang_pilgrim":

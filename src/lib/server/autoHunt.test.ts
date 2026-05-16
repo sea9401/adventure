@@ -21,6 +21,7 @@ function makeResult(overrides: Partial<OfflineSimResult> = {}): OfflineSimResult
     materialsGained: {},
     equipsGained: [],
     recipesLearned: [],
+    skillBooksGained: [],
     potionsConsumed: {},
     potionsGranted: {},
     revives: 0,

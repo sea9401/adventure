@@ -3,6 +3,7 @@ import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { POTIONS } from "@/adventure/data/potions";
 import { getRecipeById } from "@/adventure/data/recipes";
 import { craftVarianceSummary } from "@/adventure/data/craftQuality";
+import { SKILL_BOOKS, type SkillBookId } from "@/adventure/data/skillBooks";
 import type { Listing } from "./types";
 
 // 매물 카드를 클릭하면 펼쳐 보여줄 상세 — 장비 옵션 / 제작서 결과 / 재료 설명.
@@ -47,6 +48,13 @@ export function listingDetail(item: Listing): ListingDetail | null {
   if (item.itemKind === "material") {
     if (!hasOwn(MATERIALS, item.itemId)) return null;
     return { lines: [], description: MATERIALS[item.itemId as MaterialId].description };
+  }
+  if (item.itemKind === "skill_book") {
+    if (!hasOwn(SKILL_BOOKS, item.itemId)) return null;
+    return {
+      lines: [],
+      description: SKILL_BOOKS[item.itemId as SkillBookId].description,
+    };
   }
   return null;
 }
