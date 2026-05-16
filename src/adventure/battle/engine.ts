@@ -1660,7 +1660,13 @@ export function resolveBattle(
       state = { ...state, log: tagged };
     }
     // enemy → player 전환 시 새 턴 marker 박기 (다음 턴이 시작됨을 시각화).
-    if (prevPhase === "enemy" && state.phase === "player") {
+    // 단, completedPlayerTurns === 0 인 경우는 적 선공의 첫 페이즈 직후이므로
+    // 루프 진입 직전에 박아둔 "1턴" 마커와 중복됨 — 건너뛴다.
+    if (
+      prevPhase === "enemy" &&
+      state.phase === "player" &&
+      state.turn.completedPlayerTurns > 0
+    ) {
       const turnNo = state.turn.completedPlayerTurns + 1;
       state = {
         ...state,
