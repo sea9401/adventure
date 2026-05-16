@@ -14,6 +14,7 @@ type Sizes = {
   label: string;
   banner: string;
   turnMarker: string;
+  hpBar: string;
   bubblePadding: string;
   spacing: string;
 };
@@ -25,6 +26,7 @@ const SIZES: Record<"normal" | "compact", Sizes> = {
     label: "text-[11px]",
     banner: "text-base",
     turnMarker: "text-[12px]",
+    hpBar: "text-[12px]",
     bubblePadding: "px-3 py-2",
     spacing: "space-y-1",
   },
@@ -34,6 +36,7 @@ const SIZES: Record<"normal" | "compact", Sizes> = {
     label: "text-[10px]",
     banner: "text-[13px]",
     turnMarker: "text-[10px]",
+    hpBar: "text-[10px]",
     bubblePadding: "px-2 py-1",
     spacing: "space-y-0.5",
   },
@@ -55,6 +58,18 @@ export function BattleLogList({
         }
         if (entry.kind === "turn_marker") {
           return <TurnMarker key={i} text={entry.text} sizes={s} />;
+        }
+        if (entry.kind === "hp_bar") {
+          return (
+            <HpBar
+              key={i}
+              playerHp={entry.playerHp}
+              playerMaxHp={entry.playerMaxHp}
+              enemyHp={entry.enemyHp}
+              enemyMaxHp={entry.enemyMaxHp}
+              sizes={s}
+            />
+          );
         }
         if (entry.kind === "player_attack" || entry.kind === "enemy_attack") {
           return (
@@ -217,6 +232,50 @@ function TurnMarker({ text, sizes }: { text: string; sizes: Sizes }) {
         {text}
       </span>
       <div className="h-px flex-1 bg-zinc-300 dark:bg-zinc-700" />
+    </div>
+  );
+}
+
+function HpBar({
+  playerHp,
+  playerMaxHp,
+  enemyHp,
+  enemyMaxHp,
+  sizes,
+}: {
+  playerHp: number;
+  playerMaxHp: number;
+  enemyHp: number;
+  enemyMaxHp: number;
+  sizes: Sizes;
+}) {
+  const BAR_LEN = 10;
+  const renderBar = (cur: number, max: number): string => {
+    const ratio = max > 0 ? Math.max(0, Math.min(1, cur / max)) : 0;
+    const filled = Math.round(ratio * BAR_LEN);
+    return "█".repeat(filled) + "░".repeat(BAR_LEN - filled);
+  };
+  return (
+    <div
+      className={`flex items-center justify-between gap-2 rounded border border-zinc-200 bg-zinc-50/70 px-2 py-1 font-mono ${sizes.hpBar} text-zinc-700 dark:border-zinc-700/60 dark:bg-zinc-900/40 dark:text-zinc-300`}
+    >
+      <span className="flex-1 truncate">
+        <span className="text-emerald-700 dark:text-emerald-300">
+          {renderBar(playerHp, playerMaxHp)}
+        </span>
+        <span className="ml-1 text-zinc-600 dark:text-zinc-400">
+          {playerHp}/{playerMaxHp}
+        </span>
+      </span>
+      <span className="text-zinc-300 dark:text-zinc-600">│</span>
+      <span className="flex-1 truncate text-right">
+        <span className="mr-1 text-zinc-600 dark:text-zinc-400">
+          {enemyHp}/{enemyMaxHp}
+        </span>
+        <span className="text-rose-700 dark:text-rose-300">
+          {renderBar(enemyHp, enemyMaxHp)}
+        </span>
+      </span>
     </div>
   );
 }
