@@ -28,6 +28,7 @@ import { InventoryView } from "@/adventure/InventoryView";
 import { SKILL_BOOKS, type SkillBookId } from "@/adventure/data/skillBooks";
 import {
   AP_SKILLS,
+  formatAPSkillDescription,
   getAPSkillById,
 } from "@/adventure/character/apSkills";
 import { RecentLogView } from "@/adventure/RecentLogView";
@@ -268,7 +269,10 @@ export function CharacterScreen() {
           skills={character.skills}
           apSkills={AP_SKILLS.filter((s) =>
             characterStateHook.state.learnedAPSkills?.includes(s.name),
-          ).map((s) => ({ name: s.name, description: s.description }))}
+          ).map((s) => ({
+            name: s.name,
+            description: formatAPSkillDescription(s),
+          }))}
           equippedNames={effectiveSkillNameList}
           normalSlots={skillLayout.normalSlots}
           feats={characterFeats}

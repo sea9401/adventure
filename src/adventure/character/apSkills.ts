@@ -44,3 +44,9 @@ export function getAPSkillById(id: APSkillId): APSkill | undefined {
 export function isAPSkillName(name: string): boolean {
   return AP_SKILLS.some((s) => s.name === name);
 }
+
+// SkillsView 등 UI 에 표시할 description — 코스트를 앞에 prefix 해 한눈에 들어오게.
+// 데이터의 raw description 은 효과만 담고 표시 시 합성. apCost 변경 시 description 보정 불필요.
+export function formatAPSkillDescription(skill: APSkill): string {
+  return `AP ${skill.apCost} · ${skill.description}`;
+}
