@@ -147,23 +147,44 @@ describe("simulateOfflineHunt", () => {
     expect(r.expBonusApplied).toBe(false); // baseInput 은 playerLevel 99
   });
 
-  it("신참 보너스 — playerLevel < 8 면 expGained ×2 + 플래그 true", () => {
+  it("신참 보너스 — playerLevel < 30 면 expGained ×2 + 플래그 true", () => {
     const baseR = simulateOfflineHunt(baseInput({ awayMs: 10_000, playerLevel: 99 }));
     const newbieR = simulateOfflineHunt(baseInput({ awayMs: 10_000, playerLevel: 1 }));
     expect(newbieR.expGained).toBe(baseR.expGained * 2);
     expect(newbieR.expBonusApplied).toBe(true);
   });
 
-  it("신참 보너스 — sim 중 8 레벨 도달하면 그 시점부터 보너스 OFF", () => {
-    // L7, 다음 레벨까지 거의 다 찬 exp. 슬라임 몇 마리만 잡아도 L8 도달.
-    // requiredExpToNext(7) = floor(120 * 7^1.5) = 2222.
+  it("신참 보너스 — playerLevel < 30 면 드롭률도 ×2", () => {
+    // 슬라임 drops: slime_chunk chance 0.15 / slime_core chance 0.015.
+    // rng=0.2 로 두면 — base(×1): 0.15 → fail (0.2 >= 0.15). newbie(×2): 0.30 → pass (0.2 < 0.30).
+    // 따라서 newbie 쪽만 slime_chunk 드롭이 매 처치마다 터지고, base 는 0.
+    const baseR = simulateOfflineHunt(
+      baseInput({ awayMs: 10_000, playerLevel: 99, rng: () => 0.2 }),
+    );
+    const newbieR = simulateOfflineHunt(
+      baseInput({ awayMs: 10_000, playerLevel: 1, rng: () => 0.2 }),
+    );
+    const baseMatTotal = Object.values(baseR.materialsGained).reduce(
+      (s, n) => s + (n ?? 0),
+      0,
+    );
+    const newbieMatTotal = Object.values(newbieR.materialsGained).reduce(
+      (s, n) => s + (n ?? 0),
+      0,
+    );
+    expect(baseMatTotal).toBe(0);
+    expect(newbieMatTotal).toBeGreaterThan(0);
+  });
+
+  it("신참 보너스 — sim 중 30 레벨 도달하면 그 시점부터 보너스 OFF", () => {
+    // L29, 다음 레벨까지 거의 다 찬 exp. 슬라임 처치로 L30 도달.
+    // requiredExpToNext(29) = floor(120 * 29^1.5) ≈ 18740.
     // 다음 슬라임 처치는 base exp(2) 만 적립.
-    // 단, 이 테스트는 "총 expGained 가 풀-신참 케이스보다 작다" 만 검증해도 충분.
     const aboutToLevel = simulateOfflineHunt(
       baseInput({
         awayMs: 60_000,
-        playerLevel: 7,
-        playerExp: 2210, // L7→8 직전
+        playerLevel: 29,
+        playerExp: 18730, // L29→30 직전
       }),
     );
     const stayedNewbie = simulateOfflineHunt(
@@ -173,7 +194,7 @@ describe("simulateOfflineHunt", () => {
         playerExp: 0,
       }),
     );
-    // L7→8 케이스는 처음 몇 마리만 ×2 받고 나머진 base. stayedNewbie 는 전부 ×2.
+    // L29→30 케이스는 처음 몇 마리만 ×2 받고 나머진 base. stayedNewbie 는 전부 ×2.
     expect(aboutToLevel.expGained).toBeLessThan(stayedNewbie.expGained);
     expect(aboutToLevel.expBonusApplied).toBe(true); // 처음에는 발동했음
   });

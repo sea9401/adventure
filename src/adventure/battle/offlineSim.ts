@@ -25,7 +25,12 @@ import {
   AUTO_HUNT_REVIVE_DELAY_MS,
   AUTO_HUNT_REVIVE_POTION_REFILL,
 } from "./autoHunt";
-import { applyExpGain, applyNewbieBonus, XP_RATE_MULT } from "@/lib/leveling";
+import {
+  applyExpGain,
+  applyNewbieBonus,
+  getNewbieDropMultiplier,
+  XP_RATE_MULT,
+} from "@/lib/leveling";
 
 export const OFFLINE_SIM_MAX_MS = 6 * 60 * 60 * 1000;
 
@@ -152,8 +157,8 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
   const luckMultiplier = 1 + input.luk * 0.01;
   let currentHp = input.player.hp;
   let elapsed = 0;
-  // 신참 보너스 ×2 판정용 — 매 처치마다 누적 EXP 로 레벨업 추적.
-  // 레벨이 임계치 (5) 도달하는 순간부터 다음 처치에는 보너스 OFF.
+  // 신참 보너스 ×2 (EXP + 드롭) 판정용 — 매 처치마다 누적 EXP 로 레벨업 추적.
+  // 레벨이 임계치 (NEWBIE_BONUS_LEVEL_THRESHOLD) 도달하는 순간부터 다음 처치에는 보너스 OFF.
   let runningLevel = input.playerLevel;
   let runningExp = input.playerExp ?? 0;
 
@@ -213,10 +218,16 @@ export function simulateOfflineHunt(input: OfflineSimInput): OfflineSimResult {
         const after = applyExpGain(runningLevel, runningExp, gained);
         runningLevel = after.level;
         runningExp = after.exp;
-        // 드롭 — onBattleEnd 와 동일 로직(LUK 멀티 + cap 1.0).
+        // 드롭 — onBattleEnd 와 동일 로직(LUK 멀티 + 신참 ×2 + cap 1.0).
+        // 신참 드롭 ×2 는 처치 시점의 runningLevel 로 판정 — 사이클 중 임계치 넘으면
+        // 그때부터 OFF (EXP 보너스와 같은 타이밍).
+        const newbieDropMult = getNewbieDropMultiplier(runningLevel);
         if (enemy.drops) {
           for (const drop of enemy.drops) {
-            const adjustedChance = Math.min(1, drop.chance * luckMultiplier);
+            const adjustedChance = Math.min(
+              1,
+              drop.chance * luckMultiplier * newbieDropMult,
+            );
             if (rng() >= adjustedChance) continue;
             if (drop.kind === "material") {
               const amount = drop.amount ?? 1;

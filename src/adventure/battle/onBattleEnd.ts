@@ -20,7 +20,7 @@ import {
   type GuildBuffSlot,
 } from "@/adventure/data/guildBuffs";
 import type { RuneBonusMap } from "@/adventure/character/runeBonus";
-import { XP_RATE_MULT } from "@/lib/leveling";
+import { XP_RATE_MULT, getNewbieDropMultiplier } from "@/lib/leveling";
 import type { MapProgress } from "@/lib/map-progress";
 import type {
   NotificationKind,
@@ -59,6 +59,8 @@ export type BattleEndDeps = {
   storyFlags: { set: (id: string) => void };
   vit: number;
   luk: number;
+  /** 신참 드롭 ×2 판정용. Lv 30 미만이면 ×2. */
+  playerLevel: number;
   respawnRegionId: RegionId;
   addNotification: (
     kind: NotificationKind,
@@ -131,11 +133,14 @@ export function onBattleEnd(
     }
     // 길드 버프 — 비어 있으면 모든 곱셈 ×1.0 (no-op).
     // 룬 EXP/드롭 % 도 길드 버프와 같은 자리에서 곱셈으로 합류.
+    // 신참 드롭 ×2 도 같은 자리에서 합류 (Lv 30 미만일 때).
     const buffs = deps.guildBuffs ?? [];
     const runeExpMult = 1 + (deps.runeBonus?.exp_pct ?? 0) / 100;
     const runeDropMult = 1 + (deps.runeBonus?.drop_pct ?? 0) / 100;
+    const newbieDropMult = getNewbieDropMultiplier(deps.playerLevel);
     const expMult = resolveBuffMultiplier(buffs, "exp_mult") * runeExpMult;
-    const dropMult = resolveBuffMultiplier(buffs, "drop_mult") * runeDropMult;
+    const dropMult =
+      resolveBuffMultiplier(buffs, "drop_mult") * runeDropMult * newbieDropMult;
     const boostedExp = Math.floor(payload.rewards.exp * expMult * XP_RATE_MULT);
     deps.characterState.addExp(boostedExp, deps.vit);
     // 보스 처치 시 storyFlag 발급 (data-driven, monster.onDefeatFlag).

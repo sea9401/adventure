@@ -22,10 +22,11 @@ function parseXpRateMult(): number {
 
 export const XP_RATE_MULT = parseXpRateMult();
 
-// 신참 보너스 — 8레벨 미만이면 사냥/퀘스트 EXP 가 ×2.
+// 신참 보너스 — 30레벨 미만이면 사냥/퀘스트 EXP 가 ×2 + 드롭률 ×2.
 // 레벨업으로 조건이 깨지는 순간 자동으로 꺼진다 (기존 캐릭터 포함).
-export const NEWBIE_BONUS_LEVEL_THRESHOLD = 8;
+export const NEWBIE_BONUS_LEVEL_THRESHOLD = 30;
 export const NEWBIE_EXP_MULTIPLIER = 2;
+export const NEWBIE_DROP_MULTIPLIER = 2;
 
 export function isNewbieBonusActive(level: number): boolean {
   return level < NEWBIE_BONUS_LEVEL_THRESHOLD;
@@ -39,6 +40,11 @@ export function applyNewbieBonus(
     return { gained: exp, bonusApplied: false };
   }
   return { gained: exp * NEWBIE_EXP_MULTIPLIER, bonusApplied: true };
+}
+
+// 드롭률 곱셈 — 신참이면 ×2, 아니면 ×1. 드롭 chance 계산 시 다른 멀티플라이어와 곱연산.
+export function getNewbieDropMultiplier(level: number): number {
+  return isNewbieBonusActive(level) ? NEWBIE_DROP_MULTIPLIER : 1;
 }
 
 // 35레벨 기준으로 지수를 1.5 → 2.5로 전환. 경계값이 동일하도록 계수를 맞춤:
