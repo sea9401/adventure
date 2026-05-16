@@ -237,6 +237,18 @@ export const TITLES: Record<TitleId, Title> = {
     description: "창공의 주재를 홀로 절반 이상 깎아낸 자. 옥좌 위 별빛이 마침내 한 사람의 결을 알아본다.",
     condition: "창공의 주재 협동 처치에서 누적 데미지 60% 이상 (legend 티어)",
   },
+  apex_sealer: {
+    id: "apex_sealer",
+    name: "옥좌의 봉인자",
+    description: "옥좌 위에 흩어진 빛을 다시 옥좌에 돌려놓은 자. 별빛이 다시 묶이고, 세상이 사람의 자리로 돌아왔다.",
+    condition: "창공의 주재 처치 후 별바다 노수호자 유성 앞에서 — 옥좌를 다시 봉인한다.",
+  },
+  apex_inheritor: {
+    id: "apex_inheritor",
+    name: "새로운 옥좌의 주재",
+    description: "옥좌에 앉은 자. 별빛이 다음 주재를 받아 갔다. 이제 부르는 자는 그 자신이다.",
+    condition: "창공의 주재 처치 후 별바다 노수호자 유성 앞에서 — 옥좌에 앉는다.",
+  },
   primordial_slayer: {
     id: "primordial_slayer",
     name: "태고의 노룡 마지막 자",

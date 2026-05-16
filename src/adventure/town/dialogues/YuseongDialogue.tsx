@@ -1,6 +1,11 @@
+import { useRef } from "react";
+import { X } from "@phosphor-icons/react";
 import type { Npc } from "@/adventure/data/npcs";
+import { NpcAvatar } from "@/adventure/NpcAvatar";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import { QuestLineDialogue, type QuestLineStep } from "./questLineDialogue";
 
 type Props = {
@@ -9,6 +14,8 @@ type Props = {
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
   inventory: ReturnType<typeof useInventory>;
+  storyFlags: ReturnType<typeof useStoryFlags>;
+  adventureLog: ReturnType<typeof useAdventureLog>;
 };
 
 // 노수호자 유성 — 별바다(천공 라인 endgame 정거장) 의 마지막 천공인 후예. 차분한 어른 말투.
@@ -172,7 +179,39 @@ const STEPS: QuestLineStep[] = [
   },
 ];
 
-export function YuseongDialogue({ npc, onClose, quests, completeQuest, inventory }: Props) {
+export function YuseongDialogue({
+  npc,
+  onClose,
+  quests,
+  completeQuest,
+  inventory,
+  storyFlags,
+  adventureLog,
+}: Props) {
+  const apexDefeated = storyFlags.has("endgame_apex_defeated");
+  const endedSealed = storyFlags.has("ending_sealed");
+  const endedThroned = storyFlags.has("ending_throned");
+
+  // 엔딩 분기 — 창공의 주재를 잠재운 직후, 아직 결정 안 한 상태면 우선 분기 모달.
+  // 두 칭호 중 한 자루를 새기고 한 자루의 결로 끝낸다.
+  if (apexDefeated && !endedSealed && !endedThroned) {
+    return (
+      <EpilogueChoice
+        npc={npc}
+        onClose={onClose}
+        storyFlags={storyFlags}
+        adventureLog={adventureLog}
+      />
+    );
+  }
+
+  // 엔딩 이후 idleText — 두 분기의 후일담을 한 줄로.
+  const idleText = endedSealed
+    ? "옥좌가 다시 봉인됐소. 별빛이 다시 묶여 있구려. 자네 한 사람의 결로 — 세상이 사람의 자리로 돌아왔소. 늦은 잔 한 잔, 같이 비우시려나."
+    : endedThroned
+      ? "옥좌의 주인 — 다시 별바다에 와 주셔서 고맙소. 별빛이 자네의 결을 입고 있는 것이 보이오. 자네가 부르는 자가 되어버린 지금도 — 사람의 자리에 들러주는 자요."
+      : "별바다에 발걸음이 닿으면 — 언제든 다시 들르게. 옛 결을 가라앉히는 일은 한 사람만으로는 끝나지 않으니.";
+
   return (
     <QuestLineDialogue
       npc={npc}
@@ -181,7 +220,105 @@ export function YuseongDialogue({ npc, onClose, quests, completeQuest, inventory
       completeQuest={completeQuest}
       inventory={inventory}
       steps={STEPS}
-      idleText="별바다에 발걸음이 닿으면 — 언제든 다시 들르게. 옛 결을 가라앉히는 일은 한 사람만으로는 끝나지 않으니."
+      idleText={idleText}
     />
+  );
+}
+
+// 엔딩 분기 — 봉인 / 앉음. 한 번 결정하면 flag + 칭호로 영구 기록.
+function EpilogueChoice({
+  npc,
+  onClose,
+  storyFlags,
+  adventureLog,
+}: {
+  npc: Npc;
+  onClose: () => void;
+  storyFlags: ReturnType<typeof useStoryFlags>;
+  adventureLog: ReturnType<typeof useAdventureLog>;
+}) {
+  const firedRef = useRef(false);
+
+  const choose = (kind: "sealed" | "throned") => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    if (kind === "sealed") {
+      storyFlags.set("ending_sealed");
+      adventureLog.markTitleObtained("apex_sealer");
+    } else {
+      storyFlags.set("ending_throned");
+      adventureLog.markTitleObtained("apex_inheritor");
+    }
+    onClose();
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="yuseong-epilogue-title"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-4">
+            <NpcAvatar npc={npc} size={112} />
+            <div className="min-w-0">
+              <div
+                id="yuseong-epilogue-title"
+                className="text-lg font-semibold text-zinc-900 dark:text-zinc-100"
+              >
+                {npc.name}
+              </div>
+              <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                {npc.description}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="닫기"
+            className="shrink-0 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+          >
+            <X size={18} weight="bold" />
+          </button>
+        </div>
+
+        <p className="mt-5 whitespace-pre-line text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
+          {
+            "옥좌가 비어 있소. 별빛 한 점이 — 자네 손 쪽으로 흘러왔구려.\n\n나는 한 세대를 옥좌 앞에서 별빛이 닳아 가는 걸 세고 있었지. 마지막 결은 — 내가 새길 수 없는 결이오. 자네가 새겨야 하오.\n\n자네 손이 닿으면, 옥좌는 다시 봉인되오. 별빛이 다시 묶이는 자리로. 세상이 사람의 자리로 돌아오오.\n자네 발이 닿으면, 옥좌는 자네를 받소. 별빛이 다음 주재를 받아 가는 자리로. 자네가 부르는 자가 되오.\n\n…한 결만 새기시오. 한 사람만의 결이오."
+          }
+        </p>
+
+        <div className="mt-5 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => choose("sealed")}
+            className="w-full rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+          >
+            손을 뻗어 — 옥좌를 다시 봉인한다
+          </button>
+          <button
+            type="button"
+            onClick={() => choose("throned")}
+            className="w-full rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700"
+          >
+            발을 옮겨 — 옥좌에 앉는다
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          >
+            …아직 결을 새기지 못한다
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
