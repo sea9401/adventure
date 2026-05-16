@@ -37,6 +37,7 @@ import { TRAINING_DURATION_MS } from "@/adventure/training/useTraining";
 import { equipmentCountsAllGrades } from "@/adventure/inventory/ownership";
 import { START_REGION_ID, type RegionId } from "@/adventure/data/world";
 import { useGame } from "@/adventure/GameContext";
+import { TutorialOverlay } from "@/adventure/tutorial";
 
 export function TownScreen() {
   const {
@@ -95,6 +96,29 @@ export function TownScreen() {
   if (subView === null) {
     return (
       <div className="space-y-2">
+        <TutorialOverlay
+          stepId="tutorial.town.intro"
+          title="마을에 오신 걸 환영합니다"
+          body={
+            <>
+              <p>
+                <b>치료소</b> — 전투로 줄어든 HP·MP 를 회복한다.
+              </p>
+              <p>
+                <b>상점</b> — 포션·재료를 사고 판다.
+              </p>
+              <p>
+                <b>대장간</b> — 장비를 강화하거나 새로 만든다.
+              </p>
+              <p>
+                <b>훈련소·길드</b> — 의뢰를 받아 기초를 다지고 보상을 얻는다.
+              </p>
+              <p>
+                지역의 <b>NPC 와 대화</b> 하면 1회성 이야기 의뢰를 받을 수 있다.
+              </p>
+            </>
+          }
+        />
         <EntryCard
           icon={
             <FirstAid size={28} weight="duotone" className="text-rose-500" />
