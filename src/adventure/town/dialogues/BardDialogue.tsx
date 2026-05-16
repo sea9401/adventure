@@ -2,8 +2,12 @@ import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { useQuests } from "@/adventure/quests/useQuests";
 import type { EquippedSlots } from "@/adventure/character/types";
 import { ownedUniqueItemCount } from "@/adventure/inventory/ownership";
+
+const FOCUSED_BREATH = "windvale-bard-focused-breath";
+const FOCUSED_BREATH_NEED = 3;
 
 type Props = {
   npc: Npc;
@@ -11,14 +15,81 @@ type Props = {
   storyFlags: ReturnType<typeof useStoryFlags>;
   inventory: ReturnType<typeof useInventory>;
   equippedSlots: EquippedSlots;
+  quests: ReturnType<typeof useQuests>;
+  completeQuest: (id: string) => boolean;
 };
 
-// 떠돌이 음유시인 — 의뢰는 없고 §11 hidden-lucky-collector 만 가드한다.
+// 떠돌이 음유시인 — §11 hidden-lucky-collector + 호흡 라인(book_focused_breath).
 // 유실된 명품(unique) 2종 보유 → bard_lucky_collected flag → lucky_finder 칭호(useTitleGrants).
-export function BardDialogue({ npc, onClose, storyFlags, inventory, equippedSlots }: Props) {
+// bard_lucky_collected 이후 풀리는 히든 라인 — 봉황 깃털 ×3 → 집중의 호흡 스킬북.
+export function BardDialogue({
+  npc,
+  onClose,
+  storyFlags,
+  inventory,
+  equippedSlots,
+  quests,
+  completeQuest,
+}: Props) {
   const collected = storyFlags.has("bard_lucky_collected");
 
   if (collected) {
+    // 히든 — 한 호흡의 결. 봉황 깃털 ×3 deliver.
+    const breath = quests.getEntry(FOCUSED_BREATH);
+    if (breath.state === "available") {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "행운이 붙은 손이라면 — 한 가지 더 일러둘게.\n노래는 한 호흡으로 끝나야 결이 잡혀. 봉황 깃털 셋만 가져다 주면 — 진짜 불을 머금은 깃이라야 — 그 호흡의 결을 자네 검에 옮겨 줄게."
+          }
+          primaryAction={{
+            label: "받아들인다",
+            onClick: () => {
+              quests.accept(FOCUSED_BREATH);
+              onClose();
+            },
+          }}
+        />
+      );
+    }
+    if (breath.state === "active") {
+      const have = inventory.materialCount("phoenix_feather");
+      if (have >= FOCUSED_BREATH_NEED) {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "셋 — 결이 살아 있군. 호흡 한 자락 옮길 만한 깃이야.\n자, 집중의 호흡 — 받게. 다음 휘두름엔 잊지 말고."
+            }
+            primaryAction={{
+              label: "건네준다",
+              onClick: () => {
+                const r = quests.tryDeliver(
+                  FOCUSED_BREATH,
+                  inventory.materialCount,
+                  inventory.consumeMaterial,
+                );
+                if (r.ok) {
+                  completeQuest(FOCUSED_BREATH);
+                  onClose();
+                }
+              },
+            }}
+          />
+        );
+      }
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={`봉황 깃털은 봉황령 능선 — 불꽃 독수리한테서 나오지. — 진행 ${have}/${FOCUSED_BREATH_NEED}`}
+        />
+      );
+    }
+
     return (
       <NpcDialogue
         npc={npc}

@@ -16,7 +16,13 @@ export type APSkillId =
   | "expose_weakness"
   | "madness"
   | "slow"
-  | "frenzy";
+  | "frenzy"
+  | "focused_breath"
+  | "combo_strike"
+  | "storm_strike"
+  | "mad_slash"
+  | "thunder_strike"
+  | "light_glide";
 
 export type APSkillEffect =
   // 본타 데미지를 ATK × atkMult 로 갱신. ignoresDef = true 면 적 DEF 무시.
@@ -47,7 +53,33 @@ export type APSkillEffect =
   // 다음 N 라운드 동안 적 SPD ×mult. 둔화 — 천칭 시너지용.
   | { kind: "enemy_spd_mult_turns"; mult: number; turns: number }
   // 다음 N 라운드 동안 자신 SPD ×mult. 폭주 — 천칭 시너지용.
-  | { kind: "player_spd_mult_turns"; mult: number; turns: number };
+  | { kind: "player_spd_mult_turns"; mult: number; turns: number }
+  // 다음 평타 1회 크리 100% + 크리뎀 +pct% (크리뎀은 그 1발에만). 집중의 호흡.
+  | { kind: "crit_buff_next_attack"; critDmgBonusPct: number }
+  // 이번 턴 추가 공격 +count. 연환격 — 이미 attackCount 가 결정된 후 즉시 attacksLeft 증가.
+  | { kind: "extra_attack_this_turn"; count: number }
+  // 본타 + (ATK × spdPct/100) 추가 데미지. 폭풍 일격 — fire 공격에 한 번 더 얹는다.
+  | { kind: "atk_plus_spd_pct_bonus"; spdPct: number }
+  // 발동 attack 으로 ATK×atkMult 데미지를 hits 번 적용 + maxHp ×selfDmgPct/100 자해.
+  // 광살참 — 단일 fire 에서 다중 타격 + HP 비용. ignoresDef·ignoresEvasion 동일 옵션.
+  | {
+      kind: "multi_hit_self_damage";
+      atkMult: number;
+      hits: number;
+      selfDmgPct: number;
+      ignoresDef?: boolean;
+      ignoresEvasion?: boolean;
+    }
+  // ATK ×atkMult + 1턴 적 스킬 봉인. 천뢰 일격 — 본타 변형 + enemy skill silence.
+  | {
+      kind: "atk_multiplier_with_silence";
+      atkMult: number;
+      silenceTurns: number;
+      ignoresDef?: boolean;
+      ignoresEvasion?: boolean;
+    }
+  // 다음 1턴 플레이어 attackCount +count. 빛의 활공 — 큐잉 형태로 다음 턴 시작 시 소비.
+  | { kind: "queued_extra_attacks_next_turn"; count: number };
 
 export type APSkill = {
   /** 내부 id — 데이터 식별용. user-facing 은 name. */
@@ -139,6 +171,57 @@ export const AP_SKILLS: APSkill[] = [
     description: "3턴 동안 자신 SPD ×1.5 (천칭 크리 시너지)",
     apCost: 4,
     effect: { kind: "player_spd_mult_turns", mult: 1.5, turns: 3 },
+  },
+  {
+    id: "focused_breath",
+    name: "집중의 호흡",
+    description: "다음 평타 1회 크리 보장 + 그 1발 크리뎀 +30%",
+    apCost: 2,
+    effect: { kind: "crit_buff_next_attack", critDmgBonusPct: 30 },
+  },
+  {
+    id: "combo_strike",
+    name: "연환격",
+    description: "이번 턴 추가 공격 +1",
+    apCost: 2,
+    effect: { kind: "extra_attack_this_turn", count: 1 },
+  },
+  {
+    id: "storm_strike",
+    name: "폭풍 일격",
+    description: "본타 + (ATK × SPD%) 추가 데미지",
+    apCost: 3,
+    effect: { kind: "atk_plus_spd_pct_bonus", spdPct: 100 },
+  },
+  {
+    id: "mad_slash",
+    name: "광살참",
+    description: "ATK ×2.0 으로 2연타, 자신 maxHP ×15% 자해",
+    apCost: 4,
+    effect: {
+      kind: "multi_hit_self_damage",
+      atkMult: 2.0,
+      hits: 2,
+      selfDmgPct: 15,
+    },
+  },
+  {
+    id: "thunder_strike",
+    name: "천뢰 일격",
+    description: "ATK ×2.5 + 1턴 적 스킬 봉인",
+    apCost: 5,
+    effect: {
+      kind: "atk_multiplier_with_silence",
+      atkMult: 2.5,
+      silenceTurns: 1,
+    },
+  },
+  {
+    id: "light_glide",
+    name: "빛의 활공",
+    description: "다음 1턴 추가 공격 +3 (큐잉)",
+    apCost: 5,
+    effect: { kind: "queued_extra_attacks_next_turn", count: 3 },
   },
 ];
 

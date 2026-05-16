@@ -247,6 +247,8 @@ export function renderTownNpcDialogue(
           storyFlags={storyFlags}
           inventory={inventory}
           equippedSlots={characterStateHook.equippedSlots}
+          quests={quests}
+          completeQuest={completeQuest}
         />
       );
     case "windvale_keeper":

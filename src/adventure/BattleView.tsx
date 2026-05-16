@@ -37,6 +37,8 @@ export type BattleEndPayload = {
   finalPlayerHp: number;
   /** 그 전투에서 플레이어가 가졌던 최대 HP — kill_within_hp 의뢰 판정용. */
   playerMaxHp: number;
+  /** 이 전투에서 실제로 받은 HP 피해 (보호막 흡수분 제외) — 무피해 업적 판정용. */
+  damageTakenThisCombat: number;
   /** exp 는 신참 보너스가 적용된 최종 적립값. expBonusApplied 는 토스트/표시 단서. */
   rewards: { exp: number; expBonusApplied: boolean };
   potionsConsumed: Partial<Record<PotionId, number>>;
@@ -151,6 +153,7 @@ export function BattleView({
         enemyName: state.enemy.name,
         finalPlayerHp: state.playerHp,
         playerMaxHp: state.playerMaxHp,
+        damageTakenThisCombat: state.stacks.damageTakenThisCombat,
         rewards: { exp: expBonus.gained, expBonusApplied: expBonus.bonusApplied },
         potionsConsumed,
         log: state.log,
@@ -413,6 +416,7 @@ export function BattleView({
                 enemyName: state.enemy.name,
                 finalPlayerHp: 0,
                 playerMaxHp: state.playerMaxHp,
+                damageTakenThisCombat: state.stacks.damageTakenThisCombat,
                 rewards: { exp: 0, expBonusApplied: false },
                 potionsConsumed,
                 log: state.log,

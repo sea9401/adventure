@@ -430,6 +430,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "material", materialId: "wolf_king_fang", chance: 0.0075 },
       { kind: "material", materialId: "giant_scale", chance: 0.12 },
+      // 무리장이 익혔던 연환의 결 — 연환격 스킬북.
+      { kind: "skill_book", bookId: "book_combo_strike", chance: 0.005 },
     ],
   },
   // 운향 협곡 보스 — region.boss 도전 버튼으로만 진입. 일반 인카운터 풀에선 제외.

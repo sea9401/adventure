@@ -42,6 +42,8 @@ export type AdventureLog = {
   chatCount?: number;
   /** 누적 치료소 이용 횟수 — '환자' 칭호용. */
   healingCount?: number;
+  /** 누적 무피해 승리 횟수 — 광살참 스킬북 100회 업적용. */
+  noDamageWins?: number;
   /**
    * 모험의 서 등록 마일스톤으로 지금까지 수령한 단련 포인트 수.
    * 가용 = floor(eligible entries / 20) - claimed. (compendiumReward.ts 참조)

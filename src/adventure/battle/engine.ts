@@ -76,6 +76,12 @@ export type BattleTurnState = {
   fatedChainTriggeredThisTurn: boolean;
   // 이번 턴에 발동한 AP 스킬 id — null = 미발동. 턴 종료 시 null 로 리셋. 한 턴 최대 1개 정책.
   apSkillFiredThisTurn: APSkillId | null;
+  // 집중의 호흡 (AP) — 큐된 크리뎀 +pct%. 다음 평타 1번에 critRoll 강제 + 크리뎀 멀티 보너스.
+  // 0 = 미큐. 발동 즉시 비활성 (1발 소비). 턴 종료에는 리셋 안 됨 — 턴 가로질러 유지.
+  focusedBreathCritDmgBonusPct: number;
+  // 빛의 활공 (AP) — 다음 플레이어 턴 시작 시 attackCount 에 가산할 큐된 추가 공격.
+  // 0 = 미큐. 다음 턴 시작에 소비.
+  queuedExtraAttacks: number;
 };
 
 // 전투당 1회성 토글 — 한 번 켜지면 그 전투 동안 유지.
@@ -128,6 +134,8 @@ export type BattleBuffs = {
   // 적 SPD ×mult (둔화). 천칭 크리 계산에 영향.
   enemySpdMult: number;
   enemySpdTurnsLeft: number;
+  // 천뢰 일격 (AP) — 적 스킬 봉인 잔여 라운드. > 0 이면 enemy.skill 효과 비활성.
+  enemySilenceTurnsLeft: number;
 };
 
 // 가변 자원 스택 / 잔량 카운트.
@@ -643,6 +651,8 @@ export function initialBattleState(
       weakpointUsedThisTurn: false,
       fatedChainTriggeredThisTurn: false,
       apSkillFiredThisTurn: null,
+      focusedBreathCritDmgBonusPct: 0,
+      queuedExtraAttacks: 0,
     },
     flags: {
       phaseTriggered: false,
@@ -672,6 +682,7 @@ export function initialBattleState(
       enemyDefDebuffTurnsLeft: 0,
       enemySpdMult: 1,
       enemySpdTurnsLeft: 0,
+      enemySilenceTurnsLeft: 0,
     },
     stacks: {
       bleedStacks: 0,
@@ -697,6 +708,7 @@ function decrementTimedEffects(buffs: BattleBuffs): BattleBuffs {
     playerSpdTurnsLeft: Math.max(0, buffs.playerSpdTurnsLeft - 1),
     enemyDefDebuffTurnsLeft: Math.max(0, buffs.enemyDefDebuffTurnsLeft - 1),
     enemySpdTurnsLeft: Math.max(0, buffs.enemySpdTurnsLeft - 1),
+    enemySilenceTurnsLeft: Math.max(0, buffs.enemySilenceTurnsLeft - 1),
   };
 }
 
@@ -713,12 +725,19 @@ export function advanceTurn(
 
   // 새 플레이어 턴 진입 시 지속 효과 turnsLeft -1 (직전 enemy 페이즈 완료 후).
   // turn 1 (completedPlayerTurns=0) 은 가드 — 발동도 안 된 상태에서 깎을 게 없음.
+  // 빛의 활공 큐도 같이 소비 — queuedExtraAttacks 를 playerAttacksLeft 에 가산하고 0 으로 리셋.
   if (
     state.phase === "player" &&
     state.turn.firstAttackPending &&
     state.turn.completedPlayerTurns > 0
   ) {
-    state = { ...state, buffs: decrementTimedEffects(state.buffs) };
+    const consumeQueued = state.turn.queuedExtraAttacks;
+    state = {
+      ...state,
+      buffs: decrementTimedEffects(state.buffs),
+      playerAttacksLeft: state.playerAttacksLeft + consumeQueued,
+      turn: { ...state.turn, queuedExtraAttacks: 0 },
+    };
   }
 
   if (state.phase === "player") {
@@ -756,17 +775,29 @@ export function advanceTurn(
               evaluateAPSkillCondition(e.condition, state),
           )?.skill ?? null
         : null;
+    // atk_multiplier 계열 효과 — 광살참(multi_hit_self_damage)과 천뢰 일격
+    // (atk_multiplier_with_silence) 도 atkMult/ignoresDef/ignoresEvasion 을 공유.
+    const apMultEffect = apSkillFires?.effect;
     const apAtkMult =
-      apSkillFires?.effect.kind === "atk_multiplier"
-        ? apSkillFires.effect.atkMult
+      apMultEffect?.kind === "atk_multiplier" ||
+      apMultEffect?.kind === "multi_hit_self_damage" ||
+      apMultEffect?.kind === "atk_multiplier_with_silence"
+        ? apMultEffect.atkMult
         : 1;
     const apIgnoresDef =
-      apSkillFires?.effect.kind === "atk_multiplier" &&
-      apSkillFires.effect.ignoresDef === true;
+      (apMultEffect?.kind === "atk_multiplier" ||
+        apMultEffect?.kind === "multi_hit_self_damage" ||
+        apMultEffect?.kind === "atk_multiplier_with_silence") &&
+      apMultEffect.ignoresDef === true;
     // ignoresEvasion = true 면 적 회피 굴림 자체 스킵 — 천살 등이 사용.
     const apIgnoresEvasion =
-      apSkillFires?.effect.kind === "atk_multiplier" &&
-      apSkillFires.effect.ignoresEvasion === true;
+      (apMultEffect?.kind === "atk_multiplier" ||
+        apMultEffect?.kind === "multi_hit_self_damage" ||
+        apMultEffect?.kind === "atk_multiplier_with_silence") &&
+      apMultEffect.ignoresEvasion === true;
+    // 광살참 hits — 같은 fire 에서 N 번 데미지 누적.
+    const apHits =
+      apMultEffect?.kind === "multi_hit_self_damage" ? apMultEffect.hits : 1;
 
     // 적 회피 — 데미지 굴리기 전에 1차 판정. 회피하면 공격 1회가 그대로 빗나간다.
     // 정확 슬롯 시 적 evasion 에 배수(<1) 가 곱해져 부분 무력화.
@@ -888,8 +919,15 @@ export function advanceTurn(
       baseCritPct + luckCritBonus + balanceCritBonus + universalLuckBonus + cyclingChiThisTurn;
     // 연쇄 운명 (2티어 특기) — 큐가 있으면 이 공격 크리 강제. 큐는 아래에서 소비.
     const fatedChainConsumed = state.flags.fatedChainCritPending;
+    // 집중의 호흡 (AP) — 큐가 있으면 이 공격 크리 강제 + 크리뎀 보너스. 1회 소비.
+    // 발동 attack 자체는 fire 후에 셋팅돼서 그 다음 공격부터 적용 (자연스럽게 분리).
+    const focusedBreathConsumed = state.turn.focusedBreathCritDmgBonusPct > 0;
+    const focusedBreathCritDmgBonus =
+      focusedBreathConsumed
+        ? state.turn.focusedBreathCritDmgBonusPct / 100
+        : 0;
     const critRoll =
-      fatedChainConsumed
+      fatedChainConsumed || focusedBreathConsumed
         ? true
         : effectiveCritPct > 0
           ? Math.random() * 100 < effectiveCritPct
@@ -908,10 +946,17 @@ export function advanceTurn(
       gustBonus +
       enduringStrikeBonus +
       madnessAtkBonus;
-    const baseDmg = damageBetween(
+    const baseDmgSingleHit = damageBetween(
       apAtkMult !== 1 ? Math.floor(atkBeforeApMult * apAtkMult) : atkBeforeApMult,
       targetDef,
     );
+    // 광살참 (AP) — 같은 fire 에서 hits 번 반복 데미지. apHits=1 이면 baseDmgSingleHit 그대로.
+    const baseDmg = apHits > 1 ? baseDmgSingleHit * apHits : baseDmgSingleHit;
+    // 폭풍 일격 (AP) — fire 시 (player.atk × spdPct/100) 추가 고정 데미지. targetDef 무시.
+    const stormBonus =
+      apMultEffect?.kind === "atk_plus_spd_pct_bonus"
+        ? Math.floor((player.atk * apMultEffect.spdPct) / 100)
+        : 0;
     // 처형 — 적 HP 비율 < executionHpFraction 일 때 데미지 ×executionDamageMult.
     // 강공격/분쇄 후 데미지에 곱하고, 크리티컬은 그 위에 다시 곱한다 (다단 누적).
     const exMult = player.executionDamageMult ?? 1;
@@ -922,7 +967,9 @@ export function advanceTurn(
     const dmgAfterExecution = executionActive
       ? Math.max(1, Math.floor(baseDmg * exMult))
       : baseDmg;
-    const critMult = player.critMult ?? CRIT_MULT_BASE;
+    // 집중의 호흡 (AP) — 그 1발 한정 critMult 에 +pct% 추가 (가산 후 한 번에 곱).
+    const critMult =
+      (player.critMult ?? CRIT_MULT_BASE) + focusedBreathCritDmgBonus;
     const dmgAfterCrit = critRoll
       ? Math.floor(dmgAfterExecution * critMult)
       : dmgAfterExecution;
@@ -938,8 +985,12 @@ export function advanceTurn(
       ? Math.floor(dmgAfterLuckyStar * player.assassinateDmgMult!)
       : dmgAfterLuckyStar;
     // 잡몹 스킬 "방어 태세" — 이 적을 공격할 때 데미지 -damageReduction (최소 1로 클램프).
+    // 천뢰 일격 silence 활성 시 brace 도 비활성.
     const braceReduction =
-      state.enemy.skill?.kind === "brace" ? state.enemy.skill.damageReduction : 0;
+      state.buffs.enemySilenceTurnsLeft <= 0 &&
+      state.enemy.skill?.kind === "brace"
+        ? state.enemy.skill.damageReduction
+        : 0;
     const dmg =
       braceReduction > 0 ? Math.max(1, dmgBeforeBrace - braceReduction) : dmgBeforeBrace;
     // 천명 (4티어) — 일정 확률로 적 현재 HP 의 일부를 추가 고정 피해 (이 공격의 보통 피해와 별개로 합산).
@@ -958,7 +1009,7 @@ export function advanceTurn(
     const impactDmg = impactFires
       ? Math.floor((state.enemyHp * impactPct) / 100)
       : 0;
-    const totalDmg = dmg + decreeDmg + impactDmg;
+    const totalDmg = dmg + decreeDmg + impactDmg + stormBonus;
     const labels: string[] = [];
     if (bonus > 0) labels.push("강공격");
     if (bonus > 0 && crushReduction > 0) labels.push("분쇄");
@@ -1153,13 +1204,71 @@ export function advanceTurn(
         kind: "info",
         text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 SPD ×${apSkillFires.effect.mult}`,
       });
+    } else if (apSkillFires?.effect.kind === "atk_multiplier_with_silence") {
+      // 천뢰 일격 — atk_multiplier 와 같이 발동 + 1턴 적 스킬 봉인.
+      nextBuffsTimed = {
+        ...nextBuffsTimed,
+        enemySilenceTurnsLeft: apSkillFires.effect.silenceTurns,
+      };
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires.name}] ${state.enemy.name} ${apSkillFires.effect.silenceTurns}턴간 스킬 봉인`,
+      });
+    }
+    // 광살참 (multi_hit_self_damage) — 자해 HP. dmg 적용 후 player HP 에서 추가 감산.
+    const madSlashSelfDmg =
+      apMultEffect?.kind === "multi_hit_self_damage"
+        ? Math.floor((state.playerMaxHp * apMultEffect.selfDmgPct) / 100)
+        : 0;
+    const playerHpAfterMadSlash =
+      madSlashSelfDmg > 0
+        ? Math.max(0, playerHpAfterAPHeal - madSlashSelfDmg)
+        : playerHpAfterAPHeal;
+    if (madSlashSelfDmg > 0) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires!.name}] ${playerName}의 HP -${madSlashSelfDmg} (자해)`,
+      });
+    }
+    // 연환격 (extra_attack_this_turn) — 이번 턴 attacksLeft 즉시 가산.
+    const comboExtraAttacks =
+      apSkillFires?.effect.kind === "extra_attack_this_turn"
+        ? apSkillFires.effect.count
+        : 0;
+    // 빛의 활공 (queued_extra_attacks_next_turn) — 다음 턴 시작 시 attacksLeft 에 가산할 큐.
+    const queuedExtraAttacksAdd =
+      apSkillFires?.effect.kind === "queued_extra_attacks_next_turn"
+        ? apSkillFires.effect.count
+        : 0;
+    if (comboExtraAttacks > 0) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires!.name}] 이번 턴 추가 공격 +${comboExtraAttacks}`,
+      });
+    }
+    if (queuedExtraAttacksAdd > 0) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires!.name}] 다음 턴 행동 +${queuedExtraAttacksAdd}`,
+      });
+    }
+    // 집중의 호흡 큐잉 — 이 발동 attack 후 첫 평타에 적용. 현재 fire 의 critRoll 에는 영향 X.
+    const focusedBreathQueueBonusPct =
+      apSkillFires?.effect.kind === "crit_buff_next_attack"
+        ? apSkillFires.effect.critDmgBonusPct
+        : 0;
+    if (focusedBreathQueueBonusPct > 0) {
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires!.name}] 다음 공격 크리 보장 + 크리뎀 +${focusedBreathQueueBonusPct}%`,
+      });
     }
     // 페이즈 트리거 검사 — 데미지 적용 직후, 사망 분기 전에 처리해야 트리거된 def 가
     // 같은 턴 후속 공격(다중공격/연타)에 즉시 반영된다.
     const afterDamage = applyPhaseTriggerIfAny({
       ...state,
       enemyHp,
-      playerHp: playerHpAfterAPHeal,
+      playerHp: playerHpAfterMadSlash,
       log,
       ap: nextApAfter,
       flags: {
@@ -1192,6 +1301,16 @@ export function advanceTurn(
         apSkillFiredThisTurn: apSkillFires
           ? apSkillFires.id
           : state.turn.apSkillFiredThisTurn,
+        // 집중의 호흡 — 발동되면 이번 fire 후부터 큐잉, 큐 활성 중 평타 1회 발사 시 0 으로 소비.
+        focusedBreathCritDmgBonusPct: focusedBreathQueueBonusPct > 0
+          ? focusedBreathQueueBonusPct
+          : focusedBreathConsumed
+            ? 0
+            : state.turn.focusedBreathCritDmgBonusPct,
+        // 빛의 활공 — 다음 턴 attacksLeft 에 가산할 큐. 일반 평타에선 0 유지.
+        queuedExtraAttacks: queuedExtraAttacksAdd > 0
+          ? queuedExtraAttacksAdd
+          : state.turn.queuedExtraAttacks,
       },
     });
     if (enemyHp <= 0) {
@@ -1209,7 +1328,8 @@ export function advanceTurn(
         },
       };
     }
-    const attacksLeft = state.playerAttacksLeft - 1 + weakpointAdd;
+    const attacksLeft =
+      state.playerAttacksLeft - 1 + weakpointAdd + comboExtraAttacks;
     if (attacksLeft > 0) {
       return {
         ...afterDamage,
@@ -1632,7 +1752,9 @@ export function advanceTurn(
   }
 
   // ── 잡몹 스킬 (적 공격에 영향) ──────────────────────────────────────────
-  const skill = state.enemy.skill;
+  // 천뢰 일격 (AP) — silence 활성 중엔 enemy.skill 전체 효과 비활성.
+  const skill =
+    state.buffs.enemySilenceTurnsLeft > 0 ? undefined : state.enemy.skill;
   // 격노 — 적 HP 가 maxHp×hpFraction 미만으로 떨어지는 순간 1회 발동, ATK +atkBonus (전투 종료까지 유지).
   const enrageReady =
     skill?.kind === "enrage" &&

@@ -24,6 +24,7 @@ function readInitial(raw: unknown): AdventureLog {
     battleLosses: parsed.battleLosses ?? 0,
     chatCount: parsed.chatCount ?? 0,
     healingCount: parsed.healingCount ?? 0,
+    noDamageWins: parsed.noDamageWins ?? 0,
     compendiumPointsClaimed: parsed.compendiumPointsClaimed ?? 0,
   };
 }
@@ -156,6 +157,14 @@ export function useAdventureLog() {
     }));
   }, []);
 
+  // 누적 무피해 승리 +1 — 광살참 스킬북 100회 업적용.
+  const incrementNoDamageWin = useCallback(() => {
+    setLog((prev) => ({
+      ...prev,
+      noDamageWins: (prev.noDamageWins ?? 0) + 1,
+    }));
+  }, []);
+
   // 모험의 서 등록 마일스톤(20개당 단련 +1) 보상 수령 — claimed += n.
   // n 만큼 단련 포인트를 실제로 더하는 건 호출부(training.addPoints) 책임.
   const addCompendiumClaimed = useCallback((n: number) => {
@@ -237,6 +246,7 @@ export function useAdventureLog() {
     incrementBattleLosses,
     incrementChatCount,
     incrementHealingCount,
+    incrementNoDamageWin,
     addCompendiumClaimed,
     setCompendiumClaimed,
   };

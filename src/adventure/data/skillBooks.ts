@@ -15,7 +15,13 @@ export type SkillBookId =
   | "book_expose_weakness"
   | "book_madness"
   | "book_slow"
-  | "book_frenzy";
+  | "book_frenzy"
+  | "book_focused_breath"
+  | "book_combo_strike"
+  | "book_storm_strike"
+  | "book_mad_slash"
+  | "book_thunder_strike"
+  | "book_light_glide";
 
 export type SkillBook = {
   id: SkillBookId;
@@ -112,6 +118,54 @@ export const SKILL_BOOKS: Record<SkillBookId, SkillBook> = {
     description:
       "천 마리를 잡은 자의 손이 익히는 호흡. 사용하면 '폭주' (AP 4) 를 학습한다. 귀속.",
     learnsSkillId: "frenzy",
+    tradable: false,
+  },
+  book_focused_breath: {
+    id: "book_focused_breath",
+    name: "스킬북 — 집중의 호흡",
+    description:
+      "음유시인의 노래 한 구절이 호흡법으로 정리된 잔편. 사용하면 '집중의 호흡' (AP 2) 을 학습한다. 귀속.",
+    learnsSkillId: "focused_breath",
+    tradable: false,
+  },
+  book_combo_strike: {
+    id: "book_combo_strike",
+    name: "스킬북 — 연환격",
+    description:
+      "늑대 무리장이 익혔던 연환의 결. 사용하면 '연환격' (AP 2) 을 학습한다.",
+    learnsSkillId: "combo_strike",
+    tradable: true,
+  },
+  book_storm_strike: {
+    id: "book_storm_strike",
+    name: "스킬북 — 폭풍 일격",
+    description:
+      "구름 위 바람을 검결로 옮긴 비전서. 사용하면 '폭풍 일격' (AP 3) 을 학습한다. 귀속.",
+    learnsSkillId: "storm_strike",
+    tradable: false,
+  },
+  book_mad_slash: {
+    id: "book_mad_slash",
+    name: "스킬북 — 광살참",
+    description:
+      "흠 없이 백 번을 잡아낸 자에게만 보이는 광폭의 결. 사용하면 '광살참' (AP 4) 을 학습한다. 귀속.",
+    learnsSkillId: "mad_slash",
+    tradable: false,
+  },
+  book_thunder_strike: {
+    id: "book_thunder_strike",
+    name: "스킬북 — 천뢰 일격",
+    description:
+      "거인을 열 번 잠재운 자의 손이 익히는 천둥 결. 사용하면 '천뢰 일격' (AP 5) 을 학습한다. 귀속.",
+    learnsSkillId: "thunder_strike",
+    tradable: false,
+  },
+  book_light_glide: {
+    id: "book_light_glide",
+    name: "스킬북 — 빛의 활공",
+    description:
+      "별바다 보스를 잠재운 자에게 별빛이 전한 결. 사용하면 '빛의 활공' (AP 5) 을 학습한다. 귀속.",
+    learnsSkillId: "light_glide",
     tradable: false,
   },
 };
