@@ -10,7 +10,12 @@ export type SkillBookId =
   | "book_extra_evade"
   | "book_mending"
   | "book_heaven_slay"
-  | "book_deep_wound";
+  | "book_deep_wound"
+  | "book_resolve"
+  | "book_expose_weakness"
+  | "book_madness"
+  | "book_slow"
+  | "book_frenzy";
 
 export type SkillBook = {
   id: SkillBookId;
@@ -65,6 +70,48 @@ export const SKILL_BOOKS: Record<SkillBookId, SkillBook> = {
     description:
       "수많은 보스를 베어 넘긴 자에게만 보이는 핏빛 비전서. 사용하면 '깊은 상처' (AP 3) 를 학습한다. 귀속.",
     learnsSkillId: "deep_wound",
+    tradable: false,
+  },
+  book_resolve: {
+    id: "book_resolve",
+    name: "스킬북 — 결의",
+    description:
+      "수비대 노수병이 후학에게 남긴 호흡법. 사용하면 '결의' (AP 2) 를 학습한다.",
+    learnsSkillId: "resolve",
+    price: 600,
+    tradable: true,
+  },
+  book_expose_weakness: {
+    id: "book_expose_weakness",
+    name: "스킬북 — 약점 노출",
+    description:
+      "사냥꾼이 짐승의 결을 읽는 법. 사용하면 '약점 노출' (AP 2) 을 학습한다.",
+    learnsSkillId: "expose_weakness",
+    price: 700,
+    tradable: true,
+  },
+  book_madness: {
+    id: "book_madness",
+    name: "스킬북 — 광기",
+    description:
+      "광폭화한 산적 두목이 쥐고 있던 핏물 절은 노트. 사용하면 '광기' (AP 3) 를 학습한다.",
+    learnsSkillId: "madness",
+    tradable: true,
+  },
+  book_slow: {
+    id: "book_slow",
+    name: "스킬북 — 둔화",
+    description:
+      "거미줄에 휘감긴 채 발견된 사냥 비전. 사용하면 '둔화' (AP 2) 를 학습한다.",
+    learnsSkillId: "slow",
+    tradable: true,
+  },
+  book_frenzy: {
+    id: "book_frenzy",
+    name: "스킬북 — 폭주",
+    description:
+      "천 마리를 잡은 자의 손이 익히는 호흡. 사용하면 '폭주' (AP 4) 를 학습한다. 귀속.",
+    learnsSkillId: "frenzy",
     tradable: false,
   },
 };

@@ -405,6 +405,7 @@ function Home() {
       },
       storyFlags: { set: storyFlags.set, has: storyFlags.has },
       bossKillsTotal,
+      totalKillsTotal: totalMonsterKills,
       vit: character.stats.vit,
       luk: character.stats.luk,
       playerLevel: character.level,

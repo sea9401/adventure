@@ -383,6 +383,8 @@ export function renderTownNpcDialogue(
           completeQuest={completeQuest}
           inventory={inventory}
           storyFlags={storyFlags}
+          characterStateHook={characterStateHook}
+          addNotification={addNotification}
         />
       );
     case "dustford_scavenger":
@@ -413,6 +415,8 @@ export function renderTownNpcDialogue(
           quests={quests}
           completeQuest={completeQuest}
           inventory={inventory}
+          characterStateHook={characterStateHook}
+          addNotification={addNotification}
         />
       );
     case "dustford_kid":
