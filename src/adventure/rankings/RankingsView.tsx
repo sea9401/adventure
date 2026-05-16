@@ -18,6 +18,7 @@ import {
   type RankingEntry,
   type RankingMe,
 } from "./useRankings";
+import { currentWeeklyModifier } from "@/adventure/tower/modifiers";
 
 const TABS: { key: RankingMetric; label: string }[] = [
   { key: "level", label: "레벨" },
@@ -74,6 +75,8 @@ export function RankingsView() {
         />
       </Card>
 
+      {metric === "towerWeek" && <TowerWeeklyModifierPill />}
+
       {metric === "guild" ? (
         <GuildRankingsBody />
       ) : (
@@ -83,6 +86,20 @@ export function RankingsView() {
         />
       )}
     </div>
+  );
+}
+
+function TowerWeeklyModifierPill() {
+  const modifier = currentWeeklyModifier();
+  return (
+    <Card as="section" padding="sm">
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+        <span className="rounded-full bg-violet-500/15 px-2 py-0.5 font-medium text-violet-700 dark:text-violet-300">
+          이번 주: {modifier.name}
+        </span>
+        <span className="text-zinc-500 dark:text-zinc-400">{modifier.description}</span>
+      </div>
+    </Card>
   );
 }
 
