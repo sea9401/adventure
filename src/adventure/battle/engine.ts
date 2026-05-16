@@ -17,17 +17,29 @@ import {
   type APSkillId,
 } from "../character/apSkills";
 
-export type BattleLogEntry = {
-  kind: "player_attack" | "enemy_attack" | "info" | "phase_trigger" | "turn_marker";
-  text: string;
-  /**
-   * 이 entry 가 발생한 페이즈. UI 가 좌/우 레인 분할에 사용 — info entry 의 사이드를
-   * 결정. attack kind 는 그대로 좌(player)/우(enemy) 라 turn 보조 없이도 동작.
-   * resolveBattle 이 advanceTurn 전후의 phase 차이를 보고 사후 태깅한다 (engine
-   * 호출부 변경 최소화). 옛 로그 (서버 캐시 / DB) 는 미동봉 — 클라 폴백.
-   */
-  turn?: "player" | "enemy";
-};
+export type BattleLogEntry =
+  | {
+      kind: "player_attack" | "enemy_attack" | "info" | "phase_trigger" | "turn_marker";
+      text: string;
+      /**
+       * 이 entry 가 발생한 페이즈. UI 가 좌/우 레인 분할에 사용 — info entry 의 사이드를
+       * 결정. attack kind 는 그대로 좌(player)/우(enemy) 라 turn 보조 없이도 동작.
+       * resolveBattle 이 advanceTurn 전후의 phase 차이를 보고 사후 태깅한다 (engine
+       * 호출부 변경 최소화). 옛 로그 (서버 캐시 / DB) 는 미동봉 — 클라 폴백.
+       */
+      turn?: "player" | "enemy";
+    }
+  | {
+      // 매 턴 종료 시점 (그리고 전투 종료 시) 양쪽 HP 스냅샷. UI 가 텍스트형 막대로 렌더.
+      // text 는 미사용이지만 옛 코드가 e.text 를 참조할 때 깨지지 않게 빈 문자열로 둔다.
+      kind: "hp_bar";
+      text: string;
+      turn?: "player" | "enemy";
+      playerHp: number;
+      playerMaxHp: number;
+      enemyHp: number;
+      enemyMaxHp: number;
+    };
 
 export type BattleOutcome = "win" | "lose";
 
@@ -1677,6 +1689,16 @@ export function resolveBattle(
   // 턴 마커 — 그 턴 시작 시점 AP 동봉. 미장착 캐릭터도 그대로 노출 (시스템 발견용).
   const turnMarkerText = (turnNo: number, ap: number): string =>
     `${turnNo}턴 · AP ${ap}`;
+  // 그 시점 HP 스냅샷 — 매 턴 종료 시 + 전투 종료 시 로그 마지막에 박는다.
+  const hpBarEntry = (s: BattleState): BattleLogEntry => ({
+    kind: "hp_bar",
+    text: "",
+    turn: "player",
+    playerHp: s.playerHp,
+    playerMaxHp: s.playerMaxHp,
+    enemyHp: s.enemyHp,
+    enemyMaxHp: s.enemy.hp,
+  });
   // 초기 entry (적 등장 / 선공 / 능력 안내 등) 는 player 턴으로 태깅. 첫 턴 marker 도 박는다.
   state = {
     ...state,
@@ -1723,6 +1745,7 @@ export function resolveBattle(
     // enemy → player 전환 시 새 턴 marker 박기 (다음 턴이 시작됨을 시각화).
     // 단, completedPlayerTurns === 0 인 경우는 적 선공의 첫 페이즈 직후이므로
     // 루프 진입 직전에 박아둔 "1턴" 마커와 중복됨 — 건너뛴다.
+    // 마커 직전에 방금 끝난 턴의 HP 스냅샷도 박는다 (해당 턴 로그의 마지막 줄).
     if (
       prevPhase === "enemy" &&
       state.phase === "player" &&
@@ -1731,11 +1754,14 @@ export function resolveBattle(
       const turnNo = state.turn.completedPlayerTurns + 1;
       state = {
         ...state,
-        log: appendLog(state.log, {
-          kind: "turn_marker",
-          text: turnMarkerText(turnNo, state.ap),
-          turn: "player",
-        }),
+        log: appendLog(
+          appendLog(state.log, hpBarEntry(state)),
+          {
+            kind: "turn_marker",
+            text: turnMarkerText(turnNo, state.ap),
+            turn: "player",
+          },
+        ),
       };
     }
     turns += 1;
@@ -1747,10 +1773,13 @@ export function resolveBattle(
       state.phase !== "ended" &&
       state.turn.completedPlayerTurns >= BOSS_TURN_CAP
     ) {
-      const timeoutLog = appendLog(state.log, {
-        kind: "info",
-        text: `${BOSS_TURN_CAP}턴 경과 — 보스를 쓰러뜨리지 못했다.`,
-      });
+      const timeoutLog = appendLog(
+        appendLog(state.log, {
+          kind: "info",
+          text: `${BOSS_TURN_CAP}턴 경과 — 보스를 쓰러뜨리지 못했다.`,
+        }),
+        hpBarEntry(state),
+      );
       return {
         outcome: "lose",
         finalState: {
@@ -1769,7 +1798,12 @@ export function resolveBattle(
     if (turns > 500) {
       return {
         outcome: "lose",
-        finalState: { ...state, phase: "ended", outcome: "lose" },
+        finalState: {
+          ...state,
+          log: appendLog(state.log, hpBarEntry(state)),
+          phase: "ended",
+          outcome: "lose",
+        },
         potionsConsumed: consumed,
         turns,
       };
@@ -1778,7 +1812,7 @@ export function resolveBattle(
 
   return {
     outcome: state.outcome!,
-    finalState: state,
+    finalState: { ...state, log: appendLog(state.log, hpBarEntry(state)) },
     potionsConsumed: consumed,
     turns,
   };
