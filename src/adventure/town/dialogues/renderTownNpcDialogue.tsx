@@ -126,6 +126,7 @@ export function renderTownNpcDialogue(
           quests={quests}
           completeQuest={completeQuest}
           storyFlags={storyFlags}
+          inventory={inventory}
         />
       );
     case "diola_stranger":

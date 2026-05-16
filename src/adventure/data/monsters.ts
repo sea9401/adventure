@@ -252,6 +252,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "soul_crystal", chance: 0.015 },
       { kind: "equip", itemId: "wraith_cloak", chance: 0.002 },
       { kind: "recipe", recipeId: "wraithking_cloak", chance: 0.002 },
+      // 빛바랜 호흡법 — 정화 스킬북. 망령이 남긴 결.
+      { kind: "skill_book", bookId: "book_purify", chance: 0.004 },
     ],
   },
   "작은 광물 골렘": {

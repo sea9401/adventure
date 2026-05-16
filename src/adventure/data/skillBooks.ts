@@ -21,7 +21,9 @@ export type SkillBookId =
   | "book_storm_strike"
   | "book_mad_slash"
   | "book_thunder_strike"
-  | "book_light_glide";
+  | "book_light_glide"
+  | "book_purify"
+  | "book_afterimage";
 
 export type SkillBook = {
   id: SkillBookId;
@@ -166,6 +168,22 @@ export const SKILL_BOOKS: Record<SkillBookId, SkillBook> = {
     description:
       "별바다 보스를 잠재운 자에게 별빛이 전한 결. 사용하면 '빛의 활공' (AP 5) 을 학습한다. 귀속.",
     learnsSkillId: "light_glide",
+    tradable: false,
+  },
+  book_purify: {
+    id: "book_purify",
+    name: "스킬북 — 정화",
+    description:
+      "떠도는 망령이 남긴 빛바랜 호흡법. 사용하면 '정화' (AP 1) 를 학습한다.",
+    learnsSkillId: "purify",
+    tradable: true,
+  },
+  book_afterimage: {
+    id: "book_afterimage",
+    name: "스킬북 — 잔상",
+    description:
+      "그림자만 남기고 빠져나가는 보법의 결. 사용하면 '잔상' (AP 3) 을 학습한다. 귀속.",
+    learnsSkillId: "afterimage",
     tradable: false,
   },
 };

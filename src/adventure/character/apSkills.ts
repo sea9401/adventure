@@ -22,7 +22,9 @@ export type APSkillId =
   | "storm_strike"
   | "mad_slash"
   | "thunder_strike"
-  | "light_glide";
+  | "light_glide"
+  | "purify"
+  | "afterimage";
 
 export type APSkillEffect =
   // 본타 데미지를 ATK × atkMult 로 갱신. ignoresDef = true 면 적 DEF 무시.
@@ -79,7 +81,11 @@ export type APSkillEffect =
       ignoresEvasion?: boolean;
     }
   // 다음 1턴 플레이어 attackCount +count. 빛의 활공 — 큐잉 형태로 다음 턴 시작 시 소비.
-  | { kind: "queued_extra_attacks_next_turn"; count: number };
+  | { kind: "queued_extra_attacks_next_turn"; count: number }
+  // 플레이어에게 걸린 모든 디버프 제거. 정화 — 광기 자신 DEF 페널티 등 클리어.
+  | { kind: "cleanse_debuffs" }
+  // 적의 다음 공격 N회 무효. 잔상 — 적 페이즈에서 데미지 적용 전 소비.
+  | { kind: "block_next_enemy_attack"; count: number };
 
 export type APSkill = {
   /** 내부 id — 데이터 식별용. user-facing 은 name. */
@@ -222,6 +228,20 @@ export const AP_SKILLS: APSkill[] = [
     description: "다음 1턴 추가 공격 +3 (큐잉)",
     apCost: 5,
     effect: { kind: "queued_extra_attacks_next_turn", count: 3 },
+  },
+  {
+    id: "purify",
+    name: "정화",
+    description: "플레이어에게 걸린 모든 디버프 제거",
+    apCost: 1,
+    effect: { kind: "cleanse_debuffs" },
+  },
+  {
+    id: "afterimage",
+    name: "잔상",
+    description: "적의 다음 공격 1회 무효",
+    apCost: 3,
+    effect: { kind: "block_next_enemy_attack", count: 1 },
   },
 ];
 

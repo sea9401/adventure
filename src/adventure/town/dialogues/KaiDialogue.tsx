@@ -2,6 +2,7 @@ import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import type { useInventory } from "@/adventure/inventory/useInventory";
 import {
   SUZY_FLAG_ACCEPTED,
   SUZY_FLAG_KAI_SEEN,
@@ -17,6 +18,9 @@ export const KAI_FLAG_LAKE_HINT = "kai_lake_hint";
 // 을 그대로 잇는다.
 const PRISTINE_QUEST = "diola-kai-pristine-nymphs";
 const PRISTINE_NEED = 5;
+// 잔상 히든 — pristine 완료 후 풀리는 요정 가루 ×10 deliver. 보상: book_afterimage.
+const AFTERIMAGE_QUEST = "diola-kai-afterimage";
+const AFTERIMAGE_NEED = 10;
 
 type Props = {
   npc: Npc;
@@ -24,9 +28,17 @@ type Props = {
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
   storyFlags: ReturnType<typeof useStoryFlags>;
+  inventory: ReturnType<typeof useInventory>;
 };
 
-export function KaiDialogue({ npc, onClose, quests, completeQuest, storyFlags }: Props) {
+export function KaiDialogue({
+  npc,
+  onClose,
+  quests,
+  completeQuest,
+  storyFlags,
+  inventory,
+}: Props) {
   const accepted = storyFlags.has(SUZY_FLAG_ACCEPTED);
   const kaiSeen = storyFlags.has(SUZY_FLAG_KAI_SEEN);
   const suzyComplete = storyFlags.has(SUZY_FLAG_COMPLETE);
@@ -116,6 +128,63 @@ export function KaiDialogue({ npc, onClose, quests, completeQuest, storyFlags }:
           }}
         />
       );
+    }
+    // pristine 완료 후 히든 — 닿기 전의 결 (요정 가루 ×10 → 잔상 스킬북).
+    if (e.state === "completed") {
+      const ai = quests.getEntry(AFTERIMAGE_QUEST);
+      if (ai.state === "available") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "노랫소리에 만져지지 않고 다섯을 잡으셨죠. 그 결을 한 권으로 옮겨 드릴게요.\n요정 가루 열 점만 모아 오세요 — 호수 님프가 가끔 떨궈요. 그걸로 잔상의 결을 자네 검에 옮겨 드릴게요."
+            }
+            primaryAction={{
+              label: "받아들인다",
+              onClick: () => {
+                quests.accept(AFTERIMAGE_QUEST);
+                onClose();
+              },
+            }}
+          />
+        );
+      }
+      if (ai.state === "active") {
+        const have = inventory.materialCount("fairy_dust");
+        if (have >= AFTERIMAGE_NEED) {
+          return (
+            <NpcDialogue
+              npc={npc}
+              onClose={onClose}
+              text={
+                "열 점 — 새벽 안개가 잡힌 결이네요. 잔상의 결을 옮겨 드릴게요. 받으세요."
+              }
+              primaryAction={{
+                label: "건네준다",
+                onClick: () => {
+                  const r = quests.tryDeliver(
+                    AFTERIMAGE_QUEST,
+                    inventory.materialCount,
+                    inventory.consumeMaterial,
+                  );
+                  if (r.ok) {
+                    completeQuest(AFTERIMAGE_QUEST);
+                    onClose();
+                  }
+                },
+              }}
+            />
+          );
+        }
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={`요정 가루는 호수 님프가 가끔 떨궈요. — 진행 ${have}/${AFTERIMAGE_NEED}`}
+          />
+        );
+      }
     }
   }
 
