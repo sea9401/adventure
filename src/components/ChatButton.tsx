@@ -72,13 +72,20 @@ export function ChatButton({
             (mx, m) => (isNoticeMessage(m) && m.id > mx ? m.id : mx),
             0,
           );
+          // 두 경우에 prev 를 현재 최신 id 로 맞춤:
+          //  (a) 신규 유저 (prev=0) — 옛 메시지 전부 unread 로 표시되는 거 막음.
+          //  (b) prev > lastChat — DB 마이그레이션 등으로 messages.id serial 이 작은 값부터
+          //      다시 시작했을 때, 옛 localStorage 값이 "미래 id" 라 모든 m.id > prev 가
+          //      false 가 되어 빨간/노란 dot 이 영영 안 뜨는 버그. 현재 최신으로 클램프.
           setLastSeenChatId((prev) => {
-            if (prev !== 0 || lastChat === 0) return prev;
+            if (lastChat === 0) return prev;
+            if (prev !== 0 && prev <= lastChat) return prev;
             writeId(LAST_SEEN_KEY, lastChat);
             return lastChat;
           });
           setLastSeenNoticeId((prev) => {
-            if (prev !== 0 || lastNotice === 0) return prev;
+            if (lastNotice === 0) return prev;
+            if (prev !== 0 && prev <= lastNotice) return prev;
             writeId(LAST_SEEN_NOTICE_KEY, lastNotice);
             return lastNotice;
           });
