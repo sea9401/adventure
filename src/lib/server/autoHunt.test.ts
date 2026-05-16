@@ -3,7 +3,13 @@
 // 테스트한다. DB I/O 통합 테스트 인프라가 없어 라우트 자체는 수동 시나리오로 검증.
 
 import { describe, expect, it } from "vitest";
-import { decideClaim, decideWinner, type ClaimSnapshot } from "./autoHunt";
+import {
+  assembleSimInput,
+  decideClaim,
+  decideWinner,
+  type ClaimSnapshot,
+  type LoadedState,
+} from "./autoHunt";
 import type { OfflineSimResult } from "@/adventure/battle/offlineSim";
 
 const MIN_MS = 10_000;
@@ -137,5 +143,55 @@ describe("decideWinner", () => {
   it("비활성화 + 결과 없음 → lost (이론상 드물지만 안전망)", () => {
     const u = snap({ huntActive: false, huntBaselineAt: null });
     expect(decideWinner(u, baselineMs)).toEqual({ kind: "lost" });
+  });
+});
+
+describe("assembleSimInput — AP 스킬 plumbing", () => {
+  function makeState(over: Partial<LoadedState["character"]> = {}): LoadedState {
+    return {
+      character: {
+        hp: 100,
+        level: 50,
+        ...over,
+      },
+      inventory: {},
+      crafting: {},
+      map: {},
+      training: {},
+      storyFlags: {},
+    };
+  }
+
+  // 회귀: 사냥(서버 시뮬) 에서 AP 스킬이 발동 안 한다는 문의 — character.learnedAPSkills 가
+  // derivePlayerCombat 에 전달되지 않아 equippedAPSkills 가 항상 빈 배열이었다.
+  it("character.learnedAPSkills 가 player.equippedAPSkills 로 흘러간다", () => {
+    const state = makeState({
+      equippedSkills: ["회복술"],
+      learnedAPSkills: ["회복술"],
+    });
+    const input = assembleSimInput({
+      state,
+      baselineHp: 100,
+      baselineRegionId: "plains",
+      awayMs: 60_000,
+      rng: () => 0.5,
+      autoPotionRules: [],
+      playerName: "tester",
+    });
+    expect(input.player.equippedAPSkills?.map((s) => s.name)).toContain("회복술");
+  });
+
+  it("learnedAPSkills 미설정 → equippedAPSkills 비어있음", () => {
+    const state = makeState({ equippedSkills: ["회복술"] });
+    const input = assembleSimInput({
+      state,
+      baselineHp: 100,
+      baselineRegionId: "plains",
+      awayMs: 60_000,
+      rng: () => 0.5,
+      autoPotionRules: [],
+      playerName: "tester",
+    });
+    expect(input.player.equippedAPSkills ?? []).toEqual([]);
   });
 });

@@ -79,6 +79,8 @@ type SavedCharacter = {
   equippedFeats?: (string | null)[];
   /** 레거시 — 단일 특기 슬롯 시절 필드. 읽기 호환만. */
   equippedFeat?: string;
+  /** 학습한 AP 스킬 이름 — equippedSkills 와 교집합이 실제 장착 AP 스킬. */
+  learnedAPSkills?: string[];
   [k: string]: unknown;
 };
 
@@ -217,6 +219,7 @@ export function assembleSimInput(opts: AssembleSimInputOpts): OfflineSimInput {
     equipped: equippedFrom(character),
     equippedSkills: character.equippedSkills,
     equippedFeats,
+    learnedAPSkills: character.learnedAPSkills,
     storyFlagIds: new Set(state.storyFlags.flags ?? []),
     hp: baselineHp,
   });
