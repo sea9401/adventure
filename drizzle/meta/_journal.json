@@ -127,6 +127,13 @@
       "when": 1778770845379,
       "tag": "0017_big_madame_hydra",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1778941672438,
+      "tag": "0018_coop_tier_silver_unlock_backfill",
+      "breakpoints": true
     }
   ]
 }

@@ -12,7 +12,11 @@ import {
   coopBossSessions,
 } from "@/db/schema";
 import { derivePlayerCombatFromSaves } from "@/lib/server/derivePlayerCombatFromSaves";
-import { COOP_ATTACK_COOLDOWN_MS, COOP_BOSSES } from "@/adventure/coop/data";
+import {
+  COOP_ATTACK_COOLDOWN_MS,
+  COOP_BOSSES,
+  COOP_TIER_THRESHOLDS,
+} from "@/adventure/coop/data";
 import { simulateCoopAttack } from "@/adventure/coop/simulate";
 import type { RegionId } from "@/adventure/data/world";
 import { broadcastBossKill, setStoryFlagServer } from "./bossState";
@@ -169,14 +173,31 @@ export async function handleCoopAttack(
     });
   });
 
-  // 처치 시 storyFlag set — savesKv 의 storyFlags.v2 갱신. CAS 로 처치를 점유한 1명만.
+  // 처치 시 storyFlag set — savesKv 의 storyFlags.v2 갱신. CAS 로 처치를 점유한 1명만
+  // 이 분기에 진입한다. 킬샷 운에 따라 슬롯 해금이 좌우되지 않도록, 이 세션의 silver+
+  // 기여자(누적 데미지 / maxHp ≥ COOP_TIER_THRESHOLDS.silver) 전원에게 fan-out.
+  // 킬샷 본인은 누적과 무관하게 무조건 포함 — 마지막 일격 자체가 의미있는 기여.
   // (서버에서 직접 patch — 클라이언트 상태와 다음 fetch 에 반영)
-  // 추가로 set 한 flag 를 응답에 실어 보내 클라가 메모리 상태에도 즉시 반영하게 한다 —
-  // 안 그러면 reload 전까지 운향 진입로 등이 안 열린다 (useStoryFlags 는 마운트 스냅샷).
+  // 응답에 본인 flag 를 실어 보내 클라가 메모리 상태에도 즉시 반영하게 한다.
   const storyFlagsSet: string[] = [];
   if (iClaimedKill && def.onDefeatFlag) {
-    await setStoryFlagServer(userId, def.onDefeatFlag);
-    storyFlagsSet.push(def.onDefeatFlag);
+    const flagId = def.onDefeatFlag;
+    const contribs = await db
+      .select({
+        userId: coopBossContributors.userId,
+        damage: coopBossContributors.damage,
+      })
+      .from(coopBossContributors)
+      .where(eq(coopBossContributors.sessionId, session.id));
+    const minRatio = COOP_TIER_THRESHOLDS.silver;
+    const recipients = new Set<string>([userId]);
+    for (const c of contribs) {
+      if (c.damage / session.maxHp >= minRatio) recipients.add(c.userId);
+    }
+    await Promise.all(
+      [...recipients].map((uid) => setStoryFlagServer(uid, flagId)),
+    );
+    storyFlagsSet.push(flagId);
   }
   // 1회 이상 attack 한 유저에게 set 되는 참여 flag — idempotent (이미 있으면 skip).
   if (def.onAttackFlag) {
