@@ -16,6 +16,7 @@ import {
 import { GuildCooldownSection } from "./GuildCooldownSection";
 import { ItemGrantSection } from "./ItemGrantSection";
 import { TowerSection } from "./TowerSection";
+import { BossSection } from "./BossSection";
 
 export function SelectedUserPanel({
   user,
@@ -28,6 +29,7 @@ export function SelectedUserPanel({
   onUpdateTraining,
   onUpdateInventory,
   onResetTowerDailyAttempts,
+  onResetBossAttempts,
   onReload,
 }: {
   user: AdminUserRow;
@@ -40,6 +42,7 @@ export function SelectedUserPanel({
   onUpdateTraining: (next: TrainingPersisted) => void;
   onUpdateInventory: (next: InventoryState) => void;
   onResetTowerDailyAttempts: () => void;
+  onResetBossAttempts: () => void;
   onReload: () => void;
 }) {
   const character = saves?.["character.v2"] ?? initialCharacterState;
@@ -283,6 +286,13 @@ export function SelectedUserPanel({
         readOnly={readOnly}
         loading={loading}
         onResetDailyAttempts={onResetTowerDailyAttempts}
+      />
+
+      <BossSection
+        character={saves?.["character.v2"]}
+        readOnly={readOnly}
+        loading={loading}
+        onResetBossAttempts={onResetBossAttempts}
       />
     </>
   );
