@@ -29,11 +29,7 @@ import { RecentLogView } from "@/adventure/RecentLogView";
 import { QuestJournalView } from "@/adventure/quests/QuestJournalView";
 import { QUESTS } from "@/adventure/data/quests";
 import { useGame } from "@/adventure/GameContext";
-import {
-  TUTORIAL_ENABLED_FLAG,
-  TUTORIAL_FLAG_PREFIX,
-  TutorialOverlay,
-} from "@/adventure/tutorial";
+import { TutorialOverlay } from "@/adventure/tutorial";
 
 export function CharacterScreen() {
   const {
@@ -62,14 +58,7 @@ export function CharacterScreen() {
     handlePurchaseRune,
     quests,
     crafting,
-    storyFlags,
   } = useGame();
-
-  const handleReplayTutorial = () => {
-    storyFlags.removeWithPrefix(TUTORIAL_FLAG_PREFIX);
-    storyFlags.set(TUTORIAL_ENABLED_FLAG);
-    addNotification("info", "튜토리얼을 다시 표시합니다.");
-  };
 
   const activeQuestCount = QUESTS.reduce((n, q) => {
     const e = quests.getEntry(q.id);
@@ -205,15 +194,6 @@ export function CharacterScreen() {
             />
           </div>
         </Card>
-        <div className="flex justify-end pt-1">
-          <button
-            type="button"
-            onClick={handleReplayTutorial}
-            className="text-xs text-sky-600 transition-colors hover:text-sky-800 hover:underline dark:text-sky-400 dark:hover:text-sky-300"
-          >
-            튜토리얼 다시 보기
-          </button>
-        </div>
       </div>
     );
   }

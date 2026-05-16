@@ -56,6 +56,10 @@ import { useShopActions } from "@/adventure/shop/useShopActions";
 import { useEquipmentActions } from "@/adventure/inventory/useEquipmentActions";
 import { useCraftAction } from "@/adventure/crafting/useCraftAction";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import {
+  TUTORIAL_ENABLED_FLAG,
+  TUTORIAL_FLAG_PREFIX,
+} from "@/adventure/tutorial";
 import { SaveProvider, useSavedValue } from "@/lib/storage/SaveProvider";
 import { STARTER_SAVES } from "@/adventure/starterSaves";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
@@ -547,7 +551,14 @@ function Home() {
               title={character.titleName ?? null}
               onSent={adventureLog.incrementChatCount}
             />
-            <SettingsMenu gameName={character.name} />
+            <SettingsMenu
+              gameName={character.name}
+              onReplayTutorial={() => {
+                storyFlags.removeWithPrefix(TUTORIAL_FLAG_PREFIX);
+                storyFlags.set(TUTORIAL_ENABLED_FLAG);
+                addNotification("info", "튜토리얼을 다시 표시합니다.");
+              }}
+            />
           </div>
         </header>
 
