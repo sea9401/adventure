@@ -4,6 +4,10 @@ export const BULLETIN_TITLE_MAX_LENGTH = 50;
 export const BULLETIN_RATE_LIMIT_MS = 60_000; // 1분에 1개
 export const BULLETIN_FETCH_LIMIT = 50;
 
+// 댓글 — 본문 200자, 1분에 1개 (글 작성보다 빈도 ↑ 일 거 같지만 같은 정책으로 시작).
+export const BULLETIN_COMMENT_MAX_LENGTH = 200;
+export const BULLETIN_COMMENT_RATE_LIMIT_MS = 10_000; // 10초에 1개
+
 // 카테고리 — 일반 유저는 free/guide 만 작성 가능, notice 는 admin 전용 (서버 검증).
 // 추가/순서 변경 시 BULLETIN_CATEGORY_LABELS 와 DB 의 category 컬럼 호환만 유지하면 됨.
 export const BULLETIN_CATEGORIES = ["notice", "free", "guide"] as const;

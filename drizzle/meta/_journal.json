@@ -141,6 +141,13 @@
       "when": 1778965516824,
       "tag": "0019_bulletin_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1778965989370,
+      "tag": "0020_bulletin_likes_comments",
+      "breakpoints": true
     }
   ]
 }
