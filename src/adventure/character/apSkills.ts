@@ -264,44 +264,90 @@ export function formatAPSkillDescription(skill: APSkill): string {
 }
 
 // 슬롯별 발동 조건 — AP affordable 체크 이전에 평가된다.
+// 부등식 의미는 라벨 그대로 (≥ / ≤ / </ ≥ — 미만/이상). UI 도 같은 수식 라벨 사용.
 //   - always: 기존 동작. AP 만 닿으면 발동 (기본값).
-//   - ap_at_least: AP 가 X 이상일 때만. 저코스트 스킬을 "AP 저축" 게이트로 만드는 용도.
-//   - hp_below_pct: 플레이어 HP% 가 X 미만. 회복술/결의 같은 방어 스킬용.
-//   - enemy_hp_below_pct: 적 HP% 가 X 미만. 광살참/천살 같은 마무리용.
+//   - ap_at_least: AP ≥ X. 저코스트 스킬을 "AP 저축" 게이트로 만드는 용도.
+//   - ap_at_most: AP ≤ X. 큰 스킬용 AP 저축을 정확히 표현 ("나는 작은 거 → 큰 거 안 모일 때만").
+//   - hp_below_pct: 내 HP < X%. 회복술/결의 같은 방어 스킬용.
+//   - hp_above_pct: 내 HP ≥ X%. 흡령/광살참 같이 자기 피해/회복 효과가 있는 스킬용.
+//   - enemy_hp_below_pct: 적 HP < X%. 광살참/천살 같은 마무리용.
+//   - enemy_hp_above_pct: 적 HP ≥ X%. 광기/약점 노출 같은 지속 버프 — 적이 충분히 셀 때 일찍.
+//   - every_n_turns: completedPlayerTurns 가 X 의 배수일 때 (turn 1·X+1·2X+1...). 지속 버프 재시전.
+//   - enemy_max_hp_at_least: 적 max HP ≥ X. cost 5 스킬을 잡몹에 낭비 X (보스 전용 게이트).
+//   - no_self_effect_active: 이 슬롯 스킬이 부여하는 효과가 현재 비활성. 광기·폭주 등 자기 갱신
+//                            방지 — 같은 효과 turnsLeft > 0 일 땐 발동 X. 단발 효과는 항상 true.
 export type APSkillCondition =
   | { kind: "always" }
   | { kind: "ap_at_least"; value: number }
+  | { kind: "ap_at_most"; value: number }
   | { kind: "hp_below_pct"; value: number }
-  | { kind: "enemy_hp_below_pct"; value: number };
+  | { kind: "hp_above_pct"; value: number }
+  | { kind: "enemy_hp_below_pct"; value: number }
+  | { kind: "enemy_hp_above_pct"; value: number }
+  | { kind: "every_n_turns"; value: number }
+  | { kind: "enemy_max_hp_at_least"; value: number }
+  | { kind: "no_self_effect_active" };
 
 export const AP_SKILL_CONDITION_KINDS = [
   "always",
   "ap_at_least",
+  "ap_at_most",
   "hp_below_pct",
+  "hp_above_pct",
   "enemy_hp_below_pct",
+  "enemy_hp_above_pct",
+  "every_n_turns",
+  "enemy_max_hp_at_least",
+  "no_self_effect_active",
 ] as const satisfies ReadonlyArray<APSkillCondition["kind"]>;
 
 export const DEFAULT_AP_SKILL_CONDITION: APSkillCondition = { kind: "always" };
 
+// 값 있는 트리거의 임계값 프리셋/슬라이더 범위. always / no_self_effect_active 는 제외.
+export type ValuedAPSkillConditionKind = Exclude<
+  APSkillCondition["kind"],
+  "always" | "no_self_effect_active"
+>;
+
 // 조건별 임계값 기본 프리셋 — UI 의 빠른 버튼 + 신규 트리거 선택 시 시작값.
 // 슬라이더 토글로 임의 값 입력 가능 (UI 단계에서 clamp).
 export const AP_SKILL_CONDITION_PRESETS: Record<
-  Exclude<APSkillCondition["kind"], "always">,
+  ValuedAPSkillConditionKind,
   { min: number; max: number; step: number; presets: number[] }
 > = {
   ap_at_least: { min: 1, max: AP_CAP, step: 1, presets: [2, 3, 4, 5] },
+  ap_at_most: { min: 1, max: AP_CAP, step: 1, presets: [2, 3, 4] },
   hp_below_pct: { min: 5, max: 95, step: 5, presets: [25, 50, 75] },
+  hp_above_pct: { min: 5, max: 95, step: 5, presets: [50, 75, 90] },
   enemy_hp_below_pct: { min: 5, max: 95, step: 5, presets: [25, 50, 75] },
+  enemy_hp_above_pct: { min: 5, max: 95, step: 5, presets: [50, 75, 90] },
+  every_n_turns: { min: 1, max: 10, step: 1, presets: [2, 3, 4, 5] },
+  enemy_max_hp_at_least: {
+    min: 100,
+    max: 50000,
+    step: 100,
+    presets: [1000, 3000, 5000, 10000],
+  },
 };
+
+const VALUED_KINDS: ReadonlySet<APSkillCondition["kind"]> = new Set([
+  "ap_at_least",
+  "ap_at_most",
+  "hp_below_pct",
+  "hp_above_pct",
+  "enemy_hp_below_pct",
+  "enemy_hp_above_pct",
+  "every_n_turns",
+  "enemy_max_hp_at_least",
+] satisfies APSkillCondition["kind"][]);
 
 export function isAPSkillCondition(v: unknown): v is APSkillCondition {
   if (!v || typeof v !== "object") return false;
   const o = v as { kind?: unknown; value?: unknown };
-  if (o.kind === "always") return true;
+  if (o.kind === "always" || o.kind === "no_self_effect_active") return true;
   if (
-    (o.kind === "ap_at_least" ||
-      o.kind === "hp_below_pct" ||
-      o.kind === "enemy_hp_below_pct") &&
+    typeof o.kind === "string" &&
+    VALUED_KINDS.has(o.kind as APSkillCondition["kind"]) &&
     typeof o.value === "number" &&
     Number.isFinite(o.value)
   ) {
@@ -317,9 +363,21 @@ export function formatAPSkillCondition(c: APSkillCondition): string {
       return "";
     case "ap_at_least":
       return `AP ≥ ${c.value}`;
+    case "ap_at_most":
+      return `AP ≤ ${c.value}`;
     case "hp_below_pct":
       return `HP < ${c.value}%`;
+    case "hp_above_pct":
+      return `HP ≥ ${c.value}%`;
     case "enemy_hp_below_pct":
       return `적HP < ${c.value}%`;
+    case "enemy_hp_above_pct":
+      return `적HP ≥ ${c.value}%`;
+    case "every_n_turns":
+      return `${c.value}턴마다`;
+    case "enemy_max_hp_at_least":
+      return `적maxHP ≥ ${c.value}`;
+    case "no_self_effect_active":
+      return "효과 없을 때";
   }
 }

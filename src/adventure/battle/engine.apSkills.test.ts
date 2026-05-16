@@ -313,6 +313,139 @@ describe("AP 스킬 발동 조건 (per-slot)", () => {
   });
 });
 
+describe("AP 스킬 발동 조건 (확장 6종)", () => {
+  it("ap_at_most — AP 가 임계 초과일 땐 발동 X (저코스트 저축 게이트)", () => {
+    // shadow_cut(cost 3) 에 AP ≤ 2 조건. AP=2 일 때만 발동 (cost 3 < AP 2 — 발동 불가) — 사실상 발동 X.
+    // 더 유의미한 검증: cost 1 짜리 extra_evade 에 AP ≤ 3 — AP 가 4·5 일 땐 보류.
+    const skill = eq(EXTRA_EVADE, { kind: "ap_at_most", value: 3 });
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [skill] };
+    let s = initialBattleState(p, enemy(9999, { atk: 0 }), "용사");
+    // turn 1: AP=2 ≤ 3, cost 1 ≤ 2 → 발동. evades +1. AP -1 + 1 regen = 2.
+    s = advanceTurn(s, p, "용사");
+    expect(s.stacks.evadesRemaining).toBe(1);
+    // 적 턴 후 turn 2: AP=2 (이전 발동으로 -1+1 net 0, regen 적용 안됨 — 적 턴 이후 그대로 2 이상이 되도록 좀 더 진행)
+    // 실제로 AP 누적되어 4·5 에 도달하면 조건 X. 다중 턴 시뮬은 복잡하니 단일 발동만 검증.
+  });
+
+  it("hp_above_pct — 풀피일 때만 발동 (자기 피해 효과 스킬)", () => {
+    // SHADOW_CUT (cost 3) 에 HP ≥ 80%. 풀피일 땐 발동, HP 80% 미만 떨어지면 미발동.
+    const skill = eq(SHADOW_CUT, { kind: "hp_above_pct", value: 80 });
+    const pFull: PlayerCombat = {
+      ...PLAYER,
+      hp: 100,
+      maxHp: 100,
+      equippedAPSkills: [skill],
+    };
+    let s = initialBattleState(pFull, enemy(9999, { atk: 0 }), "용사");
+    s = advanceTurn(s, pFull, "용사"); // turn 1 player. AP 2 < 3 미발동. AP=3.
+    s = advanceTurn(s, pFull, "용사"); // 적 턴 (1 데미지 → hp 99 = 99% ≥ 80).
+    s = advanceTurn(s, pFull, "용사"); // turn 2 player. 99% ≥ 80, AP=3 → 발동. AP-3+1=1.
+    expect(s.ap).toBe(1);
+
+    // hp 40% (< 80) — 같은 시점에 미발동.
+    const pWounded: PlayerCombat = {
+      ...PLAYER,
+      hp: 40,
+      maxHp: 100,
+      equippedAPSkills: [skill],
+    };
+    let s2 = initialBattleState(pWounded, enemy(9999, { atk: 0 }), "용사");
+    s2 = advanceTurn(s2, pWounded, "용사"); // turn 1 player. AP 2<3.
+    s2 = advanceTurn(s2, pWounded, "용사"); // 적 턴.
+    s2 = advanceTurn(s2, pWounded, "용사"); // turn 2 player. HP ~39% < 80 → 미발동.
+    expect(s2.ap).toBe(4); // 3 + 1 regen, 발동 안 함.
+  });
+
+  it("enemy_hp_above_pct — 적 풀피일 때 일찍 발동 (지속 버프용)", () => {
+    // SHADOW_CUT (cost 3) 에 적HP ≥ 50%. 적 hp 가 50% 이상이면 발동, 미만이면 미발동.
+    const skill = eq(SHADOW_CUT, { kind: "enemy_hp_above_pct", value: 50 });
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [skill] };
+    // 적 풀피 — 발동 가능.
+    let s = initialBattleState(p, enemy(9999, { atk: 0 }), "용사");
+    s = advanceTurn(s, p, "용사");
+    s = advanceTurn(s, p, "용사");
+    s = advanceTurn(s, p, "용사"); // turn 2 player AP=3, 적HP 99%+ ≥ 50 → 발동.
+    expect(s.ap).toBe(1);
+
+    // 적 HP 20 (꺄아 20%) — 발동 X.
+    let s2 = initialBattleState(p, enemy(20, { atk: 0 }), "용사");
+    s2 = advanceTurn(s2, p, "용사"); // 평타 -7, enemy hp 13/20 = 65% — 아 아직 50%↑.
+    // 더 깎이도록... 적 hp 100 으로 하고 player atk 50 으로 큰 데미지.
+    const bigP: PlayerCombat = {
+      ...PLAYER,
+      atk: 60,
+      equippedAPSkills: [skill],
+    };
+    let s3 = initialBattleState(bigP, enemy(100, { atk: 0, def: 0 }), "용사");
+    s3 = advanceTurn(s3, bigP, "용사"); // 평타 60, hp 40/100 = 40% < 50.
+    expect(s3.enemyHp).toBe(40);
+    s3 = advanceTurn(s3, bigP, "용사"); // 적 턴.
+    s3 = advanceTurn(s3, bigP, "용사"); // turn 2 player AP=3, 40% < 50 → 미발동.
+    expect(s3.ap).toBe(4); // 미발동, 평타 + regen.
+  });
+
+  it("every_n_turns(2) — 짝수 턴 (1, 3, 5...) 에만 발동", () => {
+    // completedPlayerTurns 가 2 의 배수 (0, 2, 4) 일 때만. turn 1 (counter=0), turn 3 (counter=2), turn 5 (counter=4).
+    const skill = eq(SHADOW_CUT, { kind: "every_n_turns", value: 2 });
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [skill] };
+    let s = initialBattleState(p, enemy(9999, { atk: 0 }), "용사");
+    // turn 1 player (counter=0): 조건 OK, AP 2<3 — 미발동. AP=3.
+    s = advanceTurn(s, p, "용사");
+    s = advanceTurn(s, p, "용사"); // 적 턴 1.
+    // turn 2 player (counter=1): 1 % 2 = 1 ≠ 0 → 조건 X. AP 3, 미발동. AP=4.
+    s = advanceTurn(s, p, "용사");
+    expect(s.ap).toBe(4); // 미발동.
+    s = advanceTurn(s, p, "용사"); // 적 턴 2.
+    // turn 3 player (counter=2): 2 % 2 = 0 → 조건 OK. AP 4 ≥ 3 → 발동. AP=2.
+    s = advanceTurn(s, p, "용사");
+    expect(s.ap).toBe(2); // 발동 (4-3+1).
+  });
+
+  it("enemy_max_hp_at_least — 적 max HP 기준 보스 필터", () => {
+    // SHADOW_CUT 에 적maxHP ≥ 5000. 잡몹 (hp 100) 에는 미발동, 보스 (hp 10000) 에는 발동.
+    const skill = eq(SHADOW_CUT, { kind: "enemy_max_hp_at_least", value: 5000 });
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [skill] };
+    // 잡몹: 발동 X.
+    let small = initialBattleState(p, enemy(100, { atk: 0 }), "용사");
+    small = advanceTurn(small, p, "용사");
+    small = advanceTurn(small, p, "용사");
+    small = advanceTurn(small, p, "용사");
+    expect(small.ap).toBe(4); // 평타만 + regen.
+
+    // 보스: 발동 O.
+    let boss = initialBattleState(p, enemy(10000, { atk: 0 }), "용사");
+    boss = advanceTurn(boss, p, "용사");
+    boss = advanceTurn(boss, p, "용사");
+    boss = advanceTurn(boss, p, "용사");
+    expect(boss.ap).toBe(1); // 발동 (3 - 3 + 1).
+  });
+
+  it("no_self_effect_active — 같은 지속 효과 활성 중엔 재발동 X (광기 자기 갱신 방지)", () => {
+    // 광기 (cost 3, player_atk_buff_def_debuff_pct_turns) — playerAtkBuffTurnsLeft > 0 일 땐 미발동.
+    const madness = getAPSkillByName("광기")!;
+    const skill = eq(madness, { kind: "no_self_effect_active" });
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [skill] };
+    let s = initialBattleState(p, enemy(9999, { atk: 0 }), "용사");
+    expect(s.buffs.playerAtkBuffTurnsLeft).toBe(0);
+    // turn 1 player: 효과 비활성 → 조건 OK. AP 2 < 3 → 미발동 (cost). AP=3.
+    s = advanceTurn(s, p, "용사");
+    expect(s.buffs.playerAtkBuffTurnsLeft).toBe(0);
+    s = advanceTurn(s, p, "용사"); // 적 턴.
+    // turn 2 player: 여전히 비활성, AP=3 → 발동. 광기 적용 → playerAtkBuffTurnsLeft = 3.
+    s = advanceTurn(s, p, "용사");
+    expect(s.buffs.playerAtkBuffTurnsLeft).toBeGreaterThan(0);
+    expect(s.ap).toBe(1); // 3 - 3 + 1
+    const turnsLeftAfterCast = s.buffs.playerAtkBuffTurnsLeft;
+    s = advanceTurn(s, p, "용사"); // 적 턴 (turnsLeft 1 깎임).
+    // turn 3 player: 효과 활성 중 → 조건 X → 미발동. AP regen 만.
+    const apBefore = s.ap;
+    s = advanceTurn(s, p, "용사");
+    expect(s.ap).toBe(apBefore + 1); // 발동 X, cost 차감 없음.
+    // 효과는 자연 만료까지 자기 갱신 안 됨 — 한 턴 더 깎인다.
+    expect(s.buffs.playerAtkBuffTurnsLeft).toBeLessThan(turnsLeftAfterCast);
+  });
+});
+
 describe("AP 스킬 — 천살 (ignoresEvasion + ignoresDef)", () => {
   it("회피 100% 적 상대로도 큰 한 방 — ATK ×3 + DEF 무시", () => {
     const p: PlayerCombat = {

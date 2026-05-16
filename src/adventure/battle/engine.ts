@@ -316,23 +316,95 @@ export type EquippedAPSkill = {
 
 // 슬롯 발동 조건 평가 — state 가 현재 시점에 조건을 만족하면 true.
 // AP affordable 체크와는 별개; 호출자가 둘 다 확인 후 발동.
+// no_self_effect_active 평가 시 slot 의 skill effect 가 필요하므로 skill 도 받는다.
 export function evaluateAPSkillCondition(
   condition: APSkillCondition,
   state: BattleState,
+  skill: APSkill,
 ): boolean {
   switch (condition.kind) {
     case "always":
       return true;
     case "ap_at_least":
       return state.ap >= condition.value;
+    case "ap_at_most":
+      return state.ap <= condition.value;
     case "hp_below_pct":
       return state.playerMaxHp > 0
         ? (state.playerHp / state.playerMaxHp) * 100 < condition.value
+        : false;
+    case "hp_above_pct":
+      return state.playerMaxHp > 0
+        ? (state.playerHp / state.playerMaxHp) * 100 >= condition.value
         : false;
     case "enemy_hp_below_pct":
       return state.enemy.hp > 0
         ? (state.enemyHp / state.enemy.hp) * 100 < condition.value
         : false;
+    case "enemy_hp_above_pct":
+      return state.enemy.hp > 0
+        ? (state.enemyHp / state.enemy.hp) * 100 >= condition.value
+        : false;
+    case "every_n_turns": {
+      // turn 1 (completedPlayerTurns = 0) 부터 시작해 X 의 배수마다. value < 1 이면 매 턴.
+      const n = Math.max(1, Math.floor(condition.value));
+      return state.turn.completedPlayerTurns % n === 0;
+    }
+    case "enemy_max_hp_at_least":
+      return state.enemy.hp >= condition.value;
+    case "no_self_effect_active":
+      return !isAPSkillEffectActive(skill.effect, state);
+  }
+}
+
+// 스킬 효과가 현재 활성 상태인지 — no_self_effect_active 조건이 사용.
+// 단발 효과 (atk_multiplier·heal_pct·cleanse_debuffs 등) 는 lingering 이 없으므로 항상 false.
+// 지속/스택 효과는 해당 state 필드 > 0 여부.
+function isAPSkillEffectActive(
+  effect: APSkill["effect"],
+  state: BattleState,
+): boolean {
+  switch (effect.kind) {
+    // 단발 — 즉시 적용 후 흔적 없음.
+    case "atk_multiplier":
+    case "heal_pct":
+    case "atk_multiplier_with_silence":
+    case "multi_hit_self_damage":
+    case "atk_plus_spd_pct_bonus":
+    case "cleanse_debuffs":
+    case "crit_buff_next_attack":
+    case "extra_attack_this_turn":
+      return false;
+    // 적에게 출혈 스택 부여 — 누적 스택이 1 이상이면 활성. (재시전은 보통 무의미.)
+    case "apply_bleed":
+      return state.stacks.bleedStacks > 0;
+    // 보장 회피 잔량 부여 — 잔량 > 0 이면 활성.
+    case "add_guaranteed_evades":
+      return state.stacks.evadesRemaining > 0;
+    // 결의 — 받는 피해 감소 지속.
+    case "player_dmg_reduction_turns":
+      return state.buffs.playerDmgReductionTurnsLeft > 0;
+    // 약점 노출 — 적 DEF 디버프 지속.
+    case "enemy_def_debuff_pct_turns":
+      return state.buffs.enemyDefDebuffTurnsLeft > 0;
+    // 광기 — 자신 ATK+ / DEF- 지속.
+    case "player_atk_buff_def_debuff_pct_turns":
+      return (
+        state.buffs.playerAtkBuffTurnsLeft > 0 ||
+        state.buffs.playerDefDebuffTurnsLeft > 0
+      );
+    // 둔화 — 적 SPD 감속 지속.
+    case "enemy_spd_mult_turns":
+      return state.buffs.enemySpdTurnsLeft > 0;
+    // 폭주 — 자신 SPD 가속 지속.
+    case "player_spd_mult_turns":
+      return state.buffs.playerSpdTurnsLeft > 0;
+    // 빛의 활공 — 다음 턴 추가 공격 큐잉. playerAttacksLeft 큐가 1 보다 큰 동안 활성으로 본다.
+    case "queued_extra_attacks_next_turn":
+      return state.playerAttacksLeft > 1;
+    // 잔상 — 적 공격 블록 잔량.
+    case "block_next_enemy_attack":
+      return state.buffs.enemyAttackBlockedCount > 0;
   }
 }
 
@@ -775,7 +847,7 @@ export function advanceTurn(
         ? player.equippedAPSkills!.find(
             (e) =>
               e.skill.apCost <= state.ap &&
-              evaluateAPSkillCondition(e.condition, state),
+              evaluateAPSkillCondition(e.condition, state, e.skill),
           )?.skill ?? null
         : null;
     // atk_multiplier 계열 효과 — 광살참(multi_hit_self_damage)과 천뢰 일격
