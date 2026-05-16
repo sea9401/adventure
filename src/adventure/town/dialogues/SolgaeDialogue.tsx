@@ -29,14 +29,6 @@ const STEPS: QuestLineStep[] = [
     doneText: "옛길이 좀 조용해졌겠어. 행상들도 한시름 놓겠지 — 받아.",
   },
   {
-    id: "dustford-solgae-wall-ravens",
-    offerText:
-      "이제 성채도 드나든다며? 거긴 까마귀가 더 많아 — 폐성벽 까마귀라고, 무너진 흉벽에 둥지를 틀었어. 열다섯만 정리해 주면 흉벽 다니기가 한결 낫겠다.",
-    activeText: (have, need) => `폐성벽 까마귀는 흉벽 위에서 내리꽂혀. 위를 봐 두고 쳐. — 진행 ${have}/${need}`,
-    doneText: "흉벽이 좀 트였겠어. 자, 받아.",
-    acceptLabel: "받아들인다",
-  },
-  {
     // kill_within_hp — 노상강도 5을 HP 70% 이상으로 처치. solgae-ravens 후 노출.
     id: "dustford-solgae-pristine-bandits",
     offerText:
