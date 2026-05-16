@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ConsumableId } from "../data/consumables";
 import { ITEMS, type ItemId } from "../data/items";
+import { SKILL_BOOKS, type SkillBookId } from "../data/skillBooks";
 import type { CraftTier } from "../data/craftQuality";
 import {
   NON_ZERO_DROP_QUALITY_KEYS,
@@ -68,6 +69,11 @@ export type InventoryState = {
   vault: VaultState;
   materials: Partial<Record<MaterialId, number>>;
   consumables: Partial<Record<ConsumableId, number>>;
+  /**
+   * 스킬북 — 사용 시 1개 소비되어 캐릭터에 AP 스킬 학습. 학습 후엔 책 자체는 의미 X
+   * (학습 1회만 효과). 미학습 책은 마켓 거래 가능 (SKILL_BOOKS[id].tradable).
+   */
+  skillBooks?: Partial<Record<SkillBookId, number>>;
   // 종류별 포션 최대 보유 수의 추가 보너스. 보상으로 영구 누적.
   potionCapacityBonus?: number;
   /**
@@ -85,6 +91,7 @@ export const emptyInventory = (): InventoryState => ({
   vault: {},
   materials: { branch: 2 },
   consumables: {},
+  skillBooks: {},
   runes: {},
 });
 
@@ -152,9 +159,26 @@ function readInitial(raw: unknown): InventoryState {
     vault: readGradedEquipment(parsed.vault, VAULT_VARIANT_KEYS),
     materials: parsed.materials ?? {},
     consumables: parsed.consumables ?? {},
+    skillBooks: readSkillBooks(parsed.skillBooks),
     potionCapacityBonus: Math.max(0, parsed.potionCapacityBonus ?? 0),
     runes: readRunes(parsed.runes),
   };
+}
+
+// 알 수 없는 SkillBookId 는 버려서 SKILL_BOOKS 카탈로그 외 잔재가 안 남게.
+function readSkillBooks(
+  raw: unknown,
+): Partial<Record<SkillBookId, number>> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: Partial<Record<SkillBookId, number>> = {};
+  for (const [id, n] of Object.entries(raw as Record<string, unknown>)) {
+    if (!(id in SKILL_BOOKS)) continue;
+    const num = typeof n === "number" ? n : Number(n);
+    if (Number.isFinite(num) && num > 0) {
+      out[id as SkillBookId] = Math.floor(num);
+    }
+  }
+  return out;
 }
 
 export function useInventory() {
@@ -463,6 +487,38 @@ export function useInventory() {
     [state],
   );
 
+  const addSkillBook = useCallback((id: SkillBookId, n = 1) => {
+    if (n <= 0) return;
+    const cur = stateRef.current;
+    const next: InventoryState = {
+      ...cur,
+      skillBooks: {
+        ...(cur.skillBooks ?? {}),
+        [id]: ((cur.skillBooks ?? {})[id] ?? 0) + n,
+      },
+    };
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
+  const consumeSkillBook = useCallback((id: SkillBookId, n = 1): boolean => {
+    const cur = stateRef.current;
+    const have = (cur.skillBooks ?? {})[id] ?? 0;
+    if (have < n) return false;
+    const next: InventoryState = {
+      ...cur,
+      skillBooks: { ...(cur.skillBooks ?? {}), [id]: have - n },
+    };
+    stateRef.current = next;
+    setState(next);
+    return true;
+  }, []);
+
+  const skillBookCount = useCallback(
+    (id: SkillBookId): number => (state.skillBooks ?? {})[id] ?? 0,
+    [state],
+  );
+
   // 룬 보유량 +n.
   const addRune = useCallback(
     (id: RuneId, grade: RuneGrade, n = 1) => {
@@ -572,6 +628,9 @@ export function useInventory() {
     addConsumable,
     consumeConsumable,
     consumableCount,
+    addSkillBook,
+    consumeSkillBook,
+    skillBookCount,
     addRune,
     consumeRune,
     runeCount,
