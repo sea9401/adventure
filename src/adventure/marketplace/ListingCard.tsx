@@ -1,25 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { formatRelativeTime } from "@/lib/format";
 import { ITEMS, rarityTextClass, type ItemId } from "@/adventure/data/items";
 import type { Listing } from "./types";
 import { hasOwn, listingDetail } from "./listingDetail";
 
-export function ListingCard({
-  item,
-  onCancel,
-  onBuy,
-  currentGold,
-  alreadyKnown,
-}: {
+type ListingCardProps = {
   item: Listing;
   onCancel?: (listing: Listing) => Promise<void>;
   onBuy?: (listing: Listing) => Promise<void>;
   currentGold?: number;
   alreadyKnown?: boolean;
-}) {
+};
+
+function ListingCardImpl({
+  item,
+  onCancel,
+  onBuy,
+  currentGold,
+  alreadyKnown,
+}: ListingCardProps) {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const insufficientGold =
@@ -190,3 +192,8 @@ export function ListingCard({
     </Card>
   );
 }
+
+
+// memo — 부모(ListingsView via MarketplaceTab)의 onCancel/onBuy 콜백이 이미 useCallback
+// 이라 같은 item/currentGold/alreadyKnown 인 카드는 렌더 skip.
+export const ListingCard = memo(ListingCardImpl);
