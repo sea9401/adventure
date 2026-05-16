@@ -14,22 +14,22 @@ const PREF_CHANGE_EVENT = "notification-prefs-change";
 
 export type ToastPrefs = Record<NotificationKind, boolean>;
 
-// 기본값 — 모든 종류가 prefs 패널에서 토글 가능. 다음 기준으로 디폴트 결정:
-// - battle_win / loot / info: 너무 자주 발화되어 토스트로 두면 잡음 — 기본 OFF.
-// - battle_lose / expedition: 사망·원정 결과는 눈에 띄는 모달을 따로 띄우므로
-//   중복 토스트는 기본 OFF. (원하면 사용자가 켤 수 있음)
-// - training_done / quest_ready / quest_complete / milestone / item:
-//   드물거나 직접 누른 액션의 즉시 피드백 — 기본 ON.
+// 기본값 — 토스트 OFF 인 종류는 벨(좌상단 알림)에도 표시되지 않고 "최근 기록"
+// 화면에만 누적된다. 디폴트는 "정말 놓치면 아쉬운 사건"만 ON:
+// - milestone / equip_drop / training_done: 드물고 의미 있는 성장·획득.
+// - 그 외 전부 OFF (전투 결과·전리품·의뢰 진척·장비 액션·일반 정보).
+//   사용자가 원하면 모달에서 켤 수 있다.
 const DEFAULTS: ToastPrefs = {
   battle_win: false,
   battle_lose: false,
   training_done: true,
-  quest_ready: true,
-  quest_complete: true,
+  quest_ready: false,
+  quest_complete: false,
   milestone: true,
   expedition: false,
   loot: false,
-  item: true,
+  equip_drop: true,
+  item: false,
   info: false,
 };
 
@@ -115,8 +115,12 @@ export const TOAST_KIND_LABELS: Record<
     description: "자동 사냥(위탁 원정) 결과가 도착했을 때 표시.",
   },
   loot: {
-    name: "전리품",
-    description: "전투에서 재료·골드·장비·제작서를 얻었을 때.",
+    name: "재료·골드",
+    description: "전투에서 재료나 골드를 얻었을 때.",
+  },
+  equip_drop: {
+    name: "장비·제작서",
+    description: "전투에서 장비나 제작서를 얻었을 때.",
   },
   item: {
     name: "장비 액션",
@@ -130,11 +134,12 @@ export const TOAST_KIND_LABELS: Record<
 
 export const TOAST_KIND_ORDER: NotificationKind[] = [
   "milestone",
+  "equip_drop",
+  "training_done",
   "quest_ready",
   "quest_complete",
   "expedition",
   "item",
-  "training_done",
   "loot",
   "battle_win",
   "battle_lose",
