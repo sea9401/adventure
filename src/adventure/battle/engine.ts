@@ -39,6 +39,9 @@ export type BattleLogEntry =
       playerMaxHp: number;
       enemyHp: number;
       enemyMaxHp: number;
+      /** 그 시점의 AP. apMax=0 이면 AP 스킬 미장착 — UI 는 핍 안 그림. */
+      ap: number;
+      apMax: number;
     };
 
 export type BattleOutcome = "win" | "lose";
@@ -1736,6 +1739,8 @@ export function resolveBattle(
   const turnMarkerText = (turnNo: number, ap: number): string =>
     `${turnNo}턴 · AP ${ap}`;
   // 그 시점 HP 스냅샷 — 매 턴 종료 시 + 전투 종료 시 로그 마지막에 박는다.
+  // AP 스킬 장착자만 ap/apMax 가 의미 — 미장착은 ap=0, apMax=0 (UI 핍 미표시).
+  const apMaxForLog = (player.equippedAPSkills?.length ?? 0) > 0 ? AP_CAP : 0;
   const hpBarEntry = (s: BattleState): BattleLogEntry => ({
     kind: "hp_bar",
     text: "",
@@ -1744,6 +1749,8 @@ export function resolveBattle(
     playerMaxHp: s.playerMaxHp,
     enemyHp: s.enemyHp,
     enemyMaxHp: s.enemy.hp,
+    ap: s.ap,
+    apMax: apMaxForLog,
   });
   // 초기 entry (적 등장 / 선공 / 능력 안내 등) 는 player 턴으로 태깅. 첫 턴 marker 도 박는다.
   state = {
