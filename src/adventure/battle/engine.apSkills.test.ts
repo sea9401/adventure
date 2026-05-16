@@ -340,3 +340,113 @@ describe("AP 스킬 — 천살 (ignoresEvasion + ignoresDef)", () => {
     expect(biggestHit).toBeGreaterThanOrEqual(25);
   });
 });
+
+// ── PR-2 지속 효과 ──
+const RESOLVE = getAPSkillByName("결의")!;
+const EXPOSE = getAPSkillByName("약점 노출")!;
+const MADNESS = getAPSkillByName("광기")!;
+const SLOW = getAPSkillByName("둔화")!;
+const FRENZY = getAPSkillByName("폭주")!;
+
+describe("AP 스킬 — 결의 (player_dmg_reduction_turns)", () => {
+  it("발동 턴의 적 공격은 -50% 데미지, 다음 라운드는 정상", () => {
+    // 결의 cost 2, 시작 AP 2 — turn 1 첫 공격에 즉시 발동.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      hp: 1000,
+      maxHp: 1000,
+      def: 0,
+      equippedAPSkills: [eq(RESOLVE)],
+    };
+    // 적: ATK 20, DEF 0 → 평상시 약 20 데미지, 결의 활성 시 10.
+    let s = initialBattleState(
+      p,
+      { ...enemy(9999), atk: 20, def: 0 },
+      "용사",
+    );
+    expect(s.buffs.playerDmgReductionTurnsLeft).toBe(0);
+    s = advanceTurn(s, p, "용사"); // turn 1 player — 결의 발동 (turnsLeft=1).
+    expect(s.buffs.playerDmgReductionTurnsLeft).toBe(1);
+    expect(s.buffs.playerDmgReductionPct).toBe(50);
+    const hpAfterFire = s.playerHp;
+    s = advanceTurn(s, p, "용사"); // turn 1 enemy — 데미지 -50%.
+    const dmg1 = hpAfterFire - s.playerHp;
+    expect(dmg1).toBeLessThanOrEqual(11); // ~10 with floor
+    // 새 player phase 진입 시 decrement → 0.
+    s = advanceTurn(s, p, "용사"); // turn 2 player.
+    expect(s.buffs.playerDmgReductionTurnsLeft).toBe(0);
+    const hpAfterT2P = s.playerHp;
+    s = advanceTurn(s, p, "용사"); // turn 2 enemy — 데미지 정상.
+    const dmg2 = hpAfterT2P - s.playerHp;
+    expect(dmg2).toBeGreaterThanOrEqual(15); // ~20
+  });
+});
+
+describe("AP 스킬 — 약점 노출 (enemy_def_debuff_pct_turns)", () => {
+  it("발동 시 enemyDefDebuffPct/turnsLeft 셋", () => {
+    // 약점 노출 cost 2 — turn 1 첫 공격에 발동. 발동 자체는 부타 후 셋이라
+    // 그 턴 데미지엔 미반영, 다음 턴부터 효과. 셋팅 자체를 검증.
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [eq(EXPOSE)] };
+    let s = initialBattleState(p, enemy(9999, { def: 8 }), "용사");
+    s = advanceTurn(s, p, "용사");
+    expect(s.buffs.enemyDefDebuffTurnsLeft).toBe(3);
+    expect(s.buffs.enemyDefDebuffPct).toBe(25);
+  });
+});
+
+describe("AP 스킬 — 광기 (player_atk_buff_def_debuff_pct_turns)", () => {
+  it("발동 시 ATK +30%, 자신 DEF -15%", () => {
+    // 광기 cost 3 — 시작 AP 2. 첫 attack AP 2<3 no-fire → AP 3.
+    // turn 1 enemy → turn 2 첫 공격에 발동 (state.ap=3 ≥ 3).
+    const p: PlayerCombat = {
+      ...PLAYER,
+      atk: 100,
+      def: 100,
+      equippedAPSkills: [eq(MADNESS)],
+    };
+    let s = initialBattleState(p, enemy(9999, { def: 0, atk: 100 }), "용사");
+    // Loop until fire.
+    for (let i = 0; i < 10 && s.buffs.playerAtkBuffTurnsLeft === 0; i++) {
+      s = advanceTurn(s, p, "용사");
+    }
+    expect(s.buffs.playerAtkBuffTurnsLeft).toBe(3);
+    expect(s.buffs.playerAtkBuffPct).toBe(30);
+    expect(s.buffs.playerDefDebuffTurnsLeft).toBe(3);
+    expect(s.buffs.playerDefDebuffPct).toBe(15);
+  });
+});
+
+describe("AP 스킬 — 둔화 (enemy_spd_mult_turns)", () => {
+  it("발동 시 적 SPD ×0.5 + turnsLeft=2 세팅, 다음 라운드에 decrement", () => {
+    const p: PlayerCombat = {
+      ...PLAYER,
+      spd: 30,
+      equippedAPSkills: [eq(SLOW)],
+    };
+    let s = initialBattleState(p, enemy(9999, { spd: 20 }), "용사");
+    expect(s.buffs.enemySpdMult).toBe(1);
+    s = advanceTurn(s, p, "용사"); // turn 1 player — 둔화 발동.
+    expect(s.buffs.enemySpdTurnsLeft).toBe(2);
+    expect(s.buffs.enemySpdMult).toBe(0.5);
+    s = advanceTurn(s, p, "용사"); // turn 1 enemy.
+    s = advanceTurn(s, p, "용사"); // turn 2 player. AP=1 ⇒ refire 불가 → decrement.
+    expect(s.buffs.enemySpdTurnsLeft).toBe(1);
+  });
+});
+
+describe("AP 스킬 — 폭주 (player_spd_mult_turns)", () => {
+  it("발동 시 자신 SPD ×1.5, 3턴 후 만료", () => {
+    const p: PlayerCombat = {
+      ...PLAYER,
+      spd: 10,
+      equippedAPSkills: [eq(FRENZY)],
+    };
+    // 폭주 cost 4 — 시작 2 → 3 → 4 (turn 3 첫 공격에 발동).
+    let s = initialBattleState(p, enemy(9999), "용사");
+    for (let i = 0; i < 8 && s.buffs.playerSpdTurnsLeft === 0; i++) {
+      s = advanceTurn(s, p, "용사");
+    }
+    expect(s.buffs.playerSpdTurnsLeft).toBeGreaterThan(0);
+    expect(s.buffs.playerSpdMult).toBe(1.5);
+  });
+});

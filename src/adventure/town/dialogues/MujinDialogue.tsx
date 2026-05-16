@@ -3,6 +3,11 @@ import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
+import type { useCharacterState } from "@/adventure/character/useCharacterState";
+import type { NotificationKind } from "@/lib/notifications";
+import { SKILL_BOOKS } from "@/adventure/data/skillBooks";
+
+const RESOLVE_BOOK_ID = "book_resolve" as const;
 
 // 무진 — 마른나루 옛 수비대장. 차분한 노병. 서편 옛길 메인 라인의 축.
 // 두루·나래의 인트로 의뢰를 한 번씩 마치면 마른나루가 자네를 받아들임 → dustford_vouched.
@@ -64,6 +69,8 @@ type Props = {
   completeQuest: (id: string) => boolean;
   inventory: ReturnType<typeof useInventory>;
   storyFlags: ReturnType<typeof useStoryFlags>;
+  characterStateHook: ReturnType<typeof useCharacterState>;
+  addNotification: (kind: NotificationKind, text: string) => void;
 };
 
 export function MujinDialogue({
@@ -73,6 +80,8 @@ export function MujinDialogue({
   completeQuest,
   inventory,
   storyFlags,
+  characterStateHook,
+  addNotification,
 }: Props) {
   const vouched = storyFlags.has(DUSTFORD_FLAG_VOUCHED);
   const unsealed = storyFlags.has(KEEP_FLAG_UNSEALED);
@@ -190,14 +199,44 @@ export function MujinDialogue({
         />
       );
     }
+    // 보스 처치 후 idle — 결의 스킬북 판매 (옛 수비대 호흡법). 중복 가드.
+    const book = SKILL_BOOKS[RESOLVE_BOOK_ID];
+    const price = book.price ?? 0;
+    const alreadyKnown = (
+      characterStateHook.state.learnedAPSkills ?? []
+    ).includes("결의");
+    const alreadyHas = inventory.skillBookCount(RESOLVE_BOOK_ID) > 0;
+    const offerBook = felled && !alreadyKnown && !alreadyHas;
     return (
       <NpcDialogue
         npc={npc}
         onClose={onClose}
         text={
-          felled
-            ? "성채에 다시 사람이 든다오. 갈라진 우물을 메우고, 막사를 헐어 새로 짓고. …자네가 한 일이야.\n옛 변경의 일이 다 끝난 건 아닐지 몰라도 — 이 마을은 자네를 식구로 기억할 게요."
-            : "…고맙소. 진심으로. 마른나루는 자네를 잊지 않을 게요."
+          offerBook
+            ? `성채에 다시 사람이 든다오. 갈라진 우물을 메우고, 막사를 헐어 새로 짓고. …자네가 한 일이야.\n\n…그리고, 옛 수비대의 호흡법을 한 권 묶어 뒀소. "${book.name}" — ${price}G 면 자네 거요.`
+            : felled
+              ? "성채에 다시 사람이 든다오. 갈라진 우물을 메우고, 막사를 헐어 새로 짓고. …자네가 한 일이야.\n옛 변경의 일이 다 끝난 건 아닐지 몰라도 — 이 마을은 자네를 식구로 기억할 게요."
+              : "…고맙소. 진심으로. 마른나루는 자네를 잊지 않을 게요."
+        }
+        primaryAction={
+          offerBook
+            ? {
+                label: `${book.name} 구매 (${price}G)`,
+                onClick: () => {
+                  if (characterStateHook.state.gold < price) {
+                    addNotification("info", "골드가 부족합니다.");
+                    return;
+                  }
+                  characterStateHook.addGold(-price);
+                  inventory.addSkillBook(RESOLVE_BOOK_ID, 1);
+                  addNotification(
+                    "item",
+                    `${book.name} 을(를) 구매했습니다. 가방에서 사용하세요.`,
+                  );
+                  onClose();
+                },
+              }
+            : undefined
         }
       />
     );

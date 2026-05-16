@@ -1,7 +1,12 @@
 import type { Npc } from "@/adventure/data/npcs";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useInventory } from "@/adventure/inventory/useInventory";
+import type { useCharacterState } from "@/adventure/character/useCharacterState";
+import type { NotificationKind } from "@/lib/notifications";
+import { SKILL_BOOKS } from "@/adventure/data/skillBooks";
 import { QuestLineDialogue, type QuestLineStep } from "./questLineDialogue";
+
+const EXPOSE_BOOK_ID = "book_expose_weakness" as const;
 
 type Props = {
   npc: Npc;
@@ -9,6 +14,8 @@ type Props = {
   quests: ReturnType<typeof useQuests>;
   completeQuest: (id: string) => boolean;
   inventory: ReturnType<typeof useInventory>;
+  characterStateHook: ReturnType<typeof useCharacterState>;
+  addNotification: (kind: NotificationKind, text: string) => void;
 };
 
 // 솔개 — 마른나루 들사냥꾼. 무뚝뚝한 반말. 옛길 들짐승 인트로(까마귀깃 두건 제작서) →
@@ -40,7 +47,23 @@ const STEPS: QuestLineStep[] = [
   },
 ];
 
-export function SolgaeDialogue({ npc, onClose, quests, completeQuest, inventory }: Props) {
+export function SolgaeDialogue({
+  npc,
+  onClose,
+  quests,
+  completeQuest,
+  inventory,
+  characterStateHook,
+  addNotification,
+}: Props) {
+  const book = SKILL_BOOKS[EXPOSE_BOOK_ID];
+  const price = book.price ?? 0;
+  const alreadyKnown = (characterStateHook.state.learnedAPSkills ?? []).includes(
+    "약점 노출",
+  );
+  const alreadyHas = inventory.skillBookCount(EXPOSE_BOOK_ID) > 0;
+  const offerBook = !alreadyKnown && !alreadyHas;
+
   return (
     <QuestLineDialogue
       npc={npc}
@@ -49,7 +72,31 @@ export function SolgaeDialogue({ npc, onClose, quests, completeQuest, inventory 
       completeQuest={completeQuest}
       inventory={inventory}
       steps={STEPS}
-      idleText="옛길도, 흉벽도 한 번 비운다고 끝이 아니야. 또 부탁할 일 생기면 말할게."
+      idleText={
+        offerBook
+          ? `옛길도, 흉벽도 한 번 비운다고 끝이 아니야.\n\n…그리고, 짐승 결을 읽는 법을 한 권 묶어 뒀어. "${book.name}" — ${price}G 면 자네 거다.`
+          : "옛길도, 흉벽도 한 번 비운다고 끝이 아니야. 또 부탁할 일 생기면 말할게."
+      }
+      idleAction={
+        offerBook
+          ? {
+              label: `${book.name} 구매 (${price}G)`,
+              onClick: () => {
+                if (characterStateHook.state.gold < price) {
+                  addNotification("info", "골드가 부족합니다.");
+                  return;
+                }
+                characterStateHook.addGold(-price);
+                inventory.addSkillBook(EXPOSE_BOOK_ID, 1);
+                addNotification(
+                  "item",
+                  `${book.name} 을(를) 구매했습니다. 가방에서 사용하세요.`,
+                );
+                onClose();
+              },
+            }
+          : undefined
+      }
     />
   );
 }

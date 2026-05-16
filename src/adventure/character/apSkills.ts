@@ -11,7 +11,12 @@ export type APSkillId =
   | "extra_evade"
   | "mending"
   | "heaven_slay"
-  | "deep_wound";
+  | "deep_wound"
+  | "resolve"
+  | "expose_weakness"
+  | "madness"
+  | "slow"
+  | "frenzy";
 
 export type APSkillEffect =
   // 본타 데미지를 ATK × atkMult 로 갱신. ignoresDef = true 면 적 DEF 무시.
@@ -27,7 +32,22 @@ export type APSkillEffect =
   // 발동 즉시 적에게 출혈 스택 N 부여 (기존 stacks 와 누적).
   | { kind: "apply_bleed"; stacks: number }
   // 발동 즉시 보장 회피 횟수 +N (회피 강화 패시브와 누적).
-  | { kind: "add_guaranteed_evades"; count: number };
+  | { kind: "add_guaranteed_evades"; count: number }
+  // 다음 N 라운드 동안 받는 피해 -pct%. 결의 — 방어용 패닉 버튼.
+  | { kind: "player_dmg_reduction_turns"; pct: number; turns: number }
+  // 다음 N 라운드 동안 적 DEF -pct%. 약점 노출 — 데미지 증폭.
+  | { kind: "enemy_def_debuff_pct_turns"; pct: number; turns: number }
+  // 다음 N 라운드 동안 ATK +atkPct% & 자신 DEF -defPct%. 광기 — 공격형 광폭화.
+  | {
+      kind: "player_atk_buff_def_debuff_pct_turns";
+      atkPct: number;
+      defPct: number;
+      turns: number;
+    }
+  // 다음 N 라운드 동안 적 SPD ×mult. 둔화 — 천칭 시너지용.
+  | { kind: "enemy_spd_mult_turns"; mult: number; turns: number }
+  // 다음 N 라운드 동안 자신 SPD ×mult. 폭주 — 천칭 시너지용.
+  | { kind: "player_spd_mult_turns"; mult: number; turns: number };
 
 export type APSkill = {
   /** 내부 id — 데이터 식별용. user-facing 은 name. */
@@ -79,6 +99,46 @@ export const AP_SKILLS: APSkill[] = [
     description: "적에게 출혈 5스택 즉시 부여 (출혈 패시브와 시너지)",
     apCost: 3,
     effect: { kind: "apply_bleed", stacks: 5 },
+  },
+  {
+    id: "resolve",
+    name: "결의",
+    description: "1턴 동안 받는 피해 -50%",
+    apCost: 2,
+    effect: { kind: "player_dmg_reduction_turns", pct: 50, turns: 1 },
+  },
+  {
+    id: "expose_weakness",
+    name: "약점 노출",
+    description: "3턴 동안 적 DEF -25%",
+    apCost: 2,
+    effect: { kind: "enemy_def_debuff_pct_turns", pct: 25, turns: 3 },
+  },
+  {
+    id: "madness",
+    name: "광기",
+    description: "3턴 동안 ATK +30%, 자신 DEF -15%",
+    apCost: 3,
+    effect: {
+      kind: "player_atk_buff_def_debuff_pct_turns",
+      atkPct: 30,
+      defPct: 15,
+      turns: 3,
+    },
+  },
+  {
+    id: "slow",
+    name: "둔화",
+    description: "2턴 동안 적 SPD 절반 (천칭 크리 시너지)",
+    apCost: 2,
+    effect: { kind: "enemy_spd_mult_turns", mult: 0.5, turns: 2 },
+  },
+  {
+    id: "frenzy",
+    name: "폭주",
+    description: "3턴 동안 자신 SPD ×1.5 (천칭 크리 시너지)",
+    apCost: 4,
+    effect: { kind: "player_spd_mult_turns", mult: 1.5, turns: 3 },
   },
 ];
 

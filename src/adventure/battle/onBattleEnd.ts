@@ -62,6 +62,8 @@ export type BattleEndDeps = {
   storyFlags: { set: (id: string) => void; has: (id: string) => boolean };
   /** 누적 보스 처치 수 (이번 처치 전 기준) — 보스 50회 업적 보상 발급용. */
   bossKillsTotal: number;
+  /** 누적 일반 처치 수 (이번 처치 전 기준) — 1000회 사냥 폭주 업적 발급용. */
+  totalKillsTotal: number;
   vit: number;
   luk: number;
   /** 신참 드롭 ×2 판정용. Lv 30 미만이면 ×2. */
@@ -165,6 +167,18 @@ export function onBattleEnd(
       deps.addNotification(
         "milestone",
         "✨ 보스 50회 처치 — '스킬북 — 깊은 상처' 를 손에 넣었다!",
+      );
+    }
+    // 누적 처치 1000회 업적 — 폭주 스킬북 1회 지급. monster 종류 무관.
+    if (
+      deps.totalKillsTotal + 1 >= 1000 &&
+      !deps.storyFlags.has("frenzy_book_granted")
+    ) {
+      deps.storyFlags.set("frenzy_book_granted");
+      deps.inventory.addSkillBook("book_frenzy", 1);
+      deps.addNotification(
+        "milestone",
+        "✨ 누적 1000회 처치 — '스킬북 — 폭주' 를 손에 넣었다!",
       );
     }
     // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.

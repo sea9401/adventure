@@ -184,6 +184,8 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "spider_queen_silk_robe", chance: 0.0002 },
       // 그 비단갑을 한 단계 끌어올리는 직조서 (결과도 unique·비거래).
       { kind: "recipe", recipeId: "spider_queen_silk_plate", chance: 0.002 },
+      // 거미줄에 휘감긴 사냥 비전 — 둔화 스킬북.
+      { kind: "skill_book", bookId: "book_slow", chance: 0.003 },
     ],
   },
   산적: {
@@ -509,6 +511,8 @@ export const MONSTERS: Record<string, Monster> = {
     drops: [
       { kind: "gold", amount: 1, chance: 0.08 },
       { kind: "material", materialId: "wilddog_fang", chance: 0.015 },
+      // 핏물 절은 노트 — 광기 스킬북. 약탈자가 광폭화 호흡을 익혔던 흔적.
+      { kind: "skill_book", bookId: "book_madness", chance: 0.003 },
     ],
     skill: { kind: "pierce", name: "급소 노리기", armorPierce: 3 },
   },
