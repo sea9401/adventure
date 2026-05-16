@@ -121,6 +121,10 @@ export type Quest = {
   // 설정 시 지정된 의뢰가 'completed' 상태일 때만 게시판/UI 에 노출.
   // 메인 라인을 끝낸 모험가에게만 풀리는 후속 반복 의뢰 등에 사용.
   requiresQuestCompleted?: string;
+  // 발견형 의뢰 — 인벤/플래그/특수 조건이 다이얼로그에서 게이트하는 케이스.
+  // 데이터로 게이트를 표현할 수 없어 NPC 뱃지("!") 가 스포일하지 않도록 통째로 제외.
+  // 플레이어가 직접 NPC 와 대화해 발견해야 함.
+  hidden?: boolean;
 };
 
 export const REPEAT_COOLDOWN_MS_DEFAULT = 6 * 60 * 60 * 1000;
@@ -206,6 +210,7 @@ export const QUESTS: Quest[] = [
     reward: { exp: 30, gold: 15, fame: 3 },
     repeatable: false,
     giverNpcId: "village_trainer_smith",
+    requiresQuestCompleted: "village-trainer-slimes",
   },
   {
     id: "village-trainer-moles",
@@ -219,6 +224,7 @@ export const QUESTS: Quest[] = [
     },
     repeatable: false,
     giverNpcId: "village_trainer_smith",
+    requiresQuestCompleted: "village-trainer-dogs",
   },
   {
     id: "village-jimmy-bandits",
@@ -234,6 +240,8 @@ export const QUESTS: Quest[] = [
     },
     repeatable: false,
     giverNpcId: "village_woodcutter_jimmy",
+    // 다이얼로그 게이트: crafting.state.boldQuestComplete. 데이터로 표현 불가 → hidden.
+    hidden: true,
   },
   // 지미 — 산적 의뢰 완료 후 받는 깊은 동굴 조사 의뢰. 보스 1회 처치.
   // 수락 시 'jimmy_deep_cave_quest' story flag 설정 → 동굴 → 깊은 동굴 통로 해금.
@@ -248,6 +256,7 @@ export const QUESTS: Quest[] = [
     reward: { gold: 900, fame: 30, exp: 1050, potionCapacityBonus: 1 },
     repeatable: false,
     giverNpcId: "village_woodcutter_jimmy",
+    requiresQuestCompleted: "village-jimmy-bandits",
   },
   // 시작 마을 길드판 반복 의뢰 — 메인 깊은 동굴 의뢰 완료 후에만 노출.
   // 보스 일일 3회 제한이라 1일에 1회 완료 가능. 누적 파밍 동기.
@@ -277,6 +286,8 @@ export const QUESTS: Quest[] = [
     reward: { gold: 600, exp: 500, recipes: ["mana_bracelet"], potionCapacityBonus: 1 },
     repeatable: false,
     giverNpcId: "village_blacksmith_bold",
+    // 다이얼로그 게이트: storyFlags.has("jimmy_deep_cave_quest"). 데이터로 표현 불가 → hidden.
+    hidden: true,
   },
   // ── 시작 마을 — 새 quest kind 의뢰 3종 ─────────────────────────────────
   // 각 인트로 라인의 4 번째 단계로 매단다. 라인 어휘를 잇는 자연스러운 결.
@@ -337,6 +348,8 @@ export const QUESTS: Quest[] = [
     reward: { potionCapacityBonus: 1, gold: 90, fame: 9 },
     repeatable: false,
     giverNpcId: "diola_kid",
+    // 다이얼로그 게이트: storyFlags.has(STRANGER_FLAG_TRIAL_STARTED) → hidden.
+    hidden: true,
   },
   {
     id: "diola-nora-bat-eyes",
@@ -349,6 +362,8 @@ export const QUESTS: Quest[] = [
     reward: { gold: 120, fame: 12, exp: 240 },
     repeatable: false,
     giverNpcId: "diola_innkeeper",
+    // 다이얼로그 게이트: storyFlags.has(STRANGER_FLAG_TRIAL_STARTED) → hidden.
+    hidden: true,
   },
   {
     id: "diola-boro-spider-silk",
@@ -361,6 +376,8 @@ export const QUESTS: Quest[] = [
     reward: { gold: 180, fame: 15, exp: 300 },
     repeatable: false,
     giverNpcId: "diola_merchant",
+    // 다이얼로그 게이트: storyFlags.has(STRANGER_FLAG_TRIAL_STARTED) → hidden.
+    hidden: true,
   },
   // 마린 — 트라이얼 통과 후 폐허가 열리고 나서야 진행 가능 (영혼 결정은 망령 드롭).
   // 완료 시 '디올라의 친구' 칭호를 부여하는 라인의 클로저.
@@ -375,6 +392,8 @@ export const QUESTS: Quest[] = [
     reward: { gold: 300, fame: 15, exp: 600, recipes: ["soul_blade"] },
     repeatable: false,
     giverNpcId: "diola_elder",
+    // 다이얼로그 게이트: storyFlags.has(STRANGER_FLAG_RUINS_GUIDE) → hidden.
+    hidden: true,
   },
   // 마린 ↔ 백운 — 산정 교역로 개통(§7.2). 운향 백운 라인의 mountain_trade_open flag 가
   // 켜진 뒤 MarinDialogue 에서 노출. 완료 시 diola_unhyang_trade_done flag → 양 마을 갱신.
@@ -390,6 +409,9 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "diola_elder",
     requiresQuestCompleted: "unhyang-baekun-highland-goats",
+    // 다이얼로그 게이트: storyFlags.has("mountain_trade_open") — goats + cliff-wolves
+    // 둘 다 완료해야 켜지는데 prereq 는 goats 만 검사하므로 false positive 방지 위해 hidden.
+    hidden: true,
   },
   // ── 디올라 길드 게시판 — 반복 의뢰 ────────────────────────────────────
   // 호수·폐허 두 인접 지역의 적을 디올라 거점에서 처리. 폐허 적 3종은 트라이얼
@@ -501,8 +523,9 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "diola_fisher",
     // 후드 손님이 호수 떡밥을 카이에게 흘린 뒤에야 노출 (Kai 라인 클로저 flag 활용).
-    // KaiDialogue 의 lakeHint 단계까지 진행해야 의뢰가 노출되도록, requiresQuestCompleted
-    // 가 아니라 KaiDialogue 자체에서 storyFlag 로 게이팅한다 (아래 KaiDialogue 참고).
+    // KaiDialogue 의 lakeHint(KAI_FLAG_LAKE_HINT) 단계까지 진행해야 의뢰가 노출되도록,
+    // requiresQuestCompleted 가 아니라 storyFlag 로 게이팅 → hidden.
+    hidden: true,
   },
   {
     // equip_set — 마린의 라인 마무리. 자네가 처음 손에 든 것 한 복으로 차고 와라.
@@ -635,6 +658,8 @@ export const QUESTS: Quest[] = [
     reward: { gold: 220, fame: 12, exp: 380 },
     repeatable: false,
     giverNpcId: "dustford_keeper",
+    // 다이얼로그 게이트: storyFlags.has(DUSTFORD_FLAG_VOUCHED) → hidden.
+    hidden: true,
   },
   {
     id: "dustford-mujin-keep-survey",
@@ -773,6 +798,8 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "dustford_kid",
     requiresQuestCompleted: "dustford-mujin-clear-road",
+    // 다이얼로그 게이트: gatekeeper_felled && KEEP_FLAG_UNSEALED — prereq 만으로 못 표현 → hidden.
+    hidden: true,
   },
   {
     // kill_within_hp — 솔개 라인 마지막 단계. 노상강도 5 마리를 HP 70% 이상으로 처치.
@@ -930,6 +957,8 @@ export const QUESTS: Quest[] = [
     reward: { gold: 320, fame: 16, exp: 600 },
     repeatable: false,
     giverNpcId: "saltmarsh_ferryman",
+    // 다이얼로그 게이트: storyFlags.has("saltmarsh_vouched") → hidden.
+    hidden: true,
   },
   {
     id: "saltmarsh-haerang-reef-runs",
@@ -1036,6 +1065,8 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "saltmarsh_kid",
     requiresQuestCompleted: "saltmarsh-haerang-hull-plating",
+    // 다이얼로그 게이트: stilled(deep_one_stilled) && crossed — prereq 만으론 표현 불가 → hidden.
+    hidden: true,
   },
   {
     // equip_item — 해랑 라인 마지막 단계. 산호 가시 단검을 한 번이라도 차고 와라.
@@ -1177,6 +1208,9 @@ export const QUESTS: Quest[] = [
     reward: { gold: 700, fame: 24, exp: 1000, materials: [{ id: "giant_scale", count: 3 }] },
     repeatable: false,
     giverNpcId: "unhyang_elder",
+    // 다이얼로그 게이트: storyFlags.has("peak_giant_engaged") (운향 진입 시 거의 켜져 있음).
+    // 안전하게 hidden — 운향 도달 전 신규 캐릭터에게 뱃지 노출 방지.
+    hidden: true,
   },
   {
     id: "unhyang-baekun-peak-giant",
@@ -1242,6 +1276,8 @@ export const QUESTS: Quest[] = [
     reward: { gold: 500, exp: 800, recipes: ["peak_mantle"], potionCapacityBonus: 1 },
     repeatable: false,
     giverNpcId: "unhyang_smith",
+    // 다이얼로그 게이트: storyFlags.has("peak_giant_defeated") → hidden.
+    hidden: true,
   },
   {
     id: "unhyang-manwol-weapons",
@@ -2121,6 +2157,7 @@ export const QUESTS: Quest[] = [
     reward: { gold: 800, fame: 10, exp: 1200, potionCapacityBonus: 1 },
     repeatable: false,
     giverNpcId: "village_woodcutter_jimmy",
+    hidden: true,
   },
   {
     id: "hidden-deepest-vein",
@@ -2134,6 +2171,7 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "village_blacksmith_bold",
     requiresQuestCompleted: "deep-cave-hunter",
+    hidden: true,
   },
   {
     id: "hidden-blacksmith-duel",
@@ -2146,6 +2184,7 @@ export const QUESTS: Quest[] = [
     reward: { gold: 1500, exp: 2500, items: [{ id: "moonlight_blade", count: 1 }] },
     repeatable: false,
     giverNpcId: "village_blacksmith_bold",
+    hidden: true,
   },
   {
     id: "hidden-giants-origin",
@@ -2159,6 +2198,7 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "unhyang_pilgrim",
     requiresQuestCompleted: "unhyang-baekun-peak-giant",
+    hidden: true,
   },
   {
     id: "hidden-volcano-relic",
@@ -2172,6 +2212,7 @@ export const QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "skyreach_alchemist",
     requiresQuestCompleted: "windvale-volcano-boss",
+    hidden: true,
   },
 
   // ── 히든: 순례자의 자취 (§11.1) — 운저 평원→잿빛 협로→봉황령 표식 추적 ──────

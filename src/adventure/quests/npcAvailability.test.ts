@@ -48,6 +48,31 @@ describe("npcHasAcceptableQuest", () => {
     ).toBe(false);
   });
 
+  it("hidden:true 의뢰는 뱃지에 안 잡힌다 (인벤/플래그 게이트는 다이얼로그가 직접 판정)", () => {
+    const hiddenQuests = QUESTS.filter((q) => q.hidden && q.giverNpcId);
+    expect(hiddenQuests.length).toBeGreaterThan(0);
+    // 해당 NPC 의 비-히든 의뢰는 모두 막아서 "히든만 남은" 상태를 만든다.
+    for (const hq of hiddenQuests) {
+      const map: QuestProgressMap = {};
+      for (const q of QUESTS.filter(
+        (qq) => qq.giverNpcId === hq.giverNpcId && !qq.hidden,
+      )) {
+        map[q.id] = { ...defaultQuestEntry(), state: "completed", completedCount: 1 };
+      }
+      // 선행이 있으면 그것도 만족시켜 — 진짜 hidden 플래그만이 차단 사유여야 함.
+      if (hq.requiresQuestCompleted) {
+        map[hq.requiresQuestCompleted] = {
+          ...defaultQuestEntry(),
+          state: "completed",
+          completedCount: 1,
+        };
+      }
+      expect(
+        npcHasAcceptableQuest(hq.giverNpcId!, 99, mkGetEntry(map), NOW),
+      ).toBe(false);
+    }
+  });
+
   it("선행 의뢰 미완료면 후속 의뢰는 뱃지에 안 잡힌다", () => {
     const linked = QUESTS.find(
       (q) => q.giverNpcId && q.requiresQuestCompleted,
