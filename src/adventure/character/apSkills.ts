@@ -99,3 +99,64 @@ export function isAPSkillName(name: string): boolean {
 export function formatAPSkillDescription(skill: APSkill): string {
   return `AP ${skill.apCost} · ${skill.description}`;
 }
+
+// 슬롯별 발동 조건 — AP affordable 체크 이전에 평가된다.
+//   - always: 기존 동작. AP 만 닿으면 발동 (기본값).
+//   - ap_at_least: AP 가 X 이상일 때만. 저코스트 스킬을 "AP 저축" 게이트로 만드는 용도.
+//   - hp_below_pct: 플레이어 HP% 가 X 미만. 회복술/결의 같은 방어 스킬용.
+//   - enemy_hp_below_pct: 적 HP% 가 X 미만. 광살참/천살 같은 마무리용.
+export type APSkillCondition =
+  | { kind: "always" }
+  | { kind: "ap_at_least"; value: number }
+  | { kind: "hp_below_pct"; value: number }
+  | { kind: "enemy_hp_below_pct"; value: number };
+
+export const AP_SKILL_CONDITION_KINDS = [
+  "always",
+  "ap_at_least",
+  "hp_below_pct",
+  "enemy_hp_below_pct",
+] as const satisfies ReadonlyArray<APSkillCondition["kind"]>;
+
+export const DEFAULT_AP_SKILL_CONDITION: APSkillCondition = { kind: "always" };
+
+// 조건별 임계값 기본 프리셋 — UI 의 빠른 버튼 + 신규 트리거 선택 시 시작값.
+// 슬라이더 토글로 임의 값 입력 가능 (UI 단계에서 clamp).
+export const AP_SKILL_CONDITION_PRESETS: Record<
+  Exclude<APSkillCondition["kind"], "always">,
+  { min: number; max: number; step: number; presets: number[] }
+> = {
+  ap_at_least: { min: 1, max: AP_CAP, step: 1, presets: [2, 3, 4, 5] },
+  hp_below_pct: { min: 5, max: 95, step: 5, presets: [25, 50, 75] },
+  enemy_hp_below_pct: { min: 5, max: 95, step: 5, presets: [25, 50, 75] },
+};
+
+export function isAPSkillCondition(v: unknown): v is APSkillCondition {
+  if (!v || typeof v !== "object") return false;
+  const o = v as { kind?: unknown; value?: unknown };
+  if (o.kind === "always") return true;
+  if (
+    (o.kind === "ap_at_least" ||
+      o.kind === "hp_below_pct" ||
+      o.kind === "enemy_hp_below_pct") &&
+    typeof o.value === "number" &&
+    Number.isFinite(o.value)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+// 조건을 사람이 읽는 한 줄로 — UI 의 pill 표기 + 엔진 로그용. always 는 빈 문자열.
+export function formatAPSkillCondition(c: APSkillCondition): string {
+  switch (c.kind) {
+    case "always":
+      return "";
+    case "ap_at_least":
+      return `AP ≥ ${c.value}`;
+    case "hp_below_pct":
+      return `HP < ${c.value}%`;
+    case "enemy_hp_below_pct":
+      return `적HP < ${c.value}%`;
+  }
+}

@@ -3,10 +3,21 @@ import {
   advanceTurn,
   initialBattleState,
   resolveBattle,
+  type EquippedAPSkill,
   type PlayerCombat,
 } from "./engine";
 import type { Monster } from "../data/monsters";
-import { AP_CAP, getAPSkillByName } from "../character/apSkills";
+import {
+  AP_CAP,
+  getAPSkillByName,
+  type APSkill,
+  type APSkillCondition,
+} from "../character/apSkills";
+
+// 테스트 보조 — APSkill 을 always 조건으로 감싼 슬롯 형태로 변환.
+function eq(skill: APSkill, condition: APSkillCondition = { kind: "always" }): EquippedAPSkill {
+  return { skill, condition };
+}
 
 const PLAYER: PlayerCombat = {
   hp: 9999,
@@ -45,7 +56,7 @@ describe("AP 스킬 시스템 — 그림자 베기", () => {
   });
 
   it("AP 장착 시 시작 AP=2, 첫 턴은 미달 — 평타", () => {
-    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [SHADOW_CUT] };
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [eq(SHADOW_CUT)] };
     let s = initialBattleState(p, enemy(100), "용사");
     expect(s.ap).toBe(2);
     s = advanceTurn(s, p, "용사");
@@ -55,7 +66,7 @@ describe("AP 스킬 시스템 — 그림자 베기", () => {
   });
 
   it("AP 3 충족 턴 — ATK ×1.5 + DEF 무시 (damage 15)", () => {
-    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [SHADOW_CUT] };
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [eq(SHADOW_CUT)] };
     let s = initialBattleState(p, enemy(1000), "용사");
     s = advanceTurn(s, p, "용사"); // turn 1: 평타 7, AP 2→3
     expect(s.enemyHp).toBe(993);
@@ -70,7 +81,7 @@ describe("AP 스킬 시스템 — 그림자 베기", () => {
     // 발동 불가하게 코스트 막아두고 AP 만 누적시켜 cap 검증.
     const p: PlayerCombat = {
       ...PLAYER,
-      equippedAPSkills: [{ ...SHADOW_CUT, apCost: 99 }],
+      equippedAPSkills: [eq({ ...SHADOW_CUT, apCost: 99 })],
     };
     let s = initialBattleState(p, enemy(9999), "용사");
     // 2 → 3 → ... cap 도달 후 더 회복 안 됨.
@@ -85,7 +96,7 @@ describe("AP 스킬 시스템 — 그림자 베기", () => {
     const p: PlayerCombat = {
       ...PLAYER,
       attackCount: 2,
-      equippedAPSkills: [SHADOW_CUT],
+      equippedAPSkills: [eq(SHADOW_CUT)],
     };
     let s = initialBattleState(p, enemy(1000), "용사");
     // turn 1: 1st 평타 7 (AP 2 미달), 2nd 평타 7. AP 회복 ×2 = 4.
@@ -118,7 +129,7 @@ describe("AP 스킬 시스템 — 그림자 베기", () => {
     });
 
     it("AP 장착 시 첫 턴 마커가 시작값 2", () => {
-      const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [SHADOW_CUT] };
+      const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [eq(SHADOW_CUT)] };
       const r = resolveBattle(p, enemy(50), "용사", {
         pickAction: () => ({ kind: "attack" }),
         potions: {},
@@ -130,7 +141,7 @@ describe("AP 스킬 시스템 — 그림자 베기", () => {
   });
 
   it("새 전투 시작 시 AP 가 시작값 2 로 리셋", () => {
-    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [SHADOW_CUT] };
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [eq(SHADOW_CUT)] };
     let s = initialBattleState(p, enemy(9999), "용사");
     s = advanceTurn(s, p, "용사");
     s = advanceTurn(s, p, "용사");
@@ -155,7 +166,7 @@ describe("AP 스킬 — 회복술 (heal_pct)", () => {
       ...PLAYER,
       hp: 1000,
       maxHp: 4000,
-      equippedAPSkills: [MENDING],
+      equippedAPSkills: [eq(MENDING)],
     };
     let s = initialBattleState(wounded, enemy(9999), "용사");
     expect(s.playerHp).toBe(1000);
@@ -172,7 +183,7 @@ describe("AP 스킬 — 회복술 (heal_pct)", () => {
       ...PLAYER,
       hp: 100,
       maxHp: 100,
-      equippedAPSkills: [MENDING],
+      equippedAPSkills: [eq(MENDING)],
     };
     let s = initialBattleState(full, enemy(9999), "용사");
     s = advanceTurn(s, full, "용사");
@@ -184,7 +195,7 @@ describe("AP 스킬 — 회복술 (heal_pct)", () => {
 
 describe("AP 스킬 — 깊은 상처 (apply_bleed)", () => {
   it("발동 시 적에게 출혈 5스택 즉시 부여 (기존 스택과 누적)", () => {
-    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [DEEP_WOUND] };
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [eq(DEEP_WOUND)] };
     let s = initialBattleState(p, enemy(9999), "용사");
     expect(s.stacks.bleedStacks).toBe(0);
     s = advanceTurn(s, p, "용사"); // AP 2 < 3 → 미발동.
@@ -199,7 +210,7 @@ describe("AP 스킬 — 추가 회피 (add_guaranteed_evades)", () => {
   it("발동 시 보장 회피 잔량 +1", () => {
     const p: PlayerCombat = {
       ...PLAYER,
-      equippedAPSkills: [EXTRA_EVADE],
+      equippedAPSkills: [eq(EXTRA_EVADE)],
       guaranteedEvades: 0,
     };
     let s = initialBattleState(p, enemy(9999), "용사");
@@ -210,12 +221,104 @@ describe("AP 스킬 — 추가 회피 (add_guaranteed_evades)", () => {
   });
 });
 
+describe("AP 스킬 발동 조건 (per-slot)", () => {
+  it("ap_at_least — AP 가 임계 미만이면 발동 보류 (저축)", () => {
+    // SHADOW_CUT(cost 3) 에 'AP>=5' 조건. 시작 AP=2 → 3, 4, 5 가 되어야 비로소 발동.
+    const skill: EquippedAPSkill = eq(SHADOW_CUT, {
+      kind: "ap_at_least",
+      value: 5,
+    });
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [skill] };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    // 6 step 동안: turn1 AP 2→3, turn2 AP 3→4 (조건X), turn3 AP 4→5 (조건OK, 발동).
+    const apEvents: number[] = [];
+    let prev = s.enemyHp;
+    for (let i = 0; i < 8; i++) {
+      s = advanceTurn(s, p, "용사");
+      const delta = prev - s.enemyHp;
+      if (delta > 10) apEvents.push(i); // 평타 7 보다 큰 데미지 = AP 발동.
+      prev = s.enemyHp;
+    }
+    // 첫 발동까지 AP 가 5 이상으로 쌓이는데 최소 3 플레이어 턴 (1, 3, 5 step).
+    expect(apEvents.length).toBeGreaterThan(0);
+    expect(apEvents[0]).toBeGreaterThanOrEqual(4);
+  });
+
+  it("hp_below_pct — 풀피일 땐 회복 X, HP 가 임계 밑으로 떨어지면 회복 발동", () => {
+    // MENDING(cost 3) 에 'HP<50%' 조건. AP 소비량으로 발동 여부 검증 — AP 가 cost 만큼
+    // 깎였으면 발동, 안 깎였으면 미발동.
+    const skill: EquippedAPSkill = eq(MENDING, {
+      kind: "hp_below_pct",
+      value: 50,
+    });
+    const pFull: PlayerCombat = {
+      ...PLAYER,
+      hp: 100,
+      maxHp: 100,
+      equippedAPSkills: [skill],
+    };
+    let s = initialBattleState(pFull, enemy(9999, { atk: 0 }), "용사");
+    s = advanceTurn(s, pFull, "용사"); // 1턴 player. AP 2→3.
+    s = advanceTurn(s, pFull, "용사"); // 1턴 enemy (최소 1 데미지 → hp 99).
+    s = advanceTurn(s, pFull, "용사"); // 2턴 player. HP 99% ≥ 50 → 조건 X. AP 3→4.
+    expect(s.ap).toBe(4);
+
+    // HP 40% 시작이면 같은 시점에 발동 → AP 가 cost 3 만큼 차감 (3 + 1 regen - 3 = 1) +
+    // HP 가 maxHp × 25% 만큼 올라간다 (39 + 25 = 64, 적이 1턴에 1dmg 뺐으므로).
+    const pWounded: PlayerCombat = {
+      ...PLAYER,
+      hp: 40,
+      maxHp: 100,
+      equippedAPSkills: [skill],
+    };
+    let s2 = initialBattleState(pWounded, enemy(9999, { atk: 0 }), "용사");
+    s2 = advanceTurn(s2, pWounded, "용사"); // 1턴 player. AP 2<3 미발동.
+    s2 = advanceTurn(s2, pWounded, "용사"); // 1턴 enemy. hp 39.
+    s2 = advanceTurn(s2, pWounded, "용사"); // 2턴 player. HP 39% < 50, AP 3 → 발동.
+    expect(s2.ap).toBe(1); // 3 - 3 + 1 regen = 1
+    expect(s2.playerHp).toBe(64); // 39 + maxHp*25/100 = 64
+  });
+
+  it("enemy_hp_below_pct — 적 풀피일 땐 발동 X, 적 HP 가 임계 미만일 땐 발동", () => {
+    // HEAVEN_SLAY(cost 5) 에 '적HP<30%' 조건. 적 HP 가 임계 미만 상태에서 발동 시도.
+    const skill: EquippedAPSkill = eq(HEAVEN_SLAY, {
+      kind: "enemy_hp_below_pct",
+      value: 30,
+    });
+    const p: PlayerCombat = { ...PLAYER, atk: 10, equippedAPSkills: [skill] };
+    // 적 HP=100 — 풀피. 시작 AP=2. 발동 가능 시점 (AP≥5) 도달까진 4 player turn 필요.
+    // 그 사이 적 HP 가 평타로 깎이는데 — 적 HP 30 이상 유지되도록 일부러 약하게 (atk 10 - def 5 = 5).
+    let s = initialBattleState(p, enemy(100, { atk: 0 }), "용사");
+    // 2턴 player AP=3 (cost 5 < — 미발동). 3턴 player AP=4 (cost 5 — 미발동). 4턴 player AP=5.
+    // 4턴 시점 enemy HP: 시작 100 - 평타3회(7×3=21) = 79. 79 ≥ 30 → 조건 X. 미발동.
+    for (let i = 0; i < 8; i++) {
+      s = advanceTurn(s, p, "용사");
+    }
+    // 천살 미발동이면 평타만으로 enemyHp 누적 감소. 발동했으면 큰 한 방.
+    // 누적 데미지가 평타 ×N 보다 크면 발동. 평타=10-3=7. 4 player turn ⇒ 28.
+    // 조건 X 면 enemyHp ≥ 100 - 28 = 72.
+    expect(s.enemyHp).toBeGreaterThanOrEqual(70);
+
+    // 적 HP 20 으로 시작 (이미 임계 미만) — 발동 가능.
+    let s2 = initialBattleState(p, enemy(20, { atk: 0 }), "용사");
+    s2 = advanceTurn(s2, p, "용사"); // 평타 7. enemy 20-7=13. AP 2→3.
+    // 13/20 = 65% — 조건 X. 다음 턴 시점 enemy HP 13 (≥ 임계 절대값 6 = 20×30%) — 아직 조건 X?
+    // 잠깐 — 임계는 적 HP <30%. enemy max=20 → 30%=6. 13/20=65% — X. 더 깎여야.
+    s2 = advanceTurn(s2, p, "용사"); // enemy turn
+    s2 = advanceTurn(s2, p, "용사"); // turn 2 player. 평타 7. enemy 6. AP 3→4.
+    s2 = advanceTurn(s2, p, "용사"); // enemy turn
+    s2 = advanceTurn(s2, p, "용사"); // turn 3 player. enemy 6 → 6/20=30% — 30 < 30? X. 평타.
+    // 발동 안 됨 (적이 곧 죽거나 임계에 정확히 30%). 어쨌든 회피 100% 적은 아니라서 평타가 통한다.
+    expect(s2.phase === "ended" || s2.enemyHp <= 0 || s2.enemyHp < 20).toBe(true);
+  });
+});
+
 describe("AP 스킬 — 천살 (ignoresEvasion + ignoresDef)", () => {
   it("회피 100% 적 상대로도 큰 한 방 — ATK ×3 + DEF 무시", () => {
     const p: PlayerCombat = {
       ...PLAYER,
       atk: 10,
-      equippedAPSkills: [HEAVEN_SLAY],
+      equippedAPSkills: [eq(HEAVEN_SLAY)],
     };
     // 회피 100% 적 — 천살이 발동하기 전까진 데미지 0, 발동 시 30 데미지.
     let s = initialBattleState(

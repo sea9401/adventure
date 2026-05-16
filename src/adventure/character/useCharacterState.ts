@@ -11,6 +11,10 @@ import {
   RUNE_SLOT_COUNT,
   type EquippedRune,
 } from "@/adventure/data/runes";
+import {
+  isAPSkillCondition,
+  type APSkillCondition,
+} from "@/adventure/character/apSkills";
 
 // PR #140 (baseCharacter.maxHp 47 → 97) 이전 캐릭터의 hp 저장값에 +50 을 일률 보정하는
 // 일회성 마이그레이션 키. derivePlayerCombat 가 maxHp 로 클램프하므로 maxHp 초과해도 안전.
@@ -47,6 +51,11 @@ export type CharacterDynamicState = {
    * 스탯 스킬과 같은 슬롯 풀 공유 — equippedSkills 의 이름이 STAT_SKILL 에 없으면 여기에서 lookup.
    */
   learnedAPSkills?: string[];
+  /**
+   * AP 스킬 슬롯의 발동 조건 — skillName 키. 미지정 = always (기본).
+   * STAT_SKILL 은 슬롯 풀을 공유하지만 패시브라 조건 무의미 — 키 자체를 두지 않는다.
+   */
+  apSkillConditions?: Partial<Record<string, APSkillCondition>>;
   /** 일회성 마이그레이션 플래그 — 키별 1회만 실행. */
   migrations?: Partial<Record<string, boolean>>;
 };
@@ -113,8 +122,22 @@ function readInitial(raw: unknown): CharacterDynamicState {
     learnedAPSkills: Array.isArray(parsed.learnedAPSkills)
       ? parsed.learnedAPSkills.filter((x): x is string => typeof x === "string")
       : undefined,
+    apSkillConditions: parseAPSkillConditions(parsed.apSkillConditions),
     migrations: parsed.migrations,
   };
+}
+
+function parseAPSkillConditions(
+  raw: unknown,
+): Partial<Record<string, APSkillCondition>> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: Partial<Record<string, APSkillCondition>> = {};
+  for (const [name, cond] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof name === "string" && isAPSkillCondition(cond)) {
+      out[name] = cond;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function rehydrateEquippedRunes(
@@ -218,7 +241,38 @@ export function useCharacterState() {
     setState((prev) => ({ ...prev, equippedTitleId: titleId }));
 
   const setEquippedSkills = (names: string[]) =>
-    setState((prev) => ({ ...prev, equippedSkills: names }));
+    setState((prev) => {
+      // 해제된 AP 스킬의 조건은 정리. 같은 이름을 다시 끼우면 always 로 시작.
+      const prevConds = prev.apSkillConditions ?? {};
+      const kept: Partial<Record<string, APSkillCondition>> = {};
+      const set = new Set(names);
+      for (const [name, c] of Object.entries(prevConds)) {
+        if (set.has(name) && c) kept[name] = c;
+      }
+      return {
+        ...prev,
+        equippedSkills: names,
+        apSkillConditions: Object.keys(kept).length > 0 ? kept : undefined,
+      };
+    });
+
+  // AP 스킬 슬롯의 발동 조건 설정. always = 키 삭제 (저장 용량 절약 + 의미적으로 "기본").
+  const setAPSkillCondition = (
+    skillName: string,
+    condition: APSkillCondition,
+  ) =>
+    setState((prev) => {
+      const next = { ...(prev.apSkillConditions ?? {}) };
+      if (condition.kind === "always") {
+        delete next[skillName];
+      } else {
+        next[skillName] = condition;
+      }
+      return {
+        ...prev,
+        apSkillConditions: Object.keys(next).length > 0 ? next : undefined,
+      };
+    });
 
   // 슬롯 인덱스 별로 특기 장착/해제. UI 가 슬롯 번호와 함께 호출.
   // 결과 배열 길이는 항상 max(prev.length, index+1) — null 패딩으로 슬롯 자리 유지.
@@ -302,6 +356,7 @@ export function useCharacterState() {
     setSlot,
     setEquippedTitle,
     setEquippedSkills,
+    setAPSkillCondition,
     setEquippedFeatAt,
     setEquippedRuneAt,
     setAffiliation,

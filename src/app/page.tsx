@@ -199,6 +199,7 @@ function Home() {
     equipped: characterStateHook.equippedSlots,
     equippedSkills: characterState.equippedSkills,
     learnedAPSkills: characterState.learnedAPSkills,
+    apSkillConditions: characterState.apSkillConditions,
     equippedFeats: characterState.equippedFeats,
     equippedRunes: characterState.equippedRunes,
     storyFlagIds: new Set(storyFlags.state.flags),
