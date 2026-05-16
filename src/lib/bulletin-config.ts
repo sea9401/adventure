@@ -1,5 +1,41 @@
 // 광장 게시판 글 제약 — 클라/서버 공통.
 export const BULLETIN_MAX_LENGTH = 500;
+export const BULLETIN_TITLE_MAX_LENGTH = 50;
 export const BULLETIN_RATE_LIMIT_MS = 60_000; // 1분에 1개
 export const BULLETIN_FETCH_LIMIT = 50;
-export const BULLETIN_RETENTION_DAYS = 7;
+
+// 카테고리 — 일반 유저는 free/guide 만 작성 가능, notice 는 admin 전용 (서버 검증).
+// 추가/순서 변경 시 BULLETIN_CATEGORY_LABELS 와 DB 의 category 컬럼 호환만 유지하면 됨.
+export const BULLETIN_CATEGORIES = ["notice", "free", "guide"] as const;
+export type BulletinCategory = (typeof BULLETIN_CATEGORIES)[number];
+
+export const BULLETIN_CATEGORY_LABELS: Record<
+  BulletinCategory,
+  { name: string; description: string }
+> = {
+  notice: {
+    name: "공지사항",
+    description: "운영자가 작성하는 안내 — 점검·업데이트·이벤트 등.",
+  },
+  free: {
+    name: "자유게시판",
+    description: "잡담·인사·자랑·일기 등 자유롭게.",
+  },
+  guide: {
+    name: "공략·팁",
+    description: "빌드·사냥터·퀘스트 공략 등 정보 공유.",
+  },
+};
+
+export function isBulletinCategory(v: unknown): v is BulletinCategory {
+  return (
+    typeof v === "string" &&
+    (BULLETIN_CATEGORIES as readonly string[]).includes(v)
+  );
+}
+
+// 일반 유저가 직접 작성할 수 있는 카테고리. notice 는 admin 만.
+export const USER_WRITABLE_CATEGORIES: ReadonlyArray<BulletinCategory> = [
+  "free",
+  "guide",
+];

@@ -1,0 +1,2 @@
+ALTER TABLE "bulletin_posts" ADD COLUMN "category" text DEFAULT 'free' NOT NULL;--> statement-breakpoint
+CREATE INDEX "bulletin_posts_category_created_at_idx" ON "bulletin_posts" USING btree ("category","created_at");

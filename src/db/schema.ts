@@ -119,7 +119,10 @@ export const savesKv = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.key] })],
 );
 
-// 광장 게시판 글. 7일 후 cron 으로 일괄 삭제.
+// 광장 게시판 글. 영구 보관 — cleanup cron 없음 (자동 삭제 정책 제거됨).
+// category — "notice" | "free" | "guide". 작성 시 BULLETIN_CATEGORIES 로 검증.
+//   - notice: admin 만 작성 가능 (서버에서 검증)
+//   - free/guide: 일반 유저도 작성 가능
 // name/className/title 은 전송 시점 스냅샷.
 export const bulletinPosts = pgTable(
   "bulletin_posts",
@@ -130,6 +133,7 @@ export const bulletinPosts = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     className: text("class_name").notNull(),
+    category: text("category").notNull().default("free"),
     title: text("title"),
     content: text("content").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -138,6 +142,8 @@ export const bulletinPosts = pgTable(
     index("bulletin_posts_created_at_idx").on(t.createdAt),
     // POST 의 rate-limit 조회("내 마지막 글" lookup) 가 매번 userId 로 seqscan+sort 했었다.
     index("bulletin_posts_user_created_at_idx").on(t.userId, t.createdAt),
+    // 카테고리 탭별 최신순 조회 — (category, createdAt DESC).
+    index("bulletin_posts_category_created_at_idx").on(t.category, t.createdAt),
   ],
 );
 

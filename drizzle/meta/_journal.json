@@ -134,6 +134,13 @@
       "when": 1778941672438,
       "tag": "0018_coop_tier_silver_unlock_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1778965516824,
+      "tag": "0019_bulletin_categories",
+      "breakpoints": true
     }
   ]
 }
