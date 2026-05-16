@@ -1,27 +1,24 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import * as schema from "./schema";
 
-// neon-http 드라이버는 트랜잭션 미지원 — 거래소 등 트랜잭션 필요한 라우트가 깨졌다.
-// neon-serverless (WebSocket Pool) 로 전환해 db.transaction() 지원.
-// Node 22+ / Edge 는 globalThis.WebSocket 을 쓰지만, Node 20 등 환경 폴백으로 ws 주입.
-if (typeof WebSocket === "undefined") {
-  neonConfig.webSocketConstructor = ws;
-}
-
-// DATABASE_URL 은 Vercel Marketplace 의 Neon Postgres 통합이 자동 주입.
-// 로컬 개발은 `vercel env pull .env.development.local` 후 사용.
+// DATABASE_URL 은 EC2 의 .env.production.local 에서 주입.
+// 로컬 개발은 .env.development.local 에 Aurora endpoint 작성.
 let pool: Pool | null = null;
 function getPool(): Pool {
   if (pool) return pool;
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error(
-      "DATABASE_URL is not set. Run `vercel env pull .env.development.local` after installing Neon on Vercel Marketplace.",
+      "DATABASE_URL is not set. .env.development.local 에 Aurora endpoint 작성 필요.",
     );
   }
-  pool = new Pool({ connectionString: url });
+  // Aurora / RDS 모두 TLS 강제. 같은 VPC 내부 통신이라 CA 검증 생략(rejectUnauthorized:false).
+  // 외부 망에서 접근시키게 되면 RDS CA bundle 로 `ssl.ca` 채워야 함.
+  pool = new Pool({
+    connectionString: url,
+    ssl: { rejectUnauthorized: false },
+  });
   return pool;
 }
 

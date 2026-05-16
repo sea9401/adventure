@@ -16,25 +16,21 @@
 // 일반적으로 첫 1회만 실행하고, 이후 실수로 돌려도 안전하지만 실제 적용 안 된 migration 도
 // 표시해버리는 부작용이 생길 수 있다 — 워크플로 정착 후엔 봉인 권장.
 
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
+import { Pool } from "pg";
 import { readdir, readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 
-if (typeof WebSocket === "undefined") {
-  neonConfig.webSocketConstructor = ws;
-}
-
 const url = process.env.DATABASE_URL;
 if (!url) {
-  console.error(
-    "✗ DATABASE_URL not set — .env.*.local 또는 vercel env pull 필요",
-  );
+  console.error("✗ DATABASE_URL not set — .env.*.local 필요");
   process.exit(1);
 }
 
-const pool = new Pool({ connectionString: url });
+const pool = new Pool({
+  connectionString: url,
+  ssl: { rejectUnauthorized: false },
+});
 try {
   await pool.query(`CREATE SCHEMA IF NOT EXISTS drizzle`);
   await pool.query(`
