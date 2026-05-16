@@ -128,7 +128,7 @@ export function SettingsMenu({
         onClick={() => setOpen((v) => !v)}
         aria-label="설정"
         title="설정"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         <Gear size={20} weight="duotone" />
       </button>

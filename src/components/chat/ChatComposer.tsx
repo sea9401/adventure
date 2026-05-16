@@ -25,7 +25,7 @@ export function ChatComposer({
         onClick={onOpenPicker}
         aria-label="보유 아이템 자랑하기"
         title="보유 아이템 링크"
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         <Backpack size={18} weight="duotone" />
       </button>
@@ -41,7 +41,7 @@ export function ChatComposer({
         type="submit"
         disabled={!draft.trim()}
         aria-label="전송"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-zinc-300 dark:disabled:bg-zinc-700"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-zinc-300 dark:disabled:bg-zinc-700"
       >
         <PaperPlaneTilt size={18} weight="fill" />
       </button>
