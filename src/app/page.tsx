@@ -393,6 +393,7 @@ function Home() {
       storyFlags: { set: storyFlags.set },
       vit: character.stats.vit,
       luk: character.stats.luk,
+      playerLevel: character.level,
       respawnRegionId: mapProgress.respawnRegionId ?? START_REGION_ID,
       addNotification,
       setHuntingActive,
