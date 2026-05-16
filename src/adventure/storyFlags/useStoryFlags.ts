@@ -27,5 +27,13 @@ export function useStoryFlags() {
     );
   }, []);
 
-  return { state, has, set };
+  // prefix 로 시작하는 모든 플래그 제거 — 튜토리얼 "다시 보기" 같은 일괄 reset 용.
+  const removeWithPrefix = useCallback((prefix: string) => {
+    setState((prev) => {
+      const next = prev.flags.filter((f) => !f.startsWith(prefix));
+      return next.length === prev.flags.length ? prev : { flags: next };
+    });
+  }, []);
+
+  return { state, has, set, removeWithPrefix };
 }
