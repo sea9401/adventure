@@ -54,7 +54,13 @@ import {
   POWER_ATTACK_TURN_INTERVAL,
   RAMPAGE_START_TURN,
 } from "../character/skills";
-import { AP_BATTLE_START, AP_CAP } from "../character/apSkills";
+import {
+  AP_BATTLE_START,
+  AP_CAP,
+  type APSkill,
+  type APSkillCondition,
+  type APSkillEffect,
+} from "../character/apSkills";
 
 // ── 타입 정의 ───────────────────────────────────────────────────────────────
 
@@ -73,12 +79,38 @@ export type PvPSideFlags = {
 // 각 사이드별 누적 보너스/페널티. PvE 의 BattleBuffs 와 비교해 enemyDefBonus(phase trigger),
 // enemyAtkBonus(enrage) 제거. enemyAtkPenalty/enemyDefPenalty 는 opponentAtkPenalty/opponentDefPenalty
 // 로 의미 일관화 (이 사이드가 상대에게 적용한 페널티).
+// AP 스킬 지속 효과 — 모두 "이 사이드 자신에게 걸린/이 사이드가 상대에게 건" 효과로 정의:
+//   playerXxx     → 자기-효과 (결의/광기/폭주). 자기 공격/방어 시 사용.
+//   enemyXxx      → 외향 효과 (약점노출/둔화). 자기 공격 시 사용.
+//   enemyAttackBlockedCount → 방어용 카운터 (잔상). 상대가 공격해 올 때 소비.
+//   enemySilenceTurnsLeft → 호환용 (PvP 는 몬스터 skill 없어 무효).
 export type PvPSideBuffs = {
   rampageAtkBonus: number;
   opponentAtkPenalty: number;
   opponentDefPenalty: number;
   cyclingChiBonus: number;
   potionHealPct: number;
+  // 결의 — 자기가 받는 피해 -pct% (defender 일 때 적용).
+  playerDmgReductionPct: number;
+  playerDmgReductionTurnsLeft: number;
+  // 광기 — 자기 ATK +atkPct% / 자기 DEF -defPct%.
+  playerAtkBuffPct: number;
+  playerAtkBuffTurnsLeft: number;
+  playerDefDebuffPct: number;
+  playerDefDebuffTurnsLeft: number;
+  // 폭주 — 자기 SPD ×mult.
+  playerSpdMult: number;
+  playerSpdTurnsLeft: number;
+  // 약점 노출 — 공격 시 상대 DEF -pct%.
+  enemyDefDebuffPct: number;
+  enemyDefDebuffTurnsLeft: number;
+  // 둔화 — SPD 비교에서 상대 SPD ×mult.
+  enemySpdMult: number;
+  enemySpdTurnsLeft: number;
+  // 천뢰 — PvP 에선 무효 (몬스터 skill 없음) 하지만 호환용 보관.
+  enemySilenceTurnsLeft: number;
+  // 잔상 — 상대 공격 N회 무효 (defender 일 때 소비).
+  enemyAttackBlockedCount: number;
 };
 
 // 각 사이드별 가변 자원. bleedStacks → bleedStacksOnOpponent (이 사이드가 상대에게 쌓은 출혈).
@@ -130,13 +162,126 @@ function rollAttackCount(player: PlayerCombat): number {
 
 // 공격자가 마주하는 방어자의 effective DEF — analysis 누적 페널티(자기 측 buffs 에 기록) 차감.
 // armorPierceFraction 비례 관통 적용. 분쇄/암살/약점은 호출 측에서 별도 처리.
+// 약점 노출 (attacker 측 enemyDefDebuffPct) 활성 시 위 모든 감산 후 비례 차감.
+// 광기 (defender 측 playerDefDebuffPct) 활성 시 방어자 자신의 effective DEF 더 깎임.
 function attackerFacingDef(attacker: PvPSide, defender: PvPSide): number {
-  const raw = Math.max(
-    0,
-    defender.player.def - attacker.buffs.opponentDefPenalty,
-  );
+  let raw = Math.max(0, defender.player.def - attacker.buffs.opponentDefPenalty);
   const frac = attacker.player.armorPierceFraction ?? 0;
-  return frac > 0 ? Math.round(raw * (1 - frac)) : raw;
+  let afterPierce = frac > 0 ? Math.round(raw * (1 - frac)) : raw;
+  if (
+    defender.buffs.playerDefDebuffTurnsLeft > 0 &&
+    defender.buffs.playerDefDebuffPct > 0
+  ) {
+    afterPierce = Math.round(
+      afterPierce * (1 - defender.buffs.playerDefDebuffPct / 100),
+    );
+  }
+  if (
+    attacker.buffs.enemyDefDebuffTurnsLeft > 0 &&
+    attacker.buffs.enemyDefDebuffPct > 0
+  ) {
+    afterPierce = Math.round(
+      afterPierce * (1 - attacker.buffs.enemyDefDebuffPct / 100),
+    );
+  }
+  return Math.max(0, afterPierce);
+}
+
+// AP 지속 효과 라운드 카운터 -1. 새 attacker 페이즈 진입 시 호출.
+// pct/mult 값은 그대로 두지만 turnsLeft 가 0 이면 적용 쪽에서 무시.
+function decrementTimedEffects(buffs: PvPSideBuffs): PvPSideBuffs {
+  return {
+    ...buffs,
+    playerDmgReductionTurnsLeft: Math.max(0, buffs.playerDmgReductionTurnsLeft - 1),
+    playerAtkBuffTurnsLeft: Math.max(0, buffs.playerAtkBuffTurnsLeft - 1),
+    playerDefDebuffTurnsLeft: Math.max(0, buffs.playerDefDebuffTurnsLeft - 1),
+    playerSpdTurnsLeft: Math.max(0, buffs.playerSpdTurnsLeft - 1),
+    enemyDefDebuffTurnsLeft: Math.max(0, buffs.enemyDefDebuffTurnsLeft - 1),
+    enemySpdTurnsLeft: Math.max(0, buffs.enemySpdTurnsLeft - 1),
+    enemySilenceTurnsLeft: Math.max(0, buffs.enemySilenceTurnsLeft - 1),
+  };
+}
+
+// 한 스킬 효과가 lingering 상태인지 — no_self_effect_active 조건이 사용.
+// engine.ts:isAPSkillEffectActive 의 PvP 미러. 필드 매핑만 attacker side 기준으로 변경.
+function isAPEffectActiveOnAttacker(
+  effect: APSkillEffect,
+  attacker: PvPSide,
+): boolean {
+  switch (effect.kind) {
+    case "atk_multiplier":
+    case "heal_pct":
+    case "atk_multiplier_with_silence":
+    case "multi_hit_self_damage":
+    case "atk_plus_spd_pct_bonus":
+    case "cleanse_debuffs":
+    case "crit_buff_next_attack":
+    case "extra_attack_this_turn":
+      return false;
+    case "apply_bleed":
+      return attacker.stacks.bleedStacksOnOpponent > 0;
+    case "add_guaranteed_evades":
+      return attacker.stacks.evadesRemaining > 0;
+    case "player_dmg_reduction_turns":
+      return attacker.buffs.playerDmgReductionTurnsLeft > 0;
+    case "enemy_def_debuff_pct_turns":
+      return attacker.buffs.enemyDefDebuffTurnsLeft > 0;
+    case "player_atk_buff_def_debuff_pct_turns":
+      return (
+        attacker.buffs.playerAtkBuffTurnsLeft > 0 ||
+        attacker.buffs.playerDefDebuffTurnsLeft > 0
+      );
+    case "enemy_spd_mult_turns":
+      return attacker.buffs.enemySpdTurnsLeft > 0;
+    case "player_spd_mult_turns":
+      return attacker.buffs.playerSpdTurnsLeft > 0;
+    case "queued_extra_attacks_next_turn":
+      return attacker.turn.queuedExtraAttacks > 0;
+    case "block_next_enemy_attack":
+      return attacker.buffs.enemyAttackBlockedCount > 0;
+  }
+}
+
+// 슬롯별 발동 조건 평가 — engine.ts:evaluateAPSkillCondition 의 PvP 어댑터.
+// state.playerHp/enemyHp 등은 attacker/defender 사이드로 매핑.
+function evaluateAPSkillConditionPvP(
+  condition: APSkillCondition,
+  attacker: PvPSide,
+  defender: PvPSide,
+  skill: APSkill,
+): boolean {
+  switch (condition.kind) {
+    case "always":
+      return true;
+    case "ap_at_least":
+      return attacker.ap >= condition.value;
+    case "ap_at_most":
+      return attacker.ap <= condition.value;
+    case "hp_below_pct":
+      return attacker.maxHp > 0
+        ? (attacker.hp / attacker.maxHp) * 100 < condition.value
+        : false;
+    case "hp_above_pct":
+      return attacker.maxHp > 0
+        ? (attacker.hp / attacker.maxHp) * 100 >= condition.value
+        : false;
+    case "enemy_hp_below_pct":
+      return defender.maxHp > 0
+        ? (defender.hp / defender.maxHp) * 100 < condition.value
+        : false;
+    case "enemy_hp_above_pct":
+      return defender.maxHp > 0
+        ? (defender.hp / defender.maxHp) * 100 >= condition.value
+        : false;
+    case "every_n_turns": {
+      const n = Math.max(1, Math.floor(condition.value));
+      return attacker.turn.completedPlayerTurns % n === 0;
+    }
+    case "enemy_max_hp_at_least":
+      return defender.maxHp >= condition.value;
+    case "no_self_effect_active":
+      return !isAPEffectActiveOnAttacker(skill.effect, attacker);
+  }
 }
 
 // 공격자가 가하는 effective ATK — analysis 페널티는 방어자 측 buffs 에 기록 (이 사이드의 적이 나에게
@@ -189,6 +334,8 @@ function buildSide(player: PlayerCombat, name: string): PvPSide {
       weakpointUsedThisTurn: false,
       fatedChainTriggeredThisTurn: false,
       apSkillFiredThisTurn: null,
+      focusedBreathCritDmgBonusPct: 0,
+      queuedExtraAttacks: 0,
     },
     flags: {
       enduranceTriggered: false,
@@ -202,6 +349,20 @@ function buildSide(player: PlayerCombat, name: string): PvPSide {
       opponentDefPenalty: 0,
       cyclingChiBonus: 0,
       potionHealPct: player.potionHealPct ?? 0,
+      playerDmgReductionPct: 0,
+      playerDmgReductionTurnsLeft: 0,
+      playerAtkBuffPct: 0,
+      playerAtkBuffTurnsLeft: 0,
+      playerDefDebuffPct: 0,
+      playerDefDebuffTurnsLeft: 0,
+      playerSpdMult: 1,
+      playerSpdTurnsLeft: 0,
+      enemyDefDebuffPct: 0,
+      enemyDefDebuffTurnsLeft: 0,
+      enemySpdMult: 1,
+      enemySpdTurnsLeft: 0,
+      enemySilenceTurnsLeft: 0,
+      enemyAttackBlockedCount: 0,
     },
     stacks: {
       bleedStacksOnOpponent: 0,
@@ -719,6 +880,23 @@ export function advanceTurnPvP(
   if (state.phase === "ended") return state;
   const { atkKey, defKey } = actorKeys(state.phase);
 
+  // 새 attacker 턴 진입 시 timed 효과 -1 + 빛의 활공 큐 소비.
+  // turn 1 (completedPlayerTurns=0) 은 가드 — 발동된 적 없음. endAttackerPhase 가 다음 공격자의
+  // attacksLeft 에 rollAttackCount + nextTurnAttackBonus 만 더해두므로 큐 소비는 여기서.
+  if (
+    state[atkKey].turn.firstAttackPending &&
+    state[atkKey].turn.completedPlayerTurns > 0
+  ) {
+    const a = state[atkKey];
+    const consumeQueued = a.turn.queuedExtraAttacks;
+    state = setSide(state, atkKey, {
+      ...a,
+      attacksLeft: a.attacksLeft + consumeQueued,
+      buffs: decrementTimedEffects(a.buffs),
+      turn: { ...a.turn, queuedExtraAttacks: 0 },
+    });
+  }
+
   // ── 공격 페이즈 ──────────────────────────────────────────────────────────
   // 공격자의 모든 공격을 처리 → 마지막 공격 후 연타/광속/풍사슬/연참 체크 → 끝나면 상대 페이즈로.
   // 포션 사용은 한 번 마시고 즉시 페이즈 종료.
@@ -747,25 +925,70 @@ export function advanceTurnPvP(
       ? attacker.player.powerAttackBonus!
       : 0;
 
-  // AP 스킬 — 그 턴 첫 공격일 때만 슬롯 순서로 cost<=AP 인 첫 1개 발동. 한 턴 1개 정책.
-  // engine.ts:651-669 의 PvP 미러 (atkMult/ignoresDef/ignoresEvasion). 강공격과 동시 발동 가능.
-  const apSkillFires =
+  // AP 스킬 — 그 턴 첫 공격일 때만 슬롯 순서로 condition 만족 + cost<=AP 인 첫 1개 발동.
+  // 한 턴 1개 정책 (apSkillFiredThisTurn null 체크). 강공격과 동시 발동 가능.
+  const apSkillFires: APSkill | null =
     isFirstAttackOfTurn &&
     attacker.turn.apSkillFiredThisTurn === null &&
     (attacker.player.equippedAPSkills?.length ?? 0) > 0
-      ? attacker.player.equippedAPSkills!.find((s) => s.apCost <= attacker.ap) ??
-        null
+      ? attacker.player.equippedAPSkills!.find(
+          (e) =>
+            e.skill.apCost <= attacker.ap &&
+            evaluateAPSkillConditionPvP(e.condition, attacker, defender, e.skill),
+        )?.skill ?? null
       : null;
+  // atk_multiplier 계열 — 광살참(multi_hit_self_damage) / 천뢰(atk_multiplier_with_silence)
+  // 도 atkMult/ignoresDef/ignoresEvasion 공유.
+  const apMultEffect = apSkillFires?.effect;
   const apAtkMult =
-    apSkillFires?.effect.kind === "atk_multiplier"
-      ? apSkillFires.effect.atkMult
+    apMultEffect?.kind === "atk_multiplier" ||
+    apMultEffect?.kind === "multi_hit_self_damage" ||
+    apMultEffect?.kind === "atk_multiplier_with_silence"
+      ? apMultEffect.atkMult
       : 1;
   const apIgnoresDef =
-    apSkillFires?.effect.kind === "atk_multiplier" &&
-    apSkillFires.effect.ignoresDef === true;
+    (apMultEffect?.kind === "atk_multiplier" ||
+      apMultEffect?.kind === "multi_hit_self_damage" ||
+      apMultEffect?.kind === "atk_multiplier_with_silence") &&
+    apMultEffect.ignoresDef === true;
   const apIgnoresEvasion =
-    apSkillFires?.effect.kind === "atk_multiplier" &&
-    apSkillFires.effect.ignoresEvasion === true;
+    (apMultEffect?.kind === "atk_multiplier" ||
+      apMultEffect?.kind === "multi_hit_self_damage" ||
+      apMultEffect?.kind === "atk_multiplier_with_silence") &&
+    apMultEffect.ignoresEvasion === true;
+  // 광살참 hits.
+  const apHits =
+    apMultEffect?.kind === "multi_hit_self_damage" ? apMultEffect.hits : 1;
+
+  // ── 잔상 (defender 측 enemyAttackBlockedCount) ────────────────────────────
+  // 방어자가 직전 자기 페이즈에서 잔상을 발동했으면, 이번 공격을 통째 무효. 1회 소비.
+  // dodge cascade 보다 우선 (가장 강력한 회피). AP 회복은 행동 시도이므로 +1.
+  if (defender.buffs.enemyAttackBlockedCount > 0) {
+    const blockedLog = appendLog(state.log, {
+      kind: "info",
+      text: `[잔상] ${defender.name} — ${attacker.name}의 공격이 잔상을 베었다.`,
+    });
+    const nextAttacker: PvPSide = {
+      ...attacker,
+      ap: Math.min(AP_CAP, attacker.ap + 1),
+      attacksLeft: attacker.attacksLeft - 1,
+      turn: { ...attacker.turn, firstAttackPending: false },
+    };
+    const nextDefender: PvPSide = {
+      ...defender,
+      buffs: {
+        ...defender.buffs,
+        enemyAttackBlockedCount: defender.buffs.enemyAttackBlockedCount - 1,
+      },
+    };
+    let nextSt = setSide(
+      setSide({ ...state, log: blockedLog }, atkKey, nextAttacker),
+      defKey,
+      nextDefender,
+    );
+    if (nextAttacker.attacksLeft > 0) return nextSt;
+    return endAttackerPhase(nextSt, atkKey, defKey);
+  }
 
   // ── 방어자 dodge cascade ──────────────────────────────────────────────────
   // 1. 그림자 보법 — 페이즈 첫 공격(firstAttackPending) 시 한 번만 굴려, 발동하면 페이즈 통째 회피.
@@ -868,15 +1091,23 @@ export function advanceTurnPvP(
   const cyclingChiThisTurn =
     attacker.buffs.cyclingChiBonus +
     (isFirstAttackOfTurn ? attacker.player.cyclingChiPerTurn ?? 0 : 0);
-  // 크리티컬 — 기본 + 행운 + 천칭 + 만물 행운 + 회전 운기.
+  // 크리티컬 — 기본 + 행운 + 천칭 + 만물 행운 + 회전 운기. 천칭은 SPD 차이 × N, 폭주/둔화 반영.
   const baseCritPct = attacker.player.critChancePct ?? 0;
   const luckCritBonus = attacker.flags.luckyBuffActive
     ? attacker.player.doubleLuck?.crit ?? 0
     : 0;
+  const effectiveAtkSpd =
+    attacker.buffs.playerSpdTurnsLeft > 0
+      ? attacker.player.spd * attacker.buffs.playerSpdMult
+      : attacker.player.spd;
+  const effectiveDefSpd =
+    attacker.buffs.enemySpdTurnsLeft > 0
+      ? defender.player.spd * attacker.buffs.enemySpdMult
+      : defender.player.spd;
   const balanceCritBonus =
     (attacker.player.balanceCritPctPerSpdDiff ?? 0) > 0
       ? Math.floor(
-          Math.max(0, attacker.player.spd - defender.player.spd) *
+          Math.max(0, effectiveAtkSpd - effectiveDefSpd) *
             attacker.player.balanceCritPctPerSpdDiff!,
         )
       : 0;
@@ -889,31 +1120,44 @@ export function advanceTurnPvP(
     cyclingChiThisTurn;
   // 연쇄 운명 — 큐가 있으면 강제 크리. 큐는 이번 공격에 소비.
   const fatedChainConsumed = attacker.flags.fatedChainCritPending;
-  const critRoll = fatedChainConsumed
+  // 집중의 호흡 (AP) — 큐가 있으면 이 공격 크리 강제 + 크리뎀 보너스. 1회 소비.
+  const focusedBreathConsumed = attacker.turn.focusedBreathCritDmgBonusPct > 0;
+  const focusedBreathCritDmgBonus = focusedBreathConsumed
+    ? attacker.turn.focusedBreathCritDmgBonusPct / 100
+    : 0;
+  const critRoll = fatedChainConsumed || focusedBreathConsumed
     ? true
     : effectiveCritPct > 0
       ? Math.random() * 100 < effectiveCritPct
       : false;
-  // 베이스 데미지 — ATK + rampage + powerBonus + berserk + gust + enduringStrike vs targetDef.
-  // (rampage 는 effectiveAttackerAtk 의 일부 — 여기선 명시적으로 분해해서 본타 합산).
+  // 광기 (AP) — 자신 ATK +pct%. atk_multiplier 적용 전에 가산.
+  const madnessAtkBonus =
+    attacker.buffs.playerAtkBuffTurnsLeft > 0 &&
+    attacker.buffs.playerAtkBuffPct > 0
+      ? Math.floor((attacker.player.atk * attacker.buffs.playerAtkBuffPct) / 100)
+      : 0;
+  // 베이스 데미지 — ATK + rampage + powerBonus + berserk + gust + enduringStrike + madness vs targetDef.
   const baseAtkValue =
     attacker.player.atk +
     attacker.buffs.rampageAtkBonus +
     powerBonus +
     berserkBonus +
     gustBonus +
-    enduringStrikeBonus;
+    enduringStrikeBonus +
+    madnessAtkBonus;
   // 약점 분석으로 인한 본인 ATK 페널티 (defender 가 적용한 페널티) 반영.
   const baseAtkWithAnalysis = Math.max(
     0,
     baseAtkValue - defender.buffs.opponentAtkPenalty,
   );
-  // AP 스킬의 atk_multiplier 는 모든 ATK 합산 후 곱 (engine.ts:788-794 미러).
+  // AP 스킬의 atk_multiplier 는 모든 ATK 합산 후 곱.
   const atkForDmg =
     apAtkMult !== 1
       ? Math.floor(baseAtkWithAnalysis * apAtkMult)
       : baseAtkWithAnalysis;
-  const baseDmg = damageBetween(atkForDmg, targetDef);
+  const baseDmgSingleHit = damageBetween(atkForDmg, targetDef);
+  // 광살참 (AP) — 같은 fire 에서 hits 번 반복. apHits=1 이면 그대로.
+  const baseDmg = apHits > 1 ? baseDmgSingleHit * apHits : baseDmgSingleHit;
   // 처형 — defender 의 HP 비율이 임계 미만이면 데미지 ×mult.
   const exMult = attacker.player.executionDamageMult ?? 1;
   const exFraction = attacker.player.executionHpFraction ?? 0;
@@ -922,7 +1166,9 @@ export function advanceTurnPvP(
   const dmgAfterExecution = executionActive
     ? Math.max(1, Math.floor(baseDmg * exMult))
     : baseDmg;
-  const critMult = attacker.player.critMult ?? CRIT_MULT_BASE;
+  // 집중의 호흡 (AP) — 그 1발 한정 critMult +pct% (가산 후 한 번에 곱).
+  const critMult =
+    (attacker.player.critMult ?? CRIT_MULT_BASE) + focusedBreathCritDmgBonus;
   const dmgAfterCrit = critRoll
     ? Math.floor(dmgAfterExecution * critMult)
     : dmgAfterExecution;
@@ -953,7 +1199,12 @@ export function advanceTurnPvP(
   const impactDmg = impactFires
     ? Math.floor((defender.hp * impactPct) / 100)
     : 0;
-  const totalDmg = dmg + decreeDmg + impactDmg;
+  // 폭풍 일격 (AP) — fire 시 (player.atk × spdPct/100) 추가 고정 데미지. targetDef 무시.
+  const stormBonus =
+    apMultEffect?.kind === "atk_plus_spd_pct_bonus"
+      ? Math.floor((attacker.player.atk * apMultEffect.spdPct) / 100)
+      : 0;
+  const totalDmg = dmg + decreeDmg + impactDmg + stormBonus;
   const labels: string[] = [];
   if (powerBonus > 0) labels.push("강공격");
   if (powerBonus > 0 && crushReduction > 0) labels.push("분쇄");
@@ -968,13 +1219,21 @@ export function advanceTurnPvP(
   if (fatedChainConsumed) labels.push("연쇄 운명");
   if (apSkillFires) labels.push(apSkillFires.name);
   const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
-  // ── 방어자 측 데미지 감산 (가드 → 굳건한 의지 → 철벽 → 불굴 → 흡혈 갑옷) ──
+  // ── 방어자 측 데미지 감산 (결의 → 가드 → 굳건한 의지 → 철벽 → 불굴 → 흡혈 갑옷) ──
+  // 결의 (AP, defender 가 자기에게 시전한 효과) — 받는 피해 -pct%. 다른 감산 전에 먼저 적용.
+  const resolveReductionActive =
+    defender.buffs.playerDmgReductionTurnsLeft > 0 &&
+    defender.buffs.playerDmgReductionPct > 0;
+  const dmgAfterResolve = resolveReductionActive
+    ? Math.max(1, Math.floor(totalDmg * (1 - defender.buffs.playerDmgReductionPct / 100)))
+    : totalDmg;
+  const resolveApplied = dmgAfterResolve < totalDmg;
   const guard = defender.player.guard;
   const guarded =
     guard && guard.turns > 0 && defender.turn.enemyPhasesCompleted < guard.turns
-      ? Math.max(0, totalDmg - guard.reduction)
-      : totalDmg;
-  const guardApplied = guarded < totalDmg;
+      ? Math.max(0, dmgAfterResolve - guard.reduction)
+      : dmgAfterResolve;
+  const guardApplied = guarded < dmgAfterResolve;
   const steadfastFlat = defender.player.steadfastWillFlat ?? 0;
   const afterSteadfast =
     steadfastFlat > 0 ? Math.max(0, guarded - steadfastFlat) : guarded;
@@ -1001,12 +1260,18 @@ export function advanceTurnPvP(
     bloodfeastHeal > 0
       ? Math.min(defender.maxHp, defenderHpAfterDmg + bloodfeastHeal)
       : defenderHpAfterDmg;
-  // ── 로그 — 가드 → 굳건한 의지 → 철벽 → 본타 → 불굴 → 흡혈 갑옷 → 이중 행운 → 흡혈 ──
+  // ── 로그 — 결의 → 가드 → 굳건한 의지 → 철벽 → 본타 → 불굴 → 흡혈 갑옷 → 이중 행운 → 흡혈 ──
   let log = state.log;
+  if (resolveApplied) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[결의] ${defender.name} 피해 -${totalDmg - dmgAfterResolve}`,
+    });
+  }
   if (guardApplied) {
     log = appendLog(log, {
       kind: "info",
-      text: `[가드] ${defender.name} 피해 -${totalDmg - guarded}`,
+      text: `[가드] ${defender.name} 피해 -${dmgAfterResolve - guarded}`,
     });
   }
   if (steadfastApplied) {
@@ -1113,9 +1378,13 @@ export function advanceTurnPvP(
       0,
       attacker.stacks.weakpointDefIgnoreLeft - (weakpointDefIgnore ? 1 : 0),
     ) + weakpointAdd;
-  // ── AP 스킬 명중 시 부가 효과 (engine.ts:937-986 미러) ──────────────────────
-  // 비-atk_multiplier 효과: heal_pct → 자가 회복, apply_bleed → 출혈 스택, add_guaranteed_evades → 보장 회피.
+  // ── AP 스킬 명중 시 부가 효과 dispatch (engine.ts:1189-1363 PvP 미러) ──────────
   // AP 회복 +1(행동 1회 명중) 한 후 cost 차감. 회복 먼저라 ult cost 와 정확히 일치할 때도 발동.
+  const newApAfter = Math.max(
+    0,
+    Math.min(AP_CAP, attacker.ap + 1) - (apSkillFires?.apCost ?? 0),
+  );
+  // 즉시 효과 (atk_multiplier 계열 외):
   const apHealAmount =
     apSkillFires?.effect.kind === "heal_pct"
       ? Math.floor((attacker.maxHp * apSkillFires.effect.pct) / 100)
@@ -1151,14 +1420,151 @@ export function advanceTurnPvP(
       text: `[${apSkillFires!.name}] 보장 회피 +${apEvadesAdd}`,
     });
   }
-  const newApAfter = Math.max(
-    0,
-    Math.min(AP_CAP, attacker.ap + 1) - (apSkillFires?.apCost ?? 0),
-  );
-  // 사이드 갱신 — 공격자 + 방어자 (방어자엔 shield/endurance/damageTakenThisCombat 반영).
+  // 광살참 (multi_hit_self_damage) — 자해 HP.
+  const madSlashSelfDmg =
+    apMultEffect?.kind === "multi_hit_self_damage"
+      ? Math.floor((attacker.maxHp * apMultEffect.selfDmgPct) / 100)
+      : 0;
+  const attackerHpAfterMadSlash =
+    madSlashSelfDmg > 0
+      ? Math.max(0, attackerHpAfterAPHeal - madSlashSelfDmg)
+      : attackerHpAfterAPHeal;
+  if (madSlashSelfDmg > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires!.name}] ${attacker.name}의 HP -${madSlashSelfDmg} (자해)`,
+    });
+  }
+  // 연환격 (extra_attack_this_turn) — 이번 턴 attacksLeft 즉시 가산.
+  const comboExtraAttacks =
+    apSkillFires?.effect.kind === "extra_attack_this_turn"
+      ? apSkillFires.effect.count
+      : 0;
+  // 빛의 활공 (queued_extra_attacks_next_turn) — 다음 턴 시작 시 attacksLeft 가산할 큐.
+  const queuedExtraAttacksAdd =
+    apSkillFires?.effect.kind === "queued_extra_attacks_next_turn"
+      ? apSkillFires.effect.count
+      : 0;
+  if (comboExtraAttacks > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires!.name}] 이번 턴 추가 공격 +${comboExtraAttacks}`,
+    });
+  }
+  if (queuedExtraAttacksAdd > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires!.name}] 다음 턴 행동 +${queuedExtraAttacksAdd}`,
+    });
+  }
+  // 집중의 호흡 큐잉 — 이 발동 attack 후 첫 평타에 적용.
+  const focusedBreathQueueBonusPct =
+    apSkillFires?.effect.kind === "crit_buff_next_attack"
+      ? apSkillFires.effect.critDmgBonusPct
+      : 0;
+  if (focusedBreathQueueBonusPct > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires!.name}] 다음 공격 크리 보장 + 크리뎀 +${focusedBreathQueueBonusPct}%`,
+    });
+  }
+  // 지속 효과 (PR-2 미러) — attacker.buffs 의 timed 필드 설정. turnsLeft 는 새 턴 진입 시 -1.
+  let nextBuffsTimed: PvPSideBuffs = {
+    ...attacker.buffs,
+    cyclingChiBonus: cyclingChiThisTurn,
+  };
+  if (apSkillFires?.effect.kind === "player_dmg_reduction_turns") {
+    nextBuffsTimed = {
+      ...nextBuffsTimed,
+      playerDmgReductionPct: apSkillFires.effect.pct,
+      playerDmgReductionTurnsLeft: apSkillFires.effect.turns,
+    };
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 받는 피해 -${apSkillFires.effect.pct}%`,
+    });
+  } else if (apSkillFires?.effect.kind === "enemy_def_debuff_pct_turns") {
+    nextBuffsTimed = {
+      ...nextBuffsTimed,
+      enemyDefDebuffPct: apSkillFires.effect.pct,
+      enemyDefDebuffTurnsLeft: apSkillFires.effect.turns,
+    };
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 ${defender.name}의 DEF -${apSkillFires.effect.pct}%`,
+    });
+  } else if (
+    apSkillFires?.effect.kind === "player_atk_buff_def_debuff_pct_turns"
+  ) {
+    nextBuffsTimed = {
+      ...nextBuffsTimed,
+      playerAtkBuffPct: apSkillFires.effect.atkPct,
+      playerAtkBuffTurnsLeft: apSkillFires.effect.turns,
+      playerDefDebuffPct: apSkillFires.effect.defPct,
+      playerDefDebuffTurnsLeft: apSkillFires.effect.turns,
+    };
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 ATK +${apSkillFires.effect.atkPct}%, DEF -${apSkillFires.effect.defPct}%`,
+    });
+  } else if (apSkillFires?.effect.kind === "enemy_spd_mult_turns") {
+    nextBuffsTimed = {
+      ...nextBuffsTimed,
+      enemySpdMult: apSkillFires.effect.mult,
+      enemySpdTurnsLeft: apSkillFires.effect.turns,
+    };
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 ${defender.name}의 SPD ×${apSkillFires.effect.mult}`,
+    });
+  } else if (apSkillFires?.effect.kind === "player_spd_mult_turns") {
+    nextBuffsTimed = {
+      ...nextBuffsTimed,
+      playerSpdMult: apSkillFires.effect.mult,
+      playerSpdTurnsLeft: apSkillFires.effect.turns,
+    };
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 SPD ×${apSkillFires.effect.mult}`,
+    });
+  } else if (apSkillFires?.effect.kind === "atk_multiplier_with_silence") {
+    // 천뢰 — PvP 에선 silence 가 무효지만 데이터 호환용 보관.
+    nextBuffsTimed = {
+      ...nextBuffsTimed,
+      enemySilenceTurnsLeft: apSkillFires.effect.silenceTurns,
+    };
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires.name}] ${defender.name} ${apSkillFires.effect.silenceTurns}턴간 스킬 봉인 (PvP 에선 무효)`,
+    });
+  } else if (apSkillFires?.effect.kind === "cleanse_debuffs") {
+    // 정화 — 플레이어 측 디버프 (광기의 자기 DEF 페널티) 제거.
+    nextBuffsTimed = {
+      ...nextBuffsTimed,
+      playerDefDebuffPct: 0,
+      playerDefDebuffTurnsLeft: 0,
+    };
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires.name}] ${attacker.name}의 모든 디버프 해제`,
+    });
+  } else if (apSkillFires?.effect.kind === "block_next_enemy_attack") {
+    // 잔상 — 상대 공격 N회 무효. defender 페이즈 진입 시 1회 소비.
+    nextBuffsTimed = {
+      ...nextBuffsTimed,
+      enemyAttackBlockedCount:
+        nextBuffsTimed.enemyAttackBlockedCount + apSkillFires.effect.count,
+    };
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires.name}] ${defender.name}의 다음 공격 ${apSkillFires.effect.count}회 무효`,
+    });
+  }
+  // 사이드 갱신 — 공격자 + 방어자.
+  // attacksLeft 는 아래 분기에서 setSide 로 명시적으로 덮어쓰므로 여기 안 박음 (연환격 가산은 그 변수에서).
   const newAttacker: PvPSide = {
     ...attacker,
-    hp: attackerHpAfterAPHeal,
+    hp: attackerHpAfterMadSlash,
     ap: newApAfter,
     flags: {
       ...attacker.flags,
@@ -1170,10 +1576,7 @@ export function advanceTurnPvP(
           ? false
           : attacker.flags.fatedChainCritPending,
     },
-    buffs: {
-      ...attacker.buffs,
-      cyclingChiBonus: cyclingChiThisTurn,
-    },
+    buffs: nextBuffsTimed,
     stacks: {
       ...attacker.stacks,
       bleedStacksOnOpponent: newBleedOnOpponent + apBleedAdd,
@@ -1190,6 +1593,16 @@ export function advanceTurnPvP(
       apSkillFiredThisTurn: apSkillFires
         ? apSkillFires.id
         : attacker.turn.apSkillFiredThisTurn,
+      // 집중의 호흡 — 발동되면 큐잉, 큐 활성 중 평타 1회 발사 시 0 으로 소비.
+      focusedBreathCritDmgBonusPct: focusedBreathQueueBonusPct > 0
+        ? focusedBreathQueueBonusPct
+        : focusedBreathConsumed
+          ? 0
+          : attacker.turn.focusedBreathCritDmgBonusPct,
+      // 빛의 활공 — 다음 턴 attacksLeft 가산할 큐. 일반 평타에선 유지.
+      queuedExtraAttacks: queuedExtraAttacksAdd > 0
+        ? queuedExtraAttacksAdd
+        : attacker.turn.queuedExtraAttacks,
     },
   };
   const newDefender: PvPSide = {
@@ -1229,8 +1642,8 @@ export function advanceTurnPvP(
   const runeCounterResult = maybeApplyRuneCounter(next, atkKey, defKey);
   next = runeCounterResult.state;
   if (runeCounterResult.attackerKilled) return next;
-  // 남은 공격 횟수.
-  const attacksLeft = attacker.attacksLeft - 1 + weakpointAdd;
+  // 남은 공격 횟수 — 연환격(comboExtraAttacks) 도 포함.
+  const attacksLeft = attacker.attacksLeft - 1 + weakpointAdd + comboExtraAttacks;
   if (attacksLeft > 0) {
     return setSide(next, atkKey, {
       ...next[atkKey],
