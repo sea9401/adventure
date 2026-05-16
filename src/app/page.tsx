@@ -553,10 +553,20 @@ function Home() {
             />
             <SettingsMenu
               gameName={character.name}
+              tutorialEnabled={storyFlags.has(TUTORIAL_ENABLED_FLAG)}
               onReplayTutorial={() => {
                 storyFlags.removeWithPrefix(TUTORIAL_FLAG_PREFIX);
                 storyFlags.set(TUTORIAL_ENABLED_FLAG);
                 addNotification("info", "튜토리얼을 다시 표시합니다.");
+              }}
+              onToggleTutorial={() => {
+                if (storyFlags.has(TUTORIAL_ENABLED_FLAG)) {
+                  storyFlags.remove(TUTORIAL_ENABLED_FLAG);
+                  addNotification("info", "튜토리얼을 껐어요.");
+                } else {
+                  storyFlags.set(TUTORIAL_ENABLED_FLAG);
+                  addNotification("info", "튜토리얼을 켰어요.");
+                }
               }}
             />
           </div>
