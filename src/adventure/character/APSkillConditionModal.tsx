@@ -17,16 +17,9 @@ type KindWithValue = Exclude<APSkillCondition["kind"], "always">;
 
 const KIND_LABEL: Record<APSkillCondition["kind"], string> = {
   always: "항상",
-  ap_at_least: "AP 충분할 때",
-  hp_below_pct: "내 HP 낮을 때",
-  enemy_hp_below_pct: "적 HP 낮을 때",
-};
-
-const KIND_HINT: Record<APSkillCondition["kind"], string> = {
-  always: "AP 코스트만 닿으면 발동 — 기본값",
-  ap_at_least: "AP 저축 후 큰 한 방용 — 저코스트가 AP 를 다 빨아먹지 않게",
-  hp_below_pct: "회복 / 방어 스킬용 — 풀피일 땐 발동 X",
-  enemy_hp_below_pct: "마무리 한 방용 — 적이 약해진 구간에만",
+  ap_at_least: "AP ≥ X",
+  hp_below_pct: "HP < X%",
+  enemy_hp_below_pct: "적HP < X%",
 };
 
 const VALUE_SUFFIX: Record<KindWithValue, string> = {
@@ -108,7 +101,7 @@ export function APSkillConditionModal({
           ).map((k) => (
             <label
               key={k}
-              className="flex cursor-pointer items-start gap-3 rounded-md px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+              className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900"
             >
               <input
                 type="radio"
@@ -116,19 +109,17 @@ export function APSkillConditionModal({
                 value={k}
                 checked={kind === k}
                 onChange={() => setKind(k)}
-                className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-emerald-500"
+                className="h-4 w-4 shrink-0 cursor-pointer accent-emerald-500"
               />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {KIND_LABEL[k]}
-                </span>
-                <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                  {KIND_HINT[k]}
-                </span>
+              <span className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                {KIND_LABEL[k]}
               </span>
             </label>
           ))}
         </fieldset>
+        <p className="mt-1 px-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+          임계값 X 는 아래 프리셋/슬라이더에서 설정.
+        </p>
 
         {kind !== "always" && (
           <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/40">
