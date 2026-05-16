@@ -10,6 +10,12 @@ import {
   POWER_ATTACK_TURN_INTERVAL,
   RAMPAGE_START_TURN,
 } from "../character/skills";
+import {
+  AP_BATTLE_START,
+  AP_CAP,
+  type APSkill,
+  type APSkillId,
+} from "../character/apSkills";
 
 export type BattleLogEntry = {
   kind: "player_attack" | "enemy_attack" | "info" | "phase_trigger" | "turn_marker";
@@ -51,6 +57,8 @@ export type BattleTurnState = {
   weakpointUsedThisTurn: boolean;
   // 연쇄 운명 (2티어 특기) — 이번 턴에 연쇄 운명 트리거가 이미 발동했는지. 턴 종료 시 리셋. 턴당 1회.
   fatedChainTriggeredThisTurn: boolean;
+  // 이번 턴에 발동한 AP 스킬 id — null = 미발동. 턴 종료 시 null 로 리셋. 한 턴 최대 1개 정책.
+  apSkillFiredThisTurn: APSkillId | null;
 };
 
 // 전투당 1회성 토글 — 한 번 켜지면 그 전투 동안 유지.
@@ -113,6 +121,9 @@ export type BattleState = {
   flags: BattleFlags;
   buffs: BattleBuffs;
   stacks: BattleStacks;
+  // AP 스킬 자원 — 매 플레이어 행동 +1, cap=AP_CAP, 전투 시작 시 AP_BATTLE_START.
+  // 스킬 발동 시 cost 만큼 차감. equippedAPSkills 미장착이면 0 으로 두고 무시.
+  ap: number;
 };
 
 export type PlayerCombat = {
@@ -245,6 +256,9 @@ export type PlayerCombat = {
   eternalGaleNoCap?: boolean;
   // 만물 행운 — 회피·크리·추가타 모든 확률에 더할 보너스(%). 0/undefined = 미보유.
   universalLuckBonusPct?: number;
+  // AP 스킬 — 학습 + 슬롯 장착 된 것만. 슬롯 순서 보존. 빈 배열/undefined = 미장착.
+  // 매 플레이어 턴 첫 공격 시 슬롯 순서로 첫 발동 가능(cost<=AP) 한 1개 발동. 한 턴 최대 1개.
+  equippedAPSkills?: ReadonlyArray<APSkill>;
 };
 
 export type PlayerAction =
@@ -557,6 +571,7 @@ export function initialBattleState(
       riposteUsedThisTurn: false,
       weakpointUsedThisTurn: false,
       fatedChainTriggeredThisTurn: false,
+      apSkillFiredThisTurn: null,
     },
     flags: {
       phaseTriggered: false,
@@ -582,6 +597,8 @@ export function initialBattleState(
       damageTakenThisCombat: 0,
       weakpointDefIgnoreLeft: 0,
     },
+    // 장착된 AP 스킬이 있을 때만 의미. 없으면 그냥 0 으로 두고 회복/소비 노옵.
+    ap: (player.equippedAPSkills?.length ?? 0) > 0 ? AP_BATTLE_START : 0,
   };
 }
 
@@ -619,6 +636,22 @@ export function advanceTurn(
         ? player.powerAttackBonus!
         : 0;
 
+    // AP 스킬 — 그 턴 첫 공격일 때만 슬롯 순서로 cost<=AP 인 첫 1개 발동.
+    // 한 턴 1개 정책 (apSkillFiredThisTurn null 체크). 강공격과 동시 발동 가능 (별개 트리거).
+    const apSkillFires =
+      isFirstAttackOfTurn &&
+      state.turn.apSkillFiredThisTurn === null &&
+      (player.equippedAPSkills?.length ?? 0) > 0
+        ? player.equippedAPSkills!.find((s) => s.apCost <= state.ap) ?? null
+        : null;
+    const apAtkMult =
+      apSkillFires?.effect.kind === "atk_multiplier"
+        ? apSkillFires.effect.atkMult
+        : 1;
+    const apIgnoresDef =
+      apSkillFires?.effect.kind === "atk_multiplier" &&
+      apSkillFires.effect.ignoresDef === true;
+
     // 적 회피 — 데미지 굴리기 전에 1차 판정. 회피하면 공격 1회가 그대로 빗나간다.
     // 정확 슬롯 시 적 evasion 에 배수(<1) 가 곱해져 부분 무력화.
     const precisionMult = player.precisionEvasionMult ?? 1;
@@ -628,11 +661,15 @@ export function advanceTurn(
         kind: "player_attack",
         text: `${state.enemy.name}이(가) 공격을 피했다.`,
       });
+      // AP 회복 — 공격 시도 자체가 행동이므로 회피되어도 +1 (cap 클램프).
+      // AP 스킬은 회피 시 발동/소비 안 함 (apSkillFires 는 첫 공격 명중에만 적용).
+      const nextAp = Math.min(AP_CAP, state.ap + 1);
       const attacksLeft = state.playerAttacksLeft - 1;
       if (attacksLeft > 0) {
         return {
           ...state,
           log,
+          ap: nextAp,
           playerAttacksLeft: attacksLeft,
           turn: { ...state.turn, firstAttackPending: false },
         };
@@ -640,6 +677,7 @@ export function advanceTurn(
       const ended: BattleState = {
         ...state,
         log,
+        ap: nextAp,
         phase: "enemy",
         playerAttacksLeft: rollPlayerAttackCount(player),
         turn: {
@@ -653,6 +691,7 @@ export function advanceTurn(
           galeChainsThisTurn: 0,
           weakpointUsedThisTurn: false,
           fatedChainTriggeredThisTurn: false,
+          apSkillFiredThisTurn: null,
           // fatedChainCritPending 은 "다음 공격" 까지 살아 있어야 하므로 턴 경계에서 리셋 안 함.
         },
       };
@@ -672,7 +711,7 @@ export function advanceTurn(
     // 분쇄는 그 위에 추가 고정 감산.
     const crushReduction = player.crushDefReduction ?? 0;
     const baseDef = playerFacingEnemyDef(state, player);
-    const targetDef = assassinFires || weakpointDefIgnore
+    const targetDef = assassinFires || weakpointDefIgnore || apIgnoresDef
       ? 0
       : bonus > 0 && crushReduction > 0
         ? Math.max(0, baseDef - crushReduction)
@@ -725,8 +764,11 @@ export function advanceTurn(
         : effectiveCritPct > 0
           ? Math.random() * 100 < effectiveCritPct
           : false;
+    // AP 스킬의 atk_multiplier 는 모든 ATK 합산 후 곱 (강공격·격노·질풍 등의 보너스 포함).
+    const atkBeforeApMult =
+      player.atk + state.buffs.rampageAtkBonus + bonus + berserkBonus + gustBonus + enduringStrikeBonus;
     const baseDmg = damageBetween(
-      player.atk + state.buffs.rampageAtkBonus + bonus + berserkBonus + gustBonus + enduringStrikeBonus,
+      apAtkMult !== 1 ? Math.floor(atkBeforeApMult * apAtkMult) : atkBeforeApMult,
       targetDef,
     );
     // 처형 — 적 HP 비율 < executionHpFraction 일 때 데미지 ×executionDamageMult.
@@ -788,6 +830,7 @@ export function advanceTurn(
     if (enduringStrikeBonus > 0) labels.push("불굴의 일격");
     if (weakpointDefIgnore) labels.push("약점 적중");
     if (fatedChainConsumed) labels.push("연쇄 운명");
+    if (apSkillFires) labels.push(apSkillFires.name);
     const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
     let log = appendLog(state.log, {
       kind: "player_attack",
@@ -870,6 +913,12 @@ export function advanceTurn(
     const newWeakpointDefIgnoreLeft =
       Math.max(0, state.stacks.weakpointDefIgnoreLeft - (weakpointDefIgnore ? 1 : 0)) +
       weakpointAdd;
+    // AP 회복 +1 (행동 1회 = 공격 1회 명중), 발동된 AP 스킬 있으면 cost 차감.
+    // 회복이 먼저 — 그 턴 첫 공격이 ult cost 와 정확히 일치할 때도 예상대로 발동.
+    const nextApAfter = Math.max(
+      0,
+      Math.min(AP_CAP, state.ap + 1) - (apSkillFires?.apCost ?? 0),
+    );
     // 페이즈 트리거 검사 — 데미지 적용 직후, 사망 분기 전에 처리해야 트리거된 def 가
     // 같은 턴 후속 공격(다중공격/연타)에 즉시 반영된다.
     const afterDamage = applyPhaseTriggerIfAny({
@@ -877,6 +926,7 @@ export function advanceTurn(
       enemyHp,
       playerHp: newPlayerHp,
       log,
+      ap: nextApAfter,
       flags: {
         ...state.flags,
         assassinateUsed: state.flags.assassinateUsed || assassinFires,
@@ -903,6 +953,9 @@ export function advanceTurn(
         fatedChainTriggeredThisTurn:
           state.turn.fatedChainTriggeredThisTurn || fatedChainFires,
         weakpointUsedThisTurn: state.turn.weakpointUsedThisTurn || weakpointFires,
+        apSkillFiredThisTurn: apSkillFires
+          ? apSkillFires.id
+          : state.turn.apSkillFiredThisTurn,
       },
     });
     if (enemyHp <= 0) {
@@ -1041,6 +1094,7 @@ export function advanceTurn(
         galeChainsThisTurn: 0,
         weakpointUsedThisTurn: false,
         fatedChainTriggeredThisTurn: false,
+        apSkillFiredThisTurn: null,
       },
     };
     return finishPlayerTurn(ended, player, playerName);

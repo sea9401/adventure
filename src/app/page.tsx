@@ -190,6 +190,7 @@ function Home() {
     allocatedStats: training.allocatedStats ?? ZERO_ALLOCATED,
     equipped: characterStateHook.equippedSlots,
     equippedSkills: characterState.equippedSkills,
+    learnedAPSkills: characterState.learnedAPSkills,
     equippedFeats: characterState.equippedFeats,
     equippedRunes: characterState.equippedRunes,
     storyFlagIds: new Set(storyFlags.state.flags),
