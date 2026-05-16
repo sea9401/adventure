@@ -1674,12 +1674,20 @@ export function resolveBattle(
   const potions: Partial<Record<PotionId, number>> = { ...ctx.potions };
   const consumed: Partial<Record<PotionId, number>> = {};
   let state = initialBattleState(player, enemy, playerName);
+  // AP 스킬 장착 여부 — 턴 마커에 AP 상태 표기할지 결정. 미장착이면 늘 0 이라 노이즈.
+  const apEquipped = (player.equippedAPSkills?.length ?? 0) > 0;
+  const turnMarkerText = (turnNo: number, ap: number): string =>
+    apEquipped ? `${turnNo}턴 · AP ${ap}` : `${turnNo}턴`;
   // 초기 entry (적 등장 / 선공 / 능력 안내 등) 는 player 턴으로 태깅. 첫 턴 marker 도 박는다.
   state = {
     ...state,
     log: [
       ...state.log.map((e) => ({ ...e, turn: "player" as const })),
-      { kind: "turn_marker", text: "1턴", turn: "player" as const },
+      {
+        kind: "turn_marker",
+        text: turnMarkerText(1, state.ap),
+        turn: "player" as const,
+      },
     ],
   };
   let turns = 0;
@@ -1726,7 +1734,7 @@ export function resolveBattle(
         ...state,
         log: appendLog(state.log, {
           kind: "turn_marker",
-          text: `${turnNo}턴`,
+          text: turnMarkerText(turnNo, state.ap),
           turn: "player",
         }),
       };
