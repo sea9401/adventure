@@ -17,6 +17,7 @@ import {
   scaledStats,
   startFloorAfterCheckpoint,
 } from "./scaling";
+import { currentWeeklyModifier } from "./modifiers";
 import {
   BOSS_SLOTS,
   bossBaseMonster,
@@ -227,11 +228,13 @@ function apparentMilestone(outcome: "win" | "lose", floor: number) {
 // upcoming: 서버가 픽해 state.run.upcomingEnemy 에 저장해둔 잡몹 이름. 있으면 그걸 그대로
 // 표시해 다음 fight_floor 결과와 이름·이미지·스탯이 일치한다. 없으면(옛 런/풀 비어 있음)
 // 종전 동작 — 클라가 자체적으로 풀에서 한 번 픽 (서버 fight 와 mismatch 가능, 한 번 뒤 회복).
+// 주간 모디파이어가 있으면 스탯 마지막에 곱해진다 (서버 buildFloorEnemy 와 일치).
 function buildReady(floor: number, upcoming?: { name: string }): View {
+  const modifier = currentWeeklyModifier();
   const slot = bossSlotForFloor(floor);
   if (slot) {
     const base = bossBaseMonster(slot);
-    const scaled = scaledStats(base, floor, slot.bossMultiplier);
+    const scaled = scaledStats(base, floor, slot.bossMultiplier, modifier);
     const enemy: Monster = {
       ...base,
       name: bossDisplayName(slot),
@@ -247,7 +250,7 @@ function buildReady(floor: number, upcoming?: { name: string }): View {
     // 매핑 실패 안전망 — 빈 풀이면 첫 보스 슬롯의 베이스를 사용.
     const fb = BOSS_SLOTS[0];
     const base = bossBaseMonster(fb);
-    const scaled = scaledStats(base, floor);
+    const scaled = scaledStats(base, floor, 1, modifier);
     return {
       kind: "ready",
       floor,
@@ -262,7 +265,7 @@ function buildReady(floor: number, upcoming?: { name: string }): View {
       : pickMobFromPool(pool);
   const base =
     MONSTERS[name] ?? MONSTERS[pool[0]] ?? bossBaseMonster(BOSS_SLOTS[0]);
-  const scaled = scaledStats(base, floor);
+  const scaled = scaledStats(base, floor, 1, modifier);
   return {
     kind: "ready",
     floor,
@@ -302,9 +305,16 @@ function EntryView({
   const effectiveStart = startOptions.includes(selectedStart)
     ? selectedStart
     : defaultStart;
+  const modifier = currentWeeklyModifier();
   return (
     <div className="space-y-3">
       <Card padding="md">
+        <div className="mb-2 flex items-center gap-1.5 text-[11px]">
+          <span className="rounded-full bg-violet-500/15 px-2 py-0.5 font-medium text-violet-700 dark:text-violet-300">
+            이번 주: {modifier.name}
+          </span>
+          <span className="text-zinc-500 dark:text-zinc-400">{modifier.description}</span>
+        </div>
         <div className="grid grid-cols-2 gap-3 text-xs">
           <Stat label="최고 도달" value={`${state.progress.highestFloor}층`} />
           <Stat label="오늘 시도" value={`${attemptsUsed} / ${TOWER_DAILY_ATTEMPTS}`} />

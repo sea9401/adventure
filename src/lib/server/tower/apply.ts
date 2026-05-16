@@ -24,6 +24,7 @@ import {
   type TowerState,
 } from "@/adventure/tower/types";
 import { isBossFloor, scaledStats } from "@/adventure/tower/scaling";
+import { currentWeeklyModifier } from "@/adventure/tower/modifiers";
 import type { TowerMilestoneReward } from "@/adventure/tower/rewards";
 import {
   rollBossClearReward,
@@ -380,15 +381,16 @@ async function applyTowerAutoProgress(
 
 // 층 → 그 층에서 만나는 적 Monster (이름·스탯 모두 결정). 보스층은 보스 슬롯의 베이스 +
 // bossMultiplier, 잡몹층은 upcomingEnemy 가 있으면 그걸 사용 (클라 ready 화면과 일치),
-// 없으면 풀에서 균등 무작위 선택.
+// 없으면 풀에서 균등 무작위 선택. 주간 모디파이어가 있으면 스탯 마지막에 곱해진다.
 function buildFloorEnemy(
   floor: number,
   upcoming?: { name: string },
 ): Monster {
+  const modifier = currentWeeklyModifier();
   const slot = bossSlotForFloor(floor);
   if (slot) {
     const base = bossBaseMonster(slot);
-    const s = scaledStats(base, floor, slot.bossMultiplier);
+    const s = scaledStats(base, floor, slot.bossMultiplier, modifier);
     return { ...base, name: bossDisplayName(slot), hp: s.hp, atk: s.atk, def: s.def, spd: s.spd };
   }
   const pool = mobPoolForFloor(floor);
@@ -401,7 +403,7 @@ function buildFloorEnemy(
     baseName = pickMobFromPool(pool);
   }
   const base = MONSTERS[baseName] ?? MONSTERS[pool[0]] ?? bossBaseMonster(BOSS_SLOTS[0]);
-  const s = scaledStats(base, floor);
+  const s = scaledStats(base, floor, 1, modifier);
   return { ...base, hp: s.hp, atk: s.atk, def: s.def, spd: s.spd };
 }
 

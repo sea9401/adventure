@@ -118,4 +118,46 @@ describe("scaledStats", () => {
     expect(s.hp).toBeGreaterThanOrEqual(1);
     expect(s.atk).toBeGreaterThanOrEqual(1);
   });
+
+  it("modifier 미지정 시 기존 스탯 보존 (회귀 가드)", () => {
+    const s = scaledStats(base, 50);
+    const sNone = scaledStats(base, 50, 1, undefined);
+    expect(sNone).toEqual(s);
+  });
+
+  it("modifier 적용 — enemyHpMult ×1.25 시 hp 만 25% 증가", () => {
+    const f = 20;
+    const mod = { id: "heavy" as const, name: "둔중한 기운", description: "", enemyHpMult: 1.25 };
+    const s = scaledStats(base, f, 1, mod);
+    const sNone = scaledStats(base, f);
+    expect(s.hp).toBe(Math.round(sNone.hp * 1.25));
+    expect(s.atk).toBe(sNone.atk);
+    expect(s.def).toBe(sNone.def);
+    expect(s.spd).toBe(sNone.spd);
+  });
+
+  it("modifier 적용 — enemySpdMult 도 반영 (SPD 도 변동 가능)", () => {
+    const mod = { id: "stormy" as const, name: "거센 폭풍", description: "", enemySpdMult: 1.25 };
+    const s = scaledStats(base, 10, 1, mod);
+    expect(s.spd).toBe(Math.round(8 * 1.25));
+  });
+
+  it("modifier 균등 ×1.10 — 모든 스탯 비례 증가 (round 한 자리 오차 허용)", () => {
+    const mod = {
+      id: "capricious" as const,
+      name: "변덕스러운 운명",
+      description: "",
+      enemyHpMult: 1.1,
+      enemyAtkMult: 1.1,
+      enemyDefMult: 1.1,
+      enemySpdMult: 1.1,
+    };
+    const sNone = scaledStats(base, 30);
+    const s = scaledStats(base, 30, 1, mod);
+    // round 순서 차이로 ±1 가능 — "근사 1.1배" 만 확인.
+    expect(Math.abs(s.hp - Math.round(sNone.hp * 1.1))).toBeLessThanOrEqual(1);
+    expect(Math.abs(s.atk - Math.round(sNone.atk * 1.1))).toBeLessThanOrEqual(1);
+    expect(Math.abs(s.def - Math.round(sNone.def * 1.1))).toBeLessThanOrEqual(1);
+    expect(Math.abs(s.spd - Math.round(sNone.spd * 1.1))).toBeLessThanOrEqual(1);
+  });
 });

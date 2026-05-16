@@ -9,6 +9,7 @@
 // bossMultiplier. 결과는 정수로 반올림.
 
 import type { Monster } from "@/adventure/data/monsters";
+import type { TowerModifier } from "./modifiers";
 import { TOWER_BOSS_INTERVAL } from "./types";
 
 export const TOWER_HP_EXP = 0.45;
@@ -67,18 +68,27 @@ export type ScaledStats = {
   spd: number;
 };
 
-/** 베이스 몬스터 + 층 + (옵션) 보스 배수 → 실제 전투 스탯. */
+/**
+ * 베이스 몬스터 + 층 + (옵션) 보스 배수 + (옵션) 주간 모디파이어 → 실제 전투 스탯.
+ * 모디파이어 멀티플라이어 (enemyHpMult/AtkMult/DefMult/SpdMult) 가 마지막에 곱해진다.
+ * SPD 는 층 스케일링은 없지만 모디파이어로는 변동 가능 (의도적으로 공개된 효과라 OK).
+ */
 export function scaledStats(
   base: Pick<Monster, "hp" | "atk" | "def" | "spd">,
   floor: number,
   bossMultiplier = 1,
+  modifier?: TowerModifier,
 ): ScaledStats {
   const f = Math.max(1, floor);
   const m = bossMultiplier;
+  const hpMult = modifier?.enemyHpMult ?? 1;
+  const atkMult = modifier?.enemyAtkMult ?? 1;
+  const defMult = modifier?.enemyDefMult ?? 1;
+  const spdMult = modifier?.enemySpdMult ?? 1;
   return {
-    hp: Math.max(1, Math.round(base.hp * m * Math.pow(f, TOWER_HP_EXP))),
-    atk: Math.max(1, Math.round(base.atk * m * Math.pow(f, TOWER_ATK_EXP))),
-    def: Math.max(0, Math.round(base.def * m * Math.pow(f, TOWER_DEF_EXP))),
-    spd: base.spd, // 속도는 스케일링하지 않음 — 행동 순서가 층마다 뒤집히는 걸 막기 위함.
+    hp: Math.max(1, Math.round(base.hp * m * Math.pow(f, TOWER_HP_EXP) * hpMult)),
+    atk: Math.max(1, Math.round(base.atk * m * Math.pow(f, TOWER_ATK_EXP) * atkMult)),
+    def: Math.max(0, Math.round(base.def * m * Math.pow(f, TOWER_DEF_EXP) * defMult)),
+    spd: Math.max(1, Math.round(base.spd * spdMult)),
   };
 }
