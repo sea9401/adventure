@@ -21,6 +21,8 @@ const ESCORT = "unhyang-baekun-pilgrim-escort";
 const HUNTER = "peak-giant-hunter"; // 운봉의 거인 누적 ×10 (보스 사냥꾼 칭호 일부)
 const HEAVEN = "unhyang-baekun-heaven-slay"; // 히든 — HUNTER 완료 후 노출. 봉황 깃털 ×5 → 천살 스킬북.
 const HEAVEN_NEED = 5;
+const STORM = "unhyang-baekun-storm-strike"; // 히든 — HEAVEN 완료 후 노출. 돌풍 정령 ×10 → 폭풍 일격.
+const STORM_NEED = 10;
 
 // 백운 — 운향 메인 라인 "잠들지 않는 산".
 // A 협곡 정찰 → B 운봉의 거인 → C 교역로 정리(절벽 늑대 ×30 + 산양 ×40) → D 교역로 개통.
@@ -353,6 +355,54 @@ export function BaekunDialogue({
             text={`봉황 깃털은 봉황령 능선 — 불꽃 독수리한테서 나오지. — 진행 ${have}/${HEAVEN_NEED}`}
           />
         );
+      }
+      // 천살 잔편 완료 → 두 번째 히든. 폭풍 일격 (돌풍 정령 ×10).
+      if (heaven.state === "completed") {
+        const storm = quests.getEntry(STORM);
+        if (storm.state === "available") {
+          return (
+            <NpcDialogue
+              npc={npc}
+              onClose={onClose}
+              text={
+                "…한 가지 더. 산정의 바람은 한 자루 결로 옮길 수 있다고들 했지. 돌풍 정령 열을 잠재워 보게 — 그 결이 자네 검에 옮겨질 거야."
+              }
+              primaryAction={{
+                label: "받아들인다",
+                onClick: () => {
+                  quests.accept(STORM);
+                  onClose();
+                },
+              }}
+            />
+          );
+        }
+        if (storm.state === "active") {
+          return (
+            <NpcDialogue
+              npc={npc}
+              onClose={onClose}
+              text={`돌풍 정령은 협곡 위 능선에 모여. — 진행 ${storm.progress}/${STORM_NEED}`}
+            />
+          );
+        }
+        if (storm.state === "ready") {
+          return (
+            <NpcDialogue
+              npc={npc}
+              onClose={onClose}
+              text={
+                "열 마리 — 산정이 한결 조용해졌어. 자네 검에 바람의 결이 옮겨졌네 — 가져가게."
+              }
+              primaryAction={{
+                label: "보상을 받는다",
+                onClick: () => {
+                  if (completeQuest(STORM)) onClose();
+                },
+              }}
+            />
+          );
+        }
       }
     }
 

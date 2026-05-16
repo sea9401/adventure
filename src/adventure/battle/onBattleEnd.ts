@@ -43,6 +43,7 @@ export type BattleEndDeps = {
     addKill: (name: string) => void;
     markTitleObtained: (titleId: string) => void;
     incrementBattleLosses: () => void;
+    incrementNoDamageWin: () => void;
   };
   quests: {
     recordKill: (
@@ -64,6 +65,10 @@ export type BattleEndDeps = {
   bossKillsTotal: number;
   /** 누적 일반 처치 수 (이번 처치 전 기준) — 1000회 사냥 폭주 업적 발급용. */
   totalKillsTotal: number;
+  /** 누적 무피해 승리 수 (이번 처치 전 기준) — 무피해 100회 광살참 업적용. */
+  noDamageWinsTotal: number;
+  /** 누적 운봉의 거인 처치 수 (이번 처치 전 기준) — 거인 10회 천뢰 일격 업적용. */
+  peakGiantKillsTotal: number;
   vit: number;
   luk: number;
   /** 신참 드롭 ×2 판정용. Lv 30 미만이면 ×2. */
@@ -105,6 +110,21 @@ export function onBattleEnd(
   if (payload.outcome === "win") {
     deps.adventureLog.addKill(payload.enemyName);
     deps.adventureLog.markTitleObtained("first_blood");
+    // 무피해 승리 — 광살참 업적 카운터 +1. 누적 100회 도달 시 1회성 지급.
+    if (payload.damageTakenThisCombat === 0) {
+      deps.adventureLog.incrementNoDamageWin();
+      if (
+        deps.noDamageWinsTotal + 1 >= 100 &&
+        !deps.storyFlags.has("mad_slash_book_granted")
+      ) {
+        deps.storyFlags.set("mad_slash_book_granted");
+        deps.inventory.addSkillBook("book_mad_slash", 1);
+        deps.addNotification(
+          "milestone",
+          "✨ 무피해 100회 승리 — '스킬북 — 광살참' 을 손에 넣었다!",
+        );
+      }
+    }
     // '구사일생' — 체력 1 남긴 채 승리.
     if (payload.finalPlayerHp === 1) {
       deps.adventureLog.markTitleObtained("close_call");
@@ -179,6 +199,31 @@ export function onBattleEnd(
       deps.addNotification(
         "milestone",
         "✨ 누적 1000회 처치 — '스킬북 — 폭주' 를 손에 넣었다!",
+      );
+    }
+    // 운봉의 거인 10회 처치 업적 — 천뢰 일격 스킬북 1회 지급.
+    if (
+      payload.enemyName === "운봉의 거인" &&
+      deps.peakGiantKillsTotal + 1 >= 10 &&
+      !deps.storyFlags.has("thunder_strike_book_granted")
+    ) {
+      deps.storyFlags.set("thunder_strike_book_granted");
+      deps.inventory.addSkillBook("book_thunder_strike", 1);
+      deps.addNotification(
+        "milestone",
+        "✨ 운봉의 거인 10회 처치 — '스킬북 — 천뢰 일격' 을 손에 넣었다!",
+      );
+    }
+    // 천공인의 왕 첫 처치 업적 — 빛의 활공 스킬북 1회 지급.
+    if (
+      payload.enemyName === "천공인의 왕" &&
+      !deps.storyFlags.has("light_glide_book_granted")
+    ) {
+      deps.storyFlags.set("light_glide_book_granted");
+      deps.inventory.addSkillBook("book_light_glide", 1);
+      deps.addNotification(
+        "milestone",
+        "✨ 천공인의 왕 처치 — '스킬북 — 빛의 활공' 을 손에 넣었다!",
       );
     }
     // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.

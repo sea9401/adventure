@@ -2134,6 +2134,37 @@ export const QUESTS: Quest[] = [
     requiresQuestCompleted: "peak-giant-hunter",
     hidden: true,
   },
+  // 백운 — 천살 잔편 이후 두 번째 히든 라인. 폭풍 일격 — 돌풍 정령 ×10 처치.
+  // 다이얼로그 게이트: unhyang-baekun-heaven-slay 완료 여부.
+  {
+    id: "unhyang-baekun-storm-strike",
+    regionId: "unhyang",
+    title: "구름 위의 결",
+    description:
+      "산정의 바람은 한 자루 결로 옮길 수 있다 — 옛말이지. 돌풍 정령 열을 잠재워 보게. 자네 검에 그 결이 옮겨질 거야.",
+    requiredLevel: 30,
+    target: { kind: "kill", monsterName: "돌풍 정령", count: 10 },
+    reward: { fame: 50, skillBooks: ["book_storm_strike"] },
+    repeatable: false,
+    giverNpcId: "unhyang_elder",
+    requiresQuestCompleted: "unhyang-baekun-heaven-slay",
+    hidden: true,
+  },
+  // 음유시인 — 유실품 노래(bard_lucky_collected) 이후 히든 호흡 라인. 봉황 깃털 ×3 deliver.
+  // 다이얼로그 게이트: bard_lucky_collected 플래그 보유.
+  {
+    id: "windvale-bard-focused-breath",
+    regionId: "windvale",
+    title: "한 호흡의 결",
+    description:
+      "노래는 한 호흡으로 끝나야 결이 잡혀. 봉황 깃털 세 개만 가져다 줘 — 그걸로 한 호흡의 결을 자네 검에 옮겨 줄게.",
+    requiredLevel: 25,
+    target: { kind: "deliver", materialId: "phoenix_feather", count: 3 },
+    reward: { fame: 40, skillBooks: ["book_focused_breath"] },
+    repeatable: false,
+    giverNpcId: "windvale_bard",
+    hidden: true,
+  },
   {
     id: "volcano-heart-hunter",
     regionId: "skyreach",

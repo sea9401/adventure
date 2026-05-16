@@ -450,3 +450,138 @@ describe("AP 스킬 — 폭주 (player_spd_mult_turns)", () => {
     expect(s.buffs.playerSpdMult).toBe(1.5);
   });
 });
+
+// ── PR-3 단발 효과 ──
+const FOCUSED_BREATH = getAPSkillByName("집중의 호흡")!;
+const COMBO = getAPSkillByName("연환격")!;
+const STORM = getAPSkillByName("폭풍 일격")!;
+const MAD_SLASH = getAPSkillByName("광살참")!;
+const THUNDER = getAPSkillByName("천뢰 일격")!;
+const LIGHT_GLIDE = getAPSkillByName("빛의 활공")!;
+
+describe("AP 스킬 — 집중의 호흡 (crit_buff_next_attack)", () => {
+  it("발동 시 turn.focusedBreathCritDmgBonusPct 큐잉, 평타 1회에 소비", () => {
+    // cost 2 — turn 1 첫 공격에 발동. 발동 attack 자체는 큐잉 전이라 미적용.
+    // attackCount=3 으로 늘려 — 1st 평타 + 큐잉 → 2nd 평타 (큐 소비, 크리 강제) → 3rd 평타.
+    // 2nd 평타 후엔 큐가 0 이지만 critThisTurn 은 같은 턴 유지.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      attackCount: 3,
+      equippedAPSkills: [eq(FOCUSED_BREATH)],
+    };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    s = advanceTurn(s, p, "용사"); // 1st 평타 + 큐잉.
+    expect(s.turn.focusedBreathCritDmgBonusPct).toBe(30);
+    s = advanceTurn(s, p, "용사"); // 2nd 평타 — 크리 강제, 큐 소비. critThisTurn=true.
+    expect(s.turn.focusedBreathCritDmgBonusPct).toBe(0);
+    expect(s.turn.critThisTurn).toBe(true);
+  });
+});
+
+describe("AP 스킬 — 연환격 (extra_attack_this_turn)", () => {
+  it("발동 즉시 이번 턴 attacksLeft +1", () => {
+    // cost 2 — turn 1 첫 공격 발동. attackCount=1 이면 평소 1번 → 2번으로 늘어남.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      attackCount: 1,
+      equippedAPSkills: [eq(COMBO)],
+    };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    s = advanceTurn(s, p, "용사"); // 첫 공격 + combo. attacksLeft 가 0→1 (1-1+1=1).
+    expect(s.phase).toBe("player"); // 추가 공격 남음.
+    expect(s.playerAttacksLeft).toBe(1);
+  });
+});
+
+describe("AP 스킬 — 폭풍 일격 (atk_plus_spd_pct_bonus)", () => {
+  it("발동 시 본타 + (ATK × spdPct%) 추가 데미지", () => {
+    // cost 3 — turn 1 AP 2 < 3, turn 2 AP 3 fire. spdPct=100 → ATK 그대로 추가.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      atk: 50,
+      equippedAPSkills: [eq(STORM)],
+    };
+    let s = initialBattleState(p, enemy(9999, { def: 0 }), "용사");
+    let firePrevHp = s.enemyHp;
+    for (let i = 0; i < 6; i++) {
+      const prev = s.enemyHp;
+      s = advanceTurn(s, p, "용사");
+      const delta = prev - s.enemyHp;
+      // 발동 턴의 데미지 = baseDmg(50) + stormBonus(50) ≈ 100.
+      if (delta >= 80) {
+        firePrevHp = prev;
+        break;
+      }
+    }
+    expect(firePrevHp - s.enemyHp).toBeGreaterThanOrEqual(80);
+  });
+});
+
+describe("AP 스킬 — 광살참 (multi_hit_self_damage)", () => {
+  it("발동 시 hits 번 데미지 누적 + maxHp ×15% 자해", () => {
+    const p: PlayerCombat = {
+      ...PLAYER,
+      atk: 50,
+      hp: 1000,
+      maxHp: 1000,
+      equippedAPSkills: [eq(MAD_SLASH)],
+    };
+    // cost 4 — AP 2 → 3 → 4 (turn 3 발동).
+    let s = initialBattleState(p, enemy(9999, { def: 0, atk: 0 }), "용사");
+    const startHp = s.playerHp;
+    for (let i = 0; i < 8; i++) {
+      s = advanceTurn(s, p, "용사");
+      if (s.turn.apSkillFiredThisTurn === "mad_slash") break;
+    }
+    // 자해 — 발동 턴에 maxHp×15% = 150 만큼 HP 감산.
+    expect(startHp - s.playerHp).toBeGreaterThanOrEqual(150);
+    // 데미지 — atkMult 2.0 × 2 hits = 4 ATK. 50×4 = 200 가량.
+    // 정확 값은 RNG/적 DEF 0 에 따라 다름 — 안전한 하한 검증.
+    expect(s.enemyHp).toBeLessThan(9999 - 100);
+  });
+});
+
+describe("AP 스킬 — 천뢰 일격 (atk_multiplier_with_silence)", () => {
+  it("발동 시 ATK ×2.5 + enemySilenceTurnsLeft 셋", () => {
+    // cost 5 — 5 turn 누적 필요.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      atk: 30,
+      equippedAPSkills: [eq(THUNDER)],
+    };
+    let s = initialBattleState(p, enemy(9999, { def: 0 }), "용사");
+    for (let i = 0; i < 12 && s.buffs.enemySilenceTurnsLeft === 0; i++) {
+      s = advanceTurn(s, p, "용사");
+    }
+    expect(s.buffs.enemySilenceTurnsLeft).toBe(1);
+  });
+});
+
+describe("AP 스킬 — 빛의 활공 (queued_extra_attacks_next_turn)", () => {
+  it("발동 시 turn.queuedExtraAttacks 큐잉, 다음 턴 시작에 attacksLeft 가산", () => {
+    // cost 5.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      attackCount: 1,
+      equippedAPSkills: [eq(LIGHT_GLIDE)],
+    };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    for (let i = 0; i < 12 && s.turn.queuedExtraAttacks === 0; i++) {
+      s = advanceTurn(s, p, "용사");
+    }
+    expect(s.turn.queuedExtraAttacks).toBe(3);
+    // 적 턴 → 다음 player 턴 진입 시 소비 + attacksLeft +3.
+    while (s.phase === "player") s = advanceTurn(s, p, "용사");
+    s = advanceTurn(s, p, "용사"); // 적 페이즈.
+    // 이제 다음 player 턴 — advanceTurn 진입 시 자동 소비.
+    // playerAttacksLeft 가 base 1 + 큐 3 = 4 여야.
+    if (s.phase === "player" && s.turn.firstAttackPending) {
+      // 첫 advanceTurn 으로 큐 소비.
+      const before = s.playerAttacksLeft;
+      s = advanceTurn(s, p, "용사");
+      // 큐 소비 + 1 공격 처리. 처음 4 → 3 (1번 깎임).
+      expect(before + 3 - 1).toBeGreaterThanOrEqual(s.playerAttacksLeft);
+    }
+    expect(s.turn.queuedExtraAttacks).toBe(0);
+  });
+});

@@ -392,6 +392,7 @@ function Home() {
         addKill: adventureLog.addKill,
         markTitleObtained: grantTitle,
         incrementBattleLosses: adventureLog.incrementBattleLosses,
+        incrementNoDamageWin: adventureLog.incrementNoDamageWin,
       },
       quests: { recordKill: quests.recordKill },
       crafting: {
@@ -406,6 +407,9 @@ function Home() {
       storyFlags: { set: storyFlags.set, has: storyFlags.has },
       bossKillsTotal,
       totalKillsTotal: totalMonsterKills,
+      noDamageWinsTotal: adventureLog.log.noDamageWins ?? 0,
+      peakGiantKillsTotal:
+        adventureLog.log.monsters["운봉의 거인"]?.kills ?? 0,
       vit: character.stats.vit,
       luk: character.stats.luk,
       playerLevel: character.level,
