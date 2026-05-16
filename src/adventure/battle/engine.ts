@@ -2170,6 +2170,11 @@ export function resolveBattle(
   const potions: Partial<Record<PotionId, number>> = { ...ctx.potions };
   const consumed: Partial<Record<PotionId, number>> = {};
   let state = initialBattleState(player, enemy, playerName);
+  // 선공자 캐시 — 사이클(1턴) 정의가 선공자에 따라 달라진다.
+  //   - 플레이어 선공: 사이클 = [player phase → enemy phase] — enemy→player 전환이 사이클 끝.
+  //   - 적 선공:      사이클 = [enemy phase → player phase]  — player→enemy 전환이 사이클 끝.
+  // 마커는 사이클 끝 시점에 다음 사이클 번호를 박는다 (단, 첫 사이클의 "1턴" 마커는 루프 진입 전 이미 박힘).
+  const playerFirstStrike = state.phase === "player";
   // 턴 마커 — 그 턴 시작 시점 AP 동봉. 미장착 캐릭터도 그대로 노출 (시스템 발견용).
   const turnMarkerText = (turnNo: number, ap: number): string =>
     `${turnNo}턴 · AP ${ap}`;
@@ -2230,15 +2235,16 @@ export function resolveBattle(
       );
       state = { ...state, log: tagged };
     }
-    // enemy → player 전환 시 새 턴 marker 박기 (다음 턴이 시작됨을 시각화).
-    // 단, completedPlayerTurns === 0 인 경우는 적 선공의 첫 페이즈 직후이므로
-    // 루프 진입 직전에 박아둔 "1턴" 마커와 중복됨 — 건너뛴다.
-    // 마커 직전에 방금 끝난 턴의 HP 스냅샷도 박는다 (해당 턴 로그의 마지막 줄).
-    if (
-      prevPhase === "enemy" &&
-      state.phase === "player" &&
-      state.turn.completedPlayerTurns > 0
-    ) {
+    // 사이클 종료 시점 — 다음 사이클 시작 직전에 턴 marker 박기 (방금 끝난 턴의
+    // HP 스냅샷도 함께). completedPlayerTurns 는 player phase 종료마다 +1 되므로
+    // 두 케이스 모두 turnNo = completedPlayerTurns + 1 로 일관.
+    //   - 플레이어 선공: enemy→player 전환 (사이클 = 내+적)
+    //   - 적 선공:      player→enemy 전환 (사이클 = 적+내)
+    // 첫 사이클의 "1턴" 마커는 루프 진입 전 이미 박혔으므로 completedPlayerTurns > 0 으로 건너뛴다.
+    const cycleEnded = playerFirstStrike
+      ? prevPhase === "enemy" && state.phase === "player"
+      : prevPhase === "player" && state.phase === "enemy";
+    if (cycleEnded && state.turn.completedPlayerTurns > 0) {
       const turnNo = state.turn.completedPlayerTurns + 1;
       state = {
         ...state,
