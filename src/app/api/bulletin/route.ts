@@ -1,6 +1,6 @@
-import { and, desc, eq, ilike, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { bulletinPosts } from "@/db/schema";
+import { bulletinComments, bulletinLikes, bulletinPosts } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { resolveActor } from "@/lib/server/resolveActor";
 import { isCurrentUserAdmin } from "@/lib/server/isAdmin";
@@ -17,6 +17,7 @@ import {
 // GET /api/bulletin?category=<cat>&q=<search>
 //   category 미지정 — 전체 (탭 "전체" 용도, 클라가 안 쓰면 그대로 둠)
 //   q — title/content 부분일치(ILIKE %q%). 짧은 입력은 클라에서 막아도 됨.
+// 응답 — like/comment 카운트와 likedByMe 를 서브쿼리로 동봉 (N+1 회피).
 export async function GET(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
@@ -48,6 +49,8 @@ export async function GET(req: Request) {
         ? filters[0]
         : and(...filters);
 
+  // 서브쿼리 — 글마다 likes/comments 카운트와 본인 좋아요 여부. drizzle 의 sql 템플릿으로 표현.
+  // sql<number>`COUNT(*)::int` — PG 가 bigint 으로 돌려주는 걸 int 로 캐스팅해 JS Number 로 받음.
   const rows = await db
     .select({
       id: bulletinPosts.id,
@@ -58,6 +61,9 @@ export async function GET(req: Request) {
       content: bulletinPosts.content,
       createdAt: bulletinPosts.createdAt,
       mine: bulletinPosts.userId,
+      likeCount: sql<number>`(SELECT COUNT(*)::int FROM ${bulletinLikes} WHERE ${bulletinLikes.postId} = ${bulletinPosts.id})`,
+      commentCount: sql<number>`(SELECT COUNT(*)::int FROM ${bulletinComments} WHERE ${bulletinComments.postId} = ${bulletinPosts.id})`,
+      likedByMe: sql<boolean>`EXISTS(SELECT 1 FROM ${bulletinLikes} WHERE ${bulletinLikes.postId} = ${bulletinPosts.id} AND ${bulletinLikes.userId} = ${userId})`,
     })
     .from(bulletinPosts)
     .where(where)
@@ -73,6 +79,9 @@ export async function GET(req: Request) {
     content: r.content,
     createdAt: r.createdAt.getTime(),
     mine: r.mine === userId,
+    likeCount: r.likeCount,
+    commentCount: r.commentCount,
+    likedByMe: r.likedByMe,
   }));
 
   return Response.json(result);
@@ -157,6 +166,9 @@ export async function POST(req: Request) {
     content,
     createdAt: inserted.createdAt.getTime(),
     mine: true,
+    likeCount: 0,
+    commentCount: 0,
+    likedByMe: false,
   });
 }
 

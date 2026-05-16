@@ -147,6 +147,49 @@ export const bulletinPosts = pgTable(
   ],
 );
 
+// 게시판 좋아요 — (postId, userId) composite PK 로 1유저 1좋아요 강제.
+// 글 삭제 시 cascade. 카운트는 매 조회마다 COUNT 집계 (글당 평균 likes 가 적어 OK).
+export const bulletinLikes = pgTable(
+  "bulletin_likes",
+  {
+    postId: integer("post_id")
+      .notNull()
+      .references(() => bulletinPosts.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.postId, t.userId] }),
+    // 카운트/조회 — postId 만으로도 충분, composite PK 의 왼쪽 컬럼이라 별도 인덱스 생략 가능.
+  ],
+);
+
+// 게시판 댓글 — name/className 스냅샷, 글 삭제 시 cascade.
+export const bulletinComments = pgTable(
+  "bulletin_comments",
+  {
+    id: serial("id").primaryKey(),
+    postId: integer("post_id")
+      .notNull()
+      .references(() => bulletinPosts.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    className: text("class_name").notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    // 댓글 펼침 시 (postId, createdAt ASC) 정렬.
+    index("bulletin_comments_post_created_at_idx").on(t.postId, t.createdAt),
+    // rate-limit 조회 — userId 마지막 댓글.
+    index("bulletin_comments_user_created_at_idx").on(t.userId, t.createdAt),
+  ],
+);
+
 // 글로벌 채팅 메시지. 3일 후 cron 으로 일괄 삭제.
 // name/className/title 은 전송 시점 스냅샷 — 이후 사용자가 바뀌어도 과거 메시지는 그대로.
 // title 은 미장착 시 NULL.
