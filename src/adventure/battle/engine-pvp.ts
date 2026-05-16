@@ -54,6 +54,7 @@ import {
   POWER_ATTACK_TURN_INTERVAL,
   RAMPAGE_START_TURN,
 } from "../character/skills";
+import { AP_BATTLE_START, AP_CAP } from "../character/apSkills";
 
 // ── 타입 정의 ───────────────────────────────────────────────────────────────
 
@@ -99,6 +100,9 @@ export type PvPSide = {
   // 시작 시 attacksLeft 에 더해지고 0 으로 리셋. PvE 의 enemy phase 내 직접 가산을
   // PvP 에선 페이즈 분리 때문에 별도 슬롯이 필요.
   nextTurnAttackBonus: number;
+  // AP 스킬 자원 — 매 공격 행동(명중/회피 무관) +1, cap=AP_CAP. 스킬 발동 시 cost 차감.
+  // equippedAPSkills 미장착이면 0 으로 두고 회복/소비 노옵. PvE engine.ts:138 미러.
+  ap: number;
   turn: BattleTurnState;
   flags: PvPSideFlags;
   buffs: PvPSideBuffs;
@@ -172,6 +176,7 @@ function buildSide(player: PlayerCombat, name: string): PvPSide {
     maxHp: player.maxHp,
     attacksLeft: 0, // initialBattleStatePvP 에서 선공 측만 채움
     nextTurnAttackBonus: 0,
+    ap: (player.equippedAPSkills?.length ?? 0) > 0 ? AP_BATTLE_START : 0,
     turn: {
       completedPlayerTurns: 0,
       enemyPhasesCompleted: 0,
@@ -183,6 +188,7 @@ function buildSide(player: PlayerCombat, name: string): PvPSide {
       riposteUsedThisTurn: false,
       weakpointUsedThisTurn: false,
       fatedChainTriggeredThisTurn: false,
+      apSkillFiredThisTurn: null,
     },
     flags: {
       enduranceTriggered: false,
@@ -468,6 +474,13 @@ function applyDodgeEffects(
   return st;
 }
 
+// 회피된 attacker 의 AP +1 (행동 시도는 명중/회피 무관히 +1). engine.ts:687 미러.
+// equippedAPSkills 없으면 ap=0 유지로 무해. 회피 시 apSkillFires 는 발동/소비 안 함.
+function bumpAttackerAp(state: PvPBattleState, atkKey: "p1" | "p2"): PvPBattleState {
+  const a = state[atkKey];
+  return setSide(state, atkKey, { ...a, ap: Math.min(AP_CAP, a.ap + 1) });
+}
+
 // shadowStep dodge — 한 페이즈 통째로 회피 + dodge 효과 + 페이즈 종료.
 function applyShadowStepDodge(
   state: PvPBattleState,
@@ -476,7 +489,7 @@ function applyShadowStepDodge(
 ): PvPBattleState {
   const defender = state[defKey];
   const dodged = applyDodgeEffects(
-    state,
+    bumpAttackerAp(state, atkKey),
     atkKey,
     defKey,
     `[그림자 보법] ${defender.name}이(가) 모든 공격을 그림자처럼 흘려보냈다!`,
@@ -494,7 +507,13 @@ function applyPerAttackDodge(
   logText: string,
   consumeEvade: boolean,
 ): PvPBattleState {
-  const dodged = applyDodgeEffects(state, atkKey, defKey, logText, consumeEvade);
+  const dodged = applyDodgeEffects(
+    bumpAttackerAp(state, atkKey),
+    atkKey,
+    defKey,
+    logText,
+    consumeEvade,
+  );
   if (dodged.phase === "ended") return dodged;
   const attacker = dodged[atkKey];
   const newAttacksLeft = attacker.attacksLeft - 1;
@@ -728,6 +747,26 @@ export function advanceTurnPvP(
       ? attacker.player.powerAttackBonus!
       : 0;
 
+  // AP 스킬 — 그 턴 첫 공격일 때만 슬롯 순서로 cost<=AP 인 첫 1개 발동. 한 턴 1개 정책.
+  // engine.ts:651-669 의 PvP 미러 (atkMult/ignoresDef/ignoresEvasion). 강공격과 동시 발동 가능.
+  const apSkillFires =
+    isFirstAttackOfTurn &&
+    attacker.turn.apSkillFiredThisTurn === null &&
+    (attacker.player.equippedAPSkills?.length ?? 0) > 0
+      ? attacker.player.equippedAPSkills!.find((s) => s.apCost <= attacker.ap) ??
+        null
+      : null;
+  const apAtkMult =
+    apSkillFires?.effect.kind === "atk_multiplier"
+      ? apSkillFires.effect.atkMult
+      : 1;
+  const apIgnoresDef =
+    apSkillFires?.effect.kind === "atk_multiplier" &&
+    apSkillFires.effect.ignoresDef === true;
+  const apIgnoresEvasion =
+    apSkillFires?.effect.kind === "atk_multiplier" &&
+    apSkillFires.effect.ignoresEvasion === true;
+
   // ── 방어자 dodge cascade ──────────────────────────────────────────────────
   // 1. 그림자 보법 — 페이즈 첫 공격(firstAttackPending) 시 한 번만 굴려, 발동하면 페이즈 통째 회피.
   // 2. 회피 강화 (evadesRemaining) — 잔량 > 0 이면 우선 1 소비, 이 공격 회피.
@@ -735,50 +774,53 @@ export function advanceTurnPvP(
   // 4. 행운의 방패 (luckyShieldBlockPct) — 위 모두 실패 시 마지막 확률 굴림.
   // 어느 단계든 회피 시 dodge effects(곡예/무한 가시/반사 회피/반격/유격) 적용.
 
-  if (isFirstAttackOfTurn) {
-    const shadowStepPct = defender.player.shadowStepPct ?? 0;
-    if (shadowStepPct > 0 && Math.random() * 100 < shadowStepPct) {
-      return applyShadowStepDodge(state, atkKey, defKey);
+  // AP 스킬의 ignoresEvasion = true (천살 등) 면 회피 cascade 전체 스킵.
+  if (!apIgnoresEvasion) {
+    if (isFirstAttackOfTurn) {
+      const shadowStepPct = defender.player.shadowStepPct ?? 0;
+      if (shadowStepPct > 0 && Math.random() * 100 < shadowStepPct) {
+        return applyShadowStepDodge(state, atkKey, defKey);
+      }
     }
-  }
-  if (defender.stacks.evadesRemaining > 0) {
-    return applyPerAttackDodge(
-      state,
-      atkKey,
-      defKey,
-      `[회피 강화] ${defender.name}이(가) 공격을 회피했다.`,
-      true,
-    );
-  }
-  const precisionMult = attacker.player.precisionEvasionMult ?? 1;
-  // 이중 행운 — 방어자 활성 시 회피 +bonus%. 만물 행운 / 회전 운기도 회피에 합산.
-  const luckEvadeBonus = defender.flags.luckyBuffActive
-    ? defender.player.doubleLuck?.evade ?? 0
-    : 0;
-  const universalLuckEvadeBonus = defender.player.universalLuckBonusPct ?? 0;
-  const effectiveEvadePct =
-    defender.player.evasionPct * precisionMult +
-    luckEvadeBonus +
-    universalLuckEvadeBonus +
-    defender.buffs.cyclingChiBonus;
-  if (effectiveEvadePct > 0 && Math.random() * 100 < effectiveEvadePct) {
-    return applyPerAttackDodge(
-      state,
-      atkKey,
-      defKey,
-      `${defender.name}이(가) ${attacker.name}의 공격을 회피했다.`,
-      false,
-    );
-  }
-  const luckyShieldPct = defender.player.luckyShieldBlockPct ?? 0;
-  if (luckyShieldPct > 0 && Math.random() * 100 < luckyShieldPct) {
-    return applyPerAttackDodge(
-      state,
-      atkKey,
-      defKey,
-      `[행운의 방패] ${defender.name}이(가) 공격을 흘려보냈다.`,
-      false,
-    );
+    if (defender.stacks.evadesRemaining > 0) {
+      return applyPerAttackDodge(
+        state,
+        atkKey,
+        defKey,
+        `[회피 강화] ${defender.name}이(가) 공격을 회피했다.`,
+        true,
+      );
+    }
+    const precisionMult = attacker.player.precisionEvasionMult ?? 1;
+    // 이중 행운 — 방어자 활성 시 회피 +bonus%. 만물 행운 / 회전 운기도 회피에 합산.
+    const luckEvadeBonus = defender.flags.luckyBuffActive
+      ? defender.player.doubleLuck?.evade ?? 0
+      : 0;
+    const universalLuckEvadeBonus = defender.player.universalLuckBonusPct ?? 0;
+    const effectiveEvadePct =
+      defender.player.evasionPct * precisionMult +
+      luckEvadeBonus +
+      universalLuckEvadeBonus +
+      defender.buffs.cyclingChiBonus;
+    if (effectiveEvadePct > 0 && Math.random() * 100 < effectiveEvadePct) {
+      return applyPerAttackDodge(
+        state,
+        atkKey,
+        defKey,
+        `${defender.name}이(가) ${attacker.name}의 공격을 회피했다.`,
+        false,
+      );
+    }
+    const luckyShieldPct = defender.player.luckyShieldBlockPct ?? 0;
+    if (luckyShieldPct > 0 && Math.random() * 100 < luckyShieldPct) {
+      return applyPerAttackDodge(
+        state,
+        atkKey,
+        defKey,
+        `[행운의 방패] ${defender.name}이(가) 공격을 흘려보냈다.`,
+        false,
+      );
+    }
   }
 
   // 암살 (특기) — 전투 첫 공격 시 1회, DEF 무시 + 데미지 배수.
@@ -793,7 +835,7 @@ export function advanceTurnPvP(
   const crushReduction = attacker.player.crushDefReduction ?? 0;
   const baseDef = attackerFacingDef(attacker, defender);
   const targetDef =
-    assassinFires || weakpointDefIgnore
+    assassinFires || weakpointDefIgnore || apIgnoresDef
       ? 0
       : powerBonus > 0 && crushReduction > 0
         ? Math.max(0, baseDef - crushReduction)
@@ -866,7 +908,12 @@ export function advanceTurnPvP(
     0,
     baseAtkValue - defender.buffs.opponentAtkPenalty,
   );
-  const baseDmg = damageBetween(baseAtkWithAnalysis, targetDef);
+  // AP 스킬의 atk_multiplier 는 모든 ATK 합산 후 곱 (engine.ts:788-794 미러).
+  const atkForDmg =
+    apAtkMult !== 1
+      ? Math.floor(baseAtkWithAnalysis * apAtkMult)
+      : baseAtkWithAnalysis;
+  const baseDmg = damageBetween(atkForDmg, targetDef);
   // 처형 — defender 의 HP 비율이 임계 미만이면 데미지 ×mult.
   const exMult = attacker.player.executionDamageMult ?? 1;
   const exFraction = attacker.player.executionHpFraction ?? 0;
@@ -919,6 +966,7 @@ export function advanceTurnPvP(
   if (enduringStrikeBonus > 0) labels.push("불굴의 일격");
   if (weakpointDefIgnore) labels.push("약점 적중");
   if (fatedChainConsumed) labels.push("연쇄 운명");
+  if (apSkillFires) labels.push(apSkillFires.name);
   const prefix = labels.length > 0 ? `[${labels.join(" + ")}] ` : "";
   // ── 방어자 측 데미지 감산 (가드 → 굳건한 의지 → 철벽 → 불굴 → 흡혈 갑옷) ──
   const guard = defender.player.guard;
@@ -1065,10 +1113,53 @@ export function advanceTurnPvP(
       0,
       attacker.stacks.weakpointDefIgnoreLeft - (weakpointDefIgnore ? 1 : 0),
     ) + weakpointAdd;
+  // ── AP 스킬 명중 시 부가 효과 (engine.ts:937-986 미러) ──────────────────────
+  // 비-atk_multiplier 효과: heal_pct → 자가 회복, apply_bleed → 출혈 스택, add_guaranteed_evades → 보장 회피.
+  // AP 회복 +1(행동 1회 명중) 한 후 cost 차감. 회복 먼저라 ult cost 와 정확히 일치할 때도 발동.
+  const apHealAmount =
+    apSkillFires?.effect.kind === "heal_pct"
+      ? Math.floor((attacker.maxHp * apSkillFires.effect.pct) / 100)
+      : 0;
+  const apBleedAdd =
+    apSkillFires?.effect.kind === "apply_bleed"
+      ? apSkillFires.effect.stacks
+      : 0;
+  const apEvadesAdd =
+    apSkillFires?.effect.kind === "add_guaranteed_evades"
+      ? apSkillFires.effect.count
+      : 0;
+  const attackerHpAfterAPHeal =
+    apHealAmount > 0
+      ? Math.min(attacker.maxHp, newAttackerHp + apHealAmount)
+      : newAttackerHp;
+  const apHealActual = attackerHpAfterAPHeal - newAttackerHp;
+  if (apHealActual > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires!.name}] ${attacker.name}의 HP +${apHealActual}`,
+    });
+  }
+  if (apBleedAdd > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires!.name}] ${defender.name}에게 출혈 +${apBleedAdd}스택`,
+    });
+  }
+  if (apEvadesAdd > 0) {
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires!.name}] 보장 회피 +${apEvadesAdd}`,
+    });
+  }
+  const newApAfter = Math.max(
+    0,
+    Math.min(AP_CAP, attacker.ap + 1) - (apSkillFires?.apCost ?? 0),
+  );
   // 사이드 갱신 — 공격자 + 방어자 (방어자엔 shield/endurance/damageTakenThisCombat 반영).
   const newAttacker: PvPSide = {
     ...attacker,
-    hp: newAttackerHp,
+    hp: attackerHpAfterAPHeal,
+    ap: newApAfter,
     flags: {
       ...attacker.flags,
       assassinateUsed: attacker.flags.assassinateUsed || assassinFires,
@@ -1085,7 +1176,8 @@ export function advanceTurnPvP(
     },
     stacks: {
       ...attacker.stacks,
-      bleedStacksOnOpponent: newBleedOnOpponent,
+      bleedStacksOnOpponent: newBleedOnOpponent + apBleedAdd,
+      evadesRemaining: attacker.stacks.evadesRemaining + apEvadesAdd,
       weakpointDefIgnoreLeft: newWeakpointLeft,
     },
     turn: {
@@ -1095,6 +1187,9 @@ export function advanceTurnPvP(
         attacker.turn.fatedChainTriggeredThisTurn || fatedChainFires,
       weakpointUsedThisTurn:
         attacker.turn.weakpointUsedThisTurn || weakpointFires,
+      apSkillFiredThisTurn: apSkillFires
+        ? apSkillFires.id
+        : attacker.turn.apSkillFiredThisTurn,
     },
   };
   const newDefender: PvPSide = {
@@ -1273,6 +1368,7 @@ function endAttackerPhase(
       galeChainsThisTurn: 0,
       weakpointUsedThisTurn: false,
       fatedChainTriggeredThisTurn: false,
+      apSkillFiredThisTurn: null,
     },
   });
   // 공격자 턴 후처리 (분신/난무/막다른 격노/약점 분석/재생).
