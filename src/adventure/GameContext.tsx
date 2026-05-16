@@ -144,12 +144,6 @@ export type GameCtx = {
     quality?: DropQuality,
   ) => void;
   handleUnequip: (slot: EquipSlot) => void;
-  /** 인벤토리에서 장비 1개 폐기 — 보상 없음(가방 여분 정리용). */
-  handleDiscardFromInventory: (
-    id: ItemId,
-    tier?: CraftTier,
-    quality?: DropQuality,
-  ) => void;
   /** 가방 장비 1개 → 모험의 서 보관함. */
   handleDepositToVault: (
     id: ItemId,

@@ -20,8 +20,9 @@ import type { useCharacterState } from "@/adventure/character/useCharacterState"
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 
-// 장비 장착/해제/폐기 핸들러 묶음. 순수 클라 상태 조작이라 서버 권위 불필요 —
+// 장비 장착/해제 핸들러 묶음. 순수 클라 상태 조작이라 서버 권위 불필요 —
 // consume/setSlot 후 useRemotePatch 가 inventory.v2 / character.v2 를 동기화한다.
+// 잉여 장비 정리는 가방의 폐기가 아니라 대장간 옆 분해실(crafting/disassemble)에서 처리.
 export function useEquipmentActions(deps: {
   inventory: ReturnType<typeof useInventory>;
   characterStateHook: ReturnType<typeof useCharacterState>;
@@ -115,27 +116,6 @@ export function useEquipmentActions(deps: {
     });
   };
 
-  // 인벤토리에서 장비 1개 폐기 — 보상 없음. (장착 중인 장비는 인벤토리 카운트 밖이라
-  // 애초에 폐기 대상이 안 됨 — 가방엔 여분만 보인다.)
-  const handleDiscardFromInventory = (
-    id: ItemId,
-    tier?: CraftTier,
-    quality?: DropQuality,
-  ) => {
-    const isCrafted = tier != null && tier !== 0;
-    const isDropped = !isCrafted && (quality === 1 || quality === 2);
-    const ok = isCrafted
-      ? inventory.consumeCraftedEquipment(id, tier, 1)
-      : isDropped
-        ? inventory.consumeDroppedEquipment(id, quality, 1)
-        : inventory.consumeEquipment(id, 1);
-    if (!ok) return;
-    addNotification(
-      "item",
-      `${equipDisplayName(id, tier, isDropped ? quality : undefined)}을(를) 폐기했다.`,
-    );
-  };
-
   // 가방 → 도감 보관함. inventory.depositToVault 가 atomic 으로 인벤 차감 + vault 증가.
   const handleDepositToVault = (
     id: ItemId,
@@ -171,7 +151,6 @@ export function useEquipmentActions(deps: {
   return {
     handleEquipFromInventory,
     handleUnequip,
-    handleDiscardFromInventory,
     handleDepositToVault,
     handleWithdrawFromVault,
   };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Diamond, Flask, Scroll, Sword, Trash } from "@phosphor-icons/react";
+import { Diamond, Flask, Scroll, Sword } from "@phosphor-icons/react";
 import {
   BONUS_KEYS,
   BONUS_LABELS,
@@ -102,7 +102,6 @@ export function InventoryView({
   learnedAPSkillNames,
   onEquip,
   onUnequip,
-  onDiscard,
   onUseSkillBook,
 }: {
   inventory: InventoryState;
@@ -111,16 +110,12 @@ export function InventoryView({
   learnedAPSkillNames?: ReadonlyArray<string>;
   onEquip?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
   onUnequip?: (slot: EquipSlot) => void;
-  /** 장비 1개 폐기 — 보상 없음(2단계 확인). 미지정이면 폐기 버튼 숨김. */
-  onDiscard?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
   /** 스킬북 사용 — 호출 측이 인벤 소비 + 학습 + 알림 처리. 미지정이면 버튼 숨김. */
   onUseSkillBook?: (id: SkillBookId) => void;
 }) {
   const [tab, setTab] = useState<InvTabKey>("equipment");
   const [equipSlotTab, setEquipSlotTab] = useState<EquipSlot>("weapon");
   const [equipQuery, setEquipQuery] = useState("");
-  // 폐기 2단계 확인 — 현재 "정말 폐기?" 단계인 행의 key.
-  const [confirmKey, setConfirmKey] = useState<string | null>(null);
 
   const ownedEquipment = buildEquipEntries(inventory);
   const ownedMaterials = (Object.keys(MATERIALS) as MaterialId[])
@@ -185,10 +180,7 @@ export function InventoryView({
       <TabBar
         tabs={TABS}
         active={tab}
-        onChange={(k) => {
-          setTab(k);
-          setConfirmKey(null);
-        }}
+        onChange={setTab}
         ariaLabel="가방 탭"
       />
 
@@ -218,10 +210,7 @@ export function InventoryView({
             <TabBar
               tabs={SLOT_TABS}
               active={equipSlotTab}
-              onChange={(k) => {
-                setEquipSlotTab(k);
-                setConfirmKey(null);
-              }}
+              onChange={setEquipSlotTab}
               ariaLabel="장비 슬롯 탭"
               size="sm"
             />
@@ -257,7 +246,6 @@ export function InventoryView({
                         : computeDiff(item, current);
                       const suffix = craftTierSuffix(craftTier);
                       const prefix = dropQualityPrefix(quality).trim();
-                      const confirming = confirmKey === key;
                       return (
                         <li key={key} className={`flex items-start gap-2 ${ROW}`}>
                           <div className="min-w-0 flex-1 space-y-0.5">
@@ -311,50 +299,15 @@ export function InventoryView({
                             </div>
                           </div>
                           <div className="flex shrink-0 items-center gap-1 pt-0.5">
-                            {confirming ? (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    onDiscard?.(id, craftTier, quality);
-                                    setConfirmKey(null);
-                                  }}
-                                  className="rounded-md bg-rose-600 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-rose-700"
-                                >
-                                  폐기
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmKey(null)}
-                                  className="rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                                >
-                                  취소
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                {onEquip && (
-                                  <button
-                                    type="button"
-                                    onClick={() => onEquip(id, craftTier, quality)}
-                                    disabled={isEquipped}
-                                    className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                                  >
-                                    {isEquipped ? "장착중" : "장착"}
-                                  </button>
-                                )}
-                                {onDiscard && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setConfirmKey(key)}
-                                    aria-label="폐기"
-                                    title="폐기"
-                                    className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:text-zinc-500 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
-                                  >
-                                    <Trash size={15} weight="bold" />
-                                  </button>
-                                )}
-                              </>
+                            {onEquip && (
+                              <button
+                                type="button"
+                                onClick={() => onEquip(id, craftTier, quality)}
+                                disabled={isEquipped}
+                                className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                              >
+                                {isEquipped ? "장착중" : "장착"}
+                              </button>
                             )}
                           </div>
                         </li>
