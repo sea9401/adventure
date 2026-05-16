@@ -17,13 +17,15 @@ import { TownsTab } from "./tabs/TownsTab";
 import { PlacesTab } from "./tabs/PlacesTab";
 import { EtcTab } from "./tabs/EtcTab";
 import { TitlesTab } from "./tabs/TitlesTab";
+import { StoryTab } from "./tabs/StoryTab";
 import type { TitleCounterValues } from "./tabs/shared";
 
 export type { TitleCounterValues };
 
-type LogTabKey = "places" | "towns" | "items" | "etc" | "titles";
+type LogTabKey = "story" | "places" | "towns" | "items" | "etc" | "titles";
 
 const LOG_TABS: { key: LogTabKey; label: string }[] = [
+  { key: "story", label: "이야기" },
   { key: "places", label: "장소·몬스터" },
   { key: "towns", label: "마을·NPC" },
   { key: "items", label: "아이템" },
@@ -67,7 +69,7 @@ export function AdventureLogView({
   /** 보관함 → 인벤 — vault[id][variantKey] 의 1개를 인벤으로 환원. */
   onWithdrawFromVault?: (id: ItemId, variantKey: string) => void;
 }) {
-  const [tab, setTab] = useState<LogTabKey>("places");
+  const [tab, setTab] = useState<LogTabKey>("story");
 
   return (
     <div className="space-y-3">
@@ -79,6 +81,7 @@ export function AdventureLogView({
         scrollable
       />
 
+      {tab === "story" && <StoryTab />}
       {tab === "places" && <PlacesTab log={log} />}
       {tab === "items" && (
         <ItemsTab
