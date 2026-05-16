@@ -25,6 +25,7 @@ export function TownView({
   renderNpcDialogue,
   initialNpcId,
   onInitialNpcConsumed,
+  hasAvailableQuest,
 }: {
   region: Region;
   onTalkClose?: (npcId: NpcId, regionId: RegionId) => void;
@@ -37,6 +38,8 @@ export function TownView({
   initialNpcId?: string;
   /** initialNpcId 를 한 번 소비했음을 부모에 알림 (state 정리용). */
   onInitialNpcConsumed?: () => void;
+  /** true 면 NPC 아바타에 "!" 뱃지 표시 — 지금 받을 수 있는 의뢰가 있다는 힌트. */
+  hasAvailableQuest?: (npcId: NpcId) => boolean;
 }) {
   const npcs = getNpcsByRegion(region.id);
   const [openNpc, setOpenNpc] = useState<Npc | null>(null);
@@ -81,27 +84,40 @@ export function TownView({
           <div className="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             만날 수 있는 사람
           </div>
-          {npcs.map((npc) => (
-            <button
-              key={npc.id}
-              type="button"
-              onClick={() => setOpenNpc(npc)}
-              className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/90 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/90 dark:hover:bg-zinc-900/80"
-            >
-              <NpcAvatar npc={npc} size={28} />
-              <span className="min-w-0 flex-1">
-                <span className="block text-base font-medium text-zinc-900 dark:text-zinc-100">
-                  {npc.name}
-                  <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
-                    {ROLE_LABEL[npc.role]}
+          {npcs.map((npc) => {
+            const showQuestBadge = hasAvailableQuest?.(npc.id) ?? false;
+            return (
+              <button
+                key={npc.id}
+                type="button"
+                onClick={() => setOpenNpc(npc)}
+                className="flex w-full items-center gap-3 rounded-lg border border-zinc-200 bg-white/90 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/90 dark:hover:bg-zinc-900/80"
+              >
+                <span className="relative shrink-0">
+                  <NpcAvatar npc={npc} size={28} />
+                  {showQuestBadge && (
+                    <span
+                      aria-label="받을 수 있는 의뢰 있음"
+                      className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold leading-none text-zinc-900 ring-2 ring-white dark:ring-zinc-950"
+                    >
+                      !
+                    </span>
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-medium text-zinc-900 dark:text-zinc-100">
+                    {npc.name}
+                    <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                      {ROLE_LABEL[npc.role]}
+                    </span>
+                  </span>
+                  <span className="block truncate text-sm text-zinc-500 dark:text-zinc-400">
+                    {npc.description}
                   </span>
                 </span>
-                <span className="block truncate text-sm text-zinc-500 dark:text-zinc-400">
-                  {npc.description}
-                </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
 

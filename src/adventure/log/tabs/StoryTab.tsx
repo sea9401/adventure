@@ -121,6 +121,13 @@ export function StoryTab() {
                         {style.badgeText}
                       </span>
                     </div>
+                    {status === "completed" && chapter.memory && (
+                      <div className="mt-2 border-t border-zinc-800 pt-2">
+                        <p className="whitespace-pre-line text-xs italic leading-relaxed text-zinc-400">
+                          {chapter.memory}
+                        </p>
+                      </div>
+                    )}
                   </Card>
                 );
               })}
