@@ -368,6 +368,26 @@ export function TownScreen() {
   if (subView === "crafting") {
     return (
       <div className="space-y-3">
+        <TutorialOverlay
+          stepId="tutorial.smithy.intro"
+          title="대장간"
+          body={
+            <>
+              <p>
+                모은 재료로 새 장비를 <b>제작</b> 한다. 제작에는{" "}
+                <b>도면(레시피)</b> 가 필요하다 — NPC 의뢰나 책으로 얻을 수
+                있다.
+              </p>
+              <p>
+                안 쓰는 장비는 <b>분해실</b> 에서 분해해 재료로 되돌릴 수 있다.
+              </p>
+              <p>
+                대장간에서 도와줄 일이 있다면 <b>볼드</b> 가 직접 말을 걸어줄
+                것이다.
+              </p>
+            </>
+          }
+        />
         <SubViewHeader title="대장간" onBack={back} />
         {/* 대장간 옆 분해실 진입 — 같은 SubView 안에 두지 않고 별도 패널로 띄운다. */}
         <div className="flex justify-end">
