@@ -159,13 +159,14 @@ export function onBattleEnd(
       );
     }
     // 길드 버프 — 비어 있으면 모든 곱셈 ×1.0 (no-op).
-    // 룬 EXP/드롭 % 도 길드 버프와 같은 자리에서 곱셈으로 합류.
+    // 룬 EXP/드롭 % 도 같은 자리에서 곱셈으로 합류 — 단, 로그 라벨은 분리해서 표시.
     // 신참 드롭 ×2 도 같은 자리에서 합류 (Lv 30 미만일 때).
     const buffs = deps.guildBuffs ?? [];
+    const guildExpMult = resolveBuffMultiplier(buffs, "exp_mult");
     const runeExpMult = 1 + (deps.runeBonus?.exp_pct ?? 0) / 100;
     const runeDropMult = 1 + (deps.runeBonus?.drop_pct ?? 0) / 100;
     const newbieDropMult = getNewbieDropMultiplier(deps.playerLevel);
-    const expMult = resolveBuffMultiplier(buffs, "exp_mult") * runeExpMult;
+    const expMult = guildExpMult * runeExpMult;
     const dropMult =
       resolveBuffMultiplier(buffs, "drop_mult") * runeDropMult * newbieDropMult;
     const boostedExp = Math.floor(payload.rewards.exp * expMult * XP_RATE_MULT);
@@ -313,12 +314,14 @@ export function onBattleEnd(
         }
       }
     }
+    // 신참/길드/룬 각각의 곱셈을 별도 괄호로 표기 — 어느 출처로 보너스가 왔는지
+    // 유저가 한눈에 알 수 있게. 곱셈 = 1 인 출처는 라벨 자체를 생략.
+    let expParts = "";
+    if (payload.rewards.expBonusApplied) expParts += " (신참 ×2)";
+    if (guildExpMult > 1) expParts += ` (길드 ×${guildExpMult.toFixed(2)})`;
+    if (runeExpMult > 1) expParts += ` (룬 ×${runeExpMult.toFixed(2)})`;
     const reward =
-      payload.rewards.exp > 0
-        ? `EXP +${boostedExp}${
-            payload.rewards.expBonusApplied ? " (신참 ×2)" : ""
-          }${expMult > 1 ? " (길드 ×" + expMult.toFixed(2) + ")" : ""}`
-        : "보상 없음";
+      payload.rewards.exp > 0 ? `EXP +${boostedExp}${expParts}` : "보상 없음";
     deps.addNotification(
       "battle_win",
       `${payload.enemyName}을(를) 쓰러뜨렸다 — ${reward}`,
