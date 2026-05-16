@@ -171,7 +171,7 @@ export function ChatPanel({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex h-[100dvh] w-full max-w-md flex-col bg-white shadow-2xl dark:bg-zinc-950 sm:h-[600px] sm:max-h-[85vh] sm:rounded-lg sm:border sm:border-zinc-200 dark:sm:border-zinc-800"
+        className="flex h-[85dvh] w-full max-w-md flex-col rounded-t-lg border-t border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:h-[600px] sm:max-h-[85vh] sm:rounded-lg sm:border sm:border-zinc-200 dark:sm:border-zinc-800"
       >
         <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
           <div className="flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">

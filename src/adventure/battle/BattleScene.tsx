@@ -215,7 +215,7 @@ export function BattleScene({
 
       <div
         ref={logRef}
-        className="no-scrollbar h-[34rem] overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90"
+        className="no-scrollbar h-[50svh] min-h-[18rem] overflow-y-auto rounded-lg border border-zinc-200 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/90 sm:h-[34rem] sm:min-h-0"
       >
         <BattleLogList entries={state.log} />
       </div>
