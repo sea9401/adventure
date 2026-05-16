@@ -24,7 +24,7 @@ export function QtyStepper({
         type="button"
         onClick={() => setQty((q) => clamp(q - 1))}
         disabled={disabled || qty <= min}
-        className="h-7 w-7 rounded-md border border-zinc-300 text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        className="h-10 w-10 rounded-md border border-zinc-300 text-base text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
         aria-label="수량 감소"
       >
         −
@@ -42,7 +42,7 @@ export function QtyStepper({
         type="button"
         onClick={() => setQty((q) => clamp(q + 1))}
         disabled={disabled || (max !== undefined && qty >= max)}
-        className="h-7 w-7 rounded-md border border-zinc-300 text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        className="h-10 w-10 rounded-md border border-zinc-300 text-base text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
         aria-label="수량 증가"
       >
         +

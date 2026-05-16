@@ -62,7 +62,7 @@ export function ChatItemPicker({
             type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             <X size={16} />
           </button>

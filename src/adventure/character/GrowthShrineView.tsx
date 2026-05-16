@@ -196,7 +196,7 @@ export function GrowthShrineView({
                     onClick={() => onMinus(k)}
                     disabled={!canSub}
                     aria-label={`${STAT_LABELS[k]} 차감`}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                   >
                     <Minus size={14} weight="bold" />
                   </button>
@@ -205,7 +205,7 @@ export function GrowthShrineView({
                     onClick={() => onPlus(k)}
                     disabled={!canAdd}
                     aria-label={`${STAT_LABELS[k]} 단련`}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-emerald-700 bg-emerald-600 text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-emerald-700 bg-emerald-600 text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Plus size={14} weight="bold" />
                   </button>
