@@ -2165,6 +2165,21 @@ export const QUESTS: Quest[] = [
     giverNpcId: "windvale_bard",
     hidden: true,
   },
+  // 카이 — pristine 호수 님프 의뢰 완료 후 풀리는 히든 라인. 요정 가루 ×10 deliver → 잔상.
+  {
+    id: "diola-kai-afterimage",
+    regionId: "diola",
+    title: "닿기 전의 결",
+    description:
+      "노랫소리에 만져지기 전에 — 그게 결이에요. 요정 가루 열 점만 모아 주시면, 새벽 그물에 비친 잔상의 결을 자네 검에 옮겨 줄게요.",
+    requiredLevel: 12,
+    target: { kind: "deliver", materialId: "fairy_dust", count: 10 },
+    reward: { fame: 35, skillBooks: ["book_afterimage"] },
+    repeatable: false,
+    giverNpcId: "diola_fisher",
+    requiresQuestCompleted: "diola-kai-pristine-nymphs",
+    hidden: true,
+  },
   {
     id: "volcano-heart-hunter",
     regionId: "skyreach",

@@ -136,6 +136,8 @@ export type BattleBuffs = {
   enemySpdTurnsLeft: number;
   // 천뢰 일격 (AP) — 적 스킬 봉인 잔여 라운드. > 0 이면 enemy.skill 효과 비활성.
   enemySilenceTurnsLeft: number;
+  // 잔상 (AP) — 적 공격 무효 잔량. > 0 이면 적 페이즈에서 데미지 적용 직전 1회 소비.
+  enemyAttackBlockedCount: number;
 };
 
 // 가변 자원 스택 / 잔량 카운트.
@@ -683,6 +685,7 @@ export function initialBattleState(
       enemySpdMult: 1,
       enemySpdTurnsLeft: 0,
       enemySilenceTurnsLeft: 0,
+      enemyAttackBlockedCount: 0,
     },
     stacks: {
       bleedStacks: 0,
@@ -1214,6 +1217,29 @@ export function advanceTurn(
         kind: "info",
         text: `[${apSkillFires.name}] ${state.enemy.name} ${apSkillFires.effect.silenceTurns}턴간 스킬 봉인`,
       });
+    } else if (apSkillFires?.effect.kind === "cleanse_debuffs") {
+      // 정화 — 플레이어에게 걸린 모든 디버프 제거. 현재는 광기 자신 DEF 페널티만 존재하지만
+      // 미래 확장 대비 player-side debuff 필드 전부 리셋.
+      nextBuffsTimed = {
+        ...nextBuffsTimed,
+        playerDefDebuffPct: 0,
+        playerDefDebuffTurnsLeft: 0,
+      };
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires.name}] ${playerName}의 모든 디버프 해제`,
+      });
+    } else if (apSkillFires?.effect.kind === "block_next_enemy_attack") {
+      // 잔상 — 적의 다음 공격 N회 무효. 적 페이즈에서 데미지 적용 전 1회 소비.
+      nextBuffsTimed = {
+        ...nextBuffsTimed,
+        enemyAttackBlockedCount:
+          nextBuffsTimed.enemyAttackBlockedCount + apSkillFires.effect.count,
+      };
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires.name}] ${state.enemy.name}의 다음 공격 ${apSkillFires.effect.count}회 무효`,
+      });
     }
     // 광살참 (multi_hit_self_damage) — 자해 HP. dmg 적용 후 player HP 에서 추가 감산.
     const madSlashSelfDmg =
@@ -1480,6 +1506,29 @@ export function advanceTurn(
       };
     }
     state = bled;
+  }
+
+  // 잔상 (AP) — 큐가 활성이면 적 공격 전체를 1회 무효. 데미지·반사 모두 스킵, count -1.
+  // 회피·반사 우선순위보다 위에 둠 — "잔상" 은 적이 허를 쳐서 빈 자리만 후려치는 결.
+  if (state.buffs.enemyAttackBlockedCount > 0) {
+    return {
+      ...state,
+      buffs: {
+        ...state.buffs,
+        enemyAttackBlockedCount: state.buffs.enemyAttackBlockedCount - 1,
+      },
+      turn: {
+        ...state.turn,
+        enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+      },
+      playerAttacksLeft:
+        state.playerAttacksLeft + (player.skirmishNextTurnBonus ?? 0),
+      log: appendLog(state.log, {
+        kind: "info",
+        text: `[잔상] ${state.enemy.name}의 공격이 잔상만 베어 갔다.`,
+      }),
+      phase: "player",
+    };
   }
 
   // enemy phase — 그림자 보법 → 보장 회피 → % 회피 → 행운의 방패 → 데미지 (가드 적용) 순.

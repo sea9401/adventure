@@ -557,6 +557,64 @@ describe("AP 스킬 — 천뢰 일격 (atk_multiplier_with_silence)", () => {
   });
 });
 
+// ── PR-4 ──
+const PURIFY = getAPSkillByName("정화")!;
+const AFTERIMAGE = getAPSkillByName("잔상")!;
+
+describe("AP 스킬 — 정화 (cleanse_debuffs)", () => {
+  it("발동 시 playerDefDebuffPct/turnsLeft 리셋 (멱등, 디버프 없어도 OK)", () => {
+    // 정화 cost 1 — 첫 공격에 즉시 발동. AP=2-1+1=2 (cap 안 깎임). 효과 멱등.
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [eq(PURIFY)] };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    s = advanceTurn(s, p, "용사");
+    // 발동 후 AP 가 2 → (2+1-1)=2. 미발동이면 (2+1)=3. ap=2 이면 발동 확인.
+    expect(s.ap).toBe(2);
+    expect(s.buffs.playerDefDebuffPct).toBe(0);
+    expect(s.buffs.playerDefDebuffTurnsLeft).toBe(0);
+  });
+
+  it("디버프 걸린 상태에서 정화 → 0 으로 리셋", () => {
+    // 직접 state 합성 — 광기로 인한 디버프 환경.
+    const p: PlayerCombat = { ...PLAYER, equippedAPSkills: [eq(PURIFY)] };
+    let s = initialBattleState(p, enemy(9999), "용사");
+    s = {
+      ...s,
+      buffs: {
+        ...s.buffs,
+        playerDefDebuffPct: 15,
+        playerDefDebuffTurnsLeft: 3,
+      },
+    };
+    expect(s.buffs.playerDefDebuffPct).toBe(15);
+    s = advanceTurn(s, p, "용사");
+    expect(s.buffs.playerDefDebuffPct).toBe(0);
+    expect(s.buffs.playerDefDebuffTurnsLeft).toBe(0);
+  });
+});
+
+describe("AP 스킬 — 잔상 (block_next_enemy_attack)", () => {
+  it("발동 시 enemyAttackBlockedCount=1, 다음 적 공격은 무효 + count 소비", () => {
+    // 잔상 cost 3 — 시작 AP 2, turn 1 first attack 미발동, turn 2 발동.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      hp: 100,
+      maxHp: 100,
+      def: 0,
+      equippedAPSkills: [eq(AFTERIMAGE)],
+    };
+    let s = initialBattleState(p, enemy(9999, { atk: 30, def: 0 }), "용사");
+    for (let i = 0; i < 6 && s.buffs.enemyAttackBlockedCount === 0; i++) {
+      s = advanceTurn(s, p, "용사");
+    }
+    expect(s.buffs.enemyAttackBlockedCount).toBe(1);
+    const hpBeforeEnemyAttack = s.playerHp;
+    // 적 페이즈 처리 — 잔상이 흡수해야.
+    if (s.phase === "enemy") s = advanceTurn(s, p, "용사");
+    expect(s.playerHp).toBe(hpBeforeEnemyAttack); // 데미지 0.
+    expect(s.buffs.enemyAttackBlockedCount).toBe(0); // 소비됨.
+  });
+});
+
 describe("AP 스킬 — 빛의 활공 (queued_extra_attacks_next_turn)", () => {
   it("발동 시 turn.queuedExtraAttacks 큐잉, 다음 턴 시작에 attacksLeft 가산", () => {
     // cost 5.
