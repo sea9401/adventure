@@ -340,7 +340,6 @@ function Home() {
   const {
     handleEquipFromInventory,
     handleUnequip,
-    handleDiscardFromInventory,
     handleDepositToVault,
     handleWithdrawFromVault,
   } = useEquipmentActions({ inventory, characterStateHook, addNotification });
@@ -497,7 +496,6 @@ function Home() {
     handleSellEquipment,
     handleEquipFromInventory,
     handleUnequip,
-    handleDiscardFromInventory,
     handleDepositToVault,
     handleWithdrawFromVault,
     handleCraft,
