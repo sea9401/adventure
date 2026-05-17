@@ -47,7 +47,7 @@ export function NotificationBell({
         type="button"
         onClick={handleToggle}
         aria-label={`알림${unreadCount > 0 ? ` (${unreadCount}개 새 알림)` : ""}`}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         <Icon size={20} weight="duotone" />
         {unreadCount > 0 && (

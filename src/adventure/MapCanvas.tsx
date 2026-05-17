@@ -333,7 +333,7 @@ export function MapCanvas({
           type="button"
           onClick={() => recenter(INITIAL_ZOOM)}
           aria-label="현재 위치로"
-          className="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-300 bg-white/95 text-zinc-700 shadow-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-white/95 text-zinc-700 shadow-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
           <Crosshair size={16} weight="bold" />
         </button>
@@ -341,7 +341,7 @@ export function MapCanvas({
           type="button"
           onClick={fitAll}
           aria-label="전체 보기"
-          className="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-300 bg-white/95 text-zinc-700 shadow-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-white/95 text-zinc-700 shadow-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
           <ArrowsOut size={16} weight="bold" />
         </button>
@@ -349,7 +349,7 @@ export function MapCanvas({
           type="button"
           onClick={() => zoomBy(1 / 1.25)}
           aria-label="확대"
-          className="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-300 bg-white/95 text-zinc-700 shadow-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-white/95 text-zinc-700 shadow-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
           <Plus size={16} weight="bold" />
         </button>
@@ -357,7 +357,7 @@ export function MapCanvas({
           type="button"
           onClick={() => zoomBy(1.25)}
           aria-label="축소"
-          className="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-300 bg-white/95 text-zinc-700 shadow-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-white/95 text-zinc-700 shadow-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
           <Minus size={16} weight="bold" />
         </button>

@@ -146,7 +146,7 @@ export function ChatButton({
         onClick={() => setOpen(true)}
         aria-label={hasUnreadChat ? "전체 채팅 열기 (새 메시지 있음)" : "전체 채팅 열기"}
         title="전체 채팅"
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         <ChatCircle size={20} weight="duotone" />
         {hasUnreadChat ? (
