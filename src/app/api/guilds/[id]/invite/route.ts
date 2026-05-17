@@ -10,6 +10,7 @@ import {
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { findUserByName } from "@/lib/server/findUserByName";
+import { inboxValues } from "@/lib/server/inboxPayload";
 import {
   GUILD_INVITE_EXPIRES_DAYS,
   GUILD_MAX_MEMBERS,
@@ -129,19 +130,21 @@ export async function POST(
         .returning({ id: guildInvites.id });
       const inviteId = invInsert[0].id;
 
-      await tx.insert(marketplaceInbox).values({
-        userId: target.id,
-        kind: "guild_invite",
-        payload: {
-          invite_id: inviteId,
-          guild_id: guildId,
-          guild_name: guild.name,
-          expires_at: expiresAt.toISOString(),
-        },
-        message: `${guild.name} 길드 초대 (마스터: ${masterName ?? "?"})`,
-        fromUserId: userId,
-        fromName: masterName,
-      });
+      await tx.insert(marketplaceInbox).values(
+        inboxValues({
+          userId: target.id,
+          payload: {
+            kind: "guild_invite",
+            invite_id: inviteId,
+            guild_id: guildId,
+            guild_name: guild.name,
+            expires_at: expiresAt.toISOString(),
+          },
+          message: `${guild.name} 길드 초대 (마스터: ${masterName ?? "?"})`,
+          fromUserId: userId,
+          fromName: masterName,
+        }),
+      );
 
       return {
         ok: true as const,

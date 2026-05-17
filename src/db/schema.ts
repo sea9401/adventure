@@ -10,6 +10,7 @@ import {
   index,
   uniqueIndex,
   boolean,
+  check,
 } from "drizzle-orm/pg-core";
 
 // Auth.js(NextAuth) 와 게임 사용자 1:1 매핑.
@@ -291,17 +292,25 @@ export const marketplaceListings = pgTable(
       .where(sql`${t.status} = 'active'`),
     // 내 등록 목록 / 슬롯 카운트.
     index("listings_seller_idx").on(t.sellerId, t.status, t.createdAt),
+    // grade 는 vault variant 키와 동일 — 잘못된 값(예: 'rare', '+5') 이 들어가지 않도록.
+    check(
+      "listings_grade_valid",
+      sql`${t.grade} IN ('base','c-2','c-1','c1','c2','d1','d2')`,
+    ),
   ],
 );
 
-// 거래 결과 + 유저 간 쪽지 우편함. 사용자가 마을에서 "수령/확인" 누를 때까지 대기.
-// kind: 'sale_proceeds' | 'purchase_item' | 'cancel_return' | 'user_message'
-// payload 형식:
-//   sale_proceeds:  { gold: number }
-//   purchase_item:  { item_kind, item_id, quantity }
-//   cancel_return:  { item_kind, item_id, quantity }
-//   user_message:   { text: string }
-// fromUserId/fromName 은 user_message 전용 — 시스템 발송분은 NULL.
+// 거래 결과 + 유저 간 쪽지 + 길드 알림 우편함. 사용자가 마을에서 "수령/확인" 누를 때까지 대기.
+// kind 와 payload 형식 (정의·검증·빌더는 src/lib/server/inboxPayload.ts):
+//   sale_proceeds:      { gold: number }                                            — 매물 판매 대금
+//   purchase_item:      { item_kind, item_id, grade, quantity }                     — 구매한 아이템 수령
+//   cancel_return:      { item_kind, item_id, grade, quantity }                     — 본인/admin 취소 환불
+//   listing_expired:    { item_kind, item_id, grade, quantity }                     — TTL 유찰 환불
+//   user_message:       { text: string }                                            — 유저 간 쪽지
+//   recipe_gift:        { recipe_id, recipe_name }                                  — 제작서 선물
+//   guild_invite:       { invite_id, guild_id, guild_name, expires_at }             — 길드 초대
+//   guild_quest_reward: { quest_id, quest_name, gold, materials[], items[] }        — 길드 의뢰 보상
+// fromUserId/fromName 은 user_message·recipe_gift·guild_invite 등 사람·길드 발송분 — 시스템 발송은 NULL.
 export const marketplaceInbox = pgTable(
   "marketplace_inbox",
   {

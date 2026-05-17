@@ -6,7 +6,8 @@ import {
   savesKv,
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
-import { MARKETPLACE_FEE_RATE } from "@/lib/server/marketplace";
+import { isItemKind, MARKETPLACE_FEE_RATE } from "@/lib/server/marketplace";
+import { inboxValues } from "@/lib/server/inboxPayload";
 import { upsertSave } from "@/lib/server/savesKv";
 
 const SAVES_CHARACTER = "character.v2";
@@ -112,30 +113,37 @@ export async function POST(req: Request) {
       const sellerGets = listing.price - fee;
 
       const feeNote = fee > 0 ? ` (수수료 ${fee.toLocaleString()} G)` : "";
-      await tx.insert(marketplaceInbox).values({
-        userId: listing.sellerId,
-        kind: "sale_proceeds",
-        payload: { gold: sellerGets },
-        message: `${listing.itemName} 판매 — ${sellerGets.toLocaleString()} G 수령${feeNote}`,
-        listingId: listing.id,
-      });
+      await tx.insert(marketplaceInbox).values(
+        inboxValues({
+          userId: listing.sellerId,
+          payload: { kind: "sale_proceeds", gold: sellerGets },
+          message: `${listing.itemName} 판매 — ${sellerGets.toLocaleString()} G 수령${feeNote}`,
+          listingId: listing.id,
+        }),
+      );
 
+      // listing.itemKind 는 DB 에 적힌 string — 안전한 union 으로 좁힘.
+      if (!isItemKind(listing.itemKind)) {
+        throw new Error(`invalid item_kind in listing: ${listing.itemKind}`);
+      }
       const [buyerInbox] = await tx
         .insert(marketplaceInbox)
-        .values({
-          userId: buyerId,
-          kind: "purchase_item",
-          payload: {
-            item_kind: listing.itemKind,
-            item_id: listing.itemId,
-            grade: listing.grade,
-            quantity: listing.quantity,
-          },
-          message: `${listing.itemName}${
-            listing.quantity > 1 ? ` ×${listing.quantity}` : ""
-          } 구매 — 우편함에서 수령`,
-          listingId: listing.id,
-        })
+        .values(
+          inboxValues({
+            userId: buyerId,
+            payload: {
+              kind: "purchase_item",
+              item_kind: listing.itemKind,
+              item_id: listing.itemId,
+              grade: listing.grade,
+              quantity: listing.quantity,
+            },
+            message: `${listing.itemName}${
+              listing.quantity > 1 ? ` ×${listing.quantity}` : ""
+            } 구매 — 우편함에서 수령`,
+            listingId: listing.id,
+          }),
+        )
         .returning({ id: marketplaceInbox.id });
 
       return {

@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace_listings" ADD CONSTRAINT "listings_grade_valid" CHECK ("marketplace_listings"."grade" IN ('base','c-2','c-1','c1','c2','d1','d2'));
