@@ -171,13 +171,13 @@ function QuestCard({
           {(quest.reward.gold ?? 0) > 0 && (
             <span className="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-200">
               <Coins size={14} weight="fill" className="text-yellow-500" />
-              <span className="tabular-nums">{quest.reward.gold}</span>
+              <span className="tabular-nums">{(quest.reward.gold ?? 0).toLocaleString()}</span>
             </span>
           )}
           {(quest.reward.fame ?? 0) > 0 && (
             <span className="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-200">
               <Star size={14} weight="fill" className="text-amber-500" />
-              <span className="tabular-nums">명성 {quest.reward.fame}</span>
+              <span className="tabular-nums">명성 {(quest.reward.fame ?? 0).toLocaleString()}</span>
             </span>
           )}
           {entry.completedCount > 0 && (

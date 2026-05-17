@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Storefront } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { TabBar } from "@/components/ui/TabBar";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
@@ -175,13 +176,23 @@ export function ListingsView({
 
       {error ? (
         <Card padding="sm">
-          <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
+            <button
+              type="button"
+              onClick={() => void load()}
+              disabled={loading}
+              className="shrink-0 rounded-md border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/30"
+            >
+              {loading ? "재시도 중…" : "다시 시도"}
+            </button>
+          </div>
         </Card>
       ) : null}
 
       {loading && items.length === 0 ? (
         <Card padding="md">
-          <div className="text-sm text-zinc-500">로딩…</div>
+          <Skeleton rows={3} />
         </Card>
       ) : items.length === 0 ? (
         <EmptyState
