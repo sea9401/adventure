@@ -28,7 +28,7 @@ export const STAT_CONVERSIONS: Record<StatKey, string> = {
 // (스킬 실제 활성 임계는 스탯별로 다를 수 있음 — skills.ts 의 STAT_SKILL 참조.)
 export const STAT_SKILL_INFO_THRESHOLD = 5;
 
-// 도감에서 환산 정보를 공개하는 임계값.
+// 도감에서 2차 스킬 정보를 공개하는 임계값. (환산 정보는 항상 공개.)
 export const STAT_REVEAL_THRESHOLD = 15;
 
 // 3차 스킬 정보를 공개하는 임계값. 활성은 35 — gap 5.
