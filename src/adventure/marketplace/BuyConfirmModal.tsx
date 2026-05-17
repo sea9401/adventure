@@ -2,8 +2,27 @@
 
 import { useCallback, useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { craftTierSuffix, type CraftTier } from "@/adventure/data/craftQuality";
+import {
+  dropQualityPrefix,
+  type DropQuality,
+} from "@/adventure/data/dropQuality";
 import type { Listing } from "./types";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+
+// listing.grade → 표시용 prefix/suffix. base 면 둘 다 빈 문자열.
+function gradeAffix(grade: string): { prefix: string; suffix: string } {
+  if (grade === "c-2" || grade === "c-1" || grade === "c1" || grade === "c2") {
+    return { prefix: "", suffix: craftTierSuffix(Number(grade.slice(1)) as CraftTier) };
+  }
+  if (grade === "d1" || grade === "d2") {
+    return {
+      prefix: dropQualityPrefix(Number(grade.slice(1)) as DropQuality),
+      suffix: "",
+    };
+  }
+  return { prefix: "", suffix: "" };
+}
 
 export function BuyConfirmModal({
   listing,
@@ -23,6 +42,10 @@ export function BuyConfirmModal({
   const insufficient = after < 0;
   const isRecipe = listing.itemKind === "recipe";
   const blocked = alreadyKnown === true;
+  const { prefix: gradePrefix, suffix: gradeSuffix } =
+    listing.itemKind === "equip"
+      ? gradeAffix(listing.grade)
+      : { prefix: "", suffix: "" };
   const handleEscape = useCallback(() => {
     if (!busy) onClose();
   }, [busy, onClose]);
@@ -63,7 +86,9 @@ export function BuyConfirmModal({
           <Card padding="sm">
             <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
               {isRecipe ? "📜 " : ""}
+              {gradePrefix}
               {listing.itemName}
+              {gradeSuffix}
               {listing.itemKind === "material" && listing.quantity > 1 ? (
                 <span className="ml-1 text-zinc-500">×{listing.quantity}</span>
               ) : null}

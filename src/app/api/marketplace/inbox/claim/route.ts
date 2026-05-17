@@ -4,9 +4,11 @@ import { marketplaceInbox, savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { upsertSave } from "@/lib/server/savesKv";
 import {
+  addGradedEquip,
   addToCategory,
   getKnownArr,
   getShareableArr,
+  isValidGrade,
   type InventoryShape,
 } from "@/lib/server/marketplace";
 
@@ -17,6 +19,8 @@ const SAVES_CRAFTING = "crafting.v2";
 type AddItem = {
   kind: "equip" | "material" | "skill_book";
   id: string;
+  // equip 만 의미 있음. 다른 kind 는 항상 'base'. 구 페이로드(grade 없음) → 'base' fallback.
+  grade: string;
   quantity: number;
 };
 
@@ -92,6 +96,12 @@ export async function POST(req: Request) {
           const k = payload.item_kind;
           const id = payload.item_id;
           const q = Number(payload.quantity);
+          // grade 미정의/공백/비유효 → 'base' (구 페이로드 + equip 외 kind 호환).
+          const rawGrade = payload.grade;
+          const grade =
+            typeof rawGrade === "string" && isValidGrade(rawGrade)
+              ? rawGrade
+              : "base";
           if (k === "recipe" && typeof id === "string") {
             // purchase_item(recipe) 만 학습. listing_expired(recipe)/cancel_return(recipe)
             // 는 quantity:0 알림이거나 환불 의미 — 학습 X.
@@ -104,7 +114,12 @@ export async function POST(req: Request) {
             Number.isFinite(q) &&
             q > 0
           ) {
-            itemsToAdd.push({ kind: k, id, quantity: q });
+            itemsToAdd.push({
+              kind: k,
+              id,
+              grade: k === "equip" ? grade : "base",
+              quantity: q,
+            });
           }
         } else if (row.kind === "recipe_gift") {
           const id = payload.recipe_id;
@@ -121,7 +136,7 @@ export async function POST(req: Request) {
               const id = (m as { materialId?: unknown }).materialId;
               const q = Number((m as { count?: unknown }).count);
               if (typeof id === "string" && Number.isFinite(q) && q > 0) {
-                itemsToAdd.push({ kind: "material", id, quantity: q });
+                itemsToAdd.push({ kind: "material", id, grade: "base", quantity: q });
               }
             }
           }
@@ -131,7 +146,8 @@ export async function POST(req: Request) {
               const id = (it as { itemId?: unknown }).itemId;
               const q = Number((it as { count?: unknown }).count);
               if (typeof id === "string" && Number.isFinite(q) && q > 0) {
-                itemsToAdd.push({ kind: "equip", id, quantity: q });
+                // 길드 보상 장비는 항상 base 등급 (등급 사본 보상은 현재 없음).
+                itemsToAdd.push({ kind: "equip", id, grade: "base", quantity: q });
               }
             }
           }
@@ -171,16 +187,20 @@ export async function POST(req: Request) {
         const inv = (invRows[0]?.value ?? {}) as InventoryShape;
         let next: InventoryShape = { ...inv };
         for (const it of itemsToAdd) {
-          const categoryKey =
-            it.kind === "equip"
-              ? "equipment"
-              : it.kind === "skill_book"
-                ? "skillBooks"
-                : "materials";
-          next = {
-            ...next,
-            [categoryKey]: addToCategory(next[categoryKey], it.id, it.quantity),
-          };
+          if (it.kind === "equip") {
+            next = addGradedEquip(next, it.id, it.grade, it.quantity);
+          } else {
+            const categoryKey =
+              it.kind === "skill_book" ? "skillBooks" : "materials";
+            next = {
+              ...next,
+              [categoryKey]: addToCategory(
+                next[categoryKey],
+                it.id,
+                it.quantity,
+              ),
+            };
+          }
         }
         await upsertSave(tx, userId, SAVES_INVENTORY, next);
         newInventory = next;

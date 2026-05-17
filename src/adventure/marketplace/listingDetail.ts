@@ -1,10 +1,33 @@
 import { ITEMS, type ItemId } from "@/adventure/data/items";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { POTIONS } from "@/adventure/data/potions";
-import { getRecipeById } from "@/adventure/data/recipes";
-import { craftVarianceSummary } from "@/adventure/data/craftQuality";
+import { getRecipeById, resolveCraftedItem } from "@/adventure/data/recipes";
+import {
+  craftVarianceSummary,
+  type CraftTier,
+} from "@/adventure/data/craftQuality";
+import {
+  applyDropQuality,
+  type DropQuality,
+} from "@/adventure/data/dropQuality";
 import { SKILL_BOOKS, type SkillBookId } from "@/adventure/data/skillBooks";
 import type { Listing } from "./types";
+
+// 등급(craftTier) 가 있으면 recipes 의 variance 까지 반영한 stats. 없으면 dropQuality 적용.
+// 둘 다 없으면 base 그대로.
+function resolveGradedEquip(itemId: ItemId, grade: string) {
+  const base = ITEMS[itemId];
+  if (grade === "c-2" || grade === "c-1" || grade === "c1" || grade === "c2") {
+    const tier = Number(grade.slice(1)) as CraftTier;
+    // recipes 에서 variance 정의 찾기 — 못 찾으면 base 의 dropVariance 라도 사용 (fallback).
+    return resolveCraftedItem(itemId, tier);
+  }
+  if (grade === "d1" || grade === "d2") {
+    return applyDropQuality(base, Number(grade.slice(1)) as DropQuality);
+  }
+  // base — 변동 없음.
+  return base;
+}
 
 // 매물 카드를 클릭하면 펼쳐 보여줄 상세 — 장비 옵션 / 제작서 결과 / 재료 설명.
 export type ListingDetail = {
@@ -22,8 +45,9 @@ export function hasOwn(obj: object, key: string): boolean {
 export function listingDetail(item: Listing): ListingDetail | null {
   if (item.itemKind === "equip") {
     if (!hasOwn(ITEMS, item.itemId)) return null;
-    const def = ITEMS[item.itemId as ItemId];
-    return { lines: [...def.stats], description: def.description };
+    // 등급 사본은 stats 가 다름 — grade 반영해서 표시.
+    const resolved = resolveGradedEquip(item.itemId as ItemId, item.grade);
+    return { lines: [...resolved.stats], description: resolved.description };
   }
   if (item.itemKind === "recipe") {
     const r = getRecipeById(item.itemId);

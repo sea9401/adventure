@@ -261,6 +261,8 @@ export const presence = pgTable(
 // item_kind: 'equip' | 'material' — 인벤토리 카테고리 매핑.
 // item_name/seller_name 은 등록 시점 스냅샷 (이후 닉네임 변경되어도 표시 안정).
 // price 는 정수 골드 (최대 999,999,999 < 2^31 이라 integer 충분).
+// grade: 'base'|'c-2'|'c-1'|'c1'|'c2'|'d1'|'d2' — equip 만 의미 있음 (다른 kind 는 항상 'base').
+//        vault variant 키와 동일 규약. base = equipment[], c±N = craftedEquipment, dN = droppedEquipment.
 export const marketplaceListings = pgTable(
   "marketplace_listings",
   {
@@ -272,6 +274,7 @@ export const marketplaceListings = pgTable(
     itemKind: text("item_kind").notNull(), // 'equip' | 'material'
     itemId: text("item_id").notNull(),
     itemName: text("item_name").notNull(),
+    grade: text("grade").notNull().default("base"),
     quantity: integer("quantity").notNull(),
     price: integer("price").notNull(),
     status: text("status").notNull().default("active"), // 'active'|'sold'|'cancelled'

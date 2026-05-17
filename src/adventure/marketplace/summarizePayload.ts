@@ -1,7 +1,23 @@
 import { ITEMS, type ItemId } from "@/adventure/data/items";
+import { craftTierSuffix, type CraftTier } from "@/adventure/data/craftQuality";
+import { dropQualityPrefix, type DropQuality } from "@/adventure/data/dropQuality";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { getRecipeById } from "@/adventure/data/recipes";
 import type { InboxItem } from "./api";
+
+// payload.grade ("base"|"c±N"|"dN") → "정교한 야구방망이 ⟨고급⟩" 식 풀 라벨.
+// grade 없음/잘못된 값 → baseName 그대로.
+function gradedEquipName(baseName: string, grade: unknown): string {
+  if (typeof grade !== "string" || grade === "base") return baseName;
+  let tier: CraftTier | undefined;
+  let quality: DropQuality | undefined;
+  if (grade === "c-2" || grade === "c-1" || grade === "c1" || grade === "c2") {
+    tier = Number(grade.slice(1)) as CraftTier;
+  } else if (grade === "d1" || grade === "d2") {
+    quality = Number(grade.slice(1)) as DropQuality;
+  }
+  return `${dropQualityPrefix(quality)}${baseName}${craftTierSuffix(tier)}`;
+}
 
 export function summarizePayload(item: InboxItem): string {
   const p = item.payload;
@@ -23,12 +39,13 @@ export function summarizePayload(item: InboxItem): string {
   if (item.kind === "listing_expired") {
     const kind = (p as { item_kind?: unknown }).item_kind;
     const id = (p as { item_id?: unknown }).item_id;
+    const grade = (p as { grade?: unknown }).grade;
     const qty = Number((p as { quantity?: unknown }).quantity ?? 0);
     let name = typeof id === "string" ? id : "?";
     if (kind === "recipe" && typeof id === "string") {
       name = getRecipeById(id)?.name ?? id;
     } else if (kind === "equip" && typeof id === "string") {
-      name = ITEMS[id as ItemId]?.name ?? id;
+      name = gradedEquipName(ITEMS[id as ItemId]?.name ?? id, grade);
     } else if (kind === "material" && typeof id === "string") {
       name = MATERIALS[id as MaterialId]?.name ?? id;
     }
@@ -53,10 +70,11 @@ export function summarizePayload(item: InboxItem): string {
   if (item.kind === "purchase_item" || item.kind === "cancel_return") {
     const kind = (p as { item_kind?: unknown }).item_kind;
     const id = (p as { item_id?: unknown }).item_id;
+    const grade = (p as { grade?: unknown }).grade;
     const qty = Number((p as { quantity?: unknown }).quantity ?? 1);
     let name = typeof id === "string" ? id : "?";
     if (kind === "equip" && typeof id === "string") {
-      name = ITEMS[id as ItemId]?.name ?? id;
+      name = gradedEquipName(ITEMS[id as ItemId]?.name ?? id, grade);
     } else if (kind === "material" && typeof id === "string") {
       name = MATERIALS[id as MaterialId]?.name ?? id;
     } else if (kind === "recipe" && typeof id === "string") {

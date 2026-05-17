@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace_listings" ADD COLUMN "grade" text DEFAULT 'base' NOT NULL;

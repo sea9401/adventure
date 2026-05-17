@@ -10,6 +10,9 @@ export type Listing = {
   itemKind: ItemKind;
   itemId: string;
   itemName: string;
+  // 등급 variant — equip 만 의미. 'base'|'c-2'|'c-1'|'c1'|'c2'|'d1'|'d2'.
+  // vault variant 키와 동일 규약. (server: marketplace_listings.grade, default 'base')
+  grade: string;
   quantity: number;
   price: number;
   createdAt: string;

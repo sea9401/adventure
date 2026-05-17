@@ -13,13 +13,16 @@ import {
   MARKETPLACE_PRICE_MAX,
   MARKETPLACE_PRICE_MIN,
   MARKETPLACE_SLOT_LIMIT,
+  addGradedEquip,
   addToCategory,
   deductFromCategory,
+  deductGradedEquip,
   getItemName,
   getKnownArr,
   getShareableArr,
   isItemKind,
   isTradable,
+  isValidGrade,
   type InventoryShape,
 } from "@/lib/server/marketplace";
 
@@ -96,6 +99,7 @@ async function sweepExpiredListings(): Promise<void> {
           payload: {
             item_kind: listing.itemKind,
             item_id: listing.itemId,
+            grade: listing.grade,
             quantity: listing.itemKind === "recipe" ? 0 : listing.quantity,
           },
           message:
@@ -206,6 +210,7 @@ export async function GET(req: Request) {
       itemKind: r.itemKind,
       itemId: r.itemId,
       itemName: r.itemName,
+      grade: r.grade,
       quantity: r.quantity,
       price: r.price,
       createdAt: r.createdAt.toISOString(),
@@ -225,6 +230,7 @@ export async function POST(req: Request) {
   let body: {
     itemKind?: unknown;
     itemId?: unknown;
+    grade?: unknown;
     quantity?: unknown;
     price?: unknown;
   };
@@ -238,12 +244,18 @@ export async function POST(req: Request) {
   const itemId = body.itemId;
   const quantity = Number(body.quantity);
   const price = Number(body.price);
+  // grade — equip 만 의미 있음. 미지정/equip 외 kind 는 'base'.
+  const rawGrade = typeof body.grade === "string" ? body.grade : "base";
+  const grade = itemKind === "equip" ? rawGrade : "base";
 
   if (typeof itemKind !== "string" || !isItemKind(itemKind)) {
     return new Response("invalid itemKind", { status: 400 });
   }
   if (typeof itemId !== "string" || !itemId) {
     return new Response("invalid itemId", { status: 400 });
+  }
+  if (!isValidGrade(grade)) {
+    return new Response("invalid grade", { status: 400 });
   }
   if (!Number.isInteger(quantity) || quantity < 1) {
     return new Response("invalid quantity", { status: 400 });
@@ -323,18 +335,23 @@ export async function POST(req: Request) {
         const inv = (invRows[0]?.value ?? {}) as InventoryShape;
 
         // inventory.equipment 는 미장착 사본만 카운트 — 동일 ID 가 슬롯에 장착돼 있어도
-        // 인벤 스택과 무관하다. 차감은 deductFromCategory 가 보유 수량 미달 시 차단.
-        const categoryKey =
-          itemKind === "equip"
-            ? "equipment"
-            : itemKind === "skill_book"
-              ? "skillBooks"
-              : "materials";
-        const next = deductFromCategory(inv[categoryKey], itemId, quantity);
-        if (next === null) {
-          return { error: "insufficient", status: 400 as const };
+        // 인벤 스택과 무관하다. equip 은 grade 별로 올바른 카테고리에서 차감.
+        // material / skill_book 은 등급 개념 없음 → 평면 카테고리에서 차감.
+        if (itemKind === "equip") {
+          const next = deductGradedEquip(inv, itemId, grade, quantity);
+          if (next === null) {
+            return { error: "insufficient", status: 400 as const };
+          }
+          nextInv = next;
+        } else {
+          const categoryKey =
+            itemKind === "skill_book" ? "skillBooks" : "materials";
+          const next = deductFromCategory(inv[categoryKey], itemId, quantity);
+          if (next === null) {
+            return { error: "insufficient", status: 400 as const };
+          }
+          nextInv = { ...inv, [categoryKey]: next };
         }
-        nextInv = { ...inv, [categoryKey]: next };
 
         // 인벤토리 업데이트 — upsert (아직 행이 없을 수도).
         await upsertSave(tx, userId, SAVES_INVENTORY, nextInv);
@@ -369,6 +386,7 @@ export async function POST(req: Request) {
           itemKind,
           itemId,
           itemName,
+          grade,
           quantity,
           price,
         })
@@ -388,6 +406,7 @@ export async function POST(req: Request) {
         itemKind: result.listing.itemKind,
         itemId: result.listing.itemId,
         itemName: result.listing.itemName,
+        grade: result.listing.grade,
         quantity: result.listing.quantity,
         price: result.listing.price,
         createdAt: result.listing.createdAt.toISOString(),
@@ -473,9 +492,12 @@ export async function DELETE(req: Request) {
           .where(and(eq(savesKv.userId, userId), eq(savesKv.key, SAVES_INVENTORY)))
           .for("update");
         const inv = (invRows[0]?.value ?? {}) as InventoryShape;
-        const categoryKey = listing.itemKind === "equip" ? "equipment" : "materials";
-        const next = addToCategory(inv[categoryKey], listing.itemId, listing.quantity);
-        nextInv = { ...inv, [categoryKey]: next };
+        if (listing.itemKind === "equip") {
+          nextInv = addGradedEquip(inv, listing.itemId, listing.grade, listing.quantity);
+        } else {
+          const next = addToCategory(inv.materials, listing.itemId, listing.quantity);
+          nextInv = { ...inv, materials: next };
+        }
 
         await upsertSave(tx, userId, SAVES_INVENTORY, nextInv);
       }
@@ -487,6 +509,7 @@ export async function DELETE(req: Request) {
         payload: {
           item_kind: listing.itemKind,
           item_id: listing.itemId,
+          grade: listing.grade,
           quantity: listing.itemKind === "recipe" ? 0 : listing.quantity,
         },
         message:
