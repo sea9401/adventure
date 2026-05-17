@@ -4,9 +4,13 @@
 // battle engine (포션) 에서 등급 magnitude 를 합산해 적용.
 //
 // proc/trigger 류 (반격·흡혈·재생) 는 전투 엔진 hook 필요 → PR-B 에서 추가.
+//
+// 5막 PR-D1 — 1~5 등급 magnitude 너프 + 6등급 신설. 6등급은 토큰 상점에서 안 팔리고
+// 5등급 ×1 + 별빛 조각 ×20 흡수 강화로만 얻는다(runeFusion.ts). RUNE_TOKEN_PRICES[6]=0
+// 은 sentinel — UI/서버가 price===0 가드로 상점 노출/거래 차단.
 
-export type RuneGrade = 1 | 2 | 3 | 4 | 5;
-export const RUNE_GRADES: readonly RuneGrade[] = [1, 2, 3, 4, 5] as const;
+export type RuneGrade = 1 | 2 | 3 | 4 | 5 | 6;
+export const RUNE_GRADES: readonly RuneGrade[] = [1, 2, 3, 4, 5, 6] as const;
 
 // 효과 종류 — 가산 7개 + proc/trigger 3개. 모두 % 단위로 보너스 합산 후 적용.
 // rune.effect 는 ID 가 아닌 효과 카테고리 — 같은 카테고리 룬을 여러 슬롯에 끼면 합산된다.
@@ -46,20 +50,47 @@ export type RuneDef = {
   magnitudeByGrade: Record<RuneGrade, number>;
 };
 
-// 가산형 평탄 — ATK/DEF/HP%, CRIT%
-const FLAT_PCT: Record<RuneGrade, number> = { 1: 2, 2: 4, 3: 6, 4: 8, 5: 10 };
-// 자원형 — EXP/드롭/포션% (단련 포인트 인플레이션 안 건드리도록 약간 더 후함)
-const RESOURCE_PCT: Record<RuneGrade, number> = {
-  1: 5,
-  2: 10,
-  3: 15,
-  4: 20,
-  5: 30,
+// 5막 PR-D1 리밸런스 — 1~5 등급 너프 + 6 신설. 의도된 곡선:
+//  - 5등급 = 구 5등급의 약 60~70% (강한 너프)
+//  - 6등급 = 구 4~5등급 사이 (5막 별빛 조각 흡수 강화로만 얻음)
+//
+// 가산형 평탄 — ATK/DEF/HP%, CRIT%. 구: {2,4,6,8,10} → 새: {1,2,3,5,7,9}.
+const FLAT_PCT: Record<RuneGrade, number> = {
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 5,
+  5: 7,
+  6: 9,
 };
-// proc — 반격/흡혈 발동 빈도. FLAT 보다 살짝 높게 (한 슬롯만으로도 체감 가능하도록).
-const PROC_PCT: Record<RuneGrade, number> = { 1: 3, 2: 6, 3: 9, 4: 12, 5: 15 };
-// 재생 — 전투 후 HP 회복 %. 자동 사냥 휴식 무력화 방지 위해 가장 작게.
-const REGEN_PCT: Record<RuneGrade, number> = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 };
+// 자원형 — EXP/드롭/포션%. 구: {5,10,15,20,30} → 새: {3,6,10,15,20,25}.
+const RESOURCE_PCT: Record<RuneGrade, number> = {
+  1: 3,
+  2: 6,
+  3: 10,
+  4: 15,
+  5: 20,
+  6: 25,
+};
+// proc — 반격/흡혈 발동 빈도. 구: {3,6,9,12,15} → 새: {1,2,4,6,8,12}.
+const PROC_PCT: Record<RuneGrade, number> = {
+  1: 1,
+  2: 2,
+  3: 4,
+  4: 6,
+  5: 8,
+  6: 12,
+};
+// 재생 — 전투 후 HP 회복 %. 자동 사냥 휴식 무력화 방지 위해 가장 작은 수치 유지.
+// 구: {1,2,3,4,5} → 새: {1,1,2,2,3,4}.
+const REGEN_PCT: Record<RuneGrade, number> = {
+  1: 1,
+  2: 1,
+  3: 2,
+  4: 2,
+  5: 3,
+  6: 4,
+};
 
 export const RUNES: Record<RuneId, RuneDef> = {
   rune_attack: {
@@ -160,12 +191,14 @@ export function getRuneMagnitude(id: RuneId, grade: RuneGrade): number {
 // 룬 상점 (PR-C2) — 등급별 고탑 토큰 가격. 합성 비용(×3)과 정합하도록 각 등급 ×3 근사.
 // g1=5, g2=15(=5×3), g3=50(=15×3+5), g4=150(=50×3), g5=500(=150×3+50). 같은 등급의
 // 룬 종류 7가지 모두 동일 가격 — 유저가 빌드에 맞춰 자유롭게 선택하게 한다.
+// 5막 PR-D1 — 6등급은 토큰 상점에서 안 팔린다. 가격 0 = sentinel (UI/서버 가드).
 export const RUNE_TOKEN_PRICES: Record<RuneGrade, number> = {
   1: 5,
   2: 15,
   3: 50,
   4: 150,
   5: 500,
+  6: 0,
 };
 
 export function getRuneTokenPrice(grade: RuneGrade): number {
@@ -177,5 +210,5 @@ export function isRuneId(v: string): v is RuneId {
 }
 
 export function isRuneGrade(n: number): n is RuneGrade {
-  return n === 1 || n === 2 || n === 3 || n === 4 || n === 5;
+  return n === 1 || n === 2 || n === 3 || n === 4 || n === 5 || n === 6;
 }

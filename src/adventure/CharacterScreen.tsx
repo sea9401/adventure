@@ -147,10 +147,21 @@ export function CharacterScreen() {
     const tokenCount = inventory.materialCount("tower_token");
     const handleFuseRune = (id: RuneId, grade: RuneGrade) => {
       const have = inventory.runeCount(id, grade);
-      const plan = planRuneFusion(id, grade, have);
+      const shardCount = inventory.materialCount("starfall_shard");
+      const plan = planRuneFusion(id, grade, have, shardCount);
       if (isFusionError(plan)) {
         if (plan === "max_grade") {
-          addNotification("info", "5등급 룬은 합성할 수 없다.");
+          addNotification("info", "6등급 룬은 합성할 수 없다.");
+        } else if (plan === "insufficient_shard") {
+          addNotification(
+            "info",
+            "5 → 6 강화에 별빛 조각 20개가 필요하다.",
+          );
+        } else if (grade === 5) {
+          addNotification(
+            "info",
+            "5 → 6 강화에 5등급 룬 1개와 별빛 조각 20개가 필요하다.",
+          );
         } else {
           addNotification(
             "info",
@@ -160,10 +171,18 @@ export function CharacterScreen() {
         return;
       }
       if (!inventory.consumeRune(id, grade, plan.consumed)) return;
+      if (plan.extraMaterial) {
+        inventory.consumeMaterial(
+          plan.extraMaterial.id,
+          plan.extraMaterial.count,
+        );
+      }
       inventory.addRune(id, plan.toGrade, plan.produced);
       addNotification(
         "info",
-        `${grade}등급 × ${plan.consumed} → ${plan.toGrade}등급 ×1 합성.`,
+        plan.extraMaterial
+          ? `${grade}등급 ×${plan.consumed} + 별빛 조각 ×${plan.extraMaterial.count} → ${plan.toGrade}등급 ×1 강화.`
+          : `${grade}등급 × ${plan.consumed} → ${plan.toGrade}등급 ×1 합성.`,
       );
     };
     return (
@@ -173,6 +192,7 @@ export function CharacterScreen() {
           equippedRunes={characterStateHook.state.equippedRunes ?? []}
           runeInventory={inventory.state.runes ?? {}}
           tokenCount={tokenCount}
+          shardCount={inventory.materialCount("starfall_shard")}
           onEquip={(slotIndex, rune) =>
             characterStateHook.setEquippedRuneAt(slotIndex, rune)
           }

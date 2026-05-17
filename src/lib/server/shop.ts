@@ -217,6 +217,9 @@ export function computeShopOutcome(
       }
       const grade = Number(rawGrade) as RuneGrade;
       const price = getRuneTokenPrice(grade);
+      // 5막 PR-D1 — 6등급은 토큰 상점에서 안 팔린다 (price 0 sentinel).
+      // 별빛 조각 흡수 강화로만 얻음 (CharacterScreen handleFuseRune).
+      if (price <= 0) throw new ShopError("invalid_grade");
       const cost = price * qty;
       const haveTokens = materials["tower_token"] ?? 0;
       if (haveTokens < cost) throw new ShopError("insufficient_tokens");
