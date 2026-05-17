@@ -16,6 +16,12 @@ const EMPTY_STATE: TowerState = {
   daily: null,
 };
 
+// 마운트 간 캐시 — TowerPage 가 unmount 되면 useState 가 날아가는데, SaveProvider 의
+// initial 은 앱 부팅 시점 스냅샷이라 fight_floor 결과를 반영하지 않는다. 재진입 시 옛
+// 층/upcomingEnemy 가 잠깐 보이는 문제(전 층 몬스터 깜빡임) 회피용.
+// 페이지 새로고침 시엔 비워지고 SaveProvider 의 신규 fetch 로 다시 채워진다.
+let lastSeenState: TowerState | null = null;
+
 export type TowerApiAction =
   | { kind: "start"; startFloor?: number }
   | { kind: "fight_floor" }
@@ -71,7 +77,10 @@ export function useTower(opts?: {
   onApplied?: (response: TowerApiResponse) => void;
 }) {
   const initial = useSavedValue<TowerState>(TOWER_STORAGE_KEY);
-  const [state, setState] = useState<TowerState>(initial ?? EMPTY_STATE);
+  // 마운트 간 캐시 > SaveProvider 초기 스냅샷 > EMPTY. 직전 fight 결과를 보존.
+  const [state, setState] = useState<TowerState>(
+    () => lastSeenState ?? initial ?? EMPTY_STATE,
+  );
   const [pending, setPending] = useState<TowerApiAction["kind"] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const remote = useRemoteSave();
@@ -97,7 +106,10 @@ export function useTower(opts?: {
           setError(data.error ?? "unknown");
           return data;
         }
-        if (data.tower) setState(data.tower);
+        if (data.tower) {
+          setState(data.tower);
+          lastSeenState = data.tower;
+        }
         opts?.onApplied?.(data);
         return data;
       } catch (e) {
