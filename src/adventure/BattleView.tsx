@@ -225,7 +225,9 @@ export function BattleView({
   useEffect(() => {
     if (state !== null) return;
     if (!huntingActive) return;
-    if (autoHunt.isDispatched) return; // 위탁 사냥 중엔 라이브 자동전투 시작 안 함
+    // 위탁 사냥 중엔 라이브 자동전투 시작 안 함. busy(dispatch 진행 중) 까지 막아야
+    // "자동 사냥 보내기" 누른 직후 라이브 사냥을 연타로 끼워넣는 레이스를 차단.
+    if (autoHunt.isDispatched || autoHunt.busy) return;
     if (player.hp <= 0) return;
     if (region.enemies.length === 0) return;
     if (bossModeRef.current) return; // 보스 전투 직후 자동 다음 적 시작 차단
@@ -240,7 +242,7 @@ export function BattleView({
     return () => clearTimeout(id);
     // startWithLog 는 setter — deps 제외.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, huntingActive, autoHunt.isDispatched, player.hp, region]);
+  }, [state, huntingActive, autoHunt.isDispatched, autoHunt.busy, player.hp, region]);
 
   // 1) 전투 외 — 진입 화면
   if (!state) {
@@ -293,10 +295,12 @@ export function BattleView({
                 )}
                 <button
                   type="button"
-                  disabled={!canBoss || autoHunt.isDispatched}
+                  disabled={!canBoss || autoHunt.isDispatched || autoHunt.busy}
                   onClick={() => {
                     if (!bossMonster) return;
-                    if (autoHunt.isDispatched) return;
+                    // busy(dispatch 진행 중) 도 막아야 "자동 사냥 보내기" 직후 보스 도전을
+                    // 연타로 끼워넣는 레이스를 차단.
+                    if (autoHunt.isDispatched || autoHunt.busy) return;
                     // 한도 안: 카운터 소비 + 정상 보상. 한도 초과: 소비 스킵 + noReward 표시.
                     if (bossOverLimit) {
                       bossNoRewardRef.current = true;
@@ -311,13 +315,15 @@ export function BattleView({
                   }}
                   className="mt-3 w-full rounded-md border border-rose-700 bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {autoHunt.isDispatched
-                    ? "자동 사냥 중 — 보스 도전 불가"
-                    : player.hp <= 0
-                      ? "회복 필요"
-                      : bossOverLimit
-                        ? "보스 도전 (연습 — 보상 없음)"
-                        : `보스 도전 (남은 ${attemptsLeft}/${dailyLimit})`}
+                  {autoHunt.busy
+                    ? "자동 사냥 보내는 중…"
+                    : autoHunt.isDispatched
+                      ? "자동 사냥 중 — 보스 도전 불가"
+                      : player.hp <= 0
+                        ? "회복 필요"
+                        : bossOverLimit
+                          ? "보스 도전 (연습 — 보상 없음)"
+                          : `보스 도전 (남은 ${attemptsLeft}/${dailyLimit})`}
                 </button>
               </Card>
               {/* 자동 포션 룰 — 도전 버튼 직전에 점검할 수 있게 보스 카드 바로 아래에 노출.
@@ -339,11 +345,14 @@ export function BattleView({
             <button
               type="button"
               onClick={() => {
-                if (autoHunt.isDispatched) return;
+                // busy(dispatch 진행 중) 도 막아야 "자동 사냥 보내기" 직후 라이브 사냥을
+                // 연타로 시작하는 레이스를 차단. isDispatched 는 서버 응답 후에 true 가
+                // 되므로 그 사이 갭을 busy 가 메운다.
+                if (autoHunt.isDispatched || autoHunt.busy) return;
                 onToggleHunting(!huntingActive);
               }}
               aria-pressed={huntingActive}
-              disabled={player.hp <= 0 || autoHunt.isDispatched}
+              disabled={player.hp <= 0 || autoHunt.isDispatched || autoHunt.busy}
               className={`w-full rounded-md border px-3 py-3 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 huntingActive
                   ? "border-rose-500 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:border-rose-400 dark:text-rose-300"
@@ -359,13 +368,15 @@ export function BattleView({
                       : "bg-white/90"
                   }`}
                 />
-                {autoHunt.isDispatched
-                  ? "자동 사냥 중 — 라이브 사냥 불가"
-                  : player.hp <= 0
-                    ? "회복 필요"
-                    : huntingActive
-                      ? "사냥 정지"
-                      : "사냥 시작"}
+                {autoHunt.busy
+                  ? "자동 사냥 보내는 중…"
+                  : autoHunt.isDispatched
+                    ? "자동 사냥 중 — 라이브 사냥 불가"
+                    : player.hp <= 0
+                      ? "회복 필요"
+                      : huntingActive
+                        ? "사냥 정지"
+                        : "사냥 시작"}
               </span>
             </button>
             <p className="-mt-1 px-1 text-[11px] text-zinc-500 dark:text-zinc-400">
