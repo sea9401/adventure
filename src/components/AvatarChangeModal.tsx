@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import {
   AvatarPicker,
@@ -13,6 +13,7 @@ import {
 } from "@/adventure/profile/avatars";
 import { useProfile } from "@/adventure/profile/useProfile";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 
 // 현재 gender 가 어느 카테고리에 속하는지 — 모달 열 때 초기 탭 결정용.
 function categoryOf(id: Avatar): AvatarCategory {
@@ -31,6 +32,8 @@ export function AvatarChangeModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
 
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
 
   const changed = selected !== initial;
   const canSave = changed && !submitting;
@@ -67,6 +70,7 @@ export function AvatarChangeModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
       >

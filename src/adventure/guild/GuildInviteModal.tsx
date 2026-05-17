@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 import { GuildError, inviteToGuild } from "./api";
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
 
 export function GuildInviteModal({ guildId, onClose, onSuccess }: Props) {
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -43,15 +46,20 @@ export function GuildInviteModal({ guildId, onClose, onSuccess }: Props) {
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="guild-invite-title"
       onClick={onClose}
       className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center"
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
       >
         <div className="flex items-start justify-between">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          <h2
+            id="guild-invite-title"
+            className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+          >
             멤버 초대
           </h2>
           <button
@@ -75,7 +83,11 @@ export function GuildInviteModal({ guildId, onClose, onSuccess }: Props) {
           }}
           className="mt-3 space-y-3"
         >
+          <label htmlFor="guild-invite-name" className="sr-only">
+            초대할 닉네임
+          </label>
           <input
+            id="guild-invite-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}

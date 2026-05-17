@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { X } from "@phosphor-icons/react";
+import { useModalA11y } from "@/lib/useModalA11y";
 import type { Npc } from "@/adventure/data/npcs";
 import { NpcAvatar } from "@/adventure/NpcAvatar";
 import type { useQuests } from "@/adventure/quests/useQuests";
@@ -237,6 +238,8 @@ function EpilogueChoice({
   adventureLog: ReturnType<typeof useAdventureLog>;
 }) {
   const firedRef = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
 
   const choose = (kind: "sealed" | "throned") => {
     if (firedRef.current) return;
@@ -260,6 +263,7 @@ function EpilogueChoice({
       onClick={onClose}
     >
       <div
+        ref={contentRef}
         className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
         onClick={(e) => e.stopPropagation()}
       >

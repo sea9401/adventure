@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { X } from "@phosphor-icons/react";
+import { useModalA11y } from "@/lib/useModalA11y";
 import type { Npc } from "./data/npcs";
 import { NpcAvatar } from "./NpcAvatar";
 
@@ -27,6 +28,8 @@ export function NpcDialogue({
   // 닫는 핸들러가 React 리렌더 전 추가 클릭으로 두 번 실행돼 유니크 장비까지 복제됐다.
   // label 단위 일회성 락 — 다음 단계(label 변경)로 진행되면 자연스럽게 해제.
   const firedLabelRef = useRef<string | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   const handlePrimary = primaryAction
     ? () => {
         if (firedLabelRef.current === primaryAction.label) return;
@@ -44,6 +47,7 @@ export function NpcDialogue({
       onClick={onClose}
     >
       <div
+        ref={contentRef}
         className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
         onClick={(e) => e.stopPropagation()}
       >

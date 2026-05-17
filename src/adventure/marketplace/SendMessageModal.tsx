@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import { USER_MESSAGE_MAX_LENGTH } from "@/lib/inbox-config";
 import { RECIPES } from "@/adventure/data/recipes";
 import { useGame } from "@/adventure/GameContext";
 import { sendUserMessage } from "./api";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 
 type Props = {
   initialRecipient?: string;
@@ -20,6 +21,8 @@ export function SendMessageModal({
   onSent,
 }: Props) {
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   const { crafting } = useGame();
   const shareableRecipes = crafting.state.shareable;
   const consumeShare = crafting.consumeShare;
@@ -71,15 +74,20 @@ export function SendMessageModal({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="send-message-title"
       onClick={onClose}
       className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center"
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
       >
         <div className="flex items-start justify-between">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          <h2
+            id="send-message-title"
+            className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+          >
             쪽지 보내기
           </h2>
           <button

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Card } from "@/components/ui/Card";
 import { MONSTERS } from "../data/monsters";
 import { POTIONS, type PotionId } from "../data/potions";
@@ -14,6 +15,7 @@ import { getRecipeById } from "../data/recipes";
 import { SKILL_BOOKS } from "../data/skillBooks";
 import { type OfflineSimResult } from "./offlineSim";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 
 // "73분" → "1시간 13분", "60분" → "1시간", "<60분" → "N분".
 export function fmtHuntDuration(ms: number): string {
@@ -33,6 +35,8 @@ export function AutoHuntResultModal({
   onClose: () => void;
 }) {
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   const durationLabel = fmtHuntDuration(result.simulatedMs);
 
   const kills = Object.entries(result.killsByName)
@@ -87,7 +91,8 @@ export function AutoHuntResultModal({
       aria-labelledby="auto-hunt-result-title"
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
     >
-      <Card padding="lg" className="w-full max-w-sm">
+      <div ref={contentRef} className="w-full max-w-sm">
+        <Card padding="lg">
         <div className="text-center">
           <div
             id="auto-hunt-result-title"
@@ -336,6 +341,7 @@ export function AutoHuntResultModal({
           확인
         </button>
       </Card>
+      </div>
     </div>
   );
 }
