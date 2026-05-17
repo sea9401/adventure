@@ -25,6 +25,7 @@ const TABS: { key: RankingMetric; label: string }[] = [
   { key: "fame", label: "명성" },
   { key: "battleCount", label: "전투 횟수" },
   { key: "towerWeek", label: "고탑 (주간)" },
+  { key: "towerChallenge", label: "고탑 (도전)" },
   { key: "guild", label: "길드 랭킹" },
 ];
 
@@ -33,6 +34,7 @@ const METRIC_LABEL: Record<Exclude<RankingMetric, "guild">, string> = {
   fame: "명성",
   battleCount: "전투",
   towerWeek: "F.",
+  towerChallenge: "F.",
 };
 
 const GRADE_COLOR: Record<string, string> = {
@@ -52,12 +54,14 @@ const valueFor = (
     fame: number;
     battleCount: number;
     weekHighest: number;
+    challengeHighest: number;
   },
   metric: Exclude<RankingMetric, "guild">,
 ): number => {
   if (metric === "level") return e.level;
   if (metric === "fame") return e.fame;
   if (metric === "towerWeek") return e.weekHighest;
+  if (metric === "towerChallenge") return e.challengeHighest;
   return e.battleCount;
 };
 
@@ -76,6 +80,7 @@ export function RankingsView() {
       </Card>
 
       {metric === "towerWeek" && <TowerWeeklyModifierPill />}
+      {metric === "towerChallenge" && <TowerChallengePill />}
 
       {metric === "guild" ? (
         <GuildRankingsBody />
@@ -98,6 +103,21 @@ function TowerWeeklyModifierPill() {
           이번 주: {modifier.name}
         </span>
         <span className="text-zinc-500 dark:text-zinc-400">{modifier.description}</span>
+      </div>
+    </Card>
+  );
+}
+
+function TowerChallengePill() {
+  return (
+    <Card as="section" padding="sm">
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+        <span className="rounded-full bg-rose-500/15 px-2 py-0.5 font-medium text-rose-700 dark:text-rose-300">
+          도전 모드 — 영구 최고층
+        </span>
+        <span className="text-zinc-500 dark:text-zinc-400">
+          적 HP/ATK/DEF ×1.5, 매번 F1 부터, F50 클리어 시 칭호.
+        </span>
       </div>
     </Card>
   );

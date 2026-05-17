@@ -2,12 +2,13 @@
 
 import { useAsyncData } from "@/lib/useAsyncData";
 
-// 개인 metric 4종(레벨/명성/전투/이번주 고탑) + 길드 누적 명성 1종.
+// 개인 metric 5종(레벨/명성/전투/이번주 고탑/도전 최고층) + 길드 누적 명성 1종.
 export type RankingMetric =
   | "level"
   | "fame"
   | "battleCount"
   | "towerWeek"
+  | "towerChallenge"
   | "guild";
 
 export type RankingEntry = {
@@ -17,6 +18,8 @@ export type RankingEntry = {
   fame: number;
   battleCount: number;
   weekHighest: number;
+  /** 도전 모드 영구 최고층 (tower-challenge.v1.progress.highestFloor). */
+  challengeHighest: number;
   mine: boolean;
 };
 
@@ -27,6 +30,7 @@ export type RankingMe = {
   fame: number;
   battleCount: number;
   weekHighest: number;
+  challengeHighest: number;
 };
 
 export type GuildRankingEntry = {

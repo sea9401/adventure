@@ -3,7 +3,13 @@ import { db } from "@/db";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { kstWeekStartKey } from "@/adventure/tower/weeklyTypes";
 
-const VALID_METRICS = ["level", "fame", "battleCount", "towerWeek"] as const;
+const VALID_METRICS = [
+  "level",
+  "fame",
+  "battleCount",
+  "towerWeek",
+  "towerChallenge",
+] as const;
 type Metric = (typeof VALID_METRICS)[number];
 const isMetric = (v: string): v is Metric =>
   (VALID_METRICS as readonly string[]).includes(v);
@@ -23,6 +29,8 @@ type RankRow = {
   battleCount: number;
   /** towerWeek 한정 — 이번 주 최고층. 다른 metric 에서는 0. */
   weekHighest: number;
+  /** towerChallenge 한정 — 도전 모드 영구 최고층. 다른 metric 에서는 0. */
+  challengeHighest: number;
   rank: number;
 };
 
@@ -36,6 +44,7 @@ const cache: Map<Metric, CacheEntry> = new Map();
 
 async function fetchRows(metric: Metric): Promise<RankRow[]> {
   if (metric === "towerWeek") return fetchTowerWeekRows();
+  if (metric === "towerChallenge") return fetchTowerChallengeRows();
   // metric 은 isMetric 으로 검증된 닫힌 enum — sql 템플릿에 안전하게 합성.
   const orderBy =
     metric === "level"
@@ -91,6 +100,7 @@ async function fetchRows(metric: Metric): Promise<RankRow[]> {
     fame: Number(r.fame),
     battleCount: Number(r.battle_count),
     weekHighest: 0,
+    challengeHighest: 0,
     rank: Number(r.rank),
   }));
 }
@@ -139,6 +149,54 @@ async function fetchTowerWeekRows(): Promise<RankRow[]> {
     fame: Number(r.fame),
     battleCount: 0,
     weekHighest: Number(r.week_highest),
+    challengeHighest: 0,
+    rank: Number(r.rank),
+  }));
+}
+
+// 도전 모드 영구 최고층 랭킹 — tower-challenge.v1.progress.highestFloor.
+// 시즌 개념 없이 누적이라 한 번 F50 찍은 자는 계속 노출. 0 인 유저는 제외.
+async function fetchTowerChallengeRows(): Promise<RankRow[]> {
+  const result = await db.execute(sql`
+    WITH stats AS (
+      SELECT
+        u.id AS user_id,
+        COALESCE(u.game_name, p.value->>'name') AS name,
+        COALESCE((c.value->>'level')::int, 1) AS level,
+        COALESCE((c.value->>'fame')::int, 0) AS fame,
+        COALESCE((ch.value->'progress'->>'highestFloor')::int, 0) AS challenge_highest,
+        COALESCE(ch.updated_at, u.created_at) AS updated_at
+      FROM users u
+      INNER JOIN saves_kv ch ON ch.user_id = u.id AND ch.key = 'tower-challenge.v1'
+      LEFT JOIN saves_kv c ON c.user_id = u.id AND c.key = 'character.v2'
+      LEFT JOIN saves_kv p ON p.user_id = u.id AND p.key = 'character-profile.v2'
+      WHERE COALESCE((ch.value->'progress'->>'highestFloor')::int, 0) > 0
+        AND COALESCE(u.game_name, p.value->>'name') IS NOT NULL
+    ),
+    ranked AS (
+      SELECT *, ROW_NUMBER() OVER (ORDER BY challenge_highest DESC, updated_at ASC)::int AS rank
+      FROM stats
+    )
+    SELECT user_id, name, level, fame, challenge_highest, rank
+    FROM ranked
+    ORDER BY rank
+  `);
+  type DbRow = {
+    user_id: string;
+    name: string;
+    level: number;
+    fame: number;
+    challenge_highest: number;
+    rank: number;
+  };
+  return (result.rows as unknown as DbRow[]).map((r) => ({
+    userId: String(r.user_id),
+    name: String(r.name),
+    level: Number(r.level),
+    fame: Number(r.fame),
+    battleCount: 0,
+    weekHighest: 0,
+    challengeHighest: Number(r.challenge_highest),
     rank: Number(r.rank),
   }));
 }
@@ -196,6 +254,7 @@ export async function GET(req: Request) {
     fame: r.fame,
     battleCount: r.battleCount,
     weekHighest: r.weekHighest,
+    challengeHighest: r.challengeHighest,
     mine: r.userId === userId,
   }));
 
@@ -208,6 +267,7 @@ export async function GET(req: Request) {
         fame: myRow.fame,
         battleCount: myRow.battleCount,
         weekHighest: myRow.weekHighest,
+        challengeHighest: myRow.challengeHighest,
       }
     : null;
 

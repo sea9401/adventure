@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ArrowsClockwise, Coins, Skull, Star } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
+import { TabBar } from "@/components/ui/TabBar";
+import { TowerChallengeView } from "./TowerChallengeView";
 import type { BattleState } from "@/adventure/battle/engine";
 import {
   BattleScene,
@@ -76,6 +78,7 @@ export function TowerPage({
 }) {
   const tower = useTower({ onApplied });
   const [view, setView] = useState<View>({ kind: "entry" });
+  const [mode, setMode] = useState<"normal" | "challenge">("normal");
 
   const state = tower.state;
   const runActive = state.run !== null;
@@ -83,6 +86,57 @@ export function TowerPage({
   return (
     <div className="space-y-3">
       <SubViewHeader title="고탑" onBack={onBack} />
+      <Card as="section" padding="sm">
+        <TabBar
+          tabs={[
+            { key: "normal", label: "일반 탑" },
+            { key: "challenge", label: "도전 모드" },
+          ]}
+          active={mode}
+          onChange={setMode}
+          ariaLabel="고탑 모드"
+        />
+      </Card>
+
+      {mode === "challenge" ? (
+        <TowerChallengeView
+          playerName={playerName}
+          playerStatus={playerStatus}
+        />
+      ) : (
+        <NormalTowerBody
+          tower={tower}
+          view={view}
+          setView={setView}
+          state={state}
+          runActive={runActive}
+          playerName={playerName}
+          playerStatus={playerStatus}
+        />
+      )}
+    </div>
+  );
+}
+
+function NormalTowerBody({
+  tower,
+  view,
+  setView,
+  state,
+  runActive,
+  playerName,
+  playerStatus,
+}: {
+  tower: ReturnType<typeof useTower>;
+  view: View;
+  setView: (v: View) => void;
+  state: TowerState;
+  runActive: boolean;
+  playerName: string;
+  playerStatus: BattlePlayerStatus;
+}) {
+  return (
+    <>
       <Card padding="md">
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           영원히 끝나지 않는 수직 미궁. 10층마다 보스가 길을 막는다.
@@ -215,7 +269,7 @@ export function TowerPage({
             돌아가기
           </button>
         )}
-    </div>
+    </>
   );
 }
 
