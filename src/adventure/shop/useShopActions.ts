@@ -156,7 +156,7 @@ export function useShopActions(deps: {
     if (!r) return;
     addNotification(
       "info",
-      `${RUNES[id].name} ${grade}등급${quantity > 1 ? ` ×${quantity}` : ""}을(를) 샀다.`,
+      `${RUNES[id].name} ${grade}T${quantity > 1 ? ` ×${quantity}` : ""}을(를) 샀다.`,
     );
   };
 

@@ -92,7 +92,7 @@ export function RunesTab() {
                     key={g}
                     className="px-2 py-1 text-left text-xs font-semibold"
                   >
-                    {g}등급
+                    {g}T
                   </th>
                 ))}
               </tr>
