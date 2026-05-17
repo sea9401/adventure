@@ -6,7 +6,7 @@ import { useGame } from "@/adventure/GameContext";
 // AdventureScreen 에서 ?sub=tower 라우팅을 받아 TowerPage 를 렌더링하는 얇은 래퍼.
 // CharacterScreen 도 같은 컴포넌트를 직접 import 해서 자기 subView 라우팅에 사용.
 export function TowerSubView() {
-  const { character, playerStatus, back, characterStateHook, inventory } =
+  const { character, playerStatus, back, characterStateHook, inventory, storyFlags } =
     useGame();
   return (
     <TowerPage
@@ -22,6 +22,18 @@ export function TowerSubView() {
         }
         if (r.inventory) {
           inventory.replaceFromSaved(r.inventory);
+        }
+        // 5막 PR-D2 — 고탑 100층 도달 시 Ch 29 「빈 옥좌의 그림자」 활성화.
+        // Ch 25 클리어자(endgame_apex_defeated) 한정 — 4막 미완료 캐릭의 100층 도달은
+        // 의미 없으므로 가드. idempotent (storyFlags.set 이 중복 처리).
+        const floor = r.tower?.run?.currentFloor;
+        if (
+          floor != null &&
+          floor >= 100 &&
+          storyFlags.has("endgame_apex_defeated") &&
+          !storyFlags.has("apex_phantom_seen")
+        ) {
+          storyFlags.set("apex_phantom_seen");
         }
       }}
     />

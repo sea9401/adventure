@@ -12,7 +12,13 @@ export type TowerModifierId =
   | "heavy"
   | "sharp"
   | "iron"
-  | "capricious";
+  | "capricious"
+  // 5막 PR-D2 — 별빛 옥좌의 환영 5종. 4막 정점 잔영들이 탑 안쪽에 비쳐 들어온 톤.
+  | "giant_phantom"
+  | "deep_echo"
+  | "gate_phantom"
+  | "starlit_wake"
+  | "apex_shadow";
 
 export type TowerModifier = {
   id: TowerModifierId;
@@ -64,6 +70,47 @@ export const TOWER_MODIFIER_POOL: TowerModifier[] = [
     enemyAtkMult: 1.1,
     enemyDefMult: 1.1,
     enemySpdMult: 1.1,
+  },
+  // ── 5막 PR-D2 — 별빛 옥좌의 환영 5종 ───────────────────────────────────────
+  // 4막 정점 잔영(거인·수심·성문지기·노룡·옥좌) 의 그림자가 탑 안쪽에 드리워진 톤.
+  // 5막 별빛 깃든 기예의 슬롯 발동 조건과 시너지를 의도한 단일 스탯 강 위주(스탯 1개 강하게).
+  {
+    id: "giant_phantom",
+    name: "거인의 환영",
+    description:
+      "적 ATK ×1.20 — 잔영이 두 발을 박아 넣은 듯, 한 방의 무게가 더 무거워진다.",
+    enemyAtkMult: 1.2,
+  },
+  {
+    id: "deep_echo",
+    name: "수심의 메아리",
+    description:
+      "적 HP ×1.30 — 가라앉은 자가 비늘을 한 겹 더 두른 듯, 잘 쓰러지지 않는다.",
+    enemyHpMult: 1.3,
+  },
+  {
+    id: "gate_phantom",
+    name: "성문지기의 환영",
+    description:
+      "적 DEF ×1.30 — 빈 성벽이 다시 단단해진 듯, 갑주가 한 겹 더 두꺼워진다. DEF 무시(천살·별빛 흩기) 가 빛난다.",
+    enemyDefMult: 1.3,
+  },
+  {
+    id: "starlit_wake",
+    name: "별빛의 깨어남",
+    description:
+      "적 SPD ×1.30 — 별빛이 결을 흔드는 한 주, 잔영이 한 박자 빠르게 움직인다.",
+    enemySpdMult: 1.3,
+  },
+  {
+    id: "apex_shadow",
+    name: "옥좌의 그림자",
+    description:
+      "적 모든 스탯 ×1.15 — 빈 옥좌의 환영이 탑 안쪽까지 드리워진 주. 변덕보다 짙다.",
+    enemyHpMult: 1.15,
+    enemyAtkMult: 1.15,
+    enemyDefMult: 1.15,
+    enemySpdMult: 1.15,
   },
 ];
 
