@@ -48,7 +48,7 @@ export function MapCanvas({
     () => ({ x: originX, y: originY, w: world.width, h: world.height }),
   );
 
-  const INITIAL_ZOOM = 1.8;
+  const INITIAL_ZOOM = 2.5;
   const MIN_ZOOM = 0.6;
   const MAX_ZOOM = 4.5;
   // viewBox 폭 = world.width / zoom. 큰 zoom = 작은 viewBox = 확대된 것처럼 보임.
