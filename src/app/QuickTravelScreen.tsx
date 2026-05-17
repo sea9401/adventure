@@ -13,6 +13,7 @@ import {
 import { useGame } from "@/adventure/GameContext";
 import { COOP_BOSSES } from "@/adventure/coop/data";
 import { WORLD_MAP, type Region } from "@/adventure/data/world";
+import { resolveBuffMultiplier } from "@/adventure/data/guildBuffs";
 
 const SCROLL_ID = "scroll_town_return" as const;
 
@@ -21,6 +22,9 @@ type Entry = {
   label: string;
   cost: number; // 소비할 스크롤 개수
   isCurrent?: boolean; // 현재 위치 — 선택지에 유지하되 비활성 + "지금 여기" 표시
+  // 싱글보스 전용 — BattleView 와 동일하게 길드 버프(+) 합산한 일일 "보상" 한도 대비 남음.
+  // (한도 초과 후에도 입장은 가능 — EXP·드롭만 안 줄 뿐. #297)
+  bossAttemptsLeft?: { left: number; limit: number };
 };
 
 function TravelRow({
@@ -34,6 +38,8 @@ function TravelRow({
 }) {
   const isCurrent = !!entry.isCurrent;
   const insufficient = !isCurrent && entry.cost > 0 && scrollCount < entry.cost;
+  const attempts = entry.bossAttemptsLeft;
+  const exhausted = !!attempts && attempts.left <= 0;
   return (
     <button
       type="button"
@@ -76,6 +82,19 @@ function TravelRow({
                 : `주문서 ×${entry.cost}`}
         </span>
       </span>
+      {attempts && (
+        <span
+          className={
+            exhausted
+              ? "shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-[11px] font-medium tabular-nums text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400"
+              : "shrink-0 rounded-md bg-rose-50 px-2 py-1 text-[11px] font-medium tabular-nums text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+          }
+        >
+          {exhausted
+            ? "보상 마감"
+            : `보상 ${attempts.left}/${attempts.limit}`}
+        </span>
+      )}
       {!isCurrent && (
         <CaretRight
           size={16}
@@ -95,9 +114,16 @@ export function QuickTravelScreen() {
     handleUseTownReturn,
     handleUseTravelScroll,
     addNotification,
+    characterStateHook,
+    guildBuffs,
   } = useGame();
 
   const scrollCount = inventory.consumableCount(SCROLL_ID);
+  // BattleView 와 동일한 합산 방식 — region.boss.dailyEntryLimit + 길드 버프.
+  const bossAttemptBonus = resolveBuffMultiplier(
+    guildBuffs,
+    "boss_attempt_bonus",
+  );
   const visited = new Set(mapProgress.visitedRegionIds);
   const currentId = mapProgress.currentRegionId;
   const fromRegion = WORLD_MAP.regions.find((r) => r.id === currentId);
@@ -132,11 +158,14 @@ export function QuickTravelScreen() {
         isCurrent,
       });
     } else if (isSoloBoss && region.boss) {
+      const limit = region.boss.dailyEntryLimit + bossAttemptBonus;
+      const used = characterStateHook.getBossAttemptsToday(region.id);
       soloBossEntries.push({
         region,
         label: region.boss.monsterName,
         cost: 1,
         isCurrent,
+        bossAttemptsLeft: { left: Math.max(0, limit - used), limit },
       });
     }
   }
