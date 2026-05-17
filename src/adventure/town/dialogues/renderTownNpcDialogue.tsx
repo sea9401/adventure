@@ -36,6 +36,7 @@ import { NaraeDialogue } from "./NaraeDialogue";
 import { SolgaeDialogue } from "./SolgaeDialogue";
 import { BoriDialogue } from "./BoriDialogue";
 import { YuseongDialogue } from "./YuseongDialogue";
+import { MeteorDialogue } from "./MeteorDialogue";
 
 // 마을 NPC 중 커스텀 다이얼로그를 가진 NPC 들의 디스패치 테이블.
 // TownView 의 renderNpcDialogue prop 으로 넘겨 사용한다. null 이면 기본 NpcDialogue.
@@ -105,6 +106,17 @@ export function renderTownNpcDialogue(
           storyFlags={storyFlags}
           inventory={inventory}
           equippedSlots={characterStateHook.equippedSlots}
+        />
+      );
+    case "village_pilgrim_meteor":
+      return (
+        <MeteorDialogue
+          npc={npc}
+          onClose={close}
+          quests={quests}
+          completeQuest={completeQuest}
+          storyFlags={storyFlags}
+          inventory={inventory}
         />
       );
     case "village_suzy":

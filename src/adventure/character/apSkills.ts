@@ -24,7 +24,14 @@ export type APSkillId =
   | "thunder_strike"
   | "light_glide"
   | "purify"
-  | "afterimage";
+  | "afterimage"
+  // 5막 「빈 옥좌의 시대」 — 별빛 깃든 기예 6종. 노수호자 유성의 그릇 빚기 의뢰 보상.
+  | "starlit_mending"
+  | "starlit_cut"
+  | "starlit_knot"
+  | "starlit_chill"
+  | "starlit_sever"
+  | "starlit_scatter";
 
 export type APSkillEffect =
   // 본타 데미지를 ATK × atkMult 로 갱신. ignoresDef = true 면 적 DEF 무시.
@@ -242,6 +249,57 @@ export const AP_SKILLS: APSkill[] = [
     description: "적의 다음 공격 1회 무효",
     apCost: 3,
     effect: { kind: "block_next_enemy_attack", count: 1 },
+  },
+  // ── 5막 「빈 옥좌의 시대」 — 별빛 깃든 기예 6종 ─────────────────────────
+  // 노수호자 유성의 그릇 빚기 의뢰 보상. 별빛 조각 30 deliver 시 6권 일괄 학습 가능.
+  // 기존 effect kind 만 사용 (엔진 변경 없음). 4막 정점 스킬(천살·잔상·결의·깊은 상처) 의
+  // 5막 톤 변주 — 회복은 더 두텁게, 무효는 두 배로, 출혈은 짙게, 베기는 정확하게.
+  {
+    id: "starlit_mending",
+    name: "별빛 회수",
+    description: "즉시 maxHP × 40% 회복",
+    apCost: 4,
+    effect: { kind: "heal_pct", pct: 40 },
+  },
+  {
+    id: "starlit_cut",
+    name: "잔영 베기",
+    description: "ATK × 2.0 단발, 적 회피 무시",
+    apCost: 4,
+    effect: { kind: "atk_multiplier", atkMult: 2.0, ignoresEvasion: true },
+  },
+  {
+    id: "starlit_knot",
+    name: "별빛 매듭",
+    description: "2턴 동안 받는 피해 -60%",
+    apCost: 3,
+    effect: { kind: "player_dmg_reduction_turns", pct: 60, turns: 2 },
+  },
+  {
+    id: "starlit_chill",
+    name: "별빛 한기",
+    description: "적에게 출혈 7스택 즉시 부여",
+    apCost: 4,
+    effect: { kind: "apply_bleed", stacks: 7 },
+  },
+  {
+    id: "starlit_sever",
+    name: "별빛 끊기",
+    description: "적의 다음 공격 2회 무효",
+    apCost: 4,
+    effect: { kind: "block_next_enemy_attack", count: 2 },
+  },
+  {
+    id: "starlit_scatter",
+    name: "별빛 흩기",
+    description: "ATK × 1.8 단발, 회피·DEF 모두 무시",
+    apCost: 4,
+    effect: {
+      kind: "atk_multiplier",
+      atkMult: 1.8,
+      ignoresDef: true,
+      ignoresEvasion: true,
+    },
   },
 ];
 
