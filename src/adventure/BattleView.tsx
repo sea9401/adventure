@@ -45,6 +45,12 @@ export type BattleEndPayload = {
   log: BattleLogEntry[];
   /** 보스 도전 여부 — onBattleEnd lose 분기에서 마을 강제 이동/HP 0 대신 HP 풀회 + 현장 유지. */
   isBoss?: boolean;
+  /**
+   * 보스 일일 한도(3회)를 초과한 상태에서 도전한 "연습" 전투. true 면 onBattleEnd 가
+   * EXP/드롭을 지급하지 않는다. 도감 kill/퀘스트 진행/마일스톤은 정상 진행 — 사용자가
+   * 한도 안의 도전과 동일한 카운터를 쌓을 수 있되 물질 보상만 빠진다.
+   */
+  bossNoReward?: boolean;
 };
 
 function pickEnemy(region: Region): Monster | null {
@@ -124,6 +130,9 @@ export function BattleView({
 
   // 보스 전투 모드 — 일반 자동사냥 루프와 분리. 1회 전투 후 종료, 자동 다음 적 X.
   const bossModeRef = useRef(false);
+  // 보스 일일 한도(3회) 초과 후 시작한 도전이면 true. onBattleEnd payload 에 그대로
+  // 실어서 EXP/드롭 지급을 막는 신호로 쓰인다. 다음 도전 시작 시 도전 클릭 시점에서 다시 세팅.
+  const bossNoRewardRef = useRef(false);
 
   const startWithLog = (
     enemy: Monster,
@@ -159,6 +168,7 @@ export function BattleView({
         rewards: { exp: expBonus.gained, expBonusApplied: expBonus.bonusApplied },
         potionsConsumed,
         log: state.log,
+        bossNoReward: bossNoRewardRef.current || undefined,
       });
     } catch (err) {
       // 핸들러 실패 시 ref 해제 — 다음 effect 실행에서 재시도 가능.
@@ -242,7 +252,10 @@ export function BattleView({
       ? boss.dailyEntryLimit + bossAttemptBonus
       : 0;
     const attemptsLeft = boss ? Math.max(0, dailyLimit - attemptsUsed) : 0;
-    const canBoss = !!bossMonster && attemptsLeft > 0 && player.hp > 0;
+    // 한도 초과 도전은 "연습" — EXP/드롭만 안 줄 뿐 도감/퀘스트/마일스톤은 정상 진행.
+    // 도전 자체는 막지 않는다 (HP 만 살아있으면 됨).
+    const bossOverLimit = !!boss && attemptsLeft <= 0;
+    const canBoss = !!bossMonster && player.hp > 0;
     return (
       <div className="space-y-3">
         <Card padding="md">
@@ -268,18 +281,29 @@ export function BattleView({
                   {bossMonster.name}
                 </h4>
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  일일 도전 — 오늘 {attemptsUsed}/{dailyLimit} 사용 (자정에 초기화)
+                  일일 보상 한도 — 오늘 {attemptsUsed}/{dailyLimit} 사용 (자정에 초기화)
                   {bossAttemptBonus > 0
                     ? ` · 길드 +${bossAttemptBonus}`
                     : ""}
                 </p>
+                {bossOverLimit && (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                    한도 초과 — 다음 도전부터 EXP·드롭은 지급되지 않는다 (퀘스트/도감 진행은 그대로).
+                  </p>
+                )}
                 <button
                   type="button"
                   disabled={!canBoss || autoHunt.isDispatched}
                   onClick={() => {
-                    if (!bossMonster || !onConsumeBossAttempt) return;
+                    if (!bossMonster) return;
                     if (autoHunt.isDispatched) return;
-                    onConsumeBossAttempt();
+                    // 한도 안: 카운터 소비 + 정상 보상. 한도 초과: 소비 스킵 + noReward 표시.
+                    if (bossOverLimit) {
+                      bossNoRewardRef.current = true;
+                    } else {
+                      bossNoRewardRef.current = false;
+                      onConsumeBossAttempt?.();
+                    }
                     onBossAttempt?.();
                     bossModeRef.current = true;
                     if (huntingActive) onToggleHunting(false);
@@ -291,8 +315,8 @@ export function BattleView({
                     ? "자동 사냥 중 — 보스 도전 불가"
                     : player.hp <= 0
                       ? "회복 필요"
-                      : attemptsLeft <= 0
-                        ? "오늘 도전 횟수 소진"
+                      : bossOverLimit
+                        ? "보스 도전 (연습 — 보상 없음)"
                         : `보스 도전 (남은 ${attemptsLeft}/${dailyLimit})`}
                 </button>
               </Card>

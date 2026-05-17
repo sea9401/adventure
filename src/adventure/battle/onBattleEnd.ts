@@ -158,6 +158,10 @@ export function onBattleEnd(
         `재생의 룬 — HP +${hpAfterRegen - payload.finalPlayerHp}`,
       );
     }
+    // 보스 일일 보상 한도(3회) 초과 후 "연습" 도전 — EXP/드롭만 건너뛴다.
+    // 도감/퀘스트/마일스톤/스토리 플래그/룬 회복은 한도 안과 동일하게 처리해
+    // 유저가 카운트형 의뢰(예: 보스 N회 누적)를 계속 진행할 수 있게 한다.
+    const noReward = payload.bossNoReward === true;
     // 길드 버프 — 비어 있으면 모든 곱셈 ×1.0 (no-op).
     // 룬 EXP/드롭 % 도 같은 자리에서 곱셈으로 합류 — 단, 로그 라벨은 분리해서 표시.
     // 신참 드롭 ×2 도 같은 자리에서 합류 (Lv 30 미만일 때).
@@ -169,8 +173,10 @@ export function onBattleEnd(
     const expMult = guildExpMult * runeExpMult;
     const dropMult =
       resolveBuffMultiplier(buffs, "drop_mult") * runeDropMult * newbieDropMult;
-    const boostedExp = Math.floor(payload.rewards.exp * expMult * XP_RATE_MULT);
-    deps.characterState.addExp(boostedExp, deps.vit);
+    const boostedExp = noReward
+      ? 0
+      : Math.floor(payload.rewards.exp * expMult * XP_RATE_MULT);
+    if (!noReward) deps.characterState.addExp(boostedExp, deps.vit);
     // 보스 처치 시 storyFlag 발급 (data-driven, monster.onDefeatFlag).
     // useStoryFlags.set 은 idempotent 라 두 번째 처치는 무시 — 안전하게 매 처치마다 호출.
     const monster = MONSTERS[payload.enemyName];
@@ -228,8 +234,8 @@ export function onBattleEnd(
       );
     }
     // 드롭 판정 — 몬스터의 drops 정의대로 확률 굴림.
-    // kind 별로 인벤/골드/장비에 분배.
-    if (monster?.drops) {
+    // kind 별로 인벤/골드/장비에 분배. 단, noReward (보스 일일 한도 초과) 시엔 스킵.
+    if (monster?.drops && !noReward) {
       // luk 1pt 당 드랍률 ×1.01 (multiplicative). 1.0 으로 capping 해 100% 초과 방지.
       // 길드 drop_boost 가 LUK 위에 또 곱해진다 (활성화 시 +0.5%~+2.5%).
       const luckMultiplier = 1 + deps.luk * 0.01;
@@ -320,8 +326,11 @@ export function onBattleEnd(
     if (payload.rewards.expBonusApplied) expParts += " (신참 ×2)";
     if (guildExpMult > 1) expParts += ` (길드 ×${guildExpMult.toFixed(2)})`;
     if (runeExpMult > 1) expParts += ` (룬 ×${runeExpMult.toFixed(2)})`;
-    const reward =
-      payload.rewards.exp > 0 ? `EXP +${boostedExp}${expParts}` : "보상 없음";
+    const reward = noReward
+      ? "보상 없음 (일일 한도 초과)"
+      : payload.rewards.exp > 0
+        ? `EXP +${boostedExp}${expParts}`
+        : "보상 없음";
     deps.addNotification(
       "battle_win",
       `${payload.enemyName}을(를) 쓰러뜨렸다 — ${reward}`,
