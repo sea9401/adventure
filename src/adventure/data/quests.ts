@@ -2419,7 +2419,7 @@ export const QUESTS: Quest[] = [
   // ────────────────────────────────────────────────────────────────────────
   // 노수호자 유성 — 후반 3 코옵 보스(별을 지키는 자 / 천공인의 왕 / 창공의 주재)
   // 각각 3 종 도전 의뢰. 게이트 의뢰 완료(=해당 보스 진입 자격) 후 잠금 해제.
-  //   - coop_tier_reached  : 보상 티어 epic 이상 1회 도달 (legend 보다 살짝 완화)
+  //   - coop_tier_reached  : 보상 티어 gold 이상 1회 도달 (epic 이 도전 난이도 대비 진입장벽 컸음)
   //   - coop_high_dmg_attack: 단일 공격 데미지 임계 3회 — maxHp 의 10% 정도 단발
   //   - coop_survive_attack : 사망 없이 공격 완주 5회 — 안정적 딜링 검증
   // 보상은 칭호 단일 — 후방 보스라 골드/경험치 보상은 의미 박약, 도전 회수축 칭호로.
@@ -2430,12 +2430,12 @@ export const QUESTS: Quest[] = [
     regionId: "starspire",
     title: "별을 지키는 자 — 별빛의 증인",
     description:
-      "별을 지키는 자 협동 토벌에서 EPIC 이상 보상에 한 번이라도 닿으시오. 별빛이 자네의 결을 한 번이라도 깊이 알아본다면 — 그 결은 평생 가오.",
+      "별을 지키는 자 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿으시오. 별빛이 자네의 결을 한 번이라도 깊이 알아본다면 — 그 결은 평생 가오.",
     requiredLevel: 70,
     target: {
       kind: "coop_tier_reached",
       monsterName: "별을 지키는 자",
-      minTier: "epic",
+      minTier: "gold",
       count: 1,
     },
     reward: { fame: 50 },
@@ -2484,12 +2484,12 @@ export const QUESTS: Quest[] = [
     regionId: "skyfolk_ruins",
     title: "천공인의 왕 — 폐도의 증인",
     description:
-      "천공인의 왕 협동 토벌에서 EPIC 이상 보상에 한 번이라도 닿으시오. 폐도가 자네의 결을 알아보는 첫 표식이오.",
+      "천공인의 왕 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿으시오. 폐도가 자네의 결을 알아보는 첫 표식이오.",
     requiredLevel: 80,
     target: {
       kind: "coop_tier_reached",
       monsterName: "천공인의 왕",
-      minTier: "epic",
+      minTier: "gold",
       count: 1,
     },
     reward: { fame: 60 },
@@ -2538,12 +2538,12 @@ export const QUESTS: Quest[] = [
     regionId: "apex_throne",
     title: "창공의 주재 — 옥좌의 증인",
     description:
-      "창공의 주재 협동 토벌에서 EPIC 이상 보상에 한 번이라도 닿으시오. 옥좌가 자네의 결을 처음으로 깊이 인정하는 표식이오.",
+      "창공의 주재 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿으시오. 옥좌가 자네의 결을 처음으로 깊이 인정하는 표식이오.",
     requiredLevel: 90,
     target: {
       kind: "coop_tier_reached",
       monsterName: "창공의 주재",
-      minTier: "epic",
+      minTier: "gold",
       count: 1,
     },
     reward: { fame: 80 },
