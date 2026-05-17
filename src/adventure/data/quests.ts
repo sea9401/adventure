@@ -2329,7 +2329,7 @@ export const QUESTS: Quest[] = [
     regionId: "star_corridor",
     title: "회랑의 흩어진 별빛",
     description:
-      "별바다 노수호자 유성의 첫 부탁이오. 별빛 회랑에 떠도는 시녀들의 잔영이 회랑의 결을 거꾸로 흩어 놓고 있소. 열둘만 가라앉히면 — 회랑검과 회랑 방패의 결을 자네 손에 새겨 주리다.",
+      "별바다 노수호자 유성의 첫 부탁. 회랑에 떠도는 시녀들의 잔영이 별빛 흐름을 흩어 놓고 있다. 열둘만 가라앉히면 회랑검과 회랑 방패 벼림법을 넘겨준다.",
     requiredLevel: 75,
     target: { kind: "kill", monsterName: "떠도는 시녀", count: 12 },
     reward: { gold: 1200, fame: 18, exp: 2800, recipes: ["corridor_blade", "corridor_aegis"] },
@@ -2339,9 +2339,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-corridor-wraiths",
     regionId: "star_corridor",
-    title: "망령의 결을 풀어내라",
+    title: "망령을 풀어내라",
     description:
-      "회랑 깊은 곳에 별빛 망령이 결을 묶고 있소. 열다섯만 풀어주면 — 회랑창과 회랑 너클의 결도 함께 새겨 주리다.",
+      "회랑 깊은 곳에 별빛 망령들이 옛 흐름을 묶어두고 있다. 열다섯만 풀어주면 회랑창과 회랑 너클 벼림법을 함께 넘겨준다.",
     requiredLevel: 76,
     target: { kind: "kill", monsterName: "별빛 망령", count: 15 },
     reward: { gold: 1500, fame: 20, exp: 3400, recipes: ["corridor_lance", "corridor_grip"] },
@@ -2354,7 +2354,7 @@ export const QUESTS: Quest[] = [
     regionId: "star_corridor",
     title: "회랑의 봉인",
     description:
-      "별궤도 자율기들이 옛 회랑의 봉인 결을 쥐고 있소. 열만 가라앉히면 — 회랑 망토의 결을 자네 어깨에 얹어 주리다. 별의 정수도 자네 몫이오.",
+      "별궤도 자율기들이 옛 회랑의 봉인을 쥐고 있다. 열만 가라앉히면 회랑 망토 벼림법과 안에 굳어 있는 별의 정수까지 함께 받는다.",
     requiredLevel: 78,
     target: { kind: "kill", monsterName: "별궤도 자율기", count: 10 },
     reward: {
@@ -2375,7 +2375,7 @@ export const QUESTS: Quest[] = [
     regionId: "skyfolk_ruins",
     title: "폐도의 봉인을 풀어라",
     description:
-      "폐도 안쪽 깊은 결을 더는 잘못 굳게 둘 수 없소. 천공인 사관의 잔재 열만 가라앉히면 — 천공인의 왕이 자네의 결을 알아볼 자격이 생기오. 그래야 결의 주인을 만날 수 있소.",
+      "폐도 안쪽 깊이 잘못 굳어 있는 봉인을 더는 둘 수 없다. 천공인 사관의 잔재 열만 정리하면 천공인의 왕이 비로소 자네를 마주할 자격을 인정한다.",
     requiredLevel: 80,
     target: { kind: "kill", monsterName: "천공인 사관", count: 10 },
     reward: { gold: 1700, fame: 22, exp: 3800 },
@@ -2386,9 +2386,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-throne-guards",
     regionId: "throne_road",
-    title: "옥좌의 길목 — 황성의 결",
+    title: "옥좌의 길목 — 황성의 길",
     description:
-      "옥좌의 길에서 황성 호위병들이 길을 막고 있소. 열다섯만 정리해 길을 열면 — 황성 무구 다섯 자루의 결을 모두 자네 손에 새겨 주리다. 별바다가 자네에게 줄 수 있는 마지막 결이오.",
+      "옥좌의 길에서 황성 호위병들이 길을 막고 있다. 열다섯만 정리해 길을 열면 황성 무구 다섯 자루 벼림법을 모두 넘겨준다. 별바다가 줄 수 있는 마지막 선물.",
     requiredLevel: 85,
     target: { kind: "kill", monsterName: "황성 호위병", count: 15 },
     reward: {
@@ -2408,7 +2408,7 @@ export const QUESTS: Quest[] = [
     regionId: "apex_throne",
     title: "옥좌의 봉인을 풀어라",
     description:
-      "옥좌 둘레에 별빛 사도들이 마지막 결을 두르고 있소. 열만 가라앉히면 — 창공의 주재가 자네 앞에 일어설 자격이 생기오. 별빛이 그날을 기억할 것이오.",
+      "옥좌 둘레에 별빛 사도들이 마지막 봉인을 두르고 있다. 열만 가라앉히면 창공의 주재가 자네 앞에 일어선다. 별빛이 그날을 기억할 것이다.",
     requiredLevel: 90,
     target: { kind: "kill", monsterName: "별빛 사도", count: 10 },
     reward: { gold: 3000, fame: 36, exp: 6500 },
@@ -2430,7 +2430,7 @@ export const QUESTS: Quest[] = [
     regionId: "starspire",
     title: "별을 지키는 자 — 별빛의 증인",
     description:
-      "별을 지키는 자 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿으시오. 별빛이 자네의 결을 한 번이라도 깊이 알아본다면 — 그 결은 평생 가오.",
+      "별을 지키는 자 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 별빛이 자네를 한 번 깊이 알아본다면 — 그 기억은 평생 간다.",
     requiredLevel: 70,
     target: {
       kind: "coop_tier_reached",
@@ -2448,7 +2448,7 @@ export const QUESTS: Quest[] = [
     regionId: "starspire",
     title: "별을 지키는 자 — 별빛 한 줄기",
     description:
-      "별을 지키는 자에게 단 한 번의 공격으로 2,000 의 결을 새기시오 — 세 번. 한 결을 한 번에 가라앉히는 자에게만 보이는 결이 있소.",
+      "별을 지키는 자에게 단 한 번의 일격으로 2,000 의 상처를 — 세 번 새기시오. 한 번에 깊이 가르는 자에게만 보이는 자리가 있다.",
     requiredLevel: 70,
     target: {
       kind: "coop_high_dmg_attack",
@@ -2464,9 +2464,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-keeper-challenge-survive",
     regionId: "starspire",
-    title: "별을 지키는 자 — 흔들리지 않는 결",
+    title: "별을 지키는 자 — 흔들리지 않는 자세",
     description:
-      "별을 지키는 자 앞에서 다섯 번을 — 단 한 번도 쓰러지지 않고 결을 마치시오. 흔들리지 않는 결이 별빛에 새겨질 때까지.",
+      "별을 지키는 자 앞에서 다섯 번을 — 단 한 번도 쓰러지지 않고 마치시오. 흔들리지 않는 자세가 별빛에 새겨질 때까지.",
     requiredLevel: 70,
     target: {
       kind: "coop_survive_attack",
@@ -2484,7 +2484,7 @@ export const QUESTS: Quest[] = [
     regionId: "skyfolk_ruins",
     title: "천공인의 왕 — 폐도의 증인",
     description:
-      "천공인의 왕 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿으시오. 폐도가 자네의 결을 알아보는 첫 표식이오.",
+      "천공인의 왕 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 폐도가 자네를 알아보는 첫 표식이다.",
     requiredLevel: 80,
     target: {
       kind: "coop_tier_reached",
@@ -2502,7 +2502,7 @@ export const QUESTS: Quest[] = [
     regionId: "skyfolk_ruins",
     title: "천공인의 왕 — 폐도의 일격",
     description:
-      "천공인의 왕에게 단 한 번의 공격으로 3,000 의 결을 새기시오 — 세 번. 폐도가 한 자루의 결로도 흔들리는 순간이 있소.",
+      "천공인의 왕에게 단 한 번의 일격으로 3,000 의 상처를 — 세 번 새기시오. 폐도가 한 자루 칼에도 흔들리는 순간이 있다.",
     requiredLevel: 80,
     target: {
       kind: "coop_high_dmg_attack",
@@ -2520,7 +2520,7 @@ export const QUESTS: Quest[] = [
     regionId: "skyfolk_ruins",
     title: "천공인의 왕 — 폐도를 견디는 자",
     description:
-      "천공인의 왕 앞에서 다섯 번을 — 단 한 번도 쓰러지지 않고 결을 마치시오. 폐도의 결은 견디는 자만이 풀어낼 수 있소.",
+      "천공인의 왕 앞에서 다섯 번을 — 단 한 번도 쓰러지지 않고 마치시오. 폐도는 견디는 자만이 풀어낼 수 있다.",
     requiredLevel: 80,
     target: {
       kind: "coop_survive_attack",
@@ -2538,7 +2538,7 @@ export const QUESTS: Quest[] = [
     regionId: "apex_throne",
     title: "창공의 주재 — 옥좌의 증인",
     description:
-      "창공의 주재 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿으시오. 옥좌가 자네의 결을 처음으로 깊이 인정하는 표식이오.",
+      "창공의 주재 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 옥좌가 자네를 처음으로 깊이 인정하는 표식이다.",
     requiredLevel: 90,
     target: {
       kind: "coop_tier_reached",
@@ -2556,7 +2556,7 @@ export const QUESTS: Quest[] = [
     regionId: "apex_throne",
     title: "창공의 주재 — 옥좌의 일격",
     description:
-      "창공의 주재에게 단 한 번의 공격으로 4,500 의 결을 새기시오 — 세 번. 옥좌도 한 자루의 결로 흔들리는 순간이 있다 들었소.",
+      "창공의 주재에게 단 한 번의 일격으로 4,500 의 상처를 — 세 번 새기시오. 옥좌도 한 자루 칼에 흔들리는 순간이 있다 들었소.",
     requiredLevel: 90,
     target: {
       kind: "coop_high_dmg_attack",
@@ -2574,7 +2574,7 @@ export const QUESTS: Quest[] = [
     regionId: "apex_throne",
     title: "창공의 주재 — 옥좌를 견디는 자",
     description:
-      "창공의 주재 앞에서 다섯 번을 — 단 한 번도 쓰러지지 않고 결을 마치시오. 옥좌의 결을 견디는 자만이 별빛의 끝을 보오.",
+      "창공의 주재 앞에서 다섯 번을 — 단 한 번도 쓰러지지 않고 마치시오. 옥좌를 견디는 자만이 별빛의 끝을 본다.",
     requiredLevel: 90,
     target: {
       kind: "coop_survive_attack",
