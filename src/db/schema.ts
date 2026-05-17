@@ -604,3 +604,81 @@ export const coopBossAttackLog = pgTable(
   ],
 );
 
+// PvP 시즌 — 주간 (월요일 00:00 KST 시작). id 는 ISO 주차 키 (예: "2026-W20").
+// status: 'active' | 'closed'. closedAt 은 cron 이 다음 시즌 시작할 때 셋.
+// 보상 지급은 시즌 종료 시점에 cron 이 일괄 (rewardsGrantedAt 으로 idempotent).
+export const pvpSeasons = pgTable("pvp_seasons", {
+  id: text("id").primaryKey(),
+  startAt: timestamp("start_at").notNull(),
+  endAt: timestamp("end_at").notNull(),
+  status: text("status").notNull().default("active"),
+  closedAt: timestamp("closed_at"),
+  rewardsGrantedAt: timestamp("rewards_granted_at"),
+});
+
+// 시즌별 유저 Elo 레이팅. (userId, seasonId) 1 row.
+// dailyEarned / dailyResetAt 은 일일 화폐 캡 — 무제한 도전 + 철회화폐 조합의 농사
+// 인플레 방지. PR-3 매칭 API 에서 갱신.
+export const pvpRatings = pgTable(
+  "pvp_ratings",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    seasonId: text("season_id")
+      .notNull()
+      .references(() => pvpSeasons.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull().default(1000),
+    wins: integer("wins").notNull().default(0),
+    losses: integer("losses").notNull().default(0),
+    draws: integer("draws").notNull().default(0),
+    dailyEarned: integer("daily_earned").notNull().default(0),
+    dailyResetAt: timestamp("daily_reset_at"),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.seasonId] }),
+    // 시즌 순위표 — rating 내림차순 인덱스. 동률은 wins 내림차순으로 자연 정렬.
+    index("pvp_ratings_season_rating_idx").on(
+      t.seasonId,
+      sql`${t.rating} DESC`,
+    ),
+  ],
+);
+
+// PvP 매치 결과 로그. 시즌별 누적. log 는 PvPBattleState.log 그대로 jsonb.
+// outcome: 'a_win' (attacker) | 'd_win' (defender) | 'draw'.
+// 양쪽 rating before/after 를 같이 저장 — 사후 분석/UI 표시용.
+export const pvpMatches = pgTable(
+  "pvp_matches",
+  {
+    id: serial("id").primaryKey(),
+    seasonId: text("season_id")
+      .notNull()
+      .references(() => pvpSeasons.id, { onDelete: "cascade" }),
+    attackerId: text("attacker_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    defenderId: text("defender_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    outcome: text("outcome").notNull(), // 'a_win' | 'd_win' | 'draw'
+    attackerRatingBefore: integer("attacker_rating_before").notNull(),
+    defenderRatingBefore: integer("defender_rating_before").notNull(),
+    attackerRatingAfter: integer("attacker_rating_after").notNull(),
+    defenderRatingAfter: integer("defender_rating_after").notNull(),
+    log: jsonb("log").notNull().default(sql`'[]'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    // 본인 매치 이력 — 최근 N개. attacker / defender 양쪽 모두 인덱스 필요.
+    index("pvp_matches_attacker_idx").on(t.attackerId, t.createdAt),
+    index("pvp_matches_defender_idx").on(t.defenderId, t.createdAt),
+    // outcome / status 별 검색은 빈번도 낮아 별도 인덱스 X.
+    check(
+      "pvp_matches_outcome_valid",
+      sql`${t.outcome} IN ('a_win','d_win','draw')`,
+    ),
+  ],
+);
+
