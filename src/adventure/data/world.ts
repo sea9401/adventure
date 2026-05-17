@@ -40,7 +40,10 @@ export type RegionId =
   | "tower_foot"
   // 5막 「빈 옥좌의 시대」 — 황제가 쓰러진 뒤 별빛이 옛 광맥으로 떨어진 자리.
   // 깊은 동굴 안쪽으로 endgame_apex_defeated flag 가 켜져야 길이 드러난다. Lv100.
-  | "starfall_cave";
+  | "starfall_cave"
+  // 5막 PR-B1 — 운무 협곡 옆으로 별빛이 떨어진 자리. starfall_warden_felled (Ch 26) 가
+  // 켜져야 길이 드러난다. 운봉의 거인의 별빛 잔영이 협동 보스로 등장. Lv102.
+  | "starlit_canyon";
 
 export type Biome =
   | "village"
@@ -631,6 +634,25 @@ export const WORLD_MAP: WorldMap = {
       boss: { monsterName: "별빛 광맥 수호자" },
       recommendedLevel: 100,
     },
+    // ── 5막 PR-B1 — 별빛 협곡 (운무 협곡 옆) ────────────────────────────────
+    // Ch 26 「별이 떨어진 자리」 완료(starfall_warden_felled) 후 협곡 안쪽으로 별빛이
+    // 떨어진 자리가 드러난다. 운봉의 거인의 잔영이 협동 보스로 등장 — region.boss 는
+    // 미설정(운봉의 거인 패턴 유지). Lv102 권장.
+    {
+      id: "starlit_canyon",
+      name: "별빛 협곡",
+      description:
+        "운무 협곡 안쪽, 옛 거인이 잠들었던 자리에 별빛 한 점이 가라앉아 있다. 떼지어 도망쳤던 절벽 늑대들이 별빛에 데워져 다시 돌아와 있고, 협곡 깊은 자리에서 잔영 하나가 두 발을 박아 넣는다.",
+      position: { x: 1140, y: 470 },
+      biome: "mountain",
+      enemies: ["별빛 절벽 늑대", "별빛 돌풍 정령", "별빛 늑대 무리장"],
+      encounterWeights: {
+        "별빛 절벽 늑대": 45,
+        "별빛 돌풍 정령": 35,
+        "별빛 늑대 무리장": 20,
+      },
+      recommendedLevel: 102,
+    },
   ],
   edges: [
     { from: "village", to: "plains" },
@@ -837,6 +859,16 @@ export const WORLD_MAP: WorldMap = {
         kind: "story",
         flagId: "endgame_apex_defeated",
         reason: "황제가 쓰러진 뒤에야 광맥 안쪽으로 별빛이 떨어진 자리가 드러난다.",
+      },
+    },
+    // 5막 PR-B1 — 별빛 협곡. Ch 26 「별이 떨어진 자리」 완료 후에 협곡 깊은 자리가 드러난다.
+    {
+      from: "canyon",
+      to: "starlit_canyon",
+      requires: {
+        kind: "story",
+        flagId: "starfall_warden_felled",
+        reason: "별이 떨어진 첫 자리(별빛 갱도)를 정리한 뒤에야 협곡으로도 별빛이 새어 든다.",
       },
     },
     // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.
