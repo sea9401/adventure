@@ -679,7 +679,7 @@ export const ITEMS = {
     tier: 5,
   } satisfies EquipItem,
   // 별빛 두루마기 — 별을 지키는 자 협동 legend 티어 확정 드랍 (물욕템).
-  // armor 슬롯을 채우는 전스탯 균형형 — 거래 불가, 자랑용.
+  // armor 슬롯을 채우는 전스탯 균형형 — 자랑용.
   star_robe: {
     name: "별빛 두루마기",
     slot: "armor",
@@ -693,7 +693,6 @@ export const ITEMS = {
     bonus: { def: 17, str: 5, dex: 5, vit: 7, spd: 5 },
     description: "별을 지키는 자가 두르고 있던 망토가 그 잠을 깨운 자의 손에 닿자 별빛으로 결정화된 두루마기. 어느 스탯에도 치우치지 않은 옛 천공인의 유물.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
 
@@ -826,7 +825,7 @@ export const ITEMS = {
     tier: 5,
   } satisfies EquipItem,
   // 천공인의 관 — 천공인의 왕 협동 legend 티어 1% 드랍 (물욕템).
-  // accessory 슬롯, 운봉령/별빛 두루마기 위의 분포 — 거래 불가.
+  // accessory 슬롯, 운봉령/별빛 두루마기 위의 분포.
   skyfolk_crown: {
     name: "천공인의 관",
     slot: "accessory",
@@ -842,7 +841,6 @@ export const ITEMS = {
     bonus: { atk: 7, def: 7, str: 4, dex: 4, vit: 4, spd: 4, luk: 4 },
     description: "옛 천공인의 마지막 왕이 별빛에 두고 떠난 관. 닿은 자는 어느 결로도 꺾이지 않는다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
 
@@ -974,7 +972,7 @@ export const ITEMS = {
     tier: 5,
   } satisfies EquipItem,
   // 창공의 옥새 — 창공의 주재 협동 legend 티어 1% 드랍 (만렙 정점 물욕템).
-  // accessory 슬롯, 천공인의 관 위의 전스탯 + 양면 분포 — 거래 불가.
+  // accessory 슬롯, 천공인의 관 위의 전스탯 + 양면 분포.
   apex_regalia: {
     name: "창공의 옥새",
     slot: "accessory",
@@ -990,13 +988,12 @@ export const ITEMS = {
     bonus: { atk: 10, def: 10, str: 5, dex: 5, vit: 5, spd: 5, luk: 5 },
     description: "창공의 주재가 옥좌에 두고 떠난 옥새. 한 손에 별 한 자루의 무게가 그대로 실린다 — 마지막에 닿은 자에게만 허락된 결.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
 
   // ── 태고의 노룡 (월드 보스) 보상 — 용의 둥지에서 모든 모험가가 깎아 잡는 어미의 결. ──
   // gold/epic 티어 도달자에게 equipRolls 로 직접 떨어지는 무구 4종 (no debuff, BiS급).
-  // legend 티어 도달자에게는 그 위 액세서리 한 자루(태고의 비늘관) — 거래 불가, 운빨.
+  // legend 티어 도달자에게는 그 위 액세서리 한 자루(태고의 비늘관) — 운빨.
   primordial_blade: {
     name: "태고의 결검",
     slot: "weapon",
@@ -1008,7 +1005,6 @@ export const ITEMS = {
     bonus: { atk: 28, str: 14, spd: 5 },
     description: "태고의 노룡의 가장 안쪽 비늘을 깎아 결을 잡은 한손 대검. 들면 어깨에 옛 시대의 무게가 그대로 얹히면서, 그 결이 칼날 끝까지 흐른다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   primordial_aegis: {
@@ -1022,7 +1018,6 @@ export const ITEMS = {
     bonus: { def: 24, vit: 14, str: 6 },
     description: "태고의 노룡의 가슴 비늘을 그대로 뜯어 두른 두꺼운 갑주. 어떤 결도 안으로 닿지 못한다 — 어미의 무게가 가슴에 그대로 얹혀 있다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   primordial_helm: {
@@ -1036,7 +1031,6 @@ export const ITEMS = {
     bonus: { def: 11, vit: 9, str: 6 },
     description: "태고의 노룡의 머리뼈 결을 그대로 깎아 두른 투구. 한 번 쓰면 어미가 잠시 자네의 어깨에 한 결을 얹는다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   primordial_cloak: {
@@ -1051,11 +1045,10 @@ export const ITEMS = {
     bonus: { dex: 10, spd: 10, vit: 8, def: 5 },
     description: "태고의 노룡의 등에서 흘러내린 잿빛 비늘을 가는 가닥으로 풀어 짠 망토. 두르면 어깨가 가벼워지고, 동시에 어디로도 흔들리지 않는다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   // 태고의 비늘관 — legend 티어 5% 드랍 (월드 보스 정점 물욕템).
-  // accessory 슬롯, 창공의 옥새 위의 전스탯 — 거래 불가, 운빨로 한 자루.
+  // accessory 슬롯, 창공의 옥새 위의 전스탯 — 운빨로 한 자루.
   primordial_regalia: {
     name: "태고의 비늘관",
     slot: "accessory",
@@ -1071,7 +1064,6 @@ export const ITEMS = {
     bonus: { atk: 12, def: 12, str: 6, dex: 6, vit: 6, spd: 6, luk: 6 },
     description: "태고의 노룡이 마지막에 떨군 가장 안쪽 비늘 한 장을 그대로 둘러 만든 관. 한 자루로는 닿을 수 없는 결 — 모든 모험가의 누적 데미지로 어미를 쓰러뜨려야만 자네의 손에 들린다.",
     rarity: "legendary",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
 
@@ -1166,7 +1158,7 @@ export const ITEMS = {
   } satisfies EquipItem,
   // ── 천공 라인 legendary 4종 — 신규 지역(starspire/skyfolk_ruins/apex_throne) 몹에서 ──
   // ──   ultra-rare(0.00015~0.0002) 로 떨어지는 specialized lore drop. craftable 라인엔  ──
-  // ──   없는 stat 결합으로 빌드 다양성 부여. 모두 비거래.                                ──
+  // ──   없는 stat 결합으로 빌드 다양성 부여.                                            ──
   starlight_bow: {
     name: "별빛 명궁",
     slot: "weapon",
@@ -1177,7 +1169,6 @@ export const ITEMS = {
     bonus: { atk: 24, dex: 15 },
     description: "별의 첨탑 정찰자들이 한 자루씩 들고 있었다 전해지는 가느다란 활. 시위를 당기면 별빛이 시위 결을 따라 흐른다.",
     rarity: "legendary",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   ancient_sky_blade: {
@@ -1191,7 +1182,6 @@ export const ITEMS = {
     bonus: { atk: 27, str: 12, spd: 6 },
     description: "옛 천공인 전사가 폐도 끝에서 부러뜨리지 못한 채 남긴 가벼우면서 잔인하게 무거운 칼. 휘둘러야 할 결을 손이 먼저 안다.",
     rarity: "legendary",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   enthrone_plate: {
@@ -1205,7 +1195,6 @@ export const ITEMS = {
     bonus: { def: 21, vit: 15, str: 5 },
     description: "잠든 황좌 거인 내부에 함께 잠들어 있던 옛 호위병의 갑주. 두르는 자에게 옥좌의 무게가 그대로 얹힌다.",
     rarity: "legendary",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   starbound_charm: {
@@ -1219,14 +1208,13 @@ export const ITEMS = {
     bonus: { luk: 15, dex: 6, spd: 6 },
     description: "별빛 사도들이 마지막까지 품에 두고 있었다는 작은 부적. 손에 쥐면 어느 결로 떨어진 별의 자리가 어렴풋이 보인다.",
     rarity: "legendary",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
 
   // ── 천공 라인 빌드 정의 unique 18종 (Lv70~90) — 골렘갑주 패턴의 한쪽 몰빵 + 디버프 ─
   // 각 라인 잡몹에서 0.04% 로 떨어지는 specialized drop. craftable 곡선 위로 raw stat
   // 살짝 비집고 들어가지만 디버프 2~3종을 동시에 받아 특정 빌드(SPD/DEX/LUK/순수ATK/
-  // 순수DEF) 에서만 손맛이 사는 한 자루. 모두 비거래.
+  // 순수DEF) 에서만 손맛이 사는 한 자루.
   cloud_hunter_string: {
     name: "구름시위",
     slot: "weapon",
@@ -1239,7 +1227,6 @@ export const ITEMS = {
     bonus: { atk: 15, dex: 13, vit: -6, def: -4 },
     description: "구름 사냥꾼이 한쪽 어깨에 메고 있던 가느다란 활. 손에 들면 어깨가 무거워지는 만큼 시위가 가벼워진다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   fate_weaver_skein: {
@@ -1254,7 +1241,6 @@ export const ITEMS = {
     bonus: { luk: 17, dex: 4, vit: -5, def: -3 },
     description: "운명 직조자가 끝까지 풀지 못한 별빛 실타래. 손에 쥐면 운이 가닥을 따라 따라붙고, 어깨가 텅 빈다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   starlight_lens: {
@@ -1269,7 +1255,6 @@ export const ITEMS = {
     bonus: { dex: 16, luk: 4, vit: -5, def: -3 },
     description: "별점술사 잔영이 한쪽 눈에 끼우고 있던 별빛 렌즈. 손에 쥐면 어깨가 비는 만큼 별의 자리가 또렷이 보인다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   corridor_string: {
@@ -1284,7 +1269,6 @@ export const ITEMS = {
     bonus: { atk: 16, dex: 15, vit: -7, def: -4 },
     description: "떠도는 시녀가 별빛 결을 한 가닥 더 매어 둔 활. 시위에 닿으면 어깨 위 무게가 사라진다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   wraith_omen_charm: {
@@ -1299,7 +1283,6 @@ export const ITEMS = {
     bonus: { luk: 20, dex: 4, vit: -6, def: -4 },
     description: "별빛 망령이 마지막까지 쥐고 있던 별점 부적. 손에 쥐면 별빛이 다음 한 수를 일러준다 — 그 대가로 어깨가 비어 든다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   corridor_carapace: {
@@ -1314,7 +1297,6 @@ export const ITEMS = {
     bonus: { def: 24, atk: -3, spd: -5, luk: -2 },
     description: "회랑 골렘의 잔해를 그대로 두른 두꺼운 갑주. 어떤 결도 들이치지 못하지만, 발이 묶이고 운도 따르지 않는다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   starlight_dust_armor: {
@@ -1330,7 +1312,6 @@ export const ITEMS = {
     bonus: { def: 8, dex: 14, spd: 6, str: -5, vit: -7 },
     description: "별빛 망령이 두르고 있던 한 줌의 경갑. 두르면 어깨에 힘이 빠지는 만큼 발이 떠오른다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   ruin_scout_sandals: {
@@ -1345,7 +1326,6 @@ export const ITEMS = {
     bonus: { spd: 18, dex: 4, vit: -6, def: -4 },
     description: "천공인 사관이 신고 다녔다는 가벼운 별빛 짚신. 신으면 어깨가 휑한 만큼 발이 살아난다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   ruin_phantom_blade: {
@@ -1360,7 +1340,6 @@ export const ITEMS = {
     bonus: { atk: 20, spd: 14, vit: -8, def: -5 },
     description: "천공인 사관이 환영처럼 휘둘렀다는 가벼운 칼. 손에 들면 어깨가 비는 만큼 발이 한 박자 먼저 떨어진다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   skyfolk_warden_plate: {
@@ -1375,7 +1354,6 @@ export const ITEMS = {
     bonus: { def: 26, atk: -3, spd: -6, luk: -2 },
     description: "천공인 전사가 마지막까지 두르고 있던 두꺼운 갑주. 한 번 두르면 어떤 결도 안으로 닿지 못한다 — 그 대가로 발이 묶인다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   skyfolk_greatsword: {
@@ -1390,7 +1368,6 @@ export const ITEMS = {
     bonus: { atk: 26, def: -5, spd: -4, luk: -2 },
     description: "폐허의 운기가 한 손에 들고 있던 양손검. 두 손으로도 무겁지만, 한 번 휘두르면 별이 떨어진다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   road_flash_dagger: {
@@ -1405,7 +1382,6 @@ export const ITEMS = {
     bonus: { atk: 18, dex: 18, vit: -8, def: -5 },
     description: "황성 의장기수가 옥좌의 길에서 다듬은 가느다란 단검. 손에 닿으면 어깨가 비고 끝이 살아난다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   road_resolve_blade: {
@@ -1420,7 +1396,6 @@ export const ITEMS = {
     bonus: { atk: 30, def: -6, spd: -4, luk: -2 },
     description: "황성 호위병이 마지막까지 휘두른 옛 결의 칼. 무게가 손에 그대로 얹히는 만큼 발이 묶인다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   road_sandals: {
@@ -1435,7 +1410,6 @@ export const ITEMS = {
     bonus: { def: 4, spd: 18, vit: -7, str: -5 },
     description: "황성 호위병이 신고 옥좌의 길을 달렸다는 가벼운 짚신. 신으면 힘이 빠지는 만큼 발이 살아난다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   shard_seal_plate: {
@@ -1450,7 +1424,6 @@ export const ITEMS = {
     bonus: { def: 29, atk: -4, spd: -6, luk: -2 },
     description: "봉인 파편이 단단해진 옛 봉인의 결정을 그대로 두른 갑주. 어떤 무게도 결정 위로 미끄러진다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   throne_pursuer_sandals: {
@@ -1465,7 +1438,6 @@ export const ITEMS = {
     bonus: { spd: 22, dex: 6, vit: -8, def: -5 },
     description: "옥좌의 검신이 신고 옥좌 둘레를 돌았다는 가벼운 짚신. 신으면 어깨가 비고 발이 살아난다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   apostle_shard_blade: {
@@ -1480,7 +1452,6 @@ export const ITEMS = {
     bonus: { atk: 22, luk: 18, vit: -8, def: -5 },
     description: "별빛 사도가 끝까지 부러뜨리지 못한 잔검. 손에 쥐면 어깨가 비고 운이 끝을 따라 떨어진다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
   throne_starbook: {
@@ -1495,7 +1466,6 @@ export const ITEMS = {
     bonus: { luk: 24, atk: 5, vit: -8, def: -5 },
     description: "잠든 황좌 거인이 옛 황성에서 두고 떠난 별책. 손에 쥐면 어깨가 비고 별의 결이 손가락에 흐른다.",
     rarity: "unique",
-    tradable: false,
     tier: 5,
   } satisfies EquipItem,
 
@@ -1591,7 +1561,7 @@ export const ITEMS = {
   } satisfies EquipItem,
 
   // ── 기존 장비를 재료(equip)로 한 단계 끌어올린 결과물 ──
-  // 베이스가 'equip' 재료로 소비된다 (recipes.ts). 명품(unique) 업그레이드는 결과도 unique·비거래 ("손에 맞춰진 보물").
+  // 베이스가 'equip' 재료로 소비된다 (recipes.ts). 명품(unique) 업그레이드는 결과도 unique ("손에 맞춰진 보물").
   reinforced_leather_armor: {
     name: "덧댄 가죽갑옷",
     slot: "armor",
@@ -1661,7 +1631,6 @@ export const ITEMS = {
     bonus: { atk: 14, spd: -2 },
     description: "굳은 용암핵 망치에 용암 핵을 더 녹여 붓고 화염 비늘로 자루를 감싼 것. 더 둔해진 만큼, 한 번 내리치면 땅이 갈라진다.",
     rarity: "unique",
-    tradable: false,
     tier: 4,
   } satisfies EquipItem,
   azure_talon: {
@@ -1674,7 +1643,6 @@ export const ITEMS = {
     bonus: { atk: 13, dex: 6 },
     description: "하늘가르개에 초원 매 깃털을 겹겹이 둘러 균형을 잡은 것. 휘두르면 허공이 한 줄 더 깊게 갈라진다.",
     rarity: "unique",
-    tradable: false,
     tier: 4,
   } satisfies EquipItem,
   spider_queen_silk_plate: {
@@ -1687,7 +1655,6 @@ export const ITEMS = {
     bonus: { def: 5, luk: 9 },
     description: "거미여왕의 비단갑을 거미줄로 더 곱게 짜 올린 정갑. 결이 비단 위의 비단이고, 운이 더 끈질기게 따라붙는다.",
     rarity: "unique",
-    tradable: false,
     tier: 3,
   } satisfies EquipItem,
   bat_swarm_guide: {
@@ -1700,7 +1667,6 @@ export const ITEMS = {
     bonus: { spd: 6, dex: 3 },
     description: "박쥐떼의 길잡이에 박쥐 눈알을 박아 어둠을 더 멀리 읽게 한 것. 지니면 한 발 앞이 늘 환하고, 그만큼 발이 앞선다.",
     rarity: "unique",
-    tradable: false,
     tier: 3,
   } satisfies EquipItem,
   phoenix_flight_cape: {
@@ -1726,7 +1692,6 @@ export const ITEMS = {
     bonus: { atk: 8, spd: 3 },
     description: "두더지왕의 드릴에 단단한 수정 날과 마정석 동력부를 단 것. 회전이 묵직해지고, 파고드는 손맛이 한 단계 위다.",
     rarity: "unique",
-    tradable: false,
     tier: 2,
   } satisfies EquipItem,
 
@@ -1896,7 +1861,7 @@ export const ITEMS = {
     tier: 3,
   } satisfies EquipItem,
   // 유실된 명품 — 진흙 미꾸라지가 아주 드물게 떨군다. tidelord_signet 은 가시 산호 골렘/수심의 것이
-  // 떨구는 새김서로 끌어올린 결과(결과도 unique·비거래) — "손에 맞춰진 보물".
+  // 떨구는 새김서로 끌어올린 결과(결과도 unique) — "손에 맞춰진 보물".
   drowned_signet: {
     name: "물에 잠긴 인장반지",
     slot: "accessory",
@@ -1920,7 +1885,6 @@ export const ITEMS = {
     bonus: { luk: 6, spd: 2, dex: 1 },
     description: "닳은 인장반지에 심해 비늘을 녹여 새 문장을 새겨 넣은 것. 무슨 문장인지는 아무도 모르지만, 끼고 있으면 파도가 제 편인 듯하다.",
     rarity: "unique",
-    tradable: false,
     tier: 3,
   } satisfies EquipItem,
 
@@ -2091,7 +2055,7 @@ export const ITEMS = {
     tier: 3,
   } satisfies EquipItem,
   // 유실된 명품 — 들까마귀 떼가 아주 드물게 떨군다. corvid_fortune_charm 은 녹슨 자동인형/옛
-  // 성문지기가 떨구는 새김서로 끌어올린 결과(결과도 unique·비거래) — "손에 맞춰진 보물".
+  // 성문지기가 떨구는 새김서로 끌어올린 결과(결과도 unique) — "손에 맞춰진 보물".
   crows_hoard_charm: {
     name: "까마귀 둥지의 부적",
     slot: "accessory",
@@ -2115,7 +2079,6 @@ export const ITEMS = {
     bonus: { luk: 5, spd: 3, dex: 1 },
     description: "까마귀 둥지의 부적에 녹슨 동전과 톱니를 더 엮어 무겁게 한 것. 누가 손본 건지 모르지만, 지니면 운이 한층 끈질기게 따라붙는다.",
     rarity: "unique",
-    tradable: false,
     tier: 3,
   } satisfies EquipItem,
 
