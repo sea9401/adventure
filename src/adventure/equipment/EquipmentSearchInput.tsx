@@ -33,9 +33,9 @@ export function EquipmentSearchInput({
           type="button"
           onClick={() => onChange("")}
           aria-label="검색어 지우기"
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300"
+          className="absolute right-1 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300"
         >
-          <X size={12} weight="bold" />
+          <X size={14} weight="bold" />
         </button>
       )}
     </div>
