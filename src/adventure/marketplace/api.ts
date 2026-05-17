@@ -4,6 +4,8 @@ import type { ItemKind, ListResponse, Listing, SortMode } from "./types";
 export type ListQuery = {
   q?: string;
   kind?: ItemKind | "all";
+  // vault variant 키와 동일: 'base'|'c-2'|'c-1'|'c1'|'c2'|'d1'|'d2'. 'all' / undefined = 전체.
+  grade?: string | "all";
   sort?: SortMode;
   mine?: boolean;
   cursor?: string | null;
@@ -17,6 +19,7 @@ export async function fetchListings(
   const url = new URL("/api/marketplace/listings", window.location.origin);
   if (q.q) url.searchParams.set("q", q.q);
   if (q.kind && q.kind !== "all") url.searchParams.set("kind", q.kind);
+  if (q.grade && q.grade !== "all") url.searchParams.set("grade", q.grade);
   if (q.sort) url.searchParams.set("sort", q.sort);
   if (q.mine) url.searchParams.set("mine", "1");
   if (q.cursor) url.searchParams.set("cursor", q.cursor);

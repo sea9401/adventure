@@ -144,6 +144,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
   const kindParam = url.searchParams.get("kind");
+  const gradeParam = url.searchParams.get("grade");
   const sortParam = url.searchParams.get("sort");
   const VALID_SORTS = ["recent", "price_asc", "price_desc"] as const;
   type Sort = (typeof VALID_SORTS)[number];
@@ -164,6 +165,12 @@ export async function GET(req: Request) {
       return new Response("invalid kind", { status: 400 });
     }
     filters.push(eq(marketplaceListings.itemKind, kindParam));
+  }
+  if (gradeParam) {
+    if (!isValidGrade(gradeParam)) {
+      return new Response("invalid grade", { status: 400 });
+    }
+    filters.push(eq(marketplaceListings.grade, gradeParam));
   }
   if (q) filters.push(ilike(marketplaceListings.itemName, `%${q}%`));
   if (mine) filters.push(eq(marketplaceListings.sellerId, userId));
