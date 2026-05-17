@@ -1685,6 +1685,158 @@ export const MONSTERS: Record<string, Monster> = {
     auraKind: "starfall",
     onDefeatFlag: "starlit_giant_quelled",
   },
+  // ── 5막 PR-B2 — 별빛 산호초 (starlit_reef Lv104) ─────────────────────────
+  // Ch 25 직후 별빛이 산호초 섬에도 떨어졌다. 사이렌·약탈자·산호 골렘이 별빛에 데워져
+  // 다시 깨어났고, 수심의 것의 *메아리* 가 별빛을 두른 채 협동 보스로 등장.
+  "별빛 산호초 사이렌": {
+    name: "별빛 산호초 사이렌",
+    tags: ["spirit"],
+    image: "/images/monster/starfall_coralmermaid.webp",
+    hp: 2100,
+    atk: 148,
+    def: 60,
+    spd: 8,
+    evasionPct: 22,
+    exp: 260,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.09 },
+    ],
+    auraKind: "starfall",
+  },
+  "별빛 갑각 약탈자": {
+    name: "별빛 갑각 약탈자",
+    tags: ["humanoid"],
+    image: "/images/monster/starfall_shellbandit.webp",
+    hp: 2500,
+    atk: 152,
+    def: 72,
+    spd: 7,
+    exp: 270,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.10 },
+    ],
+    skill: { kind: "heavy_blow", name: "별빛 작살", everyPhases: 3, multiplier: 1.7 },
+    auraKind: "starfall",
+  },
+  "별빛 가시 산호 골렘": {
+    name: "별빛 가시 산호 골렘",
+    tags: ["golem"],
+    image: "/images/monster/starfall_coralgolem.webp",
+    hp: 3100,
+    atk: 138,
+    def: 96,
+    spd: 4,
+    exp: 290,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.12 },
+    ],
+    skill: { kind: "brace", name: "별빛 가시 껍질", damageReduction: 6 },
+    auraKind: "starfall",
+  },
+  // 수심의 메아리 — 수심의 것의 별빛 잔영. 협동 보스로만 등장 (PR-B1 의 거인 잔영 패턴).
+  // coop/data.ts 의 COOP_BOSSES.starlit_reef 로 등록. solo stat 은 시뮬·테스트 용도.
+  "수심의 메아리": {
+    name: "수심의 메아리",
+    tags: ["beast", "spirit"],
+    image: "/images/monster/starfall_deepseamonster.webp",
+    hp: 8200,
+    atk: 180,
+    def: 105,
+    spd: 6,
+    exp: 1900,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 1, amount: 6 },
+      { kind: "material", materialId: "deep_scale", chance: 1, amount: 4 },
+      { kind: "material", materialId: "coral_spine", chance: 1, amount: 4 },
+    ],
+    dropQualityBias: 4,
+    armorVulnerable: 0.3,
+    playerDefVulnerable: 0.25,
+    phaseTrigger: {
+      hpFraction: 0.4,
+      defBonus: 14,
+      message: "메아리가 한 번 더 몸을 둥글게 만다 — 별빛이 비늘 사이로 새어 든다.",
+    },
+    skill: { kind: "enrage", name: "별빛 소용돌이", hpFraction: 0.35, atkBonus: 16 },
+    auraKind: "starfall",
+    onDefeatFlag: "starlit_deep_quelled",
+  },
+  // ── 5막 PR-B2 — 별빛 성채 (starlit_keep Lv106) ───────────────────────────
+  // Ch 25 직후 별빛이 옛 변경 성채에도 떨어졌다. 까마귀·약탈자·자동인형이 별빛에
+  // 데워져 다시 깨어났고, 성문지기 자동인형의 *잔영* 이 별빛을 두른 채 협동 보스로 등장.
+  "별빛 폐성벽 까마귀": {
+    name: "별빛 폐성벽 까마귀",
+    tags: ["beast"],
+    image: "/images/monster/starfall_oldfortresscrow.webp",
+    hp: 1900,
+    atk: 150,
+    def: 60,
+    spd: 11,
+    evasionPct: 20,
+    exp: 270,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.08 },
+    ],
+    auraKind: "starfall",
+  },
+  "별빛 탈영 약탈자": {
+    name: "별빛 탈영 약탈자",
+    tags: ["humanoid"],
+    image: "/images/monster/starfall_deserterbandit.webp",
+    hp: 2350,
+    atk: 156,
+    def: 74,
+    spd: 7,
+    exp: 285,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.10 },
+    ],
+    skill: { kind: "heavy_blow", name: "별빛 투창", everyPhases: 3, multiplier: 1.7 },
+    auraKind: "starfall",
+  },
+  "별빛 녹슨 자동인형": {
+    name: "별빛 녹슨 자동인형",
+    tags: ["golem"],
+    image: "/images/monster/starfall_automaton.webp",
+    hp: 3300,
+    atk: 134,
+    def: 104,
+    spd: 3,
+    exp: 305,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.12 },
+    ],
+    skill: { kind: "brace", name: "별빛 장갑판", damageReduction: 6 },
+    auraKind: "starfall",
+  },
+  // 성문지기 잔영 — 옛 성문지기의 별빛 잔영. 협동 보스로만 등장.
+  // coop/data.ts 의 COOP_BOSSES.starlit_keep 으로 등록. solo stat 은 시뮬·테스트 용도.
+  "성문지기 잔영": {
+    name: "성문지기 잔영",
+    tags: ["golem"],
+    image: "/images/monster/starfall_oldgatekeeper.webp",
+    hp: 9000,
+    atk: 178,
+    def: 116,
+    spd: 5,
+    exp: 2000,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 1, amount: 7 },
+      { kind: "material", materialId: "scrap_iron", chance: 1, amount: 5 },
+      { kind: "material", materialId: "war_banner_scrap", chance: 1, amount: 4 },
+    ],
+    dropQualityBias: 4,
+    armorVulnerable: 0.3,
+    playerDefVulnerable: 0.25,
+    phaseTrigger: {
+      hpFraction: 0.45,
+      defBonus: 15,
+      message: "잔영이 별빛 한 점을 가슴 갑주에 끌어들이며 빗장을 한 번 더 들어 올린다.",
+    },
+    skill: { kind: "heavy_blow", name: "별빛 빗장", everyPhases: 3, multiplier: 1.7 },
+    auraKind: "starfall",
+    onDefeatFlag: "starlit_gate_quelled",
+  },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).
   "훈련용 허수아비": {

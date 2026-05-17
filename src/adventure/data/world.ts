@@ -43,7 +43,11 @@ export type RegionId =
   | "starfall_cave"
   // 5막 PR-B1 — 운무 협곡 옆으로 별빛이 떨어진 자리. starfall_warden_felled (Ch 26) 가
   // 켜져야 길이 드러난다. 운봉의 거인의 별빛 잔영이 협동 보스로 등장. Lv102.
-  | "starlit_canyon";
+  | "starlit_canyon"
+  // 5막 PR-B2 — 산호초 섬 옆/옛 변경 성채 옆. 같은 게이트(starfall_warden_felled).
+  // 수심의 메아리 / 성문지기 잔영이 협동 보스로 등장. Lv104 / Lv106.
+  | "starlit_reef"
+  | "starlit_keep";
 
 export type Biome =
   | "village"
@@ -653,6 +657,40 @@ export const WORLD_MAP: WorldMap = {
       },
       recommendedLevel: 102,
     },
+    // ── 5막 PR-B2 — 별빛 산호초 (산호초 섬 옆) ─────────────────────────────
+    // 같은 게이트(starfall_warden_felled). 수심의 것의 메아리가 협동 보스로 등장.
+    {
+      id: "starlit_reef",
+      name: "별빛 산호초",
+      description:
+        "산호초 섬 너머 안개 한가운데, 옛 수심의 것이 가라앉았던 자리에 별빛 한 점이 떠 있다. 사이렌이 옛 노래 사이에 새 음절을 섞어 부르고, 갑각 약탈자들이 한낮에도 한기를 두른 채 떠다닌다.",
+      position: { x: 960, y: -360 },
+      biome: "coast",
+      enemies: ["별빛 산호초 사이렌", "별빛 갑각 약탈자", "별빛 가시 산호 골렘"],
+      encounterWeights: {
+        "별빛 산호초 사이렌": 40,
+        "별빛 갑각 약탈자": 35,
+        "별빛 가시 산호 골렘": 25,
+      },
+      recommendedLevel: 104,
+    },
+    // ── 5막 PR-B2 — 별빛 성채 (옛 변경 성채 옆) ────────────────────────────
+    // 같은 게이트(starfall_warden_felled). 옛 성문지기의 잔영이 협동 보스로 등장.
+    {
+      id: "starlit_keep",
+      name: "별빛 성채",
+      description:
+        "옛 변경 성채 안쪽, 성문지기 자동인형이 멈춰 섰던 자리에 별빛 한 점이 가라앉아 있다. 폐성벽의 까마귀들이 별빛을 두른 채 깃을 떨구고, 빗장이 다시 한 번 들렸다 떨어진다.",
+      position: { x: 180, y: 680 },
+      biome: "ruins",
+      enemies: ["별빛 폐성벽 까마귀", "별빛 탈영 약탈자", "별빛 녹슨 자동인형"],
+      encounterWeights: {
+        "별빛 폐성벽 까마귀": 35,
+        "별빛 탈영 약탈자": 35,
+        "별빛 녹슨 자동인형": 30,
+      },
+      recommendedLevel: 106,
+    },
   ],
   edges: [
     { from: "village", to: "plains" },
@@ -869,6 +907,25 @@ export const WORLD_MAP: WorldMap = {
         kind: "story",
         flagId: "starfall_warden_felled",
         reason: "별이 떨어진 첫 자리(별빛 갱도)를 정리한 뒤에야 협곡으로도 별빛이 새어 든다.",
+      },
+    },
+    // 5막 PR-B2 — 별빛 산호초 / 별빛 성채. 같은 게이트(starfall_warden_felled).
+    {
+      from: "reef_isle",
+      to: "starlit_reef",
+      requires: {
+        kind: "story",
+        flagId: "starfall_warden_felled",
+        reason: "별이 떨어진 첫 자리(별빛 갱도)를 정리한 뒤에야 안개 너머로 별빛이 새어 든다.",
+      },
+    },
+    {
+      from: "oldwall_keep",
+      to: "starlit_keep",
+      requires: {
+        kind: "story",
+        flagId: "starfall_warden_felled",
+        reason: "별이 떨어진 첫 자리(별빛 갱도)를 정리한 뒤에야 성벽 안쪽으로 별빛이 새어 든다.",
       },
     },
     // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.

@@ -54,6 +54,30 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     lockedMessage:
       "Ch 26 「별이 떨어진 자리」를 먼저 끝내야 한다. 별빛이 옛 봉인 자리로 흩어졌음을 한 번 본 자에게만 잔영이 모습을 드러낸다.",
   },
+  // 5막 PR-B2 — 수심의 메아리. 거인 잔영(28000) 보다 한 톤 위 (30000).
+  starlit_reef: {
+    monsterName: "수심의 메아리",
+    maxHp: 30000,
+    expirationMs: 24 * 60 * 60 * 1000,
+    respawnMs: 1 * 60 * 60 * 1000,
+    onDefeatFlag: "starlit_deep_quelled",
+    onAttackFlag: "starlit_deep_engaged",
+    requiredFlag: "starfall_warden_felled",
+    lockedMessage:
+      "Ch 26 「별이 떨어진 자리」를 먼저 끝내야 한다. 별빛이 옛 봉인 자리로 흩어졌음을 한 번 본 자에게만 메아리가 모습을 드러낸다.",
+  },
+  // 5막 PR-B2 — 성문지기 잔영. 메아리(30000) 보다 한 톤 위 (33000) — 셋 중 가장 단단함.
+  starlit_keep: {
+    monsterName: "성문지기 잔영",
+    maxHp: 33000,
+    expirationMs: 24 * 60 * 60 * 1000,
+    respawnMs: 1 * 60 * 60 * 1000,
+    onDefeatFlag: "starlit_gate_quelled",
+    onAttackFlag: "starlit_gate_engaged",
+    requiredFlag: "starfall_warden_felled",
+    lockedMessage:
+      "Ch 26 「별이 떨어진 자리」를 먼저 끝내야 한다. 별빛이 옛 봉인 자리로 흩어졌음을 한 번 본 자에게만 잔영이 모습을 드러낸다.",
+  },
   starspire: {
     monsterName: "별을 지키는 자",
     maxHp: 21800,
