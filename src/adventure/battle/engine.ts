@@ -145,6 +145,10 @@ export type BattleBuffs = {
   enemySilenceTurnsLeft: number;
   // 잔상 (AP) — 적 공격 무효 잔량. > 0 이면 적 페이즈에서 데미지 적용 직전 1회 소비.
   enemyAttackBlockedCount: number;
+  // 흡령 (AP) — 가한 데미지의 pct% 만큼 자가 회복. turnsLeft 0 이면 비활성.
+  // 룬 lifesteal/특기 흡혈과 별개 가산. 라벨은 "흡령" 으로 구분.
+  playerLifestealPct: number;
+  playerLifestealTurnsLeft: number;
 };
 
 // 가변 자원 스택 / 잔량 카운트.
@@ -412,6 +416,9 @@ function isAPSkillEffectActive(
     // 잔상 — 적 공격 블록 잔량.
     case "block_next_enemy_attack":
       return state.buffs.enemyAttackBlockedCount > 0;
+    // 흡령 — 시한부 흡혈 지속.
+    case "lifesteal_dmg_pct_turns":
+      return state.buffs.playerLifestealTurnsLeft > 0;
   }
 }
 
@@ -765,6 +772,8 @@ export function initialBattleState(
       enemySpdTurnsLeft: 0,
       enemySilenceTurnsLeft: 0,
       enemyAttackBlockedCount: 0,
+      playerLifestealPct: 0,
+      playerLifestealTurnsLeft: 0,
     },
     stacks: {
       bleedStacks: 0,
@@ -791,6 +800,7 @@ function decrementTimedEffects(buffs: BattleBuffs): BattleBuffs {
     enemyDefDebuffTurnsLeft: Math.max(0, buffs.enemyDefDebuffTurnsLeft - 1),
     enemySpdTurnsLeft: Math.max(0, buffs.enemySpdTurnsLeft - 1),
     enemySilenceTurnsLeft: Math.max(0, buffs.enemySilenceTurnsLeft - 1),
+    playerLifestealTurnsLeft: Math.max(0, buffs.playerLifestealTurnsLeft - 1),
   };
 }
 
@@ -1137,8 +1147,14 @@ export function advanceTurn(
       (player.runeLifestealPct ?? 0) > 0
         ? Math.floor((dmg * player.runeLifestealPct!) / 100)
         : 0;
+    // 흡령 (AP 시한부) — buffs 의 turnsLeft 가 살아 있는 동안 가한 데미지의 pct% HP 회복.
+    // 룬/특기 흡혈과 별개 가산. 같은 trigger(공격 명중) 라 같은 라인에서 합산 라벨.
+    const apLifestealHeal =
+      state.buffs.playerLifestealTurnsLeft > 0 && state.buffs.playerLifestealPct > 0
+        ? Math.floor((dmg * state.buffs.playerLifestealPct) / 100)
+        : 0;
     const totalLifestealHeal =
-      lifestealHeal + luckyLifestealHeal + runeLifestealHeal;
+      lifestealHeal + luckyLifestealHeal + runeLifestealHeal + apLifestealHeal;
     const newPlayerHp =
       totalLifestealHeal > 0
         ? Math.min(state.playerMaxHp, state.playerHp + totalLifestealHeal)
@@ -1149,6 +1165,7 @@ export function advanceTurn(
       if (lifestealHeal > 0) lifestealLabels.push("흡혈");
       if (luckyLifestealHeal > 0) lifestealLabels.push("행운의 흡혈");
       if (runeLifestealHeal > 0) lifestealLabels.push("흡혈의 룬");
+      if (apLifestealHeal > 0) lifestealLabels.push("흡령");
       log = appendLog(log, {
         kind: "info",
         text: `[${lifestealLabels.join(" + ")}] ${playerName}의 HP +${actualLifesteal}`,
@@ -1318,6 +1335,17 @@ export function advanceTurn(
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${state.enemy.name}의 다음 공격 ${apSkillFires.effect.count}회 무효`,
+      });
+    } else if (apSkillFires?.effect.kind === "lifesteal_dmg_pct_turns") {
+      // 흡령 — 시한부 흡혈 버프. turnsLeft 동안 매 공격 데미지의 pct% heal (앞쪽 totalLifestealHeal 합산).
+      nextBuffsTimed = {
+        ...nextBuffsTimed,
+        playerLifestealPct: apSkillFires.effect.pct,
+        playerLifestealTurnsLeft: apSkillFires.effect.turns,
+      };
+      log = appendLog(log, {
+        kind: "info",
+        text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 가한 피해의 ${apSkillFires.effect.pct}% HP 회복`,
       });
     }
     // 광살참 (multi_hit_self_damage) — 자해 HP. dmg 적용 후 player HP 에서 추가 감산.

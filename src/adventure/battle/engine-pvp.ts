@@ -111,6 +111,9 @@ export type PvPSideBuffs = {
   enemySilenceTurnsLeft: number;
   // 잔상 — 상대 공격 N회 무효 (defender 일 때 소비).
   enemyAttackBlockedCount: number;
+  // 흡령 — 시한부 흡혈. 가한 데미지의 pct% 만큼 자가 회복. turnsLeft 0 이면 비활성.
+  playerLifestealPct: number;
+  playerLifestealTurnsLeft: number;
 };
 
 // 각 사이드별 가변 자원. bleedStacks → bleedStacksOnOpponent (이 사이드가 상대에게 쌓은 출혈).
@@ -199,6 +202,7 @@ function decrementTimedEffects(buffs: PvPSideBuffs): PvPSideBuffs {
     enemyDefDebuffTurnsLeft: Math.max(0, buffs.enemyDefDebuffTurnsLeft - 1),
     enemySpdTurnsLeft: Math.max(0, buffs.enemySpdTurnsLeft - 1),
     enemySilenceTurnsLeft: Math.max(0, buffs.enemySilenceTurnsLeft - 1),
+    playerLifestealTurnsLeft: Math.max(0, buffs.playerLifestealTurnsLeft - 1),
   };
 }
 
@@ -239,6 +243,8 @@ function isAPEffectActiveOnAttacker(
       return attacker.turn.queuedExtraAttacks > 0;
     case "block_next_enemy_attack":
       return attacker.buffs.enemyAttackBlockedCount > 0;
+    case "lifesteal_dmg_pct_turns":
+      return attacker.buffs.playerLifestealTurnsLeft > 0;
   }
 }
 
@@ -363,6 +369,8 @@ function buildSide(player: PlayerCombat, name: string): PvPSide {
       enemySpdTurnsLeft: 0,
       enemySilenceTurnsLeft: 0,
       enemyAttackBlockedCount: 0,
+      playerLifestealPct: 0,
+      playerLifestealTurnsLeft: 0,
     },
     stacks: {
       bleedStacksOnOpponent: 0,
@@ -1326,8 +1334,13 @@ export function advanceTurnPvP(
     (attacker.player.runeLifestealPct ?? 0) > 0
       ? Math.floor((dmg * attacker.player.runeLifestealPct!) / 100)
       : 0;
+  const apLifestealHeal =
+    attacker.buffs.playerLifestealTurnsLeft > 0 &&
+    attacker.buffs.playerLifestealPct > 0
+      ? Math.floor((dmg * attacker.buffs.playerLifestealPct) / 100)
+      : 0;
   const totalLifestealHeal =
-    lifestealHeal + luckyLifestealHeal + runeLifestealHeal;
+    lifestealHeal + luckyLifestealHeal + runeLifestealHeal + apLifestealHeal;
   const newAttackerHp =
     totalLifestealHeal > 0
       ? Math.min(attacker.maxHp, attacker.hp + totalLifestealHeal)
@@ -1338,6 +1351,7 @@ export function advanceTurnPvP(
     if (lifestealHeal > 0) lsLabels.push("흡혈");
     if (luckyLifestealHeal > 0) lsLabels.push("행운의 흡혈");
     if (runeLifestealHeal > 0) lsLabels.push("흡혈의 룬");
+    if (apLifestealHeal > 0) lsLabels.push("흡령");
     log = appendLog(log, {
       kind: "info",
       text: `[${lsLabels.join(" + ")}] ${attacker.name}의 HP +${actualLifesteal}`,
@@ -1558,6 +1572,16 @@ export function advanceTurnPvP(
     log = appendLog(log, {
       kind: "info",
       text: `[${apSkillFires.name}] ${defender.name}의 다음 공격 ${apSkillFires.effect.count}회 무효`,
+    });
+  } else if (apSkillFires?.effect.kind === "lifesteal_dmg_pct_turns") {
+    nextBuffsTimed = {
+      ...nextBuffsTimed,
+      playerLifestealPct: apSkillFires.effect.pct,
+      playerLifestealTurnsLeft: apSkillFires.effect.turns,
+    };
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 가한 피해의 ${apSkillFires.effect.pct}% HP 회복`,
     });
   }
   // 사이드 갱신 — 공격자 + 방어자.

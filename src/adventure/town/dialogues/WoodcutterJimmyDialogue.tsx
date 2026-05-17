@@ -321,6 +321,55 @@ export function WoodcutterJimmyDialogue({
         />
       );
     }
+    // 5막 깊이 — 별빛 광맥 수호자를 한 번이라도 베어 본 자에게만 풀리는 히든.
+    // 다섯 번을 거두어 오면 옛 광맥 호흡법 한 자락(흡령)을 자네 결에 옮겨 둔다.
+    if (storyFlags.has("starfall_warden_felled")) {
+      const lifesteal = quests.getEntry("village-jimmy-starfall-deepening");
+      if (lifesteal.state === "available") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "광맥의 수호자가 별빛에 데워져 다시 깨어났다는 말 — 자네가 봤다지. 사람들은 안 믿어.\n…다섯 번이면. 다섯 번을 거두어 와 주면, 노친네가 옛 광맥 호흡법 한 자락을 자네 결에 옮겨 둘 테니까. 광맥 안쪽에서 한 점씩 데려오는 결인데, 잘 익히면 자네 손에서 자네한테로 한 점이 돌아올 거요."
+            }
+            primaryAction={{
+              label: "맡겠다",
+              onClick: () => {
+                quests.accept("village-jimmy-starfall-deepening");
+                onClose();
+              },
+            }}
+          />
+        );
+      }
+      if (lifesteal.state === "active") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={`별빛에 데워진 그 광맥 놈, 또 거두어 오셨수? 다섯이면 호흡법을 옮겨 둘 게요. — 진행 ${lifesteal.progress}/5`}
+          />
+        );
+      }
+      if (lifesteal.state === "ready") {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "다섯 번을 다 — 자네 손이 광맥에 익었수.\n옛 광맥 호흡법, 잔영이 데미지를 한 점씩 자기 결로 옮겨 가는 결이지. 별빛에 데워진 이 결이라야 손에 익혀요. 자, 받아두쇼."
+            }
+            primaryAction={{
+              label: "보고를 마친다",
+              onClick: () => {
+                if (completeQuest("village-jimmy-starfall-deepening")) onClose();
+              },
+            }}
+          />
+        );
+      }
+    }
     // 5막 Ch 26 종료 후 — 별빛 광맥 수호자를 잠재운 뒤의 회상 라인. 도연 라인보다
     // 시간상 후행이라 우선 노출. 한 자리만 그런 게 아닐 거라는 5막 본격 진입 떡밥.
     if (storyFlags.has("starfall_warden_felled")) {

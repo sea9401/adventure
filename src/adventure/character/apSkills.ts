@@ -25,6 +25,7 @@ export type APSkillId =
   | "light_glide"
   | "purify"
   | "afterimage"
+  | "lifesteal"
   // 5막 「빈 옥좌의 시대」 — 별빛 깃든 기예 6종. 노수호자 유성의 그릇 빚기 의뢰 보상.
   | "starlit_mending"
   | "starlit_cut"
@@ -92,7 +93,10 @@ export type APSkillEffect =
   // 플레이어에게 걸린 모든 디버프 제거. 정화 — 광기 자신 DEF 페널티 등 클리어.
   | { kind: "cleanse_debuffs" }
   // 적의 다음 공격 N회 무효. 잔상 — 적 페이즈에서 데미지 적용 전 소비.
-  | { kind: "block_next_enemy_attack"; count: number };
+  | { kind: "block_next_enemy_attack"; count: number }
+  // 다음 N 라운드 동안 가한 모든 데미지의 pct% 만큼 자가 회복. 흡령 — 깊이 보상.
+  // 패시브 흡혈(rune_lifesteal) 과 별개로 시한부 버프. 엔진에서 두 곳 합산.
+  | { kind: "lifesteal_dmg_pct_turns"; pct: number; turns: number };
 
 export type APSkill = {
   /** 내부 id — 데이터 식별용. user-facing 은 name. */
@@ -249,6 +253,13 @@ export const AP_SKILLS: APSkill[] = [
     description: "적의 다음 공격 1회 무효",
     apCost: 3,
     effect: { kind: "block_next_enemy_attack", count: 1 },
+  },
+  {
+    id: "lifesteal",
+    name: "흡령",
+    description: "3턴 동안 가한 데미지의 30% 만큼 자가 회복",
+    apCost: 4,
+    effect: { kind: "lifesteal_dmg_pct_turns", pct: 30, turns: 3 },
   },
   // ── 5막 「빈 옥좌의 시대」 — 별빛 깃든 기예 6종 ─────────────────────────
   // 노수호자 유성의 그릇 빚기 의뢰 보상. 별빛 조각 30 deliver 시 6권 일괄 학습 가능.

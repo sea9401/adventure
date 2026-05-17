@@ -2616,6 +2616,22 @@ export const QUESTS: Quest[] = [
     giverNpcId: "village_pilgrim_meteor",
     hidden: true,
   },
+  // 5막 깊이 — 지미 히든. 별빛 광맥 수호자 5회 처치로 풀리는 호흡법(book_lifesteal).
+  // 다이얼로그 게이트: storyFlags.has("starfall_warden_felled") — 별빛 광맥 수호자를
+  // 한 번이라도 베어 본 자에게만 지미가 운을 뗀다. 보상은 흡령(귀속).
+  {
+    id: "village-jimmy-starfall-deepening",
+    regionId: "village",
+    title: "별빛 광맥의 깊이",
+    description:
+      "광맥의 수호자가 별빛에 데워져 다시 깨어났다는 말 — 자네가 봤다지. 사람들은 안 믿어. 다섯 번이면 — 다섯 번을 거두어 와 주면, 노친네가 옛 광맥 호흡법 한 자락을 자네 결에 옮겨 둘 테니까.",
+    requiredLevel: 100,
+    target: { kind: "kill", monsterName: "별빛 광맥 수호자", count: 5 },
+    reward: { gold: 3000, fame: 40, exp: 4000, skillBooks: ["book_lifesteal"] },
+    repeatable: false,
+    giverNpcId: "village_woodcutter_jimmy",
+    hidden: true,
+  },
 ];
 
 // 길드 게시판 노출용 — NPC 전속 퀘스트는 제외, kill 형만 노출.

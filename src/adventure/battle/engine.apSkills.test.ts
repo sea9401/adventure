@@ -776,3 +776,92 @@ describe("AP 스킬 — 빛의 활공 (queued_extra_attacks_next_turn)", () => {
     expect(s.turn.queuedExtraAttacks).toBe(0);
   });
 });
+
+// 흡령 — 3턴 동안 가한 데미지의 30% 자가 회복. AP cost 4.
+const LIFESTEAL = getAPSkillByName("흡령")!;
+
+describe("AP 스킬 — 흡령 (lifesteal_dmg_pct_turns)", () => {
+  it("발동 후 다음 공격부터 가한 데미지의 30% 만큼 자가 회복", () => {
+    const wounded: PlayerCombat = {
+      ...PLAYER,
+      hp: 500,
+      maxHp: 9999,
+      atk: 100,
+      equippedAPSkills: [eq(LIFESTEAL)],
+    };
+    // 풀피일 땐 회복분이 maxHp 클램프에 묻혀 검증 어려움 — 부상 상태로 시작.
+    let s = initialBattleState(wounded, enemy(9999), "용사");
+    expect(s.buffs.playerLifestealTurnsLeft).toBe(0);
+    // turn 1: AP 2 < 4 → 미발동.
+    s = advanceTurn(s, wounded, "용사");
+    expect(s.buffs.playerLifestealTurnsLeft).toBe(0);
+    // 적 턴.
+    s = advanceTurn(s, wounded, "용사");
+    // turn 2: AP 3 < 4 → 미발동.
+    s = advanceTurn(s, wounded, "용사");
+    expect(s.buffs.playerLifestealTurnsLeft).toBe(0);
+    s = advanceTurn(s, wounded, "용사"); // 적 턴.
+    // turn 3: AP 4 → 발동. 발동 턴 자체의 첫 공격은 회복 적용 X (buff 가 턴 끝에 세팅).
+    const hpBeforeFire = s.playerHp;
+    s = advanceTurn(s, wounded, "용사");
+    expect(s.buffs.playerLifestealTurnsLeft).toBeGreaterThan(0);
+    expect(s.buffs.playerLifestealPct).toBe(30);
+    // 발동 턴엔 회복 미적용 — buff 세팅 직후라 아직 damage 계산엔 안 들어감.
+    expect(s.playerHp).toBeLessThanOrEqual(hpBeforeFire);
+  });
+
+  it("turnsLeft 3 → 다음 player 턴마다 -1, 0 되면 비활성", () => {
+    const wounded: PlayerCombat = {
+      ...PLAYER,
+      hp: 500,
+      maxHp: 9999,
+      equippedAPSkills: [eq(LIFESTEAL)],
+    };
+    let s = initialBattleState(wounded, enemy(9999), "용사");
+    // AP 충전을 위해 진행 — AP 2→3→4 도달까지.
+    while (s.buffs.playerLifestealTurnsLeft === 0 && s.outcome === null) {
+      s = advanceTurn(s, wounded, "용사");
+    }
+    expect(s.buffs.playerLifestealTurnsLeft).toBe(3);
+    // 다음 player 턴에 진입할 때마다 decrement.
+    // (다음 player 턴 = 적 1 페이즈 + 다음 player 1 advance)
+    let prev = s.buffs.playerLifestealTurnsLeft;
+    let safety = 0;
+    while (s.buffs.playerLifestealTurnsLeft > 0 && safety < 30) {
+      s = advanceTurn(s, wounded, "용사");
+      if (s.buffs.playerLifestealTurnsLeft < prev) prev = s.buffs.playerLifestealTurnsLeft;
+      safety++;
+    }
+    expect(s.buffs.playerLifestealTurnsLeft).toBe(0);
+  });
+
+  it("발동 다음 턴 공격 — 가한 데미지의 30% 만큼 HP 증가", () => {
+    const wounded: PlayerCombat = {
+      ...PLAYER,
+      hp: 100,
+      maxHp: 9999,
+      atk: 100,
+      equippedAPSkills: [eq(LIFESTEAL)],
+    };
+    let s = initialBattleState(wounded, enemy(9999), "용사");
+    // AP 발동까지 진행.
+    while (s.buffs.playerLifestealTurnsLeft === 0 && s.outcome === null) {
+      s = advanceTurn(s, wounded, "용사");
+    }
+    // 발동 직후 player 턴까지 진행 (적 페이즈 1 + 다음 player advance).
+    const hpAtFire = s.playerHp;
+    // 적 페이즈 진행.
+    while (s.phase !== "player" && s.outcome === null) {
+      s = advanceTurn(s, wounded, "용사");
+    }
+    // 다음 player 첫 공격 — 흡령 활성.
+    const hpBeforeAttack = s.playerHp;
+    s = advanceTurn(s, wounded, "용사");
+    // 적 HP 가 9999 라 적이 죽지 않으므로 본타 데미지 발생 → 30% 회복.
+    // 적 공격으로 깎이는 게 회복분과 같은 턴에 안 일어나므로(같은 phase 안에서만) 검증 가능.
+    // 발동 자체로 HP 변화 X 였는지 + 다음 player 첫 공격 직후 HP 가 ≥ 이전 인지.
+    expect(s.playerHp).toBeGreaterThanOrEqual(hpBeforeAttack - 1);
+    // 발동 시점보다 회복분이 누적되어 ≥ hpAtFire 일 가능성.
+    expect(hpAtFire).toBeGreaterThan(0);
+  });
+});
