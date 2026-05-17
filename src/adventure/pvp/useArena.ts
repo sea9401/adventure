@@ -18,6 +18,25 @@ export type MatchDetail = {
   log: BattleLogEntry[];
 };
 
+export type ArenaStatsResponse = {
+  seasonId: string;
+  timeline: { id: number; createdAt: string; ratingAfter: number }[];
+  peak: { rating: number; at: string } | null;
+  currentStreak: {
+    kind: "win" | "loss" | "draw" | "none";
+    count: number;
+  };
+  frequentOpponents: {
+    userId: string;
+    name: string;
+    isBot: boolean;
+    matches: number;
+    wins: number;
+    losses: number;
+    draws: number;
+  }[];
+};
+
 export type ArenaSeason = {
   id: string;
   startAt: string;
@@ -173,6 +192,47 @@ export function useArena() {
     onCooldown,
     cooldownSecondsLeft: Math.ceil(msLeft / 1000),
   };
+}
+
+// 통계 탭 lazy fetch — 탭 처음 진입 시에만 호출. 다른 탭만 보면 평소 0 추가 요청.
+// useAsyncData 를 안 쓰는 이유: 마운트 시점이 곧 fetch 시점이라야 lazy 가 성립하는데,
+// useArena 안에 두면 페이지 진입 즉시 호출. StatsView 컴포넌트 안에서만 마운트되게.
+export function useArenaStats(): {
+  stats: ArenaStatsResponse | null;
+  loading: boolean;
+  error: string | null;
+} {
+  const [stats, setStats] = useState<ArenaStatsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetch("/api/pvp/stats", { signal: controller.signal })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return (await r.json()) as ArenaStatsResponse;
+      })
+      .then((d) => {
+        if (!cancelled) setStats(d);
+      })
+      .catch((e) => {
+        if (cancelled || e?.name === "AbortError") return;
+        setError(e instanceof Error ? e.message : "로드 실패");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
+
+  return { stats, loading, error };
 }
 
 // 단일 매치 로그 lazy fetch — 전투기록 탭에서 매치를 펼쳤을 때만 호출.

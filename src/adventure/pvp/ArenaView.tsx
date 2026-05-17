@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+  ChartLineUp,
   ClockCountdown,
   ClockCounterClockwise,
   Sword,
@@ -14,9 +15,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { TabBar } from "@/components/ui/TabBar";
 import { BattleLogList } from "@/adventure/battle/BattleLogList";
 import { useArena, useMatchLog, type ChallengeResponse } from "./useArena";
+import { StatsView } from "./StatsView";
 import { tierFor, tierProgress } from "./tiers";
 
-type ArenaTab = "leaderboard" | "recent";
+type ArenaTab = "leaderboard" | "recent" | "stats";
 
 const TABS = [
   {
@@ -28,6 +30,11 @@ const TABS = [
     key: "recent" as const,
     label: "전투기록",
     icon: <ClockCounterClockwise size={14} weight="duotone" />,
+  },
+  {
+    key: "stats" as const,
+    label: "통계",
+    icon: <ChartLineUp size={14} weight="duotone" />,
   },
 ];
 
@@ -121,11 +128,9 @@ export function ArenaView() {
         onChange={setActiveTab}
         ariaLabel="아레나 보기"
       />
-      {activeTab === "leaderboard" ? (
-        <Leaderboard top={status.top} />
-      ) : (
-        <RecentMatches recent={status.recent} />
-      )}
+      {activeTab === "leaderboard" && <Leaderboard top={status.top} />}
+      {activeTab === "recent" && <RecentMatches recent={status.recent} />}
+      {activeTab === "stats" && <StatsView />}
     </div>
   );
 }
