@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CaretRight, X } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
+import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 import {
   COOP_ATTACK_COOLDOWN_MS,
   COOP_BOSSES,
@@ -16,6 +19,7 @@ import type { RegionId } from "@/adventure/data/world";
 import type { BattleLogEntry } from "@/adventure/battle/engine";
 import { BattleLogList } from "@/adventure/battle/BattleLogList";
 import { MONSTERS } from "@/adventure/data/monsters";
+import type { CoopAttackLogRow } from "./useCoopBoss";
 
 type Props = {
   regionId: string;
@@ -73,6 +77,8 @@ export function CoopBossCard({
     tier: CoopRewardTier;
     applied: AppliedCoopReward;
   } | null>(null);
+  // 전투 로그 상세 모달 — 카드 안 펼침 대신 별도 큰 페이지로 노출.
+  const [openLog, setOpenLog] = useState<CoopAttackLogRow | null>(null);
   const tickRef = useRef<NodeJS.Timeout | null>(null);
   // 이미 kill 카운터에 반영한 sessionId — handleAttack(내 일격이 마지막) 과 polling
   // (다른 사람이 마지막) 양쪽에서 호출될 수 있으므로 중복 방지.
@@ -362,7 +368,7 @@ export function CoopBossCard({
         </details>
       )}
 
-      {/* 전투 로그 — 모든 참여자의 공격을 시간순으로, 펼치면 실제 BattleLogEntry 노출. */}
+      {/* 전투 로그 — 한 줄 = 한 참가자 공격. 클릭하면 별도 모달에 큰 화면으로 로그 노출. */}
       {recentLogs.length > 0 && (
         <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs dark:border-zinc-800 dark:bg-zinc-900/50">
           <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
@@ -374,30 +380,29 @@ export function CoopBossCard({
                 key={row.id}
                 className={`rounded border ${row.mine ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/30" : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/40"}`}
               >
-                <details>
-                  <summary
-                    className={`flex cursor-pointer list-none items-baseline justify-between gap-2 p-1.5 tabular-nums [&::-webkit-details-marker]:hidden ${row.mine ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"}`}
-                  >
-                    <span className="min-w-0 truncate">
-                      <span className={row.mine ? "font-semibold" : ""}>
-                        {row.name}
+                <button
+                  type="button"
+                  onClick={() => setOpenLog(row)}
+                  disabled={row.log.length === 0}
+                  className={`flex w-full cursor-pointer items-baseline justify-between gap-2 p-1.5 text-left tabular-nums hover:bg-zinc-100/60 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-zinc-800/40 ${row.mine ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-700 dark:text-zinc-300"}`}
+                >
+                  <span className="min-w-0 truncate">
+                    <span className={row.mine ? "font-semibold" : ""}>
+                      {row.name}
+                    </span>
+                    {row.diedEarly && (
+                      <span className="ml-1 text-rose-600 dark:text-rose-400">
+                        (쓰러짐)
                       </span>
-                      {row.diedEarly && (
-                        <span className="ml-1 text-rose-600 dark:text-rose-400">
-                          (쓰러짐)
-                        </span>
-                      )}
-                    </span>
-                    <span className="shrink-0">
-                      가한 데미지 {row.damageDealt.toLocaleString()}
-                    </span>
-                  </summary>
-                  {row.log.length > 0 && (
-                    <div className="border-t border-zinc-200 px-1.5 py-1.5 dark:border-zinc-800">
-                      <BattleLogList entries={row.log} compact />
-                    </div>
-                  )}
-                </details>
+                    )}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span>가한 데미지 {row.damageDealt.toLocaleString()}</span>
+                    {row.log.length > 0 && (
+                      <CaretRight size={12} weight="bold" className="opacity-60" />
+                    )}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
@@ -407,7 +412,81 @@ export function CoopBossCard({
       {error && (
         <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{error}</p>
       )}
+
+      {openLog && (
+        <CoopBattleLogModal row={openLog} onClose={() => setOpenLog(null)} />
+      )}
     </Card>
+  );
+}
+
+// 협동 전투 로그 전체 화면 모달 — 카드 안 펼침 대신 큰 화면에서 로그를 본다.
+// 모바일에선 화면을 거의 꽉 채우는 sheet, 데스크탑에선 가운데 정렬된 큰 패널.
+function CoopBattleLogModal({
+  row,
+  onClose,
+}: {
+  row: CoopAttackLogRow;
+  onClose: () => void;
+}) {
+  useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="coop-log-title"
+      className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/60 p-2 backdrop-blur-sm sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        ref={contentRef}
+        onClick={(e) => e.stopPropagation()}
+        className="flex h-full w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:h-[85vh]"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-zinc-200 p-4 dark:border-zinc-800">
+          <div className="min-w-0">
+            <h2
+              id="coop-log-title"
+              className={`truncate text-base font-semibold ${row.mine ? "text-emerald-700 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-100"}`}
+            >
+              {row.name}
+              {row.diedEarly && (
+                <span className="ml-1.5 text-sm font-normal text-rose-600 dark:text-rose-400">
+                  (쓰러짐)
+                </span>
+              )}
+            </h2>
+            <p className="mt-0.5 text-xs tabular-nums text-zinc-600 dark:text-zinc-300">
+              가한 데미지 {row.damageDealt.toLocaleString()}
+              {row.damageTaken > 0 && (
+                <span className="ml-2 text-zinc-500 dark:text-zinc-400">
+                  · 받은 데미지 {row.damageTaken.toLocaleString()}
+                </span>
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="닫기"
+            className="shrink-0 rounded-md p-1 text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+          >
+            <X size={20} weight="bold" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3">
+          {row.log.length > 0 ? (
+            <BattleLogList entries={row.log} />
+          ) : (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              남은 로그가 없습니다.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
