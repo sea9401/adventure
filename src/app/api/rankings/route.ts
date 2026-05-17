@@ -1,7 +1,20 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { getAdminEmailsList } from "@/lib/server/isAdmin";
 import { kstWeekStartKey } from "@/adventure/tower/weeklyTypes";
+
+// 관리자 계정을 랭킹에서 제외하는 SQL 필터. ADMIN_EMAILS 가 비어 있으면 빈 fragment.
+// 호출처는 stats CTE 의 WHERE 절에 그대로 합성한다.
+function excludeAdminEmails(): SQL {
+  const emails = getAdminEmailsList();
+  if (emails.length === 0) return sql``;
+  const list = sql.join(
+    emails.map((e) => sql`${e}`),
+    sql`, `,
+  );
+  return sql`AND LOWER(u.email) NOT IN (${list})`;
+}
 
 const VALID_METRICS = [
   "level",
@@ -75,6 +88,7 @@ async function fetchRows(metric: Metric): Promise<RankRow[]> {
       LEFT JOIN saves_kv l ON l.user_id = u.id AND l.key = 'adventure-log.v2'
       LEFT JOIN saves_kv p ON p.user_id = u.id AND p.key = 'character-profile.v2'
       WHERE COALESCE(u.game_name, p.value->>'name') IS NOT NULL
+        ${excludeAdminEmails()}
     ),
     ranked AS (
       SELECT *, ROW_NUMBER() OVER (ORDER BY ${orderBy})::int AS rank
@@ -125,6 +139,7 @@ async function fetchTowerWeekRows(): Promise<RankRow[]> {
       WHERE w.value->>'weekStartedAt' = ${thisWeek}
         AND COALESCE((w.value->>'weekHighest')::int, 0) > 0
         AND COALESCE(u.game_name, p.value->>'name') IS NOT NULL
+        ${excludeAdminEmails()}
     ),
     ranked AS (
       SELECT *, ROW_NUMBER() OVER (ORDER BY week_highest DESC, updated_at ASC)::int AS rank
@@ -172,6 +187,7 @@ async function fetchTowerChallengeRows(): Promise<RankRow[]> {
       LEFT JOIN saves_kv p ON p.user_id = u.id AND p.key = 'character-profile.v2'
       WHERE COALESCE((ch.value->'progress'->>'highestFloor')::int, 0) > 0
         AND COALESCE(u.game_name, p.value->>'name') IS NOT NULL
+        ${excludeAdminEmails()}
     ),
     ranked AS (
       SELECT *, ROW_NUMBER() OVER (ORDER BY challenge_highest DESC, updated_at ASC)::int AS rank
