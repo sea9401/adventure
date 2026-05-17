@@ -76,6 +76,12 @@ export type Monster = {
   playerDefVulnerable?: number;
   /** 처치 시 set 할 storyFlag id — 보스용. 두 번째 처치부터는 useStoryFlags.set 이 idempotent 라 무시. */
   onDefeatFlag?: string;
+  /**
+   * 5막 「빈 옥좌의 시대」 별빛 변종 표식. "starfall" — 황제가 쓰러진 뒤 별빛이 떨어진
+   * 자리에서 깨어난 변종. 향후 별빛 깃든 기예 발동 조건·드랍 풀 식별·도감 그룹화 등에
+   * 쓰일 분류 태그. PR-A 시점에서는 메타데이터로만 보존(전투 로직에 영향 없음).
+   */
+  auraKind?: "starfall";
 };
 
 export const MONSTERS: Record<string, Monster> = {
@@ -1526,6 +1532,81 @@ export const MONSTERS: Record<string, Monster> = {
     // 시그니처 — 무게 자체로 갑주를 가른다. 매 공격이 플레이어 DEF 14 만큼 무시.
     skill: { kind: "pierce", name: "태고의 무게", armorPierce: 14 },
     onDefeatFlag: "primordial_dragon_felled",
+  },
+  // ── 5막 「빈 옥좌의 시대」 — 별빛 변종 (starfall_cave Lv100) ────────────────
+  // 황제가 쓰러진 뒤 별빛이 옛 광맥으로 떨어진 자리. 깊은 동굴의 잡몹들이 별빛에 데워져
+  // 변형된 채 다시 깨어났다. 각 변종은 base 몹 대비 hp/atk 대폭 강화 + 별빛 조각 드랍.
+  // auraKind: "starfall" 분류는 5막 후속 PR(별빛 깃든 기예·도감 그룹) 에서 활용된다.
+  "별빛 박쥐": {
+    name: "별빛 박쥐",
+    tags: ["beast"],
+    image: "/images/monster/starfall_bat.webp",
+    hp: 1850,
+    atk: 138,
+    def: 62,
+    spd: 11,
+    evasionPct: 15,
+    exp: 240,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.08 },
+    ],
+    auraKind: "starfall",
+  },
+  "별빛 동굴뱀": {
+    name: "별빛 동굴뱀",
+    tags: ["beast"],
+    image: "/images/monster/starfall_cavesnake.webp",
+    hp: 2200,
+    atk: 144,
+    def: 72,
+    spd: 8,
+    exp: 250,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.09 },
+    ],
+    auraKind: "starfall",
+  },
+  "별빛 광물 골렘": {
+    name: "별빛 광물 골렘",
+    tags: ["golem"],
+    image: "/images/monster/starfall_minigolem.webp",
+    hp: 3000,
+    atk: 132,
+    def: 96,
+    spd: 4,
+    exp: 270,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.12 },
+    ],
+    auraKind: "starfall",
+  },
+  // 별빛 광맥 수호자 — Ch 2 「깊은 동굴」 의 광맥 수호자가 별빛에 다시 데워져 되살아난
+  // 5막 도입 보스. region.boss 도전 버튼으로 진입. 처치 시 Ch 26 「별이 떨어진 자리」 완료.
+  // PR-A 시점에서는 별빛 조각 드랍만 — 별빛 깃든 기예 / 별빛 무구 라인은 후속 PR.
+  "별빛 광맥 수호자": {
+    name: "별빛 광맥 수호자",
+    tags: ["golem"],
+    image: "/images/monster/starfall_warden.webp",
+    hp: 6200,
+    atk: 168,
+    def: 105,
+    spd: 5,
+    exp: 1400,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 1, amount: 4 },
+      { kind: "material", materialId: "mana_crystal", chance: 1, amount: 3 },
+    ],
+    dropQualityBias: 4,
+    armorVulnerable: 0.3,
+    playerDefVulnerable: 0.25,
+    phaseTrigger: {
+      hpFraction: 0.4,
+      defBonus: 14,
+      message: "수호자의 광맥 안쪽에서 별빛이 한 점 더 점화된다.",
+    },
+    skill: { kind: "pierce", name: "별빛 결", armorPierce: 8 },
+    auraKind: "starfall",
+    onDefeatFlag: "starfall_warden_felled",
   },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).

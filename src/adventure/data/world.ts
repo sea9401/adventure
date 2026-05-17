@@ -37,7 +37,10 @@ export type RegionId =
   // 용비늘 묘지 너머 — 월드 보스 "태고의 노룡" 이 깨어 있는 둥지. 입장은 wyrm_warden_felled 필수.
   | "dragon_nest"
   // 엔드컨텐츠 — 옛 변경 성채 너머에 잡몹 없이 솔로 무한 탑(고탑) 도전만 있는 지역.
-  | "tower_foot";
+  | "tower_foot"
+  // 5막 「빈 옥좌의 시대」 — 황제가 쓰러진 뒤 별빛이 옛 광맥으로 떨어진 자리.
+  // 깊은 동굴 안쪽으로 endgame_apex_defeated flag 가 켜져야 길이 드러난다. Lv100.
+  | "starfall_cave";
 
 export type Biome =
   | "village"
@@ -608,6 +611,26 @@ export const WORLD_MAP: WorldMap = {
       tags: ["tower"],
       recommendedLevel: 70,
     },
+    // ── 5막 도입 — 별빛 갱도 (깊은 동굴 안쪽) ───────────────────────────────
+    // 옥좌의 주재가 쓰러진 뒤 별빛 한 점이 옛 광맥 안쪽으로 떨어졌다. 깊은 동굴의
+    // 광맥 너머에서 별빛에 데워진 잡것들이 다시 깨어났다. 입장은 endgame_apex_defeated
+    // flag 가 켜져야 — 즉 Ch 25 「옥좌의 주재」 협동전 클리어 후. Lv100 권장.
+    {
+      id: "starfall_cave",
+      name: "별빛 갱도",
+      description:
+        "깊은 동굴 안쪽, 광맥이 끊긴 자리에 별빛 한 점이 가라앉아 있다. 천 길 아래로 떨어진 별의 흔적 — 광맥의 옛 잡것들이 그 빛에 데워져 다시 깨어났다.",
+      position: { x: 30, y: 40 },
+      biome: "cave",
+      enemies: ["별빛 박쥐", "별빛 동굴뱀", "별빛 광물 골렘"],
+      encounterWeights: {
+        "별빛 박쥐": 35,
+        "별빛 동굴뱀": 35,
+        "별빛 광물 골렘": 30,
+      },
+      boss: { monsterName: "별빛 광맥 수호자" },
+      recommendedLevel: 100,
+    },
   ],
   edges: [
     { from: "village", to: "plains" },
@@ -804,6 +827,16 @@ export const WORLD_MAP: WorldMap = {
         kind: "story",
         flagId: "gatekeeper_felled",
         reason: "옛 성문지기를 쓰러뜨려야 그 너머의 봉인된 길이 열린다.",
+      },
+    },
+    // 5막 도입 — 별빛 갱도. 옥좌의 주재 협동전 클리어 후에 깊은 동굴 안쪽으로 길이 드러난다.
+    {
+      from: "deep_cave",
+      to: "starfall_cave",
+      requires: {
+        kind: "story",
+        flagId: "endgame_apex_defeated",
+        reason: "황제가 쓰러진 뒤에야 광맥 안쪽으로 별빛이 떨어진 자리가 드러난다.",
       },
     },
     // 마을 간 직통 이동 (fast-travel) — 양쪽 마을을 모두 발견했을 때만 통행.
