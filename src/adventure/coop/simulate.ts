@@ -8,10 +8,13 @@
 
 import {
   advanceTurn,
+  appendLog,
   initialBattleState,
   type BattleLogEntry,
+  type BattleState,
   type PlayerCombat,
 } from "@/adventure/battle/engine";
+import { AP_CAP } from "@/adventure/character/apSkills";
 import { MONSTERS, type Monster } from "@/adventure/data/monsters";
 
 export type CoopAttackResult = {
@@ -75,7 +78,41 @@ export function simulateCoopAttack(input: CoopAttackInput): CoopAttackResult {
     },
   };
 
-  const log: BattleLogEntry[] = [];
+  // resolveBattle 과 같은 hp_bar/turn_marker 규약 — BattleLogList 가 같은 컴포넌트로
+  // 라이브/협동 양쪽 로그를 그린다. 협동 sim 이 advanceTurn 만 직접 돌리던 시절엔
+  // 이 entry 들이 누락돼 협동 보스 펼친 로그에 체력바·AP 핍이 안 떴다.
+  // AP 스킬 미장착자는 apMax=0 — UI 가 핍 영역 자체를 그리지 않는다.
+  const apMaxForLog =
+    (input.player.equippedAPSkills?.length ?? 0) > 0 ? AP_CAP : 0;
+  const hpBarEntry = (s: BattleState): BattleLogEntry => ({
+    kind: "hp_bar",
+    text: "",
+    turn: "player",
+    playerHp: s.playerHp,
+    playerMaxHp: s.playerMaxHp,
+    enemyHp: s.enemyHp,
+    enemyMaxHp: s.enemy.hp,
+    ap: s.ap,
+    apMax: apMaxForLog,
+  });
+  const turnMarkerText = (turnNo: number, ap: number): string =>
+    `${turnNo}턴 · AP ${ap}`;
+
+  // 초기 entry (적 등장 / 능력 안내 등) 는 player 턴으로 태깅 + "1턴" 마커 박기.
+  // 선공자 캐시 — 사이클 정의가 선공자에 따라 달라진다 (resolveBattle 과 동일 규약).
+  const playerFirstStrike = state.phase === "player";
+  state = {
+    ...state,
+    log: [
+      ...state.log.map((e) => ({ ...e, turn: "player" as const })),
+      {
+        kind: "turn_marker",
+        text: turnMarkerText(1, state.ap),
+        turn: "player" as const,
+      },
+    ],
+  };
+
   let turnsRun = 0;
   const maxTurns = input.turns;
 
@@ -85,13 +122,40 @@ export function simulateCoopAttack(input: CoopAttackInput): CoopAttackResult {
     state.playerHp > 0 &&
     state.enemyHp > 0
   ) {
+    const prevPhase = state.phase;
+    const prevLogLen = state.log.length;
     state = advanceTurn(state, input.player, input.playerName, { kind: "attack" });
-    // 한 player turn + enemy turn 이 한 사이클이지만 advanceTurn 은 phase 단위로 진행.
-    // 한 사이클 (player → enemy → 다시 player) 을 1 turn 으로 카운트 — phase 가 player 로 돌아올 때 +1.
+    // advanceTurn 호출 직전의 phase 를 turn context 로 — 새 entry 들에 부여.
+    if (state.log.length > prevLogLen) {
+      const tagged = state.log.map((e, idx) =>
+        idx < prevLogLen || e.turn ? e : { ...e, turn: prevPhase },
+      );
+      state = { ...state, log: tagged };
+    }
+    // 한 사이클 (player → enemy → 다시 player) 을 1 turn 으로 카운트.
     if (state.phase === "player") turnsRun += 1;
+    // 사이클 끝 — HP 스냅샷 + 다음 사이클 turn_marker. resolveBattle 과 같은 조건식.
+    const cycleEnded = playerFirstStrike
+      ? prevPhase === "enemy" && state.phase === "player"
+      : prevPhase === "player" && state.phase === "enemy";
+    if (cycleEnded && state.turn.completedPlayerTurns > 0) {
+      const turnNo = state.turn.completedPlayerTurns + 1;
+      state = {
+        ...state,
+        log: appendLog(appendLog(state.log, hpBarEntry(state)), {
+          kind: "turn_marker",
+          text: turnMarkerText(turnNo, state.ap),
+          turn: "player",
+        }),
+      };
+    }
   }
 
+  // 종료 시점 마지막 HP 스냅샷 — 사용자가 펼친 로그의 마지막 줄로 결과를 확인.
+  state = { ...state, log: appendLog(state.log, hpBarEntry(state)) };
+
   // log 추출 — engine 이 state.log 에 누적.
+  const log: BattleLogEntry[] = [];
   for (const entry of state.log) log.push(entry);
 
   const damageDealt = Math.max(0, input.bossCurrentHp - state.enemyHp);
