@@ -71,6 +71,7 @@ export function simulateCoopAttack(input: CoopAttackInput): CoopAttackResult {
   state = {
     ...state,
     enemyHp: input.bossCurrentHp,
+    isBoss: true,
     flags: { ...state.flags, phaseTriggered: alreadyTriggered },
     buffs: {
       ...state.buffs,
