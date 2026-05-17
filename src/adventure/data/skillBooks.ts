@@ -24,6 +24,7 @@ export type SkillBookId =
   | "book_light_glide"
   | "book_purify"
   | "book_afterimage"
+  | "book_lifesteal"
   // 5막 「빈 옥좌의 시대」 — 별빛 깃든 기예 6종. 노수호자 유성 보상. 귀속.
   | "book_starlit_mending"
   | "book_starlit_cut"
@@ -191,6 +192,15 @@ export const SKILL_BOOKS: Record<SkillBookId, SkillBook> = {
     description:
       "그림자만 남기고 빠져나가는 보법의 결. 사용하면 '잔상' (AP 3) 을 학습한다. 귀속.",
     learnsSkillId: "afterimage",
+    tradable: false,
+  },
+  // 5막 「빈 옥좌의 시대」 깊이 — 별빛 광맥 수호자 누적 5회 처치 보상 (지미 히든 의뢰). 귀속.
+  book_lifesteal: {
+    id: "book_lifesteal",
+    name: "스킬북 — 흡령",
+    description:
+      "별빛이 데워진 광맥 안에서 잔영이 데미지를 한 점씩 자기 결로 옮겨 가는 호흡법. 사용하면 '흡령' (AP 4) 을 학습한다. 귀속.",
+    learnsSkillId: "lifesteal",
     tradable: false,
   },
   // ── 5막 「빈 옥좌의 시대」 — 별빛 깃든 기예 6권. 노수호자 유성의 그릇 빚기 의뢰 보상. ─

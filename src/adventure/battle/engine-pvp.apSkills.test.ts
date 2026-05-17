@@ -439,3 +439,51 @@ describe("PvP AP — 슬롯 발동 조건", () => {
     expect(s.p1.turn.apSkillFiredThisTurn).toBeNull();
   });
 });
+
+const LIFESTEAL = getAPSkillByName("흡령")!;
+
+describe("PvP AP — 흡령 (lifesteal_dmg_pct_turns)", () => {
+  it("p1 발동 시 자기 사이드 buffs 에 lifestealPct/TurnsLeft 세팅", () => {
+    const wounded: PlayerCombat = {
+      ...BASE,
+      hp: 1000,
+      maxHp: 9999,
+      atk: 100,
+      equippedAPSkills: [slot(LIFESTEAL)],
+    };
+    let s = initialBattleStatePvP(wounded, BASE, "p1", "p2");
+    expect(s.p1.buffs.playerLifestealTurnsLeft).toBe(0);
+    // turn 1 p1: AP 2 < 4 — 미발동.
+    s = attack(s);
+    expect(s.p1.buffs.playerLifestealTurnsLeft).toBe(0);
+    s = attack(s); // p2 평타.
+    // turn 2 p1: AP 3 < 4 — 미발동.
+    s = attack(s);
+    expect(s.p1.buffs.playerLifestealTurnsLeft).toBe(0);
+    s = attack(s); // p2 평타.
+    // turn 3 p1: AP 4 — 발동.
+    s = attack(s);
+    expect(s.p1.buffs.playerLifestealTurnsLeft).toBe(3);
+    expect(s.p1.buffs.playerLifestealPct).toBe(30);
+    // 상대 buff 은 불변.
+    expect(s.p2.buffs.playerLifestealTurnsLeft).toBe(0);
+  });
+
+  it("발동 다음 player 페이즈 진입 시 turnsLeft -1", () => {
+    const wounded: PlayerCombat = {
+      ...BASE,
+      hp: 1000,
+      maxHp: 9999,
+      equippedAPSkills: [slot(LIFESTEAL)],
+    };
+    let s = initialBattleStatePvP(wounded, BASE, "p1", "p2");
+    while (s.p1.buffs.playerLifestealTurnsLeft === 0 && s.outcome === null) {
+      s = attack(s);
+    }
+    expect(s.p1.buffs.playerLifestealTurnsLeft).toBe(3);
+    // p2 페이즈 진행 후 다시 p1 진입 — decrement.
+    s = attack(s); // p2.
+    s = attack(s); // p1 진입 + 공격 — decrement 됨.
+    expect(s.p1.buffs.playerLifestealTurnsLeft).toBe(2);
+  });
+});
