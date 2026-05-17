@@ -30,6 +30,12 @@ export type BattleLogEntry =
        * 호출부 변경 최소화). 옛 로그 (서버 캐시 / DB) 는 미동봉 — 클라 폴백.
        */
       turn?: "player" | "enemy";
+      /**
+       * PvP 전용 — 이 entry 를 발생시킨 액터 사이드 (p1/p2). engine-pvp 의 resolveBattlePvP
+       * 가 advanceTurnPvP 전후의 log 차분을 보고 태깅한다. API 가 "me=p1" 관점으로
+       * `turn` / `kind` 를 재매핑할 때 사용. PvE 에는 미사용.
+       */
+      side?: "p1" | "p2";
     }
   | {
       // 매 턴 종료 시점 (그리고 전투 종료 시) 양쪽 HP 스냅샷. UI 가 텍스트형 막대로 렌더.
@@ -37,6 +43,7 @@ export type BattleLogEntry =
       kind: "hp_bar";
       text: string;
       turn?: "player" | "enemy";
+      side?: "p1" | "p2";
       playerHp: number;
       playerMaxHp: number;
       enemyHp: number;

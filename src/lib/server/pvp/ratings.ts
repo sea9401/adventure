@@ -12,7 +12,7 @@
 import { and, desc, eq, or } from "drizzle-orm";
 import { db } from "@/db";
 import { pvpMatches, pvpRatings } from "@/db/schema";
-import { ELO_INITIAL, applyEloMatch } from "./elo";
+import { ELO_INITIAL, applyEloMatch, computeNewRating } from "./elo";
 
 export type PvPRatingRow = typeof pvpRatings.$inferSelect;
 export type PvPMatchRow = typeof pvpMatches.$inferSelect;
@@ -142,6 +142,73 @@ export async function recordMatchAndUpdateRatings(args: {
     });
 
     return { attackerAfter, defenderAfter };
+  });
+}
+
+// 봇 매치 전용 — 챌린저 측 rating 만 업데이트하고 봇의 고정 rating 으로 pvpMatches row 박는다.
+// 봇은 pvp_ratings row 가 없으므로 그쪽 select/update 는 스킵. 봇 rating 은 항상 before==after.
+export async function recordBotMatchAndUpdateRating(args: {
+  seasonId: string;
+  attackerId: string;
+  botId: string;
+  botRating: number;
+  outcome: "a_win" | "d_win" | "draw";
+  log: unknown;
+}): Promise<{ attackerAfter: number }> {
+  return db.transaction(async (tx) => {
+    const aRows = await tx
+      .select()
+      .from(pvpRatings)
+      .where(
+        and(
+          eq(pvpRatings.userId, args.attackerId),
+          eq(pvpRatings.seasonId, args.seasonId),
+        ),
+      )
+      .for("update");
+    const a = aRows[0];
+    if (!a) {
+      throw new Error("pvp rating missing — getOrCreateRating 호출 누락");
+    }
+
+    const aResult =
+      args.outcome === "a_win"
+        ? "win"
+        : args.outcome === "d_win"
+          ? "loss"
+          : "draw";
+    const attackerAfter = computeNewRating(a.rating, args.botRating, aResult);
+
+    const now = new Date();
+    await tx
+      .update(pvpRatings)
+      .set({
+        rating: attackerAfter,
+        wins: args.outcome === "a_win" ? a.wins + 1 : a.wins,
+        losses: args.outcome === "d_win" ? a.losses + 1 : a.losses,
+        draws: args.outcome === "draw" ? a.draws + 1 : a.draws,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(pvpRatings.userId, args.attackerId),
+          eq(pvpRatings.seasonId, args.seasonId),
+        ),
+      );
+
+    await tx.insert(pvpMatches).values({
+      seasonId: args.seasonId,
+      attackerId: args.attackerId,
+      defenderId: args.botId,
+      outcome: args.outcome,
+      attackerRatingBefore: a.rating,
+      defenderRatingBefore: args.botRating,
+      attackerRatingAfter: attackerAfter,
+      defenderRatingAfter: args.botRating, // 봇은 고정
+      log: args.log as object,
+    });
+
+    return { attackerAfter };
   });
 }
 
