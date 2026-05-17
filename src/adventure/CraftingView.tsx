@@ -115,6 +115,7 @@ export type GradedCount = Partial<Record<string, number>>;
 
 export function CraftingView({
   knownIds,
+  craftedIds,
   materialCounts,
   equipmentCounts,
   baseEquipmentCounts,
@@ -125,6 +126,8 @@ export function CraftingView({
   onCraft,
 }: {
   knownIds: string[];
+  /** 한 번이라도 제작한 적 있는 레시피 ID. 카드에 "첫 제작 보호" 라벨 표시 여부 판단. */
+  craftedIds: string[];
   materialCounts: Partial<Record<MaterialId, number>>;
   /** 등급 합산 — "have/need" 표시용. */
   equipmentCounts: Partial<Record<ItemId, number>>;
@@ -218,6 +221,7 @@ export function CraftingView({
                     <RecipeRow
                       key={r.id}
                       recipe={r}
+                      firstCraft={!craftedIds.includes(r.id)}
                       materialCounts={materialCounts}
                       equipmentCounts={equipmentCounts}
                       baseEquipmentCounts={baseEquipmentCounts}
@@ -240,6 +244,7 @@ export function CraftingView({
               <RecipeRow
                 key={r.id}
                 recipe={r}
+                firstCraft={!craftedIds.includes(r.id)}
                 materialCounts={materialCounts}
                 equipmentCounts={equipmentCounts}
                 baseEquipmentCounts={baseEquipmentCounts}
@@ -261,6 +266,7 @@ export function CraftingView({
 // 수량 state 는 행마다 독립이라 페이지/탭이 바뀌어도 보이는 행은 1 로 새로 시작한다.
 function RecipeRow({
   recipe,
+  firstCraft,
   materialCounts,
   equipmentCounts,
   baseEquipmentCounts,
@@ -271,6 +277,8 @@ function RecipeRow({
   onCraft,
 }: {
   recipe: Recipe;
+  /** 이 레시피로 한 번도 만든 적이 없으면 true — "첫 제작 보호" 라벨을 띄운다. */
+  firstCraft: boolean;
   materialCounts: Partial<Record<MaterialId, number>>;
   equipmentCounts: Partial<Record<ItemId, number>>;
   baseEquipmentCounts: Partial<Record<ItemId, number>>;
@@ -325,6 +333,11 @@ function RecipeRow({
       {variance && (
         <p className="mt-1 text-xs text-sky-600 dark:text-sky-400">
           품질에 따라 변동 — {variance}
+        </p>
+      )}
+      {variance && firstCraft && (
+        <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+          첫 제작 보호 — 최소 ⟨일반⟩ 등급 보장
         </p>
       )}
       {recipe.ingredients.length > 0 && (

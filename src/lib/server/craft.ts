@@ -98,6 +98,11 @@ export type CraftComputeOptions = {
   rng?: () => number;
   /** "고급 재료 사용" opt-in. 명시된 itemId 만 picks 대로 차감 + 결과 등급 bias 적용. */
   equipPicks?: EquipPicks;
+  /**
+   * 이 레시피의 첫 제작 — 배치 첫 회만 tier ≥ 0 으로 클램프(불량/하급 차단, 고급/걸작은 유지).
+   * 처음 만들어 보는 경험을 보호한다. 두 번째 회부터는 평소 분포.
+   */
+  firstCraft?: boolean;
 };
 
 function cloneGraded(src: GradedMap): GradedMap {
@@ -288,9 +293,11 @@ export function computeCraftOutcome(
   for (let i = 0; i < quantity; i++) {
     if (recipe.result.kind === "equipment") {
       const itemId = recipe.result.itemId;
-      const tier: CraftTier = recipeHasVariance(recipe)
+      let tier: CraftTier = recipeHasVariance(recipe)
         ? rollCraftTier(rng, biasPerRound[i] ?? 1)
         : 0;
+      // 첫 제작 보호 — 배치 첫 회에 한해 음수 등급 차단(불량/하급 → 일반). 양수는 그대로 살림.
+      if (options.firstCraft && i === 0 && tier < 0) tier = 0;
       if (tier === 0) {
         equipment[itemId] = (equipment[itemId] ?? 0) + 1;
       } else {
@@ -370,6 +377,11 @@ export async function applyCraftAction(
   const craftingState =
     (await readKv<SavedCrafting>(tx, userId, "crafting.v2")) ?? {};
 
+  const craftedList = Array.isArray(craftingState.crafted)
+    ? craftingState.crafted
+    : [];
+  const firstCraft = !craftedList.includes(recipeId);
+
   const out = computeCraftOutcome(
     {
       potions: { ...(inv.potions ?? {}) },
@@ -386,7 +398,7 @@ export async function applyCraftAction(
       ),
     },
     recipeId,
-    { quantity, equipPicks },
+    { quantity, equipPicks, firstCraft },
   );
 
   const newInventory: SavedInventory = {
@@ -398,12 +410,9 @@ export async function applyCraftAction(
     droppedEquipment: out.droppedEquipment,
   };
 
-  const craftedList = Array.isArray(craftingState.crafted)
-    ? craftingState.crafted
-    : [];
-  const newCrafting: SavedCrafting = craftedList.includes(recipeId)
-    ? craftingState
-    : { ...craftingState, crafted: [...craftedList, recipeId] };
+  const newCrafting: SavedCrafting = firstCraft
+    ? { ...craftingState, crafted: [...craftedList, recipeId] }
+    : craftingState;
 
   await upsertSave(tx, userId, "inventory.v2", newInventory);
   if (newCrafting !== craftingState)
