@@ -173,27 +173,18 @@ export function useShopActions(deps: {
     return true;
   };
 
-  // 마을 귀환 주문서 사용 — 가본 마을로 즉시 이동.
-  // 마을→마을은 무소비 (지도 fast-travel 과 동일), 그 외엔 1개 소비.
+  // 마을 귀환 — 가본 마을로 즉시 이동.
+  // 2026-05-18~ 당분간 인벤 소모 없이 무료 (이동권 사기 귀찮음 완화).
+  // 주문서 소비 라인은 주석으로 보존 — 복구할 땐 한 줄만 살리면 된다.
   const handleUseTownReturn = (townId: RegionId): boolean => {
     const target = WORLD_MAP.regions.find((r) => r.id === townId);
     if (!target?.tags?.includes("town")) return false;
     if (!mapProgress.visitedRegionIds.includes(townId)) return false;
     if (mapProgress.currentRegionId === townId) return false;
-    const from = WORLD_MAP.regions.find(
-      (r) => r.id === mapProgress.currentRegionId,
-    );
-    const fromIsTown = !!from?.tags?.includes("town");
-    if (!fromIsTown) {
-      if (!inventory.consumeConsumable("scroll_town_return", 1)) return false;
-    }
+    // 옛 규칙: 마을→마을 무료, 그 외엔 scroll_town_return 1 개 소비.
+    // if (!from-is-town) { if (!inventory.consumeConsumable("scroll_town_return", 1)) return false; }
     setMapProgress((prev) => ({ ...prev, currentRegionId: townId }));
-    addNotification(
-      "info",
-      fromIsTown
-        ? `${target.name}(으)로 이동했다.`
-        : `귀환 주문서로 ${target.name}(으)로 이동했다.`,
-    );
+    addNotification("info", `${target.name}(으)로 이동했다.`);
     return true;
   };
 

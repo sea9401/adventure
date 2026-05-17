@@ -39,8 +39,7 @@ export function MapView({
   hasStoryFlag: (flagId: string) => boolean;
   onTrialStart: (from: RegionId, to: RegionId) => void;
 }) {
-  const { addNotification, inventory, handleUseTownReturn, autoHunt } = useGame();
-  const scrollCount = inventory.consumableCount("scroll_town_return");
+  const { addNotification, handleUseTownReturn, autoHunt } = useGame();
   const [selectedId, setSelectedId] = useState<RegionId | null>(null);
   const [lowHpBlocked, setLowHpBlocked] = useState(false);
 
@@ -166,8 +165,8 @@ export function MapView({
       performMove(selectedId);
       return;
     }
-    if (isScrollEligible && scrollCount > 0) {
-      // 주문서 소비 + 텔레포트 — handleUseTownReturn 가 mapProgress 까지 갱신.
+    if (isScrollEligible) {
+      // 마을 귀환 — 당분간 인벤 소모 없이 무료. handleUseTownReturn 가 mapProgress 갱신.
       handleUseTownReturn(selectedId);
       return;
     }
@@ -194,10 +193,7 @@ export function MapView({
           return;
       }
       if (lowHpBlocked) return;
-      const canFire =
-        canMove ||
-        canChallenge ||
-        (isScrollEligible && scrollCount > 0);
+      const canFire = canMove || canChallenge || isScrollEligible;
       if (!canFire) return;
       e.preventDefault(); // Space 의 페이지 스크롤 기본 동작 차단.
       handleMove();
@@ -207,7 +203,7 @@ export function MapView({
     // handleMove 는 매 렌더 새로 만들어지지만 effect 가 매 렌더 재바인딩되는 비용은 작음.
     // 의존성 명시로 closure 가 항상 최신 selectedId / 플래그를 본다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canMove, canChallenge, isScrollEligible, scrollCount, lowHpBlocked]);
+  }, [canMove, canChallenge, isScrollEligible, lowHpBlocked]);
 
   const currentRegion = getRegion(progress.currentRegionId);
 
@@ -267,7 +263,7 @@ export function MapView({
         canChallenge={canChallenge}
         onMove={handleMove}
         requirementStatus={requirementStatus}
-        scrollMove={isScrollEligible ? { count: scrollCount } : undefined}
+        scrollMove={isScrollEligible}
       />
       {lowHpBlocked && (
         <LowHpBlockModal onConfirm={() => setLowHpBlocked(false)} />
