@@ -899,3 +899,15 @@ export function getAdjacent(map: WorldMap, regionId: RegionId): RegionId[] {
   }
   return Array.from(adjacent);
 }
+
+// id → Region 빠른 조회. WORLD_MAP.regions.find() 가 O(N) 인데,
+// MapView 가 edge 마다 두 번씩 호출해 30 regions × 50+ edges = 1500+ 비교/렌더.
+// 모듈 로드 시 한 번 빌드 → O(1) 조회.
+const REGION_BY_ID: Map<RegionId, Region> = new Map(
+  WORLD_MAP.regions.map((r) => [r.id, r]),
+);
+
+export function getRegion(id: RegionId | undefined | null): Region | null {
+  if (!id) return null;
+  return REGION_BY_ID.get(id) ?? null;
+}

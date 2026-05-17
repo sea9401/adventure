@@ -213,9 +213,9 @@ export function ChatPanel({
               </div>
             ) : (
               <ul className="space-y-0.5">
-                {presence.map((u, i) => (
+                {presence.map((u) => (
                   <li
-                    key={`${u.name}-${i}`}
+                    key={u.name}
                     className="flex items-center gap-1.5 text-xs"
                   >
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
