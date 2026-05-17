@@ -82,11 +82,18 @@ export async function POST(req: Request) {
       let goldTotal = 0;
       const itemsToAdd: AddItem[] = [];
       const recipesToAdd: AddRecipe[] = [];
+      // 파싱 실패 row 는 claimedAt 마킹에서 제외 — 인박스에 남겨 운영진이 점검할 수
+      // 있게 함. 자동 claim 했다가 사라지면 보상이 영구 손실됨 (#309 후속 보강).
+      const parseFailedRowIds: number[] = [];
       for (const row of rows) {
-        // payload shape 어긋난 잔재 행 (마이그레이션, 옛 버그 등) 은 스킵 —
-        // claim 자체는 진행시켜 사용자가 우편을 비울 수 있게.
         const parsed = parseInboxPayload(row.kind, row.payload);
-        if (!parsed) continue;
+        if (!parsed) {
+          parseFailedRowIds.push(row.id);
+          console.warn(
+            `[marketplace.inbox.claim] payload parse failed — row ${row.id} (kind=${row.kind}, user=${userId}). 인박스에 보존, 운영 점검 필요.`,
+          );
+          continue;
+        }
         switch (parsed.kind) {
           // user_message / guild_invite: 부수효과 없음 — claimedAt 만 마킹.
           case "user_message":
@@ -232,23 +239,26 @@ export async function POST(req: Request) {
 
       // inbox 마킹.
       const now = new Date();
-      await tx
-        .update(marketplaceInbox)
-        .set({ claimedAt: now })
-        .where(
-          and(
-            eq(marketplaceInbox.userId, userId),
-            inArray(
-              marketplaceInbox.id,
-              rows.map((r) => r.id),
+      const failedSet = new Set(parseFailedRowIds);
+      const idsToMark = rows
+        .filter((r) => !failedSet.has(r.id))
+        .map((r) => r.id);
+      if (idsToMark.length > 0) {
+        await tx
+          .update(marketplaceInbox)
+          .set({ claimedAt: now })
+          .where(
+            and(
+              eq(marketplaceInbox.userId, userId),
+              inArray(marketplaceInbox.id, idsToMark),
+              isNull(marketplaceInbox.claimedAt),
             ),
-            isNull(marketplaceInbox.claimedAt),
-          ),
-        );
+          );
+      }
 
       return {
         ok: true as const,
-        claimed: rows.map((r) => r.id),
+        claimed: idsToMark,
         goldAdded: goldTotal,
         itemsAdded: itemsToAdd,
         recipesAdded,
