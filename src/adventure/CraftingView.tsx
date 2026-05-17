@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Hammer, Sparkle } from "@phosphor-icons/react";
 import { ITEMS, type ItemId } from "./data/items";
 import { MATERIALS, type MaterialId } from "./data/materials";
@@ -17,6 +17,7 @@ import {
 } from "./data/dropQuality";
 import { CRAFT_BATCH_MAX, type EquipPicks } from "./crafting/types";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
@@ -544,6 +545,8 @@ function MaterialPickerModal({
   onConfirm: (picks: EquipPicks) => void;
 }) {
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   const slots = useMemo(() => buildSlots(), []);
 
   // picks state — itemId 별 슬롯 키 → 갯수. 초기값 0.
@@ -621,6 +624,7 @@ function MaterialPickerModal({
       onClick={onClose}
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
       >

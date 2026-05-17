@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { X } from "@phosphor-icons/react";
 import {
   TOAST_KIND_LABELS,
@@ -7,10 +8,13 @@ import {
   useToastPrefs,
 } from "@/lib/notification-prefs";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 
 export function NotificationPrefsModal({ onClose }: { onClose: () => void }) {
   const { prefs, setPref } = useToastPrefs();
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
 
   return (
     <div
@@ -21,6 +25,7 @@ export function NotificationPrefsModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
       >

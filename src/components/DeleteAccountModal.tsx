@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Warning, X } from "@phosphor-icons/react";
 import { signOut } from "next-auth/react";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 
 // 회원 탈퇴 확인 모달. 본인 닉네임(없으면 "탈퇴")을 정확히 입력해야 활성화 — 실수 클릭 방어.
 // 성공 시 곧바로 signOut() — 세이브가 모두 삭제됐는데 JWT 쿠키가 남아 있으면
@@ -21,6 +22,8 @@ export function DeleteAccountModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
 
   const canSubmit = confirm.trim() === expected && !submitting;
 
@@ -55,6 +58,7 @@ export function DeleteAccountModal({
       onClick={submitting ? undefined : onClose}
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-lg border border-rose-200 bg-white p-5 shadow-2xl dark:border-rose-900/60 dark:bg-zinc-950"
       >

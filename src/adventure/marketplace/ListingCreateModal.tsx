@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { ITEMS, rarityTextClass, type ItemId, type EquipItem } from "@/adventure/data/items";
@@ -28,6 +28,7 @@ import type { InventoryState } from "@/adventure/inventory/useInventory";
 import type { RemoteSave } from "@/lib/storage/remote";
 import { createListing } from "./api";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 
 // 서버 MARKETPLACE_FEE_RATE 와 동기화. 0 이면 수수료 표시 숨김.
 const FEE_RATE = 0;
@@ -88,6 +89,8 @@ export function ListingCreateModal({
   showError: (msg: string) => void;
 }) {
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   const [selection, setSelection] = useState<Selection | null>(null);
   // 입력 중 빈 값/임시 값을 허용하기 위해 string 으로 보관 — 검증은 submit 에서.
   const [quantity, setQuantity] = useState("1");
@@ -249,6 +252,7 @@ export function ListingCreateModal({
       onClick={onClose}
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="no-scrollbar max-h-[85vh] w-full max-w-md overflow-y-auto rounded-lg border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
       >

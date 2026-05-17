@@ -154,7 +154,12 @@ export function NotificationToast({
   if (toasts.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-50 flex flex-col items-end gap-2 sm:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:right-6">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
+      className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-50 flex flex-col items-end gap-2 sm:bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:right-6"
+    >
       {toasts.map((t) => {
         const Icon = TOAST_ICON[t.kind];
         return (

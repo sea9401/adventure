@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 import { Sparkle, Hammer, ArrowsLeftRight, X } from "@phosphor-icons/react";
 import { ITEMS, type EquipItem, type ItemId, rarityTextClass } from "../data/items";
 import { MATERIALS, type MaterialId } from "../data/materials";
@@ -528,11 +530,28 @@ function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  useEscapeKey(onCancel);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 px-4">
-      <Card as="section" padding="lg" className="w-full max-w-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-disassemble-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 px-4"
+      onClick={onCancel}
+    >
+      <div
+        ref={contentRef}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm"
+      >
+        <Card as="section" padding="lg">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          <h3
+            id="confirm-disassemble-title"
+            className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+          >
             정말 분해하시겠습니까?
           </h3>
           <button
@@ -572,6 +591,7 @@ function ConfirmModal({
           </button>
         </div>
       </Card>
+      </div>
     </div>
   );
 }

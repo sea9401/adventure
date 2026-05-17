@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { craftTierSuffix, type CraftTier } from "@/adventure/data/craftQuality";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/adventure/data/dropQuality";
 import type { Listing } from "./types";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 
 // listing.grade → 표시용 prefix/suffix. base 면 둘 다 빈 문자열.
 function gradeAffix(grade: string): { prefix: string; suffix: string } {
@@ -50,6 +51,8 @@ export function BuyConfirmModal({
     if (!busy) onClose();
   }, [busy, onClose]);
   useEscapeKey(handleEscape);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
 
   const submit = async () => {
     if (insufficient || blocked) return;
@@ -72,6 +75,7 @@ export function BuyConfirmModal({
       }}
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm rounded-lg border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
       >

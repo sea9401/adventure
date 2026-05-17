@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 import {
   AP_SKILL_CONDITION_KINDS,
   AP_SKILL_CONDITION_PRESETS,
@@ -60,6 +61,8 @@ export function APSkillConditionModal({
   onClose: () => void;
 }) {
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   const [kind, setKind] = useState<APSkillCondition["kind"]>(initial.kind);
   const [values, setValues] = useState<Record<ValuedAPSkillConditionKind, number>>(() => {
     // 트리거별 입력값을 따로 보관 — 사용자가 라디오를 바꿔도 직전 값 유지. 기본값은 프리셋
@@ -100,6 +103,7 @@ export function APSkillConditionModal({
       onClick={onClose}
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
       >

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Megaphone, X } from "@phosphor-icons/react";
 import {
   ANNOUNCEMENTS,
@@ -7,6 +8,7 @@ import {
   type AnnouncementCategory,
 } from "@/lib/announcements";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 
 const CATEGORY_LABEL: Record<AnnouncementCategory, string> = {
   feature: "신규",
@@ -24,6 +26,8 @@ const CATEGORY_STYLE: Record<AnnouncementCategory, string> = {
 
 export function AnnouncementsModal({ onClose }: { onClose: () => void }) {
   useEscapeKey(onClose);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
 
   return (
     <div
@@ -34,6 +38,7 @@ export function AnnouncementsModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="no-scrollbar max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
       >

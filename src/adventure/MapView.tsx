@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   WORLD_MAP,
   getAdjacent,
@@ -18,6 +18,7 @@ import { MapNode, type NodeState } from "./MapNode";
 import { MapCanvas } from "./MapCanvas";
 import { RegionDetail } from "./RegionDetail";
 import { Card } from "@/components/ui/Card";
+import { useModalA11y } from "@/lib/useModalA11y";
 import { useGame } from "./GameContext";
 
 export function MapView({
@@ -281,10 +282,21 @@ export function MapView({
 }
 
 function LowHpBlockModal({ onConfirm }: { onConfirm: () => void }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
-      <Card padding="lg" className="w-full max-w-sm text-center">
-        <div className="text-lg font-semibold text-rose-600 dark:text-rose-400">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="low-hp-block-title"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+    >
+      <div ref={contentRef} className="w-full max-w-sm">
+        <Card padding="lg" className="text-center">
+        <div
+          id="low-hp-block-title"
+          className="text-lg font-semibold text-rose-600 dark:text-rose-400"
+        >
           움직일 수가 없다
         </div>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
@@ -300,6 +312,7 @@ function LowHpBlockModal({ onConfirm }: { onConfirm: () => void }) {
           확인
         </button>
       </Card>
+      </div>
     </div>
   );
 }

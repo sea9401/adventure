@@ -1,8 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { GraduationCap, X } from "@phosphor-icons/react";
 import { useEscapeKey } from "@/lib/useEscapeKey";
+import { useModalA11y } from "@/lib/useModalA11y";
 import { useTutorial } from "./useTutorial";
 import type { TutorialStepId } from "./flags";
 
@@ -26,6 +27,8 @@ function TutorialOverlayInner({
   onDismiss,
 }: Omit<Props, "stepId"> & { onDismiss: () => void }) {
   useEscapeKey(onDismiss);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   return (
     <div
       role="dialog"
@@ -35,6 +38,7 @@ function TutorialOverlayInner({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
     >
       <div
+        ref={contentRef}
         onClick={(e) => e.stopPropagation()}
         className="no-scrollbar max-h-[85vh] w-full max-w-md overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
       >

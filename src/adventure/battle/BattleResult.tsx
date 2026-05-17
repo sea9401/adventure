@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef } from "react";
+import { useModalA11y } from "@/lib/useModalA11y";
 import type { BattleOutcome } from "./engine";
 import { Card } from "@/components/ui/Card";
 
@@ -16,10 +18,19 @@ export function BattleResult({
   onConfirm: () => void;
 }) {
   const isWin = outcome === "win";
+  const contentRef = useRef<HTMLDivElement>(null);
+  useModalA11y(contentRef);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
-      <Card padding="lg" className="w-full max-w-sm text-center">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="battle-result-title"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+    >
+      <div ref={contentRef} className="w-full max-w-sm">
+        <Card padding="lg" className="text-center">
         <div
+          id="battle-result-title"
           className={`text-2xl font-semibold ${
             isWin
               ? "text-emerald-600 dark:text-emerald-400"
@@ -45,6 +56,7 @@ export function BattleResult({
           확인
         </button>
       </Card>
+      </div>
     </div>
   );
 }

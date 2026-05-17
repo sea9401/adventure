@@ -73,7 +73,7 @@ describe("parseInboxPayload — happy path", () => {
       grade: "base",
       quantity: 0,
     });
-    expect(r?.quantity).toBe(0);
+    expect(r?.kind === "listing_expired" ? r.quantity : null).toBe(0);
   });
 
   it("user_message", () => {
