@@ -21,6 +21,8 @@ type Props = {
   completeQuest: (id: string) => boolean;
   storyFlags: ReturnType<typeof useStoryFlags>;
   inventory: ReturnType<typeof useInventory>;
+  /** 5막 종착 의식에서 starfall_keeper 칭호 부여 — useTitleGrant 의 grantTitle. */
+  grantTitle: (titleId: string) => void;
 };
 
 export function MeteorDialogue({
@@ -30,6 +32,7 @@ export function MeteorDialogue({
   completeQuest,
   storyFlags,
   inventory,
+  grantTitle,
 }: Props) {
   // 4막 미완 — 옥좌의 주재 협동전 클리어 전. 옥좌의 자리를 본 적이 없으니 모르는 사람.
   if (!storyFlags.has("endgame_apex_defeated")) {
@@ -119,13 +122,51 @@ export function MeteorDialogue({
     );
   }
 
-  // 의뢰 완료 후 — Ch 30 진입 떡밥(옥좌의 환영). 후속 PR 에서 활용.
+  // Ch 30 종착 — apex_phantom_seen(고탑 100층 환영) 본 후 의식 컷씬 1회.
+  // 누르면 endgame_complete flag set + starfall_keeper 칭호 grant. idempotent.
+  if (
+    storyFlags.has("apex_phantom_seen") &&
+    !storyFlags.has("endgame_complete")
+  ) {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "…자네 등 뒤로 옥좌의 환영이 따라왔구먼. 고탑 위에서 자네가 본 그 자리.\n그릇은 빚어 두었네. 자, 내 앞에 내밀어 보게. 그 환영을 그릇 안에 한 점 한 점 *놓아주면* 되네 — 누구의 것도 아닌 빛은, 누구의 것도 아닌 자리에. 자네에게도, 누구에게도 묶이지 않게."
+        }
+        primaryAction={{
+          label: "그릇을 내민다",
+          onClick: () => {
+            storyFlags.set("endgame_complete");
+            grantTitle("starfall_keeper");
+            onClose();
+          },
+        }}
+      />
+    );
+  }
+
+  // endgame_complete 후 — 유성 작별 회상 라인. (NPC 등장 자체는 그대로 두되 후일담 톤.)
+  if (storyFlags.has("endgame_complete")) {
+    return (
+      <NpcDialogue
+        npc={npc}
+        onClose={onClose}
+        text={
+          "잔은 비었고, 옥좌의 자리도 비었어. 자네 등 뒤가 가벼워졌지.\n…나는 내일이면 별바다로 돌아가네. 한 자리에 모이지 않을 빛을 자네가 거두어 주었으니 — 그 자리에 술 한 잔을 두고 떠나야지. 자네는 자네의 길을 가시게. 봉인은 더 이상 봉인이 아니야."
+        }
+      />
+    );
+  }
+
+  // 의뢰 완료 후 ~ Ch 29 미진입 — 옥좌 환영 떡밥. 고탑 100층까지는 자네 몫이라는 안내.
   return (
     <NpcDialogue
       npc={npc}
       onClose={onClose}
       text={
-        "그릇은 빚어 두었네. 자네에게 묶지 않을 결로 — 누구의 것도 아닌 자리에. 별빛이 한 점 한 점 그릇 가장자리에 가라앉는 것을 자네도 보겠지.\n옛 옥좌의 환영이 아직 자네 등을 따라온다는 얘기를 들었네. 그것을 마지막으로 떼어 내는 자리는 — 자네가 잘 알고 있을 게야."
+        "그릇은 빚어 두었네. 자네에게 묶지 않을 결로 — 누구의 것도 아닌 자리에. 별빛이 한 점 한 점 그릇 가장자리에 가라앉는 것을 자네도 보겠지.\n옛 옥좌의 환영이 아직 자네 등을 따라온다는 얘기를 들었네. 그것을 마지막으로 떼어 내는 자리는 — *고탑 위* 일 게야. 자기가 만든 자리로 자기가 가 닿는 그 길."
       }
     />
   );

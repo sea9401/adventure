@@ -22,6 +22,7 @@ export function TownSubView() {
     storyFlags,
     completeQuest,
     addNotification,
+    grantTitle,
   } = useGame();
 
   const characterLevel = characterStateHook.state.level;
@@ -60,6 +61,7 @@ export function TownSubView() {
             addNotification,
             characterStateHook,
             adventureLog,
+            grantTitle,
           })
         }
       />

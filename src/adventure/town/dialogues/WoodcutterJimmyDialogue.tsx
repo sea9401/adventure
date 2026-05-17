@@ -202,6 +202,19 @@ export function WoodcutterJimmyDialogue({
   }
 
   if (deepCaveQuest.state === "completed") {
+    // ── 5막 「빈 옥좌의 시대」 Ch 30 「별을 놓는 자」 종착 후 ────────────────
+    // 유성이 마을을 떠난 뒤의 회상 톤. 5막 시퀀스의 *마지막* 안내 라인.
+    if (storyFlags.has("endgame_complete")) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "유성 노인이 어제 마을을 떴수. 별바다 쪽 길목으로 가더라고 — 잔 하나만 우물가에 두고.\n자네 등 뒤가 가벼워 보이오. 그 환영인지 뭔지, 누구의 것도 아닌 자리에 두고 왔다지. 잘했수. 별이 다시 떠올랐는지는 모르겠지만 — 광맥 한기는 가셨고, 도끼날이 또 무뎌졌어요. 그러면 된 거지."
+          }
+        />
+      );
+    }
     // ── 5막 「빈 옥좌의 시대」 Ch 26 「별이 떨어진 자리」 ────────────────────
     // 옥좌의 주재가 쓰러진 직후 광맥 안쪽으로 별빛이 떨어졌다. 별빛 광맥 수호자를
     // 잠재울 때까지(starfall_warden_felled) 다른 의뢰들보다 우선 노출. 늙은 톤 정착.
