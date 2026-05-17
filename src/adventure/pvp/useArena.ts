@@ -2,8 +2,21 @@
 
 // /api/pvp/status 페이지 데이터 fetch + 도전 mutation. ArenaView 에서 사용.
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAsyncData } from "@/lib/useAsyncData";
+import type { BattleLogEntry } from "@/adventure/battle/engine";
+
+export type MatchDetail = {
+  id: number;
+  createdAt: string;
+  iAmAttacker: boolean;
+  opponent: { userId: string; name: string; isBot: boolean };
+  myOutcome: "win" | "loss" | "draw";
+  ratingBefore: number;
+  ratingAfter: number;
+  ratingDelta: number;
+  log: BattleLogEntry[];
+};
 
 export type ArenaSeason = {
   id: string;
@@ -33,7 +46,7 @@ export type ArenaRecentMatch = {
   id: number;
   createdAt: string;
   iAmAttacker: boolean;
-  opponent: { userId: string; name: string };
+  opponent: { userId: string; name: string; isBot: boolean };
   myOutcome: "win" | "loss" | "draw";
   ratingBefore: number;
   ratingAfter: number;
@@ -43,9 +56,15 @@ export type ArenaRecentMatch = {
 export type ArenaStatusResponse = {
   season: ArenaSeason;
   me: ArenaMe;
+  // 쿨다운 중이면 다음 도전 가능 시각 (ISO), 아니면 null. 서버가 권위.
+  nextChallengeAt: string | null;
   top: ArenaLeaderboardEntry[];
   recent: ArenaRecentMatch[];
 };
+
+// 도전 직후 / 429 응답으로 setNextChallengeAt 을 받았을 때 화면에 즉시 반영하기 위해
+// 클라이언트 로컬로도 미러. status refetch 가 끝나면 그쪽 값이 권위.
+const CHALLENGE_COOLDOWN_MS = 60_000;
 
 export type ChallengeResponse = {
   seasonId: string;
@@ -57,8 +76,9 @@ export type ChallengeResponse = {
     name: string;
     ratingBefore: number;
     ratingAfter: number;
+    isBot: boolean;
   };
-  log: { kind: string; text: string }[];
+  log: BattleLogEntry[];
 };
 
 async function getJson<T>(url: string, signal: AbortSignal): Promise<T> {
@@ -77,12 +97,44 @@ export function useArena() {
   const [challenging, setChallenging] = useState(false);
   const [challengeError, setChallengeError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<ChallengeResponse | null>(null);
+  // 로컬 쿨다운 미러 — 서버 status 의 nextChallengeAt 또는 도전 직후 set.
+  // 서버가 권위지만, status refetch 가 끝나기 전에도 UI 가 즉시 잠기도록.
+  const [localCooldownUntil, setLocalCooldownUntil] = useState<number | null>(
+    null,
+  );
+
+  const serverNext = data?.nextChallengeAt
+    ? new Date(data.nextChallengeAt).getTime()
+    : null;
+  const cooldownUntil =
+    Math.max(serverNext ?? 0, localCooldownUntil ?? 0) || null;
+
+  // 1초마다 tick — 쿨다운이 활성일 때만.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!cooldownUntil || cooldownUntil <= Date.now()) return;
+    const id = setInterval(() => setTick((t) => t + 1), 500);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const msLeft = cooldownUntil ? Math.max(0, cooldownUntil - Date.now()) : 0;
+  const onCooldown = msLeft > 0;
 
   const challenge = useCallback(async (): Promise<ChallengeResponse | null> => {
     setChallenging(true);
     setChallengeError(null);
     try {
       const r = await fetch("/api/pvp/challenge", { method: "POST" });
+      if (r.status === 429) {
+        const body = (await r.json().catch(() => null)) as {
+          nextChallengeAt?: string;
+        } | null;
+        if (body?.nextChallengeAt) {
+          setLocalCooldownUntil(new Date(body.nextChallengeAt).getTime());
+        }
+        setChallengeError("아직 쿨다운 중이에요.");
+        return null;
+      }
       if (!r.ok) {
         const body = await r.text().catch(() => "");
         const msg =
@@ -96,6 +148,8 @@ export function useArena() {
       }
       const result = (await r.json()) as ChallengeResponse;
       setLastResult(result);
+      // 도전 성공 → 60초 쿨다운 즉시 잠금 (status refetch 가 같은 값을 곧 덮어씀).
+      setLocalCooldownUntil(Date.now() + CHALLENGE_COOLDOWN_MS);
       refetch();
       return result;
     } catch (e) {
@@ -116,5 +170,49 @@ export function useArena() {
     challengeError,
     lastResult,
     clearLastResult: () => setLastResult(null),
+    onCooldown,
+    cooldownSecondsLeft: Math.ceil(msLeft / 1000),
   };
+}
+
+// 단일 매치 로그 lazy fetch — 전투기록 탭에서 매치를 펼쳤을 때만 호출.
+// 펼친 매치마다 독립 hook 인스턴스이므로 컴포넌트 unmount 시 자동 정리.
+// 같은 컴포넌트 안에서 닫았다가 다시 열면 state 가 살아있어 재요청 없음.
+export function useMatchLog(matchId: number): {
+  log: BattleLogEntry[] | null;
+  loading: boolean;
+  error: string | null;
+} {
+  const [log, setLog] = useState<BattleLogEntry[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetch(`/api/pvp/matches/${matchId}`, { signal: controller.signal })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return (await r.json()) as MatchDetail;
+      })
+      .then((d) => {
+        if (cancelled) return;
+        setLog(d.log);
+      })
+      .catch((e) => {
+        if (cancelled || e?.name === "AbortError") return;
+        setError(e instanceof Error ? e.message : "로드 실패");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [matchId]);
+
+  return { log, loading, error };
 }

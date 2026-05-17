@@ -1901,6 +1901,25 @@ export function resolveBattlePvP(
     p2: {} as Partial<Record<PotionId, number>>,
   };
   let state = initialBattleStatePvP(p1Player, p2Player, p1Name, p2Name);
+  // hp_bar 용 apMax — AP 스킬 장착자만 핍 표시. 미장착 사이드는 0.
+  const p1ApMax = (p1Player.equippedAPSkills?.length ?? 0) > 0 ? AP_CAP : 0;
+  const p2ApMax = (p2Player.equippedAPSkills?.length ?? 0) > 0 ? AP_CAP : 0;
+  // hp_bar 는 p1=player / p2=enemy 관점으로 박는다. challenge API 가 me=p1 로
+  // 호출하므로 그대로 도전자 시점 렌더에 맞음. (대전자 시점 미러가 필요해지면
+  // 동일 데이터를 그쪽 관점으로 swap 해 새 entry 생성.)
+  const hpBarEntry = (s: PvPBattleState): BattleLogEntry => ({
+    kind: "hp_bar",
+    text: "",
+    playerHp: s.p1.hp,
+    playerMaxHp: s.p1.maxHp,
+    enemyHp: s.p2.hp,
+    enemyMaxHp: s.p2.maxHp,
+    ap: s.p1.ap,
+    apMax: p1ApMax,
+  });
+  // p2 도전자(상대) 측 AP 표시도 살리려면 별도 hp_bar 가 필요하지만,
+  // 지금은 도전자(p1) 시점만. p2ApMax 는 향후 미러용으로 유지.
+  void p2ApMax;
   let turns = 0;
   while (state.phase !== "ended") {
     const who: "p1" | "p2" = state.phase === "p1" ? "p1" : "p2";
@@ -1916,7 +1935,18 @@ export function resolveBattlePvP(
     } else {
       action = picked;
     }
+    const prevLogLen = state.log.length;
     state = advanceTurnPvP(state, action);
+    // advanceTurnPvP 안에서 push 된 entry 들은 모두 이번 액터(who) 의 것.
+    // 이미 side 가 박힌 entry 는 보존.
+    if (state.log.length > prevLogLen) {
+      const tagged = state.log.map((e, idx) =>
+        idx < prevLogLen || e.side ? e : { ...e, side: who },
+      );
+      state = { ...state, log: tagged };
+    }
+    // 턴 종료 시점 HP/AP 스냅샷. 종료된 상태(phase==="ended")에서도 한 번 박는다.
+    state = { ...state, log: appendLog(state.log, hpBarEntry(state)) };
     turns += 1;
     // PvP 무한 루프 가드 / 시간 캡. 양쪽 다 데미지 0 이면 hp% 로 승부 결정 (높은 쪽 승, 동률 무승부).
     if (turns > PVP_TURN_CAP && state.phase !== "ended") {

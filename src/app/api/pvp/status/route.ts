@@ -16,6 +16,8 @@ import { pvpMatches, savesKv, users } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { getOrCreateCurrentSeason } from "@/lib/server/pvp/season";
 import { getOrCreateRating } from "@/lib/server/pvp/ratings";
+import { getNextChallengeAt } from "@/lib/server/pvp/cooldown";
+import { isBotId } from "@/lib/server/pvp/bots";
 
 const TOP_LIMIT = 50;
 const RECENT_LIMIT = 20;
@@ -26,7 +28,10 @@ export async function GET() {
 
   const season = await getOrCreateCurrentSeason();
 
-  const meRating = await getOrCreateRating(userId, season.id);
+  const [meRating, nextChallengeAt] = await Promise.all([
+    getOrCreateRating(userId, season.id),
+    getNextChallengeAt(userId),
+  ]);
 
   // 순위표 — 레이팅 인덱스(seasonId, rating DESC) 가 정렬을 cover.
   const topResult = await db.execute(sql`
@@ -133,6 +138,7 @@ export async function GET() {
       opponent: {
         userId: opponentId,
         name: nameMap.get(opponentId) ?? "이름 없는 모험가",
+        isBot: isBotId(opponentId),
       },
       myOutcome,
       ratingBefore: myBefore,
@@ -149,6 +155,7 @@ export async function GET() {
       losses: meRating.losses,
       draws: meRating.draws,
     },
+    nextChallengeAt: nextChallengeAt ? nextChallengeAt.toISOString() : null,
     top,
     recent,
   });
