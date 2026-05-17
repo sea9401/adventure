@@ -27,7 +27,6 @@ import { craftHasVariance, type CraftVariance } from "./craftQuality";
 
 export type DropQuality = 0 | 1 | 2; // 기본 / 정교한 / 빼어난
 
-export const DROP_QUALITIES: readonly DropQuality[] = [0, 1, 2];
 // 0(기본)을 제외한 "비-기본" 등급 — droppedEquipment 인벤토리는 이 2종만 담는다.
 export const NON_ZERO_DROP_QUALITIES: readonly DropQuality[] = [1, 2];
 export const NON_ZERO_DROP_QUALITY_KEYS: readonly string[] = ["1", "2"];

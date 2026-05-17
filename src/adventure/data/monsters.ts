@@ -1542,7 +1542,3 @@ export const MONSTERS: Record<string, Monster> = {
 };
 
 export const SPAR_DUMMY_ID = "훈련용 허수아비" as const;
-
-export function getMonstersByTag(tag: MonsterTag): Monster[] {
-  return Object.values(MONSTERS).filter((m) => m.tags.includes(tag));
-}

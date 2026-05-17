@@ -21,14 +21,3 @@ export function getRevealStage(
   if (kills >= t[0]) return 2;
   return 1;
 }
-
-export function getKillsToNextStage(
-  kills: number,
-  isBoss: boolean = false,
-): number | null {
-  const t = isBoss ? BOSS_MONSTER_THRESHOLDS : MONSTER_THRESHOLDS;
-  if (kills < t[0]) return t[0] - kills;
-  if (kills < t[1]) return t[1] - kills;
-  if (kills < t[2]) return t[2] - kills;
-  return null;
-}

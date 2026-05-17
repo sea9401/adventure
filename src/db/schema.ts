@@ -576,22 +576,8 @@ export const coopBossContributors = pgTable(
 );
 
 export type User = typeof users.$inferSelect;
-export type AccountRow = typeof accounts.$inferSelect;
-export type SessionRow = typeof sessions.$inferSelect;
-export type SavesKvRow = typeof savesKv.$inferSelect;
-export type MessageRow = typeof messages.$inferSelect;
-export type ServerFeedRow = typeof serverFeed.$inferSelect;
-export type BulletinPostRow = typeof bulletinPosts.$inferSelect;
-export type PresenceRow = typeof presence.$inferSelect;
-export type MarketplaceListingRow = typeof marketplaceListings.$inferSelect;
-export type MarketplaceInboxRow = typeof marketplaceInbox.$inferSelect;
 export type RankingRow = typeof rankings.$inferSelect;
 export type GuildRow = typeof guilds.$inferSelect;
-export type GuildMemberRow = typeof guildMembers.$inferSelect;
-export type GuildInviteRow = typeof guildInvites.$inferSelect;
-export type GuildJoinRequestRow = typeof guildJoinRequests.$inferSelect;
-export type GuildLeaveCooldownRow = typeof guildLeaveCooldown.$inferSelect;
-export type GuildQuestInstanceRow = typeof guildQuestInstances.$inferSelect;
 // 공격마다 1줄씩 기록되는 협동 보스 전투 로그.
 // 모든 참여자의 공격을 시간순으로 모아 보스 카드 밑에 노출 — "다른 사람들 공격도 같이 본다".
 // session 삭제 시 cascade. session 당 최근 N개만 의미가 있어 GET 에서 LIMIT.
@@ -618,6 +604,3 @@ export const coopBossAttackLog = pgTable(
   ],
 );
 
-export type CoopBossSessionRow = typeof coopBossSessions.$inferSelect;
-export type CoopBossContributorRow = typeof coopBossContributors.$inferSelect;
-export type CoopBossAttackLogRow = typeof coopBossAttackLog.$inferSelect;

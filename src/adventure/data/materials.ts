@@ -327,7 +327,3 @@ export const MATERIALS = {
 
 export type MaterialId = keyof typeof MATERIALS;
 export type Material = (typeof MATERIALS)[MaterialId];
-
-export function getMaterialName(id: MaterialId): string {
-  return MATERIALS[id].name;
-}

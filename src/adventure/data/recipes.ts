@@ -1367,10 +1367,6 @@ for (const r of RECIPES) {
   if (r.result.kind === "equipment") RECIPE_BY_RESULT_ITEM.set(r.result.itemId, r);
 }
 
-export function getEquipmentRecipeByItemId(itemId: ItemId): Recipe | undefined {
-  return RECIPE_BY_RESULT_ITEM.get(itemId);
-}
-
 // 레시피에 품질 변동 정의(variance / varianceTable)가 있는지 — 서버가 등급 추첨 여부를 결정.
 export function recipeHasVariance(recipe: Recipe): boolean {
   return craftHasVariance(recipe);

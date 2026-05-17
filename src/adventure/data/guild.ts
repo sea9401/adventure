@@ -13,7 +13,6 @@ export const GUILD_LEAVE_COOLDOWN_DAYS = 1;
 export const GUILD_INVITE_EXPIRES_DAYS = 7;
 export const GUILD_JOIN_REQUEST_EXPIRES_DAYS = 7;
 export const GUILD_DISBANDED_NAME_HOLD_DAYS = 30;
-export const GUILD_INACTIVITY_DAYS = 30; // Phase 2 — 30일 미접속 자동 해체/위임
 
 // 이름 정책.
 export const GUILD_NAME_MIN = 2;
@@ -46,4 +45,3 @@ export function validateGuildName(raw: string): GuildNameValidation {
   return { ok: true, trimmed };
 }
 
-export type GuildRole = "master" | "member";

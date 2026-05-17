@@ -28,20 +28,3 @@ export function rehydrateEquippedItem(
   if (q === 1 || q === 2) return resolveDroppedItem(id, q);
   return ITEMS[id];
 }
-
-export function rehydrateEquippedSlots(
-  saved:
-    | {
-        weapon?: EquippedItem | null;
-        armor?: EquippedItem | null;
-        accessory?: EquippedItem | null;
-      }
-    | null
-    | undefined,
-): { weapon: EquippedItem | null; armor: EquippedItem | null; accessory: EquippedItem | null } {
-  return {
-    weapon: rehydrateEquippedItem(saved?.weapon),
-    armor: rehydrateEquippedItem(saved?.armor),
-    accessory: rehydrateEquippedItem(saved?.accessory),
-  };
-}
