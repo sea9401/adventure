@@ -1,11 +1,18 @@
 import type { RuneGrade, RuneId } from "@/adventure/data/runes";
 
-// 합성 패턴 — 1~4 → 2~5: 동일 (id, grade) 룬 ×3 → grade+1 ×1.
+// 합성 패턴 — 1~4 → 2~5: 동일 (id, grade) 룬을 fusionCostFor(fromGrade) 만큼 → grade+1 ×1.
+// 등급별 차등 비용 (1→2: 3, 2→3: 4, 3→4: 5, 4→5: 6) — 상위로 갈수록 가파르게.
+//   누적 1T→5T = 3·4·5·6 = 360, 3T→5T = 5·6 = 30.
 // 5 → 6: 5막 PR-D1 흡수 강화. 5등급 ×1 + 별빛 조각 ×20 → 6등급 ×1.
 //   별빛 조각은 5막 「빈 옥좌의 시대」 전용 자원이라 4막 클리어 전에는 6등급 진입 불가.
 // 6등급은 합성 불가 (최상위). 합성 후 잔량 0 이면 호출부가 인벤 정리.
 
-export const RUNE_FUSION_COST = 3;
+/** 1~4 등급의 +1 합성 비용 (소비 룬 개수). 5→6 은 별빛 강화로 별도. */
+export function fusionCostFor(fromGrade: RuneGrade): number {
+  // 1→2: 3, 2→3: 4, 3→4: 5, 4→5: 6
+  return fromGrade + 2;
+}
+
 export const STARLIT_FUSION_RUNE_COST = 1;
 export const STARLIT_FUSION_SHARD_COST = 20;
 
@@ -13,7 +20,7 @@ export type FusionPlan = {
   id: RuneId;
   fromGrade: RuneGrade;
   toGrade: RuneGrade;
-  consumed: number; // 1~4 → +1: RUNE_FUSION_COST(3) / 5 → 6: STARLIT_FUSION_RUNE_COST(1)
+  consumed: number; // 1~4 → +1: fusionCostFor(fromGrade) / 5 → 6: STARLIT_FUSION_RUNE_COST(1)
   produced: number; // 항상 1
   /** 5 → 6 흡수 강화 한정 — 별빛 조각 추가 소비. 그 외 등급에서는 undefined. */
   extraMaterial?: { id: "starfall_shard"; count: number };
@@ -45,12 +52,13 @@ export function planRuneFusion(
     };
   }
   // 1~4 → 2~5
-  if (have < RUNE_FUSION_COST) return "insufficient";
+  const cost = fusionCostFor(fromGrade);
+  if (have < cost) return "insufficient";
   return {
     id,
     fromGrade,
     toGrade: (fromGrade + 1) as RuneGrade,
-    consumed: RUNE_FUSION_COST,
+    consumed: cost,
     produced: 1,
   };
 }
