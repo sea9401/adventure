@@ -25,9 +25,9 @@ export function BattleSubView() {
     inventory,
     guildBuffs,
   } = useGame();
-  const bossAttemptBonus = resolveBuffMultiplier(
+  const bossCooldownReductionPct = resolveBuffMultiplier(
     guildBuffs,
-    "boss_attempt_bonus",
+    "boss_cooldown_reduction_pct",
   );
 
   return (
@@ -85,10 +85,13 @@ export function BattleSubView() {
         bossAttemptsToday={characterStateHook.getBossAttemptsToday(
           currentRegion.id,
         )}
+        bossLastAttemptAtMs={characterStateHook.getBossLastAttemptAt(
+          currentRegion.id,
+        )}
         onConsumeBossAttempt={() =>
           characterStateHook.consumeBossAttempt(currentRegion.id)
         }
-        bossAttemptBonus={bossAttemptBonus}
+        bossCooldownReductionPct={bossCooldownReductionPct}
       />
     </div>
   );
