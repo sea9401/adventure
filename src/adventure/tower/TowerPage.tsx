@@ -614,7 +614,7 @@ function ResultView({
               )}
               {bossDrops.reward.runes.map((r) => (
                 <span key={`${r.id}_${r.grade}`}>
-                  {RUNES[r.id].name} {r.grade}등급 ×{r.count}
+                  {RUNES[r.id].name} {r.grade}T ×{r.count}
                 </span>
               ))}
               {bossDrops.reward.runes.length === 0 &&

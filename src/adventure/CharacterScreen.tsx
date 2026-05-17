@@ -151,7 +151,7 @@ export function CharacterScreen() {
       const plan = planRuneFusion(id, grade, have, shardCount);
       if (isFusionError(plan)) {
         if (plan === "max_grade") {
-          addNotification("info", "6등급 룬은 합성할 수 없다.");
+          addNotification("info", "6T 룬은 합성할 수 없다.");
         } else if (plan === "insufficient_shard") {
           addNotification(
             "info",
@@ -160,7 +160,7 @@ export function CharacterScreen() {
         } else if (grade === 5) {
           addNotification(
             "info",
-            "5 → 6 강화에 5등급 룬 1개와 별빛 조각 20개가 필요하다.",
+            "5 → 6 강화에 5T 룬 1개와 별빛 조각 20개가 필요하다.",
           );
         } else {
           addNotification(
@@ -181,8 +181,8 @@ export function CharacterScreen() {
       addNotification(
         "info",
         plan.extraMaterial
-          ? `${grade}등급 ×${plan.consumed} + 별빛 조각 ×${plan.extraMaterial.count} → ${plan.toGrade}등급 ×1 강화.`
-          : `${grade}등급 × ${plan.consumed} → ${plan.toGrade}등급 ×1 합성.`,
+          ? `${grade}T ×${plan.consumed} + 별빛 조각 ×${plan.extraMaterial.count} → ${plan.toGrade}T ×1 강화.`
+          : `${grade}T × ${plan.consumed} → ${plan.toGrade}T ×1 합성.`,
       );
     };
     return (

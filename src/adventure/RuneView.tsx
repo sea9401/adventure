@@ -70,7 +70,7 @@ function gradeColor(grade: RuneGrade): string {
 }
 
 function gradeLabel(grade: RuneGrade): string {
-  return `${grade}등급`;
+  return `${grade}T`;
 }
 
 // 같은 (id, grade) 룬을 두 슬롯에 끼지 못하도록 — 가방 잔량 < 장착 카운트면 제한.
@@ -210,13 +210,13 @@ export function RuneView({
               const fusionTitle = (() => {
                 if (canFuse && !isFusionError(fusion)) {
                   return fusion.extraMaterial
-                    ? `5등급 ×${STARLIT_FUSION_RUNE_COST} + 별빛 조각 ×${STARLIT_FUSION_SHARD_COST} → 6등급 ×1`
-                    : `${RUNE_FUSION_COST}개 → ${row.grade + 1}등급 1개`;
+                    ? `5T ×${STARLIT_FUSION_RUNE_COST} + 별빛 조각 ×${STARLIT_FUSION_SHARD_COST} → 6T ×1`
+                    : `${RUNE_FUSION_COST}개 → ${row.grade + 1}T 1개`;
                 }
-                if (row.grade >= 6) return "6등급은 합성 불가";
+                if (row.grade >= 6) return "6T 는 합성 불가";
                 if (row.grade === 5) {
                   if (row.count < STARLIT_FUSION_RUNE_COST) {
-                    return "5 → 6 강화에 5등급 룬 1개가 필요";
+                    return "5 → 6 강화에 5T 룬 1개가 필요";
                   }
                   return `5 → 6 강화에 별빛 조각 ${STARLIT_FUSION_SHARD_COST}개가 필요 (보유 ${shardCount})`;
                 }
@@ -313,7 +313,7 @@ export function RuneView({
                       type="button"
                       onClick={() => onBuy(id, g)}
                       disabled={insufficient}
-                      title={`${def.name} ${g}등급 — ${effectLine(id, g)}`}
+                      title={`${def.name} ${g}T — ${effectLine(id, g)}`}
                       className={`inline-flex items-center gap-0.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                         insufficient
                           ? "border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-500"
