@@ -35,6 +35,10 @@ export function ChatComposer({
         onChange={(e) => onDraftChange(e.target.value)}
         maxLength={CHAT_MAX_LENGTH}
         placeholder="메시지를 입력하세요"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
         className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-blue-400"
       />
       <button
