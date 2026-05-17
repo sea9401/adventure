@@ -14,6 +14,10 @@ const EMPTY_STATE: TowerChallengeState = {
   daily: null,
 };
 
+// 마운트 간 캐시 — useTower 와 동일한 이유 (전 층 몬스터 깜빡임 회피). 페이지 새로고침
+// 시 비워지고 SaveProvider 의 신규 fetch 로 다시 채워진다.
+let lastSeenState: TowerChallengeState | null = null;
+
 export type TowerChallengeApiAction =
   | { kind: "start" }
   | { kind: "fight_floor" }
@@ -45,7 +49,9 @@ export function useTowerChallenge(opts?: {
   onApplied?: (response: TowerChallengeApiResponse) => void;
 }) {
   const initial = useSavedValue<TowerChallengeState>(TOWER_CHALLENGE_STORAGE_KEY);
-  const [state, setState] = useState<TowerChallengeState>(initial ?? EMPTY_STATE);
+  const [state, setState] = useState<TowerChallengeState>(
+    () => lastSeenState ?? initial ?? EMPTY_STATE,
+  );
   const [pending, setPending] = useState<TowerChallengeApiAction["kind"] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const remote = useRemoteSave();
@@ -66,7 +72,10 @@ export function useTowerChallenge(opts?: {
           setError(data.error ?? "unknown");
           return data;
         }
-        if (data.challenge) setState(data.challenge);
+        if (data.challenge) {
+          setState(data.challenge);
+          lastSeenState = data.challenge;
+        }
         opts?.onApplied?.(data);
         return data;
       } catch (e) {
