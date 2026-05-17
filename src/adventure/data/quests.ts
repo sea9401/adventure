@@ -2586,6 +2586,36 @@ export const QUESTS: Quest[] = [
     giverNpcId: "star_haven_elder",
     requiresQuestCompleted: "star-haven-apex-gate",
   },
+  // ── 5막 「빈 옥좌의 시대」 PR-C — 별빛을 담을 그릇 ───────────────────────────
+  // 노수호자 유성(시작 마을 인스턴스, village_pilgrim_meteor) 의 단일 deliver 의뢰.
+  // dialogue 가 endgame_apex_defeated + Ch 27 완료(세 잔영 flag) 를 가드 — 데이터로
+  // 표현 불가하므로 hidden:true (게시판 노출 X, NPC 대화로만 발견).
+  // 보상: 별빛 깃든 기예 6권 일괄. 의뢰 완료가 Ch 28 「유성의 마지막 부탁」 의 완료 조건.
+  {
+    id: "village-meteor-vessel",
+    regionId: "village",
+    title: "별빛을 담을 그릇",
+    description:
+      "별바다에서 시작 마을까지 직접 찾아온 노수호자 유성. 옛 봉인 자리 셋에서 거두어진 별빛 조각 30점을 가져가면, 누구의 것도 아닌 빛을 누구의 것도 아닌 자리에 두기 위한 마지막 그릇을 빚어 두겠다고 한다.",
+    requiredLevel: 100,
+    target: { kind: "deliver", materialId: "starfall_shard", count: 30 },
+    reward: {
+      gold: 5000,
+      fame: 50,
+      exp: 5000,
+      skillBooks: [
+        "book_starlit_mending",
+        "book_starlit_cut",
+        "book_starlit_knot",
+        "book_starlit_chill",
+        "book_starlit_sever",
+        "book_starlit_scatter",
+      ],
+    },
+    repeatable: false,
+    giverNpcId: "village_pilgrim_meteor",
+    hidden: true,
+  },
 ];
 
 // 길드 게시판 노출용 — NPC 전속 퀘스트는 제외, kill 형만 노출.

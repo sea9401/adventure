@@ -5,6 +5,8 @@ export type NpcId =
   | "village_blacksmith_bold"
   | "village_suzy"
   | "village_woodcutter_jimmy"
+  // 5막 「빈 옥좌의 시대」 — 별바다 노수호자 유성이 시작 마을로 직접 걸어왔다 (Ch 26 ~).
+  | "village_pilgrim_meteor"
   | "diola_elder"
   | "diola_fisher"
   | "diola_innkeeper"
@@ -103,6 +105,20 @@ export const NPCS: Npc[] = [
     greeting:
       "어이, 모험가 양반.\n오늘도 숲에서 나무 좀 패다 왔지. 별일 없는 게 제일이야, 안 그래?",
     portrait: "/images/npc/jimmy.webp",
+  },
+  // 5막 — 별바다에서 시작 마을까지 직접 걸어온 노수호자. star_haven_elder 와 동일 인물,
+  // 다른 인스턴스(NPC 시스템에 flag-gated 등장이 없어 dialogue 가 endgame_apex_defeated
+  // 미보유 시 짧은 인사로 가드). portrait 공유.
+  {
+    id: "village_pilgrim_meteor",
+    region: "village",
+    name: "노수호자 유성",
+    role: "quest",
+    description:
+      "별바다에서 여기까지 걸어 내려온 노인. 가슴팍에 별빛 한 점을 작은 그릇에 담아 두었다. 우물가에 앉아 자네를 기다린다.",
+    greeting:
+      "…먼 길이었지. 별바다에서 시작 마을까지 — 자네를 만나기 위해 천천히 걸어왔네.",
+    portrait: "/images/npc/yousung.webp",
   },
   {
     id: "diola_elder",

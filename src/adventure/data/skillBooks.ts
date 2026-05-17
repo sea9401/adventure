@@ -23,7 +23,14 @@ export type SkillBookId =
   | "book_thunder_strike"
   | "book_light_glide"
   | "book_purify"
-  | "book_afterimage";
+  | "book_afterimage"
+  // 5막 「빈 옥좌의 시대」 — 별빛 깃든 기예 6종. 노수호자 유성 보상. 귀속.
+  | "book_starlit_mending"
+  | "book_starlit_cut"
+  | "book_starlit_knot"
+  | "book_starlit_chill"
+  | "book_starlit_sever"
+  | "book_starlit_scatter";
 
 export type SkillBook = {
   id: SkillBookId;
@@ -184,6 +191,56 @@ export const SKILL_BOOKS: Record<SkillBookId, SkillBook> = {
     description:
       "그림자만 남기고 빠져나가는 보법의 결. 사용하면 '잔상' (AP 3) 을 학습한다. 귀속.",
     learnsSkillId: "afterimage",
+    tradable: false,
+  },
+  // ── 5막 「빈 옥좌의 시대」 — 별빛 깃든 기예 6권. 노수호자 유성의 그릇 빚기 의뢰 보상. ─
+  // 별빛 조각 30 deliver 한 자에게 한꺼번에 묶음 보상 — 6권 모두 인벤에 들어간다. 귀속.
+  book_starlit_mending: {
+    id: "book_starlit_mending",
+    name: "스킬북 — 별빛 회수",
+    description:
+      "별빛 한 점을 가슴에 모아 옛 상처를 데우는 결. 사용하면 '별빛 회수' (AP 4) 를 학습한다. 귀속.",
+    learnsSkillId: "starlit_mending",
+    tradable: false,
+  },
+  book_starlit_cut: {
+    id: "book_starlit_cut",
+    name: "스킬북 — 잔영 베기",
+    description:
+      "잔영의 가장자리까지 따라가 베어 내는 결. 사용하면 '잔영 베기' (AP 4) 를 학습한다. 귀속.",
+    learnsSkillId: "starlit_cut",
+    tradable: false,
+  },
+  book_starlit_knot: {
+    id: "book_starlit_knot",
+    name: "스킬북 — 별빛 매듭",
+    description:
+      "별빛 한 가닥을 자기 둘레에 묶어 두 박자 동안 풀지 않는 결. 사용하면 '별빛 매듭' (AP 3) 을 학습한다. 귀속.",
+    learnsSkillId: "starlit_knot",
+    tradable: false,
+  },
+  book_starlit_chill: {
+    id: "book_starlit_chill",
+    name: "스킬북 — 별빛 한기",
+    description:
+      "별빛에 데워진 한기를 상처 자리에 일곱 결로 새겨 두는 결. 사용하면 '별빛 한기' (AP 4) 를 학습한다. 귀속.",
+    learnsSkillId: "starlit_chill",
+    tradable: false,
+  },
+  book_starlit_sever: {
+    id: "book_starlit_sever",
+    name: "스킬북 — 별빛 끊기",
+    description:
+      "달려드는 자의 결을 별빛으로 두 번 끊어 두는 결. 사용하면 '별빛 끊기' (AP 4) 를 학습한다. 귀속.",
+    learnsSkillId: "starlit_sever",
+    tradable: false,
+  },
+  book_starlit_scatter: {
+    id: "book_starlit_scatter",
+    name: "스킬북 — 별빛 흩기",
+    description:
+      "별빛이 흩어지듯, 갑주도 회피도 거두지 않는 결. 사용하면 '별빛 흩기' (AP 4) 를 학습한다. 귀속.",
+    learnsSkillId: "starlit_scatter",
     tradable: false,
   },
 };
