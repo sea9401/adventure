@@ -25,6 +25,7 @@ import { NotificationToast } from "@/components/NotificationToast";
 import { LevelUpOverlay } from "@/components/LevelUpOverlay";
 import { useQuests } from "@/adventure/quests/useQuests";
 import { useInventory } from "@/adventure/inventory/useInventory";
+import { POTION_IDS, POTIONS } from "@/adventure/data/potions";
 import { useInboxCount } from "@/adventure/marketplace/useInboxCount";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
 import { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
@@ -276,10 +277,18 @@ function Home() {
     replaceSubView,
   });
 
+  // HP 회복약 보유 총합 (전투씬 표시용). 모든 heal_hp 효과 포션을 합산 — 새 종류가
+  // 추가돼도 자동 포함되도록 effect.kind 로 필터.
+  const hpPotionCount = POTION_IDS.reduce((sum, id) => {
+    if (POTIONS[id].effect.kind !== "heal_hp") return sum;
+    return sum + (inventory.state.potions[id] ?? 0);
+  }, 0);
+
   const playerStatus = {
     gender: character.gender,
     exp: character.exp,
     maxExp: character.maxExp,
+    hpPotionCount,
   };
 
   const addNotification = (
