@@ -1540,7 +1540,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 박쥐": {
     name: "별빛 박쥐",
     tags: ["beast"],
-    image: "/images/monster/starfall_bat.webp",
     hp: 1850,
     atk: 138,
     def: 62,
@@ -1555,7 +1554,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 동굴뱀": {
     name: "별빛 동굴뱀",
     tags: ["beast"],
-    image: "/images/monster/starfall_cavesnake.webp",
     hp: 2200,
     atk: 144,
     def: 72,
@@ -1569,7 +1567,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 광물 골렘": {
     name: "별빛 광물 골렘",
     tags: ["golem"],
-    image: "/images/monster/starfall_minigolem.webp",
     hp: 3000,
     atk: 132,
     def: 96,
@@ -1586,7 +1583,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 광맥 수호자": {
     name: "별빛 광맥 수호자",
     tags: ["golem"],
-    image: "/images/monster/starfall_warden.webp",
     hp: 6200,
     atk: 168,
     def: 105,
@@ -1615,7 +1611,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 절벽 늑대": {
     name: "별빛 절벽 늑대",
     tags: ["beast"],
-    image: "/images/monster/starfall_mountainwolf.webp",
     hp: 2050,
     atk: 146,
     def: 66,
@@ -1630,7 +1625,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 돌풍 정령": {
     name: "별빛 돌풍 정령",
     tags: ["spirit"],
-    image: "/images/monster/starfall_icespirit.webp",
     hp: 2200,
     atk: 152,
     def: 62,
@@ -1646,7 +1640,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 늑대 무리장": {
     name: "별빛 늑대 무리장",
     tags: ["beast"],
-    image: "/images/monster/starfall_wolfchieftain.webp",
     hp: 2800,
     atk: 150,
     def: 86,
@@ -1662,7 +1655,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 거인 잔영": {
     name: "별빛 거인 잔영",
     tags: ["golem"],
-    image: "/images/monster/starfall_frostgiant.webp",
     hp: 7500,
     atk: 178,
     def: 112,
@@ -1691,7 +1683,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 산호초 사이렌": {
     name: "별빛 산호초 사이렌",
     tags: ["spirit"],
-    image: "/images/monster/starfall_coralmermaid.webp",
     hp: 2100,
     atk: 148,
     def: 60,
@@ -1706,7 +1697,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 갑각 약탈자": {
     name: "별빛 갑각 약탈자",
     tags: ["humanoid"],
-    image: "/images/monster/starfall_shellbandit.webp",
     hp: 2500,
     atk: 152,
     def: 72,
@@ -1721,7 +1711,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 가시 산호 골렘": {
     name: "별빛 가시 산호 골렘",
     tags: ["golem"],
-    image: "/images/monster/starfall_coralgolem.webp",
     hp: 3100,
     atk: 138,
     def: 96,
@@ -1738,7 +1727,6 @@ export const MONSTERS: Record<string, Monster> = {
   "수심의 메아리": {
     name: "수심의 메아리",
     tags: ["beast", "spirit"],
-    image: "/images/monster/starfall_deepseamonster.webp",
     hp: 8200,
     atk: 180,
     def: 105,
@@ -1767,7 +1755,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 폐성벽 까마귀": {
     name: "별빛 폐성벽 까마귀",
     tags: ["beast"],
-    image: "/images/monster/starfall_oldfortresscrow.webp",
     hp: 1900,
     atk: 150,
     def: 60,
@@ -1782,7 +1769,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 탈영 약탈자": {
     name: "별빛 탈영 약탈자",
     tags: ["humanoid"],
-    image: "/images/monster/starfall_deserterbandit.webp",
     hp: 2350,
     atk: 156,
     def: 74,
@@ -1797,7 +1783,6 @@ export const MONSTERS: Record<string, Monster> = {
   "별빛 녹슨 자동인형": {
     name: "별빛 녹슨 자동인형",
     tags: ["golem"],
-    image: "/images/monster/starfall_automaton.webp",
     hp: 3300,
     atk: 134,
     def: 104,
@@ -1814,7 +1799,6 @@ export const MONSTERS: Record<string, Monster> = {
   "성문지기 잔영": {
     name: "성문지기 잔영",
     tags: ["golem"],
-    image: "/images/monster/starfall_oldgatekeeper.webp",
     hp: 9000,
     atk: 178,
     def: 116,
