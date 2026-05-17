@@ -56,7 +56,13 @@ export function seasonIdFor(weekStartUtc: Date): string {
 }
 
 // 현재 시각 기준 활성 시즌 1건. 없으면 생성. ON CONFLICT 으로 race 안전.
+//
+// self-heal: 만료된 (endAt 지난) active 시즌이 있으면 closed 로 마킹. cron 미동작 / 지연 / dev
+// 환경 보호. coop respawn / marketplace sweep 와 동일 패턴 — 단일 UPDATE 라 cost 미미하고,
+// 만료 없으면 즉시 noop. 이로써 첫 PvP 호출이 자동 롤오버를 강제.
 export async function getOrCreateCurrentSeason(now: Date = new Date()) {
+  await closeExpiredSeasons(now);
+
   const weekStart = weekStartUtcFor(now);
   const weekEnd = weekEndUtcFor(weekStart);
   const id = seasonIdFor(weekStart);
