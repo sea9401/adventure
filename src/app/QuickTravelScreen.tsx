@@ -160,7 +160,6 @@ export function QuickTravelScreen() {
     inventory,
     handleUseTownReturn,
     handleUseTravelScroll,
-    addNotification,
     characterStateHook,
     guildBuffs,
   } = useGame();
@@ -181,8 +180,6 @@ export function QuickTravelScreen() {
   const nowMs = Date.now();
   const visited = new Set(mapProgress.visitedRegionIds);
   const currentId = mapProgress.currentRegionId;
-  const fromRegion = WORLD_MAP.regions.find((r) => r.id === currentId);
-  const fromIsTown = !!fromRegion?.tags?.includes("town");
 
   const townEntries: Entry[] = [];
   const soloBossEntries: Entry[] = [];
@@ -197,19 +194,15 @@ export function QuickTravelScreen() {
     const coopBoss = COOP_BOSSES[region.id];
     const isSoloBoss = !!region.boss && !coopBoss;
     if (isTown) {
-      townEntries.push({
-        region,
-        label: region.name,
-        cost: fromIsTown ? 0 : 1,
-        isCurrent,
-      });
+      // 2026-05-18~ 빠른이동 전 카테고리 무료. cost 필드는 옛 회계 호환을 위해 남겨둠.
+      townEntries.push({ region, label: region.name, cost: 0, isCurrent });
     } else if (isTower) {
-      towerEntries.push({ region, label: region.name, cost: 1, isCurrent });
+      towerEntries.push({ region, label: region.name, cost: 0, isCurrent });
     } else if (coopBoss) {
       coopBossEntries.push({
         region,
         label: coopBoss.monsterName,
-        cost: 1,
+        cost: 0,
         isCurrent,
         coopSummary: coopSummaryByRegion.get(region.id),
       });
@@ -221,7 +214,7 @@ export function QuickTravelScreen() {
       soloBossEntries.push({
         region,
         label: region.boss.monsterName,
-        cost: 1,
+        cost: 0,
         isCurrent,
         bossCooldownRemainingMs: remaining,
       });
@@ -233,19 +226,12 @@ export function QuickTravelScreen() {
   // world.ts 정의 순서 (방문 순서에 가까움) 를 그대로 유지하고, 현재 위치는 그 자리에서
   // isCurrent 표시 + 비활성으로만 구분한다.
 
-  const onTravelTown = (region: Region, cost: number) => {
-    if (cost > 0 && scrollCount < cost) {
-      addNotification("info", "귀환 주문서가 부족하다.");
-      return;
-    }
+  // 2026-05-18~ 빠른이동 무료. 옛 가드(주문서 부족 토스트) 는 제거.
+  const onTravelTown = (region: Region) => {
     handleUseTownReturn(region.id);
   };
 
   const onTravelScroll = (region: Region) => {
-    if (scrollCount < 1) {
-      addNotification("info", "귀환 주문서가 부족하다.");
-      return;
-    }
     handleUseTravelScroll(region.id);
   };
 
@@ -272,7 +258,7 @@ export function QuickTravelScreen() {
             key={e.region.id}
             entry={e}
             scrollCount={scrollCount}
-            onTravel={() => onTravelTown(e.region, e.cost)}
+            onTravel={() => onTravelTown(e.region)}
           />
         ))}
       </Section>

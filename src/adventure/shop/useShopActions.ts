@@ -160,16 +160,16 @@ export function useShopActions(deps: {
     );
   };
 
-  // 빠른이동 — 가본 보스/고탑 지역으로 즉시 이동. 출발지 무관 무조건 주문서 1개 소비.
-  // 마을 목적지는 handleUseTownReturn (마을→마을 무료) 을 그대로 사용한다.
+  // 빠른이동 — 가본 보스/고탑 지역으로 즉시 이동.
+  // 2026-05-18~ 당분간 인벤 소모 없이 무료. 복구는 주석 한 줄 살리면 된다.
   const handleUseTravelScroll = (regionId: RegionId): boolean => {
     const target = WORLD_MAP.regions.find((r) => r.id === regionId);
     if (!target) return false;
     if (!mapProgress.visitedRegionIds.includes(regionId)) return false;
     if (mapProgress.currentRegionId === regionId) return false;
-    if (!inventory.consumeConsumable("scroll_town_return", 1)) return false;
+    // 옛 규칙: if (!inventory.consumeConsumable("scroll_town_return", 1)) return false;
     setMapProgress((prev) => ({ ...prev, currentRegionId: regionId }));
-    addNotification("info", `귀환 주문서로 ${target.name}(으)로 이동했다.`);
+    addNotification("info", `${target.name}(으)로 이동했다.`);
     return true;
   };
 
