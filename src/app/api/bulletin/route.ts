@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { bulletinComments, bulletinLikes, bulletinPosts } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
@@ -49,9 +49,9 @@ export async function GET(req: Request) {
         ? filters[0]
         : and(...filters);
 
-  // 서브쿼리 — 글마다 likes/comments 카운트와 본인 좋아요 여부. drizzle 의 sql 템플릿으로 표현.
-  // sql<number>`COUNT(*)::int` — PG 가 bigint 으로 돌려주는 걸 int 로 캐스팅해 JS Number 로 받음.
-  const rows = await db
+  // 글 본문 먼저 페치 — 카운트/likedByMe 는 postId 묶음으로 별도 쿼리.
+  // (이전엔 각 행마다 3개 상관 서브쿼리가 돌아 N=30 글이면 90+ 쿼리. 4개로 정리.)
+  const posts = await db
     .select({
       id: bulletinPosts.id,
       name: bulletinPosts.name,
@@ -61,16 +61,52 @@ export async function GET(req: Request) {
       content: bulletinPosts.content,
       createdAt: bulletinPosts.createdAt,
       mine: bulletinPosts.userId,
-      likeCount: sql<number>`(SELECT COUNT(*)::int FROM ${bulletinLikes} WHERE ${bulletinLikes.postId} = ${bulletinPosts.id})`,
-      commentCount: sql<number>`(SELECT COUNT(*)::int FROM ${bulletinComments} WHERE ${bulletinComments.postId} = ${bulletinPosts.id})`,
-      likedByMe: sql<boolean>`EXISTS(SELECT 1 FROM ${bulletinLikes} WHERE ${bulletinLikes.postId} = ${bulletinPosts.id} AND ${bulletinLikes.userId} = ${userId})`,
     })
     .from(bulletinPosts)
     .where(where)
     .orderBy(desc(bulletinPosts.createdAt))
     .limit(BULLETIN_FETCH_LIMIT);
 
-  const result = rows.map((r) => ({
+  if (posts.length === 0) return Response.json([]);
+
+  const postIds = posts.map((p) => p.id);
+  // 인덱스: bulletin_likes 는 PK(postId,userId), bulletin_comments 는
+  // (postId, createdAt) — 셋 다 postId 가 선행 컬럼이라 GROUP/IN 모두 인덱스 스캔.
+  const [likeCountRows, commentCountRows, likedByMeRows] = await Promise.all([
+    db
+      .select({
+        postId: bulletinLikes.postId,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(bulletinLikes)
+      .where(inArray(bulletinLikes.postId, postIds))
+      .groupBy(bulletinLikes.postId),
+    db
+      .select({
+        postId: bulletinComments.postId,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(bulletinComments)
+      .where(inArray(bulletinComments.postId, postIds))
+      .groupBy(bulletinComments.postId),
+    db
+      .select({ postId: bulletinLikes.postId })
+      .from(bulletinLikes)
+      .where(
+        and(
+          eq(bulletinLikes.userId, userId),
+          inArray(bulletinLikes.postId, postIds),
+        ),
+      ),
+  ]);
+
+  const likeCountMap = new Map(likeCountRows.map((r) => [r.postId, r.count]));
+  const commentCountMap = new Map(
+    commentCountRows.map((r) => [r.postId, r.count]),
+  );
+  const likedSet = new Set(likedByMeRows.map((r) => r.postId));
+
+  const result = posts.map((r) => ({
     id: r.id,
     name: r.name,
     className: r.className,
@@ -79,9 +115,9 @@ export async function GET(req: Request) {
     content: r.content,
     createdAt: r.createdAt.getTime(),
     mine: r.mine === userId,
-    likeCount: r.likeCount,
-    commentCount: r.commentCount,
-    likedByMe: r.likedByMe,
+    likeCount: likeCountMap.get(r.id) ?? 0,
+    commentCount: commentCountMap.get(r.id) ?? 0,
+    likedByMe: likedSet.has(r.id),
   }));
 
   return Response.json(result);

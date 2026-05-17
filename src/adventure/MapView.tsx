@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   WORLD_MAP,
   getAdjacent,
+  getRegion,
   type RegionId,
 } from "./data/world";
 import {
@@ -65,9 +66,7 @@ export function MapView({
   const isEdgeActive = (fromId: RegionId, toId: RegionId): boolean =>
     visitedSet.has(fromId) && visitedSet.has(toId);
 
-  const selectedRegion = selectedId
-    ? (WORLD_MAP.regions.find((r) => r.id === selectedId) ?? null)
-    : null;
+  const selectedRegion = getRegion(selectedId);
   const selectedState = selectedId ? stateOf(selectedId) : null;
   const isAdjacent = !!selectedId && adjacentToCurrent.has(selectedId);
   const selectedReq = selectedId
@@ -120,9 +119,7 @@ export function MapView({
   // 마을 귀환 주문서로 이동 가능 여부 — 가본 마을이고, 정상 경로(canMove/canChallenge)
   // 가 안 풀리는 상황에서만 노출. 출발지가 마을이면 fast-travel 엣지로 무료 이동 가능
   // 하므로 주문서 모드 자체를 띄우지 않는다 (count 표시 + 소비 일관성).
-  const fromRegion = WORLD_MAP.regions.find(
-    (r) => r.id === progress.currentRegionId,
-  );
+  const fromRegion = getRegion(progress.currentRegionId);
   const fromIsTown = !!fromRegion?.tags?.includes("town");
   const targetIsTown = !!selectedRegion?.tags?.includes("town");
   const isScrollEligible =
@@ -144,7 +141,7 @@ export function MapView({
         : progress.visitedRegionIds,
     });
     if (isFirstVisit) {
-      const region = WORLD_MAP.regions.find((r) => r.id === toId);
+      const region = getRegion(toId);
       if (region) {
         addNotification(
           "info",
@@ -212,9 +209,7 @@ export function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canMove, canChallenge, isScrollEligible, scrollCount, lowHpBlocked]);
 
-  const currentRegion = WORLD_MAP.regions.find(
-    (r) => r.id === progress.currentRegionId,
-  );
+  const currentRegion = getRegion(progress.currentRegionId);
 
   return (
     <div className="space-y-3">
@@ -232,8 +227,8 @@ export function MapView({
           focusY={currentRegion?.position.y ?? WORLD_MAP.viewBox.height / 2}
         >
           {WORLD_MAP.edges.map((edge) => {
-            const from = WORLD_MAP.regions.find((r) => r.id === edge.from);
-            const to = WORLD_MAP.regions.find((r) => r.id === edge.to);
+            const from = getRegion(edge.from);
+            const to = getRegion(edge.to);
             if (!from || !to) return null;
             // 마을 직통 (fast-travel) 엣지는 지도에 그리지 않는다 — 길게 가로지르는
             // 라인이 다른 엣지/노드 위로 어지럽게 겹친다. 발견된 마을 노드가 "방문함"
