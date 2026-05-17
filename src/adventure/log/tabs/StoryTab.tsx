@@ -4,11 +4,12 @@ import { Card } from "@/components/ui/Card";
 import { useChapterProgress } from "@/adventure/story/useChapterProgress";
 import type { ChapterStatus } from "@/adventure/story/useChapterProgress";
 
-const ACT_LABELS: Record<1 | 2 | 3 | 4, string> = {
+const ACT_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: "1막 — 평범한 모험가",
   2: "2막 — 세 봉인",
   3: "3막 — 노룡의 유언",
   4: "4막 — 옥좌의 길",
+  5: "5막 — 빈 옥좌의 시대",
 };
 
 // 다크/라이트 양쪽에서 읽히도록 light 톤(zinc-700/800, emerald-700/800, amber-700/800)
@@ -51,8 +52,8 @@ export function StoryTab() {
   const { entries, currentChapter, completedCount, totalCount } =
     useChapterProgress();
 
-  // 막별로 그룹화 — 1, 2, 3, 4 순서로 항상 표시.
-  const acts: (1 | 2 | 3 | 4)[] = [1, 2, 3, 4];
+  // 막별로 그룹화 — 1, 2, 3, 4, 5 순서로 항상 표시.
+  const acts: (1 | 2 | 3 | 4 | 5)[] = [1, 2, 3, 4, 5];
 
   return (
     <div className="flex flex-col gap-4">

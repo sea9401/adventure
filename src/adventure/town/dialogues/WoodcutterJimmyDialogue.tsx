@@ -202,6 +202,23 @@ export function WoodcutterJimmyDialogue({
   }
 
   if (deepCaveQuest.state === "completed") {
+    // ── 5막 「빈 옥좌의 시대」 Ch 26 「별이 떨어진 자리」 ────────────────────
+    // 옥좌의 주재가 쓰러진 직후 광맥 안쪽으로 별빛이 떨어졌다. 별빛 광맥 수호자를
+    // 잠재울 때까지(starfall_warden_felled) 다른 의뢰들보다 우선 노출. 늙은 톤 정착.
+    if (
+      storyFlags.has("endgame_apex_defeated") &&
+      !storyFlags.has("starfall_warden_felled")
+    ) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "어이구, 자네…\n옥좌 어쩌고 하는 그 큰 싸움이 끝났다더만. 무사히 돌아와서 다행이여.\n…한데 자네, 큰일이 끝났는데 광맥 안쪽에서 또 한기가 새어 나오기 시작했수. 그놈 잠재웠던 자리 너머 — 광맥이 끊긴 데까지 가봤더니 별빛 같은 게 한 점 가라앉아 있더라고. 광맥의 옛 잡것들이 그 빛에 데워져 또 깨어났수.\n…자네 말고는 가볼 사람이 없네. 한 번 더 잠재워주면 안 되겠수?"
+          }
+        />
+      );
+    }
     // 광맥 자리 재확인 — visit_region. deep-cave-hunter 노출 전에 우선 노출되는 한 단계.
     const tour = quests.getEntry("village-jimmy-deep-cave-tour");
     if (tour.state === "available") {
@@ -288,6 +305,19 @@ export function WoodcutterJimmyDialogue({
               if (completeQuest("deep-cave-hunter")) onClose();
             },
           }}
+        />
+      );
+    }
+    // 5막 Ch 26 종료 후 — 별빛 광맥 수호자를 잠재운 뒤의 회상 라인. 도연 라인보다
+    // 시간상 후행이라 우선 노출. 한 자리만 그런 게 아닐 거라는 5막 본격 진입 떡밥.
+    if (storyFlags.has("starfall_warden_felled")) {
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "광맥 안쪽 한기는 자네 덕에 다시 잠잠해졌수. 별빛이라더만 — 손에 쥐어보니 옅게 떨리는 게, 옥좌에서 떨어진 거라고들 합디다.\n…한 자리만 그런 게 아닐 거란 얘기가 돕디다. 운향 백운 노인네도 협곡이 다시 들썩인다고 사람을 보냈고, 소만 여울 영감도 갯바람이 차다고 합디다. 자네, 발 닿는 자리마다 한 번씩 들러봐주쇼."
+          }
         />
       );
     }

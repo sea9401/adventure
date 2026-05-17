@@ -323,6 +323,17 @@ export const MATERIALS = {
     price: 0,
     inShop: false,
   },
+  // ── 5막 「빈 옥좌의 시대」 — 별빛이 떨어진 자리의 회수 통화 ───────────────
+  // 황제가 쓰러진 뒤 옛 봉인 자리로 흩어진 별빛 한 조각. 별빛 변종 처치 시 떨어진다.
+  // 룬 6등급 강화 / 별빛 깃든 기예 스킬북 / 별빛 재단 무구 의 공통 재료. inShop: false.
+  starfall_shard: {
+    id: "starfall_shard",
+    name: "별빛 조각",
+    description:
+      "옥좌의 주재가 거두어 모았던 별빛이, 그가 쓰러진 자리에서 한 조각씩 떨어져 옛 봉인 자리로 회귀했다. 손에 쥐면 옅게 떨리는 한기.",
+    price: 0,
+    inShop: false,
+  },
 } as const;
 
 export type MaterialId = keyof typeof MATERIALS;
