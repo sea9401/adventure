@@ -13,6 +13,7 @@ import type {
 import type { CraftTier } from "@/adventure/data/craftQuality";
 import type { DropQuality } from "@/adventure/data/dropQuality";
 import { ItemsTab } from "./tabs/ItemsTab";
+import { MaterialsTab } from "./tabs/MaterialsTab";
 import { TownsTab } from "./tabs/TownsTab";
 import { PlacesTab } from "./tabs/PlacesTab";
 import { EtcTab } from "./tabs/EtcTab";
@@ -22,13 +23,21 @@ import type { TitleCounterValues } from "./tabs/shared";
 
 export type { TitleCounterValues };
 
-type LogTabKey = "story" | "places" | "towns" | "items" | "etc" | "titles";
+type LogTabKey =
+  | "story"
+  | "places"
+  | "towns"
+  | "items"
+  | "materials"
+  | "etc"
+  | "titles";
 
 const LOG_TABS: { key: LogTabKey; label: string }[] = [
   { key: "story", label: "이야기" },
   { key: "places", label: "장소·몬스터" },
   { key: "towns", label: "마을·NPC" },
   { key: "items", label: "아이템" },
+  { key: "materials", label: "재료" },
   { key: "etc", label: "스탯" },
   { key: "titles", label: "칭호" },
 ];
@@ -94,6 +103,7 @@ export function AdventureLogView({
           onDeposit={onDepositToVault}
         />
       )}
+      {tab === "materials" && <MaterialsTab log={log} />}
       {tab === "towns" && <TownsTab log={log} />}
       {tab === "etc" && <EtcTab stats={stats} />}
       {tab === "titles" && (
