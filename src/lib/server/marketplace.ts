@@ -104,12 +104,136 @@ export function addToCategory(
 }
 
 // inventory.v2 jsonb 의 안전한 모양. 호출 측에서 cast 후 사용.
+// craftedEquipment / droppedEquipment 는 itemId → 등급키 → 개수 (vault variant 와 동일 규약).
 export type InventoryShape = {
   potions?: Record<string, number>;
   equipment?: Record<string, number>;
+  craftedEquipment?: Record<string, Record<string, number>>;
+  droppedEquipment?: Record<string, Record<string, number>>;
   materials?: Record<string, number>;
   skillBooks?: Record<string, number>;
 };
+
+// 장비 등급 variant 키 — vault 변형 키와 동일 규약(useInventory.ts VAULT_VARIANT_KEYS).
+//  base: equipment[]                          (일반)
+//  c-2/c-1/c1/c2: craftedEquipment[id][tier]  (불량/하급/고급/걸작)
+//  d1/d2:        droppedEquipment[id][quality] (정교한/빼어난)
+const VALID_GRADES = new Set([
+  "base",
+  "c-2",
+  "c-1",
+  "c1",
+  "c2",
+  "d1",
+  "d2",
+]);
+
+export function isValidGrade(g: string): boolean {
+  return VALID_GRADES.has(g);
+}
+
+export type GradeCategory =
+  | "equipment"
+  | "craftedEquipment"
+  | "droppedEquipment";
+
+// grade → 인벤 카테고리. base = equipment, c±N = craftedEquipment, dN = droppedEquipment.
+// 비정상 grade 는 equipment 로 보수적 fallback (호출 측에서 isValidGrade 로 미리 검증할 것).
+export function inventoryCategoryForGrade(grade: string): GradeCategory {
+  if (grade[0] === "c") return "craftedEquipment";
+  if (grade[0] === "d") return "droppedEquipment";
+  return "equipment";
+}
+
+// grade 키 → 중첩 맵에서 쓰는 sub-key ("c1" → "1", "d2" → "2"). base 는 sub-key 없음.
+function gradeSubKey(grade: string): string {
+  return grade.slice(1);
+}
+
+// 등급 사본이 들어가는 중첩 카테고리(craftedEquipment / droppedEquipment) 의 한 슬롯에서
+// 차감. 부족하면 null. (base 는 호출 측에서 deductFromCategory 로 평면 처리.)
+function deductNestedSlot(
+  nested: Record<string, Record<string, number>> | undefined,
+  itemId: string,
+  subKey: string,
+  quantity: number,
+): Record<string, Record<string, number>> | null {
+  const have = nested?.[itemId]?.[subKey] ?? 0;
+  if (have < quantity) return null;
+  const innerNext = { ...(nested?.[itemId] ?? {}) };
+  const left = have - quantity;
+  if (left > 0) innerNext[subKey] = left;
+  else delete innerNext[subKey];
+  const outerNext = { ...(nested ?? {}) };
+  if (Object.keys(innerNext).length) outerNext[itemId] = innerNext;
+  else delete outerNext[itemId];
+  return outerNext;
+}
+
+function addNestedSlot(
+  nested: Record<string, Record<string, number>> | undefined,
+  itemId: string,
+  subKey: string,
+  quantity: number,
+): Record<string, Record<string, number>> {
+  const innerNext = { ...(nested?.[itemId] ?? {}) };
+  innerNext[subKey] = (innerNext[subKey] ?? 0) + quantity;
+  const outerNext = { ...(nested ?? {}) };
+  outerNext[itemId] = innerNext;
+  return outerNext;
+}
+
+// 장비 등급 사본 차감 — base/c±N/dN 분기해서 올바른 카테고리에서 deduct.
+// 성공 시 새 InventoryShape, 부족하면 null.
+export function deductGradedEquip(
+  inv: InventoryShape,
+  itemId: string,
+  grade: string,
+  quantity: number,
+): InventoryShape | null {
+  if (grade === "base") {
+    const nextCat = deductFromCategory(inv.equipment, itemId, quantity);
+    if (nextCat === null) return null;
+    return { ...inv, equipment: nextCat };
+  }
+  const sub = gradeSubKey(grade);
+  if (grade[0] === "c") {
+    const next = deductNestedSlot(inv.craftedEquipment, itemId, sub, quantity);
+    if (next === null) return null;
+    return { ...inv, craftedEquipment: next };
+  }
+  if (grade[0] === "d") {
+    const next = deductNestedSlot(inv.droppedEquipment, itemId, sub, quantity);
+    if (next === null) return null;
+    return { ...inv, droppedEquipment: next };
+  }
+  return null;
+}
+
+// 장비 등급 사본 가산 — 취소/유찰 환불 + 인박스 수령에서 사용.
+// grade 가 유효하지 않으면 equipment[] (base) 로 fallback (구 데이터 호환).
+export function addGradedEquip(
+  inv: InventoryShape,
+  itemId: string,
+  grade: string,
+  quantity: number,
+): InventoryShape {
+  if (grade === "base" || !isValidGrade(grade)) {
+    return { ...inv, equipment: addToCategory(inv.equipment, itemId, quantity) };
+  }
+  const sub = gradeSubKey(grade);
+  if (grade[0] === "c") {
+    return {
+      ...inv,
+      craftedEquipment: addNestedSlot(inv.craftedEquipment, itemId, sub, quantity),
+    };
+  }
+  // grade[0] === "d"
+  return {
+    ...inv,
+    droppedEquipment: addNestedSlot(inv.droppedEquipment, itemId, sub, quantity),
+  };
+}
 
 // crafting.v2 jsonb 의 share-token 보조 헬퍼.
 // shareable 누락된 레거시 데이터는 known 의 사본으로 fallback.

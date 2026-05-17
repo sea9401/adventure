@@ -109,6 +109,7 @@ export async function GET(req: Request) {
       itemKind: r.itemKind,
       itemId: r.itemId,
       itemName: r.itemName,
+      grade: r.grade,
       quantity: r.quantity,
       price: r.price,
       status: r.status,
@@ -173,6 +174,7 @@ export async function DELETE(req: Request) {
         payload: {
           item_kind: listing.itemKind,
           item_id: listing.itemId,
+          grade: listing.grade,
           quantity: listing.quantity,
         },
         message,

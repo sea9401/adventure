@@ -128,6 +128,7 @@ export async function POST(req: Request) {
           payload: {
             item_kind: listing.itemKind,
             item_id: listing.itemId,
+            grade: listing.grade,
             quantity: listing.quantity,
           },
           message: `${listing.itemName}${

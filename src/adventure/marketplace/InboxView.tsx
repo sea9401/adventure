@@ -8,6 +8,11 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { ITEMS, type ItemId } from "@/adventure/data/items";
+import { craftTierSuffix, type CraftTier } from "@/adventure/data/craftQuality";
+import {
+  dropQualityPrefix,
+  type DropQuality,
+} from "@/adventure/data/dropQuality";
 import { MATERIALS, type MaterialId } from "@/adventure/data/materials";
 import { getRecipeById } from "@/adventure/data/recipes";
 import { SKILL_BOOKS, type SkillBookId } from "@/adventure/data/skillBooks";
@@ -32,6 +37,8 @@ export function InboxView() {
     grantTitle,
   } = useGame();
   const addEquipment = inventory.addEquipment;
+  const addCraftedEquipment = inventory.addCraftedEquipment;
+  const addDroppedEquipment = inventory.addDroppedEquipment;
   const addMaterial = inventory.addMaterial;
   const addSkillBook = inventory.addSkillBook;
   const addGold = characterStateHook.addGold;
@@ -121,7 +128,16 @@ export function InboxView() {
       for (const it of r.itemsAdded) {
         if (it.kind === "equip") {
           if (Object.prototype.hasOwnProperty.call(ITEMS, it.id)) {
-            addEquipment(it.id as ItemId, it.quantity);
+            // grade variant 별로 적절한 storage 에 추가. 미지정/잘못된 grade → base fallback.
+            const g = it.grade;
+            const id = it.id as ItemId;
+            if (g === "c-2" || g === "c-1" || g === "c1" || g === "c2") {
+              addCraftedEquipment(id, Number(g.slice(1)) as -2 | -1 | 1 | 2, it.quantity);
+            } else if (g === "d1" || g === "d2") {
+              addDroppedEquipment(id, Number(g.slice(1)) as 1 | 2, it.quantity);
+            } else {
+              addEquipment(id, it.quantity);
+            }
           }
         } else if (it.kind === "skill_book") {
           if (Object.prototype.hasOwnProperty.call(SKILL_BOOKS, it.id)) {
@@ -142,13 +158,26 @@ export function InboxView() {
       if (r.goldAdded > 0) parts.push(`🪙 ${r.goldAdded.toLocaleString()} G`);
       const grouped = new Map<string, number>();
       for (const it of r.itemsAdded) {
-        const name =
+        const base =
           it.kind === "equip"
             ? ITEMS[it.id as ItemId]?.name
             : it.kind === "skill_book"
               ? SKILL_BOOKS[it.id as SkillBookId]?.name
               : MATERIALS[it.id as MaterialId]?.name;
-        const label = name ?? it.id;
+        const baseLabel = base ?? it.id;
+        // 등급 라벨 합성 (equip 만 의미) — "정교한 야구방망이 ⟨고급⟩" 식.
+        let label = baseLabel;
+        if (it.kind === "equip") {
+          const g = it.grade;
+          let tier: CraftTier | undefined;
+          let quality: DropQuality | undefined;
+          if (g === "c-2" || g === "c-1" || g === "c1" || g === "c2") {
+            tier = Number(g.slice(1)) as CraftTier;
+          } else if (g === "d1" || g === "d2") {
+            quality = Number(g.slice(1)) as DropQuality;
+          }
+          label = `${dropQualityPrefix(quality)}${baseLabel}${craftTierSuffix(tier)}`;
+        }
         grouped.set(label, (grouped.get(label) ?? 0) + it.quantity);
       }
       for (const [name, qty] of grouped) {

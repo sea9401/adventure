@@ -30,9 +30,13 @@ export function MarketplaceTab() {
     addNotification,
   } = useGame();
   const consumeEquipment = inventory.consumeEquipment;
+  const consumeCraftedEquipment = inventory.consumeCraftedEquipment;
+  const consumeDroppedEquipment = inventory.consumeDroppedEquipment;
   const consumeMaterial = inventory.consumeMaterial;
   const consumeSkillBook = inventory.consumeSkillBook;
   const addEquipment = inventory.addEquipment;
+  const addCraftedEquipment = inventory.addCraftedEquipment;
+  const addDroppedEquipment = inventory.addDroppedEquipment;
   const addMaterial = inventory.addMaterial;
   const addSkillBook = inventory.addSkillBook;
   const addGold = characterStateHook.addGold;
@@ -90,7 +94,17 @@ export function MarketplaceTab() {
         // 그래야 useRemotePatch 가 보낼 다음 PATCH 가 일관된 값을 보낸다.
         if (listing.itemKind === "equip") {
           if (Object.prototype.hasOwnProperty.call(ITEMS, listing.itemId)) {
-            addEquipment(listing.itemId as ItemId, listing.quantity);
+            // grade variant ('base'|'c±N'|'dN') 별로 알맞은 storage 로 환불.
+            // 미지정/잘못된 grade → base 로 fallback (구 데이터 호환).
+            const g = listing.grade;
+            const id = listing.itemId as ItemId;
+            if (g === "c-2" || g === "c-1" || g === "c1" || g === "c2") {
+              addCraftedEquipment(id, Number(g.slice(1)) as -2 | -1 | 1 | 2, listing.quantity);
+            } else if (g === "d1" || g === "d2") {
+              addDroppedEquipment(id, Number(g.slice(1)) as 1 | 2, listing.quantity);
+            } else {
+              addEquipment(id, listing.quantity);
+            }
           }
         } else if (listing.itemKind === "material") {
           if (Object.prototype.hasOwnProperty.call(MATERIALS, listing.itemId)) {
@@ -110,7 +124,16 @@ export function MarketplaceTab() {
         pushToast(msg);
       }
     },
-    [remote, pushToast, addEquipment, addMaterial, learnRecipe, addSkillBook],
+    [
+      remote,
+      pushToast,
+      addEquipment,
+      addCraftedEquipment,
+      addDroppedEquipment,
+      addMaterial,
+      learnRecipe,
+      addSkillBook,
+    ],
   );
 
   return (
@@ -181,7 +204,14 @@ export function MarketplaceTab() {
           }}
           onLocalDeduct={(s, qty) => {
             if (s.kind === "equip") {
-              consumeEquipment(s.itemId as ItemId, 1);
+              // grade 별로 차감 storage 분기. base = equipment[], c±N = crafted, dN = dropped.
+              if (s.craftTier != null) {
+                consumeCraftedEquipment(s.itemId as ItemId, s.craftTier, 1);
+              } else if (s.dropQuality != null) {
+                consumeDroppedEquipment(s.itemId as ItemId, s.dropQuality, 1);
+              } else {
+                consumeEquipment(s.itemId as ItemId, 1);
+              }
             } else if (s.kind === "material") {
               consumeMaterial(s.itemId as MaterialId, qty);
             } else if (s.kind === "recipe") {

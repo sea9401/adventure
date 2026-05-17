@@ -5,6 +5,16 @@ import { Card } from "@/components/ui/Card";
 import { TabBar } from "@/components/ui/TabBar";
 import { ITEMS, rarityTextClass, type ItemId, type EquipItem } from "@/adventure/data/items";
 import {
+  craftTierSuffix,
+  craftTierTextClass,
+  type CraftTier,
+} from "@/adventure/data/craftQuality";
+import {
+  dropQualityPrefix,
+  dropQualityTextClass,
+  type DropQuality,
+} from "@/adventure/data/dropQuality";
+import {
   MATERIALS,
   type MaterialId,
 } from "@/adventure/data/materials";
@@ -23,8 +33,21 @@ import { useEscapeKey } from "@/lib/useEscapeKey";
 const FEE_RATE = 0;
 const PRICE_MAX = 999_999_999;
 
+// 장비 등급 variant — vault 키와 동일 규약. base = 일반(equipment[]),
+// c±1/±2 = 제작 (불량/하급/고급/걸작), d1/d2 = 드랍 (정교한/빼어난).
+// craftTier / dropQuality 둘 중 하나만 채워지면 grade key 결정. (둘 다 0/없으면 base.)
+type EquipGradeKey = "base" | `c${-2 | -1 | 1 | 2}` | `d${1 | 2}`;
+
 type Selection =
-  | { kind: "equip"; itemId: ItemId; def: EquipItem; have: number }
+  | {
+      kind: "equip";
+      itemId: ItemId;
+      def: EquipItem;
+      grade: EquipGradeKey;
+      craftTier?: CraftTier;
+      dropQuality?: DropQuality;
+      have: number;
+    }
   | {
       kind: "material";
       itemId: MaterialId;
@@ -33,6 +56,18 @@ type Selection =
     }
   | { kind: "recipe"; itemId: string; def: Recipe }
   | { kind: "skill_book"; itemId: SkillBookId; def: SkillBook; have: number };
+
+// 정렬용 등급 가치 — 같은 itemId 내에서 좋은 사본부터 노출.
+// c2(걸작) > d2(빼어난) > c1(고급) > d1(정교한) > base > c-1(하급) > c-2(불량).
+const GRADE_RANK: Record<EquipGradeKey, number> = {
+  c2: 6,
+  d2: 5,
+  c1: 4,
+  d1: 3,
+  base: 2,
+  "c-1": 1,
+  "c-2": 0,
+};
 
 export function ListingCreateModal({
   inventory,
@@ -59,19 +94,70 @@ export function ListingCreateModal({
   const [price, setPrice] = useState("1");
   const [submitting, setSubmitting] = useState(false);
 
-  // inventory.equipment 는 미장착 사본만 카운트 — 동일 ID 가 슬롯에 장착돼 있어도
-  // 인벤 스택은 별개라 거래 가능하다. 장착 여부 필터를 두지 않는 이유.
+  // 등급별로 3 storage 모두 펼친다 — equipment(base) + craftedEquipment(c±N) + droppedEquipment(dN).
+  // 장착 여부 필터는 두지 않는다 (인벤 스택 ≠ 장착 사본).
+  // 정렬: itemId 이름 오름차순 → 같은 itemId 내에서는 GRADE_RANK 내림차순.
   const equipOptions = useMemo<Selection[]>(() => {
     const out: Selection[] = [];
+    const pushBase = (id: string, count: number) => {
+      if (!count) return;
+      const def = ITEMS[id as ItemId];
+      if (!def) return;
+      if ("tradable" in def && def.tradable === false) return;
+      out.push({
+        kind: "equip",
+        itemId: id as ItemId,
+        def,
+        grade: "base",
+        have: count,
+      });
+    };
     for (const [id, count] of Object.entries(inventory.equipment ?? {})) {
-      if (!count) continue;
+      pushBase(id, count ?? 0);
+    }
+    for (const [id, tierMap] of Object.entries(inventory.craftedEquipment ?? {})) {
       const def = ITEMS[id as ItemId];
       if (!def) continue;
       if ("tradable" in def && def.tradable === false) continue;
-      out.push({ kind: "equip", itemId: id as ItemId, def, have: count });
+      for (const [tierKey, count] of Object.entries(tierMap ?? {})) {
+        if (!count) continue;
+        const t = Number(tierKey);
+        if (t !== -2 && t !== -1 && t !== 1 && t !== 2) continue;
+        out.push({
+          kind: "equip",
+          itemId: id as ItemId,
+          def,
+          grade: `c${t as -2 | -1 | 1 | 2}`,
+          craftTier: t as CraftTier,
+          have: count,
+        });
+      }
     }
-    return out.sort((a, b) => a.def.name.localeCompare(b.def.name));
-  }, [inventory.equipment]);
+    for (const [id, qMap] of Object.entries(inventory.droppedEquipment ?? {})) {
+      const def = ITEMS[id as ItemId];
+      if (!def) continue;
+      if ("tradable" in def && def.tradable === false) continue;
+      for (const [qKey, count] of Object.entries(qMap ?? {})) {
+        if (!count) continue;
+        const q = Number(qKey);
+        if (q !== 1 && q !== 2) continue;
+        out.push({
+          kind: "equip",
+          itemId: id as ItemId,
+          def,
+          grade: `d${q as 1 | 2}`,
+          dropQuality: q as DropQuality,
+          have: count,
+        });
+      }
+    }
+    return out.sort((a, b) => {
+      const nameCmp = a.def.name.localeCompare(b.def.name);
+      if (nameCmp !== 0) return nameCmp;
+      if (a.kind !== "equip" || b.kind !== "equip") return 0;
+      return GRADE_RANK[b.grade] - GRADE_RANK[a.grade];
+    });
+  }, [inventory.equipment, inventory.craftedEquipment, inventory.droppedEquipment]);
 
   const materialOptions = useMemo<Selection[]>(() => {
     const out: Selection[] = [];
@@ -141,6 +227,7 @@ export function ListingCreateModal({
       await createListing(remote, {
         itemKind: selection.kind,
         itemId: selection.itemId,
+        grade: selection.kind === "equip" ? selection.grade : "base",
         quantity: qtyN,
         price: priceN,
       });
@@ -294,24 +381,34 @@ function ItemPicker({
       )}
       <ul className="space-y-1">
         {items.map((o) => (
-          <li key={`${o.kind}-${o.itemId}`}>
+          <li key={pickerKey(o)}>
             <button
               type="button"
               onClick={() => onPick(o)}
               className="flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
             >
-              <span
-                className={
-                  o.kind === "equip"
-                    ? rarityTextClass(o.def)
-                    : o.kind === "skill_book"
+              {o.kind === "equip" ? (
+                <span>
+                  <span className={dropQualityTextClass(o.dropQuality)}>
+                    {dropQualityPrefix(o.dropQuality)}
+                  </span>
+                  <span className={rarityTextClass(o.def)}>{o.def.name}</span>
+                  <span className={craftTierTextClass(o.craftTier)}>
+                    {craftTierSuffix(o.craftTier)}
+                  </span>
+                </span>
+              ) : (
+                <span
+                  className={
+                    o.kind === "skill_book"
                       ? "text-violet-700 dark:text-violet-300"
                       : undefined
-                }
-              >
-                {o.kind === "recipe" ? "📜 " : o.kind === "skill_book" ? "📖 " : ""}
-                {o.def.name}
-              </span>
+                  }
+                >
+                  {o.kind === "recipe" ? "📜 " : o.kind === "skill_book" ? "📖 " : ""}
+                  {o.def.name}
+                </span>
+              )}
               <span className="text-xs text-zinc-500">
                 {o.kind === "recipe"
                   ? "제작서"
@@ -325,6 +422,12 @@ function ItemPicker({
       </ul>
     </div>
   );
+}
+
+// 같은 itemId 가 등급별로 여러 줄 노출되므로 grade 까지 포함해야 key 가 유니크.
+function pickerKey(o: Selection): string {
+  if (o.kind === "equip") return `equip-${o.itemId}-${o.grade}`;
+  return `${o.kind}-${o.itemId}`;
 }
 
 function PriceForm({
@@ -350,22 +453,34 @@ function PriceForm({
     <div className="mt-3 space-y-3">
       <Card padding="sm">
         <div className="flex items-center justify-between">
-          <span
-            className={`text-sm font-medium ${
-              selection.kind === "equip"
-                ? rarityTextClass(selection.def)
-                : selection.kind === "skill_book"
+          {selection.kind === "equip" ? (
+            <span className="text-sm font-medium">
+              <span className={dropQualityTextClass(selection.dropQuality)}>
+                {dropQualityPrefix(selection.dropQuality)}
+              </span>
+              <span className={rarityTextClass(selection.def)}>
+                {selection.def.name}
+              </span>
+              <span className={craftTierTextClass(selection.craftTier)}>
+                {craftTierSuffix(selection.craftTier)}
+              </span>
+            </span>
+          ) : (
+            <span
+              className={`text-sm font-medium ${
+                selection.kind === "skill_book"
                   ? "text-violet-700 dark:text-violet-300"
                   : ""
-            }`}
-          >
-            {selection.kind === "recipe"
-              ? "📜 "
-              : selection.kind === "skill_book"
-                ? "📖 "
-                : ""}
-            {selection.def.name}
-          </span>
+              }`}
+            >
+              {selection.kind === "recipe"
+                ? "📜 "
+                : selection.kind === "skill_book"
+                  ? "📖 "
+                  : ""}
+              {selection.def.name}
+            </span>
+          )}
           <button
             type="button"
             onClick={onBack}

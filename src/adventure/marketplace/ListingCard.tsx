@@ -4,8 +4,32 @@ import { memo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { formatRelativeTime } from "@/lib/format";
 import { ITEMS, rarityTextClass, type ItemId } from "@/adventure/data/items";
+import {
+  craftTierSuffix,
+  craftTierTextClass,
+  type CraftTier,
+} from "@/adventure/data/craftQuality";
+import {
+  dropQualityPrefix,
+  dropQualityTextClass,
+  type DropQuality,
+} from "@/adventure/data/dropQuality";
 import type { Listing } from "./types";
 import { hasOwn, listingDetail } from "./listingDetail";
+
+// listing.grade ("base"|"c±N"|"dN") → (craftTier, dropQuality) — UI 라벨용.
+function parseListingGrade(grade: string): {
+  tier?: CraftTier;
+  quality?: DropQuality;
+} {
+  if (grade === "c-2" || grade === "c-1" || grade === "c1" || grade === "c2") {
+    return { tier: Number(grade.slice(1)) as CraftTier };
+  }
+  if (grade === "d1" || grade === "d2") {
+    return { quality: Number(grade.slice(1)) as DropQuality };
+  }
+  return {};
+}
 
 type ListingCardProps = {
   item: Listing;
@@ -29,21 +53,22 @@ function ListingCardImpl({
   const blocked = alreadyKnown === true;
   const isRecipe = item.itemKind === "recipe";
   const isSkillBook = item.itemKind === "skill_book";
+  const isEquip = item.itemKind === "equip";
   // 장비 매물이면 등급색으로 강조 — 다른 종류는 기본 zinc 톤. 스킬북은 보라색 강조.
   const equipDef =
-    item.itemKind === "equip" && hasOwn(ITEMS, item.itemId)
-      ? ITEMS[item.itemId as ItemId]
-      : null;
+    isEquip && hasOwn(ITEMS, item.itemId) ? ITEMS[item.itemId as ItemId] : null;
   const nameClass = isSkillBook
     ? "text-violet-700 dark:text-violet-300"
     : rarityTextClass(equipDef, "text-zinc-900 dark:text-zinc-100");
+  // 등급 라벨 — equip 전용. base 면 prefix/suffix 둘 다 빈 문자열.
+  const { tier, quality } = isEquip ? parseListingGrade(item.grade) : {};
   const detail = listingDetail(item);
   return (
     <Card padding="sm">
       <div className="flex items-center gap-3">
         <span className="flex-1 min-w-0">
           <span
-            className={`block truncate text-sm font-medium ${nameClass} ${
+            className={`block truncate text-sm font-medium ${
               detail
                 ? "cursor-pointer underline decoration-dotted decoration-zinc-400 underline-offset-2"
                 : ""
@@ -63,11 +88,25 @@ function ListingCardImpl({
                 : undefined
             }
           >
-            {isRecipe ? "📜 " : isSkillBook ? "📖 " : ""}
-            {item.itemName}
-            {item.itemKind === "material" && item.quantity > 1 ? (
-              <span className="ml-1 text-zinc-500">×{item.quantity}</span>
-            ) : null}
+            {isEquip ? (
+              <>
+                <span className={dropQualityTextClass(quality)}>
+                  {dropQualityPrefix(quality)}
+                </span>
+                <span className={nameClass}>{item.itemName}</span>
+                <span className={craftTierTextClass(tier)}>
+                  {craftTierSuffix(tier)}
+                </span>
+              </>
+            ) : (
+              <span className={nameClass}>
+                {isRecipe ? "📜 " : isSkillBook ? "📖 " : ""}
+                {item.itemName}
+                {item.itemKind === "material" && item.quantity > 1 ? (
+                  <span className="ml-1 text-zinc-500">×{item.quantity}</span>
+                ) : null}
+              </span>
+            )}
           </span>
           <span className="mt-0.5 block text-[11px] text-zinc-500">
             {formatRelativeTime(item.createdAt)}

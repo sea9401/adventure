@@ -29,6 +29,8 @@ export async function fetchListings(
 export type CreateParams = {
   itemKind: ItemKind;
   itemId: string;
+  // 등급 variant. 미지정 = 'base'. equip 외 kind 는 항상 'base'.
+  grade?: string;
   quantity: number;
   price: number;
 };
@@ -139,6 +141,8 @@ export type ClaimResult = {
   itemsAdded: {
     kind: "equip" | "material" | "skill_book";
     id: string;
+    // 등급 variant — equip 만 의미. 'base' 면 일반 equipment[] 로 합산.
+    grade: string;
     quantity: number;
   }[];
   recipesAdded: string[];
