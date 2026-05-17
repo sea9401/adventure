@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   Bell,
@@ -16,9 +17,30 @@ import {
   UserMinus,
 } from "@phosphor-icons/react";
 import { signIn, signOut } from "next-auth/react";
-import { NotificationPrefsModal } from "./NotificationPrefsModal";
-import { DeleteAccountModal } from "./DeleteAccountModal";
-import { AvatarChangeModal } from "./AvatarChangeModal";
+
+// 설정 메뉴 안의 모달 3종 — 거의 안 눌리는 보조 UI. 초기 페이지 번들에서 분리해
+// 메뉴 아이템 클릭 시점에 동적 로드. modal 자체가 client-only 라 ssr:false.
+const NotificationPrefsModal = dynamic(
+  () =>
+    import("./NotificationPrefsModal").then((m) => ({
+      default: m.NotificationPrefsModal,
+    })),
+  { ssr: false },
+);
+const DeleteAccountModal = dynamic(
+  () =>
+    import("./DeleteAccountModal").then((m) => ({
+      default: m.DeleteAccountModal,
+    })),
+  { ssr: false },
+);
+const AvatarChangeModal = dynamic(
+  () =>
+    import("./AvatarChangeModal").then((m) => ({
+      default: m.AvatarChangeModal,
+    })),
+  { ssr: false },
+);
 
 export function SettingsMenu({
   gameName,

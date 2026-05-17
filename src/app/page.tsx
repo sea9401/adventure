@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Coins, MapPin } from "@phosphor-icons/react";
 import { SettingsMenu } from "@/components/SettingsMenu";
@@ -46,7 +47,15 @@ import { getTitle } from "@/adventure/data/titles";
 import { MONSTERS } from "@/adventure/data/monsters";
 import { onBattleEnd } from "@/adventure/battle/onBattleEnd";
 import { useAutoHunt } from "@/adventure/hunting/useAutoHunt";
-import { AutoHuntResultModal } from "@/adventure/battle/AutoHuntResultModal";
+// 자동사냥 결과 모달 — 결과가 있을 때만 마운트. 메인 페이지 초기 번들에서 분리해
+// 라우트 진입 시 다운로드 안 함. 결과 발생 시 (드물게) 동적 로드.
+const AutoHuntResultModal = dynamic(
+  () =>
+    import("@/adventure/battle/AutoHuntResultModal").then((m) => ({
+      default: m.AutoHuntResultModal,
+    })),
+  { ssr: false },
+);
 import { useAutoHuntResultHandler } from "@/adventure/hunting/useAutoHuntResultHandler";
 import { useOneTimeNotices } from "@/adventure/notifications/useOneTimeNotices";
 import { useGuildFameSync } from "@/adventure/guild/useGuildFameSync";
