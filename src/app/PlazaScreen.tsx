@@ -1,12 +1,13 @@
 "use client";
 
-import { Envelope, Note, Storefront, Trophy } from "@phosphor-icons/react";
+import { Envelope, Note, Storefront, Sword, Trophy } from "@phosphor-icons/react";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
 import { BulletinBoardView } from "@/adventure/BulletinBoardView";
 import { MarketplaceTab } from "@/adventure/marketplace/MarketplaceTab";
 import { InboxView } from "@/adventure/marketplace/InboxView";
 import { RankingsView } from "@/adventure/rankings/RankingsView";
+import { ArenaView } from "@/adventure/pvp/ArenaView";
 import { useGame } from "@/adventure/GameContext";
 
 export function PlazaScreen() {
@@ -57,6 +58,12 @@ export function PlazaScreen() {
           description="모험가 명부 — 등록한 사람들의 레벨, 명성, 전투 횟수 순위."
           onClick={() => setSubView("rankings")}
         />
+        <EntryCard
+          icon={<Sword size={28} weight="duotone" className="text-rose-500" />}
+          title="투기장"
+          description="다른 모험가와 비동기 1:1 도전 — 시즌 Elo 랭킹."
+          onClick={() => setSubView("arena")}
+        />
       </div>
     );
   }
@@ -93,6 +100,15 @@ export function PlazaScreen() {
       <div className="space-y-3">
         <SubViewHeader title="랭킹" onBack={back} />
         <RankingsView />
+      </div>
+    );
+  }
+
+  if (subView === "arena") {
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="투기장" onBack={back} />
+        <ArenaView />
       </div>
     );
   }
