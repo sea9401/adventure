@@ -95,8 +95,10 @@ export const RECIPES: Recipe[] = [
     id: "sticky_cloak",
     name: "비단 로브 제작서",
     description: `${ITEMS.sticky_cloak.name}을(를) 만든다. 거미줄을 비단처럼 곱게 짜낸다.`,
+    // spider_silk: 거미 4.5% 단독 드랍. 같은 재료를 golem_armor 도 7개 요구해 합 14 ≈ 311킬 벽이었음.
+    // 보로 거미줄 의뢰(deliver 10) 와 합치면 더 부담 — 4 로 낮춰 두 추출물 합 8 + 의뢰 10 = 18 (≈ 400킬).
     ingredients: [
-      { kind: "material", materialId: "spider_silk", count: 7 },
+      { kind: "material", materialId: "spider_silk", count: 4 },
       { kind: "material", materialId: "slime_chunk", count: 5 },
     ],
     result: {
@@ -125,9 +127,11 @@ export const RECIPES: Recipe[] = [
     id: "golem_armor",
     name: "골렘갑주 제작서",
     description: `${ITEMS.golem_armor.name}을(를) 만든다. 폐허 잔해를 다듬어 거미줄로 안을 덧대고 슬라임 점액으로 이음새를 메운다.`,
+    // spider_silk 7→4: sticky_cloak 과 같은 재료(거미 단독 드랍 4.5%) 라 합 14 ≈ 311킬 부담.
+    // ruin_fragment(7.5%)/slime_chunk(15%) 는 빠른 재료라 그대로.
     ingredients: [
       { kind: "material", materialId: "ruin_fragment", count: 7 },
-      { kind: "material", materialId: "spider_silk", count: 7 },
+      { kind: "material", materialId: "spider_silk", count: 4 },
       { kind: "material", materialId: "slime_chunk", count: 5 },
     ],
     result: {
@@ -918,9 +922,11 @@ export const RECIPES: Recipe[] = [
     id: "mole_king_borer",
     name: "두더지왕의 굴착드릴 개조서",
     description: `${ITEMS.mole_king_borer.name}을(를) 만든다. ${ITEMS.mole_king_drill.name}에 단단한 수정 날과 마정석 동력부를 단다.`,
+    // hard_crystal 20→12: 이 라인 외에 마나 시리즈 4종이 같은 재료 ×8 씩 쓰는데, 거기에 더해
+    // 20개는 ~500킬. 12 로 줄여 ~300킬 — 유실된 명품 업그레이드라 적당히 노력 보존.
     ingredients: [
       { kind: "equip", itemId: "mole_king_drill", count: 1 },
-      { kind: "material", materialId: "hard_crystal", count: 20 },
+      { kind: "material", materialId: "hard_crystal", count: 12 },
       { kind: "material", materialId: "mana_crystal", count: 10 },
     ],
     result: { kind: "equipment", itemId: "mole_king_borer", slot: "weapon" },
