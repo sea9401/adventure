@@ -52,6 +52,7 @@ export type TownNpcDialogueDeps = Pick<
   | "addNotification"
   | "characterStateHook"
   | "adventureLog"
+  | "grantTitle"
 >;
 
 export function renderTownNpcDialogue(
@@ -68,6 +69,7 @@ export function renderTownNpcDialogue(
     addNotification,
     characterStateHook,
     adventureLog,
+    grantTitle,
   } = deps;
 
   switch (npc.id) {
@@ -117,6 +119,7 @@ export function renderTownNpcDialogue(
           completeQuest={completeQuest}
           storyFlags={storyFlags}
           inventory={inventory}
+          grantTitle={grantTitle}
         />
       );
     case "village_suzy":
