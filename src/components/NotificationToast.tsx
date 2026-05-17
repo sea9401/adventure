@@ -165,14 +165,14 @@ export function NotificationToast({
         return (
         <div
           key={t.id}
-          className="pointer-events-auto relative flex max-w-[calc(100vw-2rem)] items-start gap-2 overflow-hidden rounded-lg border border-zinc-200 bg-white py-2 pl-4 pr-2 text-sm text-zinc-800 shadow-lg animate-in slide-in-from-bottom-2 sm:max-w-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+          className="pointer-events-auto relative flex max-w-[calc(100vw-2rem)] items-start gap-2.5 overflow-hidden rounded-lg border border-zinc-200 bg-white py-3 pl-5 pr-2 text-base text-zinc-800 shadow-lg animate-in slide-in-from-bottom-2 sm:max-w-md dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
         >
           <span
             aria-hidden
-            className={`absolute inset-y-0 left-0 w-1 ${TOAST_ACCENT[t.kind]}`}
+            className={`absolute inset-y-0 left-0 w-1.5 ${TOAST_ACCENT[t.kind]}`}
           />
           <Icon
-            size={16}
+            size={20}
             weight="duotone"
             className={`mt-0.5 shrink-0 ${TOAST_ICON_COLOR[t.kind]}`}
           />

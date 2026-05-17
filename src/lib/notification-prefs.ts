@@ -16,8 +16,8 @@ export type ToastPrefs = Record<NotificationKind, boolean>;
 
 // 기본값 — 토스트 OFF 인 종류는 벨(좌상단 알림)에도 표시되지 않고 "최근 기록"
 // 화면에만 누적된다. 디폴트는 "정말 놓치면 아쉬운 사건"만 ON:
-// - milestone / equip_drop / training_done: 드물고 의미 있는 성장·획득.
-// - 그 외 전부 OFF (전투 결과·전리품·의뢰 진척·장비 액션·일반 정보).
+// - milestone / equip_drop / training_done / item: 드물고 의미 있는 성장·획득·제작 결과.
+// - 그 외 전부 OFF (전투 결과·전리품·의뢰 진척·일반 정보).
 //   사용자가 원하면 모달에서 켤 수 있다.
 const DEFAULTS: ToastPrefs = {
   battle_win: false,
@@ -29,7 +29,7 @@ const DEFAULTS: ToastPrefs = {
   expedition: false,
   loot: false,
   equip_drop: true,
-  item: false,
+  item: true,
   info: false,
 };
 
