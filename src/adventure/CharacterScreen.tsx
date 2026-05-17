@@ -165,7 +165,7 @@ export function CharacterScreen() {
         } else {
           addNotification(
             "info",
-            "합성에 필요한 룬이 부족하다 (동일 등급 3개 필요).",
+            "합성에 필요한 룬이 부족하다 (1T 3개·2T 4개·3T 5개·4T 6개).",
           );
         }
         return;

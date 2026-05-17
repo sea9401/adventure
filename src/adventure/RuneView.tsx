@@ -17,7 +17,7 @@ import {
 import {
   isFusionError,
   planRuneFusion,
-  RUNE_FUSION_COST,
+  fusionCostFor,
   STARLIT_FUSION_RUNE_COST,
   STARLIT_FUSION_SHARD_COST,
 } from "@/adventure/character/runeFusion";
@@ -211,7 +211,7 @@ export function RuneView({
                 if (canFuse && !isFusionError(fusion)) {
                   return fusion.extraMaterial
                     ? `5T ×${STARLIT_FUSION_RUNE_COST} + 별빛 조각 ×${STARLIT_FUSION_SHARD_COST} → 6T ×1`
-                    : `${RUNE_FUSION_COST}개 → ${row.grade + 1}T 1개`;
+                    : `${fusionCostFor(row.grade)}개 → ${row.grade + 1}T 1개`;
                 }
                 if (row.grade >= 6) return "6T 는 합성 불가";
                 if (row.grade === 5) {
@@ -220,7 +220,7 @@ export function RuneView({
                   }
                   return `5 → 6 강화에 별빛 조각 ${STARLIT_FUSION_SHARD_COST}개가 필요 (보유 ${shardCount})`;
                 }
-                return `합성에 ${RUNE_FUSION_COST}개 필요`;
+                return `합성에 ${fusionCostFor(row.grade)}개 필요`;
               })();
               return (
                 <li key={`${row.id}_${row.grade}`} className="flex items-stretch gap-1.5">
