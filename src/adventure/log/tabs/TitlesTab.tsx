@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { CaretDown, CaretRight, Crown, Lock } from "@phosphor-icons/react";
+import { useMemo, useState } from "react";
+import {
+  ArrowsDownUp,
+  CaretDown,
+  CaretRight,
+  Crown,
+  Lock,
+} from "@phosphor-icons/react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import {
@@ -26,6 +32,22 @@ export function TitlesTab({
   titleCounters: TitleCounterValues;
 }) {
   const [lockedOpen, setLockedOpen] = useState(false);
+  // 획득 칭호 정렬 — 클릭 시 토글. 기본값 recent (가장 최근 획득 위).
+  const [sortMode, setSortMode] = useState<"recent" | "abc">("recent");
+  const obtained = useMemo(() => {
+    const arr = Object.values(TITLES).filter((t) => !!log.titles[t.id]);
+    if (sortMode === "abc") {
+      arr.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    } else {
+      // recent — obtainedAt 내림차순. 동률은 정의 순서 안정 유지.
+      arr.sort(
+        (a, b) =>
+          (log.titles[b.id]?.obtainedAt ?? 0) -
+          (log.titles[a.id]?.obtainedAt ?? 0),
+      );
+    }
+    return arr;
+  }, [sortMode, log.titles]);
   const all = Object.values(TITLES);
   if (all.length === 0) {
     return (
@@ -36,7 +58,6 @@ export function TitlesTab({
       />
     );
   }
-  const obtained = all.filter((t) => !!log.titles[t.id]);
   const locked = all.filter((t) => !log.titles[t.id]);
 
   const renderCard = (title: (typeof all)[number]) => {
@@ -103,9 +124,26 @@ export function TitlesTab({
   return (
     <div className="space-y-4">
       <section>
-        <h3 className="mb-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-          획득한 칭호 ({obtained.length})
-        </h3>
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            획득한 칭호 ({obtained.length})
+          </h3>
+          {obtained.length > 1 && (
+            <button
+              type="button"
+              onClick={() =>
+                setSortMode((m) => (m === "recent" ? "abc" : "recent"))
+              }
+              aria-label={
+                sortMode === "recent" ? "ABC 순으로 정렬" : "최근 획득순으로 정렬"
+              }
+              className="inline-flex items-center gap-1 rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-[11px] font-medium text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <ArrowsDownUp size={11} weight="bold" />
+              {sortMode === "recent" ? "최근 획득순" : "ABC 순"}
+            </button>
+          )}
+        </div>
         {obtained.length === 0 ? (
           <p className="text-xs italic text-zinc-400 dark:text-zinc-500">
             아직 획득한 칭호가 없습니다.
