@@ -18,6 +18,8 @@ import {
   isFusionError,
   planRuneFusion,
   RUNE_FUSION_COST,
+  STARLIT_FUSION_RUNE_COST,
+  STARLIT_FUSION_SHARD_COST,
 } from "@/adventure/character/runeFusion";
 
 type RuneInventory = Partial<Record<RuneId, Partial<Record<RuneGrade, number>>>>;
@@ -62,6 +64,8 @@ function gradeColor(grade: RuneGrade): string {
       return "text-violet-600 dark:text-violet-400";
     case 5:
       return "text-amber-600 dark:text-amber-400";
+    case 6:
+      return "text-rose-600 dark:text-rose-400";
   }
 }
 
@@ -86,6 +90,7 @@ export function RuneView({
   equippedRunes,
   runeInventory,
   tokenCount,
+  shardCount,
   onEquip,
   onFuse,
   onBuy,
@@ -94,8 +99,10 @@ export function RuneView({
   runeInventory: RuneInventory;
   /** 보유 고탑의 인장 개수 — 룬 상점 가격 차감 통화. */
   tokenCount: number;
+  /** 보유 별빛 조각 개수 — 5 → 6 흡수 강화 가능 여부 판정용. */
+  shardCount: number;
   onEquip: (slotIndex: number, rune: EquippedRune | null) => void;
-  /** 합성 — id × grade ×3 → 같은 id 의 grade+1 ×1. 호출부가 인벤에서 직접 차감/증가. */
+  /** 합성 — 1~4 → +1: ×3. 5 → 6: ×1 + 별빛 조각 ×20. 호출부가 인벤에서 직접 차감/증가. */
   onFuse: (id: RuneId, fromGrade: RuneGrade) => void;
   /** 상점 구매 — tower_token 으로 결제. 서버 권위 (useShopActions). */
   onBuy: (id: RuneId, grade: RuneGrade) => void;
@@ -193,8 +200,28 @@ export function RuneView({
                 activeSlot === null ||
                 // 활성 슬롯에 같은 (id, grade) 가 이미 있으면 무의미 (그 슬롯이 이미 같은 거)
                 remaining <= 0;
-              const fusion = planRuneFusion(row.id, row.grade, row.count);
+              const fusion = planRuneFusion(
+                row.id,
+                row.grade,
+                row.count,
+                shardCount,
+              );
               const canFuse = !isFusionError(fusion);
+              const fusionTitle = (() => {
+                if (canFuse && !isFusionError(fusion)) {
+                  return fusion.extraMaterial
+                    ? `5등급 ×${STARLIT_FUSION_RUNE_COST} + 별빛 조각 ×${STARLIT_FUSION_SHARD_COST} → 6등급 ×1`
+                    : `${RUNE_FUSION_COST}개 → ${row.grade + 1}등급 1개`;
+                }
+                if (row.grade >= 6) return "6등급은 합성 불가";
+                if (row.grade === 5) {
+                  if (row.count < STARLIT_FUSION_RUNE_COST) {
+                    return "5 → 6 강화에 5등급 룬 1개가 필요";
+                  }
+                  return `5 → 6 강화에 별빛 조각 ${STARLIT_FUSION_SHARD_COST}개가 필요 (보유 ${shardCount})`;
+                }
+                return `합성에 ${RUNE_FUSION_COST}개 필요`;
+              })();
               return (
                 <li key={`${row.id}_${row.grade}`} className="flex items-stretch gap-1.5">
                   <button
@@ -234,18 +261,12 @@ export function RuneView({
                     type="button"
                     onClick={() => onFuse(row.id, row.grade)}
                     disabled={!canFuse}
-                    title={
-                      canFuse
-                        ? `${RUNE_FUSION_COST}개 → ${row.grade + 1}등급 1개`
-                        : row.grade >= 5
-                          ? "5등급은 합성 불가"
-                          : `합성에 ${RUNE_FUSION_COST}개 필요`
-                    }
+                    title={fusionTitle}
                     aria-label="합성"
                     className="inline-flex shrink-0 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
                   >
                     <ArrowsClockwise size={12} weight="bold" />
-                    합성
+                    {row.grade === 5 ? "강화" : "합성"}
                   </button>
                 </li>
               );
@@ -282,6 +303,9 @@ export function RuneView({
                 </span>
                 {RUNE_GRADES.map((g) => {
                   const price = RUNE_TOKEN_PRICES[g];
+                  // 5막 PR-D1 — 6등급은 토큰 상점 미노출 (price 0 sentinel).
+                  // 별빛 조각 흡수 강화로만 얻는다.
+                  if (price <= 0) return null;
                   const insufficient = tokenCount < price;
                   return (
                     <button
