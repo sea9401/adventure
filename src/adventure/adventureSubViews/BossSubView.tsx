@@ -34,9 +34,9 @@ export function BossSubView() {
     guildBuffs,
     quests,
   } = useGame();
-  const bossAttemptBonus = resolveBuffMultiplier(
+  const bossCooldownReductionPct = resolveBuffMultiplier(
     guildBuffs,
-    "boss_attempt_bonus",
+    "boss_cooldown_reduction_pct",
   );
 
   const coopBossDef = COOP_BOSSES[currentRegion.id];
@@ -158,6 +158,9 @@ export function BossSubView() {
           bossAttemptsToday={characterStateHook.getBossAttemptsToday(
             currentRegion.id,
           )}
+          bossLastAttemptAtMs={characterStateHook.getBossLastAttemptAt(
+            currentRegion.id,
+          )}
           onConsumeBossAttempt={() =>
             characterStateHook.consumeBossAttempt(currentRegion.id)
           }
@@ -167,7 +170,7 @@ export function BossSubView() {
               grantTitle("stagnant");
             }
           }}
-          bossAttemptBonus={bossAttemptBonus}
+          bossCooldownReductionPct={bossCooldownReductionPct}
           bossOnlyMode
         />
       </div>

@@ -14,6 +14,10 @@ import { useGame } from "@/adventure/GameContext";
 import { COOP_BOSSES } from "@/adventure/coop/data";
 import { WORLD_MAP, type Region } from "@/adventure/data/world";
 import { resolveBuffMultiplier } from "@/adventure/data/guildBuffs";
+import {
+  formatCooldownRemaining,
+  nextAttemptAt,
+} from "@/adventure/data/bossCooldown";
 
 const SCROLL_ID = "scroll_town_return" as const;
 
@@ -22,9 +26,8 @@ type Entry = {
   label: string;
   cost: number; // 소비할 스크롤 개수
   isCurrent?: boolean; // 현재 위치 — 선택지에 유지하되 비활성 + "지금 여기" 표시
-  // 싱글보스 전용 — BattleView 와 동일하게 길드 버프(+) 합산한 일일 "보상" 한도 대비 남음.
-  // (한도 초과 후에도 입장은 가능 — EXP·드롭만 안 줄 뿐. #297)
-  bossAttemptsLeft?: { left: number; limit: number };
+  // 싱글보스 전용 — 누진 쿨다운 잔여 ms. 0 이면 즉시 도전 가능.
+  bossCooldownRemainingMs?: number;
 };
 
 function TravelRow({
@@ -38,8 +41,8 @@ function TravelRow({
 }) {
   const isCurrent = !!entry.isCurrent;
   const insufficient = !isCurrent && entry.cost > 0 && scrollCount < entry.cost;
-  const attempts = entry.bossAttemptsLeft;
-  const exhausted = !!attempts && attempts.left <= 0;
+  const cooldownMs = entry.bossCooldownRemainingMs ?? 0;
+  const onCooldown = cooldownMs > 0;
   return (
     <button
       type="button"
@@ -82,17 +85,17 @@ function TravelRow({
                 : `주문서 ×${entry.cost}`}
         </span>
       </span>
-      {attempts && (
+      {entry.bossCooldownRemainingMs !== undefined && (
         <span
           className={
-            exhausted
-              ? "shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-[11px] font-medium tabular-nums text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400"
-              : "shrink-0 rounded-md bg-rose-50 px-2 py-1 text-[11px] font-medium tabular-nums text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+            onCooldown
+              ? "shrink-0 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium tabular-nums text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+              : "shrink-0 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium tabular-nums text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
           }
         >
-          {exhausted
-            ? "보상 마감"
-            : `보상 ${attempts.left}/${attempts.limit}`}
+          {onCooldown
+            ? formatCooldownRemaining(cooldownMs)
+            : "도전 가능"}
         </span>
       )}
       {!isCurrent && (
@@ -119,11 +122,14 @@ export function QuickTravelScreen() {
   } = useGame();
 
   const scrollCount = inventory.consumableCount(SCROLL_ID);
-  // BattleView 와 동일한 합산 방식 — region.boss.dailyEntryLimit + 길드 버프.
-  const bossAttemptBonus = resolveBuffMultiplier(
+  // BattleView 와 동일한 누진 쿨다운 계산 — 길드 버프로 % 감소.
+  const bossCooldownReductionPct = resolveBuffMultiplier(
     guildBuffs,
-    "boss_attempt_bonus",
+    "boss_cooldown_reduction_pct",
   );
+  // 화면을 떠나기 전 1회 스냅샷 — 사용자가 행 클릭 시점에 카운트다운이 조금 더
+  // 지나 있어도 무방 (UI 미세 갱신 아닌 도전 가능 여부 가시화가 목적).
+  const nowMs = Date.now();
   const visited = new Set(mapProgress.visitedRegionIds);
   const currentId = mapProgress.currentRegionId;
   const fromRegion = WORLD_MAP.regions.find((r) => r.id === currentId);
@@ -158,14 +164,16 @@ export function QuickTravelScreen() {
         isCurrent,
       });
     } else if (isSoloBoss && region.boss) {
-      const limit = region.boss.dailyEntryLimit + bossAttemptBonus;
       const used = characterStateHook.getBossAttemptsToday(region.id);
+      const lastAt = characterStateHook.getBossLastAttemptAt(region.id);
+      const endsAt = nextAttemptAt(lastAt, used, bossCooldownReductionPct);
+      const remaining = Math.max(0, endsAt - nowMs);
       soloBossEntries.push({
         region,
         label: region.boss.monsterName,
         cost: 1,
         isCurrent,
-        bossAttemptsLeft: { left: Math.max(0, limit - used), limit },
+        bossCooldownRemainingMs: remaining,
       });
     }
   }

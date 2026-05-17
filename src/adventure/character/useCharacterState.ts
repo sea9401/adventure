@@ -42,10 +42,14 @@ export type CharacterDynamicState = {
    */
   equippedRunes?: (EquippedRune | null)[];
   /**
-   * region 단위 일일 보스 입장 카운터.
+   * region 단위 일일 보스 도전 카운터.
    * date 는 클라이언트 로컬 'YYYY-MM-DD'. 다른 날짜로 보면 0 부터 새로 카운트.
+   * lastAttemptAtMs: 직전 도전의 epoch ms — 누진 쿨다운 계산용. 자정 넘어 date
+   * 가 바뀌면 무시 (자정 = 쿨다운/횟수 동시 리셋).
    */
-  bossAttempts?: Partial<Record<string, { date: string; count: number }>>;
+  bossAttempts?: Partial<
+    Record<string, { date: string; count: number; lastAttemptAtMs?: number }>
+  >;
   /**
    * 학습한 AP 스킬 이름 목록. 스킬북 사용 시 추가됨. 슬롯 장착(equippedSkills)해야 발동.
    * 스탯 스킬과 같은 슬롯 풀 공유 — equippedSkills 의 이름이 STAT_SKILL 에 없으면 여기에서 lookup.
@@ -308,11 +312,19 @@ export function useCharacterState() {
   // 동일 값을 다시 PATCH 하지만 서버 version 과 409 재시도로 자가 수렴.
   const replaceFromSaved = (raw: unknown) => setState(readInitial(raw));
 
-  // 오늘 기준 region 의 보스 입장 카운터. 다른 날짜 데이터는 0 으로 처리.
+  // 오늘 기준 region 의 보스 도전 카운터. 다른 날짜 데이터는 0 으로 처리.
   const getBossAttemptsToday = (regionId: string): number => {
     const entry = state.bossAttempts?.[regionId];
     if (!entry || entry.date !== todayLocalDateKey()) return 0;
     return entry.count;
+  };
+
+  // 오늘 기준 region 의 마지막 도전 epoch ms. 다른 날짜 / 미기록은 null.
+  // 호출 측 (BattleView) 이 cooldownAfterAttempt() 와 조합해 다음 도전 가능 시점 계산.
+  const getBossLastAttemptAt = (regionId: string): number | null => {
+    const entry = state.bossAttempts?.[regionId];
+    if (!entry || entry.date !== todayLocalDateKey()) return null;
+    return entry.lastAttemptAtMs ?? null;
   };
 
   // 스킬북 사용 시 호출 — 이미 학습한 스킬이면 false (인벤 측이 책 소비 막아야 함).
@@ -326,9 +338,11 @@ export function useCharacterState() {
     return true;
   };
 
-  // 입장 1회 소비 — 날짜가 바뀌었으면 0 부터 1 로 리셋. 호출자가 한도 검사를 했다고 가정.
+  // 도전 1회 기록 — 날짜가 바뀌었으면 1 부터 시작. lastAttemptAtMs 도 갱신해
+  // 누진 쿨다운 기준점이 된다. 호출 측이 쿨다운 검사를 했다고 가정.
   const consumeBossAttempt = (regionId: string) => {
     const today = todayLocalDateKey();
+    const nowMs = Date.now();
     setState((prev) => {
       const cur = prev.bossAttempts?.[regionId];
       const nextCount = cur && cur.date === today ? cur.count + 1 : 1;
@@ -336,7 +350,7 @@ export function useCharacterState() {
         ...prev,
         bossAttempts: {
           ...(prev.bossAttempts ?? {}),
-          [regionId]: { date: today, count: nextCount },
+          [regionId]: { date: today, count: nextCount, lastAttemptAtMs: nowMs },
         },
       };
     });
@@ -362,6 +376,7 @@ export function useCharacterState() {
     setAffiliation,
     replaceFromSaved,
     getBossAttemptsToday,
+    getBossLastAttemptAt,
     consumeBossAttempt,
     learnAPSkill,
   };

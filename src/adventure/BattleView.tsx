@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  cooldownAfterAttempt,
+  formatCooldownRemaining,
+  nextAttemptAt,
+} from "./data/bossCooldown";
 import { pickEnemyName, type Region } from "./data/world";
 import { MONSTERS, type Monster } from "./data/monsters";
 import type {
@@ -45,12 +50,6 @@ export type BattleEndPayload = {
   log: BattleLogEntry[];
   /** 보스 도전 여부 — onBattleEnd lose 분기에서 마을 강제 이동/HP 0 대신 HP 풀회 + 현장 유지. */
   isBoss?: boolean;
-  /**
-   * 보스 일일 한도(3회)를 초과한 상태에서 도전한 "연습" 전투. true 면 onBattleEnd 가
-   * EXP/드롭을 지급하지 않는다. 도감 kill/퀘스트 진행/마일스톤은 정상 진행 — 사용자가
-   * 한도 안의 도전과 동일한 카운터를 쌓을 수 있되 물질 보상만 빠진다.
-   */
-  bossNoReward?: boolean;
 };
 
 function pickEnemy(region: Region): Monster | null {
@@ -81,10 +80,11 @@ export function BattleView({
   huntingActive,
   onToggleHunting,
   autoHunt,
-  bossAttemptsToday,
+  bossAttemptsToday = 0,
+  bossLastAttemptAtMs = null,
   onConsumeBossAttempt,
   onBossAttempt,
-  bossAttemptBonus = 0,
+  bossCooldownReductionPct = 0,
   bossOnlyMode = false,
 }: {
   region: Region;
@@ -107,14 +107,16 @@ export function BattleView({
   onToggleHunting: (next: boolean) => void;
   /** 타이머형 자동 사냥(6시간 원정) hook — page.tsx 에서 1회 생성해 주입. */
   autoHunt: AutoHuntHook;
-  /** region.boss 가 정의된 경우 — 오늘 입장한 횟수. */
+  /** region.boss 가 정의된 경우 — 오늘 도전한 횟수 (누진 쿨다운 계산용). */
   bossAttemptsToday?: number;
-  /** 보스 도전 1회 입장 카운트. 호출자가 한도 검사 후 호출. */
+  /** 오늘 마지막 도전의 epoch ms. null 이면 오늘 아직 안 침. */
+  bossLastAttemptAtMs?: number | null;
+  /** 보스 도전 1회 기록. 호출자가 쿨다운 검사 후 호출. */
   onConsumeBossAttempt?: () => void;
   /** 보스 도전 클릭 시점에 호출 — 부모에서 장비 미착용 등 조건성 칭호 판정. */
   onBossAttempt?: () => void;
-  /** 길드 buff "결의의 깃발" 가산 — 보스 일일 도전 횟수 +N. */
-  bossAttemptBonus?: number;
+  /** 길드 buff "결의의 깃발" — 누진 쿨다운 감소 % (0~50). */
+  bossCooldownReductionPct?: number;
   /**
    * true 면 일반 사냥 섹션 숨기고 보스 카드만 노출. 모험 탭의 "보스" 서브뷰용.
    * false (기본) 면 사냥 섹션만 노출하고 보스 카드는 숨김 — 보스는 별도 서브뷰에 있음.
@@ -130,9 +132,14 @@ export function BattleView({
 
   // 보스 전투 모드 — 일반 자동사냥 루프와 분리. 1회 전투 후 종료, 자동 다음 적 X.
   const bossModeRef = useRef(false);
-  // 보스 일일 한도(3회) 초과 후 시작한 도전이면 true. onBattleEnd payload 에 그대로
-  // 실어서 EXP/드롭 지급을 막는 신호로 쓰인다. 다음 도전 시작 시 도전 클릭 시점에서 다시 세팅.
-  const bossNoRewardRef = useRef(false);
+
+  // 보스 누진 쿨다운 라이브 카운트다운 — 1초마다 tick. region 에 보스 있을 때만 돌림.
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (!region.boss) return;
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [region.boss]);
 
   const startWithLog = (
     enemy: Monster,
@@ -168,7 +175,6 @@ export function BattleView({
         rewards: { exp: expBonus.gained, expBonusApplied: expBonus.bonusApplied },
         potionsConsumed,
         log: state.log,
-        bossNoReward: bossNoRewardRef.current || undefined,
       });
     } catch (err) {
       // 핸들러 실패 시 ref 해제 — 다음 effect 실행에서 재시도 가능.
@@ -249,15 +255,22 @@ export function BattleView({
     const hasEnemies = region.enemies.length > 0;
     const boss = region.boss;
     const bossMonster = boss ? (MONSTERS[boss.monsterName] ?? null) : null;
-    const attemptsUsed = bossAttemptsToday ?? 0;
-    const dailyLimit = boss
-      ? boss.dailyEntryLimit + bossAttemptBonus
-      : 0;
-    const attemptsLeft = boss ? Math.max(0, dailyLimit - attemptsUsed) : 0;
-    // 한도 초과 도전은 "연습" — EXP/드롭만 안 줄 뿐 도감/퀘스트/마일스톤은 정상 진행.
-    // 도전 자체는 막지 않는다 (HP 만 살아있으면 됨).
-    const bossOverLimit = !!boss && attemptsLeft <= 0;
-    const canBoss = !!bossMonster && player.hp > 0;
+    const attemptsUsed = bossAttemptsToday;
+    // 다음 도전 가능 시점 (epoch ms). last 가 없거나 자정 지나서 reset 된 경우 0 — 즉시 가능.
+    const cooldownEndsAt = nextAttemptAt(
+      bossLastAttemptAtMs,
+      attemptsUsed,
+      bossCooldownReductionPct,
+    );
+    const cooldownRemainingMs = Math.max(0, cooldownEndsAt - nowMs);
+    const onCooldown = cooldownRemainingMs > 0;
+    // 다음 도전(N+1번째) 직후 걸릴 쿨다운 — 사용자에게 미리 보여줘 "다음엔 더 길어진다"
+    // 인지시키기 위함.
+    const nextCooldownMs = cooldownAfterAttempt(
+      attemptsUsed + 1,
+      bossCooldownReductionPct,
+    );
+    const canBoss = !!bossMonster && player.hp > 0 && !onCooldown;
     return (
       <div className="space-y-3">
         <Card padding="md">
@@ -283,14 +296,15 @@ export function BattleView({
                   {bossMonster.name}
                 </h4>
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  일일 보상 한도 — 오늘 {attemptsUsed}/{dailyLimit} 사용 (자정에 초기화)
-                  {bossAttemptBonus > 0
-                    ? ` · 길드 +${bossAttemptBonus}`
+                  오늘 {attemptsUsed}회 도전 · 다음 쿨다운{" "}
+                  {formatCooldownRemaining(nextCooldownMs)} (자정에 초기화)
+                  {bossCooldownReductionPct > 0
+                    ? ` · 길드 -${bossCooldownReductionPct}%`
                     : ""}
                 </p>
-                {bossOverLimit && (
-                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                    한도 초과 — 다음 도전부터 EXP·드롭은 지급되지 않는다 (퀘스트/도감 진행은 그대로).
+                {onCooldown && (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400 tabular-nums">
+                    다음 도전까지 {formatCooldownRemaining(cooldownRemainingMs)}
                   </p>
                 )}
                 <button
@@ -301,13 +315,8 @@ export function BattleView({
                     // busy(dispatch 진행 중) 도 막아야 "자동 사냥 보내기" 직후 보스 도전을
                     // 연타로 끼워넣는 레이스를 차단.
                     if (autoHunt.isDispatched || autoHunt.busy) return;
-                    // 한도 안: 카운터 소비 + 정상 보상. 한도 초과: 소비 스킵 + noReward 표시.
-                    if (bossOverLimit) {
-                      bossNoRewardRef.current = true;
-                    } else {
-                      bossNoRewardRef.current = false;
-                      onConsumeBossAttempt?.();
-                    }
+                    // 쿨다운 검사는 위 disabled 로 이미 가드 — 여기선 그냥 카운트 + 시각 기록.
+                    onConsumeBossAttempt?.();
                     onBossAttempt?.();
                     bossModeRef.current = true;
                     if (huntingActive) onToggleHunting(false);
@@ -321,9 +330,9 @@ export function BattleView({
                       ? "자동 사냥 중 — 보스 도전 불가"
                       : player.hp <= 0
                         ? "회복 필요"
-                        : bossOverLimit
-                          ? "보스 도전 (연습 — 보상 없음)"
-                          : `보스 도전 (남은 ${attemptsLeft}/${dailyLimit})`}
+                        : onCooldown
+                          ? `쿨다운 ${formatCooldownRemaining(cooldownRemainingMs)}`
+                          : "보스 도전"}
                 </button>
               </Card>
               {/* 자동 포션 룰 — 도전 버튼 직전에 점검할 수 있게 보스 카드 바로 아래에 노출.

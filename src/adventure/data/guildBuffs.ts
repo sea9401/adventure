@@ -13,15 +13,15 @@ export type GuildBuffId =
 
 export type GuildBuffTier = 1 | 2 | 3 | 4 | 5;
 
-// 효과 타입 — 곱셈 4종 + 가산 1종.
+// 효과 타입 — 곱셈 4종 + 보스 쿨다운 감소 1종.
 // exp/drop/fame_mult: multiplier ≥ 1 (1.01~1.05). train_speed_mult: multiplier ≤ 1
-// (0.97~0.85 — 훈련 소요시간에 곱한다). boss_attempt_bonus: 정수 (+1~+3).
+// (0.97~0.85 — 훈련 소요시간에 곱한다). boss_cooldown_reduction_pct: 정수 % (10~50).
 export type GuildBuffEffect =
   | { kind: "exp_mult"; value: number }
   | { kind: "train_speed_mult"; value: number }
   | { kind: "drop_mult"; value: number }
   | { kind: "fame_mult"; value: number }
-  | { kind: "boss_attempt_bonus"; value: number };
+  | { kind: "boss_cooldown_reduction_pct"; value: number };
 
 export type GuildBuffTierDef = {
   tier: GuildBuffTier;
@@ -103,8 +103,8 @@ export const GUILD_BUFFS: Record<GuildBuffId, GuildBuffDef> = {
   boss_attempt: {
     id: "boss_attempt",
     name: "결의의 깃발",
-    description: "보스 일일 도전 횟수가 늘어난다.",
-    tiers: buildTiers([1, 1, 2, 2, 3], "boss_attempt_bonus"),
+    description: "보스 도전 누진 쿨다운을 감소시킨다 (10%~50%).",
+    tiers: buildTiers([10, 20, 30, 40, 50], "boss_cooldown_reduction_pct"),
   },
 };
 
@@ -147,7 +147,7 @@ export function buffSlotsForGrade(grade: GuildGrade): number {
 
 // 슬롯들에서 특정 효과 종류의 multiplier/bonus 를 추출.
 // 곱셈 효과(exp/gold/drop/fame_mult): 활성 슬롯 effect.value, 없으면 1.0.
-// 가산 효과(boss_attempt_bonus): value, 없으면 0.
+// 가산 효과(boss_cooldown_reduction_pct): value(%), 없으면 0.
 // 같은 종류 슬롯은 1개만 유효 (install 검증으로 enforce).
 export function resolveBuffMultiplier(
   buffs: GuildBuffSlot[],
@@ -158,7 +158,7 @@ export function resolveBuffMultiplier(
     if (!tier) continue;
     if (tier.effect.kind === kind) return tier.effect.value;
   }
-  return kind === "boss_attempt_bonus" ? 0 : 1;
+  return kind === "boss_cooldown_reduction_pct" ? 0 : 1;
 }
 
 // 슬롯 배열의 누적 투자 비용(특정 buffId) — 다운그레이드 환급 계산용.

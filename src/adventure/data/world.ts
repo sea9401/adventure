@@ -68,12 +68,11 @@ export type Region = {
   encounterWeights?: Partial<Record<string, number>>;
   /**
    * 보스 인카운터 — 별도 도전 버튼으로 진입. 일반 자동 사냥 풀에서 제외된다.
-   * 일일 입장 횟수 제한이 있으며 자정(클라이언트 로컬) 기준 reset.
+   * 누진 쿨다운 (도전 횟수가 늘수록 길어짐) 이 있으며 자정 기준 reset.
    * boss.monsterName 은 MONSTERS 의 키.
    */
   boss?: {
     monsterName: string;
-    dailyEntryLimit: number;
   };
   tags?: RegionTag[];
   recommendedLevel?: number;
@@ -178,7 +177,7 @@ export const WORLD_MAP: WorldMap = {
         동굴뱀: 35,
         "작은 광물 골렘": 30,
       },
-      boss: { monsterName: "광맥의 수호자", dailyEntryLimit: 3 },
+      boss: { monsterName: "광맥의 수호자" },
       recommendedLevel: 6,
     },
     {
@@ -348,7 +347,7 @@ export const WORLD_MAP: WorldMap = {
         "화산 두꺼비": 35,
         "불꽃 골렘": 25,
       },
-      boss: { monsterName: "화산의 심장", dailyEntryLimit: 3 },
+      boss: { monsterName: "화산의 심장" },
       recommendedLevel: 55,
     },
     {
@@ -435,7 +434,7 @@ export const WORLD_MAP: WorldMap = {
         "황성 호위병": 40,
         "봉인 파편": 25,
       },
-      boss: { monsterName: "순례자의 분신", dailyEntryLimit: 3 },
+      boss: { monsterName: "순례자의 분신" },
       recommendedLevel: 85,
     },
     {
@@ -497,7 +496,7 @@ export const WORLD_MAP: WorldMap = {
         "가시 산호 골렘": 25,
       },
       // 산호초 섬 보스 — 별도 도전 버튼. 일반 인카운터 풀에선 제외, 자정 기준 일일 3회.
-      boss: { monsterName: "수심의 것", dailyEntryLimit: 3 },
+      boss: { monsterName: "수심의 것" },
       recommendedLevel: 18,
     },
     // ── 서편 옛길 (village → westgate → dustford → oldwall_keep) ────────────
@@ -543,7 +542,7 @@ export const WORLD_MAP: WorldMap = {
         "녹슨 자동인형": 30,
       },
       // 옛 변경 성채 보스 — 별도 도전 버튼. 일반 인카운터 풀에선 제외, 자정 기준 일일 3회.
-      boss: { monsterName: "옛 성문지기", dailyEntryLimit: 3 },
+      boss: { monsterName: "옛 성문지기" },
       recommendedLevel: 13,
     },
     // ── 용비늘 라인 (windvale → bone_marches → scalefall_barrows) ───────────
@@ -578,7 +577,7 @@ export const WORLD_MAP: WorldMap = {
         "용골 리치": 30,
       },
       // 용비늘 묘지 보스 — 솔로 도전, 자정 기준 일일 3회.
-      boss: { monsterName: "뼈비늘 노룡", dailyEntryLimit: 3 },
+      boss: { monsterName: "뼈비늘 노룡" },
       recommendedLevel: 75,
     },
     // ── 용의 둥지 (scalefall_barrows 너머 월드 보스 맵) ───────────────────────────
