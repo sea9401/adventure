@@ -406,6 +406,33 @@ export function BaekunDialogue({
       }
     }
 
+    // ── 5막 「빈 옥좌의 시대」 PR-B1 — 별빛 협곡 ────────────────────────────
+    // Ch 26 「별이 떨어진 자리」 완료 후 협곡 안쪽으로 별빛이 떨어진다. 별빛 거인 잔영을
+    // 협동으로 잠재울 때까지(starlit_giant_quelled) 우선 노출. 4막 산정 라인 모두 종료
+    // 후의 fallback 자리에 끼워, 4막 히든 의뢰(escort/hunter/heaven/storm) 진행을 막지 않는다.
+    if (storyFlags.has("starfall_warden_felled")) {
+      if (!storyFlags.has("starlit_giant_quelled")) {
+        return (
+          <NpcDialogue
+            npc={npc}
+            onClose={onClose}
+            text={
+              "…자네, 마침 잘 왔네. 지미가 사람을 보냈더라고 — 별빛이 광맥에 떨어졌단 얘기. 그놈만 그리된 게 아니더만.\n협곡이 다시 들썩이고 있네. 운봉의 거인을 잠재웠던 자리 깊은 곳에서, 잔영 하나가 두 발을 박아 넣고 있어 — 별빛에 데워진 채로.\n혼자선 어림없네. 그때처럼 동료를 모아 — 잔영을 한 번 더 잠재워 주게."
+            }
+          />
+        );
+      }
+      return (
+        <NpcDialogue
+          npc={npc}
+          onClose={onClose}
+          text={
+            "잔영도 다시 잠들었구먼. 거인의 자리에서 떨어진 별빛 한 점이 자네 손에 거두어졌다 들었네.\n…한데 산정의 노수호자들이 그러더라고. 별이 세 자리에 떨어졌다고 — 갯바람도 차가워졌고, 옛 성채 쪽에서 쇳소리도 들린다네. 자네, 다른 두 자리도 한 번씩 둘러봐 주게."
+          }
+        />
+      );
+    }
+
     return (
       <NpcDialogue
         npc={npc}

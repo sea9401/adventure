@@ -1608,6 +1608,83 @@ export const MONSTERS: Record<string, Monster> = {
     auraKind: "starfall",
     onDefeatFlag: "starfall_warden_felled",
   },
+  // ── 5막 PR-B1 — 별빛 협곡 (starlit_canyon Lv102) ──────────────────────────
+  // Ch 25 직후 별빛이 운무 협곡에도 떨어졌다. 절벽 늑대·돌풍 정령·무리장이 별빛에
+  // 데워져 다시 깨어났고, 협곡 깊은 자리에 운봉의 거인의 *잔영* 이 잠들어 있다.
+  // 잔영은 협동 보스로만 등장 (운봉의 거인 패턴 유지) — region.boss 미설정.
+  "별빛 절벽 늑대": {
+    name: "별빛 절벽 늑대",
+    tags: ["beast"],
+    image: "/images/monster/starfall_mountainwolf.webp",
+    hp: 2050,
+    atk: 146,
+    def: 66,
+    spd: 10,
+    evasionPct: 15,
+    exp: 250,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.08 },
+    ],
+    auraKind: "starfall",
+  },
+  "별빛 돌풍 정령": {
+    name: "별빛 돌풍 정령",
+    tags: ["spirit"],
+    image: "/images/monster/starfall_icespirit.webp",
+    hp: 2200,
+    atk: 152,
+    def: 62,
+    spd: 9,
+    evasionPct: 18,
+    exp: 260,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.09 },
+    ],
+    skill: { kind: "pierce", name: "별빛 결풍", armorPierce: 6 },
+    auraKind: "starfall",
+  },
+  "별빛 늑대 무리장": {
+    name: "별빛 늑대 무리장",
+    tags: ["beast"],
+    image: "/images/monster/starfall_wolfchieftain.webp",
+    hp: 2800,
+    atk: 150,
+    def: 86,
+    spd: 7,
+    exp: 280,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 0.12 },
+    ],
+    auraKind: "starfall",
+  },
+  // 별빛 거인 잔영 — 운봉의 거인의 별빛 잔영. 협동 보스 시스템으로만 등장 (region.boss 미설정).
+  // coop/data.ts 의 COOP_BOSSES.starlit_canyon 으로 등록. solo stat 은 시뮬·테스트 용도.
+  "별빛 거인 잔영": {
+    name: "별빛 거인 잔영",
+    tags: ["golem"],
+    image: "/images/monster/starfall_frostgiant.webp",
+    hp: 7500,
+    atk: 178,
+    def: 112,
+    spd: 6,
+    exp: 1800,
+    drops: [
+      { kind: "material", materialId: "starfall_shard", chance: 1, amount: 6 },
+      { kind: "material", materialId: "giant_scale", chance: 1, amount: 4 },
+      { kind: "material", materialId: "unbong_ore", chance: 1, amount: 3 },
+    ],
+    dropQualityBias: 4,
+    armorVulnerable: 0.3,
+    playerDefVulnerable: 0.25,
+    phaseTrigger: {
+      hpFraction: 0.45,
+      defBonus: 14,
+      message: "잔영이 별빛 한 점을 가슴에 끌어들이며 두 발을 박아 넣는다.",
+    },
+    skill: { kind: "heavy_blow", name: "별빛 짓밟기", everyPhases: 3, multiplier: 1.7 },
+    auraKind: "starfall",
+    onDefeatFlag: "starlit_giant_quelled",
+  },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).
   "훈련용 허수아비": {

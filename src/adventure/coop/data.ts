@@ -40,6 +40,20 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     onDefeatFlag: "peak_giant_defeated",
     onAttackFlag: "peak_giant_engaged",
   },
+  // 5막 PR-B1 — 별빛 거인 잔영. 운봉의 거인 처치 후 별빛이 그 자리에 떨어졌다.
+  // 만렙 100 협동 보스 — apex_throne(49000) / starspire(21800) 사이 톤. 진입 자격:
+  // Ch 26 「별이 떨어진 자리」 완료(starfall_warden_felled) — 별빛이 흩어졌음을 본 자만.
+  starlit_canyon: {
+    monsterName: "별빛 거인 잔영",
+    maxHp: 28000,
+    expirationMs: 24 * 60 * 60 * 1000, // 24h
+    respawnMs: 1 * 60 * 60 * 1000, // 1h
+    onDefeatFlag: "starlit_giant_quelled",
+    onAttackFlag: "starlit_giant_engaged",
+    requiredFlag: "starfall_warden_felled",
+    lockedMessage:
+      "Ch 26 「별이 떨어진 자리」를 먼저 끝내야 한다. 별빛이 옛 봉인 자리로 흩어졌음을 한 번 본 자에게만 잔영이 모습을 드러낸다.",
+  },
   starspire: {
     monsterName: "별을 지키는 자",
     maxHp: 21800,
