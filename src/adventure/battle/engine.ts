@@ -181,7 +181,12 @@ export type BattleState = {
   // AP 스킬 자원 — 매 플레이어 행동 +1, cap=AP_CAP, 전투 시작 시 AP_BATTLE_START.
   // 스킬 발동 시 cost 만큼 차감. equippedAPSkills 미장착이면 0 으로 두고 무시.
   ap: number;
+  /** 보스 전투 여부 — 충돌파/천명 같은 %HP 효과가 BOSS_PCT_HP_DAMAGE_MULT 로 감산. */
+  isBoss?: boolean;
 };
+
+/** 보스에 대한 %HP 비례 추가 데미지(충돌파/천명) 감산 계수. 1.0 = 그대로, 0.5 = 반감. */
+export const BOSS_PCT_HP_DAMAGE_MULT = 0.5;
 
 export type PlayerCombat = {
   hp: number;
@@ -1086,21 +1091,28 @@ export function advanceTurn(
     const dmg =
       braceReduction > 0 ? Math.max(1, dmgBeforeBrace - braceReduction) : dmgBeforeBrace;
     // 천명 (4티어) — 일정 확률로 적 현재 HP 의 일부를 추가 고정 피해 (이 공격의 보통 피해와 별개로 합산).
+    // 보스 전투에는 BOSS_PCT_HP_DAMAGE_MULT 배 적용 (%HP 누진 폭딜 방지).
     const decreeFires =
       (player.heavenDecreeChancePct ?? 0) > 0 &&
       Math.random() * 100 < player.heavenDecreeChancePct!;
-    const decreeDmg = decreeFires
+    const decreeBaseDmg = decreeFires
       ? Math.floor((state.enemyHp * HEAVEN_DECREE_HP_PCT) / 100)
       : 0;
+    const decreeDmg = state.isBoss
+      ? Math.floor(decreeBaseDmg * BOSS_PCT_HP_DAMAGE_MULT)
+      : decreeBaseDmg;
     // 충돌파 (6티어) — 매 IMPACT_WAVE_INTERVAL 턴마다 본타 첫 공격에 적 현재 HP 의 N% 추가 고정 피해.
     const impactPct = player.impactWaveHpPct ?? 0;
     const impactFires =
       impactPct > 0 &&
       isFirstAttackOfTurn &&
       turnNumber % IMPACT_WAVE_INTERVAL === 0;
-    const impactDmg = impactFires
+    const impactBaseDmg = impactFires
       ? Math.floor((state.enemyHp * impactPct) / 100)
       : 0;
+    const impactDmg = state.isBoss
+      ? Math.floor(impactBaseDmg * BOSS_PCT_HP_DAMAGE_MULT)
+      : impactBaseDmg;
     const totalDmg = dmg + decreeDmg + impactDmg + stormBonus;
     const labels: string[] = [];
     if (bonus > 0) labels.push("강공격");
@@ -2205,6 +2217,8 @@ export function resolveBattle(
   const potions: Partial<Record<PotionId, number>> = { ...ctx.potions };
   const consumed: Partial<Record<PotionId, number>> = {};
   let state = initialBattleState(player, enemy, playerName);
+  // 보스 전투 여부 — 충돌파/천명 같은 %HP 효과 감산 (BOSS_PCT_HP_DAMAGE_MULT) 에 사용.
+  if (ctx.isBoss) state = { ...state, isBoss: true };
   // 선공자 캐시 — 사이클(1턴) 정의가 선공자에 따라 달라진다.
   //   - 플레이어 선공: 사이클 = [player phase → enemy phase] — enemy→player 전환이 사이클 끝.
   //   - 적 선공:      사이클 = [enemy phase → player phase]  — player→enemy 전환이 사이클 끝.
