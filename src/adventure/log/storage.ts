@@ -114,30 +114,3 @@ export const emptyAdventureLog = (): AdventureLog => ({
   compendiumPointsClaimed: 0,
 });
 
-export function loadAdventureLog(): AdventureLog {
-  if (typeof window === "undefined") return emptyAdventureLog();
-  try {
-    const raw = localStorage.getItem(ADVENTURE_LOG_KEY);
-    if (!raw) return emptyAdventureLog();
-    const parsed = JSON.parse(raw) as Partial<AdventureLog> | null;
-    return {
-      monsters: migrateMonsters(parsed?.monsters ?? {}),
-      towns: parsed?.towns ?? {},
-      npcs: parsed?.npcs ?? {},
-      titles: parsed?.titles ?? {},
-      discoveredEquipment: parsed?.discoveredEquipment ?? {},
-      battleLosses: parsed?.battleLosses ?? 0,
-      chatCount: parsed?.chatCount ?? 0,
-      healingCount: parsed?.healingCount ?? 0,
-      compendiumPointsClaimed: parsed?.compendiumPointsClaimed ?? 0,
-    };
-  } catch {
-    return emptyAdventureLog();
-  }
-}
-
-export function saveAdventureLog(log: AdventureLog): void {
-  try {
-    localStorage.setItem(ADVENTURE_LOG_KEY, JSON.stringify(log));
-  } catch {}
-}

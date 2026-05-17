@@ -296,8 +296,3 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
 export function getGuildQuestById(id: string): GuildQuestDef | undefined {
   return GUILD_QUESTS.find((q) => q.id === id);
 }
-
-export function getGuildQuestsByGrades(grades: GuildGrade[]): GuildQuestDef[] {
-  const set = new Set(grades);
-  return GUILD_QUESTS.filter((q) => set.has(q.grade));
-}

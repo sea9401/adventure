@@ -21,9 +21,6 @@ import {
 
 export type CraftTier = -2 | -1 | 0 | 1 | 2;
 
-// 추첨 순서 + 0(일반)을 제외한 "비-기본" 등급 — craftedEquipment 인벤토리는 이 4종만 담는다.
-export const CRAFT_TIERS: readonly CraftTier[] = [-2, -1, 0, 1, 2];
-
 export const CRAFT_TIER_NAMES: Record<CraftTier, string> = {
   [-2]: "불량",
   [-1]: "하급",

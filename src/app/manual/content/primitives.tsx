@@ -60,14 +60,6 @@ export function Note({ children }: { children: ReactNode }) {
   );
 }
 
-export function Tip({ children }: { children: ReactNode }) {
-  return (
-    <div className="mt-4 rounded-md border border-emerald-300/60 bg-emerald-50/70 px-3 py-2 text-sm leading-relaxed text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-950/40 dark:text-emerald-200">
-      {children}
-    </div>
-  );
-}
-
 export function Table({
   head,
   rows,

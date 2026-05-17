@@ -21,14 +21,6 @@ export const EQUIP_TIER_METAS: readonly EquipTierMeta[] = [
   { tier: 5, label: "엔드", hint: "천공 ~ 만렙 후 · 60+" },
 ] as const;
 
-const TIER_META_BY_KEY: Record<EquipTier, EquipTierMeta> = Object.fromEntries(
-  EQUIP_TIER_METAS.map((m) => [m.tier, m]),
-) as Record<EquipTier, EquipTierMeta>;
-
-export function tierMeta(tier: EquipTier): EquipTierMeta {
-  return TIER_META_BY_KEY[tier];
-}
-
 // 장비의 tier — items.ts 에 명시된 값, 없으면 fallback.
 // id 가 ITEMS 에 없으면 (orphan / 동적 생성 등) 도 fallback.
 export function getItemTier(idOrItem: ItemId | EquipItem | null | undefined): EquipTier {

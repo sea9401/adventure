@@ -19,7 +19,6 @@ export const CHARACTER_AVATARS = [
   "female2",
   "female3",
 ] as const;
-export type CharacterAvatar = (typeof CHARACTER_AVATARS)[number];
 
 // 하위 호환 — 기존 AVATARS export 자리. (캐릭터 외형 한정 — 신규 NPC/몬스터는 별도 카탈로그.)
 export const AVATARS = CHARACTER_AVATARS;

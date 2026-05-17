@@ -61,36 +61,6 @@ export function describeMonsterSkill(s: MonsterSkill): string {
   }
 }
 
-export function MonsterAvatar({
-  name,
-  stage,
-}: {
-  name: string;
-  stage: MonsterRevealStage;
-}) {
-  const image = MONSTERS[name]?.image;
-  const silhouette = stage === 1;
-  if (!image) {
-    return (
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 text-base text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500">
-        ?
-      </div>
-    );
-  }
-  return (
-    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={image}
-        alt={silhouette ? "아직 발견되지 않은 몬스터" : name}
-        className={`h-full w-full object-cover transition-all ${
-          silhouette ? "opacity-30 brightness-0" : ""
-        }`}
-      />
-    </div>
-  );
-}
-
 export function MonsterAvatarMini({
   name,
   encountered,
