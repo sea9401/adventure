@@ -130,7 +130,9 @@ function ListingCardImpl({
               <span className="ml-2 text-emerald-600">내 매물</span>
             ) : null}
             {blocked ? (
-              <span className="ml-2 text-zinc-500">이미 알고 있음</span>
+              <span className="ml-2 font-medium text-amber-600 dark:text-amber-400">
+                📚 이미 알고 있음
+              </span>
             ) : null}
           </span>
         </span>
@@ -138,6 +140,11 @@ function ListingCardImpl({
           <span className="block text-base font-semibold text-amber-700 dark:text-amber-400">
             {item.price.toLocaleString()} G
           </span>
+          {item.itemKind === "material" && item.quantity > 1 ? (
+            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400">
+              {Math.ceil(item.price / item.quantity).toLocaleString()} G/개
+            </span>
+          ) : null}
           {item.isMine && onCancel ? (
             <button
               type="button"
