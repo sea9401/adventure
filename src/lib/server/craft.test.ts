@@ -372,3 +372,60 @@ describe("computeCraftOutcome — 고급 재료 사용(equipPicks)", () => {
     expect(out.craftedEquipment.baseball_bat).toEqual({ "2": 1 });
   });
 });
+
+describe("computeCraftOutcome — firstCraft 보호", () => {
+  it("firstCraft 일 때 불량(-2) 롤이 0(일반) 으로 클램프", () => {
+    const input = { ...base(), known: ["baseball_bat"], materials: { branch: 2 } };
+    const out = computeCraftOutcome(input, "baseball_bat", {
+      rng: rngMin,
+      firstCraft: true,
+    });
+    expect(out.results).toEqual([
+      { kind: "equipment", itemId: "baseball_bat", tier: 0 },
+    ]);
+    // 일반은 craftedEquipment 가 아닌 equipment[] 로.
+    expect(out.equipment.baseball_bat).toBe(1);
+    expect(out.craftedEquipment.baseball_bat).toBeUndefined();
+  });
+
+  it("firstCraft 라도 양수 등급(걸작)은 그대로 살림", () => {
+    const input = { ...base(), known: ["baseball_bat"], materials: { branch: 2 } };
+    const out = computeCraftOutcome(input, "baseball_bat", {
+      rng: rngMax,
+      firstCraft: true,
+    });
+    expect(out.results).toEqual([
+      { kind: "equipment", itemId: "baseball_bat", tier: 2 },
+    ]);
+    expect(out.craftedEquipment.baseball_bat).toEqual({ "2": 1 });
+  });
+
+  it("firstCraft 배치 — 첫 회만 보호, 2 회차부터는 평소 분포", () => {
+    // rng=0.0 → 평소 -2. 첫 회는 0 으로 클램프, 2 회차는 그대로 -2.
+    const input = {
+      ...base(),
+      known: ["baseball_bat"],
+      materials: { branch: 4 },
+    };
+    const out = computeCraftOutcome(input, "baseball_bat", {
+      quantity: 2,
+      rng: rngMin,
+      firstCraft: true,
+    });
+    const tiers = out.results.map((r) =>
+      r.kind === "equipment" ? r.tier : null,
+    );
+    expect(tiers).toEqual([0, -2]);
+  });
+
+  it("firstCraft=false (재제작) 면 평소 분포 — 불량 그대로", () => {
+    const input = { ...base(), known: ["baseball_bat"], materials: { branch: 2 } };
+    const out = computeCraftOutcome(input, "baseball_bat", {
+      rng: rngMin,
+      firstCraft: false,
+    });
+    if (out.results[0].kind === "equipment") {
+      expect(out.results[0].tier).toBe(-2);
+    }
+  });
+});

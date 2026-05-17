@@ -401,6 +401,7 @@ export function TownScreen() {
         </div>
         <CraftingView
           knownIds={crafting.state.known}
+          craftedIds={crafting.state.crafted}
           materialCounts={inventory.state.materials}
           equipmentCounts={equipmentCountsAllGrades(inventory.state)}
           baseEquipmentCounts={inventory.state.equipment}
