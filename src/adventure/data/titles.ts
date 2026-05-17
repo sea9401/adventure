@@ -498,6 +498,14 @@ export const TITLES: Record<TitleId, Title> = {
     description: "한 주의 고탑 상위 절반 — 그 주의 절반보다는 앞에 섰다.",
     condition: "주간 고탑 최고층 상위 50% (F30 이상 자격)",
   },
+  // 고탑 도전 모드 — F50 보스 클리어 단일 칭호. 1.5× 고정 스케일링, 매번 F1 부터, 칭호만 보상.
+  tower_challenge_f50: {
+    id: "tower_challenge_f50",
+    name: "고탑의 도전자",
+    description:
+      "1.5배의 무게가 얹힌 고탑을, 발판도 없이 50층까지 올라간 자. 같은 자리에서 다시 시작해 끝내 그 층의 보스 앞에 섰고 — 잠재웠다.",
+    condition: "도전 모드 고탑 F50 보스 클리어",
+  },
   // ── 5막 「빈 옥좌의 시대」 종착 칭호 ───────────────────────────────────────
   starfall_keeper: {
     id: "starfall_keeper",

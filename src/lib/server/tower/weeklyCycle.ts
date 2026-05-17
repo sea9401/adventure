@@ -8,7 +8,7 @@
 
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { upsertSave } from "@/lib/server/savesKv";
+import { grantTitleIfMissing } from "@/lib/server/grantTitle";
 import {
   TOWER_WEEKLY_STORAGE_KEY,
   TOWER_WEEKLY_MIN_FLOOR,
@@ -19,11 +19,6 @@ import {
   computePercentileTitles,
   type WeeklyQualifier,
 } from "@/adventure/tower/weeklyTiers";
-
-type AdventureLogShape = {
-  titles?: Record<string, { obtainedAt: number }>;
-  [k: string]: unknown;
-};
 
 export type WeeklyCycleResult = {
   weekStart: string;
@@ -76,28 +71,3 @@ export async function runTowerWeeklyCycle(
   };
 }
 
-// adventure-log.v2 의 titles 에 한 항목 추가. 이미 있으면 no-op.
-// 단일 트랜잭션 안에서 SELECT → MERGE → upsertSave 로 처리.
-async function grantTitleIfMissing(
-  userId: string,
-  titleId: string,
-  obtainedAt: number,
-): Promise<boolean> {
-  return db.transaction(async (tx) => {
-    const result = await tx.execute(sql`
-      SELECT value FROM saves_kv
-      WHERE user_id = ${userId} AND key = 'adventure-log.v2'
-      FOR UPDATE
-    `);
-    const row = result.rows[0] as { value: AdventureLogShape } | undefined;
-    const current: AdventureLogShape = row?.value ?? {};
-    const titles = current.titles ?? {};
-    if (titles[titleId]) return false; // 이미 보유 — idempotent
-    const next: AdventureLogShape = {
-      ...current,
-      titles: { ...titles, [titleId]: { obtainedAt } },
-    };
-    await upsertSave(tx, userId, "adventure-log.v2", next);
-    return true;
-  });
-}
