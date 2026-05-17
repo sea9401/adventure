@@ -10,6 +10,11 @@ function getAdminEmails(): Set<string> {
   );
 }
 
+/** 관리자 이메일 리스트 (소문자). 랭킹 등 admin 제외 SQL 필터 합성에 사용. */
+export function getAdminEmailsList(): string[] {
+  return Array.from(getAdminEmails());
+}
+
 export async function isCurrentUserAdmin(): Promise<boolean> {
   const allow = getAdminEmails();
   if (allow.size === 0) return false;
