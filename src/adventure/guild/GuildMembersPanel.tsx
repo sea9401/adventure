@@ -97,19 +97,21 @@ function MemberRow({
               type="button"
               onClick={onTransfer}
               disabled={busy}
-              className="rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-[11px] text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+              className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-[11px] text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
               title="마스터 양도"
+              aria-label="마스터 양도"
             >
-              <Crown size={11} weight="bold" />
+              <Crown size={14} weight="bold" />
             </button>
             <button
               type="button"
               onClick={onKick}
               disabled={busy}
-              className="rounded-md border border-rose-300 bg-white px-2 py-0.5 text-[11px] text-rose-700 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-900 dark:bg-zinc-900 dark:text-rose-300"
+              className="rounded-md border border-rose-300 bg-white px-2 py-1.5 text-[11px] text-rose-700 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-900 dark:bg-zinc-900 dark:text-rose-300"
               title="추방"
+              aria-label="추방"
             >
-              <UserMinus size={11} weight="bold" />
+              <UserMinus size={14} weight="bold" />
             </button>
           </div>
         ) : null}
