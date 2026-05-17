@@ -17,6 +17,7 @@ import { MaterialsTab } from "./tabs/MaterialsTab";
 import { TownsTab } from "./tabs/TownsTab";
 import { PlacesTab } from "./tabs/PlacesTab";
 import { EtcTab } from "./tabs/EtcTab";
+import { APSkillsTab } from "./tabs/APSkillsTab";
 import { TitlesTab } from "./tabs/TitlesTab";
 import { StoryTab } from "./tabs/StoryTab";
 import type { TitleCounterValues } from "./tabs/shared";
@@ -30,6 +31,7 @@ type LogTabKey =
   | "items"
   | "materials"
   | "etc"
+  | "apskills"
   | "titles";
 
 const LOG_TABS: { key: LogTabKey; label: string }[] = [
@@ -39,6 +41,7 @@ const LOG_TABS: { key: LogTabKey; label: string }[] = [
   { key: "items", label: "아이템" },
   { key: "materials", label: "재료" },
   { key: "etc", label: "스탯" },
+  { key: "apskills", label: "AP 스킬" },
   { key: "titles", label: "칭호" },
 ];
 
@@ -54,6 +57,7 @@ export function AdventureLogView({
   vault,
   onDepositToVault,
   onWithdrawFromVault,
+  learnedAPSkills,
 }: {
   log: AdventureLog;
   stats: Record<StatKey, number>;
@@ -77,6 +81,8 @@ export function AdventureLogView({
   ) => void;
   /** 보관함 → 인벤 — vault[id][variantKey] 의 1개를 인벤으로 환원. */
   onWithdrawFromVault?: (id: ItemId, variantKey: string) => void;
+  /** 학습한 AP 스킬 이름 목록 — AP 스킬 탭 노출용. */
+  learnedAPSkills?: string[];
 }) {
   const [tab, setTab] = useState<LogTabKey>("story");
 
@@ -106,6 +112,9 @@ export function AdventureLogView({
       {tab === "materials" && <MaterialsTab log={log} />}
       {tab === "towns" && <TownsTab log={log} />}
       {tab === "etc" && <EtcTab stats={stats} />}
+      {tab === "apskills" && (
+        <APSkillsTab learnedAPSkills={learnedAPSkills} />
+      )}
       {tab === "titles" && (
         <TitlesTab
           log={log}

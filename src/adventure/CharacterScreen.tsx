@@ -363,6 +363,7 @@ export function CharacterScreen() {
           vault={inventory.state.vault}
           onDepositToVault={handleDepositToVault}
           onWithdrawFromVault={handleWithdrawFromVault}
+          learnedAPSkills={characterStateHook.state.learnedAPSkills}
         />
       </div>
     );
