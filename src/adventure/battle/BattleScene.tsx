@@ -16,6 +16,9 @@ export type BattlePlayerStatus = {
   gender: Gender;
   exp: number;
   maxExp: number;
+  // HP 회복약 보유 총합 (모든 등급 합). 전투 도중 자동 사용 규칙으로 소진되면
+  // 다음 전투 시작 시 갱신된 값이 반영된다. 0 이면 회색으로 노출해 "곧 마름" 시그널.
+  hpPotionCount: number;
 };
 
 const RECENT_KIND_COLOR: Record<NotificationKind, string> = {
@@ -202,6 +205,27 @@ export function BattleScene({
               max={playerStatus.maxExp}
               color="bg-amber-400"
             />
+            <div className="flex items-baseline gap-1 text-[11px] tabular-nums">
+              <span
+                aria-hidden
+                className={
+                  playerStatus.hpPotionCount > 0
+                    ? "text-rose-500"
+                    : "text-zinc-400 dark:text-zinc-600"
+                }
+              >
+                🧪
+              </span>
+              <span
+                className={
+                  playerStatus.hpPotionCount > 0
+                    ? "text-zinc-700 dark:text-zinc-300"
+                    : "text-zinc-400 dark:text-zinc-600"
+                }
+              >
+                회복약 {playerStatus.hpPotionCount}
+              </span>
+            </div>
           </div>
         </div>
       </Card>
