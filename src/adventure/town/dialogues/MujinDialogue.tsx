@@ -207,6 +207,16 @@ export function MujinDialogue({
     ).includes("결의");
     const alreadyHas = inventory.skillBookCount(RESOLVE_BOOK_ID) > 0;
     const offerBook = felled && !alreadyKnown && !alreadyHas;
+    // 5막 「빈 옥좌의 시대」 PR-B2 — 별빛 성채. Ch 26(starfall_warden_felled) 부터 활성.
+    // 책 제안이 활성일 때는 그쪽이 우선(원래 라인 유지), 그 외엔 5막 분기 노출.
+    const starfall = storyFlags.has("starfall_warden_felled");
+    const gateQuelled = storyFlags.has("starlit_gate_quelled");
+    const starfallLine =
+      starfall && !gateQuelled
+        ? "…자네, 마침 잘 왔소. 산정 백운 영감도, 소만 여울 노인네도 사람을 보냈더만 — 별빛이 옛 봉인 자리로 떨어졌단 얘기. 우리 성채도 그렇소.\n빈 성벽 안쪽에서 빗장 들어 올리는 쇳소리가 다시 들리오. 한 세대 동안 지키던 자가 별빛에 데워져, 잔영으로 돌아왔다오. 단단히 채비하고 동료를 데려가 — 한 번 더 잠재워 주게."
+        : starfall && gateQuelled
+          ? "잔영도 잠들었소. 자네 손에 거두어진 별빛 한 점이 — 빗장 위에서 가볍게 떨고 있다지.\n세 자리 모두 잠재웠다면 — 떨어진 별빛이 한데 모일 자리가 있을 게요. 별바다 노수호자한테 가 보게. 자네를 기다리고 있을 거요."
+          : null;
     return (
       <NpcDialogue
         npc={npc}
@@ -214,9 +224,10 @@ export function MujinDialogue({
         text={
           offerBook
             ? `성채에 다시 사람이 든다오. 갈라진 우물을 메우고, 막사를 헐어 새로 짓고. …자네가 한 일이야.\n\n…그리고, 옛 수비대의 호흡법을 한 권 묶어 뒀소. "${book.name}" — ${price}G 면 자네 거요.`
-            : felled
-              ? "성채에 다시 사람이 든다오. 갈라진 우물을 메우고, 막사를 헐어 새로 짓고. …자네가 한 일이야.\n옛 변경의 일이 다 끝난 건 아닐지 몰라도 — 이 마을은 자네를 식구로 기억할 게요."
-              : "…고맙소. 진심으로. 마른나루는 자네를 잊지 않을 게요."
+            : starfallLine ??
+              (felled
+                ? "성채에 다시 사람이 든다오. 갈라진 우물을 메우고, 막사를 헐어 새로 짓고. …자네가 한 일이야.\n옛 변경의 일이 다 끝난 건 아닐지 몰라도 — 이 마을은 자네를 식구로 기억할 게요."
+                : "…고맙소. 진심으로. 마른나루는 자네를 잊지 않을 게요.")
         }
         primaryAction={
           offerBook

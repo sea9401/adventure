@@ -187,14 +187,23 @@ export function YeoulDialogue({
         />
       );
     }
+    // ── 5막 「빈 옥좌의 시대」 PR-B2 — 별빛 산호초 ─────────────────────────
+    // 4막 종료 후 별빛이 산호초에도 떨어졌다. Ch 26 완료(starfall_warden_felled) 시점부터
+    // 수심의 메아리 안내. 메아리 처치(starlit_deep_quelled) 후 회상. 4막 fallback 위에 얹음.
+    const starfall = storyFlags.has("starfall_warden_felled");
+    const echoQuelled = storyFlags.has("starlit_deep_quelled");
     return (
       <NpcDialogue
         npc={npc}
         onClose={onClose}
         text={
-          stilled
-            ? "그물이 차오르고, 소금밭에 다시 사람이 붐비오. …자네가 한 일이야.\n안개 너머의 일이 다 끝난 건 아닐지 몰라도 — 이 포구는 자네를 식구로 기억할 게요."
-            : "…고맙소. 진심으로. 소만은 자네를 잊지 않을 게요."
+          starfall && !echoQuelled
+            ? "…자네, 마침 잘 왔소. 산정 백운 노인네가 사람을 보냈더만 — 별빛이 옛 봉인 자리로 떨어졌단 얘기. 우리 갯바람도 그렇소.\n암초 너머에서 *메아리* 가 부르고 있어. 한 번 가라앉혔던 그것이, 별빛에 데워져 다시 노래를 시작했다오. 단단히 채비하고 동료를 데려가 — 한 번 더 가라앉혀 주게."
+            : starfall && echoQuelled
+              ? "메아리도 가라앉았소. …자네 손에 거두어진 별빛 한 점이 — 안개 한가운데서 가볍게 떨고 있다지.\n산정 잔영도, 우리 메아리도 잠재웠다면 — 옛 변경 성채만 남았소. 거기서도 쇳소리가 들린다고 무진 영감이 사람을 보냈으니, 자네 걸음 한 번 더 빌려야겠소."
+              : stilled
+                ? "그물이 차오르고, 소금밭에 다시 사람이 붐비오. …자네가 한 일이야.\n안개 너머의 일이 다 끝난 건 아닐지 몰라도 — 이 포구는 자네를 식구로 기억할 게요."
+                : "…고맙소. 진심으로. 소만은 자네를 잊지 않을 게요."
         }
       />
     );
