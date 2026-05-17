@@ -18,6 +18,8 @@ import {
   formatCooldownRemaining,
   nextAttemptAt,
 } from "@/adventure/data/bossCooldown";
+import { useCoopSummary } from "@/adventure/coop/useCoopSummary";
+import type { CoopSummaryRegion } from "@/app/api/coop/summary/route";
 
 const SCROLL_ID = "scroll_town_return" as const;
 
@@ -28,7 +30,48 @@ type Entry = {
   isCurrent?: boolean; // 현재 위치 — 선택지에 유지하되 비활성 + "지금 여기" 표시
   // 싱글보스 전용 — 누진 쿨다운 잔여 ms. 0 이면 즉시 도전 가능.
   bossCooldownRemainingMs?: number;
+  // 협동보스 전용 — 서버 summary 에서 받은 region 별 상태.
+  coopSummary?: CoopSummaryRegion;
 };
+
+function CoopBadge({ summary }: { summary: CoopSummaryRegion }) {
+  if (summary.status === "no_session") {
+    return (
+      <span className="shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-[11px] font-medium text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400">
+        등장 대기
+      </span>
+    );
+  }
+  if (summary.status === "expired") {
+    return (
+      <span className="shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-[11px] font-medium text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400">
+        만료
+      </span>
+    );
+  }
+  if (summary.status === "defeated") {
+    const ms = summary.respawnRemainingMs;
+    return (
+      <span className="shrink-0 rounded-md bg-zinc-100 px-2 py-1 text-[11px] font-medium tabular-nums text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400">
+        {ms != null && ms > 0 ? `재등장 ${formatCooldownRemaining(ms)}` : "재등장 곧"}
+      </span>
+    );
+  }
+  // active
+  const ms = summary.cooldownRemainingMs ?? 0;
+  if (ms > 0) {
+    return (
+      <span className="shrink-0 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium tabular-nums text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+        {formatCooldownRemaining(ms)}
+      </span>
+    );
+  }
+  return (
+    <span className="shrink-0 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+      공격 가능
+    </span>
+  );
+}
 
 function TravelRow({
   entry,
@@ -98,6 +141,7 @@ function TravelRow({
             : "도전 가능"}
         </span>
       )}
+      {entry.coopSummary && <CoopBadge summary={entry.coopSummary} />}
       {!isCurrent && (
         <CaretRight
           size={16}
@@ -126,6 +170,11 @@ export function QuickTravelScreen() {
   const bossCooldownReductionPct = resolveBuffMultiplier(
     guildBuffs,
     "boss_cooldown_reduction_pct",
+  );
+  // 협동 보스 region 별 상태 — batched API 1회 fetch + 15s 폴.
+  const coopSummary = useCoopSummary(true);
+  const coopSummaryByRegion = new Map(
+    (coopSummary ?? []).map((r) => [r.regionId, r]),
   );
   // 화면을 떠나기 전 1회 스냅샷 — 사용자가 행 클릭 시점에 카운트다운이 조금 더
   // 지나 있어도 무방 (UI 미세 갱신 아닌 도전 가능 여부 가시화가 목적).
@@ -162,6 +211,7 @@ export function QuickTravelScreen() {
         label: coopBoss.monsterName,
         cost: 1,
         isCurrent,
+        coopSummary: coopSummaryByRegion.get(region.id),
       });
     } else if (isSoloBoss && region.boss) {
       const used = characterStateHook.getBossAttemptsToday(region.id);
