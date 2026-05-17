@@ -5,6 +5,7 @@ import {
   marketplaceListings,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/server/isAdmin";
+import { inboxValues } from "@/lib/server/inboxPayload";
 import { isItemKind } from "@/lib/server/marketplace";
 
 // GET /api/admin/marketplace/listings
@@ -168,20 +169,25 @@ export async function DELETE(req: Request) {
         ? `[관리자 취소] ${listing.itemName} — ${note}`
         : `[관리자 취소] ${listing.itemName}`;
 
-      await tx.insert(marketplaceInbox).values({
-        userId: listing.sellerId,
-        kind: "cancel_return",
-        payload: {
-          item_kind: listing.itemKind,
-          item_id: listing.itemId,
-          grade: listing.grade,
-          quantity: listing.quantity,
-        },
-        message,
-        listingId: listing.id,
-        // 일반 cancel 은 본인이 누른 거라 자동 수령(claimed_at=NOW) 처리지만
-        // 관리자 강제 취소는 판매자가 직접 마을에서 수령하게 미수령으로 둠.
-      });
+      if (!isItemKind(listing.itemKind)) {
+        throw new Error(`invalid item_kind in listing: ${listing.itemKind}`);
+      }
+      await tx.insert(marketplaceInbox).values(
+        inboxValues({
+          userId: listing.sellerId,
+          payload: {
+            kind: "cancel_return",
+            item_kind: listing.itemKind,
+            item_id: listing.itemId,
+            grade: listing.grade,
+            quantity: listing.quantity,
+          },
+          message,
+          listingId: listing.id,
+          // 일반 cancel 은 본인이 누른 거라 자동 수령(claimed_at=NOW) 처리지만
+          // 관리자 강제 취소는 판매자가 직접 마을에서 수령하게 미수령으로 둠.
+        }),
+      );
 
       return {
         ok: true as const,

@@ -7,6 +7,7 @@ import {
   marketplaceInbox,
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { inboxValues } from "@/lib/server/inboxPayload";
 import {
   QUEST_PROGRESS_CAP_PER_CALL,
   getGuildQuestById,
@@ -134,18 +135,20 @@ export async function POST(req: Request) {
             .where(eq(guildMembers.guildId, guildId));
 
           for (const m of memberRows) {
-            await tx.insert(marketplaceInbox).values({
-              userId: m.userId,
-              kind: "guild_quest_reward",
-              payload: {
-                quest_id: def.id,
-                quest_name: def.name,
-                gold: def.reward.goldPerMember,
-                materials: def.reward.materialsPerMember ?? [],
-                items: def.reward.itemsPerMember ?? [],
-              },
-              message: `${def.name} 완료 보상`,
-            });
+            await tx.insert(marketplaceInbox).values(
+              inboxValues({
+                userId: m.userId,
+                payload: {
+                  kind: "guild_quest_reward",
+                  quest_id: def.id,
+                  quest_name: def.name,
+                  gold: def.reward.goldPerMember,
+                  materials: def.reward.materialsPerMember ?? [],
+                  items: def.reward.itemsPerMember ?? [],
+                },
+                message: `${def.name} 완료 보상`,
+              }),
+            );
           }
         }
       }

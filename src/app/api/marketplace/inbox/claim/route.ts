@@ -2,13 +2,13 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { marketplaceInbox, savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { parseInboxPayload } from "@/lib/server/inboxPayload";
 import { upsertSave } from "@/lib/server/savesKv";
 import {
   addGradedEquip,
   addToCategory,
   getKnownArr,
   getShareableArr,
-  isValidGrade,
   type InventoryShape,
 } from "@/lib/server/marketplace";
 
@@ -83,73 +83,60 @@ export async function POST(req: Request) {
       const itemsToAdd: AddItem[] = [];
       const recipesToAdd: AddRecipe[] = [];
       for (const row of rows) {
-        const payload = row.payload as Record<string, unknown>;
-        // user_message / listing_expired(recipe): 부수효과 없음 — claimedAt 만 마킹.
-        if (row.kind === "sale_proceeds") {
-          const g = Number(payload.gold);
-          if (Number.isFinite(g) && g > 0) goldTotal += g;
-        } else if (
-          row.kind === "purchase_item" ||
-          row.kind === "cancel_return" ||
-          row.kind === "listing_expired"
-        ) {
-          const k = payload.item_kind;
-          const id = payload.item_id;
-          const q = Number(payload.quantity);
-          // grade 미정의/공백/비유효 → 'base' (구 페이로드 + equip 외 kind 호환).
-          const rawGrade = payload.grade;
-          const grade =
-            typeof rawGrade === "string" && isValidGrade(rawGrade)
-              ? rawGrade
-              : "base";
-          if (k === "recipe" && typeof id === "string") {
-            // purchase_item(recipe) 만 학습. listing_expired(recipe)/cancel_return(recipe)
-            // 는 quantity:0 알림이거나 환불 의미 — 학습 X.
-            if (row.kind === "purchase_item") {
-              recipesToAdd.push({ id });
-            }
-          } else if (
-            (k === "equip" || k === "material" || k === "skill_book") &&
-            typeof id === "string" &&
-            Number.isFinite(q) &&
-            q > 0
-          ) {
-            itemsToAdd.push({
-              kind: k,
-              id,
-              grade: k === "equip" ? grade : "base",
-              quantity: q,
-            });
-          }
-        } else if (row.kind === "recipe_gift") {
-          const id = payload.recipe_id;
-          if (typeof id === "string" && id.length > 0) {
-            recipesToAdd.push({ id });
-          }
-        } else if (row.kind === "guild_quest_reward") {
-          // 길드 의뢰 보상 — 골드 + 멤버당 재료/아이템.
-          const g = Number(payload.gold);
-          if (Number.isFinite(g) && g > 0) goldTotal += g;
-          const mats = payload.materials;
-          if (Array.isArray(mats)) {
-            for (const m of mats) {
-              const id = (m as { materialId?: unknown }).materialId;
-              const q = Number((m as { count?: unknown }).count);
-              if (typeof id === "string" && Number.isFinite(q) && q > 0) {
-                itemsToAdd.push({ kind: "material", id, grade: "base", quantity: q });
+        // payload shape 어긋난 잔재 행 (마이그레이션, 옛 버그 등) 은 스킵 —
+        // claim 자체는 진행시켜 사용자가 우편을 비울 수 있게.
+        const parsed = parseInboxPayload(row.kind, row.payload);
+        if (!parsed) continue;
+        switch (parsed.kind) {
+          // user_message / guild_invite: 부수효과 없음 — claimedAt 만 마킹.
+          case "user_message":
+          case "guild_invite":
+            break;
+          case "sale_proceeds":
+            if (parsed.gold > 0) goldTotal += parsed.gold;
+            break;
+          case "purchase_item":
+          case "cancel_return":
+          case "listing_expired": {
+            if (parsed.item_kind === "recipe") {
+              // purchase_item(recipe) 만 학습. listing_expired/cancel_return 은 알림/환불 의미.
+              if (parsed.kind === "purchase_item") {
+                recipesToAdd.push({ id: parsed.item_id });
               }
+            } else if (parsed.quantity > 0) {
+              itemsToAdd.push({
+                kind: parsed.item_kind,
+                id: parsed.item_id,
+                grade: parsed.item_kind === "equip" ? parsed.grade : "base",
+                quantity: parsed.quantity,
+              });
             }
+            break;
           }
-          const its = payload.items;
-          if (Array.isArray(its)) {
-            for (const it of its) {
-              const id = (it as { itemId?: unknown }).itemId;
-              const q = Number((it as { count?: unknown }).count);
-              if (typeof id === "string" && Number.isFinite(q) && q > 0) {
-                // 길드 보상 장비는 항상 base 등급 (등급 사본 보상은 현재 없음).
-                itemsToAdd.push({ kind: "equip", id, grade: "base", quantity: q });
-              }
+          case "recipe_gift":
+            recipesToAdd.push({ id: parsed.recipe_id });
+            break;
+          case "guild_quest_reward": {
+            // 길드 의뢰 보상 — 골드 + 멤버당 재료/아이템.
+            if (parsed.gold > 0) goldTotal += parsed.gold;
+            for (const m of parsed.materials) {
+              itemsToAdd.push({
+                kind: "material",
+                id: m.materialId,
+                grade: "base",
+                quantity: m.count,
+              });
             }
+            for (const it of parsed.items) {
+              // 길드 보상 장비는 항상 base 등급 (등급 사본 보상은 현재 없음).
+              itemsToAdd.push({
+                kind: "equip",
+                id: it.itemId,
+                grade: "base",
+                quantity: it.count,
+              });
+            }
+            break;
           }
         }
       }

@@ -7,6 +7,7 @@ import {
   users,
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { inboxValues } from "@/lib/server/inboxPayload";
 import { upsertSave } from "@/lib/server/savesKv";
 import {
   MARKETPLACE_LISTING_TTL_MS,
@@ -93,21 +94,26 @@ async function sweepExpiredListings(): Promise<void> {
             await upsertSave(tx, listing.sellerId, SAVES_CRAFTING, nextCraft);
           }
         }
-        await tx.insert(marketplaceInbox).values({
-          userId: listing.sellerId,
-          kind: "listing_expired",
-          payload: {
-            item_kind: listing.itemKind,
-            item_id: listing.itemId,
-            grade: listing.grade,
-            quantity: listing.itemKind === "recipe" ? 0 : listing.quantity,
-          },
-          message:
-            listing.itemKind === "recipe"
-              ? `${listing.itemName} 매물이 24시간 안에 거래되지 않아 회수되었습니다.`
-              : `${listing.itemName} — 24시간 이내 미거래로 인벤토리에 환불됩니다.`,
-          listingId: listing.id,
-        });
+        if (!isItemKind(listing.itemKind)) {
+          throw new Error(`invalid item_kind in listing: ${listing.itemKind}`);
+        }
+        await tx.insert(marketplaceInbox).values(
+          inboxValues({
+            userId: listing.sellerId,
+            payload: {
+              kind: "listing_expired",
+              item_kind: listing.itemKind,
+              item_id: listing.itemId,
+              grade: listing.grade,
+              quantity: listing.itemKind === "recipe" ? 0 : listing.quantity,
+            },
+            message:
+              listing.itemKind === "recipe"
+                ? `${listing.itemName} 매물이 24시간 안에 거래되지 않아 회수되었습니다.`
+                : `${listing.itemName} — 24시간 이내 미거래로 인벤토리에 환불됩니다.`,
+            listingId: listing.id,
+          }),
+        );
       }
     });
   } catch (e) {
@@ -503,22 +509,27 @@ export async function DELETE(req: Request) {
       }
 
       // 우편함 row 도 남겨 추후 거래 이력/감사용 (수령 자동 — 이미 인벤 반영됨).
-      await tx.insert(marketplaceInbox).values({
-        userId,
-        kind: "cancel_return",
-        payload: {
-          item_kind: listing.itemKind,
-          item_id: listing.itemId,
-          grade: listing.grade,
-          quantity: listing.itemKind === "recipe" ? 0 : listing.quantity,
-        },
-        message:
-          listing.itemKind === "recipe"
-            ? `${listing.itemName} 등록 취소`
-            : `${listing.itemName} 등록 취소 — 인벤토리로 환불`,
-        listingId: listing.id,
-        claimedAt: new Date(), // 자동 수령 처리 (취소는 본인이 클릭해 즉시 반영)
-      });
+      if (!isItemKind(listing.itemKind)) {
+        throw new Error(`invalid item_kind in listing: ${listing.itemKind}`);
+      }
+      await tx.insert(marketplaceInbox).values(
+        inboxValues({
+          userId,
+          payload: {
+            kind: "cancel_return",
+            item_kind: listing.itemKind,
+            item_id: listing.itemId,
+            grade: listing.grade,
+            quantity: listing.itemKind === "recipe" ? 0 : listing.quantity,
+          },
+          message:
+            listing.itemKind === "recipe"
+              ? `${listing.itemName} 등록 취소`
+              : `${listing.itemName} 등록 취소 — 인벤토리로 환불`,
+          listingId: listing.id,
+          claimedAt: new Date(), // 자동 수령 처리 (취소는 본인이 클릭해 즉시 반영)
+        }),
+      );
 
       return { ok: true as const, inventory: nextInv };
     });

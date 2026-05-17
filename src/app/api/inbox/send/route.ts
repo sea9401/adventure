@@ -2,6 +2,7 @@ import { and, count, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { marketplaceInbox, savesKv, users } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { inboxValues } from "@/lib/server/inboxPayload";
 import { upsertSave } from "@/lib/server/savesKv";
 import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
 import {
@@ -207,14 +208,19 @@ export async function POST(req: Request) {
         const nextShareable = shareableArr.filter((x) => x !== attachedRecipeId);
         const nextCraft = { ...craft, known: knownArr, shareable: nextShareable };
         await upsertSave(tx, senderId, SAVES_CRAFTING, nextCraft);
-        await tx.insert(marketplaceInbox).values({
-          userId: recipient.id,
-          kind: "recipe_gift",
-          payload: { recipe_id: attachedRecipeId, recipe_name: recipeName },
-          message: text || `${recipeName}을(를) 선물로 받았습니다.`,
-          fromUserId: senderId,
-          fromName: senderName,
-        });
+        await tx.insert(marketplaceInbox).values(
+          inboxValues({
+            userId: recipient.id,
+            payload: {
+              kind: "recipe_gift",
+              recipe_id: attachedRecipeId,
+              recipe_name: recipeName,
+            },
+            message: text || `${recipeName}을(를) 선물로 받았습니다.`,
+            fromUserId: senderId,
+            fromName: senderName,
+          }),
+        );
         return { ok: true as const };
       });
       if ("error" in txResult) {
@@ -225,13 +231,14 @@ export async function POST(req: Request) {
       return new Response("internal error", { status: 500 });
     }
   } else {
-    await db.insert(marketplaceInbox).values({
-      userId: recipient.id,
-      kind: "user_message",
-      payload: { text },
-      fromUserId: senderId,
-      fromName: senderName,
-    });
+    await db.insert(marketplaceInbox).values(
+      inboxValues({
+        userId: recipient.id,
+        payload: { kind: "user_message", text },
+        fromUserId: senderId,
+        fromName: senderName,
+      }),
+    );
   }
 
   return Response.json({ ok: true, recipientName: recipient.name });
