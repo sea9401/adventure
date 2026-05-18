@@ -167,7 +167,15 @@ function rehydrateEquippedRunes(
   return out;
 }
 
-export function useCharacterState() {
+export type UseCharacterStateOpts = {
+  /**
+   * 100레벨 도달 후 캡된 잉여 EXP 를 라우팅할 콜백. 미지정 시 잉여는 폐기 (기존 동작).
+   * page.tsx 에서 useParagonState 와 짝지어 주입.
+   */
+  onParagonOverflow?: (overflow: number) => void;
+};
+
+export function useCharacterState(opts?: UseCharacterStateOpts) {
   const initial = useSavedValue("character.v2");
   const [state, setState] = useState<CharacterDynamicState>(() =>
     readInitial(initial),
@@ -218,7 +226,10 @@ export function useCharacterState() {
 
   // vitHpBonus: 레벨업 풀회복 시 VIT(스탯+장비) 보너스만큼 maxHp에 더해 회복.
   // 기본 0 — 호출 측에서 안 넘기면 레벨 기준 max 까지만 회복 (퀘스트 보상 등).
-  const addExp = (n: number, vitHpBonus = 0) =>
+  const addExp = (n: number, vitHpBonus = 0) => {
+    // 만렙 잉여 EXP 라우팅용 사전 계산 — setState 콜백 안에서 부수효과를 부르면
+    // Strict Mode 가 콜백을 두 번 돌릴 때 잉여가 두 번 적립되니, 콜은 setState 밖에서.
+    const peek = applyExpGain(state.level, state.exp, n);
     setState((prev) => {
       const next = applyExpGain(prev.level, prev.exp, n);
       // 레벨업 시 HP/MP 를 새 max 로 풀회복 — 보상감 + max 증가만 했을 때 발생하는
@@ -234,6 +245,10 @@ export function useCharacterState() {
       }
       return { ...prev, level: next.level, exp: next.exp };
     });
+    if (peek.overflowExp > 0) {
+      opts?.onParagonOverflow?.(peek.overflowExp);
+    }
+  };
 
   const setSlot = (slot: keyof EquippedSlots, item: EquippedItem | null) =>
     setState((prev) => {

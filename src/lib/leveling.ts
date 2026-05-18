@@ -84,12 +84,19 @@ export function requiredExpToNext(level: number): number | null {
 
 // EXP 누적 적용 + 자동 레벨업 처리.
 // 누적 EXP가 다음 레벨 임계치를 넘으면 레벨업하고 다음 임계치로 계속 진행.
-// 만렙 도달 시 잉여 EXP는 0으로 캡.
+// 만렙 도달 시 잉여 EXP는 0으로 캡 — 잉여량은 `overflowExp` 로 분리 반환해
+// 호출 측이 파라곤 등으로 라우팅할 수 있도록.
 export function applyExpGain(
   level: number,
   exp: number,
   gain: number,
-): { level: number; exp: number; levelsGained: number } {
+): {
+  level: number;
+  exp: number;
+  levelsGained: number;
+  /** 만렙 도달로 캡된 잉여 EXP. 만렙 미도달이거나 정확히 임계치면 0. */
+  overflowExp: number;
+} {
   let nextLevel = Math.max(1, Math.min(MAX_LEVEL, level));
   let nextExp = Math.max(0, exp + gain);
   let levelsGained = 0;
@@ -100,8 +107,12 @@ export function applyExpGain(
     nextLevel += 1;
     levelsGained += 1;
   }
-  if (nextLevel >= MAX_LEVEL) nextExp = 0;
-  return { level: nextLevel, exp: nextExp, levelsGained };
+  let overflowExp = 0;
+  if (nextLevel >= MAX_LEVEL) {
+    overflowExp = nextExp;
+    nextExp = 0;
+  }
+  return { level: nextLevel, exp: nextExp, levelsGained, overflowExp };
 }
 
 // UI 노출용 — 레벨별 필요 EXP 테이블.
