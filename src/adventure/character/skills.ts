@@ -122,10 +122,11 @@ export const COUNTER_DEX_THRESHOLD = 20;
 export const COUNTER_ATK_DEX_DIVISOR = 5;
 
 // 가드 — 활력 10 도달 시 획득.
-// 전투 시작 후 첫 GUARD_TURNS 적 페이즈 동안 받는 피해 -max(1, floor(VIT/10)) (최소 0).
+// 전투 시작 후 첫 GUARD_TURNS 적 페이즈 동안 받는 피해 -max(1, floor(VIT/8)) (최소 0).
+// 몬스터 다대시 도입 후 per-hit 흡수가 더 중요해져서 divisor 10 → 8 로 상향.
 export const GUARD_VIT_THRESHOLD = 10;
 export const GUARD_TURNS = 4;
-export const GUARD_REDUCTION_VIT_DIVISOR = 10;
+export const GUARD_REDUCTION_VIT_DIVISOR = 8;
 
 // 재생 — 활력 20 도달 시 획득.
 // 효과: 매 REGEN_INTERVAL 플레이어 턴 종료 시 HP +floor(VIT × REGEN_HP_PER_VIT).
@@ -347,7 +348,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
   vit: [
     {
       name: SKILL_NAMES.GUARD,
-      description: `전투 시작 후 첫 ${GUARD_TURNS}턴 동안 받는 피해 -(VIT/${GUARD_REDUCTION_VIT_DIVISOR}) (최소 1) — VIT 35=-3`,
+      description: `전투 시작 후 첫 ${GUARD_TURNS}턴 동안 받는 피해 -(VIT/${GUARD_REDUCTION_VIT_DIVISOR}) (최소 1) — VIT 40=-5`,
       activationThreshold: GUARD_VIT_THRESHOLD,
     },
     {
@@ -783,7 +784,7 @@ export const LUCKY_LIFESTEAL_LUK_DIVISOR = 8;
 // 무한 가시 (VIT+SPD) — 매 적 공격에 적 ATK 의 (VIT/N)% 반사 (회피/피격 무관).
 export const INFINITE_THORNS_VIT_DIVISOR = 4;
 // 굳건한 의지 (VIT+LUK) — 받은 피해 평탄 -(LUK/N).
-export const STEADFAST_WILL_LUK_DIVISOR = 4;
+export const STEADFAST_WILL_LUK_DIVISOR = 3;
 // 회전 운기 (SPD+LUK) — 매 플레이어 턴 시작 시 회피/크리 확률 +(LUK/N)% 누적.
 export const CYCLING_CHI_LUK_DIVISOR = 10;
 
@@ -833,7 +834,7 @@ export const FEAT_TIER2_SKILL: FeatSkillInfo[] = [
   },
   {
     name: FEAT_TIER2_NAMES.STEADFAST_WILL,
-    description: `받은 피해 평탄 -(LUK/${STEADFAST_WILL_LUK_DIVISOR}) 감소 — LUK 50=-12`,
+    description: `받은 피해 평탄 -(LUK/${STEADFAST_WILL_LUK_DIVISOR}) 감소 — LUK 51=-17`,
     req: ["vit", "luk"],
   },
   {

@@ -219,14 +219,15 @@ export function derivePlayerCombat(
   const effectiveSkillSet = new Set(statEffectiveNames);
   for (const f of featNames) effectiveSkillSet.add(f);
 
-  // VIT 1pt 당 maxHp +2, 불굴 장착 시 +N%, 생명의 룬 합산 +N%.
+  // VIT 1pt 당 maxHp +3, 불굴 장착 시 +N%, 생명의 룬 합산 +N%.
+  // (몬스터 다대시 도입 후 모든 빌드 생존성 보강 — 이전 ×2)
   const enduranceHpBonusPct = enduranceMaxHpBonusPctFor(
     totalStats,
     effectiveSkillSet,
   );
   const runeBonus = computeRuneBonus(input.equippedRunes);
   const maxHp = Math.floor(
-    (maxHpForLevel(input.level) + totalStats.vit * 2) *
+    (maxHpForLevel(input.level) + totalStats.vit * 3) *
       (1 + enduranceHpBonusPct / 100) *
       pctToMultiplier(runeBonus.hp_pct),
   );
@@ -257,11 +258,14 @@ export function derivePlayerCombat(
     Math.floor(totalStats.luk / 3) +
     Math.floor(totalStats.spd / 5) +
     equipAtk;
+  // 레벨 기반 base DEF — Lv 1pt 당 +0.5 DEF (Lv 100 = +50). ATK 공식에는 미반영 (playerDef 그대로) —
+  // 룬/장비 def_pct 보너스도 미적용. 화력 빌드(DEF 낮음)에 상대적으로 큰 도움, 탱커엔 미미.
+  const levelBaseDef = Math.floor(input.level / 2);
   const player: PlayerCombat = {
     hp: Math.max(0, Math.min(input.hp, maxHp)),
     maxHp,
     atk: Math.floor(rawAtk * pctToMultiplier(runeBonus.atk_pct)),
-    def: Math.floor(playerDef * pctToMultiplier(runeBonus.def_pct)),
+    def: Math.floor(playerDef * pctToMultiplier(runeBonus.def_pct)) + levelBaseDef,
     spd: totalStats.spd,
     evasionPct:
       totalStats.dex * 0.5 + evadeBonusPctFor(totalStats, effectiveSkillSet),
