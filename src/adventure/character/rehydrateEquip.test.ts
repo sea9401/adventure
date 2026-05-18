@@ -49,4 +49,40 @@ describe("rehydrateEquippedItem", () => {
     expect(bonus.atk ?? 0).toBeGreaterThanOrEqual(baseBonus.atk ?? 0);
     expect(bonus.dex ?? 0).toBeGreaterThanOrEqual(baseBonus.dex ?? 0);
   });
+
+  // 인스턴스 기반 장비(별빛 재단 무구) — instanceId + enhancementLevel 까지 들고 있다.
+  it("별빛 재단 무구 +3 — bonus 에 강화 보너스 누적", () => {
+    const base = ITEMS.starlit_blade;
+    const saved = {
+      ...base,
+      instanceId: "inst-test-123",
+      enhancementLevel: 3,
+    };
+    const re = rehydrateEquippedItem(saved);
+    expect(re).not.toBeNull();
+    expect(re!.instanceId).toBe("inst-test-123");
+    expect(re!.enhancementLevel).toBe(3);
+    // base: atk 27, str 13 / +3: atk 30, str 16
+    expect(re!.bonus?.atk).toBe(30);
+    expect(re!.bonus?.str).toBe(16);
+  });
+
+  it("별빛 재단 무구 그러나 instanceId 누락 — null (슬롯 비움)", () => {
+    const base = ITEMS.starlit_blade;
+    const saved = { ...base }; // instanceId 없음
+    expect(rehydrateEquippedItem(saved)).toBeNull();
+  });
+
+  it("별빛 재단 무구 +0 (미강화) — bonus 베이스 그대로, 메타만 박힘", () => {
+    const base = ITEMS.starlit_mantle;
+    const saved = {
+      ...base,
+      instanceId: "inst-mantle",
+      enhancementLevel: 0,
+    };
+    const re = rehydrateEquippedItem(saved);
+    expect(re).not.toBeNull();
+    expect(re!.bonus).toEqual(base.bonus);
+    expect(re!.enhancementLevel).toBe(0);
+  });
 });

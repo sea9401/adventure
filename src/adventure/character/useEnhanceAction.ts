@@ -1,0 +1,98 @@
+"use client";
+
+// 별빛 재단 무구 +1 강화 — 서버 권위. 클라는 instanceId 만 보내고, 서버가 inventory.v2
+// 를 잠그고 검증·적용한 새 값을 받아 in-memory state 를 replace.
+//
+// 사전 검사(보유 단계/조각)는 UX 용 — 라운드트립 전에 부족분을 안내. 권한은 서버가 갖는다.
+
+import { ITEMS } from "@/adventure/data/items";
+import {
+  ENHANCE_MAX_LEVEL,
+  ENHANCE_SHARD_COST,
+} from "@/adventure/character/enhancement";
+import type { useInventory } from "@/adventure/inventory/useInventory";
+import { useRemoteSave } from "@/lib/storage/SaveProvider";
+import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
+
+const ENHANCE_ERROR_LABELS: Record<string, string> = {
+  instance_not_found: "강화할 장비를 찾지 못했다.",
+  not_enhanceable: "강화할 수 없는 장비다.",
+  max_level: "이미 최대 단계다.",
+  insufficient_shards: "별빛 조각이 부족하다.",
+};
+
+export function useEnhanceAction(deps: {
+  inventory: ReturnType<typeof useInventory>;
+  addNotification: (
+    kind: NotificationKind,
+    text: string,
+    meta?: NotificationMeta,
+  ) => void;
+}) {
+  const { inventory, addNotification } = deps;
+  const remote = useRemoteSave();
+
+  const handleEnhance = async (instanceId: string) => {
+    // UX 사전 검사 — 서버도 같은 검사를 다시 한다.
+    const inst = inventory.findEquipmentInstance(instanceId);
+    if (!inst) {
+      addNotification("info", "강화할 장비를 찾지 못했다.");
+      return;
+    }
+    if (inst.enhancementLevel >= ENHANCE_MAX_LEVEL) {
+      addNotification("info", "이미 최대 단계다.");
+      return;
+    }
+    const toLevel = inst.enhancementLevel + 1;
+    const cost = ENHANCE_SHARD_COST[toLevel] ?? 0;
+    const have = inventory.state.materials.starfall_shard ?? 0;
+    if (have < cost) {
+      addNotification(
+        "info",
+        `별빛 조각이 부족하다 — ${cost}개 필요 (보유 ${have}).`,
+      );
+      return;
+    }
+
+    // 디바운스 큐 flush — 서버가 stale 값 위에서 차감하지 않게.
+    await remote.flush();
+    let res: Response;
+    try {
+      res = await fetch("/api/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instanceId }),
+      });
+    } catch {
+      addNotification("info", "통신 오류 — 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    if (res.status === 401 || res.status === 410) return;
+    const data = (await res.json().catch(() => null)) as
+      | { ok: true; inventory: unknown; toLevel: number; shardsSpent: number }
+      | { ok: false; error: string }
+      | null;
+    if (!data) {
+      addNotification("info", "강화에 실패했다.");
+      return;
+    }
+    if (data.ok === false) {
+      addNotification("info", ENHANCE_ERROR_LABELS[data.error] ?? "강화에 실패했다.");
+      return;
+    }
+    inventory.replaceFromSaved(data.inventory);
+    const itemName = ITEMS[inst.itemId].name;
+    addNotification(
+      "milestone",
+      `${itemName}을(를) +${data.toLevel} 으로 강화했다. (별빛 조각 ${data.shardsSpent} 소비)`,
+      {
+        highlight: {
+          name: `${itemName} +${data.toLevel}`,
+          className: "text-amber-600 dark:text-amber-400",
+        },
+      },
+    );
+  };
+
+  return { handleEnhance };
+}

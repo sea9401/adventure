@@ -12,9 +12,17 @@ export type Skill = {
 // 슬롯에 들어가는 장비 — 제작산이면 등급(craftTier), 드랍산 고품질이면 dropQuality 가 박혀
 // 있고 bonus·stats 는 그 등급 반영본. 둘 다 미지정/0 = 평범한 장비(기본 드랍/상점/퀘스트/시작).
 // craftTier 와 dropQuality 는 상호 배타 — 한 인스턴스에 둘 다 박히지 않는다.
+//
+// instanceId 가 박힌 경우 = 인스턴스 기반 장비(별빛 재단 무구). enhancementLevel(0~5) 의
+// 강화 보너스가 bonus·stats 에 합쳐져 있다. 인벤토리로 회수할 때는 instanceId 로 다시
+// equipmentInstances 풀에 돌려놓는다.
 export type EquippedItem = EquipItem & {
   craftTier?: CraftTier;
   dropQuality?: DropQuality;
+  /** 인스턴스 기반 장비 한정. 강화 단계 (0~5). bonus/stats 에 이미 합쳐져 있다. */
+  enhancementLevel?: number;
+  /** 인스턴스 기반 장비 한정. 슬롯에서 빠질 때 equipmentInstances 로 복원하는 키. */
+  instanceId?: string;
 };
 
 export type EquippedSlots = {

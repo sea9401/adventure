@@ -15,6 +15,10 @@ import {
   type DropQuality,
 } from "@/adventure/data/dropQuality";
 import { resolveCraftedItem } from "@/adventure/data/recipes";
+import {
+  isEnhanceable,
+  resolveEnhancedItem,
+} from "@/adventure/character/enhancement";
 import type { EquippedItem } from "@/adventure/character/types";
 import type { useCharacterState } from "@/adventure/character/useCharacterState";
 import type { useInventory } from "@/adventure/inventory/useInventory";
@@ -34,23 +38,39 @@ export function useEquipmentActions(deps: {
 }) {
   const { inventory, characterStateHook, addNotification } = deps;
 
-  // 한 장비 인스턴스의 표시 이름 — 드랍 품질은 prefix("정교한 ○○"), 제작 등급은 suffix("○○ ⟨걸작⟩").
+  // 한 장비 인스턴스의 표시 이름 — 드랍 품질은 prefix("정교한 ○○"), 제작 등급은 suffix("○○ ⟨걸작⟩"),
+  // 강화 단계는 끝에 " +N" 으로 붙는다(별빛 재단 무구 한정).
   const equipDisplayName = (
     id: ItemId,
     tier?: CraftTier,
     quality?: DropQuality,
+    enhancementLevel?: number,
   ): string =>
-    dropQualityPrefix(quality) + ITEMS[id].name + craftTierSuffix(tier);
+    dropQualityPrefix(quality) +
+    ITEMS[id].name +
+    craftTierSuffix(tier) +
+    (enhancementLevel && enhancementLevel > 0 ? ` +${enhancementLevel}` : "");
 
   // 표시 이름 강조 색 — 드랍 고품질이면 그 등급 톤, 아니면 아이템 rarity 톤.
   const equipNameClass = (id: ItemId, quality?: DropQuality): string =>
     quality ? dropQualityTextClass(quality) : rarityTextClass(ITEMS[id]);
 
-  // 슬롯에 장착돼 있던 장비를 인벤토리로 회수 — 제작산/드랍 고품질이면 등급별 칸으로, 아니면 기본 칸으로.
+  // 슬롯에 장착돼 있던 장비를 인벤토리로 회수 — 인스턴스 기반이면 풀로, 제작산/드랍
+  // 고품질이면 등급별 칸으로, 아니면 기본 칸으로.
   const returnEquippedToInventory = (item: EquippedItem | null) => {
     if (!item) return;
     const id = findItemId(item);
     if (!id) return;
+    // 인스턴스 기반(별빛 재단 무구) — instanceId 로 풀에 복원. 강화 단계 보존.
+    if (item.instanceId && isEnhanceable(id)) {
+      inventory.addEquipmentInstance({
+        instanceId: item.instanceId,
+        itemId: id,
+        craftTier: item.craftTier,
+        enhancementLevel: item.enhancementLevel ?? 0,
+      });
+      return;
+    }
     const tier = item.craftTier;
     if (tier != null && tier !== 0) {
       inventory.addCraftedEquipment(id, tier, 1);
@@ -62,6 +82,33 @@ export function useEquipmentActions(deps: {
       return;
     }
     inventory.addEquipment(id, 1);
+  };
+
+  // 인스턴스 기반 장비 장착 — 풀에서 instanceId 로 한 자루 꺼내 슬롯에 박는다.
+  // 기존 장비는 회수(인스턴스 기반이면 풀로, 아니면 스택으로).
+  const handleEquipInstanceFromInventory = (instanceId: string) => {
+    const inst = inventory.findEquipmentInstance(instanceId);
+    if (!inst) return;
+    if (!inventory.consumeEquipmentInstance(instanceId)) return;
+    const equipItem: EquippedItem = resolveEnhancedItem(
+      inst.itemId,
+      inst.craftTier,
+      inst.enhancementLevel,
+      inst.instanceId,
+    );
+    returnEquippedToInventory(
+      characterStateHook.equippedSlots[equipItem.slot],
+    );
+    characterStateHook.setSlot(equipItem.slot, equipItem);
+    const name = equipDisplayName(
+      inst.itemId,
+      inst.craftTier,
+      undefined,
+      inst.enhancementLevel,
+    );
+    addNotification("item", `${name}을(를) 장착했다.`, {
+      highlight: { name, className: equipNameClass(inst.itemId) },
+    });
   };
 
   // 인벤토리에서 장비를 꺼내 장착. 보유분에서 1개 차감, 기존 장비는 회수.
@@ -104,7 +151,12 @@ export function useEquipmentActions(deps: {
     characterStateHook.setSlot(slot, null);
     const id = findItemId(current);
     const name = id
-      ? equipDisplayName(id, current.craftTier, current.dropQuality)
+      ? equipDisplayName(
+          id,
+          current.craftTier,
+          current.dropQuality,
+          current.enhancementLevel,
+        )
       : current.name;
     addNotification("item", `${name}을(를) 해제했다.`, {
       highlight: {
@@ -150,6 +202,7 @@ export function useEquipmentActions(deps: {
 
   return {
     handleEquipFromInventory,
+    handleEquipInstanceFromInventory,
     handleUnequip,
     handleDepositToVault,
     handleWithdrawFromVault,

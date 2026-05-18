@@ -57,6 +57,7 @@ export function CharacterScreen() {
     baseAllocatedStats,
     addNotification,
     handleEquipFromInventory,
+    handleEquipInstanceFromInventory,
     handleUnequip,
     handleDepositToVault,
     handleWithdrawFromVault,
@@ -251,6 +252,7 @@ export function CharacterScreen() {
           equipped={character.equipped}
           learnedAPSkillNames={characterStateHook.state.learnedAPSkills}
           onEquip={handleEquipFromInventory}
+          onEquipInstance={handleEquipInstanceFromInventory}
           onUnequip={handleUnequip}
           onUseSkillBook={(id: SkillBookId) => {
             const book = SKILL_BOOKS[id];

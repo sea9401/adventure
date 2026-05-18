@@ -74,11 +74,16 @@ const ROW =
   "rounded-md border border-zinc-200 bg-white/90 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950/90";
 
 // 같은 슬롯에 장착 중인 게 이 entry 와 동종(id + 제작 등급 + 드랍 등급 일치)인지 — 동종 여분이면 표시상 "장착중".
+// 인스턴스 기반(별빛 재단 무구) 은 instanceId 가 정확히 일치해야 같은 인스턴스 — 두 자루가 같은 +N
+// 라도 다른 한 자루로 본다.
 function isEntryEquipped(
   entry: EquipEntry,
   current: EquippedItem | null | undefined,
 ): boolean {
   if (findItemId(current ?? null) !== entry.id) return false;
+  if (entry.instanceId || current?.instanceId) {
+    return entry.instanceId === current?.instanceId;
+  }
   if ((current?.craftTier ?? 0) !== (entry.tier ?? 0)) return false;
   return (current?.dropQuality ?? 0) === (entry.quality ?? 0);
 }
@@ -101,6 +106,7 @@ export function InventoryView({
   equipped,
   learnedAPSkillNames,
   onEquip,
+  onEquipInstance,
   onUnequip,
   onUseSkillBook,
 }: {
@@ -109,6 +115,8 @@ export function InventoryView({
   /** 학습한 AP 스킬 이름 (소문자 비교용 X — 그대로 매칭). 스킬북 사용 버튼 비활성화 판단용. */
   learnedAPSkillNames?: ReadonlyArray<string>;
   onEquip?: (id: ItemId, tier?: CraftTier, quality?: DropQuality) => void;
+  /** 인스턴스 기반 장비 장착. 미지정이면 인스턴스 entry 의 장착 버튼이 숨겨진다. */
+  onEquipInstance?: (instanceId: string) => void;
   onUnequip?: (slot: EquipSlot) => void;
   /** 스킬북 사용 — 호출 측이 인벤 소비 + 학습 + 알림 처리. 미지정이면 버튼 숨김. */
   onUseSkillBook?: (id: SkillBookId) => void;
@@ -246,6 +254,10 @@ export function InventoryView({
                         : computeDiff(item, current);
                       const suffix = craftTierSuffix(craftTier);
                       const prefix = dropQualityPrefix(quality).trim();
+                      const enhanceSuffix =
+                        entry.enhancementLevel && entry.enhancementLevel > 0
+                          ? ` +${entry.enhancementLevel}`
+                          : "";
                       return (
                         <li key={key} className={`flex items-start gap-2 ${ROW}`}>
                           <div className="min-w-0 flex-1 space-y-0.5">
@@ -265,6 +277,11 @@ export function InventoryView({
                               {suffix && (
                                 <span className={`text-xs ${craftTierTextClass(craftTier)}`}>
                                   {suffix.trim()}
+                                </span>
+                              )}
+                              {enhanceSuffix && (
+                                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                  {enhanceSuffix.trim()}
                                 </span>
                               )}
                               {isEquipped && (
@@ -299,16 +316,29 @@ export function InventoryView({
                             </div>
                           </div>
                           <div className="flex shrink-0 items-center gap-1 pt-0.5">
-                            {onEquip && (
-                              <button
-                                type="button"
-                                onClick={() => onEquip(id, craftTier, quality)}
-                                disabled={isEquipped}
-                                className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                              >
-                                {isEquipped ? "장착중" : "장착"}
-                              </button>
-                            )}
+                            {entry.instanceId
+                              ? onEquipInstance && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      onEquipInstance(entry.instanceId!)
+                                    }
+                                    disabled={isEquipped}
+                                    className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                  >
+                                    {isEquipped ? "장착중" : "장착"}
+                                  </button>
+                                )
+                              : onEquip && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onEquip(id, craftTier, quality)}
+                                    disabled={isEquipped}
+                                    className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                                  >
+                                    {isEquipped ? "장착중" : "장착"}
+                                  </button>
+                                )}
                           </div>
                         </li>
                       );

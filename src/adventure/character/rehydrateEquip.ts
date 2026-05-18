@@ -14,6 +14,7 @@
 import { ITEMS, findItemId } from "@/adventure/data/items";
 import { resolveCraftedItem } from "@/adventure/data/recipes";
 import { resolveDroppedItem } from "@/adventure/data/dropQuality";
+import { isEnhanceable, resolveEnhancedItem } from "./enhancement";
 import type { EquippedItem } from "./types";
 
 export function rehydrateEquippedItem(
@@ -22,6 +23,14 @@ export function rehydrateEquippedItem(
   if (!saved) return null;
   const id = findItemId(saved);
   if (!id) return null;
+  // 인스턴스 기반(강화 가능 장비) — instanceId + enhancementLevel 가 박혀 있어야 정상.
+  // 둘 다 없으면 인스턴스가 풀로 풀려 나간 옛 상태(테스트·서버 마이그레이션 도중 등) →
+  // 베이스 아이템으로 떨어뜨림(슬롯에 안 머무르고 자연 회수).
+  if (isEnhanceable(id)) {
+    if (typeof saved.instanceId !== "string" || !saved.instanceId) return null;
+    const lv = saved.enhancementLevel ?? 0;
+    return resolveEnhancedItem(id, saved.craftTier, lv, saved.instanceId);
+  }
   const tier = saved.craftTier;
   if (tier != null && tier !== 0) return resolveCraftedItem(id, tier);
   const q = saved.dropQuality;
