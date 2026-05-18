@@ -3,6 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CoopRewardTier } from "./data";
 import type { BattleLogEntry } from "@/adventure/battle/engine";
+import { readDeviceSessionId } from "@/lib/storage/deviceSession";
+
+// 코옵 POST 요청 헬퍼 — X-Session-Id 헤더 동봉.
+function coopHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const sessionId = readDeviceSessionId();
+  if (sessionId) headers["X-Session-Id"] = sessionId;
+  return headers;
+}
 
 export type CoopSession = {
   id: string;
@@ -118,7 +127,7 @@ export function useCoopBoss(regionId: string, enabled: boolean) {
       try {
         const r = await fetch(`/api/coop/${regionId}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: coopHeaders(),
           body: JSON.stringify({ action: "attack", playerName }),
         });
         if (!r.ok) {
@@ -144,7 +153,7 @@ export function useCoopBoss(regionId: string, enabled: boolean) {
     try {
       const r = await fetch(`/api/coop/${regionId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: coopHeaders(),
         body: JSON.stringify({ action: "claim" }),
       });
       if (!r.ok) {
