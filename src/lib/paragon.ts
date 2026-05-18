@@ -115,9 +115,9 @@ export function expToNextPoint(exp: number): number {
   return Math.max(0, cumulativeExpForPoints(pts + 1) - exp);
 }
 
-/** 들어온 EXP 를 적립 — 캡 초과분은 폐기. */
+/** 들어온 EXP 를 적립 — 캡 초과분은 폐기. NaN/Infinity 는 무시. */
 export function addParagonExp(state: ParagonState, gain: number): ParagonState {
-  if (gain <= 0) return state;
+  if (!Number.isFinite(gain) || gain <= 0) return state;
   const next = Math.min(state.paragonExp + gain, PARAGON_EXP_CAP);
   if (next === state.paragonExp) return state;
   return { ...state, paragonExp: next };
@@ -217,5 +217,13 @@ export function readInitialParagon(raw: unknown): ParagonState {
     typeof r.paragonExp === "number" && Number.isFinite(r.paragonExp)
       ? Math.max(0, Math.min(PARAGON_EXP_CAP, r.paragonExp))
       : 0;
+  // 총 할당이 적립 EXP 로 살 수 있는 포인트 한도를 초과하면 (위조/손상 세이브) 안전 리셋.
+  // 트랙별 cap 만으로는 6트랙 × 25 = 150 까지 허용해 paragonExp 0 으로도 풀빌드가 가능했다.
+  const maxPoints = pointsFromExp(paragonExp);
+  let totalAlloc = 0;
+  for (const k of PARAGON_TRACKS) totalAlloc += allocations[k] ?? 0;
+  if (totalAlloc > maxPoints) {
+    return { paragonExp, allocations: {} };
+  }
   return { paragonExp, allocations };
 }

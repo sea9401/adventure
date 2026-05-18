@@ -157,6 +157,21 @@ function pickTotal(pick: EquipPicks[string]): number {
   return sum;
 }
 
+// 모든 카운트가 비음수 정수인지 검증. 음수가 섞이면 sum 검사를 통과한 뒤 차감 시
+// inventory bucket 이 +로 증가하는 위조 공격이 가능하므로 사전에 막는다.
+function isValidPick(pick: EquipPicks[string]): boolean {
+  const checks: (number | undefined)[] = [
+    pick.base,
+    ...Object.values(pick.crafted ?? {}),
+    ...Object.values(pick.dropped ?? {}),
+  ];
+  for (const n of checks) {
+    if (n === undefined) continue;
+    if (!Number.isInteger(n) || n < 0) return false;
+  }
+  return true;
+}
+
 // picks 의 모든 비-기본 인스턴스 → bias 값을 강한 등급부터 정렬해 회별 1 개씩 배정.
 // 한 회당 한 인스턴스 — 회 i 의 bias 는 i 번째 인스턴스(0 등급 제외)의 bias. 부족하면 1.
 function computeBiasPerRound(
@@ -226,7 +241,8 @@ export function computeCraftOutcome(
     } else {
       const pick = equipPicks[ing.itemId];
       if (pick) {
-        // picks 명시 — 합계가 정확히 need 와 같아야 한다.
+        // picks 명시 — 합계가 정확히 need 와 같아야 한다. 음수/비정수 차단 선행.
+        if (!isValidPick(pick)) throw new CraftError("invalid_picks");
         const sum = pickTotal(pick);
         if (sum !== need) throw new CraftError("invalid_picks");
         if ((pick.base ?? 0) > (equipment[ing.itemId] ?? 0))
