@@ -481,25 +481,91 @@ function applyBaselineRegen(
   return next;
 }
 
-// 부가 공격 1회 (분신/난무) — 데미지 적용 + 사망 처리. 크리/강공격/기타 미적용.
+// 부가 공격 1회 (분신/난무) — 본인 빌드로 발동시킨 추가타라 "**모든 공격**" / "**매 공격마다**"
+// 효과는 함께 적용: 출혈 +1, 행운의 별 ×배수, 천명 %HP, 흡혈류 (비크리 기반만).
+// 미적용: 크리/강공격/충돌파/약점적중/연참/연쇄운명/암살/AP 스킬 발동, AP +1 (페이싱 보호).
+// 자동 반사(반격/가시/반사 회피) 는 별도 경로. 본 헬퍼는 engine.ts 의 dealExtraEnemyDamage 미러.
 function dealExtraDamage(
   state: PvPBattleState,
   atkKey: "p1" | "p2",
   defKey: "p1" | "p2",
-  dmg: number,
+  baseDmg: number,
   label: string,
 ): PvPBattleState {
+  const attacker = state[atkKey];
   const defender = state[defKey];
-  const newHp = Math.max(0, defender.hp - dmg);
-  let next = setSide(state, defKey, { ...defender, hp: newHp });
+  const player = attacker.player;
+  // 행운의 별.
+  const luckyStarPct = player.luckyStarChancePct ?? 0;
+  const luckyStarFires =
+    luckyStarPct > 0 && Math.random() * 100 < luckyStarPct;
+  const dmgAfterLuckyStar = luckyStarFires
+    ? Math.floor(baseDmg * LUCKY_STAR_DAMAGE_MULT)
+    : baseDmg;
+  // 천명 — defender 현재 HP %. PvP 에는 boss 감산 없음.
+  const decreeFires =
+    (player.heavenDecreeChancePct ?? 0) > 0 &&
+    Math.random() * 100 < player.heavenDecreeChancePct!;
+  const decreeDmg = decreeFires
+    ? Math.floor((defender.hp * HEAVEN_DECREE_HP_PCT) / 100)
+    : 0;
+  const totalDmg = dmgAfterLuckyStar + decreeDmg;
+  const newDefHp = Math.max(0, defender.hp - totalDmg);
+  // 흡혈류 — 비크리 기반만 (luckyLifesteal / runeLifesteal / 흡령).
+  const luckyLifestealHeal =
+    (player.luckyLifestealPct ?? 0) > 0
+      ? Math.floor((totalDmg * player.luckyLifestealPct!) / 100)
+      : 0;
+  const runeLifestealHeal =
+    (player.runeLifestealPct ?? 0) > 0
+      ? Math.floor((totalDmg * player.runeLifestealPct!) / 100)
+      : 0;
+  const apLifestealHeal =
+    attacker.buffs.playerLifestealTurnsLeft > 0 &&
+    attacker.buffs.playerLifestealPct > 0
+      ? Math.floor((totalDmg * attacker.buffs.playerLifestealPct) / 100)
+      : 0;
+  const totalHeal = luckyLifestealHeal + runeLifestealHeal + apLifestealHeal;
+  const newAtkHp =
+    totalHeal > 0 ? Math.min(attacker.maxHp, attacker.hp + totalHeal) : attacker.hp;
+  const actualHeal = newAtkHp - attacker.hp;
+  // 출혈 +1 (attacker 가 defender 에 누적).
+  const newBleedOnOpponent =
+    (player.bleedDmgPerStack ?? 0) > 0
+      ? attacker.stacks.bleedStacksOnOpponent + 1
+      : attacker.stacks.bleedStacksOnOpponent;
+
+  const dmgLabels: string[] = [label];
+  if (luckyStarFires) dmgLabels.push("행운의 별");
+  if (decreeFires) dmgLabels.push("천명");
+
+  let next = setSide(state, defKey, { ...defender, hp: newDefHp });
+  next = setSide(next, atkKey, {
+    ...next[atkKey],
+    hp: newAtkHp,
+    stacks: { ...next[atkKey].stacks, bleedStacksOnOpponent: newBleedOnOpponent },
+  });
   next = {
     ...next,
     log: appendLog(next.log, {
       kind: "player_attack",
-      text: `[${label}] ${defender.name}에게 ${dmg} 피해를 입혔다.`,
+      text: `[${dmgLabels.join(" + ")}] ${defender.name}에게 ${totalDmg} 피해를 입혔다.`,
     }),
   };
-  if (newHp <= 0) {
+  if (actualHeal > 0) {
+    const healLabels: string[] = [];
+    if (luckyLifestealHeal > 0) healLabels.push("행운의 흡혈");
+    if (runeLifestealHeal > 0) healLabels.push("흡혈의 룬");
+    if (apLifestealHeal > 0) healLabels.push("흡령");
+    next = {
+      ...next,
+      log: appendLog(next.log, {
+        kind: "info",
+        text: `[${healLabels.join(" + ")}] ${attacker.name}의 HP +${actualHeal}`,
+      }),
+    };
+  }
+  if (newDefHp <= 0) {
     next = {
       ...next,
       log: appendLog(next.log, {

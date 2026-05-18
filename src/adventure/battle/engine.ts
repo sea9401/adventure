@@ -587,20 +587,91 @@ function applyBaselineRegenIfAny(
   };
 }
 
-// 부가 공격(분신/난무 등) 1회 — 데미지 적용 + 페이즈 트리거 + 사망 처리. 크리/강공격/브레이스 등 미적용 (반격과 동일하게 단순 데미지).
+// 부가 공격(분신/난무 등) 1회 — 본인 빌드로 발동시킨 추가타라 "**모든 공격**" / "**매 공격마다**"
+// 로 설명된 효과는 함께 적용한다:
+//   - 출혈 +1 스택 (bleedDmgPerStack 보유 시)
+//   - 행운의 별 (5티어) — 확률 × 데미지 배수
+//   - 천명 (4티어) — 확률 × 적 현재 HP %
+//   - 흡혈류 (행운의 흡혈 / 흡혈의 룬 / 흡령) — 비크리 기반만 적용 (extras 는 크리 안 굴림)
+// 미적용: 본타 정체성에 묶인 것들 — 크리/강공격/충돌파/약점적중/연참/연쇄운명/암살/AP 스킬 발동,
+//   AP +1 (행동 자원이라 분신 회복원 되면 AP 스킬 페이싱 망가짐).
+// 자동 반사(반격/가시/반사 회피) 는 별도 경로 — 여기 안 옴.
 function dealExtraEnemyDamage(
   state: BattleState,
-  dmg: number,
+  baseDmg: number,
   label: string,
+  player: PlayerCombat,
+  playerName: string,
 ): BattleState {
-  const enemyHp = Math.max(0, state.enemyHp - dmg);
+  // 행운의 별 — 모든 공격 ×배수.
+  const luckyStarPct = player.luckyStarChancePct ?? 0;
+  const luckyStarFires =
+    luckyStarPct > 0 && Math.random() * 100 < luckyStarPct;
+  const dmgAfterLuckyStar = luckyStarFires
+    ? Math.floor(baseDmg * LUCKY_STAR_DAMAGE_MULT)
+    : baseDmg;
+  // 천명 — 적 현재 HP % (보스에는 BOSS_PCT_HP_DAMAGE_MULT 감산).
+  const decreeFires =
+    (player.heavenDecreeChancePct ?? 0) > 0 &&
+    Math.random() * 100 < player.heavenDecreeChancePct!;
+  const decreeBaseDmg = decreeFires
+    ? Math.floor((state.enemyHp * HEAVEN_DECREE_HP_PCT) / 100)
+    : 0;
+  const decreeDmg = state.isBoss
+    ? Math.floor(decreeBaseDmg * BOSS_PCT_HP_DAMAGE_MULT)
+    : decreeBaseDmg;
+  const totalDmg = dmgAfterLuckyStar + decreeDmg;
+  const enemyHp = Math.max(0, state.enemyHp - totalDmg);
+  // 흡혈류 — 크리 흡혈(lifestealCritHealPct) 은 extras 가 크리 안 굴리므로 제외. 그 외 셋만.
+  const luckyLifestealHeal =
+    (player.luckyLifestealPct ?? 0) > 0
+      ? Math.floor((totalDmg * player.luckyLifestealPct!) / 100)
+      : 0;
+  const runeLifestealHeal =
+    (player.runeLifestealPct ?? 0) > 0
+      ? Math.floor((totalDmg * player.runeLifestealPct!) / 100)
+      : 0;
+  const apLifestealHeal =
+    state.buffs.playerLifestealTurnsLeft > 0 && state.buffs.playerLifestealPct > 0
+      ? Math.floor((totalDmg * state.buffs.playerLifestealPct) / 100)
+      : 0;
+  const totalHeal = luckyLifestealHeal + runeLifestealHeal + apLifestealHeal;
+  const newPlayerHp =
+    totalHeal > 0
+      ? Math.min(state.playerMaxHp, state.playerHp + totalHeal)
+      : state.playerHp;
+  const actualHeal = newPlayerHp - state.playerHp;
+  // 출혈 +1 — 적중 시 매번. (본타와 같은 룰.)
+  const bleedStacks =
+    (player.bleedDmgPerStack ?? 0) > 0
+      ? state.stacks.bleedStacks + 1
+      : state.stacks.bleedStacks;
+
+  // 메인 데미지 라인 — 라벨에 행운의 별/천명 합쳐 박는다.
+  const dmgLabels: string[] = [label];
+  if (luckyStarFires) dmgLabels.push("행운의 별");
+  if (decreeFires) dmgLabels.push("천명");
+  let log = appendLog(state.log, {
+    kind: "player_attack",
+    text: `[${dmgLabels.join(" + ")}] ${state.enemy.name}에게 ${totalDmg} 피해를 입혔다.`,
+  });
+  if (actualHeal > 0) {
+    const healLabels: string[] = [];
+    if (luckyLifestealHeal > 0) healLabels.push("행운의 흡혈");
+    if (runeLifestealHeal > 0) healLabels.push("흡혈의 룬");
+    if (apLifestealHeal > 0) healLabels.push("흡령");
+    log = appendLog(log, {
+      kind: "info",
+      text: `[${healLabels.join(" + ")}] ${playerName}의 HP +${actualHeal}`,
+    });
+  }
+
   let next = applyPhaseTriggerIfAny({
     ...state,
     enemyHp,
-    log: appendLog(state.log, {
-      kind: "player_attack",
-      text: `[${label}] ${state.enemy.name}에게 ${dmg} 피해를 입혔다.`,
-    }),
+    playerHp: newPlayerHp,
+    stacks: { ...state.stacks, bleedStacks },
+    log,
   });
   if (enemyHp <= 0) {
     next = {
@@ -639,6 +710,8 @@ function finishPlayerTurn(
         st,
         cloneDmg,
         cloneExtra > 0 ? "그림자 군단" : "그림자 분신",
+        player,
+        playerName,
       );
     }
   }
@@ -648,7 +721,7 @@ function finishPlayerTurn(
     for (let i = 0; i < flurry; i += 1) {
       if (st.phase === "ended") break;
       const fd = damageBetween(player.atk, playerFacingEnemyDef(st, player));
-      st = dealExtraEnemyDamage(st, fd, "무피해 난무");
+      st = dealExtraEnemyDamage(st, fd, "무피해 난무", player, playerName);
     }
   }
   if (st.phase === "ended") return st;
