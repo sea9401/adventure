@@ -1037,6 +1037,46 @@ export const ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
+  // ── 5막 잔영 협동 legend 1% unique 액세서리 3종 (별빛 변종 협동 보스 보상) ──
+  // 별빛 거인 잔영 / 수심의 메아리 / 성문지기 잔영 각각 legend 도달자 한정 0.01 굴림.
+  // peak_relic / star_robe / apex_regalia 와 같은 결의 물욕 unique 라인. 한 자루씩.
+  giant_yoke: {
+    name: "거인의 멍에",
+    slot: "accessory",
+    stats: [
+      { label: "활력", value: "+18" },
+      { label: "힘", value: "+12" },
+    ],
+    bonus: { vit: 18, str: 12 },
+    description: "거인의 어깨에 얹혔던 멍에. 별빛 잔영이 그 무게를 자기 결로 옮겨 온 자리 — 두르면 어깨가 가라앉지 않는다. 마지막에 자기 발로 선 자만 허락된 결.",
+    rarity: "unique",
+    tier: 5,
+  } satisfies EquipItem,
+  deep_orb: {
+    name: "수심의 메아리 보주",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+15" },
+      { label: "속도", value: "+15" },
+    ],
+    bonus: { dex: 15, spd: 15 },
+    description: "수심의 것이 가장 깊은 곳에서 한 점씩 모아 두었던 결. 손에 쥐면 발 끝의 결이 흐르듯 가벼워진다 — 마지막 한 음절을 끊은 자에게만 허락된 결.",
+    rarity: "unique",
+    tier: 5,
+  } satisfies EquipItem,
+  gate_bar: {
+    name: "성문의 빗장",
+    slot: "accessory",
+    stats: [
+      { label: "공격력", value: "+15" },
+      { label: "행운", value: "+18" },
+    ],
+    bonus: { atk: 15, luk: 18 },
+    description: "성문지기 자동인형이 마지막으로 들었다가 떨군 빗장. 한 손에 쥐면 한 번에 두 박자를 끊을 수 있다 — 빗장을 마지막으로 내린 자에게만 허락된 결.",
+    rarity: "unique",
+    tier: 5,
+  } satisfies EquipItem,
+
   // 창공의 옥새 — 창공의 주재 협동 legend 티어 1% 드랍 (만렙 정점 물욕템).
   // accessory 슬롯, 천공인의 관 위의 전스탯 + 양면 분포.
   apex_regalia: {

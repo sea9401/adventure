@@ -237,6 +237,31 @@ export const TITLES: Record<TitleId, Title> = {
     description: "창공의 주재를 홀로 절반 이상 깎아낸 자. 옥좌 위 별빛이 마침내 한 사람의 결을 알아본다.",
     condition: "창공의 주재 협동 처치에서 누적 데미지 60% 이상 (legend 티어)",
   },
+  // ── 5막 잔영 협동 legend 티어 칭호 3종 + 셋 모두 도달자에게 부여되는 컬렉션 칭호 ─────
+  starlit_giant_breaker: {
+    id: "starlit_giant_breaker",
+    name: "거인 잔영을 가라앉힌 자",
+    description: "별빛으로 다시 깨어난 운봉의 거인 잔영을 홀로 절반 이상 깎아낸 자. 옛 산정의 결이 다시 자기 자리에 가라앉는다.",
+    condition: "별빛 거인 잔영 협동 처치에서 누적 데미지 50% 이상 (legend 티어)",
+  },
+  starlit_depth_breaker: {
+    id: "starlit_depth_breaker",
+    name: "수심의 메아리를 가라앉힌 자",
+    description: "별빛 한 음절을 새로 부르던 수심의 메아리를 홀로 절반 이상 깎아낸 자. 산호초 너머 안개가 다시 한 결로 가라앉는다.",
+    condition: "수심의 메아리 협동 처치에서 누적 데미지 50% 이상 (legend 티어)",
+  },
+  starlit_gate_breaker: {
+    id: "starlit_gate_breaker",
+    name: "성문지기 잔영을 가라앉힌 자",
+    description: "별빛에 다시 들렸던 성문의 빗장을 마지막으로 내린 자. 옛 변경 성채가 다시 한 결로 가라앉는다.",
+    condition: "성문지기 잔영 협동 처치에서 누적 데미지 50% 이상 (legend 티어)",
+  },
+  starlit_quietener: {
+    id: "starlit_quietener",
+    name: "별빛을 가라앉힌 자",
+    description: "잔영 셋의 결을 모두 자기 손으로 가라앉힌 자. 흩어졌던 별빛이 한 자리에 모이는 자리에서 — 자기 결 위에 가지런히 가라앉는다.",
+    condition: "거인 잔영·수심의 메아리·성문지기 잔영 셋 모두 협동 legend 티어 처치",
+  },
   apex_sealer: {
     id: "apex_sealer",
     name: "옥좌의 봉인자",

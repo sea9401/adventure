@@ -168,12 +168,97 @@ const PRIMORDIAL_DRAGON_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
   },
 };
 
+// ── 5막 잔영 협동 보상 3종 — 별빛 변종 협동 보스 누적 데미지 티어 보상 ──────────
+// 패턴: 별을 지키는 자 결 그대로. 잔영별 signature material(거인 = giant_scale,
+// 메아리 = deep_scale, 성문지기 = war_banner_scrap) 와 별빛 조각 누진 + legend 의
+// 칭호 + 1% unique 액세서리(giant_yoke / deep_orb / gate_bar).
+//
+// 5막 종착 의식 후 별빛 재단법은 이미 자동 학습돼 있어 recipeOneOf 는 안 둔다.
+// (별빛 재단 무구 → 강화 라인이 별빛 조각의 영구 sink — 잔영 협동은 그 공급원.)
+const STARLIT_GIANT_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
+  bronze: {
+    materials: { giant_scale: 2 },
+    recipes: [],
+  },
+  silver: {
+    materials: { starfall_shard: 4 },
+    recipes: [],
+  },
+  gold: {
+    materials: { giant_scale: 2, starfall_shard: 6 },
+    recipes: [],
+  },
+  epic: {
+    materials: { starfall_shard: 8 },
+    recipes: [],
+  },
+  legend: {
+    materials: {},
+    recipes: [],
+    titleId: "starlit_giant_breaker",
+    equipRolls: [{ itemId: "giant_yoke", chance: 0.01 }],
+  },
+};
+
+const STARLIT_DEPTH_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
+  bronze: {
+    materials: { deep_scale: 2 },
+    recipes: [],
+  },
+  silver: {
+    materials: { starfall_shard: 4 },
+    recipes: [],
+  },
+  gold: {
+    materials: { deep_scale: 2, starfall_shard: 6 },
+    recipes: [],
+  },
+  epic: {
+    materials: { starfall_shard: 8 },
+    recipes: [],
+  },
+  legend: {
+    materials: {},
+    recipes: [],
+    titleId: "starlit_depth_breaker",
+    equipRolls: [{ itemId: "deep_orb", chance: 0.01 }],
+  },
+};
+
+const STARLIT_GATE_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
+  bronze: {
+    materials: { war_banner_scrap: 2 },
+    recipes: [],
+  },
+  silver: {
+    materials: { starfall_shard: 4 },
+    recipes: [],
+  },
+  gold: {
+    materials: { war_banner_scrap: 2, starfall_shard: 6 },
+    recipes: [],
+  },
+  epic: {
+    materials: { starfall_shard: 8 },
+    recipes: [],
+  },
+  legend: {
+    materials: {},
+    recipes: [],
+    titleId: "starlit_gate_breaker",
+    equipRolls: [{ itemId: "gate_bar", chance: 0.01 }],
+  },
+};
+
 const TIER_TABLES: Record<string, Record<CoopRewardTier, CoopReward>> = {
   "운봉의 거인": PEAK_GIANT_TIER_REWARDS,
   "별을 지키는 자": STAR_KEEPER_TIER_REWARDS,
   "천공인의 왕": SKYFOLK_KING_TIER_REWARDS,
   "창공의 주재": SKY_ARBITER_TIER_REWARDS,
   "태고의 노룡": PRIMORDIAL_DRAGON_TIER_REWARDS,
+  "별빛 거인 잔영": STARLIT_GIANT_TIER_REWARDS,
+  "수심의 메아리": STARLIT_DEPTH_TIER_REWARDS,
+  "성문지기 잔영": STARLIT_GATE_TIER_REWARDS,
 };
 
 const TIER_ORDER: CoopRewardTier[] = ["bronze", "silver", "gold", "epic", "legend"];
