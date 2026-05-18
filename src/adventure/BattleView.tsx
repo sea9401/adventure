@@ -296,8 +296,11 @@ export function BattleView({
                   {bossMonster.name}
                 </h4>
                 <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  오늘 {attemptsUsed}회 도전 · 다음 쿨다운{" "}
-                  {formatCooldownRemaining(nextCooldownMs)} (자정에 초기화)
+                  오늘 {attemptsUsed}회 도전 ·{" "}
+                  {nextCooldownMs > 0
+                    ? `다음 쿨다운 ${formatCooldownRemaining(nextCooldownMs)}`
+                    : "다음 쿨다운 없음"}{" "}
+                  (자정에 초기화)
                   {bossCooldownReductionPct > 0
                     ? ` · 길드 -${bossCooldownReductionPct}%`
                     : ""}
