@@ -114,12 +114,15 @@ export function simulateCoopAttack(input: CoopAttackInput): CoopAttackResult {
     ],
   };
 
-  let turnsRun = 0;
   const maxTurns = input.turns;
 
+  // 턴 캡은 engine 의 completedPlayerTurns 로 잰다. advanceTurn 은 공격 한 번마다 호출되고
+  // 다중공격(attackCount>=2, 연타, 광속, 풍사슬 등) 중간 공격도 phase=player 로 리턴하므로,
+  // 예전처럼 "phase===player 면 +1" 식으로 카운트하면 사이클이 아닌 "공격 횟수" 를 세버려
+  // 본타가 많을수록 시뮬이 일찍 잘렸다 (협동 보스 12턴 만에 끝나던 버그).
   while (
     state.phase !== "ended" &&
-    turnsRun < maxTurns &&
+    state.turn.completedPlayerTurns < maxTurns &&
     state.playerHp > 0 &&
     state.enemyHp > 0
   ) {
@@ -133,8 +136,6 @@ export function simulateCoopAttack(input: CoopAttackInput): CoopAttackResult {
       );
       state = { ...state, log: tagged };
     }
-    // 한 사이클 (player → enemy → 다시 player) 을 1 turn 으로 카운트.
-    if (state.phase === "player") turnsRun += 1;
     // 사이클 끝 — HP 스냅샷 + 다음 사이클 turn_marker. resolveBattle 과 같은 조건식.
     const cycleEnded = playerFirstStrike
       ? prevPhase === "enemy" && state.phase === "player"
