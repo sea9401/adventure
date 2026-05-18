@@ -366,10 +366,18 @@ function evaluateAPSkillConditionPvP(
 
 // 공격자가 가하는 effective ATK — analysis 페널티는 방어자 측 buffs 에 기록 (이 사이드의 적이 나에게
 // 적용한 페널티). 그래서 effectiveAtk = attacker.atk - defender.buffs.opponentAtkPenalty.
+// 자신 ATK + 광기(AP 시한부 ATK 버프) — 분신·난무·반사회피 raw 추정용 헬퍼.
+function attackerAtkWithMadness(attacker: PvPSide): number {
+  const buffPct =
+    attacker.buffs.playerAtkBuffTurnsLeft > 0 ? attacker.buffs.playerAtkBuffPct : 0;
+  const bonus = buffPct > 0 ? Math.floor((attacker.player.atk * buffPct) / 100) : 0;
+  return attacker.player.atk + bonus;
+}
+
 function effectiveAttackerAtk(attacker: PvPSide, defender: PvPSide): number {
   return Math.max(
     0,
-    attacker.player.atk +
+    attackerAtkWithMadness(attacker) +
       attacker.buffs.rampageAtkBonus -
       defender.buffs.opponentAtkPenalty,
   );
@@ -951,7 +959,7 @@ function finishAttackerTurn(
       const atk = st[atkKey];
       const def = st[defKey];
       const cloneDmg = damageBetween(
-        Math.floor((atk.player.atk * clonePct) / 100),
+        Math.floor((attackerAtkWithMadness(atk) * clonePct) / 100),
         attackerFacingDef(atk, def),
       );
       st = dealExtraDamage(

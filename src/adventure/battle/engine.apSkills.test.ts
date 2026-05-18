@@ -573,6 +573,28 @@ describe("AP 스킬 — 광기 (player_atk_buff_def_debuff_pct_turns)", () => {
     expect(s.buffs.playerAtkBuffPct).toBe(30);
     expect(hp1 - s.enemyHp).toBe(130);
   });
+
+  it("발동턴 그림자 분신 추가타에도 광기 ATK 보너스 적용", () => {
+    // 메인 공격 ATK 100 × 1.3 = 130. 분신은 ATK 의 100% 1회 → 분신도 130.
+    // 메인 + 분신 총 260 데미지.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      hp: 9999,
+      maxHp: 9999,
+      atk: 100,
+      def: 0,
+      shadowCloneAtkPct: 100,
+      equippedAPSkills: [eq(MADNESS)],
+    };
+    let s = initialBattleState(p, enemy(99999, { def: 0, atk: 1 }), "용사");
+    s = advanceTurn(s, p, "용사"); // turn 1 발동 미달, 분신 100 → 데미지 100 + 100 = 200.
+    s = advanceTurn(s, p, "용사"); // 적 턴
+    const hpBefore = s.enemyHp;
+    s = advanceTurn(s, p, "용사"); // turn 2 광기 발동, 메인 130 + 분신 130 = 260.
+    expect(s.buffs.playerAtkBuffTurnsLeft).toBe(3);
+    expect(hpBefore - s.enemyHp).toBe(260);
+  });
+
 });
 
 describe("AP 스킬 — 둔화 (enemy_spd_mult_turns)", () => {
