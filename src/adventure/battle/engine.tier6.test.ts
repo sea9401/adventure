@@ -53,7 +53,7 @@ describe("6티어 — 충돌파", () => {
     expect(s.enemyHp).toBe(1000 - 21);
   });
 
-  it("isBoss=true 면 충돌파가 BOSS_PCT_HP_DAMAGE_MULT(0.5) 로 감산", () => {
+  it("isBoss=true 면 충돌파가 BOSS_PCT_HP_DAMAGE_MULT(0.1) 로 감산", () => {
     const p: PlayerCombat = { ...PLAYER, impactWaveHpPct: 10 };
     let s = { ...initialBattleState(p, enemy(1000), "용사"), isBoss: true };
     // turn 1, 2: 본타만, 1000 → 993 → 986
@@ -61,9 +61,9 @@ describe("6티어 — 충돌파", () => {
     s = advanceTurn(s, p, "용사"); // 적 턴
     s = advanceTurn(s, p, "용사");
     s = advanceTurn(s, p, "용사"); // 적 턴
-    // turn 3: 본타 7 + 충돌파 floor(986×10/100)=98 → ×0.5 = 49 → 1000-21-49 = 930
+    // turn 3: 본타 7 + 충돌파 floor(986×10/100)=98 → floor(×0.1) = 9 → 1000-21-9 = 970
     s = advanceTurn(s, p, "용사");
-    expect(s.enemyHp).toBe(1000 - 7 - 7 - 7 - 49); // 930
+    expect(s.enemyHp).toBe(1000 - 7 - 7 - 7 - 9); // 970
   });
 });
 

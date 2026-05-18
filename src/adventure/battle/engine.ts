@@ -185,8 +185,8 @@ export type BattleState = {
   isBoss?: boolean;
 };
 
-/** 보스에 대한 %HP 비례 추가 데미지(충돌파/천명) 감산 계수. 1.0 = 그대로, 0.5 = 반감. */
-export const BOSS_PCT_HP_DAMAGE_MULT = 0.5;
+/** 보스에 대한 %HP 비례 추가 데미지(충돌파/천명) 감산 계수. 1.0 = 그대로, 0.1 = 1/10. */
+export const BOSS_PCT_HP_DAMAGE_MULT = 0.1;
 
 export type PlayerCombat = {
   hp: number;
