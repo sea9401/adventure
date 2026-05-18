@@ -234,9 +234,10 @@ export const RAMPAGE_ATK_STR_DIVISOR = 12;
 // 약점 분석 — 매 플레이어 턴 종료 시 적 ATK·DEF 각각 -floor(DEX/ANALYSIS_DEX_DIVISOR) (최소 0 클램프, 누적).
 export const ANALYSIS_DEX_THRESHOLD = 65;
 export const ANALYSIS_DEX_DIVISOR = 30;
-// 가시 갑옷 — 받은 피해의 floor(VIT/BRAMBLE_VIT_DIVISOR)% 적에게 반사 (특성 반사 갑주와 별도로 누적).
+// 가시 갑옷 — 적이 넣은 피해(가드/굳건/철벽 감산 전, heavyBlow 반영)의 floor(VIT/BRAMBLE_VIT_DIVISOR)% 반사.
+// 특성 반사 갑주와 별도로 누적.
 export const BRAMBLE_VIT_THRESHOLD = 65;
-export const BRAMBLE_VIT_DIVISOR = 3;
+export const BRAMBLE_VIT_DIVISOR = 6;
 // 풍사슬 — 추가 공격(연타·광속·난무·기습 등) 발동 후 SPD/GALE_CHAIN_PCT_SPD_DIVISOR% 확률로 1회 더 (체인). 한 턴 최대 GALE_CHAIN_MAX_PER_TURN 회.
 export const GALE_CHAIN_SPD_THRESHOLD = 65;
 export const GALE_CHAIN_PCT_SPD_DIVISOR = 4;
@@ -366,7 +367,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.BRAMBLE,
-      description: `받은 피해의 (VIT/${BRAMBLE_VIT_DIVISOR})% 적에게 반사 (특성 반사 갑주와 별도 누적) — VIT 65=21%`,
+      description: `적이 넣은 피해(감산 전)의 (VIT/${BRAMBLE_VIT_DIVISOR})% 적에게 반사 (반사 갑주와 별도 누적) — VIT 66=11%`,
       activationThreshold: BRAMBLE_VIT_THRESHOLD,
     },
     {
@@ -532,8 +533,9 @@ export const GUST_BLADE_ATK_PER_ATTACK = 1;
 export const RIPOSTE_EXTRA_ATTACKS = 1;
 // 유격 (DEX & SPD) — 회피 성공 시 다음 플레이어 턴 공격 횟수 +N.
 export const SKIRMISH_NEXT_TURN_BONUS = 1;
-// 반사 갑주 (VIT & SPD) — 피격 시 받은 HP 피해의 floor((VIT+SPD)/N)% 를 적에게 반사.
-export const THORN_ARMOR_STAT_DIVISOR = 10;
+// 반사 갑주 (VIT & SPD) — 피격 시 적이 넣은 피해(가드/굳건/철벽 감산 전, heavyBlow 반영)의
+// floor((VIT+SPD)/N)% 를 적에게 반사.
+export const THORN_ARMOR_STAT_DIVISOR = 20;
 
 export type FeatSkillInfo = {
   name: string;
@@ -592,7 +594,7 @@ export const FEAT_SKILL: FeatSkillInfo[] = [
   },
   {
     name: FEAT_NAMES.THORN_ARMOR,
-    description: `피격 시 받은 피해의 ((VIT+SPD)/${THORN_ARMOR_STAT_DIVISOR})% 를 적에게 반사 — VIT+SPD 50=5%`,
+    description: `피격 시 적이 넣은 피해(감산 전)의 ((VIT+SPD)/${THORN_ARMOR_STAT_DIVISOR})% 를 적에게 반사 — VIT+SPD 100=5%`,
     req: ["vit", "spd"],
   },
 ];
@@ -735,7 +737,7 @@ export function skirmishNextTurnBonusFor(
     : 0;
 }
 
-// 반사 갑주 — 받은 HP 피해의 % 를 적에게 반사. 미장착 시 0.
+// 반사 갑주 — 적이 넣은 피해(감산 전, heavyBlow 반영)의 % 를 적에게 반사. 미장착 시 0.
 export function thornsPctFor(
   stats: Record<StatKey, number>,
   equipped: ReadonlySet<string>,
@@ -1244,7 +1246,7 @@ export function analysisPerTurnFor(
     : 0;
 }
 
-// 가시 갑옷 — 받은 피해 반사 비율(%). 미장착/미달 시 0. 특기 반사 갑주와 별도로 누적된다.
+// 가시 갑옷 — 적이 넣은 피해(감산 전, heavyBlow 반영) 반사 비율(%). 미장착/미달 시 0. 반사 갑주와 별도 누적.
 export function bramblePctFor(
   stats: Record<StatKey, number>,
   equipped: ReadonlySet<string>,

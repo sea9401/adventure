@@ -765,20 +765,26 @@ function applyPerAttackDodge(
 }
 
 // 데미지 적중 시 반사 (반사 갑주 + 가시 갑옷 + 무한 가시). 공격자가 죽으면 attackerKilled=true.
+// 반사 갑주/가시 갑옷 베이스는 공격자가 넣은 피해(결의/가드/굳건/철벽 감산 전, 모든 공격 보너스 후) —
+// 탱커 빌드가 막으면서 동시에 반사할 수 있도록.
 function applyOnHitReflect(
   state: PvPBattleState,
   atkKey: "p1" | "p2",
   defKey: "p1" | "p2",
-  damageTakenToHp: number,
+  rawDmgBeforeMitigation: number,
 ): { state: PvPBattleState; attackerKilled: boolean } {
   const attacker = state[atkKey];
   const defender = state[defKey];
   const thornsPct = defender.player.thornsPct ?? 0;
   const thornsDmg =
-    thornsPct > 0 ? Math.floor((damageTakenToHp * thornsPct) / 100) : 0;
+    thornsPct > 0
+      ? Math.floor((rawDmgBeforeMitigation * thornsPct) / 100)
+      : 0;
   const bramblePct = defender.player.bramblePct ?? 0;
   const brambleDmg =
-    bramblePct > 0 ? Math.floor((damageTakenToHp * bramblePct) / 100) : 0;
+    bramblePct > 0
+      ? Math.floor((rawDmgBeforeMitigation * bramblePct) / 100)
+      : 0;
   const infinitePct = defender.player.infiniteThornsAtkPct ?? 0;
   const infiniteDmg =
     infinitePct > 0 ? Math.floor((attacker.player.atk * infinitePct) / 100) : 0;
@@ -1727,7 +1733,8 @@ export function advanceTurnPvP(
     };
   }
   // ── on-hit reflect (반사 갑주 + 가시 갑옷 + 무한 가시) — 공격자에게 반사 피해 ──
-  const reflectResult = applyOnHitReflect(next, atkKey, defKey, dmgToHp);
+  // 베이스는 totalDmg (방어자 결의/가드/굳건/철벽 감산 전, 공격 보너스는 모두 반영).
+  const reflectResult = applyOnHitReflect(next, atkKey, defKey, totalDmg);
   next = reflectResult.state;
   if (reflectResult.attackerKilled) return next;
   // ── 반격의 룬 — 피격 후 일정 확률로 ATK 카운터 ──
