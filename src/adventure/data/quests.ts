@@ -193,7 +193,7 @@ export const QUESTS: Quest[] = [
   {
     id: "village-trainer-slimes",
     regionId: "village",
-    title: "훈련 — 슬라임 5마리",
+    title: "훈련: 슬라임 5마리",
     description: "훈련 교관 스미스의 첫 과제. 평야의 슬라임 5마리를 처치한다.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"슬라임", count: 5 },
@@ -206,7 +206,7 @@ export const QUESTS: Quest[] = [
   {
     id: "village-trainer-dogs",
     regionId: "village",
-    title: "훈련 — 들개 10마리",
+    title: "훈련: 들개 10마리",
     description: "훈련 교관 스미스의 두 번째 과제. 들개 10마리를 처치한다.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"들개", count: 10 },
@@ -218,7 +218,7 @@ export const QUESTS: Quest[] = [
   {
     id: "village-trainer-moles",
     regionId: "village",
-    title: "훈련 — 두더지 10마리",
+    title: "훈련: 두더지 10마리",
     description: "훈련 교관 스미스의 마지막 과제. 두더지 10마리를 처치한다.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"두더지", count: 10 },
@@ -283,7 +283,7 @@ export const QUESTS: Quest[] = [
     regionId: "village",
     title: "마정석을 다루는 법",
     description:
-      "광맥의 수호자가 떨군 마정석, 그거 제대로 다루려면 손이 익어야 해. 다섯 덩이만 가져와 봐 — 그걸로 시연을 보여주지. 보고 나면 자네도 마정석 무기를 벼릴 수 있을 거야.",
+      "광맥의 수호자가 떨군 마정석, 그거 제대로 다루려면 손이 익어야 해. 다섯 덩이만 가져와 봐. 그걸로 시연을 보여주지. 보고 나면 자네도 마정석 무기를 벼릴 수 있을 거야.",
     requiredLevel: 6,
     target: { kind: "deliver", materialId: "mana_crystal", count: 5 },
     reward: { gold: 600, exp: 500, recipes: ["mana_bracelet"], potionCapacityBonus: 1 },
@@ -298,9 +298,9 @@ export const QUESTS: Quest[] = [
     // equip_item — 트레이너 라인 마무리. 활력의 반지 한 번이라도 차고 와 봐.
     id: "village-trainer-equip-vitality-ring",
     regionId: "village",
-    title: "스미스의 청 — 반지를 차고 와",
+    title: "스미스의 청: 반지를 차고 와",
     description:
-      "내가 준 활력의 반지 — 끼고 다녀? 한 번이라도 차고 와 보게. 그래야 자네가 평야 졸업이라고 인정해 주지.",
+      "내가 준 활력의 반지. 끼고 다녀? 한 번이라도 차고 와 보게. 그래야 자네가 평야 졸업이라고 인정해 주지.",
     requiredLevel: 1,
     target: { kind: "equip_item", itemId: "vitality_ring" },
     reward: { gold: 60, fame: 5, exp: 90 },
@@ -312,7 +312,7 @@ export const QUESTS: Quest[] = [
     // visit_region — 지미의 깊은 동굴 라인 마무리. 광맥 자리를 다섯 번 더 봐 두고 와라.
     id: "village-jimmy-deep-cave-tour",
     regionId: "village",
-    title: "나무꾼 지미의 청 — 광맥 자리 다시 보기",
+    title: "나무꾼 지미의 청: 광맥 자리 다시 보기",
     description:
       "사람들이 안 믿어요. 자네가 봤다는 그 광맥 자리, 한 번 더 가서 확인하고 와 주쇼. 다섯 번이면 마을 사람들도 자네 말을 믿을 게요.",
     requiredLevel: 6,
@@ -326,9 +326,9 @@ export const QUESTS: Quest[] = [
     // craft_item — 볼드의 마정석 라인 마무리. 자네 손으로 한 자루 짜 봐.
     id: "village-bold-mana-sword-craft",
     regionId: "village",
-    title: "대장장이 볼드의 청 — 자네 손으로 한 자루",
+    title: "대장장이 볼드의 청: 자네 손으로 한 자루",
     description:
-      "팔찌까지 짜 봤으니, 이젠 칼이야. 마정석 검 — 자네 손으로 한 자루 짜 봐. 그래야 그 마정석이 손에 어떻게 익는지 알지.",
+      "팔찌까지 짜 봤으니, 이젠 칼이야. 마정석 검. 자네 손으로 한 자루 짜 봐. 그래야 그 마정석이 손에 어떻게 익는지 알지.",
     requiredLevel: 7,
     target: { kind: "craft_item", itemId: "mana_sword", count: 1 },
     reward: { gold: 400, fame: 16, exp: 600 },
@@ -387,7 +387,7 @@ export const QUESTS: Quest[] = [
   {
     id: "diola-marin-soul-crystals",
     regionId: "diola",
-    title: "촌장의 청 — 영혼 결정",
+    title: "촌장의 청: 영혼 결정",
     description:
       "폐허에서 나온 영혼 결정 3개만 가져다주시오. 옛 기록에 따르면, 이 마을과 폐허의 매듭을 푸는 데 그게 필요하다고 했소. …그리고 그 결정으로 칼을 벼리는 법도 적혀 있더군. 도면도 함께 가져가시오.",
     requiredLevel: 9,
@@ -405,7 +405,7 @@ export const QUESTS: Quest[] = [
     regionId: "diola",
     title: "산정과의 거래",
     description:
-      "산정 길이 다시 안전해졌다고 들었소. 그렇다면 거래를 트지 — 우리 쪽 길목도 정리가 필요하오. 폐허 어귀 늑대 서른 마리만 솎아 주시오. 그러면 디올라와 운향 사이로 짐수레가 다시 오갈 게요.",
+      "산정 길이 다시 안전해졌다고 들었소. 그렇다면 거래를 트지. 우리 쪽 길목도 정리가 필요하오. 폐허 어귀 늑대 서른 마리만 솎아 주시오. 그러면 디올라와 운향 사이로 짐수레가 다시 오갈 게요.",
     requiredLevel: 22,
     target: { kind: "kill", monsterName: "폐허 늑대", count: 30 },
     reward: { gold: 700, fame: 26, exp: 1100, potionCapacityBonus: 1 },
@@ -469,9 +469,9 @@ export const QUESTS: Quest[] = [
     // talk_to_npc — 리오의 라인 마무리. 어부 카이를 세 번 들러줘라.
     id: "diola-rio-listen-kai",
     regionId: "diola",
-    title: "리오의 청 — 카이 아저씨한테 가 줘",
+    title: "리오의 청: 카이 아저씨한테 가 줘",
     description:
-      "카이 아저씨가 요즘 밤마다 호숫가만 봐요. 새벽에도. 엄마가 가서 한번 들어주랬는데 — 나 무서워. 형/누나가 세 번만 들러줘요. 진짜로!",
+      "카이 아저씨가 요즘 밤마다 호숫가만 봐요. 새벽에도. 엄마가 가서 한번 들어주랬는데. 나 무서워. 형/누나가 세 번만 들러줘요. 진짜로!",
     requiredLevel: 5,
     target: { kind: "talk_to_npc", npcId: "diola_fisher", count: 3 },
     reward: { gold: 140, fame: 9, exp: 220 },
@@ -483,9 +483,9 @@ export const QUESTS: Quest[] = [
     // talk_to_npc — 노라의 라인 마무리. 리오를 세 번 들러줘라.
     id: "diola-nora-listen-rio",
     regionId: "diola",
-    title: "노라의 청 — 리오 들어주기",
+    title: "노라의 청: 리오 들어주기",
     description:
-      "리오가 요즘 다 큰 척만 해요. 후드 손님 흉내 내면서요. 어린애가 어른 흉내 내는 게 마음 쓰여서요 — 형/누나가 세 번만 들러줘요. 차 한 잔 끓여 둘게요.",
+      "리오가 요즘 다 큰 척만 해요. 후드 손님 흉내 내면서요. 어린애가 어른 흉내 내는 게 마음 쓰여서요. 형/누나가 세 번만 들러줘요. 차 한 잔 끓여 둘게요.",
     requiredLevel: 5,
     target: { kind: "talk_to_npc", npcId: "diola_kid", count: 3 },
     reward: { gold: 160, fame: 10, exp: 240, potions: [{ id: "potion_heal_s", count: 4 }] },
@@ -497,9 +497,9 @@ export const QUESTS: Quest[] = [
     // equip_item — 보로의 라인 마무리. 산적 단검 한 번이라도 차고 와라.
     id: "diola-boro-bandit-dagger-bear",
     regionId: "diola",
-    title: "보로의 청 — 손에 자루를",
+    title: "보로의 청: 손에 자루를",
     description:
-      "다음에 거래소에 오실 땐 — 산적 단검 한 자루라도 차고 와 주세요. 다른 손님이 그 모습을 보면 따라 거래하거든요. 거래는 양쪽이 다 좋아야 거래라잖아요?",
+      "다음에 거래소에 오실 땐. 산적 단검 한 자루라도 차고 와 주세요. 다른 손님이 그 모습을 보면 따라 거래하거든요. 거래는 양쪽이 다 좋아야 거래라잖아요?",
     requiredLevel: 6,
     target: { kind: "equip_item", itemId: "bandit_dagger" },
     reward: { gold: 220, fame: 12, exp: 320 },
@@ -512,9 +512,9 @@ export const QUESTS: Quest[] = [
     // 카이의 결("그 노랫소리에 만져지기 전에 끝내야 해")을 그대로 잇는다.
     id: "diola-kai-pristine-nymphs",
     regionId: "diola",
-    title: "카이의 청 — 흠 없는 호수 사냥",
+    title: "카이의 청: 흠 없는 호수 사냥",
     description:
-      "그 노랫소리에 만져지기 전에 끝내야 해요. 호수 님프 다섯을 — HP 70% 이상으로 — 흠 없이 잡고 오세요. 그래야 새벽 그물을 다시 걷을 수 있을 거예요.",
+      "그 노랫소리에 만져지기 전에 끝내야 해요. 호수 님프 다섯을. HP 70% 이상으로. 흠 없이 잡고 오세요. 그래야 새벽 그물을 다시 걷을 수 있을 거예요.",
     requiredLevel: 8,
     target: {
       kind: "kill_within_hp",
@@ -535,9 +535,9 @@ export const QUESTS: Quest[] = [
     // 시작 장비 3 종(branch_stick·cloth_clothes·mom_amulet)을 동시에 장착하면 진행.
     id: "diola-marin-first-gear-set",
     regionId: "diola",
-    title: "촌장의 청 — 첫 모험가의 의장",
+    title: "촌장의 청: 첫 모험가의 의장",
     description:
-      "자네가 처음 손에 든 것 — 나뭇가지·천 옷·어머니의 부적. 한 번이라도 다시 한 복으로 차고 와 보게. 우리 마을 사람들도 한 번 봐야 해 — 자네가 어디서 시작했는지를.",
+      "자네가 처음 손에 든 것. 나뭇가지·천 옷·어머니의 부적. 한 번이라도 다시 한 복으로 차고 와 보게. 우리 마을 사람들도 한 번 봐야 해. 자네가 어디서 시작했는지를.",
     requiredLevel: 10,
     target: {
       kind: "equip_set",
@@ -555,9 +555,9 @@ export const QUESTS: Quest[] = [
   {
     id: "dustford-duru-fangs",
     regionId: "dustford",
-    title: "두루의 수집 — 들고양이 송곳니",
+    title: "두루의 수집: 들고양이 송곳니",
     description:
-      "옛길 들고양이가 통발을 헤집어 놓아 큰일이에요. 들고양이 송곳니 10개만 모아 주면 사례하지요 — 노상강도 단검 손질하는 법도 알려드릴게요.",
+      "옛길 들고양이가 통발을 헤집어 놓아 큰일이에요. 들고양이 송곳니 10개만 모아 주면 사례하지요. 노상강도 단검 손질하는 법도 알려드릴게요.",
     requiredLevel: 3,
     target: { kind: "deliver", materialId: "wilddog_fang", count: 10 },
     reward: { gold: 80, fame: 7, exp: 130, recipes: ["roadbandit_shortsword"] },
@@ -567,7 +567,7 @@ export const QUESTS: Quest[] = [
   {
     id: "dustford-duru-feathers",
     regionId: "dustford",
-    title: "두루의 수집 — 까마귀 깃",
+    title: "두루의 수집: 까마귀 깃",
     description:
       "두건이며 안감이며 까마귀 깃이 자꾸 모자랍니다. 12장만 모아 주면 후하게 쳐드리지요.",
     requiredLevel: 3,
@@ -579,7 +579,7 @@ export const QUESTS: Quest[] = [
   {
     id: "dustford-duru-scrap",
     regionId: "dustford",
-    title: "두루의 청 — 녹슨 쇳조각",
+    title: "두루의 청: 녹슨 쇳조각",
     description:
       "녹슨 쇳조각은 다시 벼리면 갑옷이고 무기고 다 됩니다. 옛 성채에서 8덩이만 들여와 주면 후하게 쳐드리지요.",
     requiredLevel: 13,
@@ -592,9 +592,9 @@ export const QUESTS: Quest[] = [
   {
     id: "dustford-narae-feathers",
     regionId: "dustford",
-    title: "나래의 베갯속 — 까마귀 깃",
+    title: "나래의 베갯속: 까마귀 깃",
     description:
-      "손님 베개 속 채울 깃이 영 모자라네요. 까마귀 깃 10장만 들여와 주면 잠자리가 한결 나을 텐데 — 손님이 두고 간 회복약도 챙겨 드릴게요.",
+      "손님 베개 속 채울 깃이 영 모자라네요. 까마귀 깃 10장만 들여와 주면 잠자리가 한결 나을 텐데. 손님이 두고 간 회복약도 챙겨 드릴게요.",
     requiredLevel: 3,
     target: { kind: "deliver", materialId: "raven_feather", count: 10 },
     reward: { gold: 75, fame: 6, exp: 120, potions: [{ id: "potion_heal_s", count: 5 }] },
@@ -606,7 +606,7 @@ export const QUESTS: Quest[] = [
     regionId: "dustford",
     title: "나래의 겨우살이",
     description:
-      "찬바람 들 철이라 깃을 넉넉히 둬야 해요. 까마귀 깃 15장만 더 들여와 주면 — 손님이 두고 간 약 주머니를 손봐서 드릴게요.",
+      "찬바람 들 철이라 깃을 넉넉히 둬야 해요. 까마귀 깃 15장만 더 들여와 주면. 손님이 두고 간 약 주머니를 손봐서 드릴게요.",
     requiredLevel: 4,
     target: { kind: "deliver", materialId: "raven_feather", count: 15 },
     reward: { gold: 120, fame: 8, exp: 180, potionCapacityBonus: 1 },
@@ -616,7 +616,7 @@ export const QUESTS: Quest[] = [
   {
     id: "dustford-narae-keep-stew",
     regionId: "dustford",
-    title: "나래의 솥 — 탈영 약탈자",
+    title: "나래의 솥: 탈영 약탈자",
     description:
       "옛 성채에 눌러앉은 탈영병들이 옛길 행상까지 따라붙는대요. 15만 정리해 주면 행상이 다시 다닐 거예요.",
     requiredLevel: 13,
@@ -629,7 +629,7 @@ export const QUESTS: Quest[] = [
   {
     id: "dustford-solgae-wildcats",
     regionId: "dustford",
-    title: "솔개의 사냥 — 갈대 살쾡이",
+    title: "솔개의 사냥: 갈대 살쾡이",
     description:
       "갈대 살쾡이가 둥지를 헤집고 다녀 밭 가는 사람들이 못 살아요. 18마리만 정리해 주면 까마귀깃 두건 짓는 법을 알려드리지요.",
     requiredLevel: 3,
@@ -641,7 +641,7 @@ export const QUESTS: Quest[] = [
   {
     id: "dustford-solgae-ravens",
     regionId: "dustford",
-    title: "솔개의 사냥 — 들까마귀 떼",
+    title: "솔개의 사냥: 들까마귀 떼",
     description:
       "들까마귀 떼가 옛길 위를 빙빙 돌며 행상 짐을 노립니다. 18마리만 떨어뜨려 주세요.",
     requiredLevel: 3,
@@ -655,7 +655,7 @@ export const QUESTS: Quest[] = [
     regionId: "dustford",
     title: "옛길 트기",
     description:
-      "옛 성채로 일꾼을 데려가려면 옛길에 눌러앉은 노상강도부터 솎아야 해. 15만 정리해 주게 — 그러면 무너진 북쪽 벽으로 가는 길을 열고, 자네도 데려가지.",
+      "옛 성채로 일꾼을 데려가려면 옛길에 눌러앉은 노상강도부터 솎아야 해. 15만 정리해 주게. 그러면 무너진 북쪽 벽으로 가는 길을 열고, 자네도 데려가지.",
     requiredLevel: 7,
     target: { kind: "kill", monsterName: "노상강도", count: 15 },
     reward: { gold: 220, fame: 12, exp: 380 },
@@ -667,9 +667,9 @@ export const QUESTS: Quest[] = [
   {
     id: "dustford-mujin-keep-survey",
     regionId: "dustford",
-    title: "무진의 청 — 성채 살피기",
+    title: "무진의 청: 성채 살피기",
     description:
-      "성채에 일꾼들을 데리고 들어가 봤네. 다만 안에 녹슨 쇳조각이 얼마나 쌓였는지 봐 와 주게 — 10덩이면 재건에 쓸 만한지 알 수 있소.",
+      "성채에 일꾼들을 데리고 들어가 봤네. 다만 안에 녹슨 쇳조각이 얼마나 쌓였는지 봐 와 주게. 10덩이면 재건에 쓸 만한지 알 수 있소.",
     requiredLevel: 12,
     target: { kind: "deliver", materialId: "scrap_iron", count: 10 },
     reward: { gold: 380, fame: 18, exp: 700 },
@@ -682,7 +682,7 @@ export const QUESTS: Quest[] = [
     regionId: "dustford",
     title: "옛 성문지기",
     description:
-      "성채는 멀쩡해. 한 가지만 빼면 — 성문지기. 사람을 막으라 만든 게 아니야, 군대를 막으라 세운 거지. 군대는 오지 않았고 그것만 남아 빈 벽을 지켜. 단단히 준비해 가서 그것을 잠재워 주게. 마른나루의 명운이 거기 달렸소.",
+      "성채는 멀쩡해. 한 가지만 빼면. 성문지기. 사람을 막으라 만든 게 아니야, 군대를 막으라 세운 거지. 군대는 오지 않았고 그것만 남아 빈 벽을 지켜. 단단히 준비해 가서 그것을 잠재워 주게. 마른나루의 명운이 거기 달렸소.",
     requiredLevel: 13,
     target: { kind: "kill", monsterName: "옛 성문지기", count: 1 },
     reward: {
@@ -699,9 +699,9 @@ export const QUESTS: Quest[] = [
   {
     id: "dustford-gatekeeper-recurring",
     regionId: "dustford",
-    title: "옛 성문지기 — 다시 깨어날 때",
+    title: "옛 성문지기: 다시 깨어날 때",
     description:
-      "한 번 잠재웠다고 끝이 아니야. 또 성문이 깨어나거든 — 옛 성문지기를 세 번 더 잠재워 주게. 마른나루가 자네를 잊지 않을 게요.",
+      "한 번 잠재웠다고 끝이 아니야. 또 성문이 깨어나거든. 옛 성문지기를 세 번 더 잠재워 주게. 마른나루가 자네를 잊지 않을 게요.",
     requiredLevel: 13,
     target: { kind: "kill", monsterName: "옛 성문지기", count: 3 },
     reward: { gold: 850, fame: 24, exp: 1200 },
@@ -717,7 +717,7 @@ export const QUESTS: Quest[] = [
     regionId: "dustford",
     title: "흠 없는 한 수",
     description:
-      "성문지기를 한 번 잠재웠다면 — 두 번째는 흠 없이 가져갈 수 있나? 빗장이 살갗에 닿기 전에. HP 70% 이상으로 옛 성문지기를 처치.",
+      "성문지기를 한 번 잠재웠다면. 두 번째는 흠 없이 가져갈 수 있나? 빗장이 살갗에 닿기 전에. HP 70% 이상으로 옛 성문지기를 처치.",
     requiredLevel: 13,
     target: { kind: "kill_within_hp", monsterName: "옛 성문지기", minHpFraction: 0.7, count: 1 },
     reward: { gold: 600, fame: 16, exp: 1000 },
@@ -743,7 +743,7 @@ export const QUESTS: Quest[] = [
     regionId: "dustford",
     title: "수비대 한 복",
     description:
-      "수비대 도검·사슬갑옷·성문지기의 핵 — 셋을 한 복으로 갖춰 한 번이라도 차고 와 주게. 옛 수비대 한 식구가 다시 선 모습을 보고 싶소.",
+      "수비대 도검·사슬갑옷·성문지기의 핵. 셋을 한 복으로 갖춰 한 번이라도 차고 와 주게. 옛 수비대 한 식구가 다시 선 모습을 보고 싶소.",
     requiredLevel: 13,
     target: {
       kind: "equip_set",
@@ -763,9 +763,9 @@ export const QUESTS: Quest[] = [
     // tattered_standard_cloak 은 노상강도가 떨궈 모이고, 합쳐 frontier_standard_cloak.
     id: "dustford-duru-standard-restore",
     regionId: "dustford",
-    title: "두루의 청 — 옛 군기 복원",
+    title: "두루의 청: 옛 군기 복원",
     description:
-      "성채까지 다닌다며? 그럼 부탁 하나 더 — 옛 변경 군기, 한 폭을 잇대 복원한 걸 한 번이라도 두르고 와 줘. 마른나루 노인들이 그 깃 한 번 보고 싶어 해. 군기 망토(frontier_standard_cloak) 1점 제작.",
+      "성채까지 다닌다며? 그럼 부탁 하나 더. 옛 변경 군기, 한 폭을 잇대 복원한 걸 한 번이라도 두르고 와 줘. 마른나루 노인들이 그 깃 한 번 보고 싶어 해. 군기 망토(frontier_standard_cloak) 1점 제작.",
     requiredLevel: 9,
     target: { kind: "craft_item", itemId: "frontier_standard_cloak", count: 1 },
     reward: { gold: 360, fame: 14, exp: 520 },
@@ -777,9 +777,9 @@ export const QUESTS: Quest[] = [
     // talk_to_npc — 나래 라인 마지막 단계. 보리(역참 아이)를 N 번 들어주기.
     id: "dustford-narae-listen-bori",
     regionId: "dustford",
-    title: "나래의 청 — 보리 들어주기",
+    title: "나래의 청: 보리 들어주기",
     description:
-      "그 애가 요즘 통 말이 적어요. 밤마다 옛길 끝 쪽을 본대요 — 자기는 안 무섭다면서. 들어줄 사람이 있어야지요. 보리와 세 번만 이야기를 나눠 주세요.",
+      "그 애가 요즘 통 말이 적어요. 밤마다 옛길 끝 쪽을 본대요. 자기는 안 무섭다면서. 들어줄 사람이 있어야지요. 보리와 세 번만 이야기를 나눠 주세요.",
     requiredLevel: 4,
     target: { kind: "talk_to_npc", npcId: "dustford_kid", count: 3 },
     reward: { gold: 200, fame: 10, exp: 240, potions: [{ id: "potion_heal_s", count: 5 }] },
@@ -792,9 +792,9 @@ export const QUESTS: Quest[] = [
     // 옛 성채에 다섯 번 들어갔다 와서 어떻게 생겼는지 이야기해 달라는 어린애의 부탁.
     id: "dustford-bori-keep-tour",
     regionId: "dustford",
-    title: "보리의 청 — 성채 한 바퀴",
+    title: "보리의 청: 성채 한 바퀴",
     description:
-      "무진 할아버지는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서, 안이 어떻게 생겼는지 다 말해 줘요 — 흉벽도, 우물도, 안마당도. 옛 성채 5회 방문.",
+      "무진 할아버지는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서, 안이 어떻게 생겼는지 다 말해 줘요. 흉벽도, 우물도, 안마당도. 옛 성채 5회 방문.",
     requiredLevel: 9,
     target: { kind: "visit_region", regionId: "oldwall_keep", count: 5 },
     reward: { gold: 220, fame: 11, exp: 320 },
@@ -809,9 +809,9 @@ export const QUESTS: Quest[] = [
     // 들사냥꾼다운 "흠 없는 한 수" 어휘를 잡몹으로 끌어다 일상 도전으로 둔다.
     id: "dustford-solgae-pristine-bandits",
     regionId: "dustford",
-    title: "솔개의 청 — 흠 없는 사냥",
+    title: "솔개의 청: 흠 없는 사냥",
     description:
-      "들사냥꾼 한 수는 빗장 맞기 전에 끝내는 거야. 노상강도 다섯을 — HP 70% 이상으로 — 흠 없이 잡아 와 봐. 그게 가능하면 옛길에서 자네 이름이 좀 알려질 거다.",
+      "들사냥꾼 한 수는 빗장 맞기 전에 끝내는 거야. 노상강도 다섯을. HP 70% 이상으로. 흠 없이 잡아 와 봐. 그게 가능하면 옛길에서 자네 이름이 좀 알려질 거다.",
     requiredLevel: 5,
     target: {
       kind: "kill_within_hp",
@@ -890,7 +890,7 @@ export const QUESTS: Quest[] = [
   {
     id: "saltmarsh-galmae-crabs",
     regionId: "saltmarsh",
-    title: "갈매의 통발 — 집게발 게",
+    title: "갈매의 통발: 집게발 게",
     description:
       "갯벌에 집게발 게가 너무 불어 통발이며 그물이 남아나질 않아요. 집게발 게 20마리를 솎아 주세요. (게딱지 손방패와 갯벌 각반 짜는 법을 알려줍니다)",
     requiredLevel: 10,
@@ -902,7 +902,7 @@ export const QUESTS: Quest[] = [
   {
     id: "saltmarsh-galmae-reef-coral",
     regionId: "saltmarsh",
-    title: "갈매의 청 — 산호 가시",
+    title: "갈매의 청: 산호 가시",
     description:
       "산호 가시는 송곳이며 통발 미늘로 두루 쓰여요. 암초에서 부러진 산호 가시 8개만 들여와 주면 사례하지요.",
     requiredLevel: 16,
@@ -915,7 +915,7 @@ export const QUESTS: Quest[] = [
   {
     id: "saltmarsh-bomal-crab-shells",
     regionId: "saltmarsh",
-    title: "보말의 게장 — 게딱지",
+    title: "보말의 게장: 게딱지",
     description:
       "손님상에 올릴 게장을 담그려는데 게딱지가 모자라네요. 게딱지 10개만 들여와 주면 섭섭잖게 사례할게요.",
     requiredLevel: 10,
@@ -929,7 +929,7 @@ export const QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "보말의 곳간 채우기",
     description:
-      "대상 길손이 줄줄이 들이닥칠 철이라 곳간을 단단히 채워야 해요. 게딱지 15개만 더 들여와 주면 — 손님이 두고 간 약 주머니를 손봐서 드릴게요.",
+      "대상 길손이 줄줄이 들이닥칠 철이라 곳간을 단단히 채워야 해요. 게딱지 15개만 더 들여와 주면. 손님이 두고 간 약 주머니를 손봐서 드릴게요.",
     requiredLevel: 11,
     target: { kind: "deliver", materialId: "crab_shell", count: 15 },
     reward: { gold: 240, fame: 13, exp: 420, potionCapacityBonus: 1 },
@@ -939,7 +939,7 @@ export const QUESTS: Quest[] = [
   {
     id: "saltmarsh-bomal-reef-stew",
     regionId: "saltmarsh",
-    title: "보말의 솥 — 갑각 약탈자",
+    title: "보말의 솥: 갑각 약탈자",
     description:
       "난바다에서 갑각 약탈자들이 어선까지 따라붙는대요. 15만 정리해 주면 어선이 다시 나갈 거예요.",
     requiredLevel: 16,
@@ -954,7 +954,7 @@ export const QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "선저 덧대기",
     description:
-      "암초 사이를 지나려면 배 밑을 게딱지 갑판으로 덧대야 해. 게딱지 15개만 모아다 줘 — 그러면 난바다로 데려가 주지.",
+      "암초 사이를 지나려면 배 밑을 게딱지 갑판으로 덧대야 해. 게딱지 15개만 모아다 줘. 그러면 난바다로 데려가 주지.",
     requiredLevel: 13,
     target: { kind: "deliver", materialId: "crab_shell", count: 15 },
     reward: { gold: 320, fame: 16, exp: 600 },
@@ -966,7 +966,7 @@ export const QUESTS: Quest[] = [
   {
     id: "saltmarsh-haerang-reef-runs",
     regionId: "saltmarsh",
-    title: "건넨 김에 — 사이렌 쫓기",
+    title: "건넨 김에: 사이렌 쫓기",
     description:
       "난바다를 건널 때마다 사이렌 노랫소리가 뱃머리를 돌려세워. 산호초 사이렌 20만 쫓아 주면 뱃길이 한결 수월하겠어.",
     requiredLevel: 16,
@@ -979,9 +979,9 @@ export const QUESTS: Quest[] = [
   {
     id: "saltmarsh-yeoul-reef-survey",
     regionId: "saltmarsh",
-    title: "여울의 청 — 암초 살피기",
+    title: "여울의 청: 암초 살피기",
     description:
-      "해랑이 자네를 난바다로 데려갔다고 들었네. 그렇다면 부탁이 있어 — 암초 둘레의 산호가 어떻게 자라는지 봐 주게. 심해 비늘 10조각이면 충분해. 그걸 보면 밑에서 자는 것이 얼마나 깨어났는지 알 수 있네.",
+      "해랑이 자네를 난바다로 데려갔다고 들었네. 그렇다면 부탁이 있어. 암초 둘레의 산호가 어떻게 자라는지 봐 주게. 심해 비늘 10조각이면 충분해. 그걸 보면 밑에서 자는 것이 얼마나 깨어났는지 알 수 있네.",
     requiredLevel: 16,
     target: { kind: "deliver", materialId: "deep_scale", count: 10 },
     reward: { gold: 460, fame: 20, exp: 900 },
@@ -994,7 +994,7 @@ export const QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "수심의 것",
     description:
-      "이제 알겠네 — 암초 밑에서 뒤척이는 그것이 잠잠해지지 않는 한, 이 포구는 다시 일어서지 못해. 수심의 것. 단단히 준비해 가서 그것을 가라앉혀 주게. 소만의 명운이 거기 달렸네.",
+      "이제 알겠네. 암초 밑에서 뒤척이는 그것이 잠잠해지지 않는 한, 이 포구는 다시 일어서지 못해. 수심의 것. 단단히 준비해 가서 그것을 가라앉혀 주게. 소만의 명운이 거기 달렸네.",
     requiredLevel: 18,
     target: { kind: "kill", monsterName: "수심의 것", count: 1 },
     reward: {
@@ -1011,9 +1011,9 @@ export const QUESTS: Quest[] = [
   {
     id: "saltmarsh-deep-one-recurring",
     regionId: "saltmarsh",
-    title: "수심의 것 — 다시 뒤척일 때",
+    title: "수심의 것: 다시 뒤척일 때",
     description:
-      "한 번 가라앉혔다고 끝이 아니야. 또 물이 차거든 — 수심의 것을 세 번 더 가라앉혀 주게. 소만이 자네를 기억할 게요.",
+      "한 번 가라앉혔다고 끝이 아니야. 또 물이 차거든. 수심의 것을 세 번 더 가라앉혀 주게. 소만이 자네를 기억할 게요.",
     requiredLevel: 18,
     target: { kind: "kill", monsterName: "수심의 것", count: 3 },
     reward: { gold: 1100, fame: 28, exp: 1500 },
@@ -1030,9 +1030,9 @@ export const QUESTS: Quest[] = [
     // 게딱지 손방패 제작서는 갈매의 첫 의뢰(crabs) 보상으로 받는다.
     id: "saltmarsh-galmae-shell-forge",
     regionId: "saltmarsh",
-    title: "갈매의 청 — 게딱지 손방패 두 점",
+    title: "갈매의 청: 게딱지 손방패 두 점",
     description:
-      "이번엔 통발 손질이 아니라 자네 손을 빌려야겠어 — 게딱지 손방패, 두 점만 새로 짜서 가져와 줘. 갯벌 다니는 일꾼 둘에게 한 점씩 들려 보내려고. 솜씨 좋게.",
+      "이번엔 통발 손질이 아니라 자네 손을 빌려야겠어. 게딱지 손방패, 두 점만 새로 짜서 가져와 줘. 갯벌 다니는 일꾼 둘에게 한 점씩 들려 보내려고. 솜씨 좋게.",
     requiredLevel: 11,
     target: { kind: "craft_item", itemId: "crab_shell_buckler", count: 2 },
     reward: { gold: 320, fame: 13, exp: 480 },
@@ -1044,9 +1044,9 @@ export const QUESTS: Quest[] = [
     // talk_to_npc — 보말 라인 마지막 단계. 미르(갯마을 아이)를 N 번 들어주기.
     id: "saltmarsh-bomal-listen-mireu",
     regionId: "saltmarsh",
-    title: "보말의 청 — 미르 들어주기",
+    title: "보말의 청: 미르 들어주기",
     description:
-      "그 애가 요즘 통 말이 적어요. 한낮에도 갯벌만 보고 있고요 — 들어줄 사람이 있어야지요. 미르와 세 번만 이야기를 나눠 주세요. 사례는 손님이 두고 간 회복약으로요.",
+      "그 애가 요즘 통 말이 적어요. 한낮에도 갯벌만 보고 있고요. 들어줄 사람이 있어야지요. 미르와 세 번만 이야기를 나눠 주세요. 사례는 손님이 두고 간 회복약으로요.",
     requiredLevel: 11,
     target: { kind: "talk_to_npc", npcId: "saltmarsh_kid", count: 3 },
     reward: { gold: 220, fame: 11, exp: 280, potions: [{ id: "potion_heal_s", count: 5 }] },
@@ -1059,9 +1059,9 @@ export const QUESTS: Quest[] = [
     // 산호초 섬에 다섯 번 다녀와 어떻게 생겼는지 이야기해 달라는 어린애의 부탁.
     id: "saltmarsh-mireu-reef-tour",
     regionId: "saltmarsh",
-    title: "미르의 청 — 산호초 섬 한 바퀴",
+    title: "미르의 청: 산호초 섬 한 바퀴",
     description:
-      "해랑 아저씨는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서, 산호초 섬이 어떻게 생겼는지 다 말해 줘요 — 안개도, 사이렌 노래도, 가시 산호도. 산호초 섬 5회 방문.",
+      "해랑 아저씨는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서, 산호초 섬이 어떻게 생겼는지 다 말해 줘요. 안개도, 사이렌 노래도, 가시 산호도. 산호초 섬 5회 방문.",
     requiredLevel: 16,
     target: { kind: "visit_region", regionId: "reef_isle", count: 5 },
     reward: { gold: 280, fame: 13, exp: 460 },
@@ -1076,9 +1076,9 @@ export const QUESTS: Quest[] = [
     // 뱃사공이 "산호 가시쯤은 익숙해야 난바다를 건너지" 라고 말하는 결.
     id: "saltmarsh-haerang-coral-bear",
     regionId: "saltmarsh",
-    title: "해랑의 청 — 산호 가시 자루",
+    title: "해랑의 청: 산호 가시 자루",
     description:
-      "암초를 자주 건너는 사람은 산호 가시쯤은 손에 익숙해야 해. 산호 가시 단검 — 한 번이라도 차고 와 줘. 그래야 뱃삯도 깎아 주지.",
+      "암초를 자주 건너는 사람은 산호 가시쯤은 손에 익숙해야 해. 산호 가시 단검. 한 번이라도 차고 와 줘. 그래야 뱃삯도 깎아 주지.",
     requiredLevel: 16,
     target: { kind: "equip_item", itemId: "coral_spine_dagger" },
     reward: { gold: 260, fame: 12, exp: 420 },
@@ -1095,7 +1095,7 @@ export const QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "흠 없는 한 잠수",
     description:
-      "수심의 것을 한 번 가라앉혔다면 — 두 번째는 흠 없이 가져갈 수 있나? 소용돌이가 등을 핥기 전에. HP 70% 이상으로 수심의 것을 처치.",
+      "수심의 것을 한 번 가라앉혔다면. 두 번째는 흠 없이 가져갈 수 있나? 소용돌이가 등을 핥기 전에. HP 70% 이상으로 수심의 것을 처치.",
     requiredLevel: 18,
     target: {
       kind: "kill_within_hp",
@@ -1127,7 +1127,7 @@ export const QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "심연의 한 복",
     description:
-      "심연 칼날·사이렌 노래 망토·수심의 핵 — 셋을 한 복으로 갖춰 한 번이라도 차고 와 주게. 옛 잠수부 한 식구가 다시 선 모습을 보고 싶소.",
+      "심연 칼날·사이렌 노래 망토·수심의 핵. 셋을 한 복으로 갖춰 한 번이라도 차고 와 주게. 옛 잠수부 한 식구가 다시 선 모습을 보고 싶소.",
     requiredLevel: 18,
     target: {
       kind: "equip_set",
@@ -1220,7 +1220,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "운봉의 거인",
     description:
-      "이제 알겠네 — 산 깊은 곳에 잠들지 않는 것이 버티는 한, 이 산정은 평온할 수 없어. 운봉의 거인. 혼자선 어림없는 상대지. 동료를 모아 그놈을 잠재워 주게. 산정의 명운이 거기 달렸다네.",
+      "이제 알겠네. 산 깊은 곳에 잠들지 않는 것이 버티는 한, 이 산정은 평온할 수 없어. 운봉의 거인. 혼자선 어림없는 상대지. 동료를 모아 그놈을 잠재워 주게. 산정의 명운이 거기 달렸다네.",
     requiredLevel: 22,
     target: { kind: "kill", monsterName: "운봉의 거인", count: 1 },
     reward: { gold: 1800, fame: 60, exp: 4500, items: [{ id: "peak_heart", count: 1 }] },
@@ -1233,7 +1233,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "교역로 정리 ─ 협곡",
     description:
-      "거인이 잠든 지금이 기회야. 협곡 길에 절벽 늑대가 너무 많아 짐꾼들이 다니질 못해. 서른 마리만 솎아 주게 — 디올라와 다시 거래를 트려면 길부터 안전해야 하니.",
+      "거인이 잠든 지금이 기회야. 협곡 길에 절벽 늑대가 너무 많아 짐꾼들이 다니질 못해. 서른 마리만 솎아 주게. 디올라와 다시 거래를 트려면 길부터 안전해야 하니.",
     requiredLevel: 22,
     target: { kind: "kill", monsterName: "절벽 늑대", count: 30 },
     reward: { gold: 500, fame: 22, exp: 900, potionCapacityBonus: 1 },
@@ -1246,7 +1246,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "교역로 정리 ─ 산기슭",
     description:
-      "산기슭 비탈은 산양 떼가 바위를 굴려대서 위험하다네. 마흔 마리만 정리해 주게 — 그래야 아랫마을 짐수레가 비탈을 오를 수 있어.",
+      "산기슭 비탈은 산양 떼가 바위를 굴려대서 위험하다네. 마흔 마리만 정리해 주게. 그래야 아랫마을 짐수레가 비탈을 오를 수 있어.",
     requiredLevel: 22,
     target: { kind: "kill", monsterName: "산양", count: 40 },
     reward: { gold: 450, fame: 20, exp: 800 },
@@ -1273,7 +1273,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "운봉석을 벼리는 법",
     description:
-      "운봉석은 제대로 다룰 줄 아는 손이 드물어. 자네가 운봉석 여섯 덩이만 가져오면, 그걸로 시연을 보여줌세 — 거인 어깨 비늘로 견갑을 어떻게 짜는지. 보고 나면 자네 손에도 새겨질 거야.",
+      "운봉석은 제대로 다룰 줄 아는 손이 드물어. 자네가 운봉석 여섯 덩이만 가져오면, 그걸로 시연을 보여줌세. 거인 어깨 비늘로 견갑을 어떻게 짜는지. 보고 나면 자네 손에도 새겨질 거야.",
     requiredLevel: 22,
     target: { kind: "deliver", materialId: "unbong_ore", count: 6 },
     reward: { gold: 500, exp: 800, recipes: ["peak_mantle"], potionCapacityBonus: 1 },
@@ -1287,7 +1287,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "운봉 네 자루",
     description:
-      "견갑은 봤으니 이제 무기 차례야. 운봉석 여덟 덩이면 — 대검, 방벽, 장창, 발톱. 네 자루 전부 벼리는 법을 새겨 줌세. 손에 맞는 걸 골라 쓰게.",
+      "견갑은 봤으니 이제 무기 차례야. 운봉석 여덟 덩이면. 대검, 방벽, 장창, 발톱. 네 자루 전부 벼리는 법을 새겨 줌세. 손에 맞는 걸 골라 쓰게.",
     requiredLevel: 22,
     target: { kind: "deliver", materialId: "unbong_ore", count: 8 },
     reward: { gold: 800, exp: 1200, recipes: ["peak_sword", "peak_shield", "peak_spear", "peak_claw"] },
@@ -1330,7 +1330,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "산기슭의 바위 두꺼비",
     description:
-      "산기슭 바위 두꺼비, 그놈들 등껍데기가 길을 막아. 열다섯 마리만 치워 주면 짐꾼들 발이 좀 편해질 거야. — 가는 김에 협곡 무리장 늑대도 한 마리 봐 두면 굵은 송곳니가 나올 거야. 그게 나오면 단검 만드는 법도 함께 알려줄게.",
+      "산기슭 바위 두꺼비, 그놈들 등껍데기가 길을 막아. 열다섯 마리만 치워 주면 짐꾼들 발이 좀 편해질 거야.. 가는 김에 협곡 무리장 늑대도 한 마리 봐 두면 굵은 송곳니가 나올 거야. 그게 나오면 단검 만드는 법도 함께 알려줄게.",
     requiredLevel: 18,
     target: { kind: "kill", monsterName: "바위 두꺼비", count: 15 },
     reward: { gold: 360, fame: 18, exp: 600, recipes: ["wolfking_fang_dagger"] },
@@ -1390,7 +1390,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "순례자의 길",
     description:
-      "북쪽에서 온 순례자가 운저 평원을 지나 다시 떠난다네. 거기 떠돌이 약탈자 무리가 자리를 잡았다더군 — 열다섯만 손봐 주겠나? 순례자가 무사히 지나가게.",
+      "북쪽에서 온 순례자가 운저 평원을 지나 다시 떠난다네. 거기 떠돌이 약탈자 무리가 자리를 잡았다더군. 열다섯만 손봐 주겠나? 순례자가 무사히 지나가게.",
     requiredLevel: 22,
     target: { kind: "kill", monsterName: "떠돌이 약탈자", count: 15 },
     reward: { gold: 450, fame: 20, exp: 800 },
@@ -1405,7 +1405,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "디올라로 보내는 약초",
     description:
-      "디올라 여관 주인 노라한테 산정 약초를 좀 보내고 싶어요. 산초꽃 열 송이만 모아다 주시면 제가 부쳐 드릴게요 — 답례는 노라가 직접 챙겨 줄 거예요. 디올라 들르면 인사 한번 하시고요.",
+      "디올라 여관 주인 노라한테 산정 약초를 좀 보내고 싶어요. 산초꽃 열 송이만 모아다 주시면 제가 부쳐 드릴게요. 답례는 노라가 직접 챙겨 줄 거예요. 디올라 들르면 인사 한번 하시고요.",
     requiredLevel: 18,
     target: { kind: "deliver", materialId: "sancho_blossom", count: 10 },
     reward: { gold: 400, exp: 600, potions: [{ id: "potion_heal_s", count: 5 }], potionCapacityBonus: 1 },
@@ -1419,7 +1419,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "산정의 단단한 목재",
     description:
-      "시작 마을 나무꾼 지미가 산정 협곡의 목재 이야기를 하더라고. 그건 절벽 늑대 소굴 안쪽에 있어 — 열다섯 마리만 정리하면 안전하게 베어 와서 지미한테 부쳐 줄게.",
+      "시작 마을 나무꾼 지미가 산정 협곡의 목재 이야기를 하더라고. 그건 절벽 늑대 소굴 안쪽에 있어. 열다섯 마리만 정리하면 안전하게 베어 와서 지미한테 부쳐 줄게.",
     requiredLevel: 20,
     target: { kind: "kill", monsterName: "절벽 늑대", count: 15 },
     reward: { gold: 400, fame: 16, exp: 600, potionCapacityBonus: 1 },
@@ -1430,7 +1430,7 @@ export const QUESTS: Quest[] = [
   {
     id: "unhyang-board-goats",
     regionId: "unhyang",
-    title: "산기슭 — 산양 정리",
+    title: "산기슭: 산양 정리",
     description: "산기슭 비탈에 산양 떼가 다시 늘었습니다. 45마리를 정리해 주세요.",
     requiredLevel: 18,
     target: { kind: "kill", monsterName: "산양", count: 45 },
@@ -1440,7 +1440,7 @@ export const QUESTS: Quest[] = [
   {
     id: "unhyang-board-goats-large",
     regionId: "unhyang",
-    title: "산기슭 — 산양 대규모 정리",
+    title: "산기슭: 산양 대규모 정리",
     description: "산양 떼가 비탈 전체를 뒤덮었습니다. 80마리를 정리해 주세요.",
     requiredLevel: 19,
     target: { kind: "kill", monsterName: "산양", count: 80 },
@@ -1450,7 +1450,7 @@ export const QUESTS: Quest[] = [
   {
     id: "unhyang-board-stone-frogs",
     regionId: "unhyang",
-    title: "산기슭 — 바위 두꺼비 구제",
+    title: "산기슭: 바위 두꺼비 구제",
     description: "산기슭 길목을 바위 두꺼비가 메우고 있습니다. 40마리를 구제해 주세요.",
     requiredLevel: 18,
     target: { kind: "kill", monsterName: "바위 두꺼비", count: 40 },
@@ -1460,7 +1460,7 @@ export const QUESTS: Quest[] = [
   {
     id: "unhyang-board-cliff-wolves",
     regionId: "unhyang",
-    title: "협곡 — 절벽 늑대 사냥",
+    title: "협곡: 절벽 늑대 사냥",
     description: "협곡 길에 절벽 늑대가 떼를 이뤘습니다. 40마리를 사냥해 주세요.",
     requiredLevel: 20,
     target: { kind: "kill", monsterName: "절벽 늑대", count: 40 },
@@ -1470,7 +1470,7 @@ export const QUESTS: Quest[] = [
   {
     id: "unhyang-board-cliff-wolves-large",
     regionId: "unhyang",
-    title: "협곡 — 절벽 늑대 대규모 사냥",
+    title: "협곡: 절벽 늑대 대규모 사냥",
     description: "절벽 늑대가 협곡 전체를 장악했습니다. 75마리를 사냥해 주세요.",
     requiredLevel: 21,
     target: { kind: "kill", monsterName: "절벽 늑대", count: 75 },
@@ -1480,7 +1480,7 @@ export const QUESTS: Quest[] = [
   {
     id: "unhyang-board-windspirits",
     regionId: "unhyang",
-    title: "협곡 — 돌풍 정령 진정",
+    title: "협곡: 돌풍 정령 진정",
     description: "협곡에 돌풍 정령이 몰려 길이 위태롭습니다. 35체를 진정시켜 주세요.",
     requiredLevel: 20,
     target: { kind: "kill", monsterName: "돌풍 정령", count: 35 },
@@ -1490,7 +1490,7 @@ export const QUESTS: Quest[] = [
   {
     id: "unhyang-board-wolf-chieftain",
     regionId: "unhyang",
-    title: "협곡 — 무리장 솎아내기",
+    title: "협곡: 무리장 솎아내기",
     description:
       "협곡 무리장 늑대들의 패턴이 파악됐습니다. 6마리를 솎아내면 길목이 한결 안전해질 거요.",
     requiredLevel: 22,
@@ -1502,7 +1502,7 @@ export const QUESTS: Quest[] = [
   {
     id: "unhyang-board-grand-hunt",
     regionId: "unhyang",
-    title: "운봉 — 대규모 무리장 토벌",
+    title: "운봉: 대규모 무리장 토벌",
     description:
       "산정이 잠잠해진 지금이 기회입니다. 무리장 늑대 12마리를 토벌해 산정의 노래에 이름을 남기세요.",
     requiredLevel: 24,
@@ -1541,7 +1541,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-bison-cull",
     regionId: "unhyang",
-    title: "운저 평원 — 들소 정리",
+    title: "운저 평원: 들소 정리",
     description:
       "운저 평원 들소가 다시 떼를 이뤘습니다. 40마리를 정리해 주세요.",
     requiredLevel: 28,
@@ -1552,7 +1552,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-bison-large",
     regionId: "unhyang",
-    title: "운저 평원 — 들소 대규모 정리",
+    title: "운저 평원: 들소 대규모 정리",
     description: "들소가 평원 전체를 뒤덮었습니다. 75마리를 정리해 주세요.",
     requiredLevel: 29,
     target: { kind: "kill", monsterName: "들소", count: 75 },
@@ -1562,7 +1562,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-hawks",
     regionId: "unhyang",
-    title: "운저 평원 — 초원 매 사냥",
+    title: "운저 평원: 초원 매 사냥",
     description: "초원 매가 평원 짐수레를 노립니다. 35마리를 사냥해 주세요.",
     requiredLevel: 28,
     target: { kind: "kill", monsterName: "초원 매", count: 35 },
@@ -1572,7 +1572,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-raiders",
     regionId: "unhyang",
-    title: "운저 평원 — 약탈자 소탕",
+    title: "운저 평원: 약탈자 소탕",
     description: "떠돌이 약탈자가 평원 길목에 자리 잡았습니다. 30명을 소탕해 주세요.",
     requiredLevel: 28,
     target: { kind: "kill", monsterName: "떠돌이 약탈자", count: 30 },
@@ -1622,7 +1622,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-ash-hounds",
     regionId: "windvale",
-    title: "잿빛 협로 — 들개 사냥",
+    title: "잿빛 협로: 들개 사냥",
     description:
       "잿빛 협로에 잿빛 들개가 들끓고 있습니다. 35마리를 사냥해 주세요.",
     requiredLevel: 34,
@@ -1637,7 +1637,7 @@ export const QUESTS: Quest[] = [
     regionId: "windvale",
     title: "능선 너머의 불덩이",
     description:
-      "잿빛 협로를 지나 봉황령을 넘으면 화산 지대가 나와요. 거기 깊은 곳에 — 사람들이 화산의 심장이라 부르는 게 깨어났습니다. 그놈을 잠재워야 그 너머 천공 성지로 가는 길이 열려요. 부탁 좀 드릴게요.",
+      "잿빛 협로를 지나 봉황령을 넘으면 화산 지대가 나와요. 거기 깊은 곳에. 사람들이 화산의 심장이라 부르는 게 깨어났습니다. 그놈을 잠재워야 그 너머 천공 성지로 가는 길이 열려요. 부탁 좀 드릴게요.",
     requiredLevel: 55,
     target: { kind: "kill", monsterName: "화산의 심장", count: 1 },
     reward: { gold: 2500, fame: 60, exp: 4500 },
@@ -1650,7 +1650,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-lava-slimes",
     regionId: "skyreach",
-    title: "화산 지대 — 용암 슬라임 정화",
+    title: "화산 지대: 용암 슬라임 정화",
     description:
       "봉황령 너머 화산 지대에 용암 슬라임이 들끓는다는 소식이 들어왔습니다. 45마리를 정화해 주세요.",
     requiredLevel: 52,
@@ -1700,7 +1700,7 @@ export const QUESTS: Quest[] = [
     regionId: "skyreach",
     title: "봉인의 자물쇠",
     description:
-      "이 성지에는 화산의 심장 말고도 잠재워 둔 것이 있소. 그 봉인이 아래에서 올라오는 열기에 무뎌졌소 — 용암 핵 여섯 개면 자물쇠를 다시 채울 수 있소. 가져다 주면, 봉황 무구를 벼리는 법도 자네 손에 새겨 주리다.",
+      "이 성지에는 화산의 심장 말고도 잠재워 둔 것이 있소. 그 봉인이 아래에서 올라오는 열기에 무뎌졌소. 용암 핵 여섯 개면 자물쇠를 다시 채울 수 있소. 가져다 주면, 봉황 무구를 벼리는 법도 자네 손에 새겨 주리다.",
     requiredLevel: 55,
     target: { kind: "deliver", materialId: "lava_core", count: 6 },
     reward: { gold: 1200, exp: 2500, recipes: ["volcano_armor"] },
@@ -1738,7 +1738,7 @@ export const QUESTS: Quest[] = [
     regionId: "skyreach",
     title: "봉황 네 자루",
     description:
-      "봉인이 채워졌으니 — 이제 네 손에 무기를 쥐어 줄 차례요. 봉황 깃털 여덟 장이면, 봉황도·봉황패·봉황극·봉황조, 네 자루 전부 벼리는 법을 자네 손에 새겨 주리다. 손에 맞는 걸 골라 쓰시오.",
+      "봉인이 채워졌으니. 이제 네 손에 무기를 쥐어 줄 차례요. 봉황 깃털 여덟 장이면, 봉황도·봉황패·봉황극·봉황조, 네 자루 전부 벼리는 법을 자네 손에 새겨 주리다. 손에 맞는 걸 골라 쓰시오.",
     requiredLevel: 55,
     target: { kind: "deliver", materialId: "phoenix_feather", count: 8 },
     reward: { gold: 2500, exp: 3500, recipes: ["volcano_sword", "volcano_shield", "volcano_spear", "volcano_claw"] },
@@ -1835,7 +1835,7 @@ export const QUESTS: Quest[] = [
     regionId: "windvale",
     title: "잿돌 여덟 덩이",
     description:
-      "잿돌이 세공 받침에 그만이거든. 여덟 덩이만 모아다 줘 — 잿빛 협로 골렘이 가끔 떨군다더라.",
+      "잿돌이 세공 받침에 그만이거든. 여덟 덩이만 모아다 줘. 잿빛 협로 골렘이 가끔 떨군다더라.",
     requiredLevel: 34,
     target: { kind: "deliver", materialId: "ash_stone", count: 8 },
     reward: { gold: 550, exp: 700 },
@@ -1845,9 +1845,9 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-pathfinder-ridge-scout",
     regionId: "windvale",
-    title: "봉황령 첫 발 — 능선 정찰",
+    title: "봉황령 첫 발: 능선 정찰",
     description:
-      "잿빛 협로를 넘으면 봉황령이야. 거기 불꽃 독수리가 능선을 빙빙 돌아 — 열둘만 떨어뜨려 주면 첫 발 디딜 데가 생겨.",
+      "잿빛 협로를 넘으면 봉황령이야. 거기 불꽃 독수리가 능선을 빙빙 돌아. 열둘만 떨어뜨려 주면 첫 발 디딜 데가 생겨.",
     requiredLevel: 38,
     target: { kind: "kill", monsterName: "불꽃 독수리", count: 12 },
     reward: { gold: 750, fame: 24, exp: 1100 },
@@ -1862,7 +1862,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-ash-golems",
     regionId: "windvale",
-    title: "잿빛 협로 — 재먼지 골렘 정리",
+    title: "잿빛 협로: 재먼지 골렘 정리",
     description: "잿빛 협로를 재먼지 골렘이 메우고 있습니다. 30체를 정리해 주세요.",
     requiredLevel: 34,
     target: { kind: "kill", monsterName: "재먼지 골렘", count: 30 },
@@ -1872,7 +1872,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-ash-salamanders",
     regionId: "windvale",
-    title: "잿빛 협로 — 불씨 도롱뇽 진화",
+    title: "잿빛 협로: 불씨 도롱뇽 진화",
     description: "잿빛 협로에 불씨 도롱뇽이 들끓습니다. 35마리를 진화해 주세요.",
     requiredLevel: 34,
     target: { kind: "kill", monsterName: "불씨 도롱뇽", count: 35 },
@@ -1882,7 +1882,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-ash-golems-large",
     regionId: "windvale",
-    title: "잿빛 협로 — 재먼지 골렘 대규모 정리",
+    title: "잿빛 협로: 재먼지 골렘 대규모 정리",
     description: "재먼지 골렘이 협로 전체를 막았습니다. 60체를 정리해 주세요.",
     requiredLevel: 35,
     target: { kind: "kill", monsterName: "재먼지 골렘", count: 60 },
@@ -1892,7 +1892,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-ridge-eagles",
     regionId: "windvale",
-    title: "봉황령 입구 — 능선 길 확보",
+    title: "봉황령 입구: 능선 길 확보",
     description: "봉황령 능선에 불꽃 독수리가 들끓습니다. 30마리를 떨어뜨려 길을 확보해 주세요.",
     requiredLevel: 38,
     target: { kind: "kill", monsterName: "불꽃 독수리", count: 30 },
@@ -1903,7 +1903,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-volcano-toads",
     regionId: "skyreach",
-    title: "화산 입구 — 화산 두꺼비 구제",
+    title: "화산 입구: 화산 두꺼비 구제",
     description: "화산 지대 어귀에 화산 두꺼비가 들끓습니다. 30마리를 구제해 주세요.",
     requiredLevel: 52,
     target: { kind: "kill", monsterName: "화산 두꺼비", count: 30 },
@@ -1928,9 +1928,9 @@ export const QUESTS: Quest[] = [
   {
     id: "skyreach-guide-phoenix-eagles",
     regionId: "skyreach",
-    title: "봉황령 — 불꽃 독수리 솎아내기",
+    title: "봉황령: 불꽃 독수리 솎아내기",
     description:
-      "봉황령 능선에 불꽃 독수리가 너무 늘었어. 15마리만 떨어뜨려 줘 — 순찰대가 좀 숨통이 트일 거야.",
+      "봉황령 능선에 불꽃 독수리가 너무 늘었어. 15마리만 떨어뜨려 줘. 순찰대가 좀 숨통이 트일 거야.",
     requiredLevel: 40,
     target: { kind: "kill", monsterName: "불꽃 독수리", count: 15 },
     reward: { gold: 850, fame: 26, exp: 1300 },
@@ -1971,7 +1971,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-ridge-knights",
     regionId: "windvale",
-    title: "봉황령 — 산악 기사 정리",
+    title: "봉황령: 산악 기사 정리",
     description: "봉황령 능선에 산악 기사단이 길목을 점거했습니다. 30명을 정리해 능선 길을 트세요.",
     requiredLevel: 44,
     target: { kind: "kill", monsterName: "산악 기사", count: 30 },
@@ -1982,7 +1982,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-flame-lizards-large",
     regionId: "windvale",
-    title: "봉황령 — 화염 도마뱀 대청소",
+    title: "봉황령: 화염 도마뱀 대청소",
     description: "봉황령 바위틈마다 화염 도마뱀이 둥지를 텄습니다. 55마리를 정리해 주세요.",
     requiredLevel: 44,
     target: { kind: "kill", monsterName: "화염 도마뱀", count: 55 },
@@ -1993,7 +1993,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-ridge-eagles-large",
     regionId: "windvale",
-    title: "봉황령 — 불꽃 독수리 대규모 솎기",
+    title: "봉황령: 불꽃 독수리 대규모 솎기",
     description: "봉황령 능선을 불꽃 독수리 떼가 뒤덮었습니다. 60마리를 솎아내 하늘 길을 트세요.",
     requiredLevel: 46,
     target: { kind: "kill", monsterName: "불꽃 독수리", count: 60 },
@@ -2004,7 +2004,7 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-board-lava-foothills",
     regionId: "skyreach",
-    title: "화산 어귀 — 용암 슬라임 정찰",
+    title: "화산 어귀: 용암 슬라임 정찰",
     description: "봉황령을 넘으면 화산 지대 어귀다. 용암 슬라임 35마리를 정화해 첫 발 디딜 데를 만드세요.",
     requiredLevel: 48,
     target: { kind: "kill", monsterName: "용암 슬라임", count: 35 },
@@ -2016,9 +2016,9 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-pathfinder-deep-ridge",
     regionId: "windvale",
-    title: "봉황령 — 능선 더 깊은 곳",
+    title: "봉황령: 능선 더 깊은 곳",
     description:
-      "능선에 첫 발은 디뎠지. 근데 더 깊이 들어가니 산악 기사단이 진을 제대로 쳤더라. 스무 명만 치워 주면 그 너머로 가는 길이 보여 — 약 주머니 더 키워 줄게.",
+      "능선에 첫 발은 디뎠지. 근데 더 깊이 들어가니 산악 기사단이 진을 제대로 쳤더라. 스무 명만 치워 주면 그 너머로 가는 길이 보여. 약 주머니 더 키워 줄게.",
     requiredLevel: 46,
     target: { kind: "kill", monsterName: "산악 기사", count: 20 },
     reward: { gold: 950, exp: 2000, potionCapacityBonus: 1 },
@@ -2029,9 +2029,9 @@ export const QUESTS: Quest[] = [
   {
     id: "windvale-pathfinder-foothills",
     regionId: "windvale",
-    title: "화산 어귀 — 불꽃 골렘",
+    title: "화산 어귀: 불꽃 골렘",
     description:
-      "봉황령 능선을 넘으면 화산 지대 어귀야. 거기 불꽃 골렘이 어슬렁대 — 광물째 녹아내리는 놈들이라 까다롭지. 열둘만 부숴 주면 화산 지대로 들어서는 길이 트인다.",
+      "봉황령 능선을 넘으면 화산 지대 어귀야. 거기 불꽃 골렘이 어슬렁대. 광물째 녹아내리는 놈들이라 까다롭지. 열둘만 부숴 주면 화산 지대로 들어서는 길이 트인다.",
     requiredLevel: 50,
     target: { kind: "kill", monsterName: "불꽃 골렘", count: 12 },
     reward: { gold: 1100, fame: 28, exp: 2400 },
@@ -2042,7 +2042,7 @@ export const QUESTS: Quest[] = [
   {
     id: "unhyang-guide-ridge-storm",
     regionId: "unhyang",
-    title: "봉황령 — 화염 도마뱀 둥지",
+    title: "봉황령: 화염 도마뱀 둥지",
     description:
       "봉황령 바위틈에 화염 도마뱀이 또 둥지를 텄어. 열여덟만 정리해 주면 순례길이 한동안 트일 거야.",
     requiredLevel: 44,
@@ -2069,7 +2069,7 @@ export const QUESTS: Quest[] = [
   {
     id: "skyreach-volcanic-toads",
     regionId: "skyreach",
-    title: "화산 지대 순찰 — 화산 두꺼비",
+    title: "화산 지대 순찰: 화산 두꺼비",
     description: "화산 지대 웅덩이 가에 화산 두꺼비가 다시 들끓습니다. 30마리를 정리해 주세요.",
     requiredLevel: 52,
     target: { kind: "kill", monsterName: "화산 두꺼비", count: 30 },
@@ -2079,7 +2079,7 @@ export const QUESTS: Quest[] = [
   {
     id: "skyreach-lava-slimes-2",
     regionId: "skyreach",
-    title: "화산 지대 순찰 — 용암 슬라임",
+    title: "화산 지대 순찰: 용암 슬라임",
     description: "화산 지대에 용암 슬라임이 들끓습니다. 40마리를 정화해 주세요.",
     requiredLevel: 52,
     target: { kind: "kill", monsterName: "용암 슬라임", count: 40 },
@@ -2097,7 +2097,7 @@ export const QUESTS: Quest[] = [
     regionId: "village",
     title: "광맥의 수호자 ─ 사냥 기록",
     description:
-      "그놈을 열 번이나 잠재우면 동굴 안쪽이 한동안 조용하다고들 하더라고. 나야 무서워서 못 가지만 — 모험가 양반이라면 기록 한번 채워볼 만하지 않겠어?",
+      "그놈을 열 번이나 잠재우면 동굴 안쪽이 한동안 조용하다고들 하더라고. 나야 무서워서 못 가지만. 모험가 양반이라면 기록 한번 채워볼 만하지 않겠어?",
     requiredLevel: 6,
     target: { kind: "kill", monsterName: "광맥의 수호자", count: 10 },
     reward: { gold: 1500, fame: 30, exp: 1800 },
@@ -2125,7 +2125,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "산정 검결의 잔편",
     description:
-      "산정의 노래에 자네 이름이 새겨졌으니, 이제 옛 검결의 잔편을 자네에게 넘길 때가 됐어. 봉황 깃털 다섯 — 진짜 불을 머금은 깃이라야 검결을 새길 수 있어. 가져와 주게.",
+      "산정의 노래에 자네 이름이 새겨졌으니, 이제 옛 검결의 잔편을 자네에게 넘길 때가 됐어. 봉황 깃털 다섯. 진짜 불을 머금은 깃이라야 검결을 새길 수 있어. 가져와 주게.",
     requiredLevel: 30,
     target: { kind: "deliver", materialId: "phoenix_feather", count: 5 },
     reward: { fame: 50, skillBooks: ["book_heaven_slay"] },
@@ -2141,7 +2141,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "구름 위의 결",
     description:
-      "산정의 바람은 한 자루 결로 옮길 수 있다 — 옛말이지. 돌풍 정령 열을 잠재워 보게. 자네 검에 그 결이 옮겨질 거야.",
+      "산정의 바람은 한 자루 결로 옮길 수 있다. 옛말이지. 돌풍 정령 열을 잠재워 보게. 자네 검에 그 결이 옮겨질 거야.",
     requiredLevel: 30,
     target: { kind: "kill", monsterName: "돌풍 정령", count: 10 },
     reward: { fame: 50, skillBooks: ["book_storm_strike"] },
@@ -2157,7 +2157,7 @@ export const QUESTS: Quest[] = [
     regionId: "windvale",
     title: "한 호흡의 결",
     description:
-      "노래는 한 호흡으로 끝나야 결이 잡혀. 봉황 깃털 세 개만 가져다 줘 — 그걸로 한 호흡의 결을 자네 검에 옮겨 줄게.",
+      "노래는 한 호흡으로 끝나야 결이 잡혀. 봉황 깃털 세 개만 가져다 줘. 그걸로 한 호흡의 결을 자네 검에 옮겨 줄게.",
     requiredLevel: 25,
     target: { kind: "deliver", materialId: "phoenix_feather", count: 3 },
     reward: { fame: 40, skillBooks: ["book_focused_breath"] },
@@ -2171,7 +2171,7 @@ export const QUESTS: Quest[] = [
     regionId: "diola",
     title: "닿기 전의 결",
     description:
-      "노랫소리에 만져지기 전에 — 그게 결이에요. 요정 가루 열 점만 모아 주시면, 새벽 그물에 비친 잔상의 결을 자네 검에 옮겨 줄게요.",
+      "노랫소리에 만져지기 전에. 그게 결이에요. 요정 가루 열 점만 모아 주시면, 새벽 그물에 비친 잔상의 결을 자네 검에 옮겨 줄게요.",
     requiredLevel: 12,
     target: { kind: "deliver", materialId: "fairy_dust", count: 10 },
     reward: { fame: 35, skillBooks: ["book_afterimage"] },
@@ -2185,7 +2185,7 @@ export const QUESTS: Quest[] = [
     regionId: "skyreach",
     title: "화산의 심장 ─ 사냥 기록",
     description:
-      "그것을 열 번이나 잠재운 자가 있었다는 옛 기록이 성지에 남아 있어. 솜씨가 있다면 — 자네가 그 기록을 다시 써 보겠어?",
+      "그것을 열 번이나 잠재운 자가 있었다는 옛 기록이 성지에 남아 있어. 솜씨가 있다면. 자네가 그 기록을 다시 써 보겠어?",
     requiredLevel: 55,
     target: { kind: "kill", monsterName: "화산의 심장", count: 10 },
     reward: { gold: 3500, fame: 50, exp: 6000 },
@@ -2198,7 +2198,7 @@ export const QUESTS: Quest[] = [
     regionId: "skyreach",
     title: "심장에서 나온 것",
     description:
-      "화산의 심장을 잠재울 때마다 떨어지는 것들 — 용암 핵. 그걸로 봉인 보강제를 만들어 봐야겠어. 열 개만 모아다 줘.",
+      "화산의 심장을 잠재울 때마다 떨어지는 것들. 용암 핵. 그걸로 봉인 보강제를 만들어 봐야겠어. 열 개만 모아다 줘.",
     requiredLevel: 55,
     target: { kind: "deliver", materialId: "lava_core", count: 10 },
     reward: { gold: 2000, exp: 3500, potionCapacityBonus: 1 },
@@ -2229,7 +2229,7 @@ export const QUESTS: Quest[] = [
     regionId: "village",
     title: "광맥의 끝",
     description:
-      "광맥의 수호자를 그렇게 여러 번 잠재웠으면, 동굴 안쪽 더 깊은 데서 마정석이 진하게 고였을 거다. 스무 덩이만 가져와 봐 — 광맥의 끝이 어디까지 뻗었는지, 그걸로 가늠해 보자.",
+      "광맥의 수호자를 그렇게 여러 번 잠재웠으면, 동굴 안쪽 더 깊은 데서 마정석이 진하게 고였을 거다. 스무 덩이만 가져와 봐. 광맥의 끝이 어디까지 뻗었는지, 그걸로 가늠해 보자.",
     requiredLevel: 6,
     target: { kind: "deliver", materialId: "mana_crystal", count: 20 },
     reward: { gold: 1200, exp: 1800, potionCapacityBonus: 1 },
@@ -2243,7 +2243,7 @@ export const QUESTS: Quest[] = [
     regionId: "village",
     title: "마저 두드린 것",
     description:
-      "옛날에 만월이랑 무기 하나를 절반씩 만들다 싸우고 헤어졌지. 둘 다 다시 만났으니… 마저 완성해 볼까 싶어. 단단한 결정 여덟 덩이만 가져와 봐. 완성되면 — 그 검은 자네 거야.",
+      "옛날에 만월이랑 무기 하나를 절반씩 만들다 싸우고 헤어졌지. 둘 다 다시 만났으니… 마저 완성해 볼까 싶어. 단단한 결정 여덟 덩이만 가져와 봐. 완성되면. 그 검은 자네 거야.",
     requiredLevel: 22,
     target: { kind: "deliver", materialId: "hard_crystal", count: 8 },
     reward: { gold: 1500, exp: 2500, items: [{ id: "moonlight_blade", count: 1 }] },
@@ -2256,7 +2256,7 @@ export const QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "거인은 어디서 왔나",
     description:
-      "거인이 어디서 왔는지 알고 싶나? …협곡 가장 깊은 곳, 돌풍 정령이 모이는 자리를 봐라. 예순쯤 흩어 놓으면 그 자리가 드러난다. 그 다음은 — 내가 본 것을 말해주지.",
+      "거인이 어디서 왔는지 알고 싶나? …협곡 가장 깊은 곳, 돌풍 정령이 모이는 자리를 봐라. 예순쯤 흩어 놓으면 그 자리가 드러난다. 그 다음은. 내가 본 것을 말해주지.",
     requiredLevel: 22,
     target: { kind: "kill", monsterName: "돌풍 정령", count: 60 },
     reward: { gold: 1200, fame: 20, exp: 2000 },
@@ -2270,7 +2270,7 @@ export const QUESTS: Quest[] = [
     regionId: "skyreach",
     title: "심장이 잠든 자리",
     description:
-      "심장이 잠든 자리에 정수가 고였더군 — 화산 두꺼비를 충분히 잡으면 그 정수가 흘러나올 거야. 마흔 마리쯤이면 돼. 그걸로 — 용암 정수를 다듬어 줄게. 자네 몫이야.",
+      "심장이 잠든 자리에 정수가 고였더군. 화산 두꺼비를 충분히 잡으면 그 정수가 흘러나올 거야. 마흔 마리쯤이면 돼. 그걸로. 용암 정수를 다듬어 줄게. 자네 몫이야.",
     requiredLevel: 55,
     target: { kind: "kill", monsterName: "화산 두꺼비", count: 40 },
     reward: { gold: 1500, exp: 2500, items: [{ id: "lava_essence", count: 1 }] },
@@ -2290,7 +2290,7 @@ export const QUESTS: Quest[] = [
     regionId: "cloud_plain",
     title: "순례자의 자취 ─ 풀밭의 매듭",
     description:
-      "풀밭 한가운데 돌무지 위에 낯선 매듭이 묶여 있다. 순례자가 묶은 거다 — 옆에는 떠돌이 약탈자들의 야영지. 길을 트지 않으면 다음 표식을 찾을 수 없다. 열 명만 정리하자.",
+      "풀밭 한가운데 돌무지 위에 낯선 매듭이 묶여 있다. 순례자가 묶은 거다. 옆에는 떠돌이 약탈자들의 야영지. 길을 트지 않으면 다음 표식을 찾을 수 없다. 열 명만 정리하자.",
     requiredLevel: 22,
     target: { kind: "kill", monsterName: "떠돌이 약탈자", count: 10 },
     reward: { gold: 600, fame: 12, exp: 900 },
@@ -2302,7 +2302,7 @@ export const QUESTS: Quest[] = [
     regionId: "ashen_pass",
     title: "순례자의 자취 ─ 잿더미의 매듭",
     description:
-      "잿더미에 반쯤 묻힌 같은 매듭. 옆에 식은 모닥불 자리, 그 둘레에 잿돌이 흩어져 있다. 다섯 덩이를 주워 표식 위에 올려놓으면 — 잿가루 사이로 순례자가 간 방향이 드러난다.",
+      "잿더미에 반쯤 묻힌 같은 매듭. 옆에 식은 모닥불 자리, 그 둘레에 잿돌이 흩어져 있다. 다섯 덩이를 주워 표식 위에 올려놓으면. 잿가루 사이로 순례자가 간 방향이 드러난다.",
     requiredLevel: 34,
     target: { kind: "deliver", materialId: "ash_stone", count: 5 },
     reward: { gold: 800, fame: 14, exp: 1200 },
@@ -2314,7 +2314,7 @@ export const QUESTS: Quest[] = [
     regionId: "phoenix_ridge",
     title: "순례자의 자취 ─ 능선의 매듭",
     description:
-      "능선 바위에 새겨진 매듭 문양 — 디올라 후드 손님이 준 표식과 같은 모양이다. 순례자가 산악 기사들에게 길을 막혔던 듯. 열둘만 정리하면 능선 너머로 가는 자취가 이어진다.",
+      "능선 바위에 새겨진 매듭 문양. 디올라 후드 손님이 준 표식과 같은 모양이다. 순례자가 산악 기사들에게 길을 막혔던 듯. 열둘만 정리하면 능선 너머로 가는 자취가 이어진다.",
     requiredLevel: 38,
     target: { kind: "kill", monsterName: "산악 기사", count: 12 },
     reward: { gold: 1000, fame: 18, exp: 1500 },
@@ -2386,7 +2386,7 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-throne-guards",
     regionId: "throne_road",
-    title: "옥좌의 길목 — 황성의 길",
+    title: "옥좌의 길목: 황성의 길",
     description:
       "옥좌의 길에서 황성 호위병들이 길을 막고 있다. 열다섯만 정리해 길을 열면 황성 무구 다섯 자루 벼림법을 모두 넘겨준다. 별바다가 줄 수 있는 마지막 선물.",
     requiredLevel: 85,
@@ -2428,9 +2428,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-keeper-challenge-witness",
     regionId: "starspire",
-    title: "별을 지키는 자 — 별빛의 증인",
+    title: "별을 지키는 자: 별빛의 증인",
     description:
-      "별을 지키는 자 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 별빛이 자네를 한 번 깊이 알아본다면 — 그 기억은 평생 간다.",
+      "별을 지키는 자 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 별빛이 자네를 한 번 깊이 알아본다면. 그 기억은 평생 간다.",
     requiredLevel: 70,
     target: {
       kind: "coop_tier_reached",
@@ -2446,9 +2446,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-keeper-challenge-strike",
     regionId: "starspire",
-    title: "별을 지키는 자 — 별빛 한 줄기",
+    title: "별을 지키는 자: 별빛 한 줄기",
     description:
-      "별을 지키는 자에게 단 한 번의 일격으로 2,000 의 상처를 — 세 번 새기시오. 한 번에 깊이 가르는 자에게만 보이는 자리가 있다.",
+      "별을 지키는 자에게 단 한 번의 일격으로 2,000 의 상처를. 세 번 새기시오. 한 번에 깊이 가르는 자에게만 보이는 자리가 있다.",
     requiredLevel: 70,
     target: {
       kind: "coop_high_dmg_attack",
@@ -2464,9 +2464,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-keeper-challenge-survive",
     regionId: "starspire",
-    title: "별을 지키는 자 — 흔들리지 않는 자세",
+    title: "별을 지키는 자: 흔들리지 않는 자세",
     description:
-      "별을 지키는 자 앞에서 다섯 번을 — 단 한 번도 쓰러지지 않고 마치시오. 흔들리지 않는 자세가 별빛에 새겨질 때까지.",
+      "별을 지키는 자 앞에서 다섯 번을. 단 한 번도 쓰러지지 않고 마치시오. 흔들리지 않는 자세가 별빛에 새겨질 때까지.",
     requiredLevel: 70,
     target: {
       kind: "coop_survive_attack",
@@ -2482,7 +2482,7 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-king-challenge-witness",
     regionId: "skyfolk_ruins",
-    title: "천공인의 왕 — 폐도의 증인",
+    title: "천공인의 왕: 폐도의 증인",
     description:
       "천공인의 왕 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 폐도가 자네를 알아보는 첫 표식이다.",
     requiredLevel: 80,
@@ -2500,9 +2500,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-king-challenge-strike",
     regionId: "skyfolk_ruins",
-    title: "천공인의 왕 — 폐도의 일격",
+    title: "천공인의 왕: 폐도의 일격",
     description:
-      "천공인의 왕에게 단 한 번의 일격으로 3,000 의 상처를 — 세 번 새기시오. 폐도가 한 자루 칼에도 흔들리는 순간이 있다.",
+      "천공인의 왕에게 단 한 번의 일격으로 3,000 의 상처를. 세 번 새기시오. 폐도가 한 자루 칼에도 흔들리는 순간이 있다.",
     requiredLevel: 80,
     target: {
       kind: "coop_high_dmg_attack",
@@ -2518,9 +2518,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-king-challenge-survive",
     regionId: "skyfolk_ruins",
-    title: "천공인의 왕 — 폐도를 견디는 자",
+    title: "천공인의 왕: 폐도를 견디는 자",
     description:
-      "천공인의 왕 앞에서 다섯 번을 — 단 한 번도 쓰러지지 않고 마치시오. 폐도는 견디는 자만이 풀어낼 수 있다.",
+      "천공인의 왕 앞에서 다섯 번을. 단 한 번도 쓰러지지 않고 마치시오. 폐도는 견디는 자만이 풀어낼 수 있다.",
     requiredLevel: 80,
     target: {
       kind: "coop_survive_attack",
@@ -2536,7 +2536,7 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-arbiter-challenge-witness",
     regionId: "apex_throne",
-    title: "창공의 주재 — 옥좌의 증인",
+    title: "창공의 주재: 옥좌의 증인",
     description:
       "창공의 주재 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 옥좌가 자네를 처음으로 깊이 인정하는 표식이다.",
     requiredLevel: 90,
@@ -2554,9 +2554,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-arbiter-challenge-strike",
     regionId: "apex_throne",
-    title: "창공의 주재 — 옥좌의 일격",
+    title: "창공의 주재: 옥좌의 일격",
     description:
-      "창공의 주재에게 단 한 번의 일격으로 4,500 의 상처를 — 세 번 새기시오. 옥좌도 한 자루 칼에 흔들리는 순간이 있다 들었소.",
+      "창공의 주재에게 단 한 번의 일격으로 4,500 의 상처를. 세 번 새기시오. 옥좌도 한 자루 칼에 흔들리는 순간이 있다 들었소.",
     requiredLevel: 90,
     target: {
       kind: "coop_high_dmg_attack",
@@ -2572,9 +2572,9 @@ export const QUESTS: Quest[] = [
   {
     id: "star-haven-arbiter-challenge-survive",
     regionId: "apex_throne",
-    title: "창공의 주재 — 옥좌를 견디는 자",
+    title: "창공의 주재: 옥좌를 견디는 자",
     description:
-      "창공의 주재 앞에서 다섯 번을 — 단 한 번도 쓰러지지 않고 마치시오. 옥좌를 견디는 자만이 별빛의 끝을 본다.",
+      "창공의 주재 앞에서 다섯 번을. 단 한 번도 쓰러지지 않고 마치시오. 옥좌를 견디는 자만이 별빛의 끝을 본다.",
     requiredLevel: 90,
     target: {
       kind: "coop_survive_attack",
@@ -2624,7 +2624,7 @@ export const QUESTS: Quest[] = [
     regionId: "village",
     title: "별빛 광맥의 깊이",
     description:
-      "광맥의 수호자가 별빛에 데워져 다시 깨어났다는 말 — 자네가 봤다지. 사람들은 안 믿어. 다섯 번이면 — 다섯 번을 거두어 와 주면, 노친네가 옛 광맥 호흡법 한 자락을 자네 결에 옮겨 둘 테니까.",
+      "광맥의 수호자가 별빛에 데워져 다시 깨어났다는 말. 자네가 봤다지. 사람들은 안 믿어. 다섯 번이면. 다섯 번을 거두어 와 주면, 노친네가 옛 광맥 호흡법 한 자락을 자네 결에 옮겨 둘 테니까.",
     requiredLevel: 100,
     target: { kind: "kill", monsterName: "별빛 광맥 수호자", count: 5 },
     reward: { gold: 3000, fame: 40, exp: 4000, skillBooks: ["book_lifesteal"] },

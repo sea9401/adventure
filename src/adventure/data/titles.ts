@@ -85,61 +85,61 @@ export const TITLES: Record<TitleId, Title> = {
     id: "mountain_friend",
     name: "산정의 벗",
     description: "잠들지 않던 것을 잠재우고, 구름 위 마을의 숨을 되돌린 자.",
-    condition: "운향 — 노촌장 백운의 '운봉의 거인' 의뢰 완수",
+    condition: "운향: 노촌장 백운의 '운봉의 거인' 의뢰 완수",
   },
   saltmarsh_friend: {
     id: "saltmarsh_friend",
     name: "소만의 식구",
     description: "암초 밑에서 뒤척이던 것을 가라앉히고, 마른 그물을 다시 채운 자.",
-    condition: "소만 — 원로 여울의 '수심의 것' 의뢰 완수",
+    condition: "소만: 원로 여울의 '수심의 것' 의뢰 완수",
   },
   dustford_friend: {
     id: "dustford_friend",
     name: "마른나루의 식구",
     description: "한 세대 동안 빈 벽을 지키던 옛 성문지기를 잠재우고, 메마른 포구가 성채를 되찾게 한 자.",
-    condition: "마른나루 — 옛 수비대장 무진의 '옛 성문지기' 의뢰 완수",
+    condition: "마른나루: 옛 수비대장 무진의 '옛 성문지기' 의뢰 완수",
   },
   pristine_warden: {
     id: "pristine_warden",
     name: "흠 없는 수문장",
     description: "빗장 한 번 닿지 않고 옛 성문지기를 잠재운 자. 옛 수비대도 그렇게 했다 한다.",
-    condition: "마른나루 — 무진의 '흠 없는 한 수' 의뢰 완수 (HP 70% 이상 유지하며 처치)",
+    condition: "마른나루: 무진의 '흠 없는 한 수' 의뢰 완수 (HP 70% 이상 유지하며 처치)",
   },
   bare_hands_warden: {
     id: "bare_hands_warden",
     name: "맨몸의 수문장",
     description: "약 주머니에 손도 대지 않고 옛 성문지기를 잠재운 자. 가진 것만으로 한 식구가 된다.",
-    condition: "마른나루 — 무진의 '맨몸의 한 수' 의뢰 완수 (포션 사용 없이 처치)",
+    condition: "마른나루: 무진의 '맨몸의 한 수' 의뢰 완수 (포션 사용 없이 처치)",
   },
   last_garrison: {
     id: "last_garrison",
     name: "마지막 수비대",
     description: "수비대 도검·사슬갑옷·성문지기의 핵을 한 복으로 갖춘 자. 한 세대 뒤에 옛 수비대가 다시 섰다.",
-    condition: "마른나루 — 무진의 '수비대 한 복' 의뢰 완수",
+    condition: "마른나루: 무진의 '수비대 한 복' 의뢰 완수",
   },
   pristine_diver: {
     id: "pristine_diver",
     name: "흠 없는 잠수부",
     description: "소용돌이가 등을 핥기 전에 수심의 것을 가라앉힌 자. 옛 잠수부도 그렇게 들어갔다 한다.",
-    condition: "소만 — 여울의 '흠 없는 한 잠수' 의뢰 완수 (HP 70% 이상 유지하며 처치)",
+    condition: "소만: 여울의 '흠 없는 한 잠수' 의뢰 완수 (HP 70% 이상 유지하며 처치)",
   },
   dry_diver: {
     id: "dry_diver",
     name: "마른 잠수부",
     description: "약 주머니에 손도 대지 않고 수심의 것을 가라앉힌 자. 가진 숨만으로 깊이를 견딘다.",
-    condition: "소만 — 여울의 '마른 한 잠수' 의뢰 완수 (포션 사용 없이 처치)",
+    condition: "소만: 여울의 '마른 한 잠수' 의뢰 완수 (포션 사용 없이 처치)",
   },
   abyssal_envoy: {
     id: "abyssal_envoy",
     name: "심연의 사절",
     description: "심연 칼날·사이렌 노래 망토·수심의 핵을 한 복으로 갖춘 자. 한 세대 뒤에 옛 잠수부가 다시 섰다.",
-    condition: "소만 — 여울의 '심연의 한 복' 의뢰 완수",
+    condition: "소만: 여울의 '심연의 한 복' 의뢰 완수",
   },
   ridge_crosser: {
     id: "ridge_crosser",
     name: "능선을 넘은 자",
     description: "화염 능선을 넘어 천공 성지의 마지막 봉인을 다시 채운 자.",
-    condition: "천공 성지 — 원로 해무의 봉인 라인('마지막 자물쇠') 완수",
+    condition: "천공 성지: 원로 해무의 봉인 라인('마지막 자물쇠') 완수",
   },
   herbalists_courier: {
     id: "herbalists_courier",
@@ -150,7 +150,7 @@ export const TITLES: Record<TitleId, Title> = {
   boss_hunter: {
     id: "boss_hunter",
     name: "보스 사냥꾼",
-    description: "광맥의 수호자, 운봉의 거인, 화산의 심장 — 세 거대한 것을 각각 열 번 잠재운 자.",
+    description: "광맥의 수호자, 운봉의 거인, 화산의 심장. 세 거대한 것을 각각 열 번 잠재운 자.",
     condition: "세 보스 누적 사냥 의뢰(지미·백운·검) 모두 완수",
   },
   caravan_warden: {
@@ -259,20 +259,20 @@ export const TITLES: Record<TitleId, Title> = {
   starlit_quietener: {
     id: "starlit_quietener",
     name: "별빛을 가라앉힌 자",
-    description: "잔영 셋의 결을 모두 자기 손으로 가라앉힌 자. 흩어졌던 별빛이 한 자리에 모이는 자리에서 — 자기 결 위에 가지런히 가라앉는다.",
+    description: "잔영 셋의 결을 모두 자기 손으로 가라앉힌 자. 흩어졌던 별빛이 한 자리에 모이는 자리에서. 자기 결 위에 가지런히 가라앉는다.",
     condition: "거인 잔영·수심의 메아리·성문지기 잔영 셋 모두 협동 legend 티어 처치",
   },
   apex_sealer: {
     id: "apex_sealer",
     name: "옥좌의 봉인자",
     description: "옥좌 위에 흩어진 빛을 다시 옥좌에 돌려놓은 자. 별빛이 다시 묶이고, 세상이 사람의 자리로 돌아왔다.",
-    condition: "창공의 주재 처치 후 별바다 노수호자 유성 앞에서 — 옥좌를 다시 봉인한다.",
+    condition: "창공의 주재 처치 후 별바다 노수호자 유성 앞에서: 옥좌를 다시 봉인한다.",
   },
   apex_inheritor: {
     id: "apex_inheritor",
     name: "새로운 옥좌의 주재",
     description: "옥좌에 앉은 자. 별빛이 다음 주재를 받아 갔다. 이제 부르는 자는 그 자신이다.",
-    condition: "창공의 주재 처치 후 별바다 노수호자 유성 앞에서 — 옥좌에 앉는다.",
+    condition: "창공의 주재 처치 후 별바다 노수호자 유성 앞에서: 옥좌에 앉는다.",
   },
   primordial_slayer: {
     id: "primordial_slayer",
@@ -502,25 +502,25 @@ export const TITLES: Record<TitleId, Title> = {
   tower_weekly_top_5: {
     id: "tower_weekly_top_5",
     name: "고탑의 정상권",
-    description: "한 주의 고탑 상위 5% — 끝까지 올라가 본 자만 아는 풍경.",
+    description: "한 주의 고탑 상위 5%. 끝까지 올라가 본 자만 아는 풍경.",
     condition: "주간 고탑 최고층 상위 5% (F30 이상 자격)",
   },
   tower_weekly_top_10: {
     id: "tower_weekly_top_10",
     name: "고탑의 상위",
-    description: "한 주의 고탑 상위 10% — 꾸준히 위를 본 자.",
+    description: "한 주의 고탑 상위 10%. 꾸준히 위를 본 자.",
     condition: "주간 고탑 최고층 상위 10% (F30 이상 자격)",
   },
   tower_weekly_top_25: {
     id: "tower_weekly_top_25",
     name: "고탑의 도전자",
-    description: "한 주의 고탑 상위 25% — 몸을 사리지 않은 도전.",
+    description: "한 주의 고탑 상위 25%. 몸을 사리지 않은 도전.",
     condition: "주간 고탑 최고층 상위 25% (F30 이상 자격)",
   },
   tower_weekly_top_50: {
     id: "tower_weekly_top_50",
     name: "고탑의 등반가",
-    description: "한 주의 고탑 상위 절반 — 그 주의 절반보다는 앞에 섰다.",
+    description: "한 주의 고탑 상위 절반. 그 주의 절반보다는 앞에 섰다.",
     condition: "주간 고탑 최고층 상위 50% (F30 이상 자격)",
   },
   // 고탑 도전 모드 — F50 보스 클리어 단일 칭호. 1.5× 고정 스케일링, 매번 F1 부터, 칭호만 보상.
@@ -528,7 +528,7 @@ export const TITLES: Record<TitleId, Title> = {
     id: "tower_challenge_f50",
     name: "고탑의 도전자",
     description:
-      "1.5배의 무게가 얹힌 고탑을, 발판도 없이 50층까지 올라간 자. 같은 자리에서 다시 시작해 끝내 그 층의 보스 앞에 섰고 — 잠재웠다.",
+      "1.5배의 무게가 얹힌 고탑을, 발판도 없이 50층까지 올라간 자. 같은 자리에서 다시 시작해 끝내 그 층의 보스 앞에 섰고. 잠재웠다.",
     condition: "도전 모드 고탑 F50 보스 클리어",
   },
   // ── 5막 「빈 옥좌의 시대」 종착 칭호 ───────────────────────────────────────
@@ -537,7 +537,7 @@ export const TITLES: Record<TitleId, Title> = {
     name: "별빛을 놓은 자",
     description:
       "옛 봉인 자리에 떨어진 별빛 셋을 거두어, 누구의 것도 아닌 자리에 놓아 준 자. 옥좌의 환영을 자기 손에서 풀어 주었고, 별바다의 노수호자가 마지막 한 잔을 따라 준 자리에 그를 두고 떠났다.",
-    condition: "Ch 30 「별을 놓는 자」 완료 — 5막 종착 의식",
+    condition: "Ch 30 「별을 놓는 자」 완료: 5막 종착 의식",
   },
 };
 

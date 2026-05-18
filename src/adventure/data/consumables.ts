@@ -18,7 +18,7 @@ export const CONSUMABLES: Record<ConsumableId, Consumable> = {
     id: "scroll_town_return",
     name: "마을 귀환 주문서",
     description:
-      "찢어 펼치면 길이 열린다 — 가본 적 있는 마을 한 곳으로 즉시 이동.",
+      "찢어 펼치면 길이 열린다. 가본 적 있는 마을 한 곳으로 즉시 이동.",
     price: 3,
     effect: { kind: "town_return" },
   },
