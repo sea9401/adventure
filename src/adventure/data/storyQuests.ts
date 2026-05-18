@@ -46,7 +46,7 @@ export const STORY_QUESTS = {
     id: "pilgrim_beyond_north",
     title: "북쪽 너머",
     description:
-      "북쪽에서 왔다는 순례자. 화산의 심장을 잠재우고, 천공 성지의 봉인까지 완성하면 — 그가 자기가 온 곳을 한 겹씩 열어 보인다.",
+      "북쪽에서 왔다는 순례자. 화산의 심장을 잠재우고, 천공 성지의 봉인까지 완성하면. 그가 자기가 온 곳을 한 겹씩 열어 보인다.",
     giverNpcId: "unhyang_pilgrim",
   },
   // 히든 — 유실품을 모으는 자의 옛 노래(§11). 바람골 음유시인이 인벤을 보고 행운을 점친다.
@@ -55,7 +55,7 @@ export const STORY_QUESTS = {
     id: "hidden_lucky_collector",
     title: "운 좋은 손",
     description:
-      "바람골 음유시인이 부르는 옛 노래 — 유실된 명품을 둘 이상 그러모은 자에게 행운이 따라붙는다고.",
+      "바람골 음유시인이 부르는 옛 노래. 유실된 명품을 둘 이상 그러모은 자에게 행운이 따라붙는다고.",
     giverNpcId: "windvale_bard",
   },
   // 히든 — 후드 손님 ↔ 순례자의 표식(§11). 두 미스터리 NPC 가 같은 조직임이 드러난다.
@@ -64,7 +64,7 @@ export const STORY_QUESTS = {
     id: "hidden_hooded_cipher",
     title: "표식",
     description:
-      "디올라 후드 손님이 건넨 표식을, 운향 순례자에게 보여주면 — 같은 손이 그은 것임을 둘 다 안다.",
+      "디올라 후드 손님이 건넨 표식을, 운향 순례자에게 보여주면. 같은 손이 그은 것임을 둘 다 안다.",
     giverNpcId: "diola_stranger",
   },
   // 히든 — 순례자의 자취(§11.1). 운향 메인 완료 후, 순례자가 운저 평원→잿빛 협로→봉황령에 남긴
@@ -74,7 +74,7 @@ export const STORY_QUESTS = {
     id: "hidden_pilgrim_trail",
     title: "순례자의 자취",
     description:
-      "운향을 떠난 순례자가 길마다 남긴 매듭 표식 — 운저 평원, 잿빛 협로, 봉황령을 거쳐 천공 성지까지. 끝까지 따라가면 그가 처음으로 '북쪽 너머'를 말한다.",
+      "운향을 떠난 순례자가 길마다 남긴 매듭 표식. 운저 평원, 잿빛 협로, 봉황령을 거쳐 천공 성지까지. 끝까지 따라가면 그가 처음으로 '북쪽 너머'를 말한다.",
     giverNpcId: "unhyang_pilgrim",
   },
   // 부러진 영웅검 복원 — 폐허 늑대 드랍 unique `hero_broken_sword` 윗동강을 운향 만월이
@@ -86,7 +86,7 @@ export const STORY_QUESTS = {
     id: "hero_sword_restoration",
     title: "부러진 영웅검",
     description:
-      "폐허에서 주운 부러진 영웅검의 윗동강. 산정의 대장장이 만월이라면 — 운봉석으로 검신을 잇고, 날밑을 새로 둘러 한 자루로 되살릴 수 있을지도.",
+      "폐허에서 주운 부러진 영웅검의 윗동강. 산정의 대장장이 만월이라면. 운봉석으로 검신을 잇고, 날밑을 새로 둘러 한 자루로 되살릴 수 있을지도.",
     giverNpcId: "unhyang_smith",
   },
   // 해안 지선 메인 — 소만 원로 여울. 갯벌 의뢰로 소만 신임(saltmarsh_vouched) → 뱃사공 해랑
@@ -96,7 +96,7 @@ export const STORY_QUESTS = {
     id: "saltmarsh_deep_one",
     title: "수심의 것",
     description:
-      "소만 포구의 그물이 비어 오고 한낮에도 물이 차다. 노인들은 암초 너머 안개 밑에서 잠든 것이 다시 뒤척인다고 한다. 소만의 신임을 얻고, 뱃사공의 배로 난바다를 건너 — 수심의 것을 가라앉히면, 포구가 다시 일어선다.",
+      "소만 포구의 그물이 비어 오고 한낮에도 물이 차다. 노인들은 암초 너머 안개 밑에서 잠든 것이 다시 뒤척인다고 한다. 소만의 신임을 얻고, 뱃사공의 배로 난바다를 건너. 수심의 것을 가라앉히면, 포구가 다시 일어선다.",
     giverNpcId: "saltmarsh_elder",
   },
   // 서편 옛길 메인 — 마른나루 옛 수비대장 무진. 옛길 의뢰로 마른나루 신임(dustford_vouched) →
@@ -106,7 +106,7 @@ export const STORY_QUESTS = {
     id: "dustford_gatekeeper",
     title: "옛 성문지기",
     description:
-      "시작 마을 서쪽 옛길 끝, 무너진 변경 성채에서 밤마다 성문이 쿵쿵거린다. 한 세대 전 군대를 막으라 세워진 성문지기 자동인형이 빈 벽을 지키며 깨어난다. 마른나루의 신임을 얻고, 무너진 북쪽 벽으로 들어가 — 옛 성문지기를 잠재우면, 마을이 성채를 되찾는다.",
+      "시작 마을 서쪽 옛길 끝, 무너진 변경 성채에서 밤마다 성문이 쿵쿵거린다. 한 세대 전 군대를 막으라 세워진 성문지기 자동인형이 빈 벽을 지키며 깨어난다. 마른나루의 신임을 얻고, 무너진 북쪽 벽으로 들어가. 옛 성문지기를 잠재우면, 마을이 성채를 되찾는다.",
     giverNpcId: "dustford_keeper",
   },
 } as const satisfies Record<string, StoryQuest>;

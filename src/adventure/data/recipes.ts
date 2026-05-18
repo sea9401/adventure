@@ -46,21 +46,21 @@ export const RECIPES: Recipe[] = [
   // (지역 재료 라인 — 슬라임 조각/산초꽃/봉황 깃털 — 3 종은 제거됐다.)
   {
     id: "potion_heal_s_dust",
-    name: "작은 회복약 — 가루 공정",
+    name: "작은 회복약: 가루 공정",
     description: "마력가루를 약불에 졸여 작은 회복약을 만든다. 통화처럼 굳은 가루도 약이 된다.",
     ingredients: [{ kind: "material", materialId: "mana_dust", count: 1 }],
     result: { kind: "potion", potionId: "potion_heal_s", quantity: 1 },
   },
   {
     id: "potion_heal_m_dust",
-    name: "중간 회복약 — 가루 공정",
+    name: "중간 회복약: 가루 공정",
     description: "마력가루 세 줌을 한 모금으로 졸여 중간 회복약을 만든다.",
     ingredients: [{ kind: "material", materialId: "mana_dust", count: 3 }],
     result: { kind: "potion", potionId: "potion_heal_m", quantity: 1 },
   },
   {
     id: "potion_heal_l_dust",
-    name: "큰 회복약 — 가루 공정",
+    name: "큰 회복약: 가루 공정",
     description: "마력가루를 한 사발 졸여 큰 회복약을 만든다. 손맛이 굳어야 한 병이 빚어진다.",
     ingredients: [{ kind: "material", materialId: "mana_dust", count: 7 }],
     result: { kind: "potion", potionId: "potion_heal_l", quantity: 1 },

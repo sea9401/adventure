@@ -1252,7 +1252,7 @@ export const MONSTERS: Record<string, Monster> = {
     phaseTrigger: {
       hpFraction: 0.3,
       defBonus: 5,
-      message: "수심의 것이 몸을 둥글게 만다 — 비늘이 겹친다.",
+      message: "수심의 것이 몸을 둥글게 만다. 비늘이 겹친다.",
     },
     onDefeatFlag: "the_deep_one_stilled",
     bonusAttackChancePct: 160,
@@ -1389,7 +1389,7 @@ export const MONSTERS: Record<string, Monster> = {
     phaseTrigger: {
       hpFraction: 0.3,
       defBonus: 5,
-      message: "옛 성문지기가 빗장을 가로지른다 — 강철판이 겹친다.",
+      message: "옛 성문지기가 빗장을 가로지른다. 강철판이 겹친다.",
     },
     onDefeatFlag: "gatekeeper_felled",
     bonusAttackChancePct: 170,
@@ -1789,7 +1789,7 @@ export const MONSTERS: Record<string, Monster> = {
     phaseTrigger: {
       hpFraction: 0.4,
       defBonus: 14,
-      message: "메아리가 한 번 더 몸을 둥글게 만다 — 별빛이 비늘 사이로 새어 든다.",
+      message: "메아리가 한 번 더 몸을 둥글게 만다. 별빛이 비늘 사이로 새어 든다.",
     },
     skill: { kind: "enrage", name: "별빛 소용돌이", hpFraction: 0.35, atkBonus: 16 },
     auraKind: "starfall",

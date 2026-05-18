@@ -298,7 +298,7 @@ export function ChatPanel({
 
         {tab === "notice" ? (
           <div className="border-t border-zinc-200 px-3 py-2.5 text-center text-xs text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
-            협동 보스 알림 — 채팅하려면 채팅 탭으로
+            협동 보스 알림. 채팅하려면 채팅 탭으로
           </div>
         ) : (
           <ChatComposer

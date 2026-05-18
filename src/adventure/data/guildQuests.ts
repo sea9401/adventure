@@ -116,7 +116,7 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
   },
   {
     id: "f_tideflats_crabs",
-    name: "갯벌 정리 — 집게발 게",
+    name: "갯벌 정리: 집게발 게",
     description: "디올라 남쪽 조수 갯벌에 들끓는 집게발 게를 솎아 길을 튼다.",
     grade: "F",
     task: { kind: "kill_monster", monsterName: "집게발 게", count: 400 },
@@ -140,7 +140,7 @@ export const GUILD_QUESTS: GuildQuestDef[] = [
   },
   {
     id: "f_westgate_bandits",
-    name: "옛길 정리 — 노상강도",
+    name: "옛길 정리: 노상강도",
     description: "시작 마을 서쪽 옛길에 눌러앉은 노상강도를 솎아 행상 길을 튼다.",
     grade: "F",
     task: { kind: "kill_monster", monsterName: "노상강도", count: 400 },
