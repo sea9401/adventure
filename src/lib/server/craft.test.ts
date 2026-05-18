@@ -264,6 +264,37 @@ describe("computeCraftOutcome — 고급 재료 사용(equipPicks)", () => {
     ).toThrow(/invalid_picks/);
   });
 
+  it("picks 음수 카운트는 invalid_picks (bucket count 위조 차단)", () => {
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      equipment: { baseball_bat: 5 },
+    };
+    // base 2 + crafted["1"]=-1 → sum 1 (정상 need 와 같지만) — isValidPick 이 음수를 차단.
+    expect(() =>
+      computeCraftOutcome(input, "nailed_baseball_bat", {
+        rng: rngMid,
+        equipPicks: { baseball_bat: { base: 2, crafted: { "1": -1 } } },
+      }),
+    ).toThrow(/invalid_picks/);
+  });
+
+  it("picks 비정수 카운트는 invalid_picks", () => {
+    const input = {
+      ...base(),
+      known: ["nailed_baseball_bat"],
+      materials: { rusty_nail: 28 },
+      equipment: { baseball_bat: 5 },
+    };
+    expect(() =>
+      computeCraftOutcome(input, "nailed_baseball_bat", {
+        rng: rngMid,
+        equipPicks: { baseball_bat: { base: 1.5 } },
+      }),
+    ).toThrow(/invalid_picks/);
+  });
+
   it("picks 명시 — 보유량 부족이면 missing_ingredient", () => {
     const input = {
       ...base(),

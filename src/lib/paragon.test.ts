@@ -121,6 +121,13 @@ describe("addParagonExp", () => {
     const r = addParagonExp(near, 999_999);
     expect(r.paragonExp).toBe(PARAGON_EXP_CAP);
   });
+
+  it("NaN / Infinity gain 은 무변경 (같은 참조 반환)", () => {
+    expect(addParagonExp(initialParagonState, Number.NaN)).toBe(initialParagonState);
+    expect(addParagonExp(initialParagonState, Number.POSITIVE_INFINITY)).toBe(
+      initialParagonState,
+    );
+  });
 });
 
 describe("totalAllocated / unspentPoints", () => {
@@ -160,12 +167,32 @@ describe("readInitialParagon", () => {
   });
 
   it("유효한 값 파싱", () => {
+    const exp = cumulativeExpForPoints(10);
     const r = readInitialParagon({
-      paragonExp: 5000,
+      paragonExp: exp,
       allocations: { wrath: 3, blast: 7 },
     });
-    expect(r.paragonExp).toBe(5000);
+    expect(r.paragonExp).toBe(exp);
     expect(r.allocations).toEqual({ wrath: 3, blast: 7 });
+  });
+
+  it("총 할당이 적립 EXP 로 살 수 있는 포인트 초과 → allocations 리셋 (위조/손상 가드)", () => {
+    // paragonExp 0 인데 6트랙 풀(150pt) 박힌 위조 save.
+    const r = readInitialParagon({
+      paragonExp: 0,
+      allocations: { wrath: 25, guard: 25, vigor: 25, precision: 25, blast: 25, fortune: 25 },
+    });
+    expect(r.paragonExp).toBe(0);
+    expect(r.allocations).toEqual({});
+  });
+
+  it("총 할당이 적립 EXP 한도 안이면 그대로 통과", () => {
+    const exp = cumulativeExpForPoints(5);
+    const r = readInitialParagon({
+      paragonExp: exp,
+      allocations: { wrath: 3, guard: 2 },
+    });
+    expect(r.allocations).toEqual({ wrath: 3, guard: 2 });
   });
 
   it("EXP 음수/NaN → 0", () => {
@@ -189,7 +216,7 @@ describe("readInitialParagon", () => {
 
   it("트랙 할당 25 초과 → 25 로 클램프", () => {
     const r = readInitialParagon({
-      paragonExp: 0,
+      paragonExp: cumulativeExpForPoints(25),
       allocations: { wrath: 999 },
     });
     expect(r.allocations.wrath).toBe(PARAGON_TRACK_CAP);
@@ -197,7 +224,7 @@ describe("readInitialParagon", () => {
 
   it("음수 할당은 무시", () => {
     const r = readInitialParagon({
-      paragonExp: 0,
+      paragonExp: cumulativeExpForPoints(5),
       allocations: { wrath: -3, guard: 5 },
     });
     expect(r.allocations.wrath).toBeUndefined();
@@ -206,7 +233,7 @@ describe("readInitialParagon", () => {
 
   it("알 수 없는 트랙 키 무시", () => {
     const r = readInitialParagon({
-      paragonExp: 0,
+      paragonExp: cumulativeExpForPoints(2),
       allocations: { wrath: 2, bogus: 99 },
     });
     expect(r.allocations.wrath).toBe(2);
