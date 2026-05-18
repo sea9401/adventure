@@ -460,19 +460,25 @@ export function damageBetween(atk: number, def: number): number {
 // 플레이어 공격이 마주하는 적 DEF — 누적 페이즈 보너스 포함, 보스 취약(armorVulnerable)·
 // 정확 스킬(armorPierceFraction) 비례 관통을 차례로 적용. 본타는 여기에 분쇄(고정 감산)/
 // 암살(DEF 0)을 추가로 얹으므로 호출 측에서 따로 처리하고, 단순 추가타(분신/난무/반격)는 이 값 그대로.
-function playerFacingEnemyDef(state: BattleState, player: PlayerCombat): number {
+function playerFacingEnemyDef(
+  state: BattleState,
+  player: PlayerCombat,
+  // 발동턴 AP 시한부 버프(약점 노출 등) 적용을 위해 buffs 를 별도 인자로 받을 수 있음.
+  // 기본은 state.buffs — 그 외 호출 측에서 applyTimedBuffFromApSkill 결과를 전달.
+  buffs: BattleBuffs = state.buffs,
+): number {
   // 약점 분석(5티어)의 누적 페널티는 raw def 에 직접 적용 → 음수 클램프.
   const raw = Math.max(
     0,
-    state.enemy.def + state.buffs.enemyDefBonus - state.buffs.enemyDefPenalty,
+    state.enemy.def + buffs.enemyDefBonus - buffs.enemyDefPenalty,
   );
   const afterVuln = Math.round(raw * (1 - (state.enemy.armorVulnerable ?? 0)));
   const frac = player.armorPierceFraction ?? 0;
   const afterPierce =
     frac > 0 ? Math.round(afterVuln * (1 - frac)) : afterVuln;
   // 약점 노출 (AP) — 적 DEF -pct%. 곱연산으로 마지막에 반영.
-  if (state.buffs.enemyDefDebuffTurnsLeft > 0 && state.buffs.enemyDefDebuffPct > 0) {
-    return Math.round(afterPierce * (1 - state.buffs.enemyDefDebuffPct / 100));
+  if (buffs.enemyDefDebuffTurnsLeft > 0 && buffs.enemyDefDebuffPct > 0) {
+    return Math.round(afterPierce * (1 - buffs.enemyDefDebuffPct / 100));
   }
   return afterPierce;
 }
@@ -915,6 +921,75 @@ function decrementTimedEffects(buffs: BattleBuffs): BattleBuffs {
   };
 }
 
+// AP 스킬이 set 하는 시한부 효과를 buffs 에 즉시 반영 — 발동턴 damage calc 부터 효과 받도록.
+// decrementTimedEffects 는 다음 플레이어 턴 진입 시점에 -1 하므로, 발동턴 + (turns-1) 후속턴 = 총 turns 턴의 실효 효과.
+// 호출 측에서 evasion 통과 후에만 호출 — 적이 회피하면 AP 발동/소비 자체가 일어나지 않으므로 buffs 도 그대로.
+function applyTimedBuffFromApSkill(
+  buffs: BattleBuffs,
+  apSkillFires: APSkill | null,
+): BattleBuffs {
+  if (!apSkillFires) return buffs;
+  const e = apSkillFires.effect;
+  switch (e.kind) {
+    case "player_dmg_reduction_turns":
+      return {
+        ...buffs,
+        playerDmgReductionPct: e.pct,
+        playerDmgReductionTurnsLeft: e.turns,
+      };
+    case "enemy_def_debuff_pct_turns":
+      return {
+        ...buffs,
+        enemyDefDebuffPct: e.pct,
+        enemyDefDebuffTurnsLeft: e.turns,
+      };
+    case "player_atk_buff_def_debuff_pct_turns":
+      return {
+        ...buffs,
+        playerAtkBuffPct: e.atkPct,
+        playerAtkBuffTurnsLeft: e.turns,
+        playerDefDebuffPct: e.defPct,
+        playerDefDebuffTurnsLeft: e.turns,
+      };
+    case "enemy_spd_mult_turns":
+      return {
+        ...buffs,
+        enemySpdMult: e.mult,
+        enemySpdTurnsLeft: e.turns,
+      };
+    case "player_spd_mult_turns":
+      return {
+        ...buffs,
+        playerSpdMult: e.mult,
+        playerSpdTurnsLeft: e.turns,
+      };
+    case "atk_multiplier_with_silence":
+      return {
+        ...buffs,
+        enemySilenceTurnsLeft: e.silenceTurns,
+      };
+    case "cleanse_debuffs":
+      return {
+        ...buffs,
+        playerDefDebuffPct: 0,
+        playerDefDebuffTurnsLeft: 0,
+      };
+    case "block_next_enemy_attack":
+      return {
+        ...buffs,
+        enemyAttackBlockedCount: buffs.enemyAttackBlockedCount + e.count,
+      };
+    case "lifesteal_dmg_pct_turns":
+      return {
+        ...buffs,
+        playerLifestealPct: e.pct,
+        playerLifestealTurnsLeft: e.turns,
+      };
+    default:
+      return buffs;
+  }
+}
+
 // 한 턴 진행 — 현재 phase 측이 행동하고 결과를 다음 BattleState로 반환.
 // player phase는 action(공격 또는 물약)으로 분기. attack이면 attackCount 만큼 연속 공격.
 // phase === "ended" 이면 그대로 반환.
@@ -1066,6 +1141,11 @@ export function advanceTurn(
       return finishPlayerTurn(ended, player, playerName);
     }
 
+    // AP 스킬 시한부 버프 — 발동턴 damage calc 부터 효과 받도록 buffs 를 미리 갱신.
+    // decrementTimedEffects 는 다음 플레이어 턴 진입 시 -1 → 발동턴 + (turns-1) 후속턴 = 총 turns 턴.
+    // evasion 직후이라 — 회피된 공격에는 AP 가 발동 안 하니 그 분기는 위에서 이미 return 된 상태.
+    const nextBuffsTimed = applyTimedBuffFromApSkill(state.buffs, apSkillFires);
+
     // 암살 (특기) — 전투 첫 공격이면 발동: 적 DEF 무시 + 데미지 배수 (배수는 아래에서 적용).
     const assassinFires =
       (player.assassinateDmgMult ?? 0) > 1 &&
@@ -1078,7 +1158,7 @@ export function advanceTurn(
     // baseDef 는 보스 취약(armorVulnerable) + 정확(armorPierceFraction) 비례 관통이 이미 반영된 값 —
     // 분쇄는 그 위에 추가 고정 감산.
     const crushReduction = player.crushDefReduction ?? 0;
-    const baseDef = playerFacingEnemyDef(state, player);
+    const baseDef = playerFacingEnemyDef(state, player, nextBuffsTimed);
     const targetDef = assassinFires || weakpointDefIgnore || apIgnoresDef
       ? 0
       : bonus > 0 && crushReduction > 0
@@ -1115,12 +1195,12 @@ export function advanceTurn(
     // 천칭 — 내 SPD 가 적보다 빠른 만큼 크리티컬 확률 가산.
     // SPD 버프/디버프 (폭주/둔화) 가 활성이면 곱연산으로 반영.
     const effectivePlayerSpd =
-      state.buffs.playerSpdTurnsLeft > 0
-        ? player.spd * state.buffs.playerSpdMult
+      nextBuffsTimed.playerSpdTurnsLeft > 0
+        ? player.spd * nextBuffsTimed.playerSpdMult
         : player.spd;
     const effectiveEnemySpd =
-      state.buffs.enemySpdTurnsLeft > 0
-        ? state.enemy.spd * state.buffs.enemySpdMult
+      nextBuffsTimed.enemySpdTurnsLeft > 0
+        ? state.enemy.spd * nextBuffsTimed.enemySpdMult
         : state.enemy.spd;
     const balanceCritBonus =
       (player.balanceCritPctPerSpdDiff ?? 0) > 0
@@ -1151,8 +1231,8 @@ export function advanceTurn(
     // AP 스킬의 atk_multiplier 는 모든 ATK 합산 후 곱 (강공격·격노·질풍 등의 보너스 포함).
     // 광기 (AP) — 자신 ATK +pct%. atk_multiplier 적용 전에 같이 합산.
     const madnessAtkBonus =
-      state.buffs.playerAtkBuffTurnsLeft > 0 && state.buffs.playerAtkBuffPct > 0
-        ? Math.floor((player.atk * state.buffs.playerAtkBuffPct) / 100)
+      nextBuffsTimed.playerAtkBuffTurnsLeft > 0 && nextBuffsTimed.playerAtkBuffPct > 0
+        ? Math.floor((player.atk * nextBuffsTimed.playerAtkBuffPct) / 100)
         : 0;
     const atkBeforeApMult =
       player.atk +
@@ -1203,7 +1283,7 @@ export function advanceTurn(
     // 잡몹 스킬 "방어 태세" — 이 적을 공격할 때 데미지 -damageReduction (최소 1로 클램프).
     // 천뢰 일격 silence 활성 시 brace 도 비활성.
     const braceReduction =
-      state.buffs.enemySilenceTurnsLeft <= 0 &&
+      nextBuffsTimed.enemySilenceTurnsLeft <= 0 &&
       state.enemy.skill?.kind === "brace"
         ? state.enemy.skill.damageReduction
         : 0;
@@ -1281,8 +1361,8 @@ export function advanceTurn(
     // 흡령 (AP 시한부) — buffs 의 turnsLeft 가 살아 있는 동안 가한 데미지의 pct% HP 회복.
     // 룬/특기 흡혈과 별개 가산. 같은 trigger(공격 명중) 라 같은 라인에서 합산 라벨.
     const apLifestealHeal =
-      state.buffs.playerLifestealTurnsLeft > 0 && state.buffs.playerLifestealPct > 0
-        ? Math.floor((dmg * state.buffs.playerLifestealPct) / 100)
+      nextBuffsTimed.playerLifestealTurnsLeft > 0 && nextBuffsTimed.playerLifestealPct > 0
+        ? Math.floor((dmg * nextBuffsTimed.playerLifestealPct) / 100)
         : 0;
     const totalLifestealHeal =
       lifestealHeal + luckyLifestealHeal + runeLifestealHeal + apLifestealHeal;
@@ -1377,25 +1457,14 @@ export function advanceTurn(
         text: `[${apSkillFires!.name}] 보장 회피 +${apEvadesAdd}`,
       });
     }
-    // 지속 시간 효과 (PR-2) — 발동 시점에 buffs 필드를 셋. turnsLeft 는
-    // round 끝에 decrement 됨 (decrementTimedEffects).
-    let nextBuffsTimed = state.buffs;
+    // 시한부 효과 로그 — buffs state 는 evasion 직후 applyTimedBuffFromApSkill 로 이미 적용됨.
+    // 여기서는 표시용 로그만 남긴다 (발동턴 damage calc 부터 효과 받음).
     if (apSkillFires?.effect.kind === "player_dmg_reduction_turns") {
-      nextBuffsTimed = {
-        ...nextBuffsTimed,
-        playerDmgReductionPct: apSkillFires.effect.pct,
-        playerDmgReductionTurnsLeft: apSkillFires.effect.turns,
-      };
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 받는 피해 -${apSkillFires.effect.pct}%`,
       });
     } else if (apSkillFires?.effect.kind === "enemy_def_debuff_pct_turns") {
-      nextBuffsTimed = {
-        ...nextBuffsTimed,
-        enemyDefDebuffPct: apSkillFires.effect.pct,
-        enemyDefDebuffTurnsLeft: apSkillFires.effect.turns,
-      };
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 ${state.enemy.name}의 DEF -${apSkillFires.effect.pct}%`,
@@ -1403,43 +1472,22 @@ export function advanceTurn(
     } else if (
       apSkillFires?.effect.kind === "player_atk_buff_def_debuff_pct_turns"
     ) {
-      nextBuffsTimed = {
-        ...nextBuffsTimed,
-        playerAtkBuffPct: apSkillFires.effect.atkPct,
-        playerAtkBuffTurnsLeft: apSkillFires.effect.turns,
-        playerDefDebuffPct: apSkillFires.effect.defPct,
-        playerDefDebuffTurnsLeft: apSkillFires.effect.turns,
-      };
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 ATK +${apSkillFires.effect.atkPct}%, DEF -${apSkillFires.effect.defPct}%`,
       });
     } else if (apSkillFires?.effect.kind === "enemy_spd_mult_turns") {
-      nextBuffsTimed = {
-        ...nextBuffsTimed,
-        enemySpdMult: apSkillFires.effect.mult,
-        enemySpdTurnsLeft: apSkillFires.effect.turns,
-      };
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 ${state.enemy.name}의 SPD ×${apSkillFires.effect.mult}`,
       });
     } else if (apSkillFires?.effect.kind === "player_spd_mult_turns") {
-      nextBuffsTimed = {
-        ...nextBuffsTimed,
-        playerSpdMult: apSkillFires.effect.mult,
-        playerSpdTurnsLeft: apSkillFires.effect.turns,
-      };
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 SPD ×${apSkillFires.effect.mult}`,
       });
     } else if (apSkillFires?.effect.kind === "atk_multiplier_with_silence") {
       // 천뢰 일격 — atk_multiplier 와 같이 발동 + 1턴 적 스킬 봉인.
-      nextBuffsTimed = {
-        ...nextBuffsTimed,
-        enemySilenceTurnsLeft: apSkillFires.effect.silenceTurns,
-      };
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${state.enemy.name} ${apSkillFires.effect.silenceTurns}턴간 스킬 봉인`,
@@ -1447,33 +1495,18 @@ export function advanceTurn(
     } else if (apSkillFires?.effect.kind === "cleanse_debuffs") {
       // 정화 — 플레이어에게 걸린 모든 디버프 제거. 현재는 광기 자신 DEF 페널티만 존재하지만
       // 미래 확장 대비 player-side debuff 필드 전부 리셋.
-      nextBuffsTimed = {
-        ...nextBuffsTimed,
-        playerDefDebuffPct: 0,
-        playerDefDebuffTurnsLeft: 0,
-      };
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${playerName}의 모든 디버프 해제`,
       });
     } else if (apSkillFires?.effect.kind === "block_next_enemy_attack") {
       // 잔상 — 적의 다음 공격 N회 무효. 적 페이즈에서 데미지 적용 전 1회 소비.
-      nextBuffsTimed = {
-        ...nextBuffsTimed,
-        enemyAttackBlockedCount:
-          nextBuffsTimed.enemyAttackBlockedCount + apSkillFires.effect.count,
-      };
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${state.enemy.name}의 다음 공격 ${apSkillFires.effect.count}회 무효`,
       });
     } else if (apSkillFires?.effect.kind === "lifesteal_dmg_pct_turns") {
       // 흡령 — 시한부 흡혈 버프. turnsLeft 동안 매 공격 데미지의 pct% heal (앞쪽 totalLifestealHeal 합산).
-      nextBuffsTimed = {
-        ...nextBuffsTimed,
-        playerLifestealPct: apSkillFires.effect.pct,
-        playerLifestealTurnsLeft: apSkillFires.effect.turns,
-      };
       log = appendLog(log, {
         kind: "info",
         text: `[${apSkillFires.name}] ${apSkillFires.effect.turns}턴간 가한 피해의 ${apSkillFires.effect.pct}% HP 회복`,

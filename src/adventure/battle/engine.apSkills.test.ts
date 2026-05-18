@@ -547,6 +547,32 @@ describe("AP 스킬 — 광기 (player_atk_buff_def_debuff_pct_turns)", () => {
     expect(s.buffs.playerDefDebuffTurnsLeft).toBe(3);
     expect(s.buffs.playerDefDebuffPct).toBe(15);
   });
+
+  it("발동턴 첫 공격부터 ATK 보너스 즉시 적용 (cast-turn 버그 회귀 가드)", () => {
+    // atk 100, def 0 / enemy def 0 → 평상시 damage 100. 광기 발동 시 ATK +30% → damage 130.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      hp: 9999,
+      maxHp: 9999,
+      atk: 100,
+      def: 0,
+      equippedAPSkills: [eq(MADNESS)],
+    };
+    let s = initialBattleState(p, enemy(99999, { def: 0, atk: 1 }), "용사");
+    // turn 1: AP 2 < 3 미발동. damage 100.
+    const hp0 = s.enemyHp;
+    s = advanceTurn(s, p, "용사");
+    expect(s.buffs.playerAtkBuffTurnsLeft).toBe(0);
+    expect(hp0 - s.enemyHp).toBe(100);
+    s = advanceTurn(s, p, "용사"); // 적 턴.
+    // turn 2: AP 3 → 광기 발동. 핵심 회귀 가드 — 발동턴 첫 공격부터 ATK +30% 적용 (130 데미지).
+    // 이전엔 버프가 damage calc 뒤에 set 되어 발동턴에 100 만 들어가는 버그가 있었음.
+    const hp1 = s.enemyHp;
+    s = advanceTurn(s, p, "용사");
+    expect(s.buffs.playerAtkBuffTurnsLeft).toBe(3);
+    expect(s.buffs.playerAtkBuffPct).toBe(30);
+    expect(hp1 - s.enemyHp).toBe(130);
+  });
 });
 
 describe("AP 스킬 — 둔화 (enemy_spd_mult_turns)", () => {
@@ -781,7 +807,7 @@ describe("AP 스킬 — 빛의 활공 (queued_extra_attacks_next_turn)", () => {
 const LIFESTEAL = getAPSkillByName("흡령")!;
 
 describe("AP 스킬 — 흡령 (lifesteal_dmg_pct_turns)", () => {
-  it("발동 후 다음 공격부터 가한 데미지의 30% 만큼 자가 회복", () => {
+  it("발동 턴 첫 공격부터 가한 데미지의 30% 만큼 자가 회복", () => {
     const wounded: PlayerCombat = {
       ...PLAYER,
       hp: 500,
@@ -801,13 +827,13 @@ describe("AP 스킬 — 흡령 (lifesteal_dmg_pct_turns)", () => {
     s = advanceTurn(s, wounded, "용사");
     expect(s.buffs.playerLifestealTurnsLeft).toBe(0);
     s = advanceTurn(s, wounded, "용사"); // 적 턴.
-    // turn 3: AP 4 → 발동. 발동 턴 자체의 첫 공격은 회복 적용 X (buff 가 턴 끝에 세팅).
+    // turn 3: AP 4 → 발동. 발동 턴 첫 공격부터 buff 적용 (damage calc 전에 set).
     const hpBeforeFire = s.playerHp;
     s = advanceTurn(s, wounded, "용사");
     expect(s.buffs.playerLifestealTurnsLeft).toBeGreaterThan(0);
     expect(s.buffs.playerLifestealPct).toBe(30);
-    // 발동 턴엔 회복 미적용 — buff 세팅 직후라 아직 damage 계산엔 안 들어감.
-    expect(s.playerHp).toBeLessThanOrEqual(hpBeforeFire);
+    // 발동턴 첫 공격에도 lifesteal 적용 → HP 가 늘어야 함.
+    expect(s.playerHp).toBeGreaterThan(hpBeforeFire);
   });
 
   it("turnsLeft 3 → 다음 player 턴마다 -1, 0 되면 비활성", () => {
