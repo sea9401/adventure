@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { checkSession } from "@/lib/server/checkSession";
+import { sanitizeSavePayload } from "@/lib/server/saveSanitize";
 import { isSyncedKey } from "@/lib/storage/synced-keys";
 
 // GET /api/save — 로그인한 사용자의 모든 동기화 키-값을 한 번에 반환.
@@ -66,6 +67,18 @@ export async function PATCH(req: Request) {
   }
   if (body.value === undefined) {
     return new Response("missing value", { status: 400 });
+  }
+
+  // 위생 검사 — NaN/Infinity 차단 + character.v2 절대값 가드.
+  // 삭제 의도(value=null)는 검사 안 함 — sanitize 통과시켜 아래 null 분기로.
+  if (body.value !== null) {
+    const sanitized = sanitizeSavePayload(key, body.value);
+    if (!sanitized.ok) {
+      return Response.json(
+        { error: "invalid_payload", reason: sanitized.reason },
+        { status: 422 },
+      );
+    }
   }
 
   const now = new Date();
