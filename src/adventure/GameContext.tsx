@@ -13,6 +13,7 @@ import type { SkillLayout } from "@/adventure/character/skills";
 import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import type { useAutoPotionConfig } from "@/adventure/inventory/useAutoPotionConfig";
 import type { useCharacterState } from "@/adventure/character/useCharacterState";
+import type { useParagonState } from "@/adventure/character/useParagonState";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { EquipPicks } from "@/adventure/crafting/types";
 import type { useTrialUnlocks } from "@/adventure/edges/useTrialUnlocks";
@@ -54,6 +55,7 @@ export type GameCtx = {
   // — Hooks (반환 객체 통째 노출. 일부만 쓸 때도 destructure 해서 사용) —
   inventory: ReturnType<typeof useInventory>;
   characterStateHook: ReturnType<typeof useCharacterState>;
+  paragon: ReturnType<typeof useParagonState>;
   training: ReturnType<typeof useTraining>;
   crafting: ReturnType<typeof useCrafting>;
   quests: ReturnType<typeof useQuests>;
