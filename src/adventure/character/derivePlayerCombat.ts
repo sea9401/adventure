@@ -248,23 +248,24 @@ export function derivePlayerCombat(
   // 룬 atk/def % — atk 공식의 중간값(playerDef/5) 에 def% 를 끼우면 def 룬이 atk 도 미세하게
   // 올려버리는 cross-bleed 가 생긴다. 그래서 def% 는 최종 def 필드에만 적용, atk 공식의
   // playerDef 는 원본 유지. atk% 는 최종 atk 합산값에 곱한다.
-  // ATK 공식 — STR 1pt = 1ATK, DEX/LUK 3pt = 1ATK, SPD 5pt = 1ATK, VIT(DEF) 5pt = 1ATK.
-  // DEX/LUK 가 5pt → 3pt 로 강화된 건 STR 외 빌드(회피/크리)의 화력 격차를 좁히기 위함.
-  // SPD 는 5pt 유지 — 추가타 시스템(매 SPD 1pt = +2%)으로 화력 별도 보상.
+  // ATK 공식 — STR 1pt = 1ATK, DEX/LUK/SPD 5pt = 1ATK, VIT(DEF) 5pt = 1ATK.
+  // 레벨 기반 floor 가 별도로 깔리므로 (아래 levelBaseAtk) DEX/LUK 의 3pt 강화는 롤백.
+  // SPD 화력 보상은 추가타 시스템(SPD 1pt = +2%)이 별도 담당.
   const rawAtk =
     totalStats.str +
-    Math.floor(totalStats.dex / 3) +
+    Math.floor(totalStats.dex / 5) +
     Math.floor(playerDef / 5) +
-    Math.floor(totalStats.luk / 3) +
+    Math.floor(totalStats.luk / 5) +
     Math.floor(totalStats.spd / 5) +
     equipAtk;
-  // 레벨 기반 base DEF — Lv 1pt 당 +0.5 DEF (Lv 100 = +50). ATK 공식에는 미반영 (playerDef 그대로) —
-  // 룬/장비 def_pct 보너스도 미적용. 화력 빌드(DEF 낮음)에 상대적으로 큰 도움, 탱커엔 미미.
+  // 레벨 기반 base ATK/DEF — Lv 1pt 당 +0.5 (Lv 100 = +50). ATK 공식·룬 atk_pct/def_pct 와 분리 —
+  // 화력 빌드(STR 외)의 ATK floor, 화력 빌드의 DEF floor 양쪽 다 보강.
+  const levelBaseAtk = Math.floor(input.level / 2);
   const levelBaseDef = Math.floor(input.level / 2);
   const player: PlayerCombat = {
     hp: Math.max(0, Math.min(input.hp, maxHp)),
     maxHp,
-    atk: Math.floor(rawAtk * pctToMultiplier(runeBonus.atk_pct)),
+    atk: Math.floor(rawAtk * pctToMultiplier(runeBonus.atk_pct)) + levelBaseAtk,
     def: Math.floor(playerDef * pctToMultiplier(runeBonus.def_pct)) + levelBaseDef,
     spd: totalStats.spd,
     evasionPct:
