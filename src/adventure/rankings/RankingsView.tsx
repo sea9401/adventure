@@ -76,6 +76,7 @@ export function RankingsView() {
           active={metric}
           onChange={(k) => setMetric(k)}
           ariaLabel="랭킹 지표"
+          scrollable
         />
       </Card>
 
