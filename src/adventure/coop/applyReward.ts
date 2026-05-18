@@ -9,7 +9,11 @@ type Services = {
   learnRecipe: (id: string) => void;
   knowsRecipe: (id: string) => boolean;
   addEquipment: (id: ItemId, n: number) => void;
-  markTitleObtained: (titleId: string) => void;
+  /**
+   * 칭호 부여 — useTitleGrant 의 grantTitle 권장. markTitleObtained 만 호출하면
+   * 토스트 알림 / 잔영 컬렉션 체인(starlit_quietener)이 누락된다.
+   */
+  grantTitle: (titleId: string) => void;
 };
 
 /** 실제로 적용된 보상 요약 — 보스 카드의 보상 로그 표시에 사용. */
@@ -93,9 +97,9 @@ export function applyCoopReward(
     }
   }
 
-  // 6) 칭호.
+  // 6) 칭호 — grantTitle 로 토스트 + 컬렉션 체인 함께 처리.
   if (reward.titleId) {
-    s.markTitleObtained(reward.titleId);
+    s.grantTitle(reward.titleId);
     const def = TITLES[reward.titleId];
     applied.title = { id: reward.titleId, name: def?.name ?? reward.titleId };
   }
