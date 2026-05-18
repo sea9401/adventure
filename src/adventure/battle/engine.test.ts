@@ -786,3 +786,20 @@ describe("잡몹 스킬", () => {
     expect(s.log.filter((e) => e.text.startsWith("[격노]")).length).toBe(1);
   });
 });
+
+describe("반격의 룬 — non-lethal counter 데미지 반영", () => {
+  it("반격의 룬 카운터가 적 HP 에서 차감된다 (적 생존)", () => {
+    // 적 ATK 8 / DEF 0, 플레이어 ATK 10 / DEF 5 → 평타 7. 반사 갑주 없음.
+    // 플레이어 피해는 적 ATK 8 - DEF 5 = 3. 반격의 룬 100% — 적에게 ATK 10 반격.
+    // 1턴 적 페이즈 후 적 HP = (시작 HP) - 평타 7 (플레이어 턴) - 10 (반격).
+    const p: PlayerCombat = { ...PLAYER, runeCounterChancePct: 100 };
+    const enemy = makeEnemy({ hp: 100, atk: 8, def: 0, spd: 1 });
+    let s = initialBattleState(p, enemy, "P");
+    s = advanceTurn(s, p, "P"); // 플레이어 페이즈 — 평타 10, 적 100 → 90
+    expect(s.enemyHp).toBe(90);
+    s = advanceTurn(s, p, "P"); // 적 페이즈 — 피해 3 + 반격의 룬 10 → 적 90 → 80
+    expect(p.hp - s.playerHp).toBe(3);
+    expect(s.enemyHp).toBe(80);
+    expect(s.log.some((e) => e.text.startsWith("[반격의 룬]"))).toBe(true);
+  });
+});

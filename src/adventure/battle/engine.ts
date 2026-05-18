@@ -733,6 +733,14 @@ function finishPlayerTurn(
   playerName: string,
 ): BattleState {
   let st = state;
+  // 분신/난무 추가타 ATK — 메인 공격이 적용한 AP 시한부 ATK 버프(광기 등) 를 동일하게 반영.
+  // state.buffs 는 이 시점에 이번 턴의 timed buff 가 박힌 상태.
+  const buffedAtkPct =
+    st.buffs.playerAtkBuffTurnsLeft > 0 ? st.buffs.playerAtkBuffPct : 0;
+  const buffedAtk =
+    buffedAtkPct > 0
+      ? player.atk + Math.floor((player.atk * buffedAtkPct) / 100)
+      : player.atk;
   // 그림자 분신 — ATK 의 N% 로 1회. 6티어 그림자 군단 보유 시 추가 횟수만큼 더 발동.
   const clonePct = player.shadowCloneAtkPct ?? 0;
   const cloneExtra = player.shadowLegionExtraClones ?? 0;
@@ -741,7 +749,7 @@ function finishPlayerTurn(
     for (let i = 0; i < cloneCount; i += 1) {
       if (st.phase === "ended") break;
       const cloneDmg = damageBetween(
-        Math.floor((player.atk * clonePct) / 100),
+        Math.floor((buffedAtk * clonePct) / 100),
         playerFacingEnemyDef(st, player),
       );
       st = dealExtraEnemyDamage(
@@ -758,7 +766,7 @@ function finishPlayerTurn(
   if (st.phase !== "ended" && flurry > 0 && st.stacks.damageTakenThisCombat === 0) {
     for (let i = 0; i < flurry; i += 1) {
       if (st.phase === "ended") break;
-      const fd = damageBetween(player.atk, playerFacingEnemyDef(st, player));
+      const fd = damageBetween(buffedAtk, playerFacingEnemyDef(st, player));
       st = dealExtraEnemyDamage(st, fd, "무피해 난무", player, playerName);
     }
   }
@@ -2317,7 +2325,7 @@ export function advanceTurn(
   return finishEnemyAttack({
     ...state,
     playerHp,
-    enemyHp: enemyHpAfterThorns,
+    enemyHp: enemyHpAfterRuneCounter,
     flags: {
       ...state.flags,
       enduranceTriggered,
