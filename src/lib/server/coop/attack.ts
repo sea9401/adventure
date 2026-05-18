@@ -1,3 +1,5 @@
+import "server-only";
+
 // 협동 토벌 보스 — attack 액션 처리.
 //
 // 클라는 playerName 만 보내고 PlayerCombat 은 서버에서 character.v2 + training.v2 로

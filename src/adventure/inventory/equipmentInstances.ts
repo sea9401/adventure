@@ -7,7 +7,10 @@
 
 import type { CraftTier } from "@/adventure/data/craftQuality";
 import type { ItemId } from "@/adventure/data/items";
-import { ENHANCE_MAX_LEVEL } from "@/adventure/character/enhancement";
+import {
+  ENHANCEABLE_ITEM_IDS,
+  ENHANCE_MAX_LEVEL,
+} from "@/adventure/character/enhancement";
 
 export type EquipmentInstance = {
   /** 고유 ID. crypto.randomUUID 권장 (서버에서 생성). 절대 재사용 X. */
@@ -36,6 +39,9 @@ export function normalizeInstance(raw: unknown): EquipmentInstance | null {
   const r = raw as Partial<EquipmentInstance>;
   if (typeof r.instanceId !== "string" || !r.instanceId) return null;
   if (typeof r.itemId !== "string") return null;
+  // itemId 화이트리스트 — 인스턴스 풀에는 강화 대상 아이템만. 다른 itemId 가 박힌
+  // 위조 인스턴스는 drop (장착·강화 endpoint 가 itemId 자체를 신뢰하지 않게 한다).
+  if (!ENHANCEABLE_ITEM_IDS.has(r.itemId as ItemId)) return null;
   const lv = r.enhancementLevel;
   if (
     typeof lv !== "number" ||

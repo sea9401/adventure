@@ -1,3 +1,5 @@
+import "server-only";
+
 // 제작 서버 lib — /api/craft 의 핵심 로직.
 //
 // 이전엔 page.tsx 의 handleCraft 가 클라에서 재료 차감 + 결과 지급을 직접 했다 — devtools 로

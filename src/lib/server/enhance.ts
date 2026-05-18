@@ -1,3 +1,5 @@
+import "server-only";
+
 // 별빛 재단 무구 강화 서버 lib — /api/enhance 의 핵심 로직.
 //
 // 권위: 서버. 클라는 instanceId 만 보내고, 서버가 inventory.v2 를 잠그고 검증·적용.
