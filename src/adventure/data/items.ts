@@ -971,6 +971,72 @@ export const ITEMS = {
     rarity: "uncommon",
     tier: 5,
   } satisfies EquipItem,
+  // ── 별빛 재단 무구 5종 — 창공의 옥좌 옆 칸 (5막 종착 의식 후, 별빛 재단법 해금). ──
+  // empyrean 무구 1자루를 잔영 3종 소재 + 별빛 조각으로 재단조한 결과. 같은 tier 5 의
+  // 사이드그레이드 — 무기 atk +2/주능력치 +1 폭이 empyrean 대비 위. 강화 +5 여지 남기느라
+  // 베이스 자체는 작게. recipes.ts 의 starlit_* 5종 + MeteorDialogue Ch 30 onClick 학습.
+  starlit_blade: {
+    name: "별빛 재단 검",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+27" },
+      { label: "힘", value: "+13" },
+    ],
+    bonus: { atk: 27, str: 13 },
+    description: "창공검 위에 잔영 셋의 결을 한 데 둘러 다시 단조한 한손 대검. 거인의 비늘이 균형을, 수심의 결이 흐름을, 성문의 빗장이 무게를 한 칼에 얹는다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  starlit_aegis: {
+    name: "별빛 재단 방패",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+27" },
+      { label: "활력", value: "+15" },
+    ],
+    bonus: { atk: 27, vit: 15 },
+    description: "창공 방패의 골격을 잔영 셋의 결로 다시 보강한 방패형 무기. 어느 쪽에서 와도 흩으리라는 약속이 결 안쪽에 가지런히 가라앉아 있다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  starlit_lance: {
+    name: "별빛 재단 창",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+29" },
+      { label: "민첩", value: "+15" },
+    ],
+    bonus: { atk: 29, dex: 15 },
+    description: "창공창 끝에 잔영 셋의 결을 모아 박은 긴 창. 거인이 박힌 자세, 수심이 흘러간 결, 성문이 다시 들린 박자 — 한 번에 셋이 닿는다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  starlit_grip: {
+    name: "별빛 재단 너클",
+    slot: "weapon",
+    stats: [
+      { label: "공격력", value: "+29" },
+      { label: "행운", value: "+15" },
+    ],
+    bonus: { atk: 29, luk: 15 },
+    description: "창공 너클에 잔영 셋의 결을 한 결씩 새겨 넣은 너클. 한 방 한 방이 거인의 무게·수심의 흐름·성문의 빗장 셋을 한꺼번에 떨군다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+  starlit_mantle: {
+    name: "별빛 재단 망토",
+    slot: "accessory",
+    stats: [
+      { label: "민첩", value: "+12" },
+      { label: "속도", value: "+12" },
+      { label: "활력", value: "+7" },
+    ],
+    bonus: { dex: 12, spd: 12, vit: 7 },
+    description: "창공 망토에 잔영 셋의 결을 한 가닥씩 더 짜낸 가장 가벼운 망토. 두르면 어깨에 별빛 셋의 결이 가지런히 얹힌다.",
+    rarity: "uncommon",
+    tier: 5,
+  } satisfies EquipItem,
+
   // 창공의 옥새 — 창공의 주재 협동 legend 티어 1% 드랍 (만렙 정점 물욕템).
   // accessory 슬롯, 천공인의 관 위의 전스탯 + 양면 분포.
   apex_regalia: {

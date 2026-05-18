@@ -737,6 +737,85 @@ export const RECIPES: Recipe[] = [
     variance: { dex: 1 },
   },
 
+  // ── 별빛 재단 무구 5종 — 5막 종착 의식(Ch 30) 후 starfall_keeper 칭호 보유자에게
+  // MeteorDialogue 가 자동 학습. 창공 무구 1자루 + 잔영 3종 시그니처 소재 + 별빛 조각.
+  // 잔영 3종(거인·메아리·성문지기) 셋 다 잡아야 모이는 구조 — 5막 협동 동선과 한 결.
+  {
+    id: "starlit_blade",
+    name: "별빛 재단 검 제작서",
+    description: `${ITEMS.starlit_blade.name}을(를) 만든다. ${ITEMS.empyrean_blade.name}에 잔영 셋의 결(거인의 비늘·심해 비늘·옛 군기 조각)을 별빛 조각으로 한데 잡아 다시 단조한다.`,
+    ingredients: [
+      { kind: "equip", itemId: "empyrean_blade", count: 1 },
+      { kind: "material", materialId: "giant_scale", count: 4 },
+      { kind: "material", materialId: "deep_scale", count: 4 },
+      { kind: "material", materialId: "war_banner_scrap", count: 4 },
+      { kind: "material", materialId: "starfall_shard", count: 50 },
+    ],
+    result: { kind: "equipment", itemId: "starlit_blade", slot: "weapon" },
+    variance: { atk: 1 },
+    tradable: false,
+  },
+  {
+    id: "starlit_aegis",
+    name: "별빛 재단 방패 제작서",
+    description: `${ITEMS.starlit_aegis.name}을(를) 만든다. ${ITEMS.empyrean_aegis.name}의 골격을 잔영 셋의 결(거인의 비늘·심해 비늘·옛 군기 조각)로 보강하고 별빛 조각으로 결을 잡는다.`,
+    ingredients: [
+      { kind: "equip", itemId: "empyrean_aegis", count: 1 },
+      { kind: "material", materialId: "giant_scale", count: 4 },
+      { kind: "material", materialId: "deep_scale", count: 4 },
+      { kind: "material", materialId: "war_banner_scrap", count: 4 },
+      { kind: "material", materialId: "starfall_shard", count: 50 },
+    ],
+    result: { kind: "equipment", itemId: "starlit_aegis", slot: "weapon" },
+    variance: { atk: 1 },
+    tradable: false,
+  },
+  {
+    id: "starlit_lance",
+    name: "별빛 재단 창 제작서",
+    description: `${ITEMS.starlit_lance.name}을(를) 만든다. ${ITEMS.empyrean_lance.name} 끝에 잔영 셋의 결(거인의 비늘·심해 비늘·옛 군기 조각)을 모아 박고 별빛 조각으로 균형을 잡는다.`,
+    ingredients: [
+      { kind: "equip", itemId: "empyrean_lance", count: 1 },
+      { kind: "material", materialId: "giant_scale", count: 4 },
+      { kind: "material", materialId: "deep_scale", count: 4 },
+      { kind: "material", materialId: "war_banner_scrap", count: 4 },
+      { kind: "material", materialId: "starfall_shard", count: 50 },
+    ],
+    result: { kind: "equipment", itemId: "starlit_lance", slot: "weapon" },
+    variance: { atk: 1 },
+    tradable: false,
+  },
+  {
+    id: "starlit_grip",
+    name: "별빛 재단 너클 제작서",
+    description: `${ITEMS.starlit_grip.name}을(를) 만든다. ${ITEMS.empyrean_grip.name}을 풀어 잔영 셋의 결(거인의 비늘·심해 비늘·옛 군기 조각)을 한 결씩 새기고 별빛 조각으로 손등을 다진다.`,
+    ingredients: [
+      { kind: "equip", itemId: "empyrean_grip", count: 1 },
+      { kind: "material", materialId: "giant_scale", count: 4 },
+      { kind: "material", materialId: "deep_scale", count: 4 },
+      { kind: "material", materialId: "war_banner_scrap", count: 4 },
+      { kind: "material", materialId: "starfall_shard", count: 50 },
+    ],
+    result: { kind: "equipment", itemId: "starlit_grip", slot: "weapon" },
+    variance: { atk: 1 },
+    tradable: false,
+  },
+  {
+    id: "starlit_mantle",
+    name: "별빛 재단 망토 제작서",
+    description: `${ITEMS.starlit_mantle.name}을(를) 만든다. ${ITEMS.empyrean_mantle.name}에 잔영 셋의 결(거인의 비늘·심해 비늘·옛 군기 조각)을 한 가닥씩 더 짜내고 별빛 조각으로 가장자리를 묶는다.`,
+    ingredients: [
+      { kind: "equip", itemId: "empyrean_mantle", count: 1 },
+      { kind: "material", materialId: "giant_scale", count: 4 },
+      { kind: "material", materialId: "deep_scale", count: 4 },
+      { kind: "material", materialId: "war_banner_scrap", count: 4 },
+      { kind: "material", materialId: "starfall_shard", count: 50 },
+    ],
+    result: { kind: "equipment", itemId: "starlit_mantle", slot: "accessory" },
+    variance: { dex: 1 },
+    tradable: false,
+  },
+
   // ── 중간 단계 제작 라인 — 그동안 퀘스트/판매 외엔 안 쓰이던 재료에 제작 destination 부여 ──
   {
     id: "soul_blade",

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { Npc } from "@/adventure/data/npcs";
 import { NpcDialogue } from "@/adventure/NpcDialogue";
 import type { useQuests } from "@/adventure/quests/useQuests";
@@ -14,6 +15,16 @@ import type { useInventory } from "@/adventure/inventory/useInventory";
 const VESSEL_QUEST = "village-meteor-vessel";
 const VESSEL_SHARDS = 30;
 
+// 5막 종착 의식 후 풀리는 별빛 재단 무구 5종 제작서 — 유성이 떠나기 전 시작 마을 대장간에
+// "별빛 재단법" 을 남기고 간다. starfall_keeper 칭호 보유자에게 자동 학습 (idempotent).
+const STARLIT_FORGE_RECIPES: readonly string[] = [
+  "starlit_blade",
+  "starlit_aegis",
+  "starlit_lance",
+  "starlit_grip",
+  "starlit_mantle",
+];
+
 type Props = {
   npc: Npc;
   onClose: () => void;
@@ -23,6 +34,8 @@ type Props = {
   inventory: ReturnType<typeof useInventory>;
   /** 5막 종착 의식에서 starfall_keeper 칭호 부여 — useTitleGrant 의 grantTitle. */
   grantTitle: (titleId: string) => void;
+  /** Ch 30 후 별빛 재단법 5종 자동 학습 — useCrafting.learnRecipe. */
+  learnRecipe: (id: string) => void;
 };
 
 export function MeteorDialogue({
@@ -33,7 +46,16 @@ export function MeteorDialogue({
   storyFlags,
   inventory,
   grantTitle,
+  learnRecipe,
 }: Props) {
+  // 마이그레이션 — 이미 endgame_complete 인 캐릭은 본 PR 시점에 별빛 재단법이 학습돼 있지
+  // 않다. 유성을 한 번 더 만나면 그 자리에서 보강 (learnRecipe 자체가 idempotent).
+  useEffect(() => {
+    if (storyFlags.has("endgame_complete")) {
+      for (const id of STARLIT_FORGE_RECIPES) learnRecipe(id);
+    }
+  }, [storyFlags, learnRecipe]);
+
   // 4막 미완 — 옥좌의 주재 협동전 클리어 전. 옥좌의 자리를 본 적이 없으니 모르는 사람.
   if (!storyFlags.has("endgame_apex_defeated")) {
     return (
@@ -123,7 +145,8 @@ export function MeteorDialogue({
   }
 
   // Ch 30 종착 — apex_phantom_seen(고탑 100층 환영) 본 후 의식 컷씬 1회.
-  // 누르면 endgame_complete flag set + starfall_keeper 칭호 grant. idempotent.
+  // 누르면 endgame_complete flag set + starfall_keeper 칭호 grant + 별빛 재단법 5종 학습.
+  // 모두 idempotent (learnRecipe known no-op).
   if (
     storyFlags.has("apex_phantom_seen") &&
     !storyFlags.has("endgame_complete")
@@ -133,13 +156,14 @@ export function MeteorDialogue({
         npc={npc}
         onClose={onClose}
         text={
-          "…자네 등 뒤로 옥좌의 환영이 따라왔구먼. 고탑 위에서 자네가 본 그 자리.\n그릇은 빚어 두었네. 자, 내 앞에 내밀어 보게. 그 환영을 그릇 안에 한 점 한 점 *놓아주면* 되네 — 누구의 것도 아닌 빛은, 누구의 것도 아닌 자리에. 자네에게도, 누구에게도 묶이지 않게."
+          "…자네 등 뒤로 옥좌의 환영이 따라왔구먼. 고탑 위에서 자네가 본 그 자리.\n그릇은 빚어 두었네. 자, 내 앞에 내밀어 보게. 그 환영을 그릇 안에 한 점 한 점 *놓아주면* 되네 — 누구의 것도 아닌 빛은, 누구의 것도 아닌 자리에. 자네에게도, 누구에게도 묶이지 않게.\n…그리고 내가 떠나기 전에 한 가지 더. 시작 마을 대장간에 *별빛 재단법* 을 남기고 가겠네. 자네가 거둔 잔영 셋의 결을 창공 무구 위에 다시 둘러 단조할 수 있도록. 누구의 것도 아닌 빛으로 빚어낸 무구 — 자네가 두든, 누가 두든, 자기 결을 스스로 잡는 자루가 될 게야."
         }
         primaryAction={{
           label: "그릇을 내민다",
           onClick: () => {
             storyFlags.set("endgame_complete");
             grantTitle("starfall_keeper");
+            for (const id of STARLIT_FORGE_RECIPES) learnRecipe(id);
             onClose();
           },
         }}
