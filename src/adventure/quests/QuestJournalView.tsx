@@ -17,7 +17,6 @@ import { NPCS } from "@/adventure/data/npcs";
 import { WORLD_MAP } from "@/adventure/data/world";
 import { MATERIALS } from "@/adventure/data/materials";
 import { ITEMS } from "@/adventure/data/items";
-import { COOP_TIER_LABEL } from "@/adventure/coop/data";
 import type { QuestProgressEntry } from "./storage";
 
 const REGION_NAMES = new Map(WORLD_MAP.regions.map((r) => [r.id, r.name]));
@@ -440,30 +439,6 @@ function TargetView({
         />
       );
     }
-    case "coop_tier_reached":
-      return (
-        <ProgressBar
-          label={`${t.monsterName} 협동 보상 ${COOP_TIER_LABEL[t.minTier]} 이상 도달`}
-          progress={entry.progress}
-          count={total}
-        />
-      );
-    case "coop_high_dmg_attack":
-      return (
-        <ProgressBar
-          label={`${t.monsterName} 협동 — 단일 공격 ${t.minDamage.toLocaleString()} 데미지 이상`}
-          progress={entry.progress}
-          count={total}
-        />
-      );
-    case "coop_survive_attack":
-      return (
-        <ProgressBar
-          label={`${t.monsterName} 협동 — 사망 없이 공격 완주`}
-          progress={entry.progress}
-          count={total}
-        />
-      );
   }
 }
 

@@ -271,7 +271,7 @@ export const WORLD_MAP: WorldMap = {
         "돌풍 정령": 35,
         "늑대 무리장": 15,
       },
-      // 운봉의 거인은 협동 보스 시스템으로만 진입 (region.boss 솔로 인스턴스 제거).
+      boss: { monsterName: "운봉의 거인" },
       recommendedLevel: 20,
     },
     {
@@ -388,6 +388,7 @@ export const WORLD_MAP: WorldMap = {
         "구름 사냥꾼": 40,
         "운명 직조자": 25,
       },
+      boss: { monsterName: "별을 지키는 자" },
       recommendedLevel: 70,
     },
     {
@@ -429,6 +430,7 @@ export const WORLD_MAP: WorldMap = {
         "천공인 전사": 40,
         "폐허의 거상": 30,
       },
+      boss: { monsterName: "천공인의 왕" },
       recommendedLevel: 80,
     },
     {
@@ -460,6 +462,7 @@ export const WORLD_MAP: WorldMap = {
         "옥좌의 검신": 40,
         "잠든 황좌 거인": 30,
       },
+      boss: { monsterName: "창공의 주재" },
       recommendedLevel: 90,
     },
     // ── 해안 지선 (diola → tideflats → saltmarsh → reef_isle) ───────────────
@@ -640,8 +643,7 @@ export const WORLD_MAP: WorldMap = {
     },
     // ── 5막 PR-B1 — 별빛 협곡 (운무 협곡 옆) ────────────────────────────────
     // Ch 26 「별이 떨어진 자리」 완료(starfall_warden_felled) 후 협곡 안쪽으로 별빛이
-    // 떨어진 자리가 드러난다. 운봉의 거인의 잔영이 협동 보스로 등장 — region.boss 는
-    // 미설정(운봉의 거인 패턴 유지). Lv102 권장.
+    // 떨어진 자리가 드러난다. 운봉의 거인의 잔영이 솔로 region.boss 로 등장. Lv102 권장.
     {
       id: "starlit_canyon",
       name: "별빛 협곡",
@@ -655,10 +657,11 @@ export const WORLD_MAP: WorldMap = {
         "별빛 돌풍 정령": 35,
         "별빛 늑대 무리장": 20,
       },
+      boss: { monsterName: "별빛 거인 잔영" },
       recommendedLevel: 102,
     },
     // ── 5막 PR-B2 — 별빛 산호초 (산호초 섬 옆) ─────────────────────────────
-    // 같은 게이트(starfall_warden_felled). 수심의 것의 메아리가 협동 보스로 등장.
+    // 같은 게이트(starfall_warden_felled). 수심의 것의 메아리가 솔로 region.boss 로 등장.
     {
       id: "starlit_reef",
       name: "별빛 산호초",
@@ -672,10 +675,11 @@ export const WORLD_MAP: WorldMap = {
         "별빛 갑각 약탈자": 35,
         "별빛 가시 산호 골렘": 25,
       },
+      boss: { monsterName: "수심의 메아리" },
       recommendedLevel: 104,
     },
     // ── 5막 PR-B2 — 별빛 성채 (옛 변경 성채 옆) ────────────────────────────
-    // 같은 게이트(starfall_warden_felled). 옛 성문지기의 잔영이 협동 보스로 등장.
+    // 같은 게이트(starfall_warden_felled). 옛 성문지기의 잔영이 솔로 region.boss 로 등장.
     {
       id: "starlit_keep",
       name: "별빛 성채",
@@ -689,6 +693,7 @@ export const WORLD_MAP: WorldMap = {
         "별빛 탈영 약탈자": 35,
         "별빛 녹슨 자동인형": 30,
       },
+      boss: { monsterName: "성문지기 잔영" },
       recommendedLevel: 106,
     },
   ],

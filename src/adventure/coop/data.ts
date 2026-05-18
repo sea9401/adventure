@@ -31,91 +31,11 @@ export type CoopBossDef = {
   isWorldBoss?: boolean;
 };
 
-// PR #351 (사이클 기반 캡) 머지 후 적용 — 협동 1회 공격 누적 데미지가 다중공격 빌드에서
-// 1.5~2x 늘었다. 입문자 보스 canyon 은 attackCount=1 영향 거의 없고 자주 1-shot 나서
-// 그대로 유지. 나머지 보스는 flat ×1.5 로 부풀려 사이클 캡 수정 전과 비슷한 체감 처치
-// 시간을 유지한다. (측정: 엔드빌드 starspire/skyfolk_ruins 에서 ~2x, 그 외 ~1.5x —
-// 정확히 균등 보전은 어렵고 1.5 가 중앙치.)
+// 2026-05-19: 스토리 7종 (canyon/starspire/skyfolk_ruins/apex_throne/3 starlit 잔영) 솔로
+// region.boss 로 전환 — 스토리 진행 시 협동 매칭 불편함 해소. 협동은 dragon_nest 월드
+// 보스 1종만 유지 (엔드 농사 결). legend 1% unique 드랍·칭호는 monster.drops /
+// onDefeatTitleId 로 마이그레이션. coop UI / 보상 표(rewards.ts) 는 dragon 만 노출.
 export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
-  canyon: {
-    monsterName: "운봉의 거인",
-    maxHp: 5000, // 입문 보스 — 그대로.
-    expirationMs: 24 * 60 * 60 * 1000, // 24h
-    respawnMs: 1 * 60 * 60 * 1000, // 1h (처치/만료 동일)
-    onDefeatFlag: "peak_giant_defeated",
-    onAttackFlag: "peak_giant_engaged",
-  },
-  // 5막 PR-B1 — 별빛 거인 잔영. 운봉의 거인 처치 후 별빛이 그 자리에 떨어졌다.
-  // 만렙 100 협동 보스 — apex_throne / starspire 사이 톤. 진입 자격:
-  // Ch 26 「별이 떨어진 자리」 완료(starfall_warden_felled) — 별빛이 흩어졌음을 본 자만.
-  starlit_canyon: {
-    monsterName: "별빛 거인 잔영",
-    maxHp: 42000, // 28000 × 1.5
-    expirationMs: 24 * 60 * 60 * 1000, // 24h
-    respawnMs: 1 * 60 * 60 * 1000, // 1h
-    onDefeatFlag: "starlit_giant_quelled",
-    onAttackFlag: "starlit_giant_engaged",
-    requiredFlag: "starfall_warden_felled",
-    lockedMessage:
-      "Ch 26 「별이 떨어진 자리」를 먼저 끝내야 한다. 별빛이 옛 봉인 자리로 흩어졌음을 한 번 본 자에게만 잔영이 모습을 드러낸다.",
-  },
-  // 5막 PR-B2 — 수심의 메아리. 거인 잔영(42000) 보다 한 톤 위 (45000).
-  starlit_reef: {
-    monsterName: "수심의 메아리",
-    maxHp: 45000, // 30000 × 1.5
-    expirationMs: 24 * 60 * 60 * 1000,
-    respawnMs: 1 * 60 * 60 * 1000,
-    onDefeatFlag: "starlit_deep_quelled",
-    onAttackFlag: "starlit_deep_engaged",
-    requiredFlag: "starfall_warden_felled",
-    lockedMessage:
-      "Ch 26 「별이 떨어진 자리」를 먼저 끝내야 한다. 별빛이 옛 봉인 자리로 흩어졌음을 한 번 본 자에게만 메아리가 모습을 드러낸다.",
-  },
-  // 5막 PR-B2 — 성문지기 잔영. 메아리(45000) 보다 한 톤 위 (49500) — 셋 중 가장 단단함.
-  starlit_keep: {
-    monsterName: "성문지기 잔영",
-    maxHp: 49500, // 33000 × 1.5
-    expirationMs: 24 * 60 * 60 * 1000,
-    respawnMs: 1 * 60 * 60 * 1000,
-    onDefeatFlag: "starlit_gate_quelled",
-    onAttackFlag: "starlit_gate_engaged",
-    requiredFlag: "starfall_warden_felled",
-    lockedMessage:
-      "Ch 26 「별이 떨어진 자리」를 먼저 끝내야 한다. 별빛이 옛 봉인 자리로 흩어졌음을 한 번 본 자에게만 잔영이 모습을 드러낸다.",
-  },
-  starspire: {
-    monsterName: "별을 지키는 자",
-    maxHp: 32700, // 21800 × 1.5
-    expirationMs: 24 * 60 * 60 * 1000, // 24h
-    respawnMs: 1 * 60 * 60 * 1000, // 1h
-    onDefeatFlag: "starspire_keeper_defeated",
-    onAttackFlag: "starspire_engaged",
-  },
-  skyfolk_ruins: {
-    monsterName: "천공인의 왕",
-    maxHp: 49050, // 32700 × 1.5
-    expirationMs: 24 * 60 * 60 * 1000, // 24h
-    respawnMs: 1 * 60 * 60 * 1000, // 1h
-    onDefeatFlag: "skyfolk_king_defeated",
-    onAttackFlag: "skyfolk_engaged",
-    // 진입 자격 — 별바다 노수호자 유성의 "폐도의 봉인" 의뢰 완료 시 풀림.
-    requiredFlag: "skyfolk_gate_cleared",
-    lockedMessage:
-      "별바다의 노수호자 유성에게 '폐도의 봉인' 의뢰를 받아 완료해야 한다. 폐도의 결을 먼저 풀어야 천공인의 왕이 자네를 알아본다.",
-  },
-  apex_throne: {
-    monsterName: "창공의 주재",
-    maxHp: 73500, // 49000 × 1.5
-    expirationMs: 24 * 60 * 60 * 1000, // 24h
-    respawnMs: 1 * 60 * 60 * 1000, // 1h
-    // 만렙 정점 — 처치 시 6번째 일반 슬롯 + 2번째 특기 슬롯 동시 해금 (SKILL_SLOT_UNLOCK 참조).
-    onDefeatFlag: "endgame_apex_defeated",
-    onAttackFlag: "apex_engaged",
-    // 진입 자격 — 별바다 노수호자 유성의 "옥좌의 봉인" 의뢰 완료 시 풀림.
-    requiredFlag: "apex_gate_cleared",
-    lockedMessage:
-      "별바다의 노수호자 유성에게 '옥좌의 봉인' 의뢰를 받아 완료해야 한다. 옥좌 둘레의 결을 풀어야 창공의 주재가 자네 앞에 일어선다.",
-  },
   // 월드 보스 — 용비늘 묘지 너머. apex_throne 의 약 10배 HP + 7일 휴면.
   // expirationMs 는 사실상 만료 없음 (1년) — 죽을 때까지 살아있다는 의미.
   // 자연회복 없음: 누적 데미지만 유효, 며칠 비웠다 와도 진척이 보존된다.

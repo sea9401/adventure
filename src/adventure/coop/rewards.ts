@@ -1,5 +1,7 @@
 // 협동 보스 보상 — 누적 데미지 비율로 티어 결정 + 도달 티어까지 누적 지급.
-// 운봉의 거인 협동 한 보스 한정 (다른 보스 추가 시 보스별 분기 추가).
+// 2026-05-19: 스토리 7종(운봉의 거인 / 별을 지키는 자 / 천공인의 왕 / 창공의 주재 /
+// 3 별빛 잔영) 솔로 region.boss 로 전환. 그쪽 legend unique·칭호는 monster.drops /
+// onDefeatTitleId 로 마이그레이션. 이 파일은 dragon_nest 월드 보스 한 종만 남음.
 
 import type { MaterialId } from "@/adventure/data/materials";
 import type { ItemId } from "@/adventure/data/items";
@@ -17,118 +19,6 @@ export type CoopReward = {
   equipRolls?: { itemId: ItemId; chance: number }[];
   /** 부여할 칭호. */
   titleId?: string;
-};
-
-const PEAK_GIANT_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
-  bronze: {
-    materials: { giant_scale: 1 },
-    recipes: [],
-  },
-  silver: {
-    materials: { unbong_ore: 1 },
-    recipes: [],
-  },
-  gold: {
-    materials: { giant_scale: 1, unbong_ore: 1 },
-    recipes: [],
-    recipeOneOf: ["peak_sword", "peak_shield", "peak_spear", "peak_claw"],
-    recipeRolls: [{ recipeId: "peak_mantle", chance: 0.15 }],
-  },
-  epic: {
-    materials: {},
-    recipes: ["peak_heart"],
-  },
-  legend: {
-    materials: {},
-    recipes: [],
-    titleId: "giant_slayer",
-    // 물욕 드랍 — legend 도달자에게도 아주 낮은 확률로만 떨어지는 unique 액세서리.
-    equipRolls: [{ itemId: "peak_relic", chance: 0.02 }],
-  },
-};
-
-const STAR_KEEPER_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
-  bronze: {
-    materials: { stardust: 2 },
-    recipes: [],
-  },
-  silver: {
-    materials: { sky_alloy: 1 },
-    recipes: [],
-  },
-  gold: {
-    materials: { stardust: 2, sky_alloy: 1 },
-    recipes: [],
-    recipeOneOf: ["star_blade", "star_aegis", "star_lance", "star_grip"],
-    recipeRolls: [{ recipeId: "star_mantle", chance: 0.15 }],
-  },
-  epic: {
-    materials: { sky_alloy: 1 },
-    recipes: [],
-  },
-  legend: {
-    materials: {},
-    recipes: [],
-    titleId: "star_keeper",
-    // 물욕 드랍 — legend 도달자에게도 아주 낮은 확률로만 떨어지는 armor 슬롯 unique.
-    equipRolls: [{ itemId: "star_robe", chance: 0.01 }],
-  },
-};
-
-const SKYFOLK_KING_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
-  bronze: {
-    materials: { stellar_essence: 2 },
-    recipes: [],
-  },
-  silver: {
-    materials: { aether_alloy: 1 },
-    recipes: [],
-  },
-  gold: {
-    materials: { stellar_essence: 2, aether_alloy: 1 },
-    recipes: [],
-    recipeOneOf: ["aether_blade", "aether_aegis", "aether_lance", "aether_grip"],
-    recipeRolls: [{ recipeId: "aether_mantle", chance: 0.15 }],
-  },
-  epic: {
-    materials: { aether_alloy: 1 },
-    recipes: [],
-  },
-  legend: {
-    materials: {},
-    recipes: [],
-    titleId: "skyfolk_slayer",
-    // 물욕 드랍 — legend 도달자 한정, 운봉령/별빛 두루마기 패턴 그대로 낮은 확률.
-    equipRolls: [{ itemId: "skyfolk_crown", chance: 0.01 }],
-  },
-};
-
-const SKY_ARBITER_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
-  bronze: {
-    materials: { empyrean_shard: 2 },
-    recipes: [],
-  },
-  silver: {
-    materials: { primordial_essence: 1 },
-    recipes: [],
-  },
-  gold: {
-    materials: { empyrean_shard: 2, primordial_essence: 1 },
-    recipes: [],
-    recipeOneOf: ["empyrean_blade", "empyrean_aegis", "empyrean_lance", "empyrean_grip"],
-    recipeRolls: [{ recipeId: "empyrean_mantle", chance: 0.15 }],
-  },
-  epic: {
-    materials: { primordial_essence: 1 },
-    recipes: [],
-  },
-  legend: {
-    materials: {},
-    recipes: [],
-    titleId: "apex_slayer",
-    // 만렙 정점 물욕 드랍 — 운봉령/별빛 두루마기/천공인의 관 같은 결, legend 도달 후 1% 굴림.
-    equipRolls: [{ itemId: "apex_regalia", chance: 0.01 }],
-  },
 };
 
 // 월드 보스 — 태고의 노룡. 일주일 단위 이벤트라 일반 coop 보다 보상 분량 두툼.
@@ -168,97 +58,8 @@ const PRIMORDIAL_DRAGON_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
   },
 };
 
-// ── 5막 잔영 협동 보상 3종 — 별빛 변종 협동 보스 누적 데미지 티어 보상 ──────────
-// 패턴: 별을 지키는 자 결 그대로. 잔영별 signature material(거인 = giant_scale,
-// 메아리 = deep_scale, 성문지기 = war_banner_scrap) 와 별빛 조각 누진 + legend 의
-// 칭호 + 1% unique 액세서리(giant_yoke / deep_orb / gate_bar).
-//
-// 5막 종착 의식 후 별빛 재단법은 이미 자동 학습돼 있어 recipeOneOf 는 안 둔다.
-// (별빛 재단 무구 → 강화 라인이 별빛 조각의 영구 sink — 잔영 협동은 그 공급원.)
-const STARLIT_GIANT_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
-  bronze: {
-    materials: { giant_scale: 2 },
-    recipes: [],
-  },
-  silver: {
-    materials: { starfall_shard: 4 },
-    recipes: [],
-  },
-  gold: {
-    materials: { giant_scale: 2, starfall_shard: 6 },
-    recipes: [],
-  },
-  epic: {
-    materials: { starfall_shard: 8 },
-    recipes: [],
-  },
-  legend: {
-    materials: {},
-    recipes: [],
-    titleId: "starlit_giant_breaker",
-    equipRolls: [{ itemId: "giant_yoke", chance: 0.01 }],
-  },
-};
-
-const STARLIT_DEPTH_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
-  bronze: {
-    materials: { deep_scale: 2 },
-    recipes: [],
-  },
-  silver: {
-    materials: { starfall_shard: 4 },
-    recipes: [],
-  },
-  gold: {
-    materials: { deep_scale: 2, starfall_shard: 6 },
-    recipes: [],
-  },
-  epic: {
-    materials: { starfall_shard: 8 },
-    recipes: [],
-  },
-  legend: {
-    materials: {},
-    recipes: [],
-    titleId: "starlit_depth_breaker",
-    equipRolls: [{ itemId: "deep_orb", chance: 0.01 }],
-  },
-};
-
-const STARLIT_GATE_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
-  bronze: {
-    materials: { war_banner_scrap: 2 },
-    recipes: [],
-  },
-  silver: {
-    materials: { starfall_shard: 4 },
-    recipes: [],
-  },
-  gold: {
-    materials: { war_banner_scrap: 2, starfall_shard: 6 },
-    recipes: [],
-  },
-  epic: {
-    materials: { starfall_shard: 8 },
-    recipes: [],
-  },
-  legend: {
-    materials: {},
-    recipes: [],
-    titleId: "starlit_gate_breaker",
-    equipRolls: [{ itemId: "gate_bar", chance: 0.01 }],
-  },
-};
-
 const TIER_TABLES: Record<string, Record<CoopRewardTier, CoopReward>> = {
-  "운봉의 거인": PEAK_GIANT_TIER_REWARDS,
-  "별을 지키는 자": STAR_KEEPER_TIER_REWARDS,
-  "천공인의 왕": SKYFOLK_KING_TIER_REWARDS,
-  "창공의 주재": SKY_ARBITER_TIER_REWARDS,
   "태고의 노룡": PRIMORDIAL_DRAGON_TIER_REWARDS,
-  "별빛 거인 잔영": STARLIT_GIANT_TIER_REWARDS,
-  "수심의 메아리": STARLIT_DEPTH_TIER_REWARDS,
-  "성문지기 잔영": STARLIT_GATE_TIER_REWARDS,
 };
 
 const TIER_ORDER: CoopRewardTier[] = ["bronze", "silver", "gold", "epic", "legend"];

@@ -183,6 +183,11 @@ export function onBattleEnd(
     if (monster?.onDefeatFlag) {
       deps.storyFlags.set(monster.onDefeatFlag);
     }
+    // 솔로 region.boss 처치 시 칭호 부여 (data-driven, monster.onDefeatTitleId).
+    // 옛 coop 시절의 "50% 데미지 임계" 대신 솔로 처치 자체가 자격. grantTitle 이 idempotent.
+    if (monster?.onDefeatTitleId) {
+      deps.adventureLog.markTitleObtained(monster.onDefeatTitleId);
+    }
     // 보스 누적 50회 업적 — 깊은 상처 스킬북 1회 지급. phaseTrigger 보유 = 보스.
     if (
       monster?.phaseTrigger &&
