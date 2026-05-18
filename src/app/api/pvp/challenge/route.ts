@@ -17,6 +17,7 @@
 // 보상 화폐 / 일일 캡 / 시즌 cron 은 후속 PR 범위.
 
 import { ensureUser } from "@/lib/server/ensureUser";
+import { checkSession } from "@/lib/server/checkSession";
 import { derivePlayerCombatFromSaves } from "@/lib/server/derivePlayerCombatFromSaves";
 import { resolveActor } from "@/lib/server/resolveActor";
 import { getOrCreateCurrentSeason } from "@/lib/server/pvp/season";
@@ -44,9 +45,11 @@ function pvpToDbOutcome(o: PvPOutcome): DbOutcome {
   }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
+  const sessionFail = await checkSession(userId, req);
+  if (sessionFail) return sessionFail;
 
   // 쿨다운 — 60초. 비싼 시뮬레이션 전에 가장 먼저 차단.
   const nextAt = await getNextChallengeAt(userId);

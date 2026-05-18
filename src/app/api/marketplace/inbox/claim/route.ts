@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { marketplaceInbox, savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { checkSession } from "@/lib/server/checkSession";
 import { parseInboxPayload } from "@/lib/server/inboxPayload";
 import { upsertSave } from "@/lib/server/savesKv";
 import {
@@ -39,6 +40,8 @@ type AddRecipe = {
 export async function POST(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
+  const sessionFail = await checkSession(userId, req);
+  if (sessionFail) return sessionFail;
 
   let body: { ids?: unknown };
   try {
