@@ -60,28 +60,6 @@ export async function handleCoopAttack(
   }
   if (session.hp <= 0) return new Response("already defeated", { status: 409 });
 
-  // 쿨다운 확인.
-  const my = await db
-    .select()
-    .from(coopBossContributors)
-    .where(
-      and(
-        eq(coopBossContributors.sessionId, session.id),
-        eq(coopBossContributors.userId, userId),
-      ),
-    )
-    .limit(1);
-  const myRow = my[0];
-  if (myRow?.lastAttackAt) {
-    const next = myRow.lastAttackAt.getTime() + COOP_ATTACK_COOLDOWN_MS;
-    if (Date.now() < next) {
-      return Response.json(
-        { error: "cooldown", retryAfter: next - Date.now() },
-        { status: 429 },
-      );
-    }
-  }
-
   // 서버측 PlayerCombat 재계산 — 저장된 character.v2 + training.v2 로 derive.
   // (클라가 보낸 stat 은 더 이상 신뢰하지 않음)
   const derived = await derivePlayerCombatFromSaves(userId);
@@ -92,6 +70,7 @@ export async function handleCoopAttack(
     return new Response("character is incapacitated", { status: 409 });
   }
 
+  // 시뮬레이션은 CPU 작업이라 트랜잭션 밖에서 — bossCurrentHp 는 in-tx SELECT 시점에 다시 클램프된다.
   const result = simulateCoopAttack({
     player: derived.player,
     playerName: body.playerName ?? "모험가",
@@ -101,51 +80,80 @@ export async function handleCoopAttack(
     turns: 20,
   });
 
-  // 세션 hp 차감 + contributor UPSERT — 단일 트랜잭션.
-  // 처치(defeated) 판정은 SELECT 시점의 stale session.hp 가 아니라 UPDATE 의 실제 결과로 한다.
-  // (이전 버그: 동시 공격 두 건이 각자 stale hp 로 defeated 를 계산 →
-  //  ① 둘 다 true 면 broadcast/storyFlag 가 중복 실행,
-  //  ② 둘 다 false 인데 합산으로 hp 가 0 이 되면 defeatedAt 이 NULL 인 채 "죽었지만 못 받는" 보스가 됨.)
+  // 세션/쿨다운/hp 차감/contributor 를 하나의 트랜잭션에 묶는다.
+  // 핵심: session row 를 FOR UPDATE 로 잠가서 같은 보스에 대한 동시 공격을 직렬화.
+  //   - C1 fix: 쿨다운 체크가 트랜잭션 밖이라 더블클릭으로 쿨다운 우회 + 데미지 중복 적용되던 race 제거.
+  //   - C2 fix: 보스 처치 직후 후발 공격이 사망한 보스에 기여도/공격카운트를 적립하던 race 제거.
+  // 이전 코멘트에 있던 "동시 UPDATE 직렬화 + GREATEST" 패턴은 hp 충돌 자체는 막아주지만,
+  // 쿨다운/사망 가드를 함께 보장하지 못해 contributor / log 가 잘못 누적됨.
   const now = new Date();
-  let realHp = Math.max(0, session.hp - result.damageDealt);
+  let realHp = session.hp;
   let iClaimedKill = false;
+  let abortReason: "cooldown" | "defeated" | "expired" | null = null;
+  let cooldownRetryMs = 0;
 
   await db.transaction(async (tx) => {
-    // 1. 원자적 hp 차감 — RETURNING 으로 실제 적용된 결과를 받는다.
-    //    READ COMMITTED 에서 같은 row 의 동시 UPDATE 는 직렬화되므로 GREATEST 는 직전 커밋 반영값을 본다.
+    // 1. session row FOR UPDATE — 이 트랜잭션 종료 전까진 다른 attack 이 이 보스를 못 만진다.
+    const [s] = await tx
+      .select()
+      .from(coopBossSessions)
+      .where(eq(coopBossSessions.id, session.id))
+      .for("update");
+    if (!s || s.defeatedAt !== null || s.hp <= 0) {
+      abortReason = "defeated";
+      return;
+    }
+    if (s.expiresAt < new Date()) {
+      abortReason = "expired";
+      return;
+    }
+
+    // 2. 쿨다운 — session lock 보유 중이라 contributor 읽기는 fresh.
+    const [c] = await tx
+      .select({ lastAttackAt: coopBossContributors.lastAttackAt })
+      .from(coopBossContributors)
+      .where(
+        and(
+          eq(coopBossContributors.sessionId, s.id),
+          eq(coopBossContributors.userId, userId),
+        ),
+      );
+    if (c?.lastAttackAt) {
+      const next = c.lastAttackAt.getTime() + COOP_ATTACK_COOLDOWN_MS;
+      if (Date.now() < next) {
+        abortReason = "cooldown";
+        cooldownRetryMs = next - Date.now();
+        return;
+      }
+    }
+
+    // 3. hp 차감 — lock 보유로 race 없음. GREATEST 는 안전 마진.
     const [updated] = await tx
       .update(coopBossSessions)
       .set({
         hp: sql`GREATEST(0, ${coopBossSessions.hp} - ${result.damageDealt})`,
       })
-      .where(eq(coopBossSessions.id, session.id))
+      .where(eq(coopBossSessions.id, s.id))
       .returning({ hp: coopBossSessions.hp });
-    realHp = updated?.hp ?? realHp;
+    realHp = updated?.hp ?? s.hp;
 
-    // 2. 처치 CAS — hp 가 0 이고 아직 아무도 처치하지 않았을 때만 한 명이 점유.
-    //    여기서 row 를 받은 1건만 iClaimedKill=true → broadcast/storyFlag 1회.
+    // 4. 사망 처리 — lock 보유로 1명만 이 분기.
     if (realHp === 0) {
-      const [claimed] = await tx
+      await tx
         .update(coopBossSessions)
         .set({
           defeatedAt: now,
           nextSpawnAt: new Date(now.getTime() + def.respawnMs),
         })
-        .where(
-          and(
-            eq(coopBossSessions.id, session.id),
-            isNull(coopBossSessions.defeatedAt),
-          ),
-        )
-        .returning({ id: coopBossSessions.id });
-      iClaimedKill = !!claimed;
+        .where(eq(coopBossSessions.id, s.id));
+      iClaimedKill = true;
     }
 
-    // contributor UPSERT — 누적 데미지 / 공격 횟수 / lastAttackAt.
+    // 5. contributor UPSERT — 누적 데미지 / 공격 횟수 / lastAttackAt.
     await tx
       .insert(coopBossContributors)
       .values({
-        sessionId: session.id,
+        sessionId: s.id,
         userId,
         damage: result.damageDealt,
         attackCount: 1,
@@ -160,9 +168,9 @@ export async function handleCoopAttack(
         },
       });
 
-    // 공격 로그 1줄 — 다른 사람도 보스 카드 밑에서 볼 수 있게. log 는 BattleLogEntry[] 그대로.
+    // 6. 공격 로그 1줄 — 다른 사람도 보스 카드 밑에서 볼 수 있게.
     await tx.insert(coopBossAttackLog).values({
-      sessionId: session.id,
+      sessionId: s.id,
       userId,
       name: body.playerName ?? "모험가",
       damageDealt: result.damageDealt,
@@ -172,6 +180,19 @@ export async function handleCoopAttack(
       createdAt: now,
     });
   });
+
+  if (abortReason === "cooldown") {
+    return Response.json(
+      { error: "cooldown", retryAfter: cooldownRetryMs },
+      { status: 429 },
+    );
+  }
+  if (abortReason === "defeated") {
+    return new Response("already defeated", { status: 409 });
+  }
+  if (abortReason === "expired") {
+    return new Response("session expired", { status: 410 });
+  }
 
   // 처치 시 storyFlag set — savesKv 의 storyFlags.v2 갱신. CAS 로 처치를 점유한 1명만
   // 이 분기에 진입한다. 킬샷 운에 따라 슬롯 해금이 좌우되지 않도록, 이 세션의 silver+
