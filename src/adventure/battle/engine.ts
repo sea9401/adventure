@@ -2175,15 +2175,16 @@ export function advanceTurn(
       text: `[흡혈 갑옷] ${playerName}의 HP +${bloodfeastHeal}`,
     });
   }
-  // 반사 갑주 (특기) + 가시 갑옷 (5티어) — 받은 HP 피해의 N% 를 적에게 반사. 둘 다 있으면 합산.
+  // 반사 갑주 (특기) + 가시 갑옷 (5티어) — 적이 넣은 피해(가드/굳건/철벽 감산 전, heavyBlow 반영)의
+  // N% 를 적에게 반사. 둘 다 있으면 합산. 베이스가 pre-mit 이라 탱커 빌드여도 반사가 살아남는다.
   // 무한 가시 (2티어 특기) — 피격분과 별개로 적 ATK 의 N% 를 추가 반사 (회피/피격 무관).
   const thornsDmg =
     (player.thornsPct ?? 0) > 0
-      ? Math.floor((dmgToHp * player.thornsPct!) / 100)
+      ? Math.floor((rawDmgBeforeReduction * player.thornsPct!) / 100)
       : 0;
   const brambleDmg =
     (player.bramblePct ?? 0) > 0
-      ? Math.floor((dmgToHp * player.bramblePct!) / 100)
+      ? Math.floor((rawDmgBeforeReduction * player.bramblePct!) / 100)
       : 0;
   const reflectDmg = thornsDmg + brambleDmg + infiniteThornsDmg;
   const enemyHpAfterThorns = Math.max(0, state.enemyHp - reflectDmg);

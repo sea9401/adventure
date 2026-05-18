@@ -90,7 +90,7 @@ describe("특기 — 유격", () => {
 });
 
 describe("특기 — 반사 갑주", () => {
-  it("피격 시 받은 피해의 N% 를 적에게 반사", () => {
+  it("피격 시 적이 넣은 피해의 N% 를 적에게 반사", () => {
     const p: PlayerCombat = { ...PLAYER, thornsPct: 50 };
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // 1턴: 7 → 93
@@ -98,6 +98,24 @@ describe("특기 — 반사 갑주", () => {
     expect(s.playerHp).toBe(47);
     expect(s.enemyHp).toBe(92);
     expect(s.stacks.damageTakenThisCombat).toBe(3);
+  });
+
+  it("가드로 피해 0 이 되어도 pre-mit 베이스로 반사가 살아남는다", () => {
+    // 적 atk 20, 플레이어 def 0 → damageBetween=20. 가드 reduction 50 → dmgToHp=0.
+    // 반사 베이스는 rawDmgBeforeReduction=20 이므로 thornsPct 50 = floor(20*0.5)=10.
+    const p: PlayerCombat = {
+      ...PLAYER,
+      thornsPct: 50,
+      guard: { turns: 3, reduction: 50 },
+    };
+    const tough: Monster = { name: "강적", tags: ["beast"], hp: 200, atk: 20, def: 1, spd: 5, exp: 5 };
+    let s = initialBattleState(p, tough, "용사");
+    const beforeEnemy = s.enemyHp;
+    s = advanceTurn(s, p, "용사"); // 1턴 본타
+    const afterPlayer = s.playerHp;
+    s = advanceTurn(s, p, "용사"); // 적 턴: 가드로 0 피해, 반사 10
+    expect(s.playerHp).toBe(afterPlayer); // 피해 0
+    expect(beforeEnemy - s.enemyHp).toBeGreaterThanOrEqual(10); // 본타 + 반사 10
   });
 });
 
