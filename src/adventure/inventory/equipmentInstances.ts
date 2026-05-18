@@ -7,6 +7,7 @@
 
 import type { CraftTier } from "@/adventure/data/craftQuality";
 import type { ItemId } from "@/adventure/data/items";
+import { ENHANCE_MAX_LEVEL } from "@/adventure/character/enhancement";
 
 export type EquipmentInstance = {
   /** 고유 ID. crypto.randomUUID 권장 (서버에서 생성). 절대 재사용 X. */
@@ -36,7 +37,14 @@ export function normalizeInstance(raw: unknown): EquipmentInstance | null {
   if (typeof r.instanceId !== "string" || !r.instanceId) return null;
   if (typeof r.itemId !== "string") return null;
   const lv = r.enhancementLevel;
-  if (typeof lv !== "number" || !Number.isInteger(lv) || lv < 0) return null;
+  if (
+    typeof lv !== "number" ||
+    !Number.isInteger(lv) ||
+    lv < 0 ||
+    lv > ENHANCE_MAX_LEVEL
+  ) {
+    return null;
+  }
   const tier = r.craftTier;
   if (
     tier !== undefined &&

@@ -67,10 +67,26 @@ describe("rehydrateEquippedItem", () => {
     expect(re!.bonus?.str).toBe(16);
   });
 
-  it("별빛 재단 무구 그러나 instanceId 누락 — null (슬롯 비움)", () => {
+  it("별빛 재단 무구 그러나 instanceId 누락 — 강화 0 베이스로 살린다 (슬롯 보존)", () => {
     const base = ITEMS.starlit_blade;
     const saved = { ...base }; // instanceId 없음
-    expect(rehydrateEquippedItem(saved)).toBeNull();
+    const re = rehydrateEquippedItem(saved);
+    expect(re).not.toBeNull();
+    expect(re!.bonus).toEqual(base.bonus);
+    // 강화 0 베이스로 떨어졌으므로 instanceId / enhancementLevel 메타는 비어 있음.
+    expect(re!.instanceId).toBeUndefined();
+    expect(re!.enhancementLevel).toBeUndefined();
+  });
+
+  it("별빛 재단 무구 + craftTier 만 있고 instanceId 누락 — 등급 반영 베이스로 살린다", () => {
+    const base = ITEMS.starlit_blade;
+    const saved = { ...base, craftTier: 2 as const }; // instanceId 없음
+    const re = rehydrateEquippedItem(saved);
+    expect(re).not.toBeNull();
+    expect(re!.craftTier).toBe(2);
+    const bonus = (re!.bonus ?? {}) as Record<string, number | undefined>;
+    const baseBonus = (base.bonus ?? {}) as Record<string, number | undefined>;
+    expect(bonus.atk ?? 0).toBeGreaterThanOrEqual(baseBonus.atk ?? 0);
   });
 
   it("별빛 재단 무구 +0 (미강화) — bonus 베이스 그대로, 메타만 박힘", () => {
@@ -84,5 +100,16 @@ describe("rehydrateEquippedItem", () => {
     expect(re).not.toBeNull();
     expect(re!.bonus).toEqual(base.bonus);
     expect(re!.enhancementLevel).toBe(0);
+  });
+
+  it("별빛 재단 무구 enhancementLevel 가 MAX 초과 — MAX 로 clamp", () => {
+    const saved = {
+      ...ITEMS.starlit_blade,
+      instanceId: "inst-clamp",
+      enhancementLevel: 999,
+    };
+    const re = rehydrateEquippedItem(saved);
+    expect(re).not.toBeNull();
+    expect(re!.enhancementLevel).toBe(5);
   });
 });
