@@ -2,11 +2,10 @@
 // PR-A 범위: 데이터/EXP 적립/곡선. UI 와 효과 적용은 후속 PR.
 //
 // 곡선:
-// - 1pt 비용 = 99→100 비용 (`requiredExpToNext(99)`)
+// - 1pt 비용 = 653654 (= 2026-05-19 레벨 곡선 완화 직전의 `requiredExpToNext(99)` 값).
+//   이후 레벨 EXP 곡선이 튜닝되어도 파라곤 1pt 비용은 흔들리지 않도록 고정 상수화.
 // - n번째 pt 비용 = 1pt 비용 × 1.15^(n-1)
 // - 총 캡 = 150포인트 (트랙 6 × 트랙당 25). 풀졸업 EXP 는 사실상 평생급.
-
-import { requiredExpToNext } from "./leveling";
 
 export const PARAGON_TRACKS = [
   "wrath", // 분노 — flat ATK
@@ -72,12 +71,11 @@ export const initialParagonState: ParagonState = {
 
 const PT_GROWTH = 1.15;
 
-/** 1pt 비용 (99→100 비용). 모듈 로드 시 1회 계산. */
-const BASE_PT_COST = (() => {
-  const v = requiredExpToNext(99);
-  // requiredExpToNext(99) 가 null 이 되는 경우는 없어야 하지만 안전망.
-  return v == null ? 0 : v;
-})();
+/**
+ * 1pt 비용. 2026-05-19 레벨 EXP 곡선 완화(35+ ×0.85) 직전의 99→100 비용을
+ * 그대로 고정 상수화. 레벨 곡선이 추가로 튜닝되어도 파라곤 진행이 흔들리지 않도록.
+ */
+export const BASE_PT_COST = 653654;
 
 /** n번째(1-based) 포인트 비용. */
 export function paragonPointCost(pointIndex: number): number {

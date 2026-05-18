@@ -1,11 +1,15 @@
 // 캐릭터 레벨링 시스템.
 // - 만렙 100.
 // - Lv 1~34: floor(120 * level^1.5).  Lv1→2 = 120.
-// - Lv 35~59: floor(120 * level^2.5 / 35).  35레벨 경계에서 연속, 이후 가팔라짐.
-// - Lv 60~69: 위 곡선 × (1.00→1.30) 선형 램프. 엔드게임 진입.
-// - Lv 70~89: 위 곡선 × (1.30→1.55) 선형 램프. 만렙 확장 컨텐츠 구간, 완만.
-// - Lv 90~99: 위 곡선 × (1.55→2.00) 선형 램프. 막판 가파름.
+// - Lv 35~49: floor(120 * level^2.5 / 35) × (1.00→0.85 선형 램프).  35 경계 연속.
+// - Lv 50~59: 위 곡선 × 0.85.
+// - Lv 60~69: 위 곡선 × 0.85 × (1.00→1.30) 선형 램프. 엔드게임 진입.
+// - Lv 70~89: 위 곡선 × 0.85 × (1.30→1.55) 선형 램프. 만렙 확장 컨텐츠 구간, 완만.
+// - Lv 90~99: 위 곡선 × 0.85 × (1.55→2.00) 선형 램프. 막판 가파름.
 // - 레벨업당 스탯 포인트 1점 획득(호출측에서 분배).
+// 2026-05-19: 중후반 체감 완화 — Lv 35 이상에 ×0.85 적용. 35~49 는 연속성 유지를 위해
+// 1.00→0.85 램프, 50 부터 풀반영. 누적 1→100 약 -14% (13.87M → 11.87M).
+// 초반(1~34) 페이스는 유지. 파라곤 1pt 비용은 paragon.ts 에서 곡선과 분리된 고정 상수.
 
 export const MAX_LEVEL = 100;
 
@@ -51,6 +55,17 @@ export function getNewbieDropMultiplier(level: number): number {
 // 120 * 35^1.5 = (120/35) * 35^2.5  →  계수 = 120 / 35.
 const STEEP_LEVEL = 35;
 const STEEP_COEFF = 120 / STEEP_LEVEL;
+// 중후반 체감 완화 — Lv 35 부터 0.85 reduction. 단, 35 에서 곧장 ×0.85 로 떨어지면
+// 1.5/2.5 power 가 35 경계에서 한참 거꾸로 가서 단조 증가가 깨진다.
+// 35~49 에서 1.00 → 0.85 선형으로 램프시켜 연속성 유지, 50 부터 풀반영.
+const REDUCTION_FLOOR = 0.85;
+const REDUCTION_RAMP_END = 50;
+function reductionMultiplier(level: number): number {
+  if (level < STEEP_LEVEL) return 1;
+  if (level >= REDUCTION_RAMP_END) return REDUCTION_FLOOR;
+  const span = REDUCTION_RAMP_END - STEEP_LEVEL; // 15
+  return 1 - (1 - REDUCTION_FLOOR) * ((level - STEEP_LEVEL) / span);
+}
 
 // 엔드게임 가산 — 기본 곡선에 구간별 선형 multiplier 를 곱한다.
 // 각 구간 경계는 자연스럽게 연속 (시작값이 이전 구간 끝값과 매칭).
@@ -79,7 +94,7 @@ export function requiredExpToNext(level: number): number | null {
     return Math.floor(120 * Math.pow(level, 1.5));
   }
   const base = STEEP_COEFF * Math.pow(level, 2.5);
-  return Math.floor(base * endgameMultiplier(level));
+  return Math.floor(base * endgameMultiplier(level) * reductionMultiplier(level));
 }
 
 // EXP 누적 적용 + 자동 레벨업 처리.
