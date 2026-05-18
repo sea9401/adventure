@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { advanceTurn, initialBattleState, type PlayerCombat } from "./engine";
 import type { Monster } from "../data/monsters";
 
@@ -195,13 +195,16 @@ describe("6티어 — 만물 행운", () => {
     expect(s.enemyHp).toBe(86); // 100 - 14
   });
 
-  it("회피 확률 +N%", () => {
-    // evasionPct 0 + universalLuckBonusPct 100 = 100% 회피 → 적 공격 무피해.
+  it("회피 확률 +N% (캡 75% 적용)", () => {
+    // evasionPct 0 + universalLuckBonusPct 100 = 100% — 캡 EVASION_PCT_CAP(75%)에 묶임.
+    // Math.random 0.5 mock 으로 결정성 확보 — 0.5*100=50 < 75 → 회피 성공.
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
     const p: PlayerCombat = { ...PLAYER, universalLuckBonusPct: 100 };
     let s = initialBattleState(p, enemy(1000), "용사");
     s = advanceTurn(s, p, "용사"); // 본타
-    s = advanceTurn(s, p, "용사"); // 적 — 100% 회피
+    s = advanceTurn(s, p, "용사"); // 적 — 75% 회피 (Math.random 0.5 < 0.75)
     expect(s.playerHp).toBe(9999); // 무피해
+    vi.restoreAllMocks();
   });
 
   it("추가타 확률 +N% (다음 턴 attacks_left 가 2)", () => {
@@ -210,5 +213,52 @@ describe("6티어 — 만물 행운", () => {
     const p: PlayerCombat = { ...PLAYER, universalLuckBonusPct: 100 };
     const s = initialBattleState(p, enemy(100), "용사");
     expect(s.playerAttacksLeft).toBe(2);
+  });
+
+  it("추가타 확률 200% — 본타 + 2대 확정 추가타 (정수확정 로직)", () => {
+    // extraAttackChancePct 200 = base 1 + 2 확정 = 3대. 캡 제거 후 정수확정 로직 검증.
+    const p: PlayerCombat = { ...PLAYER, extraAttackChancePct: 200 };
+    const s = initialBattleState(p, enemy(100), "용사");
+    expect(s.playerAttacksLeft).toBe(3);
+  });
+
+  it("추가타 확률 350% — 본타 + 3대 확정 + 50% 확률 (정수확정 + 소수확률)", () => {
+    // extraAttackChancePct 350 = base 1 + 3 확정 + 50% 1대 추가. Math.random 0.3 mock → 0.3*100=30 < 50 → +1.
+    vi.spyOn(Math, "random").mockReturnValue(0.3);
+    const p: PlayerCombat = { ...PLAYER, extraAttackChancePct: 350 };
+    const s = initialBattleState(p, enemy(100), "용사");
+    expect(s.playerAttacksLeft).toBe(5); // 1 base + 3 확정 + 1 확률 = 5
+    vi.restoreAllMocks();
+  });
+});
+
+describe("몬스터 다대시 — bonusAttackChancePct", () => {
+  it("bonusAttackChancePct 200 보스는 한 enemy phase 에 3회 공격 (1 + 2 확정)", () => {
+    // PLAYER hp 9999, def 5. 적 atk 8, def 3 → damageBetween(8,5)=3. 3대 = 9 데미지.
+    const boss: Monster = { ...enemy(1000), bonusAttackChancePct: 200 };
+    let s = initialBattleState(PLAYER, boss, "용사");
+    s = advanceTurn(s, PLAYER, "용사"); // 1턴 본타 → 적 993
+    // enemy phase — phase==="enemy" 동안 3회 굴림 필요
+    let safety = 10;
+    while (s.phase === "enemy" && safety-- > 0) {
+      s = advanceTurn(s, PLAYER, "용사");
+    }
+    expect(s.phase).toBe("player");
+    // 보스 3대 = damageBetween(8,5)×3 = 3×3 = 9 피해
+    expect(s.playerHp).toBe(9999 - 9);
+  });
+
+  it("그림자 보법 발동 시 다대시 남은 공격까지 모두 무효", () => {
+    // shadowStepPct 100 + 보스 4대 → 첫 enemy phase 진입에 그림자 보법 발동, 4대 모두 흘림.
+    vi.spyOn(Math, "random").mockReturnValue(0); // shadowStepPct 굴림 통과
+    const p: PlayerCombat = { ...PLAYER, shadowStepPct: 100 };
+    const boss: Monster = { ...enemy(1000), bonusAttackChancePct: 300 };
+    let s = initialBattleState(p, boss, "용사");
+    s = advanceTurn(s, p, "용사"); // 본타
+    s = advanceTurn(s, p, "용사"); // 적 — 그림자 보법으로 모든 공격 무효
+    expect(s.phase).toBe("player");
+    expect(s.playerHp).toBe(9999); // 무피해
+    expect(s.turn.enemyAttacksLeft).toBe(0); // 남은 공격도 강제 0
+    vi.restoreAllMocks();
   });
 });

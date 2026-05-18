@@ -1,5 +1,6 @@
 import type { Monster } from "../data/monsters";
 import { computeHealAmount, type Potion, type PotionId } from "../data/potions";
+import { EVASION_PCT_CAP } from "../data/stats";
 import {
   CRIT_MULT_BASE,
   ETERNAL_GALE_ABSOLUTE_CAP,
@@ -89,6 +90,11 @@ export type BattleTurnState = {
   // 빛의 활공 (AP) — 다음 플레이어 턴 시작 시 attackCount 에 가산할 큐된 추가 공격.
   // 0 = 미큐. 다음 턴 시작에 소비.
   queuedExtraAttacks: number;
+  // 몬스터 다대시 — 이번 enemy phase 에서 남은 공격 횟수 (현재 처리 중인 공격 포함).
+  // advanceTurn 시작에서 phase==="enemy" 이고 0 이면 rollEnemyAttackCount 로 초기화.
+  // 각 enemy 공격 종료 시 -1, 0 보다 크면 phase 가 "enemy" 로 유지되어 호출자가 같은 phase 를 다시 굴린다.
+  // 그림자 보법(전체 무효)은 0 으로 강제. 보스 bonusAttackChancePct 기반.
+  enemyAttacksLeft: number;
 };
 
 // 전투당 1회성 토글 — 한 번 켜지면 그 전투 동안 유지.
@@ -471,14 +477,40 @@ function playerFacingEnemyDef(state: BattleState, player: PlayerCombat): number 
   return afterPierce;
 }
 
-// 다음 플레이어 턴의 공격 횟수 — 기본 attackCount + extraAttackChancePct 1회 판정.
-// 6티어 만물 행운 보너스가 있으면 추가타 확률에 가산.
+// 다음 플레이어 턴의 공격 횟수 — 기본 attackCount + extraAttackChancePct.
+// 100% 초과는 정수 부분만큼 확정 추가타, 소수 부분만 확률 굴림.
+// (예: 250% → 2대 확정 + 50% 확률로 1대 더. 만물 행운 100% 가산 시 350% → 3대 확정 + 50%.)
+// 회피 100% 무적 빌드를 견제하기 위해 SPD 1pt = +2% 캡 없음으로 변경되면서 같이 들어온 로직.
 function rollPlayerAttackCount(player: PlayerCombat): number {
   const base = Math.max(1, player.attackCount);
   const luckBonus = player.universalLuckBonusPct ?? 0;
   const chance = (player.extraAttackChancePct ?? 0) + luckBonus;
-  if (chance > 0 && Math.random() * 100 < chance) return base + 1;
-  return base;
+  if (chance <= 0) return base;
+  const guaranteed = Math.floor(chance / 100);
+  const remainder = chance - guaranteed * 100;
+  const extra = guaranteed + (Math.random() * 100 < remainder ? 1 : 0);
+  return base + extra;
+}
+
+// 한 번의 enemy phase 진입 시 결정되는 총 공격 횟수 — base 1 + bonusAttackChancePct 기반.
+// rollPlayerAttackCount 와 같은 100%↑ 정수확정 규칙. 0/undefined = 1대.
+function rollEnemyAttackCount(enemy: Monster): number {
+  const chance = enemy.bonusAttackChancePct ?? 0;
+  if (chance <= 0) return 1;
+  const guaranteed = Math.floor(chance / 100);
+  const remainder = chance - guaranteed * 100;
+  return 1 + guaranteed + (Math.random() * 100 < remainder ? 1 : 0);
+}
+
+// enemy 공격 1회 종료 시 호출 — 남은 공격이 있으면 phase="enemy" 유지, 0 이면 "player".
+// 그림자 보법처럼 모든 공격 무효인 경우 호출자가 enemyAttacksLeft 를 0 으로 강제하고 phase: "player" 직접 set.
+function finishEnemyAttack(state: BattleState): BattleState {
+  const remaining = Math.max(0, state.turn.enemyAttacksLeft - 1);
+  return {
+    ...state,
+    turn: { ...state.turn, enemyAttacksLeft: remaining },
+    phase: remaining > 0 ? "enemy" : "player",
+  };
 }
 
 // 페이즈 트리거 — 적 HP 가 phaseTrigger.hpFraction 미만으로 떨어진 순간 1회 발동.
@@ -819,6 +851,7 @@ export function initialBattleState(
       apSkillFiredThisTurn: null,
       focusedBreathCritDmgBonusPct: 0,
       queuedExtraAttacks: 0,
+      enemyAttacksLeft: 0,
     },
     flags: {
       phaseTriggered: false,
@@ -892,6 +925,19 @@ export function advanceTurn(
   action: PlayerAction = { kind: "attack" },
 ): BattleState {
   if (state.phase === "ended") return state;
+
+  // 새 enemy phase 진입 시 다대시 횟수 초기화 — 첫 공격 진입 시점에만 굴림.
+  // 다대시 중간(enemyAttacksLeft>0)에는 통과. 이 한 곳에서 잡으면 player→enemy 전환 지점들에서
+  // 별도 초기화 코드 안 둬도 됨.
+  if (state.phase === "enemy" && state.turn.enemyAttacksLeft <= 0) {
+    state = {
+      ...state,
+      turn: {
+        ...state.turn,
+        enemyAttacksLeft: rollEnemyAttackCount(state.enemy),
+      },
+    };
+  }
 
   // 새 플레이어 턴 진입 시 지속 효과 turnsLeft -1 (직전 enemy 페이즈 완료 후).
   // turn 1 (completedPlayerTurns=0) 은 가드 — 발동도 안 된 상태에서 깎을 게 없음.
@@ -1700,10 +1746,11 @@ export function advanceTurn(
     state = bled;
   }
 
-  // 잔상 (AP) — 큐가 활성이면 적 공격 전체를 1회 무효. 데미지·반사 모두 스킵, count -1.
+  // 잔상 (AP) — 큐가 활성이면 적 공격 1회 무효. 데미지·반사 모두 스킵, count -1.
   // 회피·반사 우선순위보다 위에 둠 — "잔상" 은 적이 허를 쳐서 빈 자리만 후려치는 결.
+  // 다대시 보스라도 잔상은 그 중 1대만 막음 (남은 추가타는 정상 진행).
   if (state.buffs.enemyAttackBlockedCount > 0) {
-    return {
+    return finishEnemyAttack({
       ...state,
       buffs: {
         ...state.buffs,
@@ -1719,8 +1766,7 @@ export function advanceTurn(
         kind: "info",
         text: `[잔상] ${state.enemy.name}의 공격이 잔상만 베어 갔다.`,
       }),
-      phase: "player",
-    };
+    });
   }
 
   // enemy phase — 그림자 보법 → 보장 회피 → % 회피 → 행운의 방패 → 데미지 (가드 적용) 순.
@@ -1808,6 +1854,7 @@ export function advanceTurn(
         outcome: "win",
       };
     }
+    // 그림자 보법은 그 턴 모든 적 공격 무효 — 다대시 보스라도 남은 추가타까지 모두 흘려보냄.
     let next: BattleState = {
       ...state,
       playerHp: healedHp,
@@ -1815,6 +1862,7 @@ export function advanceTurn(
       turn: {
         ...state.turn,
         enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
+        enemyAttacksLeft: 0,
       },
       playerAttacksLeft:
         state.playerAttacksLeft + (player.skirmishNextTurnBonus ?? 0),
@@ -1878,8 +1926,7 @@ export function advanceTurn(
     };
     const counter = applyCounterIfAny(next, player);
     if (counter.ended) return counter.state;
-    next = counter.state;
-    return { ...next, phase: "player" };
+    return finishEnemyAttack(counter.state);
   }
   // 이중 행운 — 활성 시 회피 확률 +bonus%.
   const luckEvadeBonus = state.flags.luckyBuffActive
@@ -1888,11 +1935,15 @@ export function advanceTurn(
   // 만물 행운 (6티어) — 회피 확률에도 +N%.
   const universalLuckEvadeBonus = player.universalLuckBonusPct ?? 0;
   // 회전 운기 (2티어 특기) — 누적 보너스 회피에도 적용.
-  const effectiveEvadePct =
+  // 회피 캡 EVASION_PCT_CAP — 100% 회피 무적 빌드 차단.
+  // 보장 회피 (소모형 적립) 는 위쪽 분기에서 별도 처리되어 캡 무관 100% 회피 유지.
+  const effectiveEvadePct = Math.min(
+    EVASION_PCT_CAP,
     player.evasionPct +
-    luckEvadeBonus +
-    universalLuckEvadeBonus +
-    state.buffs.cyclingChiBonus;
+      luckEvadeBonus +
+      universalLuckEvadeBonus +
+      state.buffs.cyclingChiBonus,
+  );
   if (Math.random() * 100 < effectiveEvadePct) {
     const healedHp = healOnDodge(state.playerHp);
     let log = appendLog(state.log, {
@@ -1938,8 +1989,7 @@ export function advanceTurn(
     };
     const counter = applyCounterIfAny(next, player);
     if (counter.ended) return counter.state;
-    next = counter.state;
-    return { ...next, phase: "player" };
+    return finishEnemyAttack(counter.state);
   }
   // 행운의 방패 (특기) — 위 회피가 모두 실패해도 일정 확률로 피해 무효 (행운 회피).
   const luckyBlockPct = player.luckyShieldBlockPct ?? 0;
@@ -1988,8 +2038,7 @@ export function advanceTurn(
     };
     const counter = applyCounterIfAny(next, player);
     if (counter.ended) return counter.state;
-    next = counter.state;
-    return { ...next, phase: "player" };
+    return finishEnemyAttack(counter.state);
   }
 
   // ── 잡몹 스킬 (적 공격에 영향) ──────────────────────────────────────────
@@ -2231,7 +2280,7 @@ export function advanceTurn(
       outcome: "win",
     };
   }
-  return {
+  return finishEnemyAttack({
     ...state,
     playerHp,
     enemyHp: enemyHpAfterThorns,
@@ -2254,8 +2303,7 @@ export function advanceTurn(
       enemyPhasesCompleted: state.turn.enemyPhasesCompleted + 1,
     },
     log,
-    phase: "player",
-  };
+  });
 }
 
 // 한 전투를 시작부터 끝까지 한 번에 시뮬한다. 결과(최종 상태 + 로그 + 턴 수 + 소비된 포션)만

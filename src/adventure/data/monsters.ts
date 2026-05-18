@@ -82,6 +82,12 @@ export type Monster = {
    * 쓰일 분류 태그. PR-A 시점에서는 메타데이터로만 보존(전투 로직에 영향 없음).
    */
   auraKind?: "starfall";
+  /**
+   * 몬스터 추가 공격 확률(%). 100% 초과는 정수 부분만큼 확정 추가타 (engine.ts enemy phase).
+   * 0/undefined = 1대 고정(잡몹). 100 = +1대 확정, 200 = +2대 확정, 300 = +3대 확정.
+   * 플레이어 회피 100% 무적 빌드 견제 + 보스전 압박감을 위한 다대시 수단.
+   */
+  bonusAttackChancePct?: number;
 };
 
 export const MONSTERS: Record<string, Monster> = {
@@ -305,6 +311,7 @@ export const MONSTERS: Record<string, Monster> = {
       defBonus: 4,
       message: "수호자가 단단해지기 시작했다.",
     },
+    bonusAttackChancePct: 170,
   },
   "폐허 늑대": {
     name: "폐허 늑대",
@@ -473,6 +480,7 @@ export const MONSTERS: Record<string, Monster> = {
       message: "거인이 두 발을 단단히 박아 넣는다.",
     },
     onDefeatFlag: "peak_giant_defeated",
+    bonusAttackChancePct: 250,
   },
   // ── 다리 구간 — 운저 평원 (cloud_plain) ─────────────────────────────────
   들소: {
@@ -699,6 +707,7 @@ export const MONSTERS: Record<string, Monster> = {
       message: "화산의 심장이 붉게 달아오른다.",
     },
     onDefeatFlag: "volcano_heart_defeated",
+    bonusAttackChancePct: 300,
   },
   // ── 별의 첨탑 (starspire) — 천공 성지 위 Lv70 구간. 협동 보스 별을 지키는 자. ─────
   "별점술사 잔영": {
@@ -719,6 +728,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "starlight_lens", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "별빛 일섬", armorPierce: 4 },
+    bonusAttackChancePct: 30,
   },
   "구름 사냥꾼": {
     name: "구름 사냥꾼",
@@ -735,6 +745,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "cloud_hunter_string", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "구름 가르기", everyPhases: 3, multiplier: 1.5 },
+    bonusAttackChancePct: 40,
   },
   "운명 직조자": {
     name: "운명 직조자",
@@ -752,6 +763,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "fate_weaver_skein", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "운명의 실", hpFraction: 0.4, atkBonus: 10 },
+    bonusAttackChancePct: 40,
   },
   // 별의 첨탑 협동 보스 — coop/data.ts 의 COOP_BOSSES 로 등장. region.boss 없이 coop UI 로만 진입.
   // solo stat 은 시뮬·테스트 용도 (coop maxHp 는 coop/data.ts 의 20000).
@@ -785,6 +797,7 @@ export const MONSTERS: Record<string, Monster> = {
     // 시그니처 — 느리지만 무거운 별빛 일격. 4 페이즈마다 ×1.6.
     skill: { kind: "heavy_blow", name: "별빛 일섬", everyPhases: 4, multiplier: 1.6 },
     onDefeatFlag: "starspire_keeper_defeated",
+    bonusAttackChancePct: 220,
   },
   // ── 별빛 회랑 (star_corridor) — 별의 첨탑 → 선인의 폐도 사이 Lv75 사냥터. 보스 없음. ───
   "떠도는 시녀": {
@@ -804,6 +817,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "corridor_string", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "회랑 일섬", armorPierce: 4 },
+    bonusAttackChancePct: 30,
   },
   "별빛 망령": {
     name: "별빛 망령",
@@ -823,6 +837,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "starlight_dust_armor", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "망령의 잔영", hpFraction: 0.4, atkBonus: 9 },
+    bonusAttackChancePct: 35,
   },
   "별궤도 자율기": {
     name: "별궤도 자율기",
@@ -841,6 +856,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "corridor_carapace", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "회랑 충격", everyPhases: 3, multiplier: 1.5 },
+    bonusAttackChancePct: 40,
   },
   // ── 선인의 폐도 (skyfolk_ruins) — 별의 첨탑 위 Lv80 구간. 협동 보스 천공인의 왕. ─────
   "천공인 사관": {
@@ -860,6 +876,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "ruin_phantom_blade", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "예봉", armorPierce: 5 },
+    bonusAttackChancePct: 120,
   },
   "천공인 전사": {
     name: "천공인 전사",
@@ -877,6 +894,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "skyfolk_warden_plate", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "천공 강타", everyPhases: 3, multiplier: 1.5 },
+    bonusAttackChancePct: 130,
   },
   "폐허의 운기": {
     name: "폐허의 운기",
@@ -893,6 +911,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "skyfolk_greatsword", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "옛 가동", hpFraction: 0.4, atkBonus: 12 },
+    bonusAttackChancePct: 140,
   },
   // 선인의 폐도 협동 보스 — coop/data.ts 의 COOP_BOSSES 로 등장.
   // solo stat 은 시뮬·테스트 용도 (coop maxHp 는 coop/data.ts 의 30000).
@@ -925,6 +944,7 @@ export const MONSTERS: Record<string, Monster> = {
     // 시그니처 — phase trigger(40%) 와 동시 발동: DEF 도 오르고 ATK 도 +15. 두 번째 페이즈 deadly.
     skill: { kind: "enrage", name: "왕의 진노", hpFraction: 0.4, atkBonus: 15 },
     onDefeatFlag: "skyfolk_king_defeated",
+    bonusAttackChancePct: 300,
   },
   // ── 옥좌의 길 (throne_road) — 선인의 폐도 → 창공의 옥좌 사이 Lv85 사냥터. 보스 없음. ───
   "황성 의장기수": {
@@ -943,6 +963,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "road_flash_dagger", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "정찰관 일섬", armorPierce: 5 },
+    bonusAttackChancePct: 40,
   },
   "황성 호위병": {
     name: "황성 호위병",
@@ -961,6 +982,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "road_sandals", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "호위 일격", everyPhases: 3, multiplier: 1.55 },
+    bonusAttackChancePct: 120,
   },
   "봉인 파편": {
     name: "봉인 파편",
@@ -978,6 +1000,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "shard_seal_plate", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "파편 폭주", hpFraction: 0.4, atkBonus: 13 },
+    bonusAttackChancePct: 140,
   },
   // 옥좌의 길(throne_road) 솔로 보스 — 순례자 미상의 분신. Ch.23 — 옥좌의 길.
   // 후드를 벗자 그 안에 얼굴이 없다(빛만). 검을 든 손만 남은, 본체로 돌아가기 전의 마지막 시험.
@@ -1007,6 +1030,7 @@ export const MONSTERS: Record<string, Monster> = {
     },
     skill: { kind: "heavy_blow", name: "모아온 빛 일섬", everyPhases: 3, multiplier: 1.8 },
     onDefeatFlag: "pilgrim_avatar_defeated",
+    bonusAttackChancePct: 180,
   },
   // ── 창공의 옥좌 (apex_throne) — 선인의 폐도 깊은 곳 Lv90 마지막 구간. 협동 보스 창공의 주재.
   // 처치 시 endgame_apex_defeated flag → 6번째 일반 슬롯 + 2번째 특기 슬롯 해금.
@@ -1027,6 +1051,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "apostle_shard_blade", chance: 0.0004 },
     ],
     skill: { kind: "pierce", name: "사도의 일섬", armorPierce: 6 },
+    bonusAttackChancePct: 120,
   },
   "옥좌의 검신": {
     name: "옥좌의 검신",
@@ -1042,6 +1067,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "throne_pursuer_sandals", chance: 0.0004 },
     ],
     skill: { kind: "heavy_blow", name: "호위 강타", everyPhases: 3, multiplier: 1.6 },
+    bonusAttackChancePct: 300,
   },
   "잠든 황좌 거인": {
     name: "잠든 황좌 거인",
@@ -1060,6 +1086,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "equip", itemId: "throne_starbook", chance: 0.0004 },
     ],
     skill: { kind: "enrage", name: "봉인 해제", hpFraction: 0.4, atkBonus: 15 },
+    bonusAttackChancePct: 300,
   },
   // 창공의 옥좌 협동 보스 — coop/data.ts 의 COOP_BOSSES 로 등장.
   // solo stat 은 시뮬·테스트 용도 (coop maxHp 는 coop/data.ts 의 45000).
@@ -1093,6 +1120,7 @@ export const MONSTERS: Record<string, Monster> = {
     // 시그니처 — 만렙 보스. 갑주를 가르는 옥좌의 빛: 매 공격이 플레이어 DEF 10 만큼 무시.
     skill: { kind: "pierce", name: "옥좌의 결", armorPierce: 10 },
     onDefeatFlag: "endgame_apex_defeated",
+    bonusAttackChancePct: 300,
   },
   // ── 해안 지선 (조수 갯벌 / 산호초 섬) ───────────────────────────────────
   // 폐허(Lv9)~산기슭(Lv18) 사이에 놓이는 바닷길 잡몹. 갯벌 ≈ 폐허 난이도, 섬 ≈ 산기슭 난이도.
@@ -1227,6 +1255,7 @@ export const MONSTERS: Record<string, Monster> = {
       message: "수심의 것이 몸을 둥글게 만다 — 비늘이 겹친다.",
     },
     onDefeatFlag: "the_deep_one_stilled",
+    bonusAttackChancePct: 160,
   },
   // ── 서편 옛길 (서편 옛길 / 옛 변경 성채) ─────────────────────────────────
   // 시작 마을 서쪽의 막다른 라인. 옛길 ≈ 동굴(Lv3) tier, 성채 ≈ 폐허~산기슭 사이(Lv13) tier.
@@ -1363,6 +1392,7 @@ export const MONSTERS: Record<string, Monster> = {
       message: "옛 성문지기가 빗장을 가로지른다 — 강철판이 겹친다.",
     },
     onDefeatFlag: "gatekeeper_felled",
+    bonusAttackChancePct: 170,
   },
   // ── 용비늘 라인 (뼈무덤 황야 / 용비늘 묘지) ──────────────────────────────
   // 바람골 역참 남쪽 막다른 라인 — 황야 잡몹(Lv47) → 묘지 잡몹(Lv75) → 솔로 보스 뼈비늘 노룡.
@@ -1432,6 +1462,7 @@ export const MONSTERS: Record<string, Monster> = {
       // 뼈각인 투구 제작서 — 묘지 잡몹산 액세서리.
       { kind: "recipe", recipeId: "bonerune_helm", chance: 0.03 },
     ],
+    bonusAttackChancePct: 130,
   },
   "잿빛 와이번": {
     name: "잿빛 와이번",
@@ -1449,6 +1480,7 @@ export const MONSTERS: Record<string, Monster> = {
       // 비늘 보호갑 제작법 — 묘지 잡몹산 갑주.
       { kind: "recipe", recipeId: "scaleguard_plate", chance: 0.03 },
     ],
+    bonusAttackChancePct: 200,
   },
   "용골 리치": {
     name: "용골 리치",
@@ -1466,6 +1498,7 @@ export const MONSTERS: Record<string, Monster> = {
       // 용골 카이트 방패 제작서 — 묘지 잡몹산 방패.
       { kind: "recipe", recipeId: "dragonbone_kite_shield", chance: 0.03 },
     ],
+    bonusAttackChancePct: 200,
   },
   // 용비늘 묘지 보스 — region.boss 도전 버튼으로만 진입. 자정 기준 일일 dailyEntryLimit 회.
   // 처치 시 wyrm_warden_felled flag. 항상 용비늘 조각·뼈각인 강철·용비늘 가루 + 보스 보상 4종 중
@@ -1504,6 +1537,7 @@ export const MONSTERS: Record<string, Monster> = {
       message: "뼈비늘 노룡이 잿빛 비늘을 곤두세우며 다시 일어선다.",
     },
     onDefeatFlag: "wyrm_warden_felled",
+    bonusAttackChancePct: 190,
   },
   // ── 용의 둥지 (dragon_nest) — 월드 보스. coop/data.ts 의 COOP_BOSSES 로 등장. ─────
   // 다인 누적 데미지로만 잡힐 만큼 압도적 스펙 + 처치 후 7일 휴면.
@@ -1532,6 +1566,7 @@ export const MONSTERS: Record<string, Monster> = {
     // 시그니처 — 무게 자체로 갑주를 가른다. 매 공격이 플레이어 DEF 14 만큼 무시.
     skill: { kind: "pierce", name: "태고의 무게", armorPierce: 14 },
     onDefeatFlag: "primordial_dragon_felled",
+    bonusAttackChancePct: 250,
   },
   // ── 5막 「빈 옥좌의 시대」 — 별빛 변종 (starfall_cave Lv100) ────────────────
   // 황제가 쓰러진 뒤 별빛이 옛 광맥으로 떨어진 자리. 깊은 동굴의 잡몹들이 별빛에 데워져
@@ -1550,6 +1585,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "starfall_shard", chance: 0.08 },
     ],
     auraKind: "starfall",
+    bonusAttackChancePct: 20,
   },
   "별빛 동굴뱀": {
     name: "별빛 동굴뱀",
@@ -1563,6 +1599,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "starfall_shard", chance: 0.09 },
     ],
     auraKind: "starfall",
+    bonusAttackChancePct: 25,
   },
   "별빛 광물 골렘": {
     name: "별빛 광물 골렘",
@@ -1576,6 +1613,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "starfall_shard", chance: 0.12 },
     ],
     auraKind: "starfall",
+    bonusAttackChancePct: 30,
   },
   // 별빛 광맥 수호자 — Ch 2 「깊은 동굴」 의 광맥 수호자가 별빛에 다시 데워져 되살아난
   // 5막 도입 보스. region.boss 도전 버튼으로 진입. 처치 시 Ch 26 「별이 떨어진 자리」 완료.
@@ -1603,6 +1641,7 @@ export const MONSTERS: Record<string, Monster> = {
     skill: { kind: "pierce", name: "별빛 결", armorPierce: 8 },
     auraKind: "starfall",
     onDefeatFlag: "starfall_warden_felled",
+    bonusAttackChancePct: 180,
   },
   // ── 5막 PR-B1 — 별빛 협곡 (starlit_canyon Lv102) ──────────────────────────
   // Ch 25 직후 별빛이 운무 협곡에도 떨어졌다. 절벽 늑대·돌풍 정령·무리장이 별빛에
@@ -1621,6 +1660,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "starfall_shard", chance: 0.08 },
     ],
     auraKind: "starfall",
+    bonusAttackChancePct: 25,
   },
   "별빛 돌풍 정령": {
     name: "별빛 돌풍 정령",
@@ -1636,6 +1676,7 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "pierce", name: "별빛 결풍", armorPierce: 6 },
     auraKind: "starfall",
+    bonusAttackChancePct: 30,
   },
   "별빛 늑대 무리장": {
     name: "별빛 늑대 무리장",
@@ -1649,6 +1690,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "starfall_shard", chance: 0.12 },
     ],
     auraKind: "starfall",
+    bonusAttackChancePct: 40,
   },
   // 별빛 거인 잔영 — 운봉의 거인의 별빛 잔영. 협동 보스 시스템으로만 등장 (region.boss 미설정).
   // coop/data.ts 의 COOP_BOSSES.starlit_canyon 으로 등록. solo stat 은 시뮬·테스트 용도.
@@ -1676,6 +1718,7 @@ export const MONSTERS: Record<string, Monster> = {
     skill: { kind: "heavy_blow", name: "별빛 짓밟기", everyPhases: 3, multiplier: 1.7 },
     auraKind: "starfall",
     onDefeatFlag: "starlit_giant_quelled",
+    bonusAttackChancePct: 300,
   },
   // ── 5막 PR-B2 — 별빛 산호초 (starlit_reef Lv104) ─────────────────────────
   // Ch 25 직후 별빛이 산호초 섬에도 떨어졌다. 사이렌·약탈자·산호 골렘이 별빛에 데워져
@@ -1693,6 +1736,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "starfall_shard", chance: 0.09 },
     ],
     auraKind: "starfall",
+    bonusAttackChancePct: 25,
   },
   "별빛 갑각 약탈자": {
     name: "별빛 갑각 약탈자",
@@ -1707,6 +1751,7 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "heavy_blow", name: "별빛 작살", everyPhases: 3, multiplier: 1.7 },
     auraKind: "starfall",
+    bonusAttackChancePct: 35,
   },
   "별빛 가시 산호 골렘": {
     name: "별빛 가시 산호 골렘",
@@ -1721,6 +1766,7 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "brace", name: "별빛 가시 껍질", damageReduction: 6 },
     auraKind: "starfall",
+    bonusAttackChancePct: 40,
   },
   // 수심의 메아리 — 수심의 것의 별빛 잔영. 협동 보스로만 등장 (PR-B1 의 거인 잔영 패턴).
   // coop/data.ts 의 COOP_BOSSES.starlit_reef 로 등록. solo stat 은 시뮬·테스트 용도.
@@ -1748,6 +1794,7 @@ export const MONSTERS: Record<string, Monster> = {
     skill: { kind: "enrage", name: "별빛 소용돌이", hpFraction: 0.35, atkBonus: 16 },
     auraKind: "starfall",
     onDefeatFlag: "starlit_deep_quelled",
+    bonusAttackChancePct: 220,
   },
   // ── 5막 PR-B2 — 별빛 성채 (starlit_keep Lv106) ───────────────────────────
   // Ch 25 직후 별빛이 옛 변경 성채에도 떨어졌다. 까마귀·약탈자·자동인형이 별빛에
@@ -1765,6 +1812,7 @@ export const MONSTERS: Record<string, Monster> = {
       { kind: "material", materialId: "starfall_shard", chance: 0.08 },
     ],
     auraKind: "starfall",
+    bonusAttackChancePct: 25,
   },
   "별빛 탈영 약탈자": {
     name: "별빛 탈영 약탈자",
@@ -1779,6 +1827,7 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "heavy_blow", name: "별빛 투창", everyPhases: 3, multiplier: 1.7 },
     auraKind: "starfall",
+    bonusAttackChancePct: 35,
   },
   "별빛 녹슨 자동인형": {
     name: "별빛 녹슨 자동인형",
@@ -1793,6 +1842,7 @@ export const MONSTERS: Record<string, Monster> = {
     ],
     skill: { kind: "brace", name: "별빛 장갑판", damageReduction: 6 },
     auraKind: "starfall",
+    bonusAttackChancePct: 40,
   },
   // 성문지기 잔영 — 옛 성문지기의 별빛 잔영. 협동 보스로만 등장.
   // coop/data.ts 의 COOP_BOSSES.starlit_keep 으로 등록. solo stat 은 시뮬·테스트 용도.
@@ -1820,6 +1870,7 @@ export const MONSTERS: Record<string, Monster> = {
     skill: { kind: "heavy_blow", name: "별빛 빗장", everyPhases: 3, multiplier: 1.7 },
     auraKind: "starfall",
     onDefeatFlag: "starlit_gate_quelled",
+    bonusAttackChancePct: 220,
   },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).
