@@ -9,7 +9,7 @@
 
 import { db } from "@/db";
 import { ensureUser } from "@/lib/server/ensureUser";
-import { checkSession } from "@/lib/server/checkSession";
+import { requireSessionHeader } from "@/lib/server/checkSession";
 import {
   EnhanceError,
   applyEnhanceAction,
@@ -19,7 +19,7 @@ import {
 export async function POST(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
-  const sessionFail = await checkSession(userId, req);
+  const sessionFail = await requireSessionHeader(userId, req);
   if (sessionFail) return sessionFail;
 
   let body: { instanceId?: unknown };
@@ -28,7 +28,12 @@ export async function POST(req: Request) {
   } catch {
     return new Response("invalid json", { status: 400 });
   }
-  if (typeof body.instanceId !== "string" || body.instanceId.length === 0) {
+  // 길이 상한 — 정상 UUID 는 36자. 위조된 거대 문자열 차단.
+  if (
+    typeof body.instanceId !== "string" ||
+    body.instanceId.length === 0 ||
+    body.instanceId.length > 128
+  ) {
     return new Response("invalid instanceId", { status: 400 });
   }
   const instanceId = body.instanceId;

@@ -17,7 +17,8 @@ export async function checkSession(
   const incoming = req.headers.get("x-session-id");
   if (!incoming) {
     // 헤더 미동봉 — claim 전 부트스트랩 GET 등에 허용. 정상 클라이언트는 claim 후
-    // 모든 호출에 헤더 붙임.
+    // 모든 호출에 헤더 붙임. 단일 세션 보호가 필요한 mutation 라우트는 아래
+    // requireSessionHeader 를 별도로 호출해 헤더를 강제할 것.
     return null;
   }
   const rows = await db
@@ -33,4 +34,21 @@ export async function checkSession(
     JSON.stringify({ error: "session_invalidated" }),
     { status: 410, headers: { "Content-Type": "application/json" } },
   );
+}
+
+// 단일 세션 보호가 필수인 mutation 라우트용. checkSession 보다 엄격 — X-Session-Id
+// 헤더가 비면 401 거절한다 (헤더를 빼서 세션 enforce 를 우회하는 공격 차단).
+// 그 외 동작은 checkSession 과 동일.
+export async function requireSessionHeader(
+  userId: string,
+  req: Request,
+): Promise<Response | null> {
+  const incoming = req.headers.get("x-session-id");
+  if (!incoming) {
+    return new Response(
+      JSON.stringify({ error: "missing_session_header" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
+  }
+  return checkSession(userId, req);
 }

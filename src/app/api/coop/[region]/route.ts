@@ -8,6 +8,7 @@ import {
   users,
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { checkSession } from "@/lib/server/checkSession";
 import {
   COOP_ATTACK_COOLDOWN_MS,
   COOP_BOSSES,
@@ -212,6 +213,8 @@ export async function GET(_req: Request, { params }: Ctx) {
 export async function POST(req: Request, { params }: Ctx) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
+  const sessionGuard = await checkSession(userId, req);
+  if (sessionGuard) return sessionGuard;
   const { region } = await params;
   if (!VALID_REGIONS.includes(region as RegionId)) {
     return new Response("invalid region", { status: 400 });

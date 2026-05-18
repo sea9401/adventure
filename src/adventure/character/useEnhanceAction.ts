@@ -12,6 +12,7 @@ import {
 } from "@/adventure/character/enhancement";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import { useRemoteSave } from "@/lib/storage/SaveProvider";
+import { readDeviceSessionId } from "@/lib/storage/deviceSession";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
 
 const ENHANCE_ERROR_LABELS: Record<string, string> = {
@@ -58,9 +59,14 @@ export function useEnhanceAction(deps: {
     await remote.flush();
     let res: Response;
     try {
+      const sessionId = readDeviceSessionId();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (sessionId) headers["X-Session-Id"] = sessionId;
       res = await fetch("/api/enhance", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ instanceId }),
       });
     } catch {
