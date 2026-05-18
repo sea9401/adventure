@@ -26,6 +26,7 @@ import {
 import { StatsPanel } from "@/adventure/character/StatsPanel";
 import { CraftingView } from "@/adventure/CraftingView";
 import { DisassemblePanel } from "@/adventure/crafting/DisassemblePanel";
+import { EnhancementPanel } from "@/adventure/character/EnhancementPanel";
 import { ShopView } from "@/adventure/ShopView";
 import { GuildView } from "@/adventure/GuildView";
 import { GuildHallView } from "@/adventure/guild/GuildHallView";
@@ -62,6 +63,7 @@ export function TownScreen() {
     autoHunt,
     notifications,
     handleCraft,
+    handleEnhance,
     handlePurchasePotion,
     handlePurchaseMaterial,
     handlePurchaseConsumable,
@@ -389,8 +391,17 @@ export function TownScreen() {
           }
         />
         <SubViewHeader title="대장간" onBack={back} />
-        {/* 대장간 옆 분해실 진입 — 같은 SubView 안에 두지 않고 별도 패널로 띄운다. */}
-        <div className="flex justify-end">
+        {/* 대장간 옆 분해실 / 별빛 강화소 진입 — 같은 SubView 안에 두지 않고 별도 패널로 띄운다. */}
+        <div className="flex flex-wrap justify-end gap-2">
+          {(inventory.state.equipmentInstances ?? []).length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSubView("enhance")}
+              className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+            >
+              <Sparkle size={16} weight="duotone" /> 별빛 강화소
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setSubView("disassemble")}
@@ -425,6 +436,19 @@ export function TownScreen() {
           onDisassemble={(req) =>
             inventory.disassemble(req, characterStateHook.equippedSlots)
           }
+        />
+      </div>
+    );
+  }
+
+  if (subView === "enhance") {
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="별빛 강화소" onBack={() => setSubView("crafting")} />
+        <EnhancementPanel
+          instances={inventory.state.equipmentInstances ?? []}
+          shardCount={inventory.state.materials.starfall_shard ?? 0}
+          onEnhance={handleEnhance}
         />
       </div>
     );

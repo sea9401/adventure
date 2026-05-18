@@ -96,7 +96,8 @@ function tierBonusDelta(
 }
 
 // 베이스 EquipItem 의 stats 표시 문자열을 새 bonus 로 재생성. 라벨 순서/구성은 유지.
-function rebuildStats(
+// 강화·등급 합성 등 외부에서 bonus 만 갱신할 때 공용.
+export function rebuildStats(
   base: EquipItem,
   bonus: EquipBonus,
 ): { label: string; value: string }[] {

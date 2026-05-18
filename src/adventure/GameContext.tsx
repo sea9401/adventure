@@ -145,6 +145,8 @@ export type GameCtx = {
     tier?: CraftTier,
     quality?: DropQuality,
   ) => void;
+  /** 인스턴스 기반 장비 장착 (별빛 재단 무구). */
+  handleEquipInstanceFromInventory: (instanceId: string) => void;
   handleUnequip: (slot: EquipSlot) => void;
   /** 가방 장비 1개 → 모험의 서 보관함. */
   handleDepositToVault: (
@@ -159,6 +161,8 @@ export type GameCtx = {
     quantity?: number,
     equipPicks?: EquipPicks,
   ) => void;
+  /** 별빛 재단 무구 +1 강화 (서버 권위). 인스턴스 ID 1자루씩. */
+  handleEnhance: (instanceId: string) => void;
   handleBattleEnd: (payload: BattleEndPayload) => void;
   handleAcceptQuest: (id: string) => void;
   handleClaimQuest: (id: string) => void;

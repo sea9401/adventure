@@ -68,6 +68,7 @@ import { useShopUnlocks } from "@/adventure/shop/useShopUnlocks";
 import { useShopActions } from "@/adventure/shop/useShopActions";
 import { useEquipmentActions } from "@/adventure/inventory/useEquipmentActions";
 import { useCraftAction } from "@/adventure/crafting/useCraftAction";
+import { useEnhanceAction } from "@/adventure/character/useEnhanceAction";
 import { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import {
   TUTORIAL_ENABLED_FLAG,
@@ -366,6 +367,7 @@ function Home() {
 
   const {
     handleEquipFromInventory,
+    handleEquipInstanceFromInventory,
     handleUnequip,
     handleDepositToVault,
     handleWithdrawFromVault,
@@ -378,6 +380,8 @@ function Home() {
     grantTitle,
     recordCraft: quests.recordCraft,
   });
+
+  const { handleEnhance } = useEnhanceAction({ inventory, addNotification });
 
   // 카운터/상태/시간 기반 자동 칭호 부여.
   const maxNpcTalkCount = Object.values(adventureLog.log.npcs).reduce(
@@ -524,10 +528,12 @@ function Home() {
     handleSellMaterial,
     handleSellEquipment,
     handleEquipFromInventory,
+    handleEquipInstanceFromInventory,
     handleUnequip,
     handleDepositToVault,
     handleWithdrawFromVault,
     handleCraft,
+    handleEnhance,
     handleBattleEnd,
     handleAcceptQuest,
     handleClaimQuest,

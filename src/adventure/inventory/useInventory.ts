@@ -25,6 +25,15 @@ import {
   type DisassembleRequest,
 } from "../crafting/disassemble";
 import type { EquippedSlots } from "../character/types";
+import {
+  ENHANCE_SHARD_COST,
+  ENHANCE_MAX_LEVEL,
+  isEnhanceable,
+} from "../character/enhancement";
+import {
+  normalizeInstances,
+  type EquipmentInstance,
+} from "./equipmentInstances";
 import { useSavedValue } from "@/lib/storage/SaveProvider";
 import { useRemotePatch } from "@/lib/storage/useRemotePatch";
 import { depositToVaultPure, withdrawFromVaultPure } from "./vaultOps";
@@ -81,6 +90,12 @@ export type InventoryState = {
    * 여기는 가방. 폐기/판매 개념은 없고 합성·장착 시 소비.
    */
   runes?: Partial<Record<RuneId, Partial<Record<RuneGrade, number>>>>;
+  /**
+   * 인스턴스 기반 장비 풀 — 별빛 재단 무구 5종(ENHANCEABLE_ITEM_IDS) 한정.
+   * 한 자루 한 자루 고유 ID + 강화 단계 보존. craftTier 도 인스턴스 단위로 같이.
+   * 일반 장비는 여기 들어가지 않는다 (equipment[] 그대로).
+   */
+  equipmentInstances?: EquipmentInstance[];
 };
 
 export const emptyInventory = (): InventoryState => ({
@@ -93,6 +108,7 @@ export const emptyInventory = (): InventoryState => ({
   consumables: {},
   skillBooks: {},
   runes: {},
+  equipmentInstances: [],
 });
 
 function readRunes(
@@ -162,6 +178,7 @@ function readInitial(raw: unknown): InventoryState {
     skillBooks: readSkillBooks(parsed.skillBooks),
     potionCapacityBonus: Math.max(0, parsed.potionCapacityBonus ?? 0),
     runes: readRunes(parsed.runes),
+    equipmentInstances: normalizeInstances(parsed.equipmentInstances),
   };
 }
 
@@ -365,6 +382,73 @@ export function useInventory() {
       return true;
     },
     [consumeEquipment],
+  );
+
+  // 인스턴스 기반 장비 — 별빛 재단 무구 5종 한정. 한 자루 한 자루 고유 ID 보존.
+  // craft 결과(서버 권위) 가 instance 를 만들어 내려 주면 클라가 받아 add. 강화는 enhance.
+  // 차감은 equip / disassemble / craft 가 재료로 쓸 때 (현재는 equip 만).
+  const addEquipmentInstance = useCallback((inst: EquipmentInstance) => {
+    if (!isEnhanceable(inst.itemId)) return;
+    const cur = stateRef.current;
+    const list = cur.equipmentInstances ?? [];
+    // 동일 instanceId 중복 방지 — 서버 권위지만 클라 reconciliation 시 dedupe.
+    if (list.some((i) => i.instanceId === inst.instanceId)) return;
+    const next: InventoryState = {
+      ...cur,
+      equipmentInstances: [...list, inst],
+    };
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
+  const consumeEquipmentInstance = useCallback(
+    (instanceId: string): boolean => {
+      const cur = stateRef.current;
+      const list = cur.equipmentInstances ?? [];
+      const idx = list.findIndex((i) => i.instanceId === instanceId);
+      if (idx < 0) return false;
+      const next: InventoryState = {
+        ...cur,
+        equipmentInstances: [...list.slice(0, idx), ...list.slice(idx + 1)],
+      };
+      stateRef.current = next;
+      setState(next);
+      return true;
+    },
+    [],
+  );
+
+  // 클라 측 강화 적용 (낙관적) — 보통 서버 응답을 replaceFromSaved 로 받으므로 직접 안 부른다.
+  // 테스트·UX 미리보기 용. 별빛 조각 차감 + 인스턴스 단계 +1. 검증 실패 시 false.
+  const enhanceInstance = useCallback((instanceId: string): boolean => {
+    const cur = stateRef.current;
+    const list = cur.equipmentInstances ?? [];
+    const idx = list.findIndex((i) => i.instanceId === instanceId);
+    if (idx < 0) return false;
+    const inst = list[idx];
+    if (inst.enhancementLevel >= ENHANCE_MAX_LEVEL) return false;
+    const toLevel = inst.enhancementLevel + 1;
+    const cost = ENHANCE_SHARD_COST[toLevel] ?? 0;
+    const have = cur.materials.starfall_shard ?? 0;
+    if (have < cost) return false;
+    const newInst: EquipmentInstance = {
+      ...inst,
+      enhancementLevel: toLevel,
+    };
+    const next: InventoryState = {
+      ...cur,
+      materials: { ...cur.materials, starfall_shard: have - cost },
+      equipmentInstances: [...list.slice(0, idx), newInst, ...list.slice(idx + 1)],
+    };
+    stateRef.current = next;
+    setState(next);
+    return true;
+  }, []);
+
+  const findEquipmentInstance = useCallback(
+    (instanceId: string): EquipmentInstance | undefined =>
+      state.equipmentInstances?.find((i) => i.instanceId === instanceId),
+    [state],
   );
 
   // 도감 보관함 ↔ 인벤토리 이동. atomic — 한 번의 setState 로 인벤 차감 + vault 증가(또는 그 반대).
@@ -619,6 +703,10 @@ export function useInventory() {
     addDroppedEquipment,
     consumeDroppedEquipment,
     droppedTotalCount,
+    addEquipmentInstance,
+    consumeEquipmentInstance,
+    enhanceInstance,
+    findEquipmentInstance,
     depositToVault,
     withdrawFromVault,
     vaultCount,

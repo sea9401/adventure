@@ -19,6 +19,13 @@ import {
   type CraftResult,
   type EquipPicks,
 } from "@/adventure/crafting/types";
+import { ENHANCEABLE_ITEM_IDS } from "@/adventure/character/enhancement";
+import {
+  generateInstanceId,
+  normalizeInstances,
+  type EquipmentInstance,
+} from "@/adventure/inventory/equipmentInstances";
+import type { ItemId } from "@/adventure/data/items";
 
 export type { CraftOutcome, CraftResult, EquipPicks };
 
@@ -77,6 +84,8 @@ export type CraftComputeInput = {
   craftedEquipment: GradedMap;
   /** 드랍 고품질 인스턴스. equip 재료 소비 시 equipment[] → craftedEquipment 다음 순서로 빠진다. 미동봉이면 빈 맵. */
   droppedEquipment?: GradedMap;
+  /** 인스턴스 기반 장비 (별빛 재단 무구). 미동봉이면 빈 배열. */
+  equipmentInstances?: EquipmentInstance[];
   potionCapacityBonus: number;
   known: string[];
 };
@@ -87,6 +96,7 @@ export type CraftComputeResult = {
   equipment: CountMap;
   craftedEquipment: GradedMap;
   droppedEquipment: GradedMap;
+  equipmentInstances: EquipmentInstance[];
   // 배치 제작 시 호출 수량만큼 채워지고 단일 제작이면 길이 1. 등급 추첨은 회마다 독립.
   results: CraftResult[];
 };
@@ -204,6 +214,7 @@ export function computeCraftOutcome(
   const equipment = { ...input.equipment };
   const crafted = cloneGraded(input.craftedEquipment);
   const dropped = cloneGraded(input.droppedEquipment ?? {});
+  const instances: EquipmentInstance[] = [...(input.equipmentInstances ?? [])];
   const equipPicks = options.equipPicks ?? {};
 
   // 1) 재료 충족 검사 — quantity 배.
@@ -298,7 +309,15 @@ export function computeCraftOutcome(
         : 0;
       // 첫 제작 보호 — 배치 첫 회에 한해 음수 등급 차단(불량/하급 → 일반). 양수는 그대로 살림.
       if (options.firstCraft && i === 0 && tier < 0) tier = 0;
-      if (tier === 0) {
+      // 강화 가능 장비(별빛 재단 무구) — 스택 칸이 아닌 인스턴스 풀로. craftTier 도 같이 박힌다.
+      if (ENHANCEABLE_ITEM_IDS.has(itemId as ItemId)) {
+        instances.push({
+          instanceId: generateInstanceId(),
+          itemId,
+          craftTier: tier === 0 ? undefined : tier,
+          enhancementLevel: 0,
+        });
+      } else if (tier === 0) {
         equipment[itemId] = (equipment[itemId] ?? 0) + 1;
       } else {
         const tierMap = crafted[itemId] ?? {};
@@ -330,6 +349,7 @@ export function computeCraftOutcome(
     equipment,
     craftedEquipment: crafted,
     droppedEquipment: dropped,
+    equipmentInstances: instances,
     results,
   };
 }
@@ -342,6 +362,7 @@ type SavedInventory = {
   equipment?: CountMap;
   craftedEquipment?: GradedMap;
   droppedEquipment?: GradedMap;
+  equipmentInstances?: unknown;
   consumables?: CountMap;
   potionCapacityBonus?: number;
   [k: string]: unknown;
@@ -389,6 +410,7 @@ export async function applyCraftAction(
       equipment: { ...(inv.equipment ?? {}) },
       craftedEquipment: inv.craftedEquipment ?? {},
       droppedEquipment: inv.droppedEquipment ?? {},
+      equipmentInstances: normalizeInstances(inv.equipmentInstances),
       potionCapacityBonus: inv.potionCapacityBonus ?? 0,
       // 가루 공정 3 종은 기본기 — 서버 권위 검증에서도 자동 학습으로 본다
       // (클라이언트는 useCrafting.readInitial 가 known 에 보강. 영속 상태가
@@ -408,6 +430,7 @@ export async function applyCraftAction(
     equipment: out.equipment,
     craftedEquipment: out.craftedEquipment,
     droppedEquipment: out.droppedEquipment,
+    equipmentInstances: out.equipmentInstances,
   };
 
   const newCrafting: SavedCrafting = firstCraft
