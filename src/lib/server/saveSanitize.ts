@@ -1,3 +1,5 @@
+import "server-only";
+
 // /api/save PATCH 들어오는 페이로드의 1차 위생 검사.
 //
 // 진짜 anti-cheat 는 아니다 — 클라가 권위인 흐름(NPC 보상, 퀘스트 보상, 단발 전투

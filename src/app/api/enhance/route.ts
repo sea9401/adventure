@@ -10,6 +10,7 @@
 import { db } from "@/db";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { requireSessionHeader } from "@/lib/server/checkSession";
+import { jsonError, jsonOk } from "@/lib/server/jsonResponse";
 import {
   EnhanceError,
   applyEnhanceAction,
@@ -18,7 +19,7 @@ import {
 
 export async function POST(req: Request) {
   const userId = await ensureUser();
-  if (!userId) return new Response("unauthorized", { status: 401 });
+  if (!userId) return jsonError("unauthorized", 401);
   const sessionFail = await requireSessionHeader(userId, req);
   if (sessionFail) return sessionFail;
 
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
   try {
     body = (await req.json()) as typeof body;
   } catch {
-    return new Response("invalid json", { status: 400 });
+    return jsonError("invalid_json");
   }
   // 길이 상한 — 정상 UUID 는 36자. 위조된 거대 문자열 차단.
   if (
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
     body.instanceId.length === 0 ||
     body.instanceId.length > 128
   ) {
-    return new Response("invalid instanceId", { status: 400 });
+    return jsonError("invalid_instance_id");
   }
   const instanceId = body.instanceId;
 
@@ -42,12 +43,12 @@ export async function POST(req: Request) {
     const outcome: EnhanceOutcome = await db.transaction((tx) =>
       applyEnhanceAction(tx, userId, instanceId),
     );
-    return Response.json({ ok: true, ...outcome });
+    return jsonOk<EnhanceOutcome>(outcome);
   } catch (e) {
     if (e instanceof EnhanceError) {
-      return Response.json({ ok: false, error: e.code }, { status: 400 });
+      return jsonError(e.code);
     }
     console.error("[enhance]", e);
-    return new Response("internal error", { status: 500 });
+    return jsonError("internal_error", 500);
   }
 }

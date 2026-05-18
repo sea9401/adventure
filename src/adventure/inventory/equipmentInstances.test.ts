@@ -43,6 +43,17 @@ describe("normalizeInstance", () => {
   it("itemId 누락은 drop", () => {
     expect(normalizeInstance({ ...valid, itemId: undefined as never })).toBeNull();
   });
+
+  it("itemId 가 ENHANCEABLE_ITEM_IDS 밖이면 drop (위조 인스턴스 차단)", () => {
+    // 일반 장비 (강화 대상 아님) id 가 박힌 인스턴스.
+    expect(
+      normalizeInstance({ ...valid, itemId: "bandit_dagger" }),
+    ).toBeNull();
+    // 존재하지 않는 itemId.
+    expect(
+      normalizeInstance({ ...valid, itemId: "totally_fake_id" }),
+    ).toBeNull();
+  });
 });
 
 describe("normalizeInstances", () => {
