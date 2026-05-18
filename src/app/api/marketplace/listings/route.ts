@@ -303,7 +303,16 @@ export async function POST(req: Request) {
 
   try {
     const result = await db.transaction(async (tx) => {
-      // 슬롯 한도 확인 — 활성 listing 카운트.
+      // H3 fix: seller 의 users row 를 먼저 잠가서 같은 유저의 등록을 직렬화.
+      // 이전 코드는 COUNT → INSERT 가 lock 없이 분리돼 있어 동시 두 건이 둘 다 한도 미만으로
+      // 판정 → 11개 이상 등록되는 race 가능. users.id 는 항상 존재하는 anchor row.
+      await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, userId))
+        .for("update");
+
+      // 슬롯 한도 확인 — 활성 listing 카운트. (users lock 보유 중이라 동시 INSERT 없음.)
       const [slotRow] = await tx
         .select({ n: count() })
         .from(marketplaceListings)

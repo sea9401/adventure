@@ -126,6 +126,17 @@ export async function POST(req: Request) {
       outcome: dbOutcome,
       log: resolution.finalState.log,
     });
+    if (result.kind === "cooldown") {
+      return Response.json(
+        {
+          error: "cooldown",
+          nextChallengeAt: new Date(
+            Date.now() + result.retryAfterMs,
+          ).toISOString(),
+        },
+        { status: 429 },
+      );
+    }
     attackerAfter = result.attackerAfter;
     defenderAfter = opponent.rating;
   } else {
@@ -136,6 +147,17 @@ export async function POST(req: Request) {
       outcome: dbOutcome,
       log: resolution.finalState.log,
     });
+    if (result.kind === "cooldown") {
+      return Response.json(
+        {
+          error: "cooldown",
+          nextChallengeAt: new Date(
+            Date.now() + result.retryAfterMs,
+          ).toISOString(),
+        },
+        { status: 429 },
+      );
+    }
     attackerAfter = result.attackerAfter;
     defenderAfter = result.defenderAfter;
   }
