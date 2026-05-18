@@ -4,11 +4,22 @@ import {
   Backpack,
   BookOpen,
   ClipboardText,
+  Crown,
   Diamond,
   Scroll,
   Sparkle,
   User,
 } from "@phosphor-icons/react";
+import { MAX_LEVEL } from "@/lib/leveling";
+import {
+  PARAGON_TOTAL_CAP,
+  pointsFromExp,
+  unspentPoints as paragonUnspentPoints,
+} from "@/lib/paragon";
+import {
+  PARAGON_RESPEC_SHARD_COST,
+  ParagonView,
+} from "@/adventure/character/ParagonView";
 import { Card } from "@/components/ui/Card";
 import { EntryCard } from "@/components/ui/EntryCard";
 import { SubViewHeader } from "@/components/ui/SubViewHeader";
@@ -44,6 +55,7 @@ export function CharacterScreen() {
     setSubView,
     back,
     characterStateHook,
+    paragon,
     inventory,
     adventureLog,
     notifications,
@@ -139,6 +151,22 @@ export function CharacterScreen() {
           description="3개의 슬롯에 룬을 장착해 영구 능력치를 더한다."
           onClick={() => setSubView("runes")}
         />
+        {character.level >= MAX_LEVEL && (
+          <EntryCard
+            icon={
+              <Crown size={28} weight="duotone" className="text-violet-500" />
+            }
+            title="파라곤"
+            description={(() => {
+              const pts = pointsFromExp(paragon.state.paragonExp);
+              const unspent = paragonUnspentPoints(paragon.state);
+              if (pts >= PARAGON_TOTAL_CAP) return "모든 파라곤 포인트 졸업.";
+              if (unspent > 0) return `미분배 포인트 ${unspent}개 보유.`;
+              return `${pts} / ${PARAGON_TOTAL_CAP} pt — 만렙 EXP 누적.`;
+            })()}
+            onClick={() => setSubView("paragon")}
+          />
+        )}
       </div>
     );
   }
@@ -198,6 +226,46 @@ export function CharacterScreen() {
           }
           onFuse={handleFuseRune}
           onBuy={(id, grade) => handlePurchaseRune(id, grade, 1)}
+        />
+      </div>
+    );
+  }
+
+  if (subView === "paragon") {
+    const shardCount = inventory.materialCount("starfall_shard");
+    const handleCommit = (next: Parameters<typeof paragon.setAllocations>[0]) => {
+      const ok = paragon.setAllocations(next);
+      if (!ok) {
+        addNotification("info", "분배 합계가 보유 파라곤 포인트를 넘는다.");
+      }
+      return ok;
+    };
+    const handleRespec = (): boolean => {
+      if (shardCount < PARAGON_RESPEC_SHARD_COST) {
+        addNotification(
+          "info",
+          `별빛 조각 ${PARAGON_RESPEC_SHARD_COST}개가 필요하다.`,
+        );
+        return false;
+      }
+      if (!inventory.consumeMaterial("starfall_shard", PARAGON_RESPEC_SHARD_COST)) {
+        return false;
+      }
+      paragon.respec();
+      addNotification(
+        "info",
+        `별빛 조각 ×${PARAGON_RESPEC_SHARD_COST} 소비하고 파라곤 분배를 되돌렸다.`,
+      );
+      return true;
+    };
+    return (
+      <div className="space-y-3">
+        <SubViewHeader title="파라곤" onBack={back} />
+        <ParagonView
+          state={paragon.state}
+          shardCount={shardCount}
+          onCommit={handleCommit}
+          onRespec={handleRespec}
         />
       </div>
     );

@@ -464,6 +464,7 @@ function Home() {
   const gameCtx: GameCtx = {
     inventory,
     characterStateHook,
+    paragon,
     training,
     crafting,
     quests,
