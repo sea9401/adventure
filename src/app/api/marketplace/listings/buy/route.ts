@@ -6,6 +6,7 @@ import {
   savesKv,
 } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { checkSession } from "@/lib/server/checkSession";
 import { isItemKind, MARKETPLACE_FEE_RATE } from "@/lib/server/marketplace";
 import { inboxValues } from "@/lib/server/inboxPayload";
 import { upsertSave } from "@/lib/server/savesKv";
@@ -23,6 +24,8 @@ const SAVES_CRAFTING = "crafting.v2";
 export async function POST(req: Request) {
   const buyerId = await ensureUser();
   if (!buyerId) return new Response("unauthorized", { status: 401 });
+  const sessionFail = await checkSession(buyerId, req);
+  if (sessionFail) return sessionFail;
 
   let body: { id?: unknown };
   try {

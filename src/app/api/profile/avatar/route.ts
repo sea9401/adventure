@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { savesKv } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { checkSession } from "@/lib/server/checkSession";
 import { upsertSave } from "@/lib/server/savesKv";
 import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
 import { isValidAvatarId } from "@/adventure/profile/avatars";
@@ -28,6 +29,8 @@ export async function POST(req: Request) {
     return new Response("server error (auth)", { status: 500 });
   }
   if (!userId) return new Response("unauthorized", { status: 401 });
+  const sessionFail = await checkSession(userId, req);
+  if (sessionFail) return sessionFail;
 
   let body: { gender?: unknown };
   try {

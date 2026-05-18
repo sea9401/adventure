@@ -195,6 +195,8 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   const userId = await ensureUser();
   if (!userId) return new Response("unauthorized", { status: 401 });
+  const sessionFail = await checkSession(userId, req);
+  if (sessionFail) return sessionFail;
 
   const url = new URL(req.url);
   const key = url.searchParams.get("key");

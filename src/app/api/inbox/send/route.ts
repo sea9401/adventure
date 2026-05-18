@@ -2,6 +2,7 @@ import { and, count, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { marketplaceInbox, savesKv, users } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
+import { checkSession } from "@/lib/server/checkSession";
 import { inboxValues } from "@/lib/server/inboxPayload";
 import { upsertSave } from "@/lib/server/savesKv";
 import { PROFILE_STORAGE_KEY } from "@/lib/storage-keys";
@@ -93,6 +94,8 @@ async function findRecipientByName(
 export async function POST(req: Request) {
   const senderId = await ensureUser();
   if (!senderId) return new Response("unauthorized", { status: 401 });
+  const sessionFail = await checkSession(senderId, req);
+  if (sessionFail) return sessionFail;
 
   let body: {
     recipientName?: unknown;
