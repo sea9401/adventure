@@ -16,6 +16,10 @@ import {
   pctToMultiplier,
   type RuneBonusMap,
 } from "./runeBonus";
+import {
+  computeParagonBonus,
+  type ParagonTrackKey,
+} from "@/lib/paragon";
 import type { EquippedRune } from "@/adventure/data/runes";
 import {
   AP_SKILLS,
@@ -113,6 +117,8 @@ export type DerivePlayerCombatInput = {
   equippedRunes?: ReadonlyArray<EquippedRune | null>;
   /** 보유 스토리 플래그 id 집합 — 슬롯 해금(skillLayout) 판정용. 미지정 = 빈 집합. */
   storyFlagIds?: ReadonlySet<string>;
+  /** 파라곤 트랙 할당. 미지정 = 빈 객체 = 보너스 없음. */
+  paragonAllocations?: Partial<Record<ParagonTrackKey, number>>;
   /** 현재 hp — 협동 공격 시 시작값. */
   hp: number;
 };
@@ -226,9 +232,14 @@ export function derivePlayerCombat(
     effectiveSkillSet,
   );
   const runeBonus = computeRuneBonus(input.equippedRunes);
+  // 파라곤 — 만렙 도달 후 트랙 할당의 효과 (PR-C 에서 적용).
+  // - flat ATK/DEF: 모든 곱셈 끝나고 가산 (rune scaling 안 받음 — true flat 의도).
+  // - pctMaxHp: endurance 와 함께 additive 합 (compounding 회피).
+  // - ppCritRate / ppCritDmg: 합산.
+  const paragonBonus = computeParagonBonus(input.paragonAllocations);
   const maxHp = Math.floor(
     (maxHpForLevel(input.level) + totalStats.vit * 3) *
-      (1 + enduranceHpBonusPct / 100) *
+      (1 + (enduranceHpBonusPct + paragonBonus.pctMaxHp) / 100) *
       pctToMultiplier(runeBonus.hp_pct),
   );
 
@@ -265,8 +276,14 @@ export function derivePlayerCombat(
   const player: PlayerCombat = {
     hp: Math.max(0, Math.min(input.hp, maxHp)),
     maxHp,
-    atk: Math.floor(rawAtk * pctToMultiplier(runeBonus.atk_pct)) + levelBaseAtk,
-    def: Math.floor(playerDef * pctToMultiplier(runeBonus.def_pct)) + levelBaseDef,
+    atk:
+      Math.floor(rawAtk * pctToMultiplier(runeBonus.atk_pct)) +
+      levelBaseAtk +
+      paragonBonus.flatAtk,
+    def:
+      Math.floor(playerDef * pctToMultiplier(runeBonus.def_pct)) +
+      levelBaseDef +
+      paragonBonus.flatDef,
     spd: totalStats.spd,
     evasionPct:
       totalStats.dex * 0.5 + evadeBonusPctFor(totalStats, effectiveSkillSet),
@@ -290,8 +307,12 @@ export function derivePlayerCombat(
       effectiveSkillSet,
     ),
     critChancePct:
-      critChancePctFor(totalStats, effectiveSkillSet) + runeBonus.crit_pct,
-    critMult: critMultFor(totalStats, effectiveSkillSet),
+      critChancePctFor(totalStats, effectiveSkillSet) +
+      runeBonus.crit_pct +
+      paragonBonus.ppCritRate,
+    critMult:
+      critMultFor(totalStats, effectiveSkillSet) +
+      paragonBonus.ppCritDmg / 100,
     doubleLuck: doubleLuckBonusesFor(totalStats, effectiveSkillSet),
     guard: guardFor(totalStats, effectiveSkillSet),
     regen: regenFor(totalStats, effectiveSkillSet),

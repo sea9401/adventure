@@ -7,12 +7,14 @@ import {
 import { applyQuestCompletionSideEffects } from "@/adventure/quests/questCompletionSideEffects";
 import type { Character } from "@/adventure/character/types";
 import type { useCharacterState } from "@/adventure/character/useCharacterState";
+import type { useParagonState } from "@/adventure/character/useParagonState";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
 import type { GuildBuffSlot } from "@/adventure/data/guildBuffs";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
+import { computeParagonBonus } from "@/lib/paragon";
 
 // 퀘스트 수락/보상 지급 핸들러 묶음 — NPC 다이얼로그·길드 게시판 공용.
 // grantTitle 은 page.tsx 초기에 useTitleGrant 로 만들어 넘긴다 (character 합성 전에도 쓰여서).
@@ -21,6 +23,7 @@ export function useQuestActions(deps: {
   crafting: ReturnType<typeof useCrafting>;
   inventory: ReturnType<typeof useInventory>;
   characterStateHook: ReturnType<typeof useCharacterState>;
+  paragon: ReturnType<typeof useParagonState>;
   storyFlags: ReturnType<typeof useStoryFlags>;
   guildBuffs: GuildBuffSlot[];
   character: Character;
@@ -36,6 +39,7 @@ export function useQuestActions(deps: {
     crafting,
     inventory,
     characterStateHook,
+    paragon,
     storyFlags,
     guildBuffs,
     character,
@@ -66,6 +70,7 @@ export function useQuestActions(deps: {
     const tokens = applyQuestReward(result.quest.reward, rewardServices, {
       playerLevel: character.level,
       guildBuffs,
+      paragonBonus: computeParagonBonus(paragon.state.allocations),
     });
     addNotification(
       "quest_complete",

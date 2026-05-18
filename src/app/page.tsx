@@ -39,6 +39,7 @@ import { useTraining } from "@/adventure/training/useTraining";
 import { baseCharacter } from "@/adventure/character/defaults";
 import { useCharacterState } from "@/adventure/character/useCharacterState";
 import { useParagonState } from "@/adventure/character/useParagonState";
+import { computeParagonBonus } from "@/lib/paragon";
 import { useProfile } from "@/adventure/profile/useProfile";
 import { useTrialUnlocks } from "@/adventure/edges/useTrialUnlocks";
 import { composeCharacter } from "@/adventure/character/composeCharacter";
@@ -218,6 +219,7 @@ function Home() {
     apSkillConditions: characterState.apSkillConditions,
     equippedFeats: characterState.equippedFeats,
     equippedRunes: characterState.equippedRunes,
+    paragonAllocations: paragon.state.allocations,
     storyFlagIds: new Set(storyFlags.state.flags),
     hp: characterState.hp,
     mp: characterState.mp,
@@ -332,6 +334,7 @@ function Home() {
       crafting,
       inventory,
       characterStateHook,
+      paragon,
       storyFlags,
       guildBuffs: guildBuffsCache.buffs,
       character,
@@ -450,6 +453,7 @@ function Home() {
       },
       guildBuffs: guildBuffsCache.buffs,
       runeBonus: composed.runeBonus,
+      paragonBonus: computeParagonBonus(paragon.state.allocations),
     });
 
   const { autoHuntResult, dismiss: dismissAutoHuntResult } =

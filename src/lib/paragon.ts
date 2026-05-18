@@ -135,6 +135,66 @@ export function unspentPoints(state: ParagonState): number {
   return Math.max(0, pointsFromExp(state.paragonExp) - totalAllocated(state));
 }
 
+/**
+ * 6트랙 할당의 효과를 합산. 카테고리별 의미:
+ * - flatAtk / flatDef: 정수 가산 (rune % 와 곱해지지 않는 진짜 flat)
+ * - pctMaxHp: % 가산 (다른 % HP 보너스 — endurance 등 — 와 additive)
+ * - ppCritRate / ppCritDmg: %p 가산
+ * - pctGoldExp: 보상 곱셈 (예: × (1 + pctGoldExp/100))
+ */
+export type ParagonBonus = {
+  flatAtk: number;
+  flatDef: number;
+  pctMaxHp: number;
+  ppCritRate: number;
+  ppCritDmg: number;
+  pctGoldExp: number;
+};
+
+export const EMPTY_PARAGON_BONUS: ParagonBonus = {
+  flatAtk: 0,
+  flatDef: 0,
+  pctMaxHp: 0,
+  ppCritRate: 0,
+  ppCritDmg: 0,
+  pctGoldExp: 0,
+};
+
+/** 트랙별 할당 × perPoint 를 카테고리에 합산. 입력이 비면 EMPTY_PARAGON_BONUS. */
+export function computeParagonBonus(
+  allocations: Partial<Record<ParagonTrackKey, number>> | undefined,
+): ParagonBonus {
+  if (!allocations) return EMPTY_PARAGON_BONUS;
+  const out: ParagonBonus = { ...EMPTY_PARAGON_BONUS };
+  for (const k of PARAGON_TRACKS) {
+    const pts = allocations[k] ?? 0;
+    if (pts <= 0) continue;
+    const eff = PARAGON_TRACK_EFFECTS[k];
+    const add = eff.perPoint * pts;
+    switch (eff.kind) {
+      case "flatAtk":
+        out.flatAtk += add;
+        break;
+      case "flatDef":
+        out.flatDef += add;
+        break;
+      case "pctMaxHp":
+        out.pctMaxHp += add;
+        break;
+      case "ppCritRate":
+        out.ppCritRate += add;
+        break;
+      case "ppCritDmg":
+        out.ppCritDmg += add;
+        break;
+      case "pctGoldExp":
+        out.pctGoldExp += add;
+        break;
+    }
+  }
+  return out;
+}
+
 /** 저장된 raw 를 정규화. 잘못된 값은 안전 디폴트로. */
 export function readInitialParagon(raw: unknown): ParagonState {
   if (!raw || typeof raw !== "object") return initialParagonState;
