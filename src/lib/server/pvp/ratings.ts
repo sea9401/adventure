@@ -13,9 +13,21 @@ import { and, desc, eq, or } from "drizzle-orm";
 import { db } from "@/db";
 import { pvpMatches, pvpRatings } from "@/db/schema";
 import { ELO_INITIAL, applyEloMatch, computeNewRating } from "./elo";
+import { CHALLENGE_COOLDOWN_MS } from "./cooldown";
 
 export type PvPRatingRow = typeof pvpRatings.$inferSelect;
 export type PvPMatchRow = typeof pvpMatches.$inferSelect;
+
+// 매치 기록 결과 — cooldown race 시 "cooldown" 으로 분기.
+// (C3 fix: tx 밖에서의 cooldown 체크는 더블 submit 시 양쪽 다 통과해 매치 중복 생성.
+//  여기선 attacker rating row 를 FOR UPDATE 로 잡고 그 안에서 최근 매치를 한 번 더 확인.)
+export type RecordMatchResult =
+  | { kind: "ok"; attackerAfter: number; defenderAfter: number }
+  | { kind: "cooldown"; retryAfterMs: number };
+
+export type RecordBotMatchResult =
+  | { kind: "ok"; attackerAfter: number }
+  | { kind: "cooldown"; retryAfterMs: number };
 
 // 시즌별 유저 레이팅 row. 없으면 ELO_INITIAL=1000 으로 INSERT. PK race 안전.
 export async function getOrCreateRating(
@@ -60,34 +72,55 @@ export async function recordMatchAndUpdateRatings(args: {
   defenderId: string;
   outcome: "a_win" | "d_win" | "draw";
   log: unknown; // PvPBattleState["log"] — jsonb 로 저장
-}): Promise<{ attackerAfter: number; defenderAfter: number }> {
+}): Promise<RecordMatchResult> {
   return db.transaction(async (tx) => {
-    // 양쪽 row select for update (잠금 + race 가드).
-    const aRows = await tx
+    // H1 fix: rating row 잠금 순서를 userId 사전순으로 정규화. A→B / B→A 가 동시이면
+    // 기존 코드는 양쪽 다 "attacker → defender" 순으로 잡아 데드락. 이제 항상 min(id) → max(id).
+    const [firstId, secondId] =
+      args.attackerId < args.defenderId
+        ? [args.attackerId, args.defenderId]
+        : [args.defenderId, args.attackerId];
+
+    const firstRows = await tx
       .select()
       .from(pvpRatings)
       .where(
         and(
-          eq(pvpRatings.userId, args.attackerId),
+          eq(pvpRatings.userId, firstId),
           eq(pvpRatings.seasonId, args.seasonId),
         ),
       )
       .for("update");
-    const dRows = await tx
+    const secondRows = await tx
       .select()
       .from(pvpRatings)
       .where(
         and(
-          eq(pvpRatings.userId, args.defenderId),
+          eq(pvpRatings.userId, secondId),
           eq(pvpRatings.seasonId, args.seasonId),
         ),
       )
       .for("update");
 
-    const a = aRows[0];
-    const d = dRows[0];
+    const a = firstId === args.attackerId ? firstRows[0] : secondRows[0];
+    const d = firstId === args.attackerId ? secondRows[0] : firstRows[0];
     if (!a || !d) {
       throw new Error("pvp ratings missing — getOrCreateRating 호출 누락");
+    }
+
+    // C3 fix: attacker rating row 를 lock 한 상태에서 최근 매치 다시 확인.
+    // 같은 attacker 의 동시 challenge 요청들은 여기서 직렬화 → 두 번째 요청은 첫 매치를 보고 429.
+    const recent = await tx
+      .select({ createdAt: pvpMatches.createdAt })
+      .from(pvpMatches)
+      .where(eq(pvpMatches.attackerId, args.attackerId))
+      .orderBy(desc(pvpMatches.createdAt))
+      .limit(1);
+    if (recent[0]) {
+      const elapsed = Date.now() - recent[0].createdAt.getTime();
+      if (elapsed < CHALLENGE_COOLDOWN_MS) {
+        return { kind: "cooldown", retryAfterMs: CHALLENGE_COOLDOWN_MS - elapsed };
+      }
     }
 
     const { attackerAfter, defenderAfter } = applyEloMatch(
@@ -141,7 +174,7 @@ export async function recordMatchAndUpdateRatings(args: {
       log: args.log as object,
     });
 
-    return { attackerAfter, defenderAfter };
+    return { kind: "ok", attackerAfter, defenderAfter };
   });
 }
 
@@ -154,7 +187,7 @@ export async function recordBotMatchAndUpdateRating(args: {
   botRating: number;
   outcome: "a_win" | "d_win" | "draw";
   log: unknown;
-}): Promise<{ attackerAfter: number }> {
+}): Promise<RecordBotMatchResult> {
   return db.transaction(async (tx) => {
     const aRows = await tx
       .select()
@@ -169,6 +202,20 @@ export async function recordBotMatchAndUpdateRating(args: {
     const a = aRows[0];
     if (!a) {
       throw new Error("pvp rating missing — getOrCreateRating 호출 누락");
+    }
+
+    // C3 fix: 봇 매치도 동일하게 attacker rating row lock 하에서 최근 매치 재확인.
+    const recent = await tx
+      .select({ createdAt: pvpMatches.createdAt })
+      .from(pvpMatches)
+      .where(eq(pvpMatches.attackerId, args.attackerId))
+      .orderBy(desc(pvpMatches.createdAt))
+      .limit(1);
+    if (recent[0]) {
+      const elapsed = Date.now() - recent[0].createdAt.getTime();
+      if (elapsed < CHALLENGE_COOLDOWN_MS) {
+        return { kind: "cooldown", retryAfterMs: CHALLENGE_COOLDOWN_MS - elapsed };
+      }
     }
 
     const aResult =
@@ -208,7 +255,7 @@ export async function recordBotMatchAndUpdateRating(args: {
       log: args.log as object,
     });
 
-    return { attackerAfter };
+    return { kind: "ok", attackerAfter };
   });
 }
 
