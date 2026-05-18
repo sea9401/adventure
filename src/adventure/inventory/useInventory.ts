@@ -25,11 +25,7 @@ import {
   type DisassembleRequest,
 } from "../crafting/disassemble";
 import type { EquippedSlots } from "../character/types";
-import {
-  ENHANCE_SHARD_COST,
-  ENHANCE_MAX_LEVEL,
-  isEnhanceable,
-} from "../character/enhancement";
+import { isEnhanceable } from "../character/enhancement";
 import {
   normalizeInstances,
   type EquipmentInstance,
@@ -418,33 +414,6 @@ export function useInventory() {
     [],
   );
 
-  // 클라 측 강화 적용 (낙관적) — 보통 서버 응답을 replaceFromSaved 로 받으므로 직접 안 부른다.
-  // 테스트·UX 미리보기 용. 별빛 조각 차감 + 인스턴스 단계 +1. 검증 실패 시 false.
-  const enhanceInstance = useCallback((instanceId: string): boolean => {
-    const cur = stateRef.current;
-    const list = cur.equipmentInstances ?? [];
-    const idx = list.findIndex((i) => i.instanceId === instanceId);
-    if (idx < 0) return false;
-    const inst = list[idx];
-    if (inst.enhancementLevel >= ENHANCE_MAX_LEVEL) return false;
-    const toLevel = inst.enhancementLevel + 1;
-    const cost = ENHANCE_SHARD_COST[toLevel] ?? 0;
-    const have = cur.materials.starfall_shard ?? 0;
-    if (have < cost) return false;
-    const newInst: EquipmentInstance = {
-      ...inst,
-      enhancementLevel: toLevel,
-    };
-    const next: InventoryState = {
-      ...cur,
-      materials: { ...cur.materials, starfall_shard: have - cost },
-      equipmentInstances: [...list.slice(0, idx), newInst, ...list.slice(idx + 1)],
-    };
-    stateRef.current = next;
-    setState(next);
-    return true;
-  }, []);
-
   const findEquipmentInstance = useCallback(
     (instanceId: string): EquipmentInstance | undefined =>
       state.equipmentInstances?.find((i) => i.instanceId === instanceId),
@@ -705,7 +674,6 @@ export function useInventory() {
     droppedTotalCount,
     addEquipmentInstance,
     consumeEquipmentInstance,
-    enhanceInstance,
     findEquipmentInstance,
     depositToVault,
     withdrawFromVault,

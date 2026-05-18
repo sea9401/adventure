@@ -74,7 +74,7 @@ export function BossSubView() {
               learnRecipe: crafting.learnRecipe,
               knowsRecipe: crafting.knows,
               addEquipment: inventory.addEquipment,
-              markTitleObtained: adventureLog.markTitleObtained,
+              grantTitle,
             })
           }
           notify={(text) => addNotification("info", text)}
