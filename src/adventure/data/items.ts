@@ -1366,7 +1366,7 @@ export const ITEMS = {
       { label: "행운", value: "-2" },
     ],
     bonus: { atk: 26, def: -5, spd: -4, luk: -2 },
-    description: "폐허의 운기가 한 손에 들고 있던 양손검. 두 손으로도 무겁지만, 한 번 휘두르면 별이 떨어진다.",
+    description: "폐허의 거상이 한 손에 들고 있던 양손검. 두 손으로도 무겁지만, 한 번 휘두르면 별이 떨어진다.",
     rarity: "unique",
     tier: 5,
   } satisfies EquipItem,

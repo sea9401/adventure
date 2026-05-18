@@ -896,8 +896,8 @@ export const MONSTERS: Record<string, Monster> = {
     skill: { kind: "heavy_blow", name: "천공 강타", everyPhases: 3, multiplier: 1.5 },
     bonusAttackChancePct: 130,
   },
-  "폐허의 운기": {
-    name: "폐허의 운기",
+  "폐허의 거상": {
+    name: "폐허의 거상",
     tags: ["golem"],
     hp: 1525,
     atk: 100,

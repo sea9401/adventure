@@ -423,11 +423,11 @@ export const WORLD_MAP: WorldMap = {
         "별바다 너머 옛 천공인의 폐도. 별빛으로 살아남은 마지막 잔재들이 무너진 첨탑 사이를 떠돌며 침입자의 발을 잡는다.",
       position: { x: 2170, y: 525 },
       biome: "ruins",
-      enemies: ["천공인 사관", "천공인 전사", "폐허의 운기"],
+      enemies: ["천공인 사관", "천공인 전사", "폐허의 거상"],
       encounterWeights: {
         "천공인 사관": 30,
         "천공인 전사": 40,
-        "폐허의 운기": 30,
+        "폐허의 거상": 30,
       },
       recommendedLevel: 80,
     },
