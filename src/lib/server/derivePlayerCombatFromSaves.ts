@@ -23,6 +23,7 @@ import {
   isAPSkillCondition,
   type APSkillCondition,
 } from "@/adventure/character/apSkills";
+import { readInitialParagon } from "@/lib/paragon";
 
 type SavedEquipped = {
   weapon?: EquippedItem | null;
@@ -110,6 +111,9 @@ export async function derivePlayerCombatFromSaves(
     character.apSkillConditions,
   );
 
+  const paragonRaw = await readSave<unknown>(userId, "paragon.v1");
+  const paragon = readInitialParagon(paragonRaw);
+
   return derivePlayerCombat({
     level: character.level ?? 1,
     baseStats: baseCharacter.stats,
@@ -121,6 +125,7 @@ export async function derivePlayerCombatFromSaves(
     learnedAPSkills,
     apSkillConditions,
     storyFlagIds,
+    paragonAllocations: paragon.allocations,
     hp: character.hp ?? baseCharacter.hp,
   });
 }

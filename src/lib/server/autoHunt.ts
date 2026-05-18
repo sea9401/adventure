@@ -29,6 +29,7 @@ import {
 import { applyExpGain } from "@/lib/leveling";
 import {
   addParagonExp as addParagonExpPure,
+  computeParagonBonus,
   readInitialParagon,
   type ParagonState,
 } from "@/lib/paragon";
@@ -251,6 +252,7 @@ export function assembleSimInput(opts: AssembleSimInputOpts): OfflineSimInput {
     learnedAPSkills: character.learnedAPSkills,
     apSkillConditions: parseAPSkillConditionsSaved(character.apSkillConditions),
     storyFlagIds: new Set(state.storyFlags.flags ?? []),
+    paragonAllocations: state.paragon.allocations,
     hp: baselineHp,
   });
 
@@ -382,10 +384,16 @@ export async function applyResultToSaves(
 
   // 3) 캐릭터 — gold/exp/level/hp.
   const character = state.character;
+  // 파라곤 풍요 트랙 → 골드/EXP 획득 % 보너스. 사냥 시뮬은 자체 멀티플라이어 없이
+  // 적의 raw EXP/gold 를 적립하므로, sim 결과를 캐릭터에 반영하는 이 시점에 곱한다.
+  const paragonBonus = computeParagonBonus(state.paragon.allocations);
+  const paragonRewardMult = 1 + paragonBonus.pctGoldExp / 100;
+  const boostedExpGained = Math.floor(result.expGained * paragonRewardMult);
+  const boostedGoldGained = Math.floor(result.goldGained * paragonRewardMult);
   const newLevelExp = computeFinalLevelExp(
     character.level ?? 1,
     character.exp ?? 0,
-    result.expGained,
+    boostedExpGained,
   );
   // 새 레벨 기준 maxHp — derivePlayerCombat 과 동일하게 VIT·불굴(endurance HP%) 등을
   // 모두 반영해 계산한다. (예전엔 maxHpForLevel + vit*2 만 직접 계산해 불굴 보너스를
@@ -402,6 +410,7 @@ export async function applyResultToSaves(
     equippedSkills: character.equippedSkills,
     equippedFeats: maxHpNewEquippedFeats,
     storyFlagIds: new Set(state.storyFlags.flags ?? []),
+    paragonAllocations: state.paragon.allocations,
     hp: result.finalPlayerHp,
   }).maxHp;
 
@@ -420,7 +429,7 @@ export async function applyResultToSaves(
 
   const newCharacter: SavedCharacter = {
     ...character,
-    gold: (character.gold ?? 0) + result.goldGained,
+    gold: (character.gold ?? 0) + boostedGoldGained,
     level: newLevelExp.level,
     exp: newLevelExp.exp,
     hp: newHp,

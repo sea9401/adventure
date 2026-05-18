@@ -9,6 +9,7 @@ import {
   type GuildBuffSlot,
 } from "../data/guildBuffs";
 import { MAX_LEVEL, applyNewbieBonus, XP_RATE_MULT } from "@/lib/leveling";
+import type { ParagonBonus } from "@/lib/paragon";
 
 export type RewardServices = {
   // 포션 cap 초과분은 silently 잘림 — 실제 추가량 반환해 호출 측이 부족분 안내 가능.
@@ -29,6 +30,8 @@ export type RewardContext = {
   playerLevel?: number;
   /** 길드 버프 슬롯 — EXP/골드/명성 곱셈. 비어 있으면 모두 ×1. */
   guildBuffs?: GuildBuffSlot[];
+  /** 파라곤 합산 보너스 — pctGoldExp 가 EXP/골드에 곱셈 적용. 미지정 = 보너스 없음. */
+  paragonBonus?: ParagonBonus;
 };
 
 function recipeName(id: string): string {
@@ -51,8 +54,10 @@ export function applyQuestReward(
   const buffs = ctx.guildBuffs ?? [];
   const fameMult = resolveBuffMultiplier(buffs, "fame_mult");
   const expMult = resolveBuffMultiplier(buffs, "exp_mult");
+  // 파라곤 풍요 트랙 → 골드·EXP 획득 % (additive % 가 아니라 multiplicative 적용).
+  const paragonRewardMult = 1 + (ctx.paragonBonus?.pctGoldExp ?? 0) / 100;
 
-  const gold = reward.gold ?? 0;
+  const gold = Math.floor((reward.gold ?? 0) * paragonRewardMult);
   const fameBase = reward.fame ?? 0;
   const fame = Math.floor(fameBase * fameMult);
   if (gold > 0 || fame > 0) {
@@ -63,17 +68,18 @@ export function applyQuestReward(
 
   const baseExp = reward.exp ?? 0;
   if (baseExp > 0) {
-    // 만렙은 applyExpGain 이 nextExp=0 으로 zeroing — addExp 자체는 호출하되 토스트는
-    // 거짓말이 되지 않도록 "(만렙)" 표시. 신참 ×2 상태일 가능성도 같이 안내.
+    // 만렙 도달 시 EXP 는 파라곤으로 적립됨 — 토스트도 그에 맞춰 표시.
     const atMaxLevel = ctx.playerLevel != null && ctx.playerLevel >= MAX_LEVEL;
     const expBonus =
       ctx.playerLevel != null
         ? applyNewbieBonus(baseExp, ctx.playerLevel)
         : { gained: baseExp, bonusApplied: false };
-    const boosted = Math.floor(expBonus.gained * expMult * XP_RATE_MULT);
+    const boosted = Math.floor(
+      expBonus.gained * expMult * XP_RATE_MULT * paragonRewardMult,
+    );
     services.addExp(boosted);
     if (atMaxLevel) {
-      summary.push(`EXP +${boosted} (만렙)`);
+      summary.push(`EXP +${boosted} (파라곤)`);
     } else {
       summary.push(
         `EXP +${boosted}${expBonus.bonusApplied ? " (신참 ×2)" : ""}`,

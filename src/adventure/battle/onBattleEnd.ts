@@ -22,6 +22,7 @@ import {
 } from "@/adventure/data/guildBuffs";
 import type { RuneBonusMap } from "@/adventure/character/runeBonus";
 import { XP_RATE_MULT, getNewbieDropMultiplier } from "@/lib/leveling";
+import type { ParagonBonus } from "@/lib/paragon";
 import type { MapProgress } from "@/lib/map-progress";
 import type {
   NotificationKind,
@@ -88,6 +89,8 @@ export type BattleEndDeps = {
   guildBuffs?: GuildBuffSlot[];
   /** 장착 룬 합산 보너스 — EXP%/드롭% 가산에 사용. 비어있으면 ×1. */
   runeBonus?: RuneBonusMap;
+  /** 파라곤 합산 보너스 — pctGoldExp 가 EXP/골드 곱셈. 미지정 = 보너스 없음. */
+  paragonBonus?: ParagonBonus;
 };
 
 // BattleView 의 onBattleEnd 콜백 본체. 의존성을 명시적으로 주입받는 형태로
@@ -166,7 +169,10 @@ export function onBattleEnd(
     const runeExpMult = 1 + (deps.runeBonus?.exp_pct ?? 0) / 100;
     const runeDropMult = 1 + (deps.runeBonus?.drop_pct ?? 0) / 100;
     const newbieDropMult = getNewbieDropMultiplier(deps.playerLevel);
-    const expMult = guildExpMult * runeExpMult;
+    // 파라곤 풍요 트랙 — EXP·골드 획득에 곱셈. 드랍률에는 영향 없음.
+    const paragonRewardMult =
+      1 + (deps.paragonBonus?.pctGoldExp ?? 0) / 100;
+    const expMult = guildExpMult * runeExpMult * paragonRewardMult;
     const dropMult =
       resolveBuffMultiplier(buffs, "drop_mult") * runeDropMult * newbieDropMult;
     const boostedExp = Math.floor(payload.rewards.exp * expMult * XP_RATE_MULT);
@@ -249,8 +255,9 @@ export function onBattleEnd(
             }을(를) 손에 넣었다.`,
           );
         } else if (drop.kind === "gold") {
-          deps.characterState.addGoldFame(drop.amount, 0);
-          deps.addNotification("loot", `골드 +${drop.amount}`);
+          const boostedGold = Math.floor(drop.amount * paragonRewardMult);
+          deps.characterState.addGoldFame(boostedGold, 0);
+          deps.addNotification("loot", `골드 +${boostedGold}`);
         } else if (drop.kind === "equip") {
           // 드랍 품질 등급 롤 — 대부분 기본(접두어 없음), 가끔 정교한(+1u)/빼어난(+2u).
           // 보스·고티어는 monster.dropQualityBias 로 좋은 품질 가중치가 올라간다.
@@ -314,12 +321,14 @@ export function onBattleEnd(
         }
       }
     }
-    // 신참/길드/룬 각각의 곱셈을 별도 괄호로 표기 — 어느 출처로 보너스가 왔는지
+    // 신참/길드/룬/파라곤 각 곱셈을 별도 괄호로 표기 — 어느 출처로 보너스가 왔는지
     // 유저가 한눈에 알 수 있게. 곱셈 = 1 인 출처는 라벨 자체를 생략.
     let expParts = "";
     if (payload.rewards.expBonusApplied) expParts += " (신참 ×2)";
     if (guildExpMult > 1) expParts += ` (길드 ×${guildExpMult.toFixed(2)})`;
     if (runeExpMult > 1) expParts += ` (룬 ×${runeExpMult.toFixed(2)})`;
+    if (paragonRewardMult > 1)
+      expParts += ` (파라곤 ×${paragonRewardMult.toFixed(2)})`;
     const reward =
       payload.rewards.exp > 0
         ? `EXP +${boostedExp}${expParts}`

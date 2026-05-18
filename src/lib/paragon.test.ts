@@ -2,7 +2,9 @@ import { describe, it, expect } from "vitest";
 import { requiredExpToNext } from "./leveling";
 import {
   addParagonExp,
+  computeParagonBonus,
   cumulativeExpForPoints,
+  EMPTY_PARAGON_BONUS,
   expToNextPoint,
   initialParagonState,
   paragonPointCost,
@@ -209,5 +211,45 @@ describe("readInitialParagon", () => {
     });
     expect(r.allocations.wrath).toBe(2);
     expect((r.allocations as Record<string, number>).bogus).toBeUndefined();
+  });
+});
+
+describe("computeParagonBonus", () => {
+  it("빈/undefined 입력 → EMPTY", () => {
+    expect(computeParagonBonus(undefined)).toEqual(EMPTY_PARAGON_BONUS);
+    expect(computeParagonBonus({})).toEqual(EMPTY_PARAGON_BONUS);
+  });
+
+  it("트랙별 1pt 효과", () => {
+    expect(computeParagonBonus({ wrath: 1 }).flatAtk).toBe(1);
+    expect(computeParagonBonus({ guard: 1 }).flatDef).toBe(1);
+    expect(computeParagonBonus({ vigor: 1 }).pctMaxHp).toBe(0.4);
+    expect(computeParagonBonus({ precision: 1 }).ppCritRate).toBe(0.2);
+    expect(computeParagonBonus({ blast: 1 }).ppCritDmg).toBe(0.5);
+    expect(computeParagonBonus({ fortune: 1 }).pctGoldExp).toBe(0.5);
+  });
+
+  it("풀투자(트랙당 25) 시 카테고리 총합 — 디자인 합의 수치와 일치", () => {
+    const allFull = PARAGON_TRACKS.reduce(
+      (acc, k) => {
+        acc[k] = PARAGON_TRACK_CAP;
+        return acc;
+      },
+      {} as Record<(typeof PARAGON_TRACKS)[number], number>,
+    );
+    const r = computeParagonBonus(allFull);
+    expect(r.flatAtk).toBe(25);
+    expect(r.flatDef).toBe(25);
+    expect(r.pctMaxHp).toBeCloseTo(10);
+    expect(r.ppCritRate).toBeCloseTo(5);
+    expect(r.ppCritDmg).toBeCloseTo(12.5);
+    expect(r.pctGoldExp).toBeCloseTo(12.5);
+  });
+
+  it("0/음수/누락 트랙은 무시 (혼합 입력)", () => {
+    const r = computeParagonBonus({ wrath: 5, guard: 0, vigor: -3 });
+    expect(r.flatAtk).toBe(5);
+    expect(r.flatDef).toBe(0);
+    expect(r.pctMaxHp).toBe(0);
   });
 });
