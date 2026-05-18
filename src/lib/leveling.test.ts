@@ -45,12 +45,12 @@ describe("MAX_LEVEL", () => {
 describe("applyExpGain", () => {
   it("임계치 미달이면 EXP만 누적", () => {
     const r = applyExpGain(1, 30, 50);
-    expect(r).toEqual({ level: 1, exp: 80, levelsGained: 0 });
+    expect(r).toEqual({ level: 1, exp: 80, levelsGained: 0, overflowExp: 0 });
   });
 
   it("임계치 정확히 도달하면 1 레벨업, 잉여 0", () => {
     const r = applyExpGain(1, 0, 120);
-    expect(r).toEqual({ level: 2, exp: 0, levelsGained: 1 });
+    expect(r).toEqual({ level: 2, exp: 0, levelsGained: 1, overflowExp: 0 });
   });
 
   it("한 번에 여러 레벨도 처리", () => {
@@ -59,17 +59,28 @@ describe("applyExpGain", () => {
     expect(r.level).toBe(3);
     expect(r.levelsGained).toBe(2);
     expect(r.exp).toBe(500 - 120 - 339);
+    expect(r.overflowExp).toBe(0);
   });
 
-  it("만렙 도달 시 잉여 EXP는 0으로 캡", () => {
+  it("만렙 도달 시 잉여 EXP는 overflowExp 로 분리, exp 는 0으로 캡", () => {
     const r = applyExpGain(MAX_LEVEL, 0, 999_999);
     expect(r.level).toBe(MAX_LEVEL);
     expect(r.exp).toBe(0);
+    expect(r.overflowExp).toBe(999_999);
+  });
+
+  it("만렙 도달하는 호출은 잔여 EXP 가 overflow 로", () => {
+    // Lv 99 에서 99→100 비용을 5000 초과로 받으면 5000 이 overflow.
+    const need99 = requiredExpToNext(99)!;
+    const r = applyExpGain(99, 0, need99 + 5000);
+    expect(r.level).toBe(MAX_LEVEL);
+    expect(r.exp).toBe(0);
+    expect(r.overflowExp).toBe(5000);
   });
 
   it("음수 gain은 0으로 클램프", () => {
     const r = applyExpGain(2, 50, -100);
-    expect(r).toEqual({ level: 2, exp: 0, levelsGained: 0 });
+    expect(r).toEqual({ level: 2, exp: 0, levelsGained: 0, overflowExp: 0 });
   });
 });
 

@@ -159,6 +159,7 @@ describe("assembleSimInput — AP 스킬 plumbing", () => {
       map: {},
       training: {},
       storyFlags: {},
+      paragon: { paragonExp: 0, allocations: {} },
     };
   }
 

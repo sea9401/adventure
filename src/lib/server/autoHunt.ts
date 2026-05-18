@@ -27,6 +27,11 @@ import {
   type APSkillCondition,
 } from "@/adventure/character/apSkills";
 import { applyExpGain } from "@/lib/leveling";
+import {
+  addParagonExp as addParagonExpPure,
+  readInitialParagon,
+  type ParagonState,
+} from "@/lib/paragon";
 import { rehydrateEquippedItem } from "@/adventure/character/rehydrateEquip";
 import type { EquippedItem } from "@/adventure/character/types";
 import { STAT_KEYS, type StatKey } from "@/adventure/data/stats";
@@ -183,6 +188,8 @@ export type LoadedState = {
   map: SavedMap;
   training: SavedTraining;
   storyFlags: SavedStoryFlags;
+  /** 100레벨 도달 후 잉여 EXP 적립처. 신규 유저는 빈 상태로 시드. */
+  paragon: ParagonState;
 };
 
 // sim 에 필요한 모든 savesKv 키를 읽음.
@@ -207,7 +214,9 @@ export async function loadStateForSim(
   const storyFlags =
     (await readKv<SavedStoryFlags>(tx, userId, STORY_FLAGS_STORAGE_KEY, lock)) ??
     {};
-  return { character, inventory, crafting, map, training, storyFlags };
+  const paragonRaw = await readKv<unknown>(tx, userId, "paragon.v1", lock);
+  const paragon = readInitialParagon(paragonRaw);
+  return { character, inventory, crafting, map, training, storyFlags, paragon };
 }
 
 // sim 입력 조립 — derivePlayerCombat 으로 PlayerCombat 만들고 region/potions/luk 등 패키징.
@@ -300,6 +309,8 @@ export type ApplyResultOutcome = {
   newCrafting: SavedCrafting;
   newTraining: SavedTraining;
   newRespawnRegionId: RegionId | null;
+  /** 잉여 EXP 가 파라곤으로 흘러 들어갔으면 갱신된 상태. 아니면 null (쓰기 스킵). */
+  newParagon: ParagonState | null;
 };
 
 export async function applyResultToSaves(
@@ -426,6 +437,14 @@ export async function applyResultToSaves(
     };
   }
 
+  // 3-c) 100레벨 도달 후 잉여 EXP → 파라곤 적립. overflowExp 가 0 이면 그대로 둠.
+  // useCharacterState.addExp 의 onParagonOverflow 와 같은 시맨틱 — 단지 서버 tx 안.
+  let newParagon: ParagonState | null = null;
+  if (newLevelExp.overflowExp > 0) {
+    const updated = addParagonExpPure(state.paragon, newLevelExp.overflowExp);
+    if (updated !== state.paragon) newParagon = updated;
+  }
+
   // savesKv 쓰기 — version++.
   await upsertSave(tx, userId, "character.v2", newCharacter);
   await upsertSave(tx, userId, "inventory.v2", newInventory);
@@ -434,6 +453,9 @@ export async function applyResultToSaves(
   }
   if (newLevelExp.levelsGained > 0) {
     await upsertSave(tx, userId, "training.v2", newTraining);
+  }
+  if (newParagon) {
+    await upsertSave(tx, userId, "paragon.v1", newParagon);
   }
 
   // 4) 사망 시 map.v2 의 currentRegionId 도 respawn 으로 갱신.
@@ -453,7 +475,14 @@ export async function applyResultToSaves(
     newRespawnRegionId = respawnId;
   }
 
-  return { newCharacter, newInventory, newCrafting, newTraining, newRespawnRegionId };
+  return {
+    newCharacter,
+    newInventory,
+    newCrafting,
+    newTraining,
+    newRespawnRegionId,
+    newParagon,
+  };
 }
 
 // (character.exp, result.expGained) 을 합쳐 최종 레벨/EXP 계산.
@@ -463,8 +492,13 @@ function computeFinalLevelExp(
   level: number,
   exp: number,
   gained: number,
-): { level: number; exp: number; levelsGained: number } {
-  if (gained <= 0) return { level, exp, levelsGained: 0 };
+): {
+  level: number;
+  exp: number;
+  levelsGained: number;
+  overflowExp: number;
+} {
+  if (gained <= 0) return { level, exp, levelsGained: 0, overflowExp: 0 };
   return applyExpGain(level, exp, gained);
 }
 

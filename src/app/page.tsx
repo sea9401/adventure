@@ -38,6 +38,7 @@ import { ZERO_ALLOCATED } from "@/adventure/character/statMeta";
 import { useTraining } from "@/adventure/training/useTraining";
 import { baseCharacter } from "@/adventure/character/defaults";
 import { useCharacterState } from "@/adventure/character/useCharacterState";
+import { useParagonState } from "@/adventure/character/useParagonState";
 import { useProfile } from "@/adventure/profile/useProfile";
 import { useTrialUnlocks } from "@/adventure/edges/useTrialUnlocks";
 import { composeCharacter } from "@/adventure/character/composeCharacter";
@@ -153,7 +154,12 @@ function Home() {
     onCollectError: (msg) => notifications.add("info", msg),
   });
   const training = useTraining();
-  const characterStateHook = useCharacterState();
+  // 파라곤 — 100레벨 도달 후 잉여 EXP 적립처. characterStateHook 보다 먼저 만들어
+  // onParagonOverflow 콜백으로 주입. PR-A 범위에선 적립만 하고 UI/효과는 후속 PR.
+  const paragon = useParagonState();
+  const characterStateHook = useCharacterState({
+    onParagonOverflow: paragon.addParagonExp,
+  });
   const characterState = characterStateHook.state;
   const profile = useProfile();
   const trialUnlocks = useTrialUnlocks();
