@@ -77,10 +77,11 @@ describe("특기 — 연참", () => {
 
 describe("특기 — 유격", () => {
   it("회피 성공 시 다음 플레이어 턴 공격 횟수 +1", () => {
-    const p: PlayerCombat = { ...PLAYER, evasionPct: 100, skirmishNextTurnBonus: 1 };
+    // 회피 캡 75% 도입으로 evasionPct:100 만으로는 결정적 회피 불가 — 보장 회피로 우회.
+    const p: PlayerCombat = { ...PLAYER, guaranteedEvades: 5, skirmishNextTurnBonus: 1 };
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // 1턴: 7 → 93, 다음 턴 선롤 playerAttacksLeft=1
-    s = advanceTurn(s, p, "용사"); // 적 턴: 회피 (100%) → playerAttacksLeft 1+1=2
+    s = advanceTurn(s, p, "용사"); // 적 턴: 보장 회피 → playerAttacksLeft 1+1=2
     expect(s.playerAttacksLeft).toBe(2);
     s = advanceTurn(s, p, "용사"); // 2턴 1타: 7 → 86
     s = advanceTurn(s, p, "용사"); // 2턴 2타: 7 → 79
@@ -183,10 +184,11 @@ describe("2티어 특기 — 연쇄 운명", () => {
 
 describe("2티어 특기 — 반사 회피", () => {
   it("회피 시 받았을 피해의 50% 반사", () => {
-    const p: PlayerCombat = { ...PLAYER, evasionPct: 100, reflexEvadeMult: 0.5 };
+    // 회피 캡 75% 도입 — 보장 회피로 결정적 회피 보장 (보장 회피 path 도 reflexEvade 정상 작동).
+    const p: PlayerCombat = { ...PLAYER, guaranteedEvades: 5, reflexEvadeMult: 0.5 };
     let s = initialBattleState(p, enemy(100), "용사");
     s = advanceTurn(s, p, "용사"); // 1턴: 7 → 93
-    s = advanceTurn(s, p, "용사"); // 적 턴 회피: 받았을 dmg=3, 반사 floor(3*0.5)=1 → 92
+    s = advanceTurn(s, p, "용사"); // 적 턴 보장 회피: 받았을 dmg=3, 반사 floor(3*0.5)=1 → 92
     expect(s.playerHp).toBe(50);
     expect(s.enemyHp).toBe(92);
   });

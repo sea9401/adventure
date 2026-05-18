@@ -9,18 +9,21 @@ export const STAT_LABELS: Record<StatKey, string> = {
   luk: "행운",
 };
 
-// SPD → 매 턴 1회 추가 공격 판정 확률(%). 1pt 당 EXTRA_ATTACK_PCT_PER_SPD%, 최대 EXTRA_ATTACK_PCT_CAP%.
-// 캡으로 "확정 2연타"(예전 SPD 40 = 100%)를 막는다 — 폭발 화력은 연타/광속/난무 등 슬롯 스킬 쪽.
-export const EXTRA_ATTACK_PCT_PER_SPD = 2.5;
-export const EXTRA_ATTACK_PCT_CAP = 75;
+// SPD → 매 턴 추가 공격 확률(%). 1pt 당 EXTRA_ATTACK_PCT_PER_SPD%, 캡 없음.
+// 100% 초과는 정수 부분만큼 확정 추가타, 소수 부분만 확률 굴림 (rollPlayerAttackCount 참조).
+// 회피 100% 무적 빌드 견제 + SPD 빌드를 STR/풍사슬 빌드와 어깨를 나란히 하는 메인 라인으로.
+export const EXTRA_ATTACK_PCT_PER_SPD = 2;
+
+// 회피 캡 — 100% 회피 무적 빌드 차단. 보장 회피 스킬(소모형 적립, 별도 path)은 캡 무관 100% 회피 유지.
+export const EVASION_PCT_CAP = 75;
 
 // 스탯 1pt 당 전투 수치 환산 — UI 도감 노출용 설명.
 export const STAT_CONVERSIONS: Record<StatKey, string> = {
   str: "1pt 당 공격력 +1",
-  dex: "1pt 당 회피 +0.5% / 5pt 당 공격력 +1",
+  dex: `1pt 당 회피 +0.5% (최대 ${EVASION_PCT_CAP}%) / 3pt 당 공격력 +1`,
   vit: "1pt 당 방어력 +1 / 1pt 당 최대 HP +2 / 방어력 5 당 공격력 +1 (방어구 합산)",
-  spd: `1pt 당 추가 공격 확률 +${EXTRA_ATTACK_PCT_PER_SPD}% (매 턴 1회 판정, 최대 ${EXTRA_ATTACK_PCT_CAP}%) / 5pt 당 공격력 +1`,
-  luk: "1pt 당 드랍률 +1% / 1pt 당 크리티컬 확률 +0.5% / 1pt 당 크리티컬 데미지 +0.025배 / 5pt 당 공격력 +1",
+  spd: `1pt 당 추가 공격 확률 +${EXTRA_ATTACK_PCT_PER_SPD}% (100% 초과 시 추가타 1회 확정) / 5pt 당 공격력 +1`,
+  luk: "1pt 당 드랍률 +1% / 1pt 당 크리티컬 확률 +0.5% / 1pt 당 크리티컬 데미지 +0.025배 / 3pt 당 공격력 +1",
 };
 
 // 도감에서 스탯별 스킬 정보를 공개하는 임계값.

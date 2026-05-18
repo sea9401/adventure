@@ -5,7 +5,6 @@
 import type { PlayerCombat } from "@/adventure/battle/engine";
 import type { EquipItem } from "@/adventure/data/items";
 import {
-  EXTRA_ATTACK_PCT_CAP,
   EXTRA_ATTACK_PCT_PER_SPD,
   STAT_KEYS,
   type StatKey,
@@ -248,11 +247,14 @@ export function derivePlayerCombat(
   // 룬 atk/def % — atk 공식의 중간값(playerDef/5) 에 def% 를 끼우면 def 룬이 atk 도 미세하게
   // 올려버리는 cross-bleed 가 생긴다. 그래서 def% 는 최종 def 필드에만 적용, atk 공식의
   // playerDef 는 원본 유지. atk% 는 최종 atk 합산값에 곱한다.
+  // ATK 공식 — STR 1pt = 1ATK, DEX/LUK 3pt = 1ATK, SPD 5pt = 1ATK, VIT(DEF) 5pt = 1ATK.
+  // DEX/LUK 가 5pt → 3pt 로 강화된 건 STR 외 빌드(회피/크리)의 화력 격차를 좁히기 위함.
+  // SPD 는 5pt 유지 — 추가타 시스템(매 SPD 1pt = +2%)으로 화력 별도 보상.
   const rawAtk =
     totalStats.str +
-    Math.floor(totalStats.dex / 5) +
+    Math.floor(totalStats.dex / 3) +
     Math.floor(playerDef / 5) +
-    Math.floor(totalStats.luk / 5) +
+    Math.floor(totalStats.luk / 3) +
     Math.floor(totalStats.spd / 5) +
     equipAtk;
   const player: PlayerCombat = {
@@ -264,10 +266,8 @@ export function derivePlayerCombat(
     evasionPct:
       totalStats.dex * 0.5 + evadeBonusPctFor(totalStats, effectiveSkillSet),
     attackCount: 1 + lightHandExtra,
-    extraAttackChancePct: Math.min(
-      EXTRA_ATTACK_PCT_CAP,
-      totalStats.spd * EXTRA_ATTACK_PCT_PER_SPD,
-    ),
+    // SPD × 2% — 캡 없음. 100% 초과는 정수 부분만큼 확정 추가타 (rollPlayerAttackCount).
+    extraAttackChancePct: totalStats.spd * EXTRA_ATTACK_PCT_PER_SPD,
     powerAttackBonus: powerAttackBonusFor(totalStats, effectiveSkillSet),
     crushDefReduction: crushDefReductionFor(totalStats, effectiveSkillSet),
     armorPierceFraction: precisionArmorPierceFractionFor(

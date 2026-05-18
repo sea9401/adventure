@@ -342,6 +342,8 @@ function buildSide(player: PlayerCombat, name: string): PvPSide {
       apSkillFiredThisTurn: null,
       focusedBreathCritDmgBonusPct: 0,
       queuedExtraAttacks: 0,
+      // PvP 엔진은 양쪽 player 라 enemy phase 자체가 없음 — 필드만 채워 BattleTurnState 형식 만족.
+      enemyAttacksLeft: 0,
     },
     flags: {
       enduranceTriggered: false,
