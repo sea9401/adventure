@@ -25,9 +25,10 @@ export type AppliedCoopReward = {
 };
 
 /**
- * 협동 보스 claim 보상 적용 — 재료 / 제작서 / 칭호.
- * recipeOneOf 는 미보유만 추려 균등 추첨, recipeRolls 는 chance 비율로 학습.
- * 반환값은 "이번에 실제로 들어온 것" — 이미 보유 중인 제작서 / 0% 굴림 등은 제외.
+ * 협동 보스 claim 보상 적용 — 재료 / 제작서 / 장비 / 칭호.
+ * RNG 굴림(recipeOneOf 추첨 / recipeRolls / equipRolls) 은 서버가 이미 풀어
+ * recipes 와 equipment 배열로 합쳐 보낸다. 클라는 받은 그대로 시도.
+ * 반환값은 "이번에 실제로 들어온 것" — 이미 보유 중인 제작서는 제외.
  */
 export function applyCoopReward(
   reward: CoopClaimResponse["reward"],
@@ -48,7 +49,7 @@ export function applyCoopReward(
     applied.materials.push({ id: mid, name: def?.name ?? id, count: n });
   }
 
-  // 2) 확정 제작서 — 미보유면 학습. 기존 보유면 로그에서도 제외.
+  // 2) 제작서 — 미보유면 학습.
   for (const recipeId of reward.recipes) {
     if (s.knowsRecipe(recipeId)) continue;
     s.learnRecipe(recipeId);
@@ -56,48 +57,15 @@ export function applyCoopReward(
     applied.recipes.push({ id: recipeId, name: def?.name ?? recipeId });
   }
 
-  // 3) recipe_one_of — 미보유만 추려 균등 추첨.
-  if (reward.recipeOneOf && reward.recipeOneOf.length > 0) {
-    const unknown = reward.recipeOneOf.filter((id) => !s.knowsRecipe(id));
-    if (unknown.length > 0) {
-      const pick = unknown[Math.floor(Math.random() * unknown.length)];
-      s.learnRecipe(pick);
-      const def = getRecipeById(pick);
-      applied.recipes.push({ id: pick, name: def?.name ?? pick });
-    }
+  // 3) 장비 드랍.
+  for (const itemIdStr of reward.equipment) {
+    const itemId = itemIdStr as ItemId;
+    s.addEquipment(itemId, 1);
+    const def = ITEMS[itemId as keyof typeof ITEMS];
+    applied.equipment.push({ id: itemId, name: def?.name ?? itemIdStr });
   }
 
-  // 4) recipeRolls — chance 비율로 학습 시도.
-  if (reward.recipeRolls) {
-    for (const roll of reward.recipeRolls) {
-      if (s.knowsRecipe(roll.recipeId)) continue;
-      if (Math.random() < roll.chance) {
-        s.learnRecipe(roll.recipeId);
-        const def = getRecipeById(roll.recipeId);
-        applied.recipes.push({
-          id: roll.recipeId,
-          name: def?.name ?? roll.recipeId,
-        });
-      }
-    }
-  }
-
-  // 5) equipRolls — chance 비율로 장비 드랍 (legend 물욕템 등).
-  if (reward.equipRolls) {
-    for (const roll of reward.equipRolls) {
-      if (Math.random() < roll.chance) {
-        const itemId = roll.itemId as ItemId;
-        s.addEquipment(itemId, 1);
-        const def = ITEMS[itemId as keyof typeof ITEMS];
-        applied.equipment.push({
-          id: itemId,
-          name: def?.name ?? roll.itemId,
-        });
-      }
-    }
-  }
-
-  // 6) 칭호 — grantTitle 로 토스트 + 컬렉션 체인 함께 처리.
+  // 4) 칭호 — grantTitle 로 토스트 + 컬렉션 체인 함께 처리.
   if (reward.titleId) {
     s.grantTitle(reward.titleId);
     const def = TITLES[reward.titleId];

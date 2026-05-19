@@ -9,7 +9,11 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { coopBossContributors, coopBossSessions } from "@/db/schema";
 import { COOP_BOSSES, coopTierForRatio } from "@/adventure/coop/data";
-import { computeCoopReward } from "@/adventure/coop/rewards";
+import {
+  computeCoopReward,
+  coopRewardSeed,
+  resolveCoopReward,
+} from "@/adventure/coop/rewards";
 import type { RegionId } from "@/adventure/data/world";
 
 export async function handleCoopClaim(
@@ -67,6 +71,13 @@ export async function handleCoopClaim(
     .returning({ id: coopBossContributors.userId });
   if (!claimed) return new Response("already claimed", { status: 409 });
 
+  // 누적 보상 + 서버 deterministic RNG 결정. seed 는 (sessionId, userId) 라 retry 도
+  // 같은 결과 — 동시에 들어온 두 건 중 한 건만 mark 되지만 RNG 결과 자체는 안전.
+  // (Phase 2 에서 saves_kv 트랜잭션 mutation 으로 race-loss 까지 완전 차단 예정.)
   const reward = computeCoopReward(session.bossName, tier);
-  return Response.json({ tier, ratio, reward });
+  const resolved = resolveCoopReward(
+    reward,
+    coopRewardSeed(session.id, userId),
+  );
+  return Response.json({ tier, ratio, reward: resolved });
 }
