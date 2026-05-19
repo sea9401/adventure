@@ -42,18 +42,10 @@ type Props = {
   dispatched?: boolean;
   /** 서버가 공격/처치 시 set 한 storyFlag 를 클라 상태에도 즉시 반영 (운향 진입로 등이 reload 없이 열리도록). */
   onStoryFlag?: (flagId: string) => void;
-  /** 협동 보스가 쓰러진 시점에 1회 호출 — kill 카운터 의뢰(운봉의 거인 처치 등) 진행용.
+  /** 협동 보스가 쓰러진 시점에 1회 호출 — kill 카운터 의뢰(태고의 노룡 처치 등) 진행용.
    *  내 일격이 마지막이든 다른 사람이 마지막이든, 내가 1점 이상 기여한 세션이 처치되면 호출.
    *  sessionId 기준으로 중복 호출 막음. */
   onKill?: (bossName: string) => void;
-  /** 단일 공격 1회 종료 시 호출 — coop_high_dmg_attack / coop_survive_attack 의뢰 진행용.
-   *  diedEarly=true 면 survive 는 진행 안 되지만 high_dmg 는 그 공격 데미지 기준으로 판정. */
-  onAttackResult?: (
-    bossName: string,
-    ctx: { damageDealt: number; diedEarly: boolean },
-  ) => void;
-  /** claim 성공 시 호출 — coop_tier_reached 의뢰 진행용. */
-  onClaim?: (bossName: string, tier: CoopRewardTier) => void;
 };
 
 export function CoopBossCard({
@@ -67,8 +59,6 @@ export function CoopBossCard({
   dispatched = false,
   onStoryFlag,
   onKill,
-  onAttackResult,
-  onClaim,
 }: Props) {
   const { data, error, working, attack, claim } = useCoopBoss(regionId, true);
   const [now, setNow] = useState(() => Date.now());
@@ -174,10 +164,6 @@ export function CoopBossCard({
     if (r.session.defeated) {
       notify?.(`${s.bossName}이(가) 쓰러졌다 — 보상을 수령할 수 있다.`);
     }
-    onAttackResult?.(s.bossName, {
-      damageDealt: r.damageDealt,
-      diedEarly: r.diedEarly,
-    });
   };
 
   const handleClaim = async () => {
@@ -186,7 +172,6 @@ export function CoopBossCard({
     const applied = applyReward(r.reward);
     setLastClaim({ tier: r.tier, applied });
     notify?.(`${COOP_TIER_LABEL[r.tier]} 보상 수령 완료`);
-    onClaim?.(s.bossName, r.tier);
   };
 
   return (

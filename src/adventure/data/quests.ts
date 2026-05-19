@@ -3,7 +3,6 @@ import type { MaterialId } from "./materials";
 import type { NpcId } from "./npcs";
 import type { PotionId } from "./potions";
 import type { RegionId } from "./world";
-import type { CoopRewardTier } from "@/adventure/coop/data";
 import type { SkillBookId } from "./skillBooks";
 
 export type QuestRewardItem = { id: ItemId; count: number };
@@ -37,9 +36,6 @@ export type QuestReward = {
 // - "kill_within_hp"   : 지정 몬스터를 처치 시점 HP 가 maxHp×minHpFraction 이상으로 N번 처치.
 //                        조건 미달 처치는 진행도 증가 없음 (보스 도전 의뢰 — 엄격한 처치).
 // - "no_potion_boss"   : 지정 몬스터를 그 전투에서 포션 0병 사용으로 N번 처치.
-// - "coop_tier_reached": 협동 보스 claim 시 도달 tier 가 minTier 이상이면 +1 누적.
-// - "coop_high_dmg_attack": 협동 보스 단일 공격이 minDamage 이상이면 +1 누적.
-// - "coop_survive_attack": 협동 보스 공격을 사망 없이 완료할 때마다 +1 누적.
 export type QuestTarget =
   | { kind: "kill"; monsterName: string; count: number }
   | { kind: "deliver"; materialId: MaterialId; count: number }
@@ -49,10 +45,7 @@ export type QuestTarget =
   | { kind: "equip_item"; itemId: ItemId }
   | { kind: "equip_set"; itemIds: ItemId[] }
   | { kind: "kill_within_hp"; monsterName: string; minHpFraction: number; count: number }
-  | { kind: "no_potion_boss"; monsterName: string; count: number }
-  | { kind: "coop_tier_reached"; monsterName: string; minTier: CoopRewardTier; count: number }
-  | { kind: "coop_high_dmg_attack"; monsterName: string; minDamage: number; count: number }
-  | { kind: "coop_survive_attack"; monsterName: string; count: number };
+  | { kind: "no_potion_boss"; monsterName: string; count: number };
 
 // 의뢰 목표가 요구하는 총량 — UI 와 useQuests 가 공용으로 쓴다.
 // count 가 없는 kind 는 1 (talk/visit 기본), equip_item 도 1, equip_set 은 itemIds.length.
@@ -63,9 +56,6 @@ export function questTargetTotal(t: QuestTarget): number {
     case "craft_item":
     case "kill_within_hp":
     case "no_potion_boss":
-    case "coop_tier_reached":
-    case "coop_high_dmg_attack":
-    case "coop_survive_attack":
       return t.count;
     case "talk_to_npc":
     case "visit_region":
@@ -98,12 +88,6 @@ export function questTargetSummary(t: QuestTarget): string {
       return `${t.itemId} 장착`;
     case "equip_set":
       return `한 복 장착 (${t.itemIds.length}종)`;
-    case "coop_tier_reached":
-      return `${t.monsterName} 협동 ${t.minTier}+ ×${t.count}`;
-    case "coop_high_dmg_attack":
-      return `${t.monsterName} 협동 단타 ${t.minDamage}+ ×${t.count}`;
-    case "coop_survive_attack":
-      return `${t.monsterName} 협동 무사 완주 ×${t.count}`;
   }
 }
 
@@ -2368,7 +2352,8 @@ export const QUESTS: Quest[] = [
     giverNpcId: "star_haven_elder",
     requiresQuestCompleted: "star-haven-corridor-wraiths",
   },
-  // 폐도의 봉인 — 천공인의 왕 협동 보스 진입 자격 게이트.
+  // 폐도의 봉인 — 천공인의 왕 서사 게이트. 2026-05-19 보스 솔로 전환 이후에도
+  // 의뢰는 서사 흐름과 storyFlag `skyfolk_gate_cleared` 설정용으로 유지.
   // 회랑 골렘(Q3) 완수 후 노출 / 완료 시 storyFlag `skyfolk_gate_cleared` 셋.
   {
     id: "star-haven-skyfolk-gate",
@@ -2401,7 +2386,8 @@ export const QUESTS: Quest[] = [
     giverNpcId: "star_haven_elder",
     requiresQuestCompleted: "star-haven-skyfolk-gate",
   },
-  // 옥좌의 봉인 — 창공의 주재 협동 보스 진입 자격 게이트. 만렙 정점 마지막 자격.
+  // 옥좌의 봉인 — 창공의 주재 서사 게이트. Chapter 24 의 완료 룰이 이 flag 를 본다.
+  // 2026-05-19 보스 솔로 전환 이후에도 의뢰는 챕터 진행용으로 필수.
   // 황성 호위병(Q4 throne-guards) 완수 후 노출 / 완료 시 storyFlag `apex_gate_cleared` 셋.
   {
     id: "star-haven-apex-gate",
@@ -2417,27 +2403,23 @@ export const QUESTS: Quest[] = [
     requiresQuestCompleted: "star-haven-throne-guards",
   },
   // ────────────────────────────────────────────────────────────────────────
-  // 노수호자 유성 — 후반 3 코옵 보스(별을 지키는 자 / 천공인의 왕 / 창공의 주재)
-  // 각각 3 종 도전 의뢰. 게이트 의뢰 완료(=해당 보스 진입 자격) 후 잠금 해제.
-  //   - coop_tier_reached  : 보상 티어 gold 이상 1회 도달 (epic 이 도전 난이도 대비 진입장벽 컸음)
-  //   - coop_high_dmg_attack: 단일 공격 데미지 임계 3회 — maxHp 의 10% 정도 단발
-  //   - coop_survive_attack : 사망 없이 공격 완주 5회 — 안정적 딜링 검증
-  // 보상은 칭호 단일 — 후방 보스라 골드/경험치 보상은 의미 박약, 도전 회수축 칭호로.
+  // 노수호자 유성 — 후반 3 보스(별을 지키는 자 / 천공인의 왕 / 창공의 주재) 도전 의뢰.
+  // 2026-05-19: 세 보스가 협동→솔로 전환되면서 coop_* 타깃 9종을 솔로 전투 가능한
+  // kind 로 재구성. 게이트 의뢰 완료(=서사 게이트) 후 잠금 해제.
+  //   - witness : kill ×1                          (서사상 첫 베어냄 인증)
+  //   - strike  : kill_within_hp 0.7 ×3            (거의 무피로 처치 — 결단의 일격)
+  //   - survive : no_potion_boss ×5                (포션 없이 처치 — 흔들림 없는 자세)
+  // 보상 fame 양은 보존 (협동→솔로 전환만, 진입장벽 동등).
   // ────────────────────────────────────────────────────────────────────────
-  // 별을 지키는 자 (starspire, maxHp 20000) 3종
+  // 별을 지키는 자 (starspire) 3종
   {
     id: "star-haven-keeper-challenge-witness",
     regionId: "starspire",
     title: "별을 지키는 자: 별빛의 증인",
     description:
-      "별을 지키는 자 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 별빛이 자네를 한 번 깊이 알아본다면. 그 기억은 평생 간다.",
+      "별을 지키는 자를 한 번 거두어 별빛이 자네를 알아보게 하시오. 별빛이 자네를 한 번 깊이 알아본다면. 그 기억은 평생 간다.",
     requiredLevel: 70,
-    target: {
-      kind: "coop_tier_reached",
-      monsterName: "별을 지키는 자",
-      minTier: "gold",
-      count: 1,
-    },
+    target: { kind: "kill", monsterName: "별을 지키는 자", count: 1 },
     reward: { fame: 50 },
     repeatable: false,
     giverNpcId: "star_haven_elder",
@@ -2448,12 +2430,12 @@ export const QUESTS: Quest[] = [
     regionId: "starspire",
     title: "별을 지키는 자: 별빛 한 줄기",
     description:
-      "별을 지키는 자에게 단 한 번의 일격으로 2,000 의 상처를. 세 번 새기시오. 한 번에 깊이 가르는 자에게만 보이는 자리가 있다.",
+      "별을 지키는 자를 거의 다치지 않은 채로 세 번 거두시오. 한 번에 깊이 가르는 자에게만 보이는 자리가 있다.",
     requiredLevel: 70,
     target: {
-      kind: "coop_high_dmg_attack",
+      kind: "kill_within_hp",
       monsterName: "별을 지키는 자",
-      minDamage: 2000,
+      minHpFraction: 0.7,
       count: 3,
     },
     reward: { fame: 50 },
@@ -2466,32 +2448,23 @@ export const QUESTS: Quest[] = [
     regionId: "starspire",
     title: "별을 지키는 자: 흔들리지 않는 자세",
     description:
-      "별을 지키는 자 앞에서 다섯 번을. 단 한 번도 쓰러지지 않고 마치시오. 흔들리지 않는 자세가 별빛에 새겨질 때까지.",
+      "포션을 단 한 병도 꺼내지 말고 별을 지키는 자를 다섯 번 거두시오. 흔들리지 않는 자세가 별빛에 새겨질 때까지.",
     requiredLevel: 70,
-    target: {
-      kind: "coop_survive_attack",
-      monsterName: "별을 지키는 자",
-      count: 5,
-    },
+    target: { kind: "no_potion_boss", monsterName: "별을 지키는 자", count: 5 },
     reward: { fame: 50 },
     repeatable: false,
     giverNpcId: "star_haven_elder",
     requiresQuestCompleted: "star-haven-corridor-golems",
   },
-  // 천공인의 왕 (skyfolk_ruins, maxHp 30000) 3종
+  // 천공인의 왕 (skyfolk_ruins) 3종
   {
     id: "star-haven-king-challenge-witness",
     regionId: "skyfolk_ruins",
     title: "천공인의 왕: 폐도의 증인",
     description:
-      "천공인의 왕 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 폐도가 자네를 알아보는 첫 표식이다.",
+      "천공인의 왕을 한 번 거두어 폐도가 자네를 알아보게 하시오. 폐도가 자네를 알아보는 첫 표식이다.",
     requiredLevel: 80,
-    target: {
-      kind: "coop_tier_reached",
-      monsterName: "천공인의 왕",
-      minTier: "gold",
-      count: 1,
-    },
+    target: { kind: "kill", monsterName: "천공인의 왕", count: 1 },
     reward: { fame: 60 },
     repeatable: false,
     giverNpcId: "star_haven_elder",
@@ -2502,12 +2475,12 @@ export const QUESTS: Quest[] = [
     regionId: "skyfolk_ruins",
     title: "천공인의 왕: 폐도의 일격",
     description:
-      "천공인의 왕에게 단 한 번의 일격으로 3,000 의 상처를. 세 번 새기시오. 폐도가 한 자루 칼에도 흔들리는 순간이 있다.",
+      "천공인의 왕을 거의 다치지 않은 채로 세 번 거두시오. 폐도가 한 자루 칼에도 흔들리는 순간이 있다.",
     requiredLevel: 80,
     target: {
-      kind: "coop_high_dmg_attack",
+      kind: "kill_within_hp",
       monsterName: "천공인의 왕",
-      minDamage: 3000,
+      minHpFraction: 0.7,
       count: 3,
     },
     reward: { fame: 60 },
@@ -2520,32 +2493,23 @@ export const QUESTS: Quest[] = [
     regionId: "skyfolk_ruins",
     title: "천공인의 왕: 폐도를 견디는 자",
     description:
-      "천공인의 왕 앞에서 다섯 번을. 단 한 번도 쓰러지지 않고 마치시오. 폐도는 견디는 자만이 풀어낼 수 있다.",
+      "포션을 단 한 병도 꺼내지 말고 천공인의 왕을 다섯 번 거두시오. 폐도는 견디는 자만이 풀어낼 수 있다.",
     requiredLevel: 80,
-    target: {
-      kind: "coop_survive_attack",
-      monsterName: "천공인의 왕",
-      count: 5,
-    },
+    target: { kind: "no_potion_boss", monsterName: "천공인의 왕", count: 5 },
     reward: { fame: 60 },
     repeatable: false,
     giverNpcId: "star_haven_elder",
     requiresQuestCompleted: "star-haven-skyfolk-gate",
   },
-  // 창공의 주재 (apex_throne, maxHp 45000) 3종
+  // 창공의 주재 (apex_throne) 3종
   {
     id: "star-haven-arbiter-challenge-witness",
     regionId: "apex_throne",
     title: "창공의 주재: 옥좌의 증인",
     description:
-      "창공의 주재 협동 토벌에서 GOLD 이상 보상에 한 번이라도 닿아 보시오. 옥좌가 자네를 처음으로 깊이 인정하는 표식이다.",
+      "창공의 주재를 한 번 거두어 옥좌가 자네를 알아보게 하시오. 옥좌가 자네를 처음으로 깊이 인정하는 표식이다.",
     requiredLevel: 90,
-    target: {
-      kind: "coop_tier_reached",
-      monsterName: "창공의 주재",
-      minTier: "gold",
-      count: 1,
-    },
+    target: { kind: "kill", monsterName: "창공의 주재", count: 1 },
     reward: { fame: 80 },
     repeatable: false,
     giverNpcId: "star_haven_elder",
@@ -2556,12 +2520,12 @@ export const QUESTS: Quest[] = [
     regionId: "apex_throne",
     title: "창공의 주재: 옥좌의 일격",
     description:
-      "창공의 주재에게 단 한 번의 일격으로 4,500 의 상처를. 세 번 새기시오. 옥좌도 한 자루 칼에 흔들리는 순간이 있다 들었소.",
+      "창공의 주재를 거의 다치지 않은 채로 세 번 거두시오. 옥좌도 한 자루 칼에 흔들리는 순간이 있다 들었소.",
     requiredLevel: 90,
     target: {
-      kind: "coop_high_dmg_attack",
+      kind: "kill_within_hp",
       monsterName: "창공의 주재",
-      minDamage: 4500,
+      minHpFraction: 0.7,
       count: 3,
     },
     reward: { fame: 80 },
@@ -2574,13 +2538,9 @@ export const QUESTS: Quest[] = [
     regionId: "apex_throne",
     title: "창공의 주재: 옥좌를 견디는 자",
     description:
-      "창공의 주재 앞에서 다섯 번을. 단 한 번도 쓰러지지 않고 마치시오. 옥좌를 견디는 자만이 별빛의 끝을 본다.",
+      "포션을 단 한 병도 꺼내지 말고 창공의 주재를 다섯 번 거두시오. 옥좌를 견디는 자만이 별빛의 끝을 본다.",
     requiredLevel: 90,
-    target: {
-      kind: "coop_survive_attack",
-      monsterName: "창공의 주재",
-      count: 5,
-    },
+    target: { kind: "no_potion_boss", monsterName: "창공의 주재", count: 5 },
     reward: { fame: 80 },
     repeatable: false,
     giverNpcId: "star_haven_elder",

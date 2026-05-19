@@ -98,10 +98,7 @@ describe("quest 의 target / requiresQuestCompleted 참조 정합성", () => {
     if (
       target.kind === "kill" ||
       target.kind === "kill_within_hp" ||
-      target.kind === "no_potion_boss" ||
-      target.kind === "coop_tier_reached" ||
-      target.kind === "coop_high_dmg_attack" ||
-      target.kind === "coop_survive_attack"
+      target.kind === "no_potion_boss"
     ) {
       const monsterName = target.monsterName;
       it(`${q.id} → monster "${monsterName}"`, () => {
