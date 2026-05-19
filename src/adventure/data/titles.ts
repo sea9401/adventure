@@ -514,8 +514,8 @@ export const TITLES: Record<TitleId, Title> = {
   },
   tower_weekly_top_25: {
     id: "tower_weekly_top_25",
-    name: "고탑의 도전자",
-    description: "한 주의 고탑 상위 25%. 몸을 사리지 않은 도전.",
+    name: "고탑의 추격자",
+    description: "한 주의 고탑 상위 25%. 위만 보고 한 주를 쫓아 올라간 자.",
     condition: "주간 고탑 최고층 상위 25% (F30 이상 자격)",
   },
   tower_weekly_top_50: {
@@ -549,7 +549,8 @@ export type TitleCounterKey =
   | "battleLosses"
   | "trainingCount"
   | "chatCount"
-  | "healingCount";
+  | "healingCount"
+  | "npcTalkCount";
 
 export const COUNTER_TITLES: {
   id: TitleId;
@@ -570,6 +571,9 @@ export const COUNTER_TITLES: {
   { id: "patient", key: "healingCount", target: 50 },
   { id: "vip_patient", key: "healingCount", target: 200 },
   { id: "head_patient", key: "healingCount", target: 500 },
+  // NPC 1인 누적 대화 — 한 사람을 얼마나 붙들었나. 카운터는 NPC 별 talkCount 의 최댓값.
+  { id: "phisher", key: "npcTalkCount", target: 100 },
+  { id: "devoted_listener", key: "npcTalkCount", target: 500 },
 ];
 
 export function getTitle(id: TitleId | null | undefined): Title | undefined {

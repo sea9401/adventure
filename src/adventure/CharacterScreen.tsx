@@ -76,6 +76,7 @@ export function CharacterScreen() {
     handlePurchaseRune,
     quests,
     crafting,
+    handleClaimQuest,
   } = useGame();
 
   const activeQuestCount = QUESTS.reduce((n, q) => {
@@ -446,6 +447,10 @@ export function CharacterScreen() {
             trainingCount: training.completedCount,
             chatCount: adventureLog.log.chatCount ?? 0,
             healingCount: adventureLog.log.healingCount ?? 0,
+            npcTalkCount: Object.values(adventureLog.log.npcs).reduce(
+              (max, e) => Math.max(max, e?.talkCount ?? 0),
+              0,
+            ),
           }}
           knownRecipes={crafting.state.known}
           shareableRecipes={crafting.state.shareable}
@@ -471,7 +476,10 @@ export function CharacterScreen() {
               <p>
                 조건을 모두 채우면 <b>완료 가능</b> 표시가 뜬다.
               </p>
-              <p>의뢰를 준 NPC 에게 돌아가 대화로 보상을 수령한다.</p>
+              <p>
+                <b>길드 의뢰</b> 는 수첩에서 바로 완료할 수 있다. NPC 의뢰는
+                해당 NPC 와 대화로 보상을 수령한다.
+              </p>
               <p>
                 NPC 의 이야기 의뢰는 <b>1회성</b>. 반복 농사가 필요하면{" "}
                 <b>길드 게시판</b> 을 이용한다.
@@ -480,7 +488,10 @@ export function CharacterScreen() {
           }
         />
         <SubViewHeader title="의뢰 수첩" onBack={back} />
-        <QuestJournalView getEntry={quests.getEntry} />
+        <QuestJournalView
+          getEntry={quests.getEntry}
+          onClaim={handleClaimQuest}
+        />
       </div>
     );
   }
