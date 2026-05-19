@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { requiredExpToNext } from "./leveling";
 import {
   addParagonExp,
+  BASE_PT_COST,
   computeParagonBonus,
   cumulativeExpForPoints,
   EMPTY_PARAGON_BONUS,
@@ -19,15 +19,16 @@ import {
 } from "./paragon";
 
 describe("paragonPointCost", () => {
-  it("1pt 비용은 99→100 비용과 동일", () => {
-    expect(paragonPointCost(1)).toBe(requiredExpToNext(99));
+  it("1pt 비용은 고정 anchor (2026-05-19 레벨 곡선 완화 직전의 99→100 비용)", () => {
+    // 곡선 튜닝과 무관하게 파라곤 진행이 흔들리지 않도록 상수화.
+    expect(paragonPointCost(1)).toBe(BASE_PT_COST);
+    expect(BASE_PT_COST).toBe(653654);
   });
 
   it("n번째 pt 비용은 ×1.15^(n-1)", () => {
-    const base = requiredExpToNext(99)!;
-    expect(paragonPointCost(2)).toBe(Math.floor(base * 1.15));
-    expect(paragonPointCost(3)).toBe(Math.floor(base * Math.pow(1.15, 2)));
-    expect(paragonPointCost(10)).toBe(Math.floor(base * Math.pow(1.15, 9)));
+    expect(paragonPointCost(2)).toBe(Math.floor(BASE_PT_COST * 1.15));
+    expect(paragonPointCost(3)).toBe(Math.floor(BASE_PT_COST * Math.pow(1.15, 2)));
+    expect(paragonPointCost(10)).toBe(Math.floor(BASE_PT_COST * Math.pow(1.15, 9)));
   });
 
   it("범위 밖은 0", () => {

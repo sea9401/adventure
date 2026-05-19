@@ -28,11 +28,23 @@ describe("requiredExpToNext", () => {
     expect(requiredExpToNext(-1)).toBeNull();
   });
 
-  it("엔드게임 multiplier 구간 경계 — Lv60 ×1.00 / Lv70 ×1.30 / Lv90 ×1.55", () => {
+  it("엔드게임 multiplier 구간 경계 — Lv60 ×1.00 / Lv70 ×1.30 / Lv90 ×1.55 + 35+ 완화 ×0.85", () => {
+    // 50 이상은 reduction floor 0.85 풀반영. endgame multiplier 가 그 위에 곱해진다.
     const base = (lv: number) => (120 / 35) * Math.pow(lv, 2.5);
-    expect(requiredExpToNext(60)).toBe(Math.floor(base(60) * 1.0));
-    expect(requiredExpToNext(70)).toBe(Math.floor(base(70) * 1.3));
-    expect(requiredExpToNext(90)).toBe(Math.floor(base(90) * 1.55));
+    expect(requiredExpToNext(60)).toBe(Math.floor(base(60) * 1.0 * 0.85));
+    expect(requiredExpToNext(70)).toBe(Math.floor(base(70) * 1.3 * 0.85));
+    expect(requiredExpToNext(90)).toBe(Math.floor(base(90) * 1.55 * 0.85));
+  });
+
+  it("35~49 reduction 램프 — 35 ×1.00 / 50 ×0.85 / 사이 선형", () => {
+    const base = (lv: number) => (120 / 35) * Math.pow(lv, 2.5);
+    // 35 경계는 reduction 1.0 — 35^1.5 기준 lower 곡선과 자연 연속.
+    expect(requiredExpToNext(35)).toBe(Math.floor(base(35) * 1.0));
+    // 50 부터 floor 0.85 도달.
+    expect(requiredExpToNext(50)).toBe(Math.floor(base(50) * 0.85));
+    // 중간 — 1.00 → 0.85 선형. lv42 (절반) 시 ~0.925.
+    const mult42 = 1 - 0.15 * ((42 - 35) / 15);
+    expect(requiredExpToNext(42)).toBe(Math.floor(base(42) * mult42));
   });
 });
 
