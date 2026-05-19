@@ -76,8 +76,8 @@ export type GameCtx = {
   effectiveSkillNameList: string[];
   /** 보유 특기 (도감/스킬 화면 표시용). */
   characterFeats: Skill[];
-  /** 장착 중인 특기 이름들 — 슬롯 수만큼, 미해금/미장착 슬롯은 결과에서 제외. */
-  effectiveFeatNames: string[];
+  /** 장착 중인 특기 이름들 — 슬롯 인덱스를 보존. 길이 = featSlots, 빈 슬롯은 null. */
+  effectiveFeatNames: (string | null)[];
   /** 현재 스킬 슬롯 레이아웃 (일반 칸 수 / 특기 칸 수). */
   skillLayout: SkillLayout;
   trainingDescription: string;

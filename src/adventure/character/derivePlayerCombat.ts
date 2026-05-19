@@ -138,8 +138,8 @@ export type DerivedPlayerCombat = {
   characterFeats: Skill[];
   /** 현재 발동 중인 일반 스킬 이름 (슬롯 한도 반영). */
   effectiveSkillNames: string[];
-  /** 현재 발동 중인 특기 이름들 — 특기 슬롯 수 만큼, 미장착·미보유 슬롯은 결과에서 제외. */
-  effectiveFeatNames: string[];
+  /** 현재 발동 중인 특기 이름들 — 슬롯 인덱스를 보존. 길이 = featSlots, 빈 슬롯은 null. */
+  effectiveFeatNames: (string | null)[];
   /** effective 일반 스킬 + 특기를 합친 Set (엔진 합성에 사용). */
   effectiveSkillSet: Set<string>;
   /** 현재 슬롯 레이아웃 (일반 칸 수 / 특기 칸 수). */
@@ -223,7 +223,9 @@ export function derivePlayerCombat(
   );
   // 스탯 스킬 효과 합성용 set — AP 스킬은 제외 (별도 발동 경로).
   const effectiveSkillSet = new Set(statEffectiveNames);
-  for (const f of featNames) effectiveSkillSet.add(f);
+  for (const f of featNames) {
+    if (f) effectiveSkillSet.add(f);
+  }
 
   // VIT 1pt 당 maxHp +3, 불굴 장착 시 +N%, 생명의 룬 합산 +N%.
   // (몬스터 다대시 도입 후 모든 빌드 생존성 보강 — 이전 ×2)

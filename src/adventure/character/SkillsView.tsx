@@ -43,7 +43,8 @@ export function SkillsView({
   equippedNames: string[];
   normalSlots: number;
   feats: Skill[];
-  equippedFeats: string[];
+  /** 슬롯 인덱스 보존된 장착 특기 이름들 — 길이 = featSlots, 빈 슬롯은 null. */
+  equippedFeats: (string | null)[];
   featSlots: number;
   /** AP 스킬 슬롯의 발동 조건 맵. 미지정/누락 = always. */
   apSkillConditions?: Partial<Record<string, APSkillCondition>>;
@@ -84,13 +85,17 @@ export function SkillsView({
   }
   const slotsFull = equippedNames.length >= normalSlots;
   const featSlotOpen = featSlots > 0;
-  const equippedFeatSet = new Set(equippedFeats);
+  // null 슬롯은 Set 에서 제외해 unequippedFeats 필터가 정확하게.
+  const equippedFeatSet = new Set(
+    equippedFeats.filter((n): n is string => n != null),
+  );
   const featSlotsResolved: (Skill | null)[] = [];
   for (let i = 0; i < featSlots; i += 1) {
     const name = equippedFeats[i];
     featSlotsResolved.push(name ? feats.find((f) => f.name === name) ?? null : null);
   }
-  const featSlotsFull = equippedFeats.length >= featSlots;
+  // null 슬롯은 "비어 있음" 으로 카운트 — equippedFeats.length 가 아닌 non-null 개수가 기준.
+  const featSlotsFull = equippedFeatSet.size >= featSlots;
   const unequippedFeats = feats.filter((f) => !equippedFeatSet.has(f.name));
 
   return (
@@ -103,7 +108,7 @@ export function SkillsView({
           <span className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
             {equippedNames.length} / {normalSlots}
             {featSlotOpen && (
-              <> · 특기 {equippedFeats.length} / {featSlots}</>
+              <> · 특기 {equippedFeatSet.size} / {featSlots}</>
             )}
           </span>
         </div>
