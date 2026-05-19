@@ -76,12 +76,15 @@ export type CoopAttackResponse = {
 export type CoopClaimResponse = {
   tier: CoopRewardTier;
   ratio: number;
+  /**
+   * 서버에서 RNG 가 펼쳐진 최종 보상 (ResolvedCoopReward 와 shape 동일).
+   * recipeOneOf / recipeRolls / equipRolls 는 서버가 결정해 recipes / equipment 로
+   * 합쳐 보낸다. 클라는 그대로 적용 — favorable seed replay 불가.
+   */
   reward: {
     materials: Record<string, number>;
     recipes: string[];
-    recipeOneOf?: string[];
-    recipeRolls?: { recipeId: string; chance: number }[];
-    equipRolls?: { itemId: string; chance: number }[];
+    equipment: string[];
     titleId?: string;
   };
 };

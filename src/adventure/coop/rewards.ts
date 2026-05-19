@@ -1,7 +1,12 @@
-// 협동 보스 보상 — 누적 데미지 비율로 티어 결정 + 도달 티어까지 누적 지급.
 // 2026-05-19: 스토리 7종(운봉의 거인 / 별을 지키는 자 / 천공인의 왕 / 창공의 주재 /
 // 3 별빛 잔영) 솔로 region.boss 로 전환. 그쪽 legend unique·칭호는 monster.drops /
 // onDefeatTitleId 로 마이그레이션. 이 파일은 dragon_nest 월드 보스 한 종만 남음.
+//
+// RNG 정책:
+//   computeCoopReward 는 누적 보상 테이블만 펼쳐 반환한다(클라/서버 공용 데이터).
+//   resolveCoopReward 가 서버에서 deterministic seed (sessionId+userId 해시) 로
+//   recipeOneOf 추첨·recipeRolls/equipRolls 굴림을 결정해 최종 ResolvedCoopReward 를
+//   확정한다. 클라는 받은 결과를 그대로 적용 — favorable seed replay 가 불가.
 
 import type { MaterialId } from "@/adventure/data/materials";
 import type { ItemId } from "@/adventure/data/items";
@@ -96,4 +101,72 @@ export function computeCoopReward(
     if (t === tier) break;
   }
   return out;
+}
+
+// ── 서버 측 RNG 결정 ─────────────────────────────────────────────────────────
+
+/** 최종 보상 — 모든 RNG 가 펼쳐진 후 클라가 그대로 적용할 수 있는 형태. */
+export type ResolvedCoopReward = {
+  materials: Partial<Record<MaterialId, number>>;
+  /** recipeOneOf picked + recipeRolls 통과 + 확정 recipes 모두 합산. */
+  recipes: string[];
+  /** equipRolls 에서 통과한 itemId 들. */
+  equipment: ItemId[];
+  titleId?: string;
+};
+
+// mulberry32 — 32bit seed 결정적 PRNG. 같은 seed → 같은 sequence.
+function mulberry32(seed: number): () => number {
+  let a = seed | 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 0x100000000;
+  };
+}
+
+function fnv1a(s: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** (sessionId, userId) 한 쌍에서 결정되는 seed. retry 시 같은 결과를 위해 deterministic. */
+export function coopRewardSeed(sessionId: string, userId: string): number {
+  return fnv1a(`${sessionId}:${userId}`);
+}
+
+/** 누적 보상의 RNG 항목들을 seed 로 풀어 ResolvedCoopReward 로 확정. */
+export function resolveCoopReward(
+  reward: CoopReward,
+  seed: number,
+): ResolvedCoopReward {
+  const rng = mulberry32(seed);
+  const recipes: string[] = [...reward.recipes];
+  if (reward.recipeOneOf && reward.recipeOneOf.length > 0) {
+    const idx = Math.floor(rng() * reward.recipeOneOf.length);
+    recipes.push(reward.recipeOneOf[idx]!);
+  }
+  if (reward.recipeRolls) {
+    for (const roll of reward.recipeRolls) {
+      if (rng() < roll.chance) recipes.push(roll.recipeId);
+    }
+  }
+  const equipment: ItemId[] = [];
+  if (reward.equipRolls) {
+    for (const roll of reward.equipRolls) {
+      if (rng() < roll.chance) equipment.push(roll.itemId);
+    }
+  }
+  return {
+    materials: reward.materials,
+    recipes,
+    equipment,
+    titleId: reward.titleId,
+  };
 }
