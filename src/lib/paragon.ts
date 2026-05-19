@@ -10,7 +10,7 @@
 export const PARAGON_TRACKS = [
   "wrath", // 분노 — flat ATK
   "guard", // 수호 — flat DEF
-  "vigor", // 활력 — %maxHP
+  "vigor", // 체력 — %maxHP (라벨 "체력" — VIT 스탯의 "활력" 과 구분)
   "precision", // 정밀 — %p crit rate
   "blast", // 폭격 — %p crit damage
   "fortune", // 풍요 — % gold/exp
@@ -24,7 +24,7 @@ export const PARAGON_TOTAL_CAP = PARAGON_TRACK_CAP * PARAGON_TRACKS.length;
 export const PARAGON_TRACK_LABELS: Record<ParagonTrackKey, string> = {
   wrath: "분노",
   guard: "수호",
-  vigor: "활력",
+  vigor: "체력",
   precision: "정밀",
   blast: "폭격",
   fortune: "풍요",
