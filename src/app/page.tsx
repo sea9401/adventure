@@ -449,8 +449,13 @@ function Home() {
       replaceLocation,
       setMapProgress,
       reportGuildKill: (enemyName) => {
+        // 보스(phaseTrigger 보유) 는 kill_boss 로, 잡몹은 kill_monster 로 분기.
+        // 서버는 task.kind 와 정확히 매칭된 활성 의뢰만 진행하므로, 보스를 kill_monster
+        // 로 보내면 일일 보스 의뢰(수심의 것/옛 성문지기/화산의 심장/뼈비늘 노룡) 가
+        // 영원히 카운트되지 않는다.
+        const isBoss = MONSTERS[enemyName]?.phaseTrigger != null;
         void reportGuildQuestProgress({
-          kind: "kill_monster",
+          kind: isBoss ? "kill_boss" : "kill_monster",
           name: enemyName,
           count: 1,
         }).catch(() => {});
