@@ -183,7 +183,7 @@ describe("disassemble — 적용", () => {
     expect(next).toBe(inv);
   });
 
-  it("equipmentInstance 분해 — 풀에서 instanceId 로 제거 + uncommon 수율 적용", () => {
+  it("equipmentInstance 분해 — 풀에서 instanceId 로 제거 + legendary 수율 적용", () => {
     const inv = withInventory({
       equipmentInstances: [
         {
@@ -215,11 +215,11 @@ describe("disassemble — 적용", () => {
       inv,
       NO_SLOTS,
     );
-    expect(plan.totalDust).toBe(RARITY_DUST_YIELD.uncommon);
+    expect(plan.totalDust).toBe(RARITY_DUST_YIELD.legendary);
     const next = applyDisassemble(plan, inv);
     expect(next.equipmentInstances).toHaveLength(1);
     expect(next.equipmentInstances?.[0].instanceId).toBe("inst-b");
-    expect(next.materials.mana_dust).toBe(RARITY_DUST_YIELD.uncommon);
+    expect(next.materials.mana_dust).toBe(RARITY_DUST_YIELD.legendary);
   });
 
   it("equipmentInstance 차단 — instanceId 가 슬롯에 있으면 equipped", () => {
