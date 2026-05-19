@@ -326,7 +326,7 @@ export function ParagonView({
             className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-violet-700 bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ArrowsClockwise size={14} weight="bold" />
-            리스펙
+            초기화
           </button>
         </div>
       </div>
