@@ -12,7 +12,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   inventory: ReturnType<typeof useInventory>;
   storyFlags: ReturnType<typeof useStoryFlags>;
 };
@@ -69,7 +69,7 @@ export function BoroDialogue({
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              if (completeQuest("diola-boro-bandit-dagger-bear")) onClose();
+              void completeQuest("diola-boro-bandit-dagger-bear", { onSuccess: onClose });
             },
           }}
         />
@@ -117,8 +117,7 @@ export function BoroDialogue({
               inventory.consumeMaterial,
             );
             if (r.ok) {
-              completeQuest(QUEST_ID);
-              onClose();
+              void completeQuest(QUEST_ID, { onSuccess: onClose });
             }
           },
         }}

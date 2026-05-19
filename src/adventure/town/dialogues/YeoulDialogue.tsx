@@ -59,7 +59,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   inventory: ReturnType<typeof useInventory>;
   storyFlags: ReturnType<typeof useStoryFlags>;
 };
@@ -90,7 +90,7 @@ export function YeoulDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(RECURRING_QUEST)) onClose();
+            void completeQuest(RECURRING_QUEST, { onSuccess: onClose });
           },
         }}
       />
@@ -116,7 +116,7 @@ export function YeoulDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(BOSS_QUEST)) onClose();
+            void completeQuest(BOSS_QUEST, { onSuccess: onClose });
           },
         }}
       />
@@ -144,7 +144,7 @@ export function YeoulDialogue({
             primaryAction={{
               label: "보상을 받는다",
               onClick: () => {
-                if (completeQuest(step.id)) onClose();
+                void completeQuest(step.id, { onSuccess: onClose });
               },
             }}
           />
@@ -245,8 +245,7 @@ export function YeoulDialogue({
                 inventory.consumeMaterial,
               );
               if (r.ok) {
-                completeQuest(SURVEY_QUEST);
-                onClose();
+                void completeQuest(SURVEY_QUEST, { onSuccess: onClose });
               }
             },
           }}

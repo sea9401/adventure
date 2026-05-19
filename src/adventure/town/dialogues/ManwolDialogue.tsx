@@ -14,7 +14,7 @@ type Props = {
   onClose: () => void;
   storyFlags: ReturnType<typeof useStoryFlags>;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   inventory: ReturnType<typeof useInventory>;
   characterStateHook: ReturnType<typeof useCharacterState>;
   /** 1회성 보상 서버 mutator — character/inventory/storyFlags 통째 교체 + dialogue close. */
@@ -105,8 +105,7 @@ export function ManwolDialogue({
                 inventory.consumeMaterial,
               );
               if (r.ok) {
-                completeQuest(ORE_QUEST);
-                onClose();
+                void completeQuest(ORE_QUEST, { onSuccess: onClose });
               }
             },
           }}
@@ -161,8 +160,7 @@ export function ManwolDialogue({
                 inventory.consumeMaterial,
               );
               if (r.ok) {
-                completeQuest(WEAPONS_QUEST);
-                onClose();
+                void completeQuest(WEAPONS_QUEST, { onSuccess: onClose });
               }
             },
           }}

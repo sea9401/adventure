@@ -26,7 +26,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   storyFlags: ReturnType<typeof useStoryFlags>;
   inventory: ReturnType<typeof useInventory>;
 };
@@ -98,7 +98,7 @@ export function KaiDialogue({
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              if (completeQuest(PRISTINE_QUEST)) onClose();
+              void completeQuest(PRISTINE_QUEST, { onSuccess: onClose });
             },
           }}
         />
@@ -169,8 +169,7 @@ export function KaiDialogue({
                     inventory.consumeMaterial,
                   );
                   if (r.ok) {
-                    completeQuest(AFTERIMAGE_QUEST);
-                    onClose();
+                    void completeQuest(AFTERIMAGE_QUEST, { onSuccess: onClose });
                   }
                 },
               }}

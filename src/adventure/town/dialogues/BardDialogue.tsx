@@ -16,7 +16,7 @@ type Props = {
   inventory: ReturnType<typeof useInventory>;
   equippedSlots: EquippedSlots;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
 };
 
 // 떠돌이 음유시인 — §11 hidden-lucky-collector + 호흡 라인(book_focused_breath).
@@ -73,8 +73,7 @@ export function BardDialogue({
                   inventory.consumeMaterial,
                 );
                 if (r.ok) {
-                  completeQuest(FOCUSED_BREATH);
-                  onClose();
+                  void completeQuest(FOCUSED_BREATH, { onSuccess: onClose });
                 }
               },
             }}

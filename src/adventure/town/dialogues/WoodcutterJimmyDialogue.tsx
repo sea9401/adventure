@@ -15,7 +15,7 @@ type Props = {
   onClose: () => void;
   crafting: ReturnType<typeof useCrafting>;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   storyFlags: ReturnType<typeof useStoryFlags>;
   inventory: ReturnType<typeof useInventory>;
   equippedSlots: EquippedSlots;
@@ -92,7 +92,7 @@ export function WoodcutterJimmyDialogue({
             primaryAction={{
               label: "보고를 마친다",
               onClick: () => {
-                if (completeQuest("hidden-mole-king")) onClose();
+                void completeQuest("hidden-mole-king", { onSuccess: onClose });
               },
             }}
           />
@@ -143,7 +143,7 @@ export function WoodcutterJimmyDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest("village-jimmy-bandits")) onClose();
+            void completeQuest("village-jimmy-bandits", { onSuccess: onClose });
           },
         }}
       />
@@ -194,7 +194,7 @@ export function WoodcutterJimmyDialogue({
         primaryAction={{
           label: "보고를 마친다",
           onClick: () => {
-            if (completeQuest("village-jimmy-deep-cave")) onClose();
+            void completeQuest("village-jimmy-deep-cave", { onSuccess: onClose });
           },
         }}
       />
@@ -270,7 +270,7 @@ export function WoodcutterJimmyDialogue({
           primaryAction={{
             label: "보고를 마친다",
             onClick: () => {
-              if (completeQuest("village-jimmy-deep-cave-tour")) onClose();
+              void completeQuest("village-jimmy-deep-cave-tour", { onSuccess: onClose });
             },
           }}
         />
@@ -315,7 +315,7 @@ export function WoodcutterJimmyDialogue({
           primaryAction={{
             label: "보고를 마친다",
             onClick: () => {
-              if (completeQuest("deep-cave-hunter")) onClose();
+              void completeQuest("deep-cave-hunter", { onSuccess: onClose });
             },
           }}
         />
@@ -363,7 +363,7 @@ export function WoodcutterJimmyDialogue({
             primaryAction={{
               label: "보고를 마친다",
               onClick: () => {
-                if (completeQuest("village-jimmy-starfall-deepening")) onClose();
+                void completeQuest("village-jimmy-starfall-deepening", { onSuccess: onClose });
               },
             }}
           />

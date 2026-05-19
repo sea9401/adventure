@@ -13,7 +13,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   storyFlags: ReturnType<typeof useStoryFlags>;
 };
 
@@ -35,7 +35,7 @@ export function MireuDialogue({ npc, onClose, quests, completeQuest, storyFlags 
           primaryAction={{
             label: "이야기해 준다",
             onClick: () => {
-              if (completeQuest(REEF_TOUR_QUEST)) onClose();
+              void completeQuest(REEF_TOUR_QUEST, { onSuccess: onClose });
             },
           }}
         />

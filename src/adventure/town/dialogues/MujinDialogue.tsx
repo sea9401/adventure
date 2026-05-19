@@ -66,7 +66,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   inventory: ReturnType<typeof useInventory>;
   storyFlags: ReturnType<typeof useStoryFlags>;
   characterStateHook: ReturnType<typeof useCharacterState>;
@@ -102,7 +102,7 @@ export function MujinDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(RECURRING_QUEST)) onClose();
+            void completeQuest(RECURRING_QUEST, { onSuccess: onClose });
           },
         }}
       />
@@ -128,7 +128,7 @@ export function MujinDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(BOSS_QUEST)) onClose();
+            void completeQuest(BOSS_QUEST, { onSuccess: onClose });
           },
         }}
       />
@@ -156,7 +156,7 @@ export function MujinDialogue({
             primaryAction={{
               label: "보상을 받는다",
               onClick: () => {
-                if (completeQuest(step.id)) onClose();
+                void completeQuest(step.id, { onSuccess: onClose });
               },
             }}
           />
@@ -289,8 +289,7 @@ export function MujinDialogue({
                 inventory.consumeMaterial,
               );
               if (r.ok) {
-                completeQuest(SURVEY_QUEST);
-                onClose();
+                void completeQuest(SURVEY_QUEST, { onSuccess: onClose });
               }
             },
           }}
@@ -334,10 +333,10 @@ export function MujinDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(CLEAR_ROAD_QUEST)) {
-              storyFlags.set(KEEP_FLAG_UNSEALED);
-              onClose();
-            }
+            // KEEP_FLAG_UNSEALED 은 questCompletionData 의 ON_COMPLETE 로 이전됨 — 서버
+            // 보상 적용 시 자동 set + 클라 replaceFromSaved 로 반영 + onSuccess 콜백에서
+            // applyQuestCompletionSideEffects 가 한 번 더 idempotent 호출.
+            void completeQuest(CLEAR_ROAD_QUEST, { onSuccess: onClose });
           },
         }}
       />

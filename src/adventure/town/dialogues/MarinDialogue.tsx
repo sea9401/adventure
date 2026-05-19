@@ -19,7 +19,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   inventory: ReturnType<typeof useInventory>;
   storyFlags: ReturnType<typeof useStoryFlags>;
   adventureLog: ReturnType<typeof useAdventureLog>;
@@ -74,7 +74,7 @@ export function MarinDialogue({
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              if (completeQuest(MT_QUEST)) onClose();
+              void completeQuest(MT_QUEST, { onSuccess: onClose });
             },
           }}
         />
@@ -136,7 +136,7 @@ export function MarinDialogue({
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              if (completeQuest("diola-marin-first-gear-set")) onClose();
+              void completeQuest("diola-marin-first-gear-set", { onSuccess: onClose });
             },
           }}
         />
@@ -204,8 +204,7 @@ export function MarinDialogue({
               // deliver 성공하면 재료는 이미 소비됨 — completeQuest 가 어떤 이유로 false 라도
               // (현재 코드상 일어나기 어렵지만 방어적으로) 다이얼로그는 닫아 stuck 방지.
               // 보상은 길드 게시판의 ready 큐에서 회수 가능.
-              completeQuest(QUEST_ID);
-              onClose();
+              void completeQuest(QUEST_ID, { onSuccess: onClose });
             }
           },
         }}

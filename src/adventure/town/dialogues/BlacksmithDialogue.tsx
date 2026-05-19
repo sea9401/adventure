@@ -21,7 +21,7 @@ type Props = {
   crafting: ReturnType<typeof useCrafting>;
   inventory: ReturnType<typeof useInventory>;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   storyFlags: ReturnType<typeof useStoryFlags>;
   addNotification: (kind: NotificationKind, text: string) => void;
   characterStateHook: ReturnType<typeof useCharacterState>;
@@ -195,8 +195,7 @@ export function BlacksmithDialogue({
                   inventory.consumeMaterial,
                 );
                 if (r.ok) {
-                  completeQuest(MANA_QUEST);
-                  onClose();
+                  void completeQuest(MANA_QUEST, { onSuccess: onClose });
                 }
               },
             }}
@@ -253,7 +252,7 @@ export function BlacksmithDialogue({
           primaryAction={{
             label: "보고를 마친다",
             onClick: () => {
-              if (completeQuest("village-bold-mana-sword-craft")) onClose();
+              void completeQuest("village-bold-mana-sword-craft", { onSuccess: onClose });
             },
           }}
         />
@@ -307,8 +306,7 @@ export function BlacksmithDialogue({
                 inventory.consumeMaterial,
               );
               if (r.ok) {
-                completeQuest(opts.id);
-                onClose();
+                void completeQuest(opts.id, { onSuccess: onClose });
               }
             },
           }}

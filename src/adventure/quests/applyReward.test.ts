@@ -62,7 +62,7 @@ describe("applyQuestReward", () => {
     const s = makeServices();
     const tokens = applyQuestReward({ recipes: ["potion_heal_s_dust"] }, s);
     expect(s.learnRecipe).toHaveBeenCalledWith("potion_heal_s_dust");
-    expect(tokens).toEqual(["작은 회복약 — 가루 공정"]);
+    expect(tokens).toEqual(["작은 회복약: 가루 공정"]);
   });
 
   it("EXP 보상은 addExp 호출 + 'EXP +n' 토큰", () => {
@@ -123,7 +123,7 @@ describe("applyQuestReward", () => {
       "명성 +1",
       "EXP +10",
       "작은 회복약 ×5",
-      "작은 회복약 — 가루 공정",
+      "작은 회복약: 가루 공정",
     ]);
   });
 });

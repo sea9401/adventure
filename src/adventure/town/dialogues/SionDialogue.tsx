@@ -9,7 +9,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   inventory: ReturnType<typeof useInventory>;
   adventureLog: ReturnType<typeof useAdventureLog>;
 };
@@ -98,7 +98,7 @@ export function SionDialogue({
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              if (completeQuest(RELIC_QUEST)) onClose();
+              void completeQuest(RELIC_QUEST, { onSuccess: onClose });
             },
           }}
         />

@@ -243,6 +243,11 @@ export function useQuests() {
     [],
   );
 
+  // 서버 권위 액션(/api/quests/claim) 응답으로 받은 quest-progress.v2 통째 교체.
+  const replaceFromSaved = useCallback((raw: unknown) => {
+    setProgress(readInitial(raw));
+  }, []);
+
   // 보상 수령 — 호출 측이 캐릭터 상태 갱신을 함께 처리.
   const claim = useCallback((id: string): ClaimResult => {
     const quest = getQuestById(id);
@@ -277,5 +282,6 @@ export function useQuests() {
     checkEquip,
     tryDeliver,
     claim,
+    replaceFromSaved,
   };
 }

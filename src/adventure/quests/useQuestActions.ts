@@ -1,32 +1,34 @@
 "use client";
 
-import {
-  applyQuestReward,
-  type RewardServices,
-} from "@/adventure/quests/applyReward";
 import { applyQuestCompletionSideEffects } from "@/adventure/quests/questCompletionSideEffects";
-import type { Character } from "@/adventure/character/types";
+import { useClaimQuestAction } from "@/adventure/quests/useClaimQuestAction";
+import type { useAdventureLog } from "@/adventure/log/useAdventureLog";
 import type { useCharacterState } from "@/adventure/character/useCharacterState";
 import type { useParagonState } from "@/adventure/character/useParagonState";
 import type { useCrafting } from "@/adventure/crafting/useCrafting";
 import type { useInventory } from "@/adventure/inventory/useInventory";
 import type { useQuests } from "@/adventure/quests/useQuests";
 import type { useStoryFlags } from "@/adventure/storyFlags/useStoryFlags";
-import type { GuildBuffSlot } from "@/adventure/data/guildBuffs";
 import type { NotificationKind, NotificationMeta } from "@/lib/notifications";
-import { computeParagonBonus } from "@/lib/paragon";
 
 // 퀘스트 수락/보상 지급 핸들러 묶음 — NPC 다이얼로그·길드 게시판 공용.
-// grantTitle 은 page.tsx 초기에 useTitleGrant 로 만들어 넘긴다 (character 합성 전에도 쓰여서).
+//
+// completeQuest 는 EPIC #3-2 (2026-05-19) 부터 서버 권위. 클라는 questId 만 보내고
+// 서버가 7개 saves 키를 통째 mutate → 응답 saves 를 각 hook 의 replaceFromSaved.
+// 토스트 + 후처리 (titles/flags via applyQuestCompletionSideEffects) 는 서버 응답
+// 후에 클라가 추가로 호출 — 보상 적용 자체는 서버가 했지만 클라 측 hook 상태도
+// (titles map 등은 replaceFromSaved 로 이미 적용됨) 동일 결과로 수렴해야 하므로
+// 동일 데이터 (questCompletionData) 를 한 번 더 호출해도 idempotent.
+//
+// 시그니처가 boolean → Promise<boolean> 로 바뀐 점에 유의 — 호출자는 await 또는 void.
 export function useQuestActions(deps: {
   quests: ReturnType<typeof useQuests>;
   crafting: ReturnType<typeof useCrafting>;
   inventory: ReturnType<typeof useInventory>;
   characterStateHook: ReturnType<typeof useCharacterState>;
   paragon: ReturnType<typeof useParagonState>;
+  adventureLog: ReturnType<typeof useAdventureLog>;
   storyFlags: ReturnType<typeof useStoryFlags>;
-  guildBuffs: GuildBuffSlot[];
-  character: Character;
   grantTitle: (titleId: string) => void;
   addNotification: (
     kind: NotificationKind,
@@ -40,51 +42,55 @@ export function useQuestActions(deps: {
     inventory,
     characterStateHook,
     paragon,
+    adventureLog,
     storyFlags,
-    guildBuffs,
-    character,
     grantTitle,
     addNotification,
   } = deps;
+
+  const { claim } = useClaimQuestAction({
+    inventory,
+    characterStateHook,
+    crafting,
+    adventureLog,
+    storyFlags,
+    quests,
+    paragon,
+    addNotification,
+  });
 
   const handleAcceptQuest = (id: string) => {
     quests.accept(id);
   };
 
-  const rewardServices: RewardServices = {
-    addPotion: (id, n) => inventory.add(id, n),
-    addMaterial: (id, n) => inventory.addMaterial(id, n),
-    addEquipment: (id) => inventory.addEquipment(id),
-    learnRecipe: (id) => crafting.learnRecipe(id),
-    addGoldFame: characterStateHook.addGoldFame,
-    // 퀘스트 보상으로 레벨업 시에도 VIT 보너스만큼 maxHp 까지 풀회복.
-    addExp: (n) => characterStateHook.addExp(n, character.stats.vit),
-    addPotionCapacity: (n) => inventory.addPotionCapacity(n),
-    addSkillBook: (id, n) => inventory.addSkillBook(id, n),
-  };
-
-  // 퀘스트 보상 지급 + 알림 한 줄로 합성. NPC 다이얼로그/길드 게시판 공용.
-  const completeQuest = (id: string): boolean => {
-    const result = quests.claim(id);
-    if (!result.ok) return false;
-    const tokens = applyQuestReward(result.quest.reward, rewardServices, {
-      playerLevel: character.level,
-      guildBuffs,
-      paragonBonus: computeParagonBonus(paragon.state.allocations),
-    });
-    addNotification(
-      "quest_complete",
-      tokens.length > 0
-        ? `${result.quest.title} 완료 — ${tokens.join(", ")}`
-        : `${result.quest.title} 완료`,
-    );
-    // 라인 클로저 후처리 — 의뢰별 칭호 부여 + 스토리 flag.
-    applyQuestCompletionSideEffects(id, { grantTitle, storyFlags, quests });
+  // 보상 지급 — 서버 권위. 성공(applied=true) 또는 idempotent(applied=false 라도 saves
+  // 통째 교체로 자가 수렴) 시 true 반환 + onSuccess 호출. fetch 실패 / 서버 에러 시
+  // false 반환 + onSuccess 미호출. onSuccess 패턴은 다이얼로그 호출자들이 보상 완료 후
+  // onClose 를 부르는 공통 케이스를 단순화한다 (await/then 보일러플레이트 없이).
+  const completeQuest = async (
+    id: string,
+    opts?: { onSuccess?: () => void },
+  ): Promise<boolean> => {
+    const result = await claim(id);
+    if (!result) return false;
+    if (result.applied) {
+      addNotification(
+        "quest_complete",
+        result.tokens.length > 0
+          ? `${result.questTitle} 완료 — ${result.tokens.join(", ")}`
+          : `${result.questTitle} 완료`,
+      );
+      // 사이드 이펙트 (title / storyFlag) 는 서버가 이미 saves 에 박았고 replaceFromSaved
+      // 가 클라 상태에 반영했지만, grantTitle 토스트 같은 부수 액션은 클라 훅을 거쳐야
+      // 한다 — 같은 데이터로 한 번 더 호출해도 idempotent.
+      applyQuestCompletionSideEffects(id, { grantTitle, storyFlags, quests });
+    }
+    opts?.onSuccess?.();
     return true;
   };
 
   const handleClaimQuest = (id: string) => {
-    completeQuest(id);
+    void completeQuest(id);
   };
 
   return { handleAcceptQuest, completeQuest, handleClaimQuest };

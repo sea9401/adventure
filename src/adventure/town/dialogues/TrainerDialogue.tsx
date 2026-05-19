@@ -7,7 +7,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   inventory: ReturnType<typeof useInventory>;
 };
 
@@ -63,7 +63,7 @@ export function TrainerDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest("village-trainer-slimes")) onClose();
+            void completeQuest("village-trainer-slimes", { onSuccess: onClose });
           },
         }}
       />
@@ -111,7 +111,7 @@ export function TrainerDialogue({
         primaryAction={{
           label: "보고한다",
           onClick: () => {
-            if (completeQuest("village-trainer-dogs")) onClose();
+            void completeQuest("village-trainer-dogs", { onSuccess: onClose });
           },
         }}
       />
@@ -159,7 +159,7 @@ export function TrainerDialogue({
         primaryAction={{
           label: "활력의 반지를 받는다",
           onClick: () => {
-            if (completeQuest("village-trainer-moles")) onClose();
+            void completeQuest("village-trainer-moles", { onSuccess: onClose });
           },
         }}
       />
@@ -227,7 +227,7 @@ export function TrainerDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest("village-trainer-equip-vitality-ring")) onClose();
+            void completeQuest("village-trainer-equip-vitality-ring", { onSuccess: onClose });
           },
         }}
       />

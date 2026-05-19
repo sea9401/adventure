@@ -8,7 +8,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   storyFlags: ReturnType<typeof useStoryFlags>;
   inventory: ReturnType<typeof useInventory>;
 };
@@ -92,7 +92,7 @@ export function BaekunDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(CANYON)) onClose();
+            void completeQuest(CANYON, { onSuccess: onClose });
           },
         }}
       />
@@ -140,7 +140,7 @@ export function BaekunDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(GIANT)) onClose();
+            void completeQuest(GIANT, { onSuccess: onClose });
           },
         }}
       />
@@ -176,7 +176,7 @@ export function BaekunDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(CLIFF)) onClose();
+            void completeQuest(CLIFF, { onSuccess: onClose });
           },
         }}
       />
@@ -191,7 +191,7 @@ export function BaekunDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(GOATS)) onClose();
+            void completeQuest(GOATS, { onSuccess: onClose });
           },
         }}
       />
@@ -249,7 +249,7 @@ export function BaekunDialogue({
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              if (completeQuest(ESCORT)) onClose();
+              void completeQuest(ESCORT, { onSuccess: onClose });
             },
           }}
         />
@@ -293,7 +293,7 @@ export function BaekunDialogue({
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              if (completeQuest(HUNTER)) onClose();
+              void completeQuest(HUNTER, { onSuccess: onClose });
             },
           }}
         />
@@ -340,8 +340,7 @@ export function BaekunDialogue({
                     inventory.consumeMaterial,
                   );
                   if (r.ok) {
-                    completeQuest(HEAVEN);
-                    onClose();
+                    void completeQuest(HEAVEN, { onSuccess: onClose });
                   }
                 },
               }}
@@ -397,7 +396,7 @@ export function BaekunDialogue({
               primaryAction={{
                 label: "보상을 받는다",
                 onClick: () => {
-                  if (completeQuest(STORM)) onClose();
+                  void completeQuest(STORM, { onSuccess: onClose });
                 },
               }}
             />

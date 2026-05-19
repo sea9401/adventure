@@ -29,7 +29,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   storyFlags: ReturnType<typeof useStoryFlags>;
   inventory: ReturnType<typeof useInventory>;
   /** 5막 종착 의식에서 starfall_keeper 칭호 부여 — useTitleGrant 의 grantTitle. */
@@ -127,8 +127,7 @@ export function MeteorDialogue({
                 inventory.consumeMaterial,
               );
               if (r.ok) {
-                completeQuest(VESSEL_QUEST);
-                onClose();
+                void completeQuest(VESSEL_QUEST, { onSuccess: onClose });
               }
             },
           }}

@@ -31,7 +31,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   inventory: ReturnType<typeof useInventory>;
   steps: QuestLineStep[];
   /** 보여줄 의뢰가 하나도 없을 때(전부 완료/쿨다운/잠금) 일상 대화. */
@@ -92,7 +92,7 @@ export function QuestLineDialogue({
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              if (completeQuest(step.id)) onClose();
+              void completeQuest(step.id, { onSuccess: onClose });
             },
           }}
         />
@@ -117,8 +117,7 @@ export function QuestLineDialogue({
                     inventory.consumeMaterial,
                   );
                   if (res.ok) {
-                    completeQuest(step.id);
-                    onClose();
+                    void completeQuest(step.id, { onSuccess: onClose });
                   }
                 },
               }}

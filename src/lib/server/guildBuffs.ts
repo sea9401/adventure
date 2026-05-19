@@ -1,7 +1,11 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { guilds, type GuildBuffSlotRow } from "@/db/schema";
-import { cumulativeCostForTier, isGuildBuffId } from "@/adventure/data/guildBuffs";
+import { guildMembers, guilds, type GuildBuffSlotRow } from "@/db/schema";
+import {
+  cumulativeCostForTier,
+  isGuildBuffId,
+  type GuildBuffSlot,
+} from "@/adventure/data/guildBuffs";
 
 // 더 이상 카탈로그(GUILD_BUFFS)에 없는 buffId 의 슬롯을 골라낸다.
 // 현재 해당: "gold_boost" (2026-05 "train_speed" 로 교체) — 자동 해제 + 누적 투자 50% 환급.
@@ -23,6 +27,43 @@ function partitionStale(buffs: GuildBuffSlotRow[]): {
 
 function isStale(buffs: GuildBuffSlotRow[]): boolean {
   return buffs.some((s) => !isGuildBuffId(s.buffId));
+}
+
+// 유저의 길드 활성 버프 슬롯을 한 번에 조회 — 보상 곱셈 적용 등 서버 측 경로 공용.
+// 길드 미가입 / 슬롯 0 / 카탈로그 검증 실패면 빈 배열. stale buff 정리는 별도 prune 경로
+// (GET /api/guilds/buffs · /api/guilds/me) 가 처리하므로 여기서는 카탈로그에 있는 것만 통과.
+export async function getActiveGuildBuffsForUser(
+  userId: string,
+): Promise<GuildBuffSlot[]> {
+  const member = await db
+    .select({ guildId: guildMembers.guildId })
+    .from(guildMembers)
+    .where(eq(guildMembers.userId, userId))
+    .limit(1);
+  if (member.length === 0) return [];
+  const guildId = member[0].guildId;
+  const rows = await db
+    .select({ buffs: guilds.buffs })
+    .from(guilds)
+    .where(eq(guilds.id, guildId))
+    .limit(1);
+  const raw = rows[0]?.buffs ?? [];
+  // 카탈로그 검증 + 데이터 모양 정리 (jsonb 라 신뢰 못함).
+  const out: GuildBuffSlot[] = [];
+  for (const slot of raw) {
+    if (!slot || typeof slot !== "object") continue;
+    const buffId = (slot as { buffId?: unknown }).buffId;
+    const tier = (slot as { tier?: unknown }).tier;
+    const installedAt = (slot as { installedAt?: unknown }).installedAt;
+    if (typeof buffId !== "string" || typeof tier !== "number") continue;
+    if (!isGuildBuffId(buffId)) continue;
+    out.push({
+      buffId,
+      tier: tier as GuildBuffSlot["tier"],
+      installedAt: typeof installedAt === "string" ? installedAt : "",
+    });
+  }
+  return out;
 }
 
 // 길드 row 의 buffs 에서 무효 슬롯을 제거하고 fameAvailable 에 50% 환급.

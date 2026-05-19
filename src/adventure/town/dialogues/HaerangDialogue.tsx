@@ -20,7 +20,7 @@ type Props = {
   npc: Npc;
   onClose: () => void;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   inventory: ReturnType<typeof useInventory>;
   storyFlags: ReturnType<typeof useStoryFlags>;
 };
@@ -64,8 +64,7 @@ export function HaerangDialogue({
                 );
                 if (r.ok) {
                   storyFlags.set(FERRYMAN_FLAG_REEF_PASSAGE);
-                  completeQuest(HULL_QUEST);
-                  onClose();
+                  void completeQuest(HULL_QUEST, { onSuccess: onClose });
                 }
               },
             }}
@@ -111,7 +110,7 @@ export function HaerangDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(CORAL_BEAR_QUEST)) onClose();
+            void completeQuest(CORAL_BEAR_QUEST, { onSuccess: onClose });
           },
         }}
       />
@@ -153,7 +152,7 @@ export function HaerangDialogue({
         primaryAction={{
           label: "보상을 받는다",
           onClick: () => {
-            if (completeQuest(RUNS_QUEST)) onClose();
+            void completeQuest(RUNS_QUEST, { onSuccess: onClose });
           },
         }}
       />

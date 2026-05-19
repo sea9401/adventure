@@ -9,7 +9,7 @@ type Props = {
   onClose: () => void;
   storyFlags: ReturnType<typeof useStoryFlags>;
   quests: ReturnType<typeof useQuests>;
-  completeQuest: (id: string) => boolean;
+  completeQuest: (id: string, opts?: { onSuccess?: () => void }) => Promise<boolean>;
   adventureLog: ReturnType<typeof useAdventureLog>;
 };
 
@@ -94,7 +94,7 @@ export function PilgrimDialogue({
           primaryAction={{
             label: "보상을 받는다",
             onClick: () => {
-              if (completeQuest(GIANTS_ORIGIN)) onClose();
+              void completeQuest(GIANTS_ORIGIN, { onSuccess: onClose });
             },
           }}
         />

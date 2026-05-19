@@ -174,7 +174,15 @@ export type GameCtx = {
   handleBattleEnd: (payload: BattleEndPayload) => void;
   handleAcceptQuest: (id: string) => void;
   handleClaimQuest: (id: string) => void;
-  completeQuest: (id: string) => boolean;
+  /**
+   * 퀘스트 보상 수령 (서버 권위, EPIC #3-2). questId 만 보내고 서버가
+   * character/inventory/crafting/log/storyFlags/quest-progress/paragon 통째 mutate.
+   * 통신 성공 시 true + onSuccess 호출, 실패 시 false + onSuccess 미호출.
+   */
+  completeQuest: (
+    id: string,
+    opts?: { onSuccess?: () => void },
+  ) => Promise<boolean>;
 };
 
 const Ctx = createContext<GameCtx | null>(null);
