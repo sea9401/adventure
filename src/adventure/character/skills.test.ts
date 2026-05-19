@@ -278,17 +278,25 @@ describe("effectiveSkillNames / effectiveFeatNames — 슬롯 한도", () => {
     ).toEqual([FEAT_NAMES.LIFESTEAL, FEAT_NAMES.BERSERKER]);
   });
 
-  it("미보유 / null 슬롯은 결과에서 제외", () => {
+  it("미보유 / null 슬롯은 그 자리 그대로 null — 슬롯 인덱스 보존", () => {
     const feats = [{ name: FEAT_NAMES.LIFESTEAL }];
     expect(
       effectiveFeatNames(feats, [null, FEAT_NAMES.LIFESTEAL, "없는특기"], 3),
-    ).toEqual([FEAT_NAMES.LIFESTEAL]);
+    ).toEqual([null, FEAT_NAMES.LIFESTEAL, null]);
   });
 
-  it("같은 특기가 두 슬롯에 있으면 첫 슬롯만 적용", () => {
+  it("슬롯 1 에만 장착 — 슬롯 0 은 null 로 유지 (위치 보존)", () => {
+    // 압축하면 UI 가 슬롯 0 에 그려버리는 버그가 생긴다.
+    const feats = [{ name: FEAT_NAMES.LIFESTEAL }];
+    expect(
+      effectiveFeatNames(feats, [null, FEAT_NAMES.LIFESTEAL], 2),
+    ).toEqual([null, FEAT_NAMES.LIFESTEAL]);
+  });
+
+  it("같은 특기가 두 슬롯에 있으면 첫 슬롯만 적용, 뒤 슬롯은 null", () => {
     const feats = [{ name: FEAT_NAMES.LIFESTEAL }];
     expect(
       effectiveFeatNames(feats, [FEAT_NAMES.LIFESTEAL, FEAT_NAMES.LIFESTEAL], 2),
-    ).toEqual([FEAT_NAMES.LIFESTEAL]);
+    ).toEqual([FEAT_NAMES.LIFESTEAL, null]);
   });
 });

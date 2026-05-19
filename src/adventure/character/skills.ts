@@ -615,16 +615,18 @@ export function deriveFeats(stats: Record<StatKey, number>): Skill[] {
   }));
 }
 
-// 장착 특기 이름들 — 특기 슬롯이 열린 만큼, 보유 특기여야 effective. 미해금/미장착/미보유 슬롯은 결과에서 제외.
-// stored 의 length 가 featSlots 보다 짧거나 길어도 OK — 슬롯 수 만큼만 처리.
-// 중복 장착 방지: 같은 특기 이름이 여러 슬롯에 있으면 첫 슬롯만 적용 (이론상 UI 에서 막아도 안전망).
+// 장착 특기 이름들 — 슬롯 인덱스를 보존해 반환. 결과 길이는 항상 featSlots.
+// 빈 슬롯·미보유·중복(앞 슬롯에 같은 이름)은 null 로 채운다.
+// 2026-05-19: 이전 버전은 compact 한 string[] 을 반환했고, UI 가 슬롯 0 이 비고 슬롯 1
+// 에만 장착된 상태를 슬롯 0 에 그려버리는 위치 어긋남 버그가 있었다 ("특기 슬롯 하나가
+// 잠겨 보임"). 결과 자체가 위치를 보존하도록 수정.
 export function effectiveFeatNames(
   availableFeats: Skill[],
   stored: ReadonlyArray<string | null | undefined>,
   featSlots: number,
-): string[] {
+): (string | null)[] {
   if (featSlots <= 0) return [];
-  const result: string[] = [];
+  const result: (string | null)[] = new Array(featSlots).fill(null);
   const seen = new Set<string>();
   for (let i = 0; i < featSlots; i += 1) {
     const name = stored[i];
@@ -632,7 +634,7 @@ export function effectiveFeatNames(
     if (seen.has(name)) continue;
     if (!availableFeats.some((f) => f.name === name)) continue;
     seen.add(name);
-    result.push(name);
+    result[i] = name;
   }
   return result;
 }
