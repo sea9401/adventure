@@ -63,8 +63,38 @@ const PRIMORDIAL_DRAGON_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
   },
 };
 
+// 6막 「별을 잊은 것」 — 잊힌 봉인 월드 레이드. T6 별빛 장신구(잊힌 별의 유물) 획득처.
+// 누적 데미지 티어로 별빛 조각을 쌓고, legend 에 한해 T6 장신구가 5% 로 떨어진다.
+// 무구류 직접 굴림은 두지 않는다 — 이 보스는 "장신구 획득처" 컨셉. (수치는 튜닝 포인트.)
+const FORGOTTEN_STAR_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
+  bronze: {
+    materials: { starfall_shard: 4 },
+    recipes: [],
+  },
+  silver: {
+    materials: { starfall_shard: 8 },
+    recipes: [],
+  },
+  gold: {
+    materials: { starfall_shard: 14 },
+    recipes: [],
+  },
+  epic: {
+    materials: { starfall_shard: 22 },
+    recipes: [],
+  },
+  legend: {
+    materials: { starfall_shard: 30 },
+    recipes: [],
+    titleId: "forgotten_star_slayer",
+    // T6 별빛 장신구 — 잊힌 봉인 legend 물욕 드랍. 7일 한 번 시도라 5%.
+    equipRolls: [{ itemId: "forgotten_star_relic", chance: 0.05 }],
+  },
+};
+
 const TIER_TABLES: Record<string, Record<CoopRewardTier, CoopReward>> = {
   "태고의 노룡": PRIMORDIAL_DRAGON_TIER_REWARDS,
+  "별을 잊은 것": FORGOTTEN_STAR_TIER_REWARDS,
 };
 
 const TIER_ORDER: CoopRewardTier[] = ["bronze", "silver", "gold", "epic", "legend"];

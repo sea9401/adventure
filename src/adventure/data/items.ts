@@ -1507,6 +1507,22 @@ export const ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
+  // 6막 「별을 잊은 것」 — 잊힌 봉인(월드 레이드) legend 티어 T6 장신구.
+  // stats/bonus 는 placeholder — 실제 옵션은 사용자가 교체 예정. tier/slot/rarity 만 확정.
+  forgotten_star_relic: {
+    name: "잊힌 별의 유물",
+    slot: "accessory",
+    stats: [
+      { label: "공격력", value: "+16" },
+      { label: "방어력", value: "+16" },
+      { label: "활력", value: "+8" },
+    ],
+    bonus: { atk: 16, def: 16, vit: 8 },
+    description: "별빛보다 오래된 봉인이 마지막에 흘린 한 점. 온기를 잊은 결이 손끝을 시리게 한다. 잊힌 것을 함께 잠재운 자들의 누적된 결로만 손에 들린다.",
+    rarity: "legendary",
+    tier: 6,
+  } satisfies EquipItem,
+
   // ── 히든 퀘스트 보상 (§11) — 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────
   // 월광검: 볼드 ↔ 만월 옛 합작 무기를 마저 완성한 것(hidden-blacksmith-duel). 운봉 무기 한 칸 위.
   moonlight_blade: {
