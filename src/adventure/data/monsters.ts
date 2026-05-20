@@ -2028,7 +2028,8 @@ export const MONSTERS: Record<string, Monster> = {
       deepHpFraction: 0.25,
     },
     auraKind: "starfall",
-    bonusAttackChancePct: 180,
+    // 4대 확정(1 + 3) — 잔영(220, 3~4대) 위 한 칸. 타격마다 한기 +1 이라 한 페이즈에 +4 스택.
+    bonusAttackChancePct: 300,
   },
   // 훈련용 더미 — 일반 인카운터 풀에 들어가지 않는 스파링 전용 몬스터.
   // 보상/패널티 모두 우회 (SparringView 가 onBattleEnd 를 호출하지 않음).
