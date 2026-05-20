@@ -113,4 +113,4 @@ export function coopTierForRatio(ratio: number): CoopRewardTier | null {
 
 // 1회 공격 시뮬 턴 수 + 공격 간 쿨다운.
 export const COOP_ATTACK_TURNS = 20;
-export const COOP_ATTACK_COOLDOWN_MS = 5 * 60 * 1000; // 5분
+export const COOP_ATTACK_COOLDOWN_MS = 10 * 60 * 1000; // 10분 (전역 — 모든 협동 보스 공통)
