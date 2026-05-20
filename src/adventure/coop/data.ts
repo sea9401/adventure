@@ -61,7 +61,7 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     monsterName: "별을 잊은 것",
     maxHp: 600_000,
     expirationMs: 365 * 24 * 60 * 60 * 1000, // 1y (실질 무한 — 죽을 때까지)
-    respawnMs: 7 * 24 * 60 * 60 * 1000, // 7d 휴면
+    respawnMs: 2 * 60 * 60 * 1000, // 2h — 처치 후 2시간이면 다시 깨어난다 (상시 레이드)
     isWorldBoss: true,
     onDefeatFlag: "forgotten_star_felled",
     onAttackFlag: "forgotten_star_engaged",

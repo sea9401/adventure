@@ -87,8 +87,7 @@ const FORGOTTEN_STAR_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
     materials: { starfall_shard: 30 },
     recipes: [],
     titleId: "forgotten_star_slayer",
-    // T6 별빛 장신구 — 잊힌 봉인 legend 물욕 드랍. 7일 한 번 시도라 5%.
-    equipRolls: [{ itemId: "forgotten_star_relic", chance: 0.05 }],
+    // 장신구 드롭은 옵션 확정 전까지 보류 — legend 는 별빛 조각 + 칭호만. 추후 별도 PR 로 추가.
   },
 };
 
