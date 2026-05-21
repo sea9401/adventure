@@ -147,12 +147,20 @@ export function CharacterScreen() {
           }
           onClick={() => setSubView("recent-log")}
         />
-        <EntryCard
-          icon={<Diamond size={28} weight="duotone" className="text-violet-500" />}
-          title="룬"
-          description="3개의 슬롯에 룬을 장착해 영구 능력치를 더한다."
-          onClick={() => setSubView("runes")}
-        />
+        {(inventory.runeTotalCount() > 0 ||
+          inventory.materialCount("tower_token") > 0 ||
+          (characterStateHook.state.equippedRunes ?? []).some(
+            (r) => r != null,
+          )) && (
+          <EntryCard
+            icon={
+              <Diamond size={28} weight="duotone" className="text-violet-500" />
+            }
+            title="룬"
+            description="3개의 슬롯에 룬을 장착해 영구 능력치를 더한다."
+            onClick={() => setSubView("runes")}
+          />
+        )}
         {character.level >= MAX_LEVEL && (
           <EntryCard
             icon={
