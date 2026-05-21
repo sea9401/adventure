@@ -7,9 +7,15 @@
 // 드랍마다 다른 결과라 인스턴스(자루별 고유)로 저장된다 — 롤 생성은 서버 권위. 이 모듈은
 // 순수 로직(롤 + 표시용 변환)만 담아 단위 테스트가 쉽게.
 
-import type { EquipBonus } from "@/adventure/data/items";
+import { ITEMS, type EquipBonus } from "@/adventure/data/items";
+import type { EquippedItem } from "@/adventure/character/types";
 
 export const STARLIT_RING_ITEM_ID = "starlit_ring" as const;
+
+/** itemId 가 별빛 고리(롤 인스턴스)인지 — equip/instance 분기용. */
+export function isStarlitRing(id: string): boolean {
+  return id === STARLIT_RING_ITEM_ID;
+}
 
 // 롤 대상 스탯 — EquipBonus 키와 동일. atk/def 는 제외(베이스 스탯만).
 export const STARLIT_RING_STAT_KEYS = [
@@ -63,6 +69,24 @@ export function starlitRingStatsFromBonus(
     label: STAT_LABEL[k],
     value: `+${bonus[k]}`,
   }));
+}
+
+/**
+ * 인스턴스(rolledBonus + instanceId)에서 장착용 EquippedItem 생성.
+ * 강화·부여가 없으니 base 정의 + 롤 bonus 그대로 — stats 도 롤에서 재생성.
+ * rolledBonus 를 EquippedItem 에도 박아 회수→풀 복원·재계산에 보존한다.
+ */
+export function resolveStarlitRing(
+  rolledBonus: EquipBonus,
+  instanceId: string,
+): EquippedItem {
+  return {
+    ...ITEMS[STARLIT_RING_ITEM_ID],
+    bonus: { ...rolledBonus },
+    stats: starlitRingStatsFromBonus(rolledBonus),
+    instanceId,
+    rolledBonus: { ...rolledBonus },
+  };
 }
 
 /** 롤 bonus 유효성 — 서버/로드 검증용. 정확히 N개, 각 1~MAX, 키는 허용 스탯. */
