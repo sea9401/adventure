@@ -421,6 +421,7 @@ export function TownScreen() {
           droppedEquipmentCounts={inventory.state.droppedEquipment}
           potionCounts={inventory.state.potions}
           potionMax={inventory.potionMax}
+          gold={character.gold}
           onCraft={handleCraft}
         />
       </div>

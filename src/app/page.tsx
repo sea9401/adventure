@@ -373,6 +373,8 @@ function Home() {
   const { handleCraft } = useCraftAction({
     inventory,
     crafting,
+    gold: characterState.gold,
+    replaceCharacterFromSaved: characterStateHook.replaceFromSaved,
     addNotification,
     grantTitle,
     recordCraft: quests.recordCraft,
