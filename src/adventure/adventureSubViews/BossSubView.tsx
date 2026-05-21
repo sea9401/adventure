@@ -114,6 +114,7 @@ export function BossSubView() {
         <BattleView
           region={currentRegion}
           player={playerCombat}
+          stance={characterStateHook.state.selectedStance ?? null}
           playerLevel={character.level}
           playerName={character.name}
           playerStatus={playerStatus}
