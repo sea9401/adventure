@@ -890,6 +890,32 @@ describe("한기 (chill) 스킬 — 「별을 잊은 것」 기믹", () => {
     expect(after.stacks.chillStacks).toBe(5);
   });
 
+  it("defMitigationFraction 만큼 플레이어 DEF 로 한기가 감산된다 (하한 1)", () => {
+    const enemy = chillEnemy({
+      skill: {
+        kind: "chill",
+        name: "선천의 한기",
+        perHit: 2,
+        dmgPerStack: 30,
+        threshold: 4,
+        defMitigationFraction: 0.3,
+      },
+    });
+    // tank def 100 → 한기 차감 round(100×0.3)=30. 스택 5 → 5×30=150, −30 = 120.
+    const s0 = initialBattleState(tank, enemy, "P");
+    const primed = {
+      ...s0,
+      phase: "enemy" as const,
+      stacks: { ...s0.stacks, chillStacks: 5 },
+    };
+    const after = advanceTurn(primed, tank, "P");
+    expect(
+      after.log.some((e) => e.text.startsWith("[한기]") && e.text.includes("120 피해")),
+    ).toBe(true);
+    // 한기 120 + 적 평타 바닥 1 → 200 − 121 = 79.
+    expect(after.playerHp).toBe(79);
+  });
+
   it("threshold 미만이면 DoT 가 발동하지 않는다", () => {
     const enemy = chillEnemy();
     const s0 = initialBattleState(tank, enemy, "P");

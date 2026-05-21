@@ -1955,7 +1955,15 @@ export function advanceTurn(
     chillSkill.dmgPerStack > 0 &&
     state.stacks.chillStacks >= chillSkill.threshold
   ) {
-    const chillDmgRaw = state.stacks.chillStacks * chillSkill.dmgPerStack;
+    // DEF 부분감산 — defMitigationFraction 만큼 플레이어 DEF 를 깎아낸다(미지정/0 = DEF 무시, 기존
+    // 동작). 하한 1 — 아무리 DEF 가 높아도 한기는 최소 1 은 들어가 시간압 취지가 죽지 않는다.
+    const chillDefCut = Math.round(
+      player.def * (chillSkill.defMitigationFraction ?? 0),
+    );
+    const chillDmgRaw = Math.max(
+      1,
+      state.stacks.chillStacks * chillSkill.dmgPerStack - chillDefCut,
+    );
     const chillDmgAfterResolve =
       state.buffs.playerDmgReductionTurnsLeft > 0 &&
       state.buffs.playerDmgReductionPct > 0
