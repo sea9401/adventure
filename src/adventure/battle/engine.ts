@@ -2194,12 +2194,21 @@ export function advanceTurn(
   // 회전 운기 (2티어 특기) — 누적 보너스 회피에도 적용.
   // 회피 캡 EVASION_PCT_CAP — 100% 회피 무적 빌드 차단.
   // 보장 회피 (소모형 적립) 는 위쪽 분기에서 별도 처리되어 캡 무관 100% 회피 유지.
-  const effectiveEvadePct = Math.min(
-    EVASION_PCT_CAP,
-    player.evasionPct +
-      luckEvadeBonus +
-      universalLuckEvadeBonus +
-      state.buffs.cyclingChiBonus,
+  // 한기 슬로우 — chill 스택당 회피율 감소(굼떠짐). 미지정/0 = 효과 없음. 회피는 0 미만 안 됨.
+  const chillSlowPct =
+    state.enemy.skill?.kind === "chill"
+      ? state.stacks.chillStacks *
+        (state.enemy.skill.evasionPenaltyPerStack ?? 0)
+      : 0;
+  const effectiveEvadePct = Math.max(
+    0,
+    Math.min(
+      EVASION_PCT_CAP,
+      player.evasionPct +
+        luckEvadeBonus +
+        universalLuckEvadeBonus +
+        state.buffs.cyclingChiBonus,
+    ) - chillSlowPct,
   );
   if (Math.random() * 100 < effectiveEvadePct) {
     const healedHp = healOnDodge(state.playerHp);

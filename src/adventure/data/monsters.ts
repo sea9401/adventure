@@ -64,6 +64,11 @@ export type MonsterSkill =
        * 미지정/0 = DEF 무시(순수 고정피해, 기존 동작). DEF 에 약간의 보람을 주되 무효화는 막는 노브.
        */
       defMitigationFraction?: number;
+      /**
+       * 한기 스택당 플레이어 회피율 감소(%p) — 슬로우 느낌(추울수록 굼떠져 못 피함).
+       * 미지정/0 = 효과 없음. 적 공격 회피 굴림 때 stacks×이 값만큼 차감(회피 0 하한).
+       */
+      evasionPenaltyPerStack?: number;
     };
 
 export type Monster = {
@@ -2038,6 +2043,8 @@ export const MONSTERS: Record<string, Monster> = {
       // DEF 30% 부분감산 — 6스택 270 기준, DEF 200 이면 270-60=210(-22%). 탱에게 보람을 주되
       // 무효화(DEF ~900 필요)는 막아 시간압 취지 유지.
       defMitigationFraction: 0.3,
+      // 슬로우 — 스택당 회피 -2%p (추울수록 굼떠짐). 6스택이면 -12%p. 조금만.
+      evasionPenaltyPerStack: 2,
     },
     auraKind: "starfall",
     // 4대 확정(1 + 3) — 잔영(220, 3~4대) 위 한 칸. 타격마다 한기 +1 이라 한 페이즈에 +4 스택.
