@@ -78,27 +78,27 @@ const PRIMORDIAL_DRAGON_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
 // 무구류 직접 굴림은 두지 않는다 — 이 보스는 "장신구 획득처" 컨셉. (수치는 튜닝 포인트.)
 const FORGOTTEN_STAR_TIER_REWARDS: Record<CoopRewardTier, CoopReward> = {
   bronze: {
-    materials: { starfall_shard: 4 },
-    recipes: [],
-  },
-  silver: {
     materials: { starfall_shard: 8 },
     recipes: [],
   },
+  silver: {
+    materials: { starfall_shard: 16 },
+    recipes: [],
+  },
   gold: {
-    materials: { starfall_shard: 14 },
+    materials: { starfall_shard: 28 },
     recipes: [],
     // T6 별빛 고리(랜덤 롤 장신구) — gold 부터 드랍, 티어 오를수록 드랍률↑(덮어쓰기).
     // 옵션은 인스턴스마다 롤(2/5 × 1~20)이라, 드랍이 나도 "원하는 조합" 은 반복 파밍 강제.
     ringRoll: { chance: 0.05 },
   },
   epic: {
-    materials: { starfall_shard: 22 },
+    materials: { starfall_shard: 44 },
     recipes: [],
     ringRoll: { chance: 0.1 },
   },
   legend: {
-    materials: { starfall_shard: 30 },
+    materials: { starfall_shard: 60 },
     recipes: [],
     titleId: "forgotten_star_slayer",
     ringRoll: { chance: 0.15 },

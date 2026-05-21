@@ -129,7 +129,7 @@ describe("별을 잊은 것 — 별빛 고리 드랍 (gold 부터, 티어 오를
 
   it("legend 누적 보상엔 별빛 조각 + 칭호 + ringRoll 이 모두 산다", () => {
     const r = computeCoopReward("별을 잊은 것", "legend");
-    expect(r.materials.starfall_shard).toBe(4 + 8 + 14 + 22 + 30);
+    expect(r.materials.starfall_shard).toBe(8 + 16 + 28 + 44 + 60);
     expect(r.titleId).toBe("forgotten_star_slayer");
     expect(r.ringRoll?.chance).toBe(0.15);
   });
