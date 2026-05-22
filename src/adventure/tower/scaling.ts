@@ -12,8 +12,8 @@ import type { Monster } from "@/adventure/data/monsters";
 import type { TowerModifier } from "./modifiers";
 import { TOWER_BOSS_INTERVAL } from "./types";
 
-export const TOWER_HP_EXP = 0.45;
-export const TOWER_ATK_EXP = 0.25;
+export const TOWER_HP_EXP = 0.42;
+export const TOWER_ATK_EXP = 0.2;
 export const TOWER_DEF_EXP = 0.25;
 
 // 고탑 적 명중(accuracy) — 플레이어 유효 회피에서 %p 차감. 고회피(DEX) 빌드가 회피의
