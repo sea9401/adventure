@@ -1210,13 +1210,15 @@ export function advanceTurnPvP(
     !attacker.flags.assassinateUsed &&
     attacker.turn.completedPlayerTurns === 0 &&
     isFirstAttackOfTurn;
-  // 약점 적중 — 큐가 있으면 이 공격은 DEF 무시.
+  // 약점 적중 — 크리 추가타 윈도 마커. 2026-05-23 방어 무시 과잉 정리로 DEF 무시 효과 제거,
+  // 추가타만 유지 (라벨/카운터는 윈도 표시용 잔존, targetDef 미반영). engine.ts 와 동일.
   const weakpointDefIgnore = attacker.stacks.weakpointDefIgnoreLeft > 0;
   // 분쇄 — 강공격 발동 턴 그 공격에 한해 적 DEF -crushDefReduction.
+  // 2026-05-23 정리: 암살/약점/AP DEF 완전 무시 제거 → DEF 0 분기 없앰(apIgnoresDef 채널만 잔존).
   const crushReduction = attacker.player.crushDefReduction ?? 0;
   const baseDef = attackerFacingDef(attacker, defender, nextBuffsTimedFromAp);
   const targetDef =
-    assassinFires || weakpointDefIgnore || apIgnoresDef
+    apIgnoresDef
       ? 0
       : powerBonus > 0 && crushReduction > 0
         ? Math.max(0, baseDef - crushReduction)

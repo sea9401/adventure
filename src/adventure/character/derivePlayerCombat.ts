@@ -76,7 +76,6 @@ import {
   luckyShieldBlockPctFor,
   luckyStarChancePctFor,
   powerAttackBonusFor,
-  precisionArmorPierceFractionFor,
   precisionEvasionMultFor,
   rampagePerTurnFor,
   reflexEvadeMultFor,
@@ -309,10 +308,7 @@ export function derivePlayerCombat(
     extraAttackChancePct: totalStats.spd * EXTRA_ATTACK_PCT_PER_SPD,
     powerAttackBonus: powerAttackBonusFor(totalStats, effectiveSkillSet),
     crushDefReduction: crushDefReductionFor(totalStats, effectiveSkillSet),
-    armorPierceFraction: precisionArmorPierceFractionFor(
-      totalStats,
-      effectiveSkillSet,
-    ),
+    // armorPierceFraction(정확 관통) 은 2026-05-23 방어 무시 과잉 정리로 제거 — 미설정(=0).
     guaranteedEvades: evadeGuaranteedFor(totalStats, effectiveSkillSet),
     counterAtkBonus: counterAtkBonusFor(totalStats, effectiveSkillSet),
     extraAttackEveryNTurns: doubleStrikeIntervalFor(

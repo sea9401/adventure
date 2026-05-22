@@ -1278,14 +1278,17 @@ export function advanceTurn(
       !state.flags.assassinateUsed &&
       state.turn.completedPlayerTurns === 0 &&
       isFirstAttackOfTurn;
-    // 약점 적중 (2티어 특기) — 큐가 있으면 이 공격은 DEF 무시. 트리거 자체는 아래 크리 처리 후.
+    // 약점 적중 (2티어 특기) — 크리 시 추가타 윈도(weakpointDefIgnoreLeft) 마커.
+    // 2026-05-23 방어 무시 과잉 정리로 이 윈도의 DEF 무시 효과는 제거 — 추가타만 유지.
+    // (라벨/카운터는 추가타 윈도 표시용으로 잔존, targetDef 에는 더는 반영 안 함.)
     const weakpointDefIgnore = state.stacks.weakpointDefIgnoreLeft > 0;
-    // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF -crushDefReduction. 암살/약점 적중이면 DEF 0.
-    // baseDef 는 보스 취약(armorVulnerable) + 정확(armorPierceFraction) 비례 관통이 이미 반영된 값 —
-    // 분쇄는 그 위에 추가 고정 감산.
+    // 분쇄 — 강공격 발동 턴, 그 공격에 한해 적 DEF -crushDefReduction.
+    // baseDef 는 보스 취약(armorVulnerable) 이 이미 반영된 값 — 분쇄는 그 위에 추가 고정 감산.
+    // 2026-05-23 정리: 암살/약점/AP 의 DEF 완전 무시 제거 → DEF 0 분기는 없앰(apIgnoresDef 채널만 잔존,
+    // 현재 ignoresDef AP 스킬 없음). 방어 투자가 모든 공격에 유효하도록.
     const crushReduction = player.crushDefReduction ?? 0;
     const baseDef = playerFacingEnemyDef(state, player, nextBuffsTimed);
-    const targetDef = assassinFires || weakpointDefIgnore || apIgnoresDef
+    const targetDef = apIgnoresDef
       ? 0
       : bonus > 0 && crushReduction > 0
         ? Math.max(0, baseDef - crushReduction)

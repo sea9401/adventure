@@ -33,15 +33,15 @@ describe("특기 — 광전사", () => {
 });
 
 describe("특기 — 암살", () => {
-  it("전투 첫 공격: 적 DEF 무시 + 데미지 ×2, 그 뒤 공격은 정상", () => {
+  it("전투 첫 공격: 데미지 ×2 (DEF 적용), 그 뒤 공격은 정상", () => {
     const p: PlayerCombat = { ...PLAYER, assassinateDmgMult: 2 };
     let s = initialBattleState(p, enemy(100), "용사");
-    s = advanceTurn(s, p, "용사"); // DEF무시 baseDmg=10, ×2 → 20 → 80
-    expect(s.enemyHp).toBe(80);
+    s = advanceTurn(s, p, "용사"); // baseDmg=damageBetween(10,3)=7, ×2 → 14 → 86
+    expect(s.enemyHp).toBe(86);
     expect(s.flags.assassinateUsed).toBe(true);
     s = advanceTurn(s, p, "용사"); // 적 턴
-    s = advanceTurn(s, p, "용사"); // 2턴: 암살 소진 → damageBetween(10,3)=7 → 73
-    expect(s.enemyHp).toBe(73);
+    s = advanceTurn(s, p, "용사"); // 2턴: 암살 소진 → damageBetween(10,3)=7 → 79
+    expect(s.enemyHp).toBe(79);
   });
 });
 
@@ -146,7 +146,7 @@ describe("2티어 특기 — 불굴의 일격", () => {
 });
 
 describe("2티어 특기 — 약점 적중", () => {
-  it("크리 발동 시 DEF 무시 추가타 1회 (턴당 1회)", () => {
+  it("크리 발동 시 추가타 1회 (DEF 적용, 턴당 1회)", () => {
     const p: PlayerCombat = {
       ...PLAYER,
       critChancePct: 100,
@@ -154,13 +154,13 @@ describe("2티어 특기 — 약점 적중", () => {
       weakpointExtraAttacks: 1,
     };
     let s = initialBattleState(p, enemy(100), "용사");
-    s = advanceTurn(s, p, "용사"); // 1타: 크리 14 → 86, 약점 적중 큐 +1 추가타
+    s = advanceTurn(s, p, "용사"); // 1타: 크리 14 → 86, 약점 적중 추가타 큐 +1
     expect(s.enemyHp).toBe(86);
     expect(s.turn.weakpointUsedThisTurn).toBe(true);
     expect(s.stacks.weakpointDefIgnoreLeft).toBe(1);
     expect(s.phase).toBe("player");
-    s = advanceTurn(s, p, "용사"); // 약점 추가타: DEF 무시, 크리 → damageBetween(10,0)=10 ×2 = 20 → 66
-    expect(s.enemyHp).toBe(66);
+    s = advanceTurn(s, p, "용사"); // 약점 추가타: DEF 적용, 크리 → damageBetween(10,3)=7 ×2 = 14 → 72
+    expect(s.enemyHp).toBe(72);
     expect(s.stacks.weakpointDefIgnoreLeft).toBe(0);
   });
 });

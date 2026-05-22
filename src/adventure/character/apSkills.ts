@@ -112,9 +112,9 @@ export const AP_SKILLS: APSkill[] = [
   {
     id: "shadow_cut",
     name: "그림자 베기",
-    description: "ATK × 1.5 단발, 적 DEF 무시",
+    description: "ATK × 1.5 단발",
     apCost: 3,
-    effect: { kind: "atk_multiplier", atkMult: 1.5, ignoresDef: true },
+    effect: { kind: "atk_multiplier", atkMult: 1.5 },
   },
   {
     id: "extra_evade",
@@ -133,12 +133,11 @@ export const AP_SKILLS: APSkill[] = [
   {
     id: "heaven_slay",
     name: "천살",
-    description: "ATK × 3.0 단발, 회피·DEF 모두 무시",
+    description: "ATK × 3.0 단발, 회피 무시",
     apCost: 5,
     effect: {
       kind: "atk_multiplier",
       atkMult: 3.0,
-      ignoresDef: true,
       ignoresEvasion: true,
     },
   },
@@ -303,12 +302,11 @@ export const AP_SKILLS: APSkill[] = [
   {
     id: "starlit_scatter",
     name: "별빛 흩기",
-    description: "ATK × 1.8 단발, 회피·DEF 모두 무시",
+    description: "ATK × 1.8 단발, 회피 무시",
     apCost: 4,
     effect: {
       kind: "atk_multiplier",
       atkMult: 1.8,
-      ignoresDef: true,
       ignoresEvasion: true,
     },
   },

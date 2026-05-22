@@ -177,15 +177,11 @@ export const EXECUTION_HP_FRACTION = 0.3;
 export const EXECUTION_DAMAGE_MULT = 1.5;
 
 // 정확 — 민첩 35 도달 시 획득.
-// 효과 1) 모든 공격에 대해 적 evasion ×PRECISION_EVASION_MULT (절반). 회피 무력화가 아닌 비례 감소.
-// 효과 2) 플레이어의 모든 공격이 적 방어력의 (DEX × PRECISION_PIERCE_PER_DEX)% 를 무시 (PRECISION_PIERCE_CAP 캡).
-//   "약점을 노린다" — DEX 비례라 후반에도 유효하고, 고방어 보스에 대한 DEX 빌드의 답.
-//   DEX 35=24.5% / 50=35% / 70=49% / 100=60%(캡). 분쇄(고정 감산)는 이 비례 관통 뒤에 적용, 암살은 여전히 DEF 0.
+// 효과) 모든 공격에 대해 적 evasion ×PRECISION_EVASION_MULT (절반). 회피 무력화가 아닌 비례 감소.
+//   회피에 의존하는 적(특히 고회피 빌드)을 깎는 명중 스킬. (2026-05-23 방어 무시 과잉 정리로
+//   기존 "적 DEF 비례 관통" 효과 제거 — DEF 무시가 방어 투자를 무력화하던 문제. 회피 절반만 유지.)
 export const PRECISION_DEX_THRESHOLD = 35;
 export const PRECISION_EVASION_MULT = 0.5;
-// DEX 1pt 당 무시하는 적 DEF 비율(0~1). 0.007 = pt당 0.7%.
-export const PRECISION_PIERCE_PER_DEX = 0.007;
-export const PRECISION_PIERCE_CAP = 0.6;
 
 // 불굴 — 활력 35 도달 시 획득.
 // 효과 1) 전투당 1회, HP 가 0 이 되는 데미지 받으면 HP 1 로 버틴다.
@@ -334,7 +330,7 @@ export const STAT_SKILL: Record<StatKey, StatSkillInfo[]> = {
     },
     {
       name: SKILL_NAMES.PRECISION,
-      description: `모든 공격에 대해 적 회피 ×${PRECISION_EVASION_MULT} (비례 절반) + 적 방어력 (DEX × ${(PRECISION_PIERCE_PER_DEX * 100).toFixed(1)})% 무시 — DEX 35=24.5%, 70=49% (최대 ${Math.round(PRECISION_PIERCE_CAP * 100)}%)`,
+      description: `모든 공격에 대해 적 회피 ×${PRECISION_EVASION_MULT} (비례 절반) — 회피에 의존하는 적에게 강함`,
       activationThreshold: PRECISION_DEX_THRESHOLD,
     },
     {
@@ -583,7 +579,7 @@ export const FEAT_SKILL: FeatSkillInfo[] = [
   },
   {
     name: FEAT_NAMES.ASSASSINATE,
-    description: `전투 첫 공격 — 적 방어력 무시 + 데미지 ×${ASSASSINATE_DMG_MULT}`,
+    description: `전투 첫 공격 — 데미지 ×${ASSASSINATE_DMG_MULT}`,
     req: ["str", "dex"],
   },
   {
@@ -708,7 +704,8 @@ export function berserkerAtkPctPerLostHpPctFor(
     : 0;
 }
 
-// 암살 — 전투 첫 공격의 데미지 배수 (DEF 무시 동반). 0/미장착 = 미발동.
+// 암살 — 전투 첫 공격의 데미지 배수. 0/미장착 = 미발동.
+// (2026-05-23 방어 무시 과잉 정리로 기존 "DEF 무시" 동반 효과 제거 — 첫 공격 배수만 유지.)
 export function assassinateDmgMultFor(
   stats: Record<StatKey, number>,
   equipped: ReadonlySet<string>,
@@ -778,7 +775,8 @@ export const FEAT_TIER2_NAMES = {
 
 // 불굴의 일격 (STR+VIT) — 매 턴 첫 공격(본타)에 (이번 전투 누적 받은 피해 × N) 추가.
 export const ENDURING_STRIKE_MULT = 0.25;
-// 약점 적중 (STR+DEX) — 크리티컬 발동 시 그 턴에 한해 추가 공격 1회 + DEF 무시. 턴당 1회.
+// 약점 적중 (STR+DEX) — 크리티컬 발동 시 그 턴에 한해 추가 공격 1회. 턴당 1회.
+// (2026-05-23 방어 무시 과잉 정리로 기존 "DEF 무시" 동반 효과 제거 — 추가타만 유지.)
 export const WEAKPOINT_EXTRA_ATTACKS = 1;
 // 광속 격투 (STR+SPD) — 매 턴 기본 공격 횟수 +N.
 export const LIGHT_HAND_EXTRA_ATTACK = 1;
@@ -809,7 +807,7 @@ export const FEAT_TIER2_SKILL: FeatSkillInfo[] = [
   },
   {
     name: FEAT_TIER2_NAMES.WEAKPOINT_HIT,
-    description: `크리티컬 발동 시 그 턴 즉시 추가 공격 ${WEAKPOINT_EXTRA_ATTACKS}회 + 적 DEF 무시 (턴당 1회)`,
+    description: `크리티컬 발동 시 그 턴 즉시 추가 공격 ${WEAKPOINT_EXTRA_ATTACKS}회 (턴당 1회)`,
     req: ["str", "dex"],
   },
   {
@@ -875,7 +873,7 @@ export function enduringStrikeMultFor(
     : 0;
 }
 
-// 약점 적중 — 크리 시 즉시 추가 공격 횟수 (DEF 무시). 미장착 시 0.
+// 약점 적중 — 크리 시 즉시 추가 공격 횟수. 미장착 시 0.
 export function weakpointExtraAttacksFor(
   stats: Record<StatKey, number>,
   equipped: ReadonlySet<string>,
@@ -1138,17 +1136,6 @@ export function precisionEvasionMultFor(
     equipped.has(SKILL_NAMES.PRECISION)
     ? PRECISION_EVASION_MULT
     : 1;
-}
-
-// 정확 — 플레이어 공격이 무시하는 적 방어력 비율(0~1). DEX 비례, PRECISION_PIERCE_CAP 캡. 미장착 시 0.
-export function precisionArmorPierceFractionFor(
-  stats: Record<StatKey, number>,
-  equipped: ReadonlySet<string>,
-): number {
-  return stats.dex >= PRECISION_DEX_THRESHOLD &&
-    equipped.has(SKILL_NAMES.PRECISION)
-    ? Math.min(PRECISION_PIERCE_CAP, stats.dex * PRECISION_PIERCE_PER_DEX)
-    : 0;
 }
 
 // 불굴 활성 여부 — 엔진이 HP 0 데미지 직전 분기.
