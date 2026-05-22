@@ -5,7 +5,7 @@ export type NpcId =
   | "village_blacksmith_bold"
   | "village_suzy"
   | "village_woodcutter_jimmy"
-  // 5막 「빈 옥좌의 시대」 — 별바다 노수호자 유성이 시작 마을로 직접 걸어왔다 (Ch 26 ~).
+  // 5막 「빈 옥좌의 시대」, 별바다 노수호자 유성이 시작 마을로 직접 걸어왔다 (Ch 26 ~).
   | "village_pilgrim_meteor"
   | "diola_elder"
   | "diola_fisher"
@@ -27,15 +27,15 @@ export type NpcId =
   | "skyreach_alchemist"
   | "skyreach_acolyte"
   | "skyreach_gatekeeper"
-  // 별바다 — 천공 라인 endgame 정거장.
+  // 별바다, 천공 라인 endgame 정거장.
   | "star_haven_elder"
-  // 소만 — 해안 지선의 작은 포구.
+  // 소만, 해안 지선의 작은 포구.
   | "saltmarsh_elder"
   | "saltmarsh_ferryman"
   | "saltmarsh_salter"
   | "saltmarsh_innkeeper"
   | "saltmarsh_kid"
-  // 마른나루 — 서편 옛길의 작은 역참 마을.
+  // 마른나루, 서편 옛길의 작은 역참 마을.
   | "dustford_keeper"
   | "dustford_scavenger"
   | "dustford_innkeeper"
@@ -106,7 +106,7 @@ export const NPCS: Npc[] = [
       "어이, 모험가 양반.\n오늘도 숲에서 나무 좀 패다 왔지. 별일 없는 게 제일이야, 안 그래?",
     portrait: "/images/npc/jimmy.webp",
   },
-  // 5막 — 별바다에서 시작 마을까지 직접 걸어온 노수호자. star_haven_elder 와 동일 인물,
+  // 5막, 별바다에서 시작 마을까지 직접 걸어온 노수호자. star_haven_elder 와 동일 인물,
   // 다른 인스턴스(NPC 시스템에 flag-gated 등장이 없어 dialogue 가 endgame_apex_defeated
   // 미보유 시 짧은 인사로 가드). portrait 공유.
   {
@@ -345,7 +345,7 @@ export const NPCS: Npc[] = [
     description:
       "별바다에 마지막으로 남은 옛 천공인의 후예. 회랑부터 옥좌의 길까지 모든 결을 외우고, 첨탑 위 별빛을 매일 지킨다.",
     greeting:
-      "…별바다에 사람의 발소리가 닿은 게 얼마만인지.\n자네의 결을 보니 별의 첨탑은 지났고, 폐도의 문 앞까지도 닿았겠지. 그렇다면. 회랑에 흩어진 별빛부터 한 결씩 챙겨주게. 옛 회랑·옥좌의 길을 다시 잇기 위한 마지막 손길이 필요하네.",
+      "…별바다에 사람의 발소리가 닿은 게 얼마만인지.\n자네의 결을 보니 별의 첨탑은 지났고, 폐도의 문 앞까지도 닿았겠지. 그렇다면, 회랑에 흩어진 별빛부터 한 결씩 챙겨주게. 옛 회랑·옥좌의 길을 다시 잇기 위한 마지막 손길이 필요하네.",
     portrait: "/images/npc/yousung.webp",
   },
   // ── 소만 (해안 지선) ─────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import type { EquipItem } from "./types";
 
 export const HIDDEN_ITEMS = {
-  // ── 히든 퀘스트 보상 (§11) — 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────
+  // ── 히든 퀘스트 보상 (§11), 정식 곡선 위 한 칸, 의뢰로만 입수 ─────────────
   // 월광검: 볼드 ↔ 만월 옛 합작 무기를 마저 완성한 것(hidden-blacksmith-duel). 운봉 무기 한 칸 위.
   moonlight_blade: {
     name: "월광검",
@@ -36,9 +36,9 @@ export const HIDDEN_ITEMS = {
 
   // ── 유실된 명품 ───────────────────────────────────────────────────────────
   // 일부 잡몹이 아주 드물게(≈0.01~0.02%) 떨구는 unique 등급 장비. 그 구간에서 제작·일반 드랍으로는
-  // 못 얻는 한두 티어 위의 "한 자루" — 운빨로 점프하는 손맛 전용이라 곡선 위로 살짝만 비집고 들어간다
+  // 못 얻는 한두 티어 위의 "한 자루", 운빨로 점프하는 손맛 전용이라 곡선 위로 살짝만 비집고 들어간다
   // (보조 스탯 합으로 보면 같은 구간 정식 장비가 대개 더 낫다). 드랍/원정 결과에 강조 배너가 뜨고,
-  // 드랍 품질 롤도 그대로 적용된다 — 정교한/빼어난까지 겹치면 더블 잭팟. 1번(두더지왕의 드릴)은 위 참고.
+  // 드랍 품질 롤도 그대로 적용된다, 정교한/빼어난까지 겹치면 더블 잭팟. 1번(두더지왕의 드릴)은 위 참고.
   bat_swarm_charm: {
     name: "박쥐떼의 길잡이",
     slot: "accessory",
@@ -90,7 +90,7 @@ export const HIDDEN_ITEMS = {
     tradable: false,
     tier: 5,
   } satisfies EquipItem,
-  // ── 천공 라인 legendary 4종 — 신규 지역(starspire/skyfolk_ruins/apex_throne) 몹에서 ──
+  // ── 천공 라인 legendary 4종, 신규 지역(starspire/skyfolk_ruins/apex_throne) 몹에서 ──
   // ──   ultra-rare(0.00015~0.0002) 로 떨어지는 specialized lore drop. craftable 라인엔  ──
   // ──   없는 stat 결합으로 빌드 다양성 부여.                                            ──
   starlight_bow: {
@@ -145,7 +145,7 @@ export const HIDDEN_ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
-  // ── 천공 라인 빌드 정의 unique 18종 (Lv70~90) — 골렘갑주 패턴의 한쪽 몰빵 + 디버프 ─
+  // ── 천공 라인 빌드 정의 unique 18종 (Lv70~90), 골렘갑주 패턴의 한쪽 몰빵 + 디버프 ─
   // 각 라인 잡몹에서 0.04% 로 떨어지는 specialized drop. craftable 곡선 위로 raw stat
   // 살짝 비집고 들어가지만 디버프 2~3종을 동시에 받아 특정 빌드(SPD/DEX/LUK/순수ATK/
   // 순수DEF) 에서만 손맛이 사는 한 자루.

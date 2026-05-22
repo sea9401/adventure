@@ -1,7 +1,7 @@
 import type { Quest } from "./types";
 
 export const SKYTHRONE_QUESTS: Quest[] = [
-  // ── 천공 성지 — 메인 라인 "능선 너머의 봉인" (원로 해무) ─────────────────
+  // ── 천공 성지, 메인 라인 "능선 너머의 봉인" (원로 해무) ─────────────────
   // 화산의 심장 처치(volcano_heart_defeated, 천공 성지 진입 조건) 후 만나는 라인.
   // 봉황 무구 갑옷·액세서리 확정 제작서 + 성지 "또 다른 봉인" 서사. HaemuDialogue.
   {
@@ -96,7 +96,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "skyreach_alchemist",
   },
-  // 천공 성지 길드 게시판 — 화산 지대 정기 의뢰 (화산의 심장 처치 후 노출).
+  // 천공 성지 길드 게시판, 화산 지대 정기 의뢰 (화산의 심장 처치 후 노출).
   {
     id: "skyreach-flame-golems",
     regionId: "skyreach",
@@ -111,10 +111,10 @@ export const SKYTHRONE_QUESTS: Quest[] = [
   },
 
   // ════════════════════════════════════════════════════════════════════════
-  // 다리 구간 / 봉황령 / 화산 — 사이드 의뢰 + 게시판 (§3.1 §3.3 §4 §5)
+  // 다리 구간 / 봉황령 / 화산, 사이드 의뢰 + 게시판 (§3.1 §3.3 §4 §5)
   // ════════════════════════════════════════════════════════════════════════
 
-  // ── 바람골 역참 — NPC 전속 사이드 (마로 / 노을 / 한솔) ───────────────────
+  // ── 바람골 역참, NPC 전속 사이드 (마로 / 노을 / 한솔) ───────────────────
   {
     id: "windvale-merchant-escort-raiders",
     regionId: "windvale",
@@ -221,7 +221,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     requiresQuestCompleted: "windvale-volcano-boss",
   },
 
-  // ── 봉황령 — 사이드 의뢰 (운향 도연/산하 · 천공 검/시온 출처) ─────────────
+  // ── 봉황령, 사이드 의뢰 (운향 도연/산하 · 천공 검/시온 출처) ─────────────
   {
     id: "unhyang-guide-flame-lizards",
     regionId: "unhyang",
@@ -270,11 +270,11 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     repeatable: false,
     giverNpcId: "unhyang_herbalist",
   },
-  // 봉황령 정기 의뢰(불꽃 독수리·화염 도마뱀·산악 기사)는 바람골 게시판 단독 — 천공은 자기
+  // 봉황령 정기 의뢰(불꽃 독수리·화염 도마뱀·산악 기사)는 바람골 게시판 단독, 천공은 자기
   // 화산 지대·성지 콘텐츠에 집중. (옛 skyreach-phoenix-ridge-* / skyreach-knight-captain-hunt 제거.)
 
 
-  // ── 봉황령 → 화산 사이 (reqLv 44~50) — 레벨 공백 보강 ───────────────────
+  // ── 봉황령 → 화산 사이 (reqLv 44~50), 레벨 공백 보강 ───────────────────
   // 봉황령 콘텐츠(reqLv ~40~42)와 화산 콘텐츠(reqLv 52+) 사이 10레벨 구간을 메운다.
   // 호스트는 이 시점에 도달 가능한 곳: 바람골 역참(게시판·길잡이 한솔) + 운향(도연).
   {
@@ -321,7 +321,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     repeatable: true,
     requiresQuestCompleted: "windvale-pathfinder-ridge-scout",
   },
-  // (옛 unhyang-board-phoenix-ridge-grand 는 분담 정리로 제거 — 봉황령은 바람골 단독 운영.)
+  // (옛 unhyang-board-phoenix-ridge-grand 는 분담 정리로 제거, 봉황령은 바람골 단독 운영.)
   {
     id: "windvale-pathfinder-deep-ridge",
     regionId: "windvale",
@@ -362,7 +362,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     requiresQuestCompleted: "unhyang-guide-flame-lizards",
   },
 
-  // ── 화산 지대 — 사이드 의뢰 (천공 검/시온 출처) ─────────────────────────
+  // ── 화산 지대, 사이드 의뢰 (천공 검/시온 출처) ─────────────────────────
   {
     id: "skyreach-alchemist-flame-scale",
     regionId: "skyreach",
@@ -398,7 +398,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
   },
 
   // ════════════════════════════════════════════════════════════════════════
-  // 보스 누적 사냥 라인 + 액세서리 확정 루트 (§10) — "보스 사냥꾼" 칭호
+  // 보스 누적 사냥 라인 + 액세서리 확정 루트 (§10), "보스 사냥꾼" 칭호
   // 세 hunter 의뢰는 그 보스를 처음 소개한 NPC 가 다시 주는 "개인 도전"(길드판 미노출).
   // ════════════════════════════════════════════════════════════════════════
   {
@@ -406,7 +406,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     regionId: "village",
     title: "광맥의 수호자 ─ 사냥 기록",
     description:
-      "그놈을 열 번이나 잠재우면 동굴 안쪽이 한동안 조용하다고들 하더라고. 나야 무서워서 못 가지만. 모험가 양반이라면 기록 한번 채워볼 만하지 않겠어?",
+      "그놈을 열 번이나 잠재우면 동굴 안쪽이 한동안 조용하다고들 하더라고. 나야 무서워서 못 가지만, 모험가 양반이라면 기록 한번 채워볼 만하지 않겠어?",
     requiredLevel: 6,
     target: { kind: "kill", monsterName: "광맥의 수호자", count: 10 },
     reward: { gold: 1500, fame: 30, exp: 1800 },
@@ -427,7 +427,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     giverNpcId: "unhyang_elder",
     requiresQuestCompleted: "unhyang-baekun-peak-giant",
   },
-  // 백운 — 거인 10회 처치 후 풀리는 히든 검결 라인. "산정 검결의 잔편" — 봉황 깃털 ×5 deliver.
+  // 백운, 거인 10회 처치 후 풀리는 히든 검결 라인. "산정 검결의 잔편", 봉황 깃털 ×5 deliver.
   // 보상은 book_heaven_slay (귀속). 다이얼로그 게이트: peak-giant-hunter 완료 여부로 노출.
   {
     id: "unhyang-baekun-heaven-slay",
@@ -443,7 +443,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     requiresQuestCompleted: "peak-giant-hunter",
     hidden: true,
   },
-  // 백운 — 천살 잔편 이후 두 번째 히든 라인. 폭풍 일격 — 돌풍 정령 ×10 처치.
+  // 백운, 천살 잔편 이후 두 번째 히든 라인. 폭풍 일격, 돌풍 정령 ×10 처치.
   // 다이얼로그 게이트: unhyang-baekun-heaven-slay 완료 여부.
   {
     id: "unhyang-baekun-storm-strike",
@@ -459,7 +459,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     requiresQuestCompleted: "unhyang-baekun-heaven-slay",
     hidden: true,
   },
-  // 음유시인 — 유실품 노래(bard_lucky_collected) 이후 히든 호흡 라인. 봉황 깃털 ×3 deliver.
+  // 음유시인, 유실품 노래(bard_lucky_collected) 이후 히든 호흡 라인. 봉황 깃털 ×3 deliver.
   // 다이얼로그 게이트: bard_lucky_collected 플래그 보유.
   {
     id: "windvale-bard-focused-breath",
@@ -474,7 +474,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     giverNpcId: "windvale_bard",
     hidden: true,
   },
-  // 카이 — pristine 호수 님프 의뢰 완료 후 풀리는 히든 라인. 요정 가루 ×10 deliver → 잔상.
+  // 카이, pristine 호수 님프 의뢰 완료 후 풀리는 히든 라인. 요정 가루 ×10 deliver → 잔상.
   {
     id: "diola-kai-afterimage",
     regionId: "diola",
@@ -494,7 +494,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     regionId: "skyreach",
     title: "화산의 심장 ─ 사냥 기록",
     description:
-      "그것을 열 번이나 잠재운 자가 있었다는 옛 기록이 성지에 남아 있어. 솜씨가 있다면. 자네가 그 기록을 다시 써 보겠어?",
+      "그것을 열 번이나 잠재운 자가 있었다는 옛 기록이 성지에 남아 있어. 솜씨가 있다면, 자네가 그 기록을 다시 써 보겠어?",
     requiredLevel: 55,
     target: { kind: "kill", monsterName: "화산의 심장", count: 10 },
     reward: { gold: 3500, fame: 50, exp: 6000 },
@@ -517,7 +517,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
   },
 
   // ════════════════════════════════════════════════════════════════════════
-  // 히든 퀘스트 (§11) — 길드 게시판 미노출(giverNpcId 지정). 추가 노출 조건
+  // 히든 퀘스트 (§11), 길드 게시판 미노출(giverNpcId 지정). 추가 노출 조건
   // (아이템 보유 / 보스 N회 처치 / flag) 은 해당 NPC 다이얼로그가 직접 가드한다.
   // ════════════════════════════════════════════════════════════════════════
   {
@@ -552,7 +552,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     regionId: "village",
     title: "마저 두드린 것",
     description:
-      "옛날에 만월이랑 무기 하나를 절반씩 만들다 싸우고 헤어졌지. 둘 다 다시 만났으니… 마저 완성해 볼까 싶어. 단단한 결정 여덟 덩이만 가져와 봐. 완성되면. 그 검은 자네 거야.",
+      "옛날에 만월이랑 무기 하나를 절반씩 만들다 싸우고 헤어졌지. 둘 다 다시 만났으니… 마저 완성해 볼까 싶어. 단단한 결정 여덟 덩이만 가져와 봐. 완성되면, 그 검은 자네 거야.",
     requiredLevel: 22,
     target: { kind: "deliver", materialId: "hard_crystal", count: 8 },
     reward: { gold: 1500, exp: 2500, items: [{ id: "moonlight_blade", count: 1 }] },

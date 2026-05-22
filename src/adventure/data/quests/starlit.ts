@@ -1,11 +1,11 @@
 import type { Quest } from "./types";
 
 export const STARLIT_QUESTS: Quest[] = [
-  // ── 히든: 순례자의 자취 (§11.1) — 운저 평원→잿빛 협로→봉황령 표식 추적 ──────
+  // ── 히든: 순례자의 자취 (§11.1), 운저 평원→잿빛 협로→봉황령 표식 추적 ──────
   // unhyang_main_cleared 후 순례자가 운향을 떠나며 길마다 표식을 남긴다. 각 지역에서
   // PilgrimMarkDialogue("알림판" 카드 → 다이얼로그)로 surfacing. 4단계(천공 성지 재회)는
   // 의뢰 없이 step-3 완료 + skyreach 도착 시 PilgrimMarkDialogue 가 처리 → pilgrim_revealed.
-  // giverNpcId 없음 — 운저 평원·잿빛 협로·봉황령은 게시판이 없는 통과 지역이라 게시판 노출 안 됨.
+  // giverNpcId 없음, 운저 평원·잿빛 협로·봉황령은 게시판이 없는 통과 지역이라 게시판 노출 안 됨.
   {
     id: "hidden-pilgrim-trail-1",
     regionId: "cloud_plain",
@@ -23,7 +23,7 @@ export const STARLIT_QUESTS: Quest[] = [
     regionId: "ashen_pass",
     title: "순례자의 자취 ─ 잿더미의 매듭",
     description:
-      "잿더미에 반쯤 묻힌 같은 매듭. 옆에 식은 모닥불 자리, 그 둘레에 잿돌이 흩어져 있다. 다섯 덩이를 주워 표식 위에 올려놓으면. 잿가루 사이로 순례자가 간 방향이 드러난다.",
+      "잿더미에 반쯤 묻힌 같은 매듭. 옆에 식은 모닥불 자리, 그 둘레에 잿돌이 흩어져 있다. 다섯 덩이를 주워 표식 위에 올려놓으면, 잿가루 사이로 순례자가 간 방향이 드러난다.",
     requiredLevel: 34,
     target: { kind: "deliver", materialId: "ash_stone", count: 5 },
     reward: { gold: 800, fame: 14, exp: 1200 },
@@ -42,7 +42,7 @@ export const STARLIT_QUESTS: Quest[] = [
     repeatable: false,
     requiresQuestCompleted: "hidden-pilgrim-trail-2",
   },
-  // ── 별바다 — 노수호자 유성의 사냥 의뢰 라인 (4단). ────────────────────────
+  // ── 별바다, 노수호자 유성의 사냥 의뢰 라인 (4단). ────────────────────────
   // 1차 출처: 떠도는 시녀(Lv75) → 별빛 망령(Lv75) → 별궤도 자율기(Lv75) → 황성 호위병(Lv85).
   // 보상: 4단으로 corridor 5종 + road 5종 제작서 전부 풀린다 (5단 craft chain 의 중간 출처).
   {
@@ -89,7 +89,7 @@ export const STARLIT_QUESTS: Quest[] = [
     giverNpcId: "star_haven_elder",
     requiresQuestCompleted: "star-haven-corridor-wraiths",
   },
-  // 폐도의 봉인 — 천공인의 왕 서사 게이트. 2026-05-19 보스 솔로 전환 이후에도
+  // 폐도의 봉인, 천공인의 왕 서사 게이트. 2026-05-19 보스 솔로 전환 이후에도
   // 의뢰는 서사 흐름과 storyFlag `skyfolk_gate_cleared` 설정용으로 유지.
   // 회랑 골렘(Q3) 완수 후 노출 / 완료 시 storyFlag `skyfolk_gate_cleared` 셋.
   {
@@ -123,7 +123,7 @@ export const STARLIT_QUESTS: Quest[] = [
     giverNpcId: "star_haven_elder",
     requiresQuestCompleted: "star-haven-skyfolk-gate",
   },
-  // 옥좌의 봉인 — 창공의 주재 서사 게이트. Chapter 24 의 완료 룰이 이 flag 를 본다.
+  // 옥좌의 봉인, 창공의 주재 서사 게이트. Chapter 24 의 완료 룰이 이 flag 를 본다.
   // 2026-05-19 보스 솔로 전환 이후에도 의뢰는 챕터 진행용으로 필수.
   // 황성 호위병(Q4 throne-guards) 완수 후 노출 / 완료 시 storyFlag `apex_gate_cleared` 셋.
   {
@@ -140,12 +140,12 @@ export const STARLIT_QUESTS: Quest[] = [
     requiresQuestCompleted: "star-haven-throne-guards",
   },
   // ────────────────────────────────────────────────────────────────────────
-  // 노수호자 유성 — 후반 3 보스(별을 지키는 자 / 천공인의 왕 / 창공의 주재) 도전 의뢰.
+  // 노수호자 유성, 후반 3 보스(별을 지키는 자 / 천공인의 왕 / 창공의 주재) 도전 의뢰.
   // 2026-05-19: 세 보스가 협동→솔로 전환되면서 coop_* 타깃 9종을 솔로 전투 가능한
   // kind 로 재구성. 게이트 의뢰 완료(=서사 게이트) 후 잠금 해제.
   //   - witness : kill ×1                          (서사상 첫 베어냄 인증)
-  //   - strike  : kill_within_hp 0.7 ×3            (거의 무피로 처치 — 결단의 일격)
-  //   - survive : no_potion_boss ×5                (포션 없이 처치 — 흔들림 없는 자세)
+  //   - strike  : kill_within_hp 0.7 ×3            (거의 무피로 처치, 결단의 일격)
+  //   - survive : no_potion_boss ×5                (포션 없이 처치, 흔들림 없는 자세)
   // 보상 fame 양은 보존 (협동→솔로 전환만, 진입장벽 동등).
   // ────────────────────────────────────────────────────────────────────────
   // 별을 지키는 자 (starspire) 3종
@@ -154,7 +154,7 @@ export const STARLIT_QUESTS: Quest[] = [
     regionId: "starspire",
     title: "별을 지키는 자: 별빛의 증인",
     description:
-      "별을 지키는 자를 한 번 거두어 별빛이 자네를 알아보게 하시오. 별빛이 자네를 한 번 깊이 알아본다면. 그 기억은 평생 간다.",
+      "별을 지키는 자를 한 번 거두어 별빛이 자네를 알아보게 하시오. 별빛이 자네를 한 번 깊이 알아본다면, 그 기억은 평생 간다.",
     requiredLevel: 70,
     target: { kind: "kill", monsterName: "별을 지키는 자", count: 1 },
     reward: { fame: 50 },
@@ -283,9 +283,9 @@ export const STARLIT_QUESTS: Quest[] = [
     giverNpcId: "star_haven_elder",
     requiresQuestCompleted: "star-haven-apex-gate",
   },
-  // ── 5막 「빈 옥좌의 시대」 PR-C — 별빛을 담을 그릇 ───────────────────────────
+  // ── 5막 「빈 옥좌의 시대」 PR-C, 별빛을 담을 그릇 ───────────────────────────
   // 노수호자 유성(시작 마을 인스턴스, village_pilgrim_meteor) 의 단일 deliver 의뢰.
-  // dialogue 가 endgame_apex_defeated + Ch 27 완료(세 잔영 flag) 를 가드 — 데이터로
+  // dialogue 가 endgame_apex_defeated + Ch 27 완료(세 잔영 flag) 를 가드, 데이터로
   // 표현 불가하므로 hidden:true (게시판 노출 X, NPC 대화로만 발견).
   // 보상: 별빛 깃든 기예 6권 일괄. 의뢰 완료가 Ch 28 「유성의 마지막 부탁」 의 완료 조건.
   {
@@ -313,15 +313,15 @@ export const STARLIT_QUESTS: Quest[] = [
     giverNpcId: "village_pilgrim_meteor",
     hidden: true,
   },
-  // 5막 깊이 — 지미 히든. 별빛 광맥 수호자 5회 처치로 풀리는 호흡법(book_lifesteal).
-  // 다이얼로그 게이트: storyFlags.has("starfall_warden_felled") — 별빛 광맥 수호자를
+  // 5막 깊이, 지미 히든. 별빛 광맥 수호자 5회 처치로 풀리는 호흡법(book_lifesteal).
+  // 다이얼로그 게이트: storyFlags.has("starfall_warden_felled"), 별빛 광맥 수호자를
   // 한 번이라도 베어 본 자에게만 지미가 운을 뗀다. 보상은 흡령(귀속).
   {
     id: "village-jimmy-starfall-deepening",
     regionId: "village",
     title: "별빛 광맥의 깊이",
     description:
-      "광맥의 수호자가 별빛에 데워져 다시 깨어났다는 말. 자네가 봤다지. 사람들은 안 믿어. 다섯 번이면. 다섯 번을 거두어 와 주면, 노친네가 옛 광맥 호흡법 한 자락을 자네 결에 옮겨 둘 테니까.",
+      "광맥의 수호자가 별빛에 데워져 다시 깨어났다는 말. 자네가 봤다지. 사람들은 안 믿어. 다섯 번이면, 다섯 번을 거두어 와 주면, 노친네가 옛 광맥 호흡법 한 자락을 자네 결에 옮겨 둘 테니까.",
     requiredLevel: 100,
     target: { kind: "kill", monsterName: "별빛 광맥 수호자", count: 5 },
     reward: { gold: 3000, fame: 40, exp: 4000, skillBooks: ["book_lifesteal"] },

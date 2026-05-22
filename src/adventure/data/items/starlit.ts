@@ -1,7 +1,7 @@
 import type { EquipItem } from "./types";
 
 export const STARLIT_ITEMS = {
-  // ── 5막 별빛 무구 — 4 별빛 사냥터 (Ch 26 이후) 진입 컨텐츠.
+  // ── 5막 별빛 무구, 4 별빛 사냥터 (Ch 26 이후) 진입 컨텐츠.
   // 무기 25종 = 5무기(대검/창/방패/쌍검/단검) × 5부스탯 변형. atk +28 / 메인 +14 / 부스탯 +5.
   // 메인스탯 매핑: 대검=str, 창=dex, 방패=vit, 쌍검=spd, 단검=luk.
   // 부스탯이 메인과 일치하는 변형(예: 힘의 별빛 대검) 은 같은 스탯에 자연 합산 → 메인 +19.
@@ -441,7 +441,7 @@ export const STARLIT_ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
-  // 창공의 옥새 — 창공의 주재 협동 legend 티어 1% 드랍 (만렙 정점 물욕템).
+  // 창공의 옥새, 창공의 주재 협동 legend 티어 1% 드랍 (만렙 정점 물욕템).
   // accessory 슬롯, 천공인의 관 위의 전스탯 + 양면 분포.
   apex_regalia: {
     name: "창공의 옥새",
@@ -461,9 +461,9 @@ export const STARLIT_ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
-  // ── 태고의 노룡 (월드 보스) 보상 — 용의 둥지에서 모든 모험가가 깎아 잡는 어미의 결. ──
+  // ── 태고의 노룡 (월드 보스) 보상, 용의 둥지에서 모든 모험가가 깎아 잡는 어미의 결. ──
   // gold/epic 티어 도달자에게 equipRolls 로 직접 떨어지는 무구 4종 (no debuff, BiS급).
-  // legend 티어 도달자에게는 그 위 액세서리 한 자루(태고의 비늘관) — 운빨.
+  // legend 티어 도달자에게는 그 위 액세서리 한 자루(태고의 비늘관), 운빨.
   primordial_blade: {
     name: "태고의 결검",
     slot: "weapon",
@@ -517,8 +517,8 @@ export const STARLIT_ITEMS = {
     rarity: "unique",
     tier: 5,
   } satisfies EquipItem,
-  // 태고의 비늘관 — legend 티어 5% 드랍 (월드 보스 정점 물욕템).
-  // accessory 슬롯, 창공의 옥새 위의 전스탯 — 운빨로 한 자루.
+  // 태고의 비늘관, legend 티어 5% 드랍 (월드 보스 정점 물욕템).
+  // accessory 슬롯, 창공의 옥새 위의 전스탯, 운빨로 한 자루.
   primordial_regalia: {
     name: "태고의 비늘관",
     slot: "accessory",
@@ -537,15 +537,15 @@ export const STARLIT_ITEMS = {
     tier: 5,
   } satisfies EquipItem,
 
-  // 6막 「별을 잊은 것」 — 잊힌 봉인 legend 랜덤 롤 장신구. base 는 옵션 없음(bonus 생략):
+  // 6막 「별을 잊은 것」, 잊힌 봉인 legend 랜덤 롤 장신구. base 는 옵션 없음(bonus 생략):
   // 실제 옵션(힘·활력·민첩·속도·행운 중 2개 × 1~20)은 드랍 시 인스턴스마다 롤되어 박힌다
-  // (starlitRing.ts / EquipmentInstance.rolledBonus). 거래 가능 — 거래소가 인스턴스(롤 포함)
+  // (starlitRing.ts / EquipmentInstance.rolledBonus). 거래 가능, 거래소가 인스턴스(롤 포함)
   // 거래를 지원하면서 좋은 롤을 사고팔 수 있다(거래소 instance_payload).
   starlit_ring: {
     name: "별빛 고리",
     slot: "accessory",
     stats: [{ label: "랜덤 옵션", value: "2종 · 각 +1~20" }],
-    // base 는 옵션 없음 — 실제 bonus 는 인스턴스 rolledBonus 가 채운다(resolveStarlitRing).
+    // base 는 옵션 없음, 실제 bonus 는 인스턴스 rolledBonus 가 채운다(resolveStarlitRing).
     // 빈 객체라도 둬야 ITEMS 유니온 전 항목이 bonus 키를 가져 타입이 일관된다.
     bonus: {},
     description:
