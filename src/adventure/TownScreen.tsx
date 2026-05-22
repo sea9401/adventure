@@ -409,6 +409,7 @@ export function TownScreen() {
           droppedEquipmentCounts={inventory.state.droppedEquipment}
           potionCounts={inventory.state.potions}
           potionMax={inventory.potionMax}
+          gold={character.gold}
           onCraft={handleCraft}
         />
       </div>
@@ -443,6 +444,7 @@ export function TownScreen() {
         <EnhancementPanel
           instances={inventory.state.equipmentInstances ?? []}
           shardCount={inventory.state.materials.starfall_shard ?? 0}
+          gold={character.gold}
           enchantScrolls={scrolls}
           onEnhance={handleEnhance}
           onEnchant={handleEnchant}
