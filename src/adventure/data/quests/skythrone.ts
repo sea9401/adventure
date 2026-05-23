@@ -450,7 +450,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "구름 위의 결",
     description:
-      "산정의 바람은 한 자루 결로 옮길 수 있다. 옛말이지. 돌풍 정령 열을 잠재워 보게. 자네 검에 그 결이 옮겨질 거야.",
+      "산정의 바람은 검 한 자루에도 옮길 수 있다. 옛말이지. 돌풍 정령 열을 잠재워 보게. 자네 검에도 그 바람이 옮겨질 거야.",
     requiredLevel: 30,
     target: { kind: "kill", monsterName: "돌풍 정령", count: 10 },
     reward: { fame: 50, skillBooks: ["book_storm_strike"] },
@@ -466,7 +466,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     regionId: "windvale",
     title: "한 호흡의 결",
     description:
-      "노래는 한 호흡으로 끝나야 결이 잡혀. 봉황 깃털 세 개만 가져다 줘. 그걸로 한 호흡의 결을 자네 검에 옮겨 줄게.",
+      "노래는 한 호흡으로 끝나야 맛이 살아. 봉황 깃털 세 개만 가져다 줘. 그걸로 그 호흡을 자네 검에 옮겨 줄게.",
     requiredLevel: 25,
     target: { kind: "deliver", materialId: "phoenix_feather", count: 3 },
     reward: { fame: 40, skillBooks: ["book_focused_breath"] },
@@ -480,7 +480,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     regionId: "diola",
     title: "닿기 전의 결",
     description:
-      "노랫소리에 만져지기 전에. 그게 결이에요. 요정 가루 열 점만 모아 주시면, 새벽 그물에 비친 잔상의 결을 자네 검에 옮겨 줄게요.",
+      "노랫소리에 닿기 전에 끝내야 해요. 그게 요령이에요. 요정 가루 열 점만 모아 주시면, 새벽 그물에 비친 잔상의 움직임을 자네 검에 옮겨 줄게요.",
     requiredLevel: 12,
     target: { kind: "deliver", materialId: "fairy_dust", count: 10 },
     reward: { fame: 35, skillBooks: ["book_afterimage"] },
@@ -494,7 +494,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     regionId: "skyreach",
     title: "화산의 심장 ─ 사냥 기록",
     description:
-      "그것을 열 번이나 잠재운 자가 있었다는 옛 기록이 성지에 남아 있어. 솜씨가 있다면, 자네가 그 기록을 다시 써 보겠어?",
+      "화산의 심장을 열 번이나 잠재운 자가 있었다는 옛 기록이 성지에 남아 있어. 솜씨가 있다면, 자네가 그 기록을 다시 써 보겠어?",
     requiredLevel: 55,
     target: { kind: "kill", monsterName: "화산의 심장", count: 10 },
     reward: { gold: 3500, fame: 50, exp: 6000 },
@@ -579,7 +579,7 @@ export const SKYTHRONE_QUESTS: Quest[] = [
     regionId: "skyreach",
     title: "심장이 잠든 자리",
     description:
-      "심장이 잠든 자리에 정수가 고였더군. 화산 두꺼비를 충분히 잡으면 그 정수가 흘러나올 거야. 마흔 마리쯤이면 돼. 그걸로. 용암 정수를 다듬어 줄게. 자네 몫이야.",
+      "심장이 잠든 자리에 정수가 고였더군. 화산 두꺼비를 충분히 잡으면 그게 흘러나올 거야. 마흔 마리쯤이면 돼. 그걸로 용암 정수를 다듬어 줄게. 자네 몫이야.",
     requiredLevel: 55,
     target: { kind: "kill", monsterName: "화산 두꺼비", count: 40 },
     reward: { gold: 1500, exp: 2500, items: [{ id: "lava_essence", count: 1 }] },

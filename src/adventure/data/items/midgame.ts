@@ -160,7 +160,7 @@ export const MIDGAME_ITEMS = {
       { label: "행운", value: "+9" },
     ],
     bonus: { def: 5, luk: 9 },
-    description: "거미여왕의 비단갑을 거미줄로 더 곱게 짜 올린 정갑. 결이 비단 위의 비단이고, 운이 더 끈질기게 따라붙는다.",
+    description: "거미여왕의 비단갑을 거미줄로 더 곱게 짜 올린 정갑. 비단 위에 비단을 얹은 듯하고, 운이 더 끈질기게 따라붙는다.",
     rarity: "unique",
     tier: 3,
   } satisfies EquipItem,

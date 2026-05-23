@@ -398,7 +398,7 @@ export const STARTER_ITEMS = {
       { label: "행운", value: "+3" },
     ],
     bonus: { str: 3, dex: 3, vit: 3, spd: 3, luk: 3 },
-    description: "운봉의 거인 척추 한 마디에서 떼어낸 운봉석 결정. 다섯 결이 한 결로 펴져 손에 쥔 자의 모든 발이 같이 가벼워진다.",
+    description: "운봉의 거인 척추 한 마디에서 떼어낸 운봉석 결정. 손에 쥐면 몸 전체가 고르게 가벼워진다.",
     rarity: "unique",
     tradable: false,
     tier: 3,

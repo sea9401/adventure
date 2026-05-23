@@ -17,7 +17,7 @@ export const HOMELAND_QUESTS: Quest[] = [
     regionId: "village",
     title: "슬라임 퇴치",
     description:
-      "평야에 슬라임이 갑자기 너무 많아져서 농부들이 피해를 보고있어요. 슬라임 60마리를 처치해주세요.",
+      "평야에 슬라임이 갑자기 너무 많아져서 농부들이 피해를 보고 있어요. 슬라임 60마리를 처치해 주세요.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"슬라임", count: 60 },
     reward: { gold: 60, fame: 4, exp: 120 },
@@ -28,7 +28,7 @@ export const HOMELAND_QUESTS: Quest[] = [
     regionId: "village",
     title: "들개 퇴치",
     description:
-      "마을 외곽에서 들개가 가축을 노린다는 신고가 들어왔어요. 들개 45마리를 처치해주세요.",
+      "마을 외곽에서 들개가 가축을 노린다는 신고가 들어왔어요. 들개 45마리를 처치해 주세요.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"들개", count: 45 },
     reward: { gold: 70, fame: 4, exp: 135 },
@@ -39,7 +39,7 @@ export const HOMELAND_QUESTS: Quest[] = [
     regionId: "village",
     title: "두더지 퇴치",
     description:
-      "두더지가 밭을 헤집어 놓아 농작물 피해가 심해요. 두더지 60마리를 처치해주세요.",
+      "두더지가 밭을 헤집어 놓아 농작물 피해가 심해요. 두더지 60마리를 처치해 주세요.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName:"두더지", count: 60 },
     reward: { gold: 55, fame: 4, exp: 120 },
@@ -89,7 +89,7 @@ export const HOMELAND_QUESTS: Quest[] = [
     regionId: "village",
     title: "나무꾼 지미의 부탁",
     description:
-      "요즘 숲에 산적이 너무 많이 나와서 벌목하러 가질 못하고있어요. 산적들좀 처리해주세요.",
+      "요즘 숲에 산적이 너무 많이 나와서 벌목하러 가질 못하고 있어요. 산적들 좀 처리해 주세요.",
     requiredLevel: 1,
     target: { kind: "kill", monsterName: "산적", count: 20 },
     reward: {

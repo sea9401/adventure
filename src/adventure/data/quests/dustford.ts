@@ -135,7 +135,7 @@ export const DUSTFORD_QUESTS: Quest[] = [
     regionId: "dustford",
     title: "옛 성문지기",
     description:
-      "성채는 멀쩡해. 한 가지만 빼면, 성문지기. 사람을 막으라 만든 게 아니야, 군대를 막으라 세운 거지. 군대는 오지 않았고 그것만 남아 빈 벽을 지켜. 단단히 준비해 가서 그것을 잠재워 주게. 마른나루의 명운이 거기 달렸소.",
+      "성채는 멀쩡해. 한 가지만 빼면, 성문지기. 사람을 막으라 만든 게 아니야, 군대를 막으라 세운 거지. 군대는 오지 않았고 그것만 남아 빈 벽을 지켜. 단단히 준비해 가서 잠재워 주게. 마른나루가 거기에 달렸소.",
     requiredLevel: 13,
     target: { kind: "kill", monsterName: "옛 성문지기", count: 1 },
     reward: {
@@ -232,7 +232,7 @@ export const DUSTFORD_QUESTS: Quest[] = [
     regionId: "dustford",
     title: "나래의 청: 보리 들어주기",
     description:
-      "그 애가 요즘 통 말이 적어요. 밤마다 옛길 끝 쪽을 본대요. 자기는 안 무섭다면서. 들어줄 사람이 있어야지요. 보리와 세 번만 이야기를 나눠 주세요.",
+      "그 애가 요즘 통 말이 적어요. 밤마다 옛길 끝 쪽을 본대요. 자기는 안 무섭다면서요. 누가 좀 들어줘야지요. 보리와 세 번만 이야기를 나눠 주세요.",
     requiredLevel: 4,
     target: { kind: "talk_to_npc", npcId: "dustford_kid", count: 3 },
     reward: { gold: 200, fame: 10, exp: 240, potions: [{ id: "potion_heal_s", count: 5 }] },
@@ -247,7 +247,7 @@ export const DUSTFORD_QUESTS: Quest[] = [
     regionId: "dustford",
     title: "보리의 청: 성채 한 바퀴",
     description:
-      "무진 할아버지는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서, 안이 어떻게 생겼는지 다 말해 줘요. 흉벽도, 우물도, 안마당도. 옛 성채 5회 방문.",
+      "무진 할아버지는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서 안이 어떻게 생겼는지 다 말해 줘요. 흉벽이랑 우물, 안마당까지요. 옛 성채 5회 방문.",
     requiredLevel: 9,
     target: { kind: "visit_region", regionId: "oldwall_keep", count: 5 },
     reward: { gold: 220, fame: 11, exp: 320 },

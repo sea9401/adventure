@@ -24,7 +24,7 @@ export const UNHYANG_QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "운봉의 거인",
     description:
-      "이제 알겠네. 산 깊은 곳에 잠들지 않는 것이 버티는 한, 이 산정은 평온할 수 없어. 운봉의 거인. 혼자선 어림없는 상대지. 동료를 모아 그놈을 잠재워 주게. 산정의 명운이 거기 달렸다네.",
+      "이제 알겠네. 산 깊은 곳에 잠들지 않는 것이 버티는 한, 이 산정은 평온할 수 없어. 운봉의 거인. 혼자선 어림없는 상대지. 동료를 모아 그놈을 잠재워 주게. 산정이 거기에 달렸다네.",
     requiredLevel: 22,
     target: { kind: "kill", monsterName: "운봉의 거인", count: 1 },
     reward: { gold: 1800, fame: 60, exp: 4500, items: [{ id: "peak_heart", count: 1 }] },
@@ -134,7 +134,7 @@ export const UNHYANG_QUESTS: Quest[] = [
     regionId: "unhyang",
     title: "산기슭의 바위 두꺼비",
     description:
-      "산기슭 바위 두꺼비, 그놈들 등껍데기가 길을 막아. 열다섯 마리만 치워 주면 짐꾼들 발이 좀 편해질 거야.. 가는 김에 협곡 무리장 늑대도 한 마리 봐 두면 굵은 송곳니가 나올 거야. 그게 나오면 단검 만드는 법도 함께 알려줄게.",
+      "산기슭 바위 두꺼비, 그놈들 등껍데기가 길을 막아. 열다섯 마리만 치워 주면 짐꾼들 발이 좀 편해질 거야. 가는 김에 협곡 무리장 늑대도 한 마리 봐 두면 굵은 송곳니가 나올 거야. 그게 나오면 단검 만드는 법도 함께 알려줄게.",
     requiredLevel: 18,
     target: { kind: "kill", monsterName: "바위 두꺼비", count: 15 },
     reward: { gold: 360, fame: 18, exp: 600, recipes: ["wolfking_fang_dagger"] },

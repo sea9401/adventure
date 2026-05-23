@@ -112,7 +112,7 @@ export const COAST_QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "수심의 것",
     description:
-      "이제 알겠네. 암초 밑에서 뒤척이는 그것이 잠잠해지지 않는 한, 이 포구는 다시 일어서지 못해. 수심의 것. 단단히 준비해 가서 그것을 가라앉혀 주게. 소만의 명운이 거기 달렸네.",
+      "이제 알겠네. 암초 밑에서 뒤척이는 놈이 잠잠해지지 않는 한, 이 포구는 다시 일어서지 못해. 수심의 것. 단단히 준비해 가서 가라앉혀 주게. 소만이 거기에 달렸네.",
     requiredLevel: 18,
     target: { kind: "kill", monsterName: "수심의 것", count: 1 },
     reward: {
@@ -131,7 +131,7 @@ export const COAST_QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "수심의 것: 다시 뒤척일 때",
     description:
-      "한 번 가라앉혔다고 끝이 아니야. 또 물이 차거든. 수심의 것을 세 번 더 가라앉혀 주게. 소만이 자네를 기억할 게요.",
+      "한 번 가라앉혔다고 끝이 아니야. 또 물이 차거든. 수심의 것을 세 번 더 가라앉혀 주게. 소만 사람들이 자네 이름을 잊지 않을 게요.",
     requiredLevel: 18,
     target: { kind: "kill", monsterName: "수심의 것", count: 3 },
     reward: { gold: 1100, fame: 28, exp: 1500 },
@@ -164,7 +164,7 @@ export const COAST_QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "보말의 청: 미르 들어주기",
     description:
-      "그 애가 요즘 통 말이 적어요. 한낮에도 갯벌만 보고 있고요. 들어줄 사람이 있어야지요. 미르와 세 번만 이야기를 나눠 주세요. 사례는 손님이 두고 간 회복약으로요.",
+      "그 애가 요즘 통 말이 적어요. 한낮에도 갯벌만 보고 있고요. 누가 좀 들어줘야지요. 미르와 세 번만 이야기를 나눠 주세요. 사례는 손님이 두고 간 회복약으로요.",
     requiredLevel: 11,
     target: { kind: "talk_to_npc", npcId: "saltmarsh_kid", count: 3 },
     reward: { gold: 220, fame: 11, exp: 280, potions: [{ id: "potion_heal_s", count: 5 }] },
@@ -179,7 +179,7 @@ export const COAST_QUESTS: Quest[] = [
     regionId: "saltmarsh",
     title: "미르의 청: 산호초 섬 한 바퀴",
     description:
-      "해랑 아저씨는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서, 산호초 섬이 어떻게 생겼는지 다 말해 줘요. 안개도, 사이렌 노래도, 가시 산호도. 산호초 섬 5회 방문.",
+      "해랑 아저씨는 안 데려가 줘요. 아저씨가 다섯 번만 더 갔다 와서 산호초 섬이 어떻게 생겼는지 다 말해 줘요. 안개랑 사이렌 노래, 가시 산호까지요. 산호초 섬 5회 방문.",
     requiredLevel: 16,
     target: { kind: "visit_region", regionId: "reef_isle", count: 5 },
     reward: { gold: 280, fame: 13, exp: 460 },
