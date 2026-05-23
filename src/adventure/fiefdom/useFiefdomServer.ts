@@ -5,13 +5,10 @@ import {
   BUILDINGS,
   GRID_H,
   GRID_W,
-  HERO_REGEN_INTERVAL,
-  HERO_REGEN_PER_TICK,
   UNITS,
   defaultFiefdomState,
-  heroAvailable,
-  heroMaxHp,
 } from "./builderData";
+import { applyTick } from "./tick";
 import type {
   Building,
   BuildingType,
@@ -20,13 +17,13 @@ import type {
   UnitType,
 } from "./types";
 
-// 길드 영지 라이브 모드 — 서버 sync.
-// useBuilderState(로컬 모드)와 거의 같은 빌드/훈련/틱 로직이지만, 영속화는 localStorage 가
-// 아닌 /api/fiefdom/me PUT, 공격은 /api/fiefdom/attack POST 로 처리.
-// 별자리 맵 노드는 /api/fiefdom/browse 로 받은 다른 길드 목록.
+// 길드 영지 라이브 모드 — 서버 권위 sync.
+// 서버가 state 의 truth: 클라 액션은 intent 로 전송(/api/fiefdom/{place-building,train-unit,
+// rename-hero,attack}), 서버가 tick + validate + 적용 후 새 state 반환 → 클라가 교체.
+// 로컬 tick(250ms) 은 부드러운 자원 표시·훈련 카운트다운 표시 전용이며, 다음 서버 응답이
+// 도착하면 truth 로 갱신된다.
 
-const TICK_MS = 250;
-const SAVE_DEBOUNCE_MS = 1500;
+const LOCAL_TICK_MS = 250;
 
 export type BrowseTarget = {
   guildId: number;
@@ -59,9 +56,9 @@ export type LiveApi = {
   canAffordUnit: (t: UnitType) => boolean;
   hasBarracks: boolean;
   renameHero: (name: string) => void;
-  /** 로컬 모드 호환을 위한 stub — 라이브에서는 attackGuild 사용. */
+  /** 로컬 모드 호환 stub — 라이브에서는 attackGuild 사용. */
   attackTerritory: (id: string) => void;
-  /** 로컬 모드 호환을 위한 stub — 라이브에서는 disable. */
+  /** 로컬 모드 호환 stub — 라이브에서는 disable. */
   reset: () => void;
 
   // Live-only.
@@ -77,13 +74,6 @@ function canAfford(resources: ResourceBag, cost: Partial<ResourceBag>): boolean 
     if ((resources[k] ?? 0) < (cost[k] ?? 0)) return false;
   }
   return true;
-}
-function pay(resources: ResourceBag, cost: Partial<ResourceBag>): ResourceBag {
-  const out = { ...resources };
-  for (const k of Object.keys(cost) as Array<keyof ResourceBag>) {
-    out[k] = (out[k] ?? 0) - (cost[k] ?? 0);
-  }
-  return out;
 }
 function buildingAt(buildings: Building[], x: number, y: number) {
   return buildings.find((b) => {
@@ -110,14 +100,7 @@ export function useFiefdomServer(): LiveApi {
   const [lastLog, setLastLog] = useState<string[]>([]);
   const [targets, setTargets] = useState<BrowseTarget[]>([]);
 
-  // 서버에서 받아온 직후 첫 PUT 을 막기 위한 가드(불필요한 round-trip 절약).
-  const hydrated = useRef(false);
-  const saveTimer = useRef<number | null>(null);
-  const stateRef = useRef(state);
-  // ref 갱신은 useEffect 안에서 — render 중 ref 쓰기는 React 19 stricter rule 위반.
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+  const inFlight = useRef(false);
 
   const pushLog = useCallback((msg: string) => {
     setLastLog((prev) => {
@@ -154,7 +137,6 @@ export function useFiefdomServer(): LiveApi {
         setState(body.state);
         setShieldUntil(body.shieldUntil ? new Date(body.shieldUntil) : null);
         setLoad({ kind: "ready", guildId: body.guildId, guildName: body.guildName });
-        hydrated.current = true;
       } catch (e) {
         if (cancelled) return;
         setLoad({ kind: "network_error", message: (e as Error).message });
@@ -165,7 +147,7 @@ export function useFiefdomServer(): LiveApi {
     };
   }, []);
 
-  // 수동/사후 refresh 용 (버튼·공격 후 호출).
+  // 수동/사후 refresh (버튼·공격 후).
   const refreshTargets = useCallback(async () => {
     try {
       const res = await fetch("/api/fiefdom/browse", { cache: "no-store" });
@@ -173,11 +155,11 @@ export function useFiefdomServer(): LiveApi {
       const body = (await res.json()) as { targets: BrowseTarget[] };
       setTargets(body.targets);
     } catch {
-      // browse 실패는 silent — 맵 노드 0개로 표시.
+      // silent
     }
   }, []);
 
-  // 초기 browse 로드 — ready 직후 한 번. 클린업으로 cancellation 처리.
+  // 초기 browse 로드.
   useEffect(() => {
     if (load.kind !== "ready") return;
     let cancelled = false;
@@ -196,96 +178,21 @@ export function useFiefdomServer(): LiveApi {
     };
   }, [load.kind]);
 
-  // Tick — 로컬 모드와 동일한 자원/훈련/regen 처리. 서버 권위 tick 으로 옮기는 건 후속.
+  // 로컬 tick — 부드러운 표시 전용. 서버 응답 도착 시 truth 로 덮어씀.
   useEffect(() => {
     if (load.kind !== "ready") return;
     const id = window.setInterval(() => {
       setState((prev) => {
-        const now = Date.now();
-        let changed = false;
-        const resources = { ...prev.resources };
-        const buildings = prev.buildings.map((b) => {
-          const def = BUILDINGS[b.type];
-          if (!def.produces || !def.interval || !b.lastProduce) return b;
-          let lastProduce = b.lastProduce;
-          while (now - lastProduce >= def.interval) {
-            for (const k of Object.keys(def.produces) as Array<keyof ResourceBag>) {
-              resources[k] = (resources[k] ?? 0) + (def.produces[k] ?? 0);
-              changed = true;
-            }
-            lastProduce += def.interval;
-          }
-          return lastProduce === b.lastProduce ? b : { ...b, lastProduce };
-        });
-
-        const units = { ...prev.units };
-        const remainingQueue: typeof prev.trainQueue = [];
-        for (const item of prev.trainQueue) {
-          if (now >= item.finishAt) {
-            units[item.type] = (units[item.type] ?? 0) + 1;
-            changed = true;
-            pushLog(`${UNITS[item.type].name} 훈련 완료`);
-          } else {
-            remainingQueue.push(item);
-          }
+        const { state: ticked, events } = applyTick(prev, Date.now());
+        for (const ev of events) {
+          if (ev.kind === "unit_trained") pushLog(`${UNITS[ev.type].name} 훈련 완료`);
+          else if (ev.kind === "hero_recovered") pushLog(`✨ ${ev.name}이(가) 회복하여 돌아왔습니다!`);
         }
-
-        let hero = prev.hero;
-        if (hero.recoveringUntil > 0 && now >= hero.recoveringUntil) {
-          hero = {
-            ...hero,
-            recoveringUntil: 0,
-            currentHp: heroMaxHp(hero),
-            lastRegen: now,
-          };
-          changed = true;
-          pushLog(`✨ ${hero.name}이(가) 회복하여 돌아왔습니다!`);
-        }
-        if (heroAvailable(hero, now)) {
-          const max = heroMaxHp(hero);
-          if (hero.currentHp < max) {
-            const elapsed = now - (hero.lastRegen || now);
-            const ticks = Math.floor(elapsed / HERO_REGEN_INTERVAL);
-            if (ticks > 0) {
-              hero = {
-                ...hero,
-                currentHp: Math.min(max, hero.currentHp + ticks * HERO_REGEN_PER_TICK),
-                lastRegen: (hero.lastRegen || now) + ticks * HERO_REGEN_INTERVAL,
-              };
-              changed = true;
-            }
-          } else if (hero.lastRegen !== now && hero.currentHp >= max) {
-            hero = { ...hero, lastRegen: now };
-          }
-        }
-
-        if (!changed && remainingQueue.length === prev.trainQueue.length) return prev;
-        return { ...prev, resources, buildings, units, trainQueue: remainingQueue, hero };
+        return ticked;
       });
-    }, TICK_MS);
+    }, LOCAL_TICK_MS);
     return () => window.clearInterval(id);
   }, [load.kind, pushLog]);
-
-  // 디바운스 PUT — 1.5초 idle 마다 서버 동기화.
-  useEffect(() => {
-    if (load.kind !== "ready" || !hydrated.current) return;
-    if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => {
-      fetch("/api/fiefdom/me", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ state: stateRef.current }),
-      }).catch(() => {
-        // 저장 실패는 다음 변화 때 재시도. silent.
-      });
-    }, SAVE_DEBOUNCE_MS);
-    return () => {
-      if (saveTimer.current !== null) {
-        window.clearTimeout(saveTimer.current);
-        saveTimer.current = null;
-      }
-    };
-  }, [state, load.kind]);
 
   const canAffordBuild = useCallback(
     (t: BuildingType) => canAfford(state.resources, BUILDINGS[t].cost),
@@ -296,34 +203,53 @@ export function useFiefdomServer(): LiveApi {
     [state.buildings],
   );
 
-  const placeBuilding = useCallback(
-    (t: BuildingType, x: number, y: number) => {
-      setState((prev) => {
-        const def = BUILDINGS[t];
-        if (def.max && prev.buildings.filter((b) => b.type === t).length >= def.max) {
-          pushLog(`${def.name}은 더 이상 지을 수 없습니다.`);
-          return prev;
+  // 공통 intent helper — 서버 응답 받아 state 교체.
+  const sendIntent = useCallback(
+    async (path: string, body: unknown, errorLabel: string) => {
+      if (inFlight.current) return;
+      inFlight.current = true;
+      try {
+        const res = await fetch(`/api/fiefdom/${path}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = (await res.json()) as { state?: FiefdomState; error?: string };
+        if (!res.ok || !json.state) {
+          pushLog(`❌ ${errorLabel}: ${json.error ?? `HTTP ${res.status}`}`);
+          return;
         }
-        if (!canPlace(prev.buildings, t, x, y)) {
-          pushLog("이 위치에는 지을 수 없습니다.");
-          return prev;
-        }
-        if (!canAfford(prev.resources, def.cost)) {
-          pushLog("자원이 부족합니다.");
-          return prev;
-        }
-        const b: Building = { type: t, x, y };
-        if (def.produces) b.lastProduce = Date.now();
-        pushLog(`${def.name} 건설 완료`);
-        return {
-          ...prev,
-          resources: pay(prev.resources, def.cost),
-          buildings: [...prev.buildings, b],
-        };
-      });
-      setSelectedBuild(null);
+        setState(json.state);
+      } catch (e) {
+        pushLog(`❌ ${errorLabel}: ${(e as Error).message}`);
+      } finally {
+        inFlight.current = false;
+      }
     },
     [pushLog],
+  );
+
+  const placeBuilding = useCallback(
+    (t: BuildingType, x: number, y: number) => {
+      // 클라단 사전 검증 — 서버도 검증하지만 round-trip 절약.
+      const def = BUILDINGS[t];
+      if (def.max && state.buildings.filter((b) => b.type === t).length >= def.max) {
+        pushLog(`${def.name}은 더 이상 지을 수 없습니다.`);
+        return;
+      }
+      if (!canPlace(state.buildings, t, x, y)) {
+        pushLog("이 위치에는 지을 수 없습니다.");
+        return;
+      }
+      if (!canAfford(state.resources, def.cost)) {
+        pushLog("자원이 부족합니다.");
+        return;
+      }
+      pushLog(`${def.name} 건설 요청`);
+      sendIntent("place-building", { type: t, x, y }, "건설 실패");
+      setSelectedBuild(null);
+    },
+    [pushLog, sendIntent, state.buildings, state.resources],
   );
 
   const canAffordUnit = useCallback(
@@ -334,37 +260,29 @@ export function useFiefdomServer(): LiveApi {
 
   const trainUnit = useCallback(
     (t: UnitType) => {
-      setState((prev) => {
-        const def = UNITS[t];
-        if (!prev.buildings.some((b) => b.type === "barracks")) {
-          pushLog("병영을 먼저 지으세요.");
-          return prev;
-        }
-        if (!canAfford(prev.resources, def.cost)) {
-          pushLog("자원이 부족합니다.");
-          return prev;
-        }
-        const now = Date.now();
-        const lastFinish =
-          prev.trainQueue.length > 0
-            ? prev.trainQueue[prev.trainQueue.length - 1].finishAt
-            : now;
-        pushLog(`${def.name} 훈련 예약`);
-        return {
-          ...prev,
-          resources: pay(prev.resources, def.cost),
-          trainQueue: [...prev.trainQueue, { type: t, finishAt: lastFinish + def.trainTime }],
-        };
-      });
+      const def = UNITS[t];
+      if (!hasBarracks) {
+        pushLog("병영을 먼저 지으세요.");
+        return;
+      }
+      if (!canAfford(state.resources, def.cost)) {
+        pushLog("자원이 부족합니다.");
+        return;
+      }
+      pushLog(`${def.name} 훈련 요청`);
+      sendIntent("train-unit", { type: t }, "훈련 실패");
     },
-    [pushLog],
+    [pushLog, sendIntent, hasBarracks, state.resources],
   );
 
-  const renameHero = useCallback((name: string) => {
-    const trimmed = name.trim().slice(0, 20);
-    if (!trimmed) return;
-    setState((prev) => ({ ...prev, hero: { ...prev.hero, name: trimmed } }));
-  }, []);
+  const renameHero = useCallback(
+    (name: string) => {
+      const trimmed = name.trim().slice(0, 20);
+      if (!trimmed) return;
+      sendIntent("rename-hero", { name: trimmed }, "이름 변경 실패");
+    },
+    [sendIntent],
+  );
 
   const attackGuild = useCallback(
     async (defenderGuildId: number) => {
@@ -381,7 +299,6 @@ export function useFiefdomServer(): LiveApi {
           } else {
             pushLog(`❌ 공격 실패: ${body.error ?? "unknown"}`);
           }
-          // 공격 실패 후 browse 재로드 — shield 상태 갱신.
           refreshTargets();
           return;
         }
@@ -405,8 +322,6 @@ export function useFiefdomServer(): LiveApi {
   );
 
   const attackTerritory = useCallback((id: string) => {
-    // 라이브 모드에서는 호출되면 안 되는 stub — BuilderApi 인터페이스 호환용.
-    // 실제 라이브 공격은 attackGuild 가 담당.
     console.warn("[useFiefdomServer] attackTerritory stub invoked with id:", id);
   }, []);
   const reset = useCallback(() => {

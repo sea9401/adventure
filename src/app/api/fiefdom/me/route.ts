@@ -3,10 +3,12 @@ import { db } from "@/db";
 import { fiefdoms, guildMembers, guilds } from "@/db/schema";
 import { ensureUser } from "@/lib/server/ensureUser";
 import { defaultFiefdomState } from "@/adventure/fiefdom/builderData";
+import { applyTick } from "@/adventure/fiefdom/tick";
 import type { FiefdomState } from "@/adventure/fiefdom/types";
 
 // GET /api/fiefdom/me — 내 길드의 영지 상태.
-// 길드 미가입 → 403. 길드 있으면 fiefdom 행이 없을 경우 default state 자동 생성 후 반환.
+// 길드 미가입 → 403. 길드 있으면 fiefdom 행이 없을 경우 default state 자동 생성.
+// 반환 전 applyTick — 마지막 활동 이후 누적 생산/훈련/regen 반영 후 DB 와 응답 동기화.
 // 응답: { guildId, guildName, state, shieldUntil }.
 export async function GET() {
   const userId = await ensureUser();
@@ -29,81 +31,36 @@ export async function GET() {
     .limit(1);
   const guildName = guildRow[0]?.name ?? "길드";
 
-  const existing = await db
-    .select()
-    .from(fiefdoms)
-    .where(eq(fiefdoms.guildId, guildId))
-    .limit(1);
+  // 트랜잭션 — read + (필요시) tick 결과 write 를 한 번에.
+  const result = await db.transaction(async (tx) => {
+    const rows = await tx
+      .select()
+      .from(fiefdoms)
+      .where(eq(fiefdoms.guildId, guildId))
+      .limit(1)
+      .for("update");
 
-  if (existing[0]) {
-    return Response.json({
-      guildId,
-      guildName,
-      state: existing[0].state as FiefdomState,
-      shieldUntil: existing[0].shieldUntil?.toISOString() ?? null,
-    });
-  }
+    const now = Date.now();
+    if (!rows[0]) {
+      const fresh = defaultFiefdomState();
+      await tx.insert(fiefdoms).values({ guildId, state: fresh });
+      return { state: fresh, shieldUntil: null as Date | null };
+    }
 
-  // 첫 진입 — default state 자동 생성.
-  const fresh = defaultFiefdomState();
-  await db.insert(fiefdoms).values({ guildId, state: fresh });
+    const { state: ticked } = applyTick(rows[0].state as FiefdomState, now);
+    if (ticked !== rows[0].state) {
+      await tx
+        .update(fiefdoms)
+        .set({ state: ticked, updatedAt: new Date(now) })
+        .where(eq(fiefdoms.guildId, guildId));
+    }
+    return { state: ticked, shieldUntil: rows[0].shieldUntil };
+  });
+
   return Response.json({
     guildId,
     guildName,
-    state: fresh,
-    shieldUntil: null,
+    state: result.state,
+    shieldUntil: result.shieldUntil?.toISOString() ?? null,
   });
-}
-
-// PUT /api/fiefdom/me — state 갱신. 빌드/훈련/틱 후 클라에서 debounced 로 전송.
-// 약식 검증만 수행 — 음수 자원, 비정상 buildings 길이 등. MVP 라 권위적 tick 시뮬은 생략.
-// 본격 anti-cheat 는 다음 페이즈에서 server-side tick 으로 옮길 예정.
-export async function PUT(req: Request) {
-  const userId = await ensureUser();
-  if (!userId) return new Response("unauthorized", { status: 401 });
-
-  const membership = await db
-    .select({ guildId: guildMembers.guildId })
-    .from(guildMembers)
-    .where(eq(guildMembers.userId, userId))
-    .limit(1);
-  if (!membership[0]) {
-    return Response.json({ error: "no_guild" }, { status: 403 });
-  }
-  const guildId = membership[0].guildId;
-
-  let body: { state?: unknown };
-  try {
-    body = (await req.json()) as typeof body;
-  } catch {
-    return new Response("invalid json", { status: 400 });
-  }
-
-  const validated = validateState(body.state);
-  if (!validated.ok) {
-    return Response.json({ error: validated.reason }, { status: 400 });
-  }
-
-  await db
-    .update(fiefdoms)
-    .set({ state: validated.state, updatedAt: new Date() })
-    .where(eq(fiefdoms.guildId, guildId));
-
-  return Response.json({ ok: true });
-}
-
-function validateState(s: unknown): { ok: true; state: FiefdomState } | { ok: false; reason: string } {
-  if (!s || typeof s !== "object") return { ok: false, reason: "state_required" };
-  const o = s as Record<string, unknown>;
-  const r = o.resources as Record<string, unknown> | undefined;
-  if (!r) return { ok: false, reason: "resources_missing" };
-  for (const k of ["gold", "wood", "food"] as const) {
-    const v = r[k];
-    if (typeof v !== "number" || !Number.isFinite(v) || v < 0)
-      return { ok: false, reason: `resources_${k}_invalid` };
-  }
-  if (!Array.isArray(o.buildings)) return { ok: false, reason: "buildings_invalid" };
-  if ((o.buildings as unknown[]).length > 100) return { ok: false, reason: "buildings_too_many" };
-  if (!o.hero || typeof o.hero !== "object") return { ok: false, reason: "hero_missing" };
-  return { ok: true, state: s as FiefdomState };
 }

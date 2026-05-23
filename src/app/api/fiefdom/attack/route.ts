@@ -6,6 +6,7 @@ import {
   SHIELD_MS,
   simulateFiefdomBattle,
 } from "@/lib/server/fiefdomBattle";
+import { applyTick } from "@/adventure/fiefdom/tick";
 import type { FiefdomState } from "@/adventure/fiefdom/types";
 
 // POST /api/fiefdom/attack — 서버 권위 전투.
@@ -78,11 +79,11 @@ export async function POST(req: Request) {
         };
       }
 
-      const outcome = simulateFiefdomBattle(
-        attacker[0].state as FiefdomState,
-        defender[0].state as FiefdomState,
-        now.getTime(),
-      );
+      // 양측 모두 tick 먼저 — 마지막 활동 이후 누적 생산/훈련/regen 반영된 상태로 전투 시뮬.
+      const nowMs = now.getTime();
+      const { state: attackerTicked } = applyTick(attacker[0].state as FiefdomState, nowMs);
+      const { state: defenderTicked } = applyTick(defender[0].state as FiefdomState, nowMs);
+      const outcome = simulateFiefdomBattle(attackerTicked, defenderTicked, nowMs);
 
       const shieldUntil = new Date(now.getTime() + SHIELD_MS);
       await tx
