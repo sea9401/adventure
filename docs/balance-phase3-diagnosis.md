@@ -108,3 +108,23 @@
 
 - 다음 작업 1개 제안
   - `ANALYSIS`를 먼저 너프하는 단일 PR을 제안한다. 구체적으로 `analysisPerTurn` 효과를 현재 3에서 1로 낮춘 대조 sim을 만들고, 목표치를 Lv80 `skyfolk_ruins` DEX `EVADE+COUNTER+PRECISION+ANALYSIS` 기준 321,207 exp/h -> 120,000 exp/h 이하, revives 0~1 범위로 둔다.
+
+## 5. 후속 측정 (2026-05-24, post-#535 머지)
+
+#535 (ANALYSIS divisor 30→50 + cap 30%) 머지 직후 같은 sim 재실행.
+
+| 셋업 | pre-#535 | post-#535 | 변화 |
+|---|---:|---:|---:|
+| `EVADE+COUNTER+PRECISION+ANALYSIS` (Lv80 폐도 메타) | 321,207 | **107,284** | **-66.6%** |
+| `EVADE+COUNTER+CLONE+ANALYSIS` | 317,385 | 62,584 | -80.3% |
+| `EVADE+COUNTER+ANALYSIS` (2슬롯+ANALYSIS) | 310,771 | 36,855 | -88.1% |
+
+region-sweep 의 폐도 결과 106,978 exp 와 ablation 의 107,284 exp 가 거의 일치 — stochastic 노이즈 작아 신뢰 가능.
+
+- **목표 121k 이하 달성** (107k). 추가 너프 (`analysisPerTurn` 3→1) 불필요.
+- Lv75 농사 메타는 여전. 용비늘 묘지 381k / 별빛 회랑 266k > Lv80 폐도 107k. 만렙도 Lv75 농사가 효율 1위인 구조는 별건.
+- Lv80→85 절벽 그대로. Lv80 폐도 107k → Lv85 옥좌의 길 3.5k (약 30×). #535 가 폐도를 너프해 격차는 좁혀졌으나 절벽 자체는 그대로.
+
+**결정**:
+1. `analysisPerTurn` 너프 PR-B 보류 — 불필요
+2. 다음 후보: Lv80→85 절벽 (옥좌의 길 몬스터 HP/exp 조정) 또는 잔여 Phase 후보 (LUK 행운의 별⊕만개·STR/VIT compound sustain)
