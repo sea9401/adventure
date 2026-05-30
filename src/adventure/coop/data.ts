@@ -29,6 +29,12 @@ export type CoopBossDef = {
   regenPerMin?: number;
   /** true 면 보스 카드 UI 에 "월드 보스" 라벨/스타일 적용. lore drop 표시 톤 강화. */
   isWorldBoss?: boolean;
+  /**
+   * 보스가 받는 데미지 배율 — 기본 1. >1 이면 플레이어 1회 공격의 누적 데미지가
+   * 그만큼 증폭되어 hp 차감·기여도에 적용된다. maxHp(체력바 표기)는 그대로 둬서
+   * 거대한 레이드 체력바 느낌은 유지하고 처치 속도만 빠르게 하는 튜닝 다이얼.
+   */
+  incomingDamageMultiplier?: number;
 };
 
 // 2026-05-19: 스토리 7종 (canyon/starspire/skyfolk_ruins/apex_throne/3 starlit 잔영) 솔로
@@ -45,6 +51,7 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     expirationMs: 365 * 24 * 60 * 60 * 1000, // 1y (실질 무한)
     respawnMs: 7 * 24 * 60 * 60 * 1000, // 7d 휴면
     isWorldBoss: true,
+    incomingDamageMultiplier: 5,
     onDefeatFlag: "primordial_dragon_felled",
     onAttackFlag: "primordial_dragon_engaged",
     // 진입 자격 — 뼈비늘 노룡 처치 이력 (wyrm_warden_felled). 같은 flag 가 region edge
@@ -63,6 +70,7 @@ export const COOP_BOSSES: Partial<Record<RegionId, CoopBossDef>> = {
     expirationMs: 365 * 24 * 60 * 60 * 1000, // 1y (실질 무한 — 죽을 때까지)
     respawnMs: 2 * 60 * 60 * 1000, // 2h — 처치 후 2시간이면 다시 깨어난다 (상시 레이드)
     isWorldBoss: true,
+    incomingDamageMultiplier: 5,
     onDefeatFlag: "forgotten_star_felled",
     onAttackFlag: "forgotten_star_engaged",
     requiredFlag: "starlit_gate_quelled",
