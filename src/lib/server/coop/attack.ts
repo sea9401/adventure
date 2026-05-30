@@ -85,6 +85,15 @@ export async function handleCoopAttack(
     turns: 20,
   });
 
+  // 월드 보스 "받는 데미지" 배율 — def.incomingDamageMultiplier (기본 1).
+  // 체력바 표기(maxHp)는 그대로 두고 실제 hp 차감·기여도 누적만 N배로 증폭한다.
+  // 증폭된 damageDealt 는 트랜잭션 안에서 잠근 행의 잔여 hp 로 클램프(effectiveDamage)되어
+  // 막타 오버킬분이 기여도/보상 비율(damage/maxHp)에 부풀려 기록되지 않는다.
+  const dmgMult = def.incomingDamageMultiplier ?? 1;
+  if (dmgMult !== 1) {
+    result.damageDealt = Math.round(result.damageDealt * dmgMult);
+  }
+
   // 전술이 켜졌으면 협동 공격 로그 첫머리에 안내 한 줄(#502 가시성을 협동 경로에도 일관).
   const stanceNote = stanceBattleLogText(derived.selectedStance);
   if (stanceNote) {
@@ -102,6 +111,8 @@ export async function handleCoopAttack(
   // 쿨다운/사망 가드를 함께 보장하지 못해 contributor / log 가 잘못 누적됨.
   const now = new Date();
   let realHp = session.hp;
+  // 실제로 보스에 들어간 데미지(막타 오버킬 클램프 후). 응답/표기에 사용 — result.damageDealt 와 달리 잔여 hp 로 캡됨.
+  let appliedDamage = result.damageDealt;
   let iClaimedKill = false;
   let abortReason: "cooldown" | "defeated" | "expired" | null = null;
   let cooldownRetryMs = 0;
@@ -141,11 +152,15 @@ export async function handleCoopAttack(
       }
     }
 
-    // 3. hp 차감 — lock 보유로 race 없음. GREATEST 는 안전 마진.
+    // 3. hp 차감 — lock 보유로 race 없음.
+    // 막타 오버킬 클램프: 잠근 행의 실제 hp 로 적용 데미지를 캡한다. 그래야 5배 증폭(또는
+    // stale 스냅샷)으로 잔여 hp 보다 큰 damageDealt 가 기여도/보상 비율에 부풀려 기록되지 않는다.
+    const effectiveDamage = Math.min(result.damageDealt, s.hp);
+    appliedDamage = effectiveDamage;
     const [updated] = await tx
       .update(coopBossSessions)
       .set({
-        hp: sql`GREATEST(0, ${coopBossSessions.hp} - ${result.damageDealt})`,
+        hp: sql`GREATEST(0, ${coopBossSessions.hp} - ${effectiveDamage})`,
       })
       .where(eq(coopBossSessions.id, s.id))
       .returning({ hp: coopBossSessions.hp });
@@ -169,14 +184,14 @@ export async function handleCoopAttack(
       .values({
         sessionId: s.id,
         userId,
-        damage: result.damageDealt,
+        damage: effectiveDamage,
         attackCount: 1,
         lastAttackAt: now,
       })
       .onConflictDoUpdate({
         target: [coopBossContributors.sessionId, coopBossContributors.userId],
         set: {
-          damage: sql`${coopBossContributors.damage} + ${result.damageDealt}`,
+          damage: sql`${coopBossContributors.damage} + ${effectiveDamage}`,
           attackCount: sql`${coopBossContributors.attackCount} + 1`,
           lastAttackAt: now,
         },
@@ -187,7 +202,7 @@ export async function handleCoopAttack(
       sessionId: s.id,
       userId,
       name: body.playerName ?? "모험가",
-      damageDealt: result.damageDealt,
+      damageDealt: effectiveDamage,
       damageTaken: result.damageTaken,
       diedEarly: result.diedEarly,
       log: result.log,
@@ -251,7 +266,7 @@ export async function handleCoopAttack(
   }
 
   return Response.json({
-    damageDealt: result.damageDealt,
+    damageDealt: appliedDamage,
     damageTaken: result.damageTaken,
     finalPlayerHp: result.finalPlayerHp,
     diedEarly: result.diedEarly,

@@ -14,10 +14,12 @@ const ZERO_DRAFT: Record<StatKey, number> = STAT_KEYS.reduce(
   {} as Record<StatKey, number>,
 );
 
-// 되돌리기 포인트 1개 구매 비용 — 레벨 비례(골드 싱크). 만렙 100 이면 2000G/포인트.
-// 종전엔 고정 1G(사실상 무료)라 골드 싱크가 아니었다. 레벨 비례라 저레벨은 저렴.
-export const REVERT_POINT_PRICE_PER_LEVEL = 20;
+// 되돌리기 포인트 1개 구매 비용 다이얼. 현재 0 = 무료(스탯 초기화 자유화).
+// 골드 싱크로 되살리려면 양수 레벨 단가로 — 예: 20 이면 만렙 100 에 2000G/포인트.
+export const REVERT_POINT_PRICE_PER_LEVEL = 0; // 0 = 무료(스탯 초기화 자유화). 다시 유료화하려면 20 으로 복구.
 export function revertPointPriceFor(level: number): number {
+  // 가격 다이얼이 0 이하면 완전 무료. 양수면 기존 레벨 비례(최소 1G) 유지.
+  if (REVERT_POINT_PRICE_PER_LEVEL <= 0) return 0;
   return Math.max(1, Math.floor(level) * REVERT_POINT_PRICE_PER_LEVEL);
 }
 
@@ -121,7 +123,9 @@ export function GrowthShrineView({
             className="shrink-0 text-yellow-500"
           />
           <div className="min-w-0 flex-1 text-xs text-amber-900 dark:text-amber-200">
-            되돌리기 포인트 1개를 {revertPrice.toLocaleString()}G 에 살 수 있다.
+            {revertPrice > 0
+              ? `되돌리기 포인트 1개를 ${revertPrice.toLocaleString()}G 에 살 수 있다.`
+              : "되돌리기 포인트를 무료로 받을 수 있다."}
             <span className="ml-2 tabular-nums text-zinc-500 dark:text-zinc-400">
               잔액 {gold.toLocaleString()} G
             </span>
